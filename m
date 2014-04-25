@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491AbaDYRDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:03:20 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:47690 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaDYRDP (ORCPT
+	id S1753614AbaDYRDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:03:25 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:32865 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821AbaDYRDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:03:15 -0400
-X-Greylist: delayed 142357 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 13:03:15 EDT
-Message-ID: <1398445392.2102.4.camel@j-VirtualBox>
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-From: Jason Low <jason.low2@hp.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Date: Fri, 25 Apr 2014 10:03:12 -0700
-In-Reply-To: <1398412733.11930.56.camel@marge.simpson.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-2-git-send-email-jason.low2@hp.com>
-	 <5358E417.8090503@linux.vnet.ibm.com>
-	 <20140424120415.GS11096@twins.programming.kicks-ass.net>
-	 <20140424124438.GT13658@twins.programming.kicks-ass.net>
-	 <1398358417.3509.11.camel@j-VirtualBox>
-	 <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-	 <1398377917.3509.32.camel@j-VirtualBox>
-	 <5359EEBE.2030808@linux.vnet.ibm.com>
-	 <1398409990.12047.27.camel@j-VirtualBox>
-	 <1398412733.11930.56.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 25 Apr 2014 13:03:22 -0400
+X-AuditID: cbfec37d-b7f966d000005e7e-a9-535a955a9f6e
+Message-id: <535A9557.4040805@samsung.com>
+Date: Fri, 25 Apr 2014 11:03:19 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.10 00/23] 3.10.38-stable review
+References: <20140424214825.933835556@linuxfoundation.org>
+In-reply-to: <20140424214825.933835556@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.8]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9hX92oqVHBBlu6eSzmrF/DZtG8eD2b
+	xeVdc9gsniw8w2Qx9dQEFosFGx8xWjzqe8vuwO6xc9Zddo8TM36zeOyfuwbI/d7A7vF5k1wA
+	axSXTUpqTmZZapG+XQJXxu4zi5gLtrBVXP1wm6mBsYe1i5GTQ0LAROJE02N2CFtM4sK99Wxd
+	jFwcQgLLGCV62/rAEkICvUwS21ocIBIbGCX2ts8HSnBw8ApoSRz+lw5SwyKgKjHhRD/YUDYB
+	dYnPr3dA9cpJNC1ZzQxiiwpESNxrPAxWwysgKPFj8j0WEFtEIFhi7deFjCDzmQVWMUpcv7yc
+	DWS+sICpxIqVURBzrCRedP0Bm8kpYC2x/OYZsDnMQPbKSdsYIWx5ic1r3jJD1CtL/Ll8iglk
+	jISAgsTXHocJjCKzkGyehaR7FpLuBYzMqxjFSouTC4qT0lMrTPSKE3OLS/PS9ZLzczcxQqKo
+	dgfj/a82hxgFOBiVeHh35EQFC7EmlhVX5h5ilOBgVhLh5egBCvGmJFZWpRblxxeV5qQWH2Jk
+	4uCUamB0Y5TgP/B4urk7B+tSsRdG0em5n2Z9Db7YJ2I2Y9Iq4++LdvYUGKaovw9IutK0sWMF
+	n4Sz586w0hWGNxewn9fas6Xh5rSP916ZOqa0M881SDpeMbun9s8Zn1uPT0jJymWafHY6Nelx
+	lLjJ3bROkVUfJ+hv27dptdCq8PrZ9iW1bSxLvk0XPbFeiaU4I9FQi7moOBEAMRtPUIACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 09:58 +0200, Mike Galbraith wrote:
-> On Fri, 2014-04-25 at 00:13 -0700, Jason Low wrote: 
-> > On Fri, 2014-04-25 at 10:42 +0530, Preeti U Murthy wrote:
-> > > I agree with this. However I am concerned with an additional point that
-> > > I have mentioned in my reply to Peter's mail on this thread.
-> > > 
-> > > Should we verify if rq->next_balance update is independent of
-> > > pulled_tasks? sd->balance_interval is changed during load_balance() and
-> > > rq->next_balance should perhaps consider that?
-> > 
-> > Hi Preeti,
-> > 
-> > I agree that we may want to consider having rq->next balance update be
-> > independent of pulled_task. As you mentioned, load_balance() can modify
-> > the balance_interval.
-> > 
-> > There are a few things I'm wondering if we would need to also add then:
-> > 
-> > 1. In the case that this_rq->avg_idle < sysctl_sched_migration_cost, we
-> >    would need to also traverse the domains to properly compute
-> >    next_balance (without the sd->busy_factor) as we would be going idle.
-> >    Otherwise, next_balance could get set to jiffies + HZ while the
-> >    CPU goes idle.
-> 
-> Avoiding high frequency cache misses and cycle wastage on micro-idle was
-> what avg-idle was about.  If you're going to traverse anyway, or have a
-> better way to not do that too frequently, you can just nuke it.
+On 04/24/2014 03:48 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.38 release.
+> There are 23 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sat Apr 26 21:48:09 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.38-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Yeah, we already compare avg-idle with the per-domain costs in that
-function. I'll run some performance tests with the first check removed,
-as such a change can potentially have a (+/-) impact on performance.
+Compiled and booted. No dmesg regressions.
 
-Thanks,
-Jason
+-- Shuah
 
-
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
