@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaDYJm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3971 "EHLO mx1.redhat.com"
+	id S1752788AbaDYJnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:43:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418AbaDYJmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:42:25 -0400
-Date: Fri, 25 Apr 2014 11:43:50 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dept-HSG Linux NIC Dev <Dept-HSGLinuxNICDev@qlogic.com>,
-        netdev <netdev@vger.kernel.org>, linux-pci <linux-pci@vger.kernel.org>
-Subject: [PATCH v2 net-next 2/2] qlcnic: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-Message-ID: <20140425094349.GA6397@dhcp-26-207.brq.redhat.com>
-References: <cover.1398412015.git.agordeev@redhat.com>
- <0a0d5f5c33d86e3777c22c3c1bbd81035660d57c.1398412015.git.agordeev@redhat.com>
- <262CB373A6D1F14F9B81E82F74F77D5A46F9EE54@avmb2.qlogic.org>
- <20140425090029.GA2500@dhcp-26-207.brq.redhat.com>
- <262CB373A6D1F14F9B81E82F74F77D5A46F9EEA2@avmb2.qlogic.org>
+	id S1750719AbaDYJnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:43:17 -0400
+Date: Fri, 25 Apr 2014 17:44:45 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kaslr should avoid setup_data region
+Message-ID: <20140425094444.GA1896@darkstar.nay.redhat.com>
+References: <20140424023544.GA2180@darkstar.nay.redhat.com>
+ <CAGXu5j+TP2=iVYj=a6YGiGdOUqznb1MxdLLz5tjL8Hwwcq2K0Q@mail.gmail.com>
+ <20140424025016.GB2180@darkstar.nay.redhat.com>
+ <CAGXu5jKaog6X+jw6Zh3iHSHS8KFUbLEHm75=HbVORJ-crpr7Fw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F9EEA2@avmb2.qlogic.org>
+In-Reply-To: <CAGXu5jKaog6X+jw6Zh3iHSHS8KFUbLEHm75=HbVORJ-crpr7Fw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On 04/24/14 at 03:50pm, Kees Cook wrote:
+> Ah, it sounds like boot_params.hdr.setup_data contains a series of
+> e820-like entries chained together as a linked list? Which loaders
+> currently populate that? Looks like EFI? Seems like
+> arch/x86/boot/compressed/eboot.c works on setup_data at least.
 
-Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Cc: Dept-HSGLinuxNICDev@qlogic.com
-Cc: netdev@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+AFAIK efi stub, kexec, also as HPA mentioned syslinux use it as well.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+kexec use setup_data for passing e820 ext ranges, also use it for efi boot.
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index dbf7539..73f908a 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -690,10 +690,10 @@ int qlcnic_setup_tss_rss_intr(struct qlcnic_adapter *adapter)
- 		adapter->msix_entries[vector].entry = vector;
- 
- restore:
--	err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
--	if (err > 0) {
-+	err = pci_enable_msix_exact(pdev, adapter->msix_entries, num_msix);
-+	if (err == -ENOSPC) {
- 		if (!adapter->drv_tss_rings && !adapter->drv_rss_rings)
--			return -ENOSPC;
-+			return err;
- 
- 		netdev_info(adapter->netdev,
- 			    "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
--- 
-1.7.7.6
+> 
+> I won't be in a position to test EFI booting for a while. If someone
+> else took this, that would make it get fixed much faster.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Because kaslr is randomizing the base, it's hard to produce the failure.
+
+>From the code itself, maybe just iterate the setup_data regions and add them
+to avoid list, not necessary to care about the setup_data type..
+
+> 
+> Do you have examples where this is actually causing failures?
+
+As mentioned above I have no idea how to test. Probably need manually hack
+the code to create a failure? 
+
+> 
+> -Kees
+> 
+> On Wed, Apr 23, 2014 at 7:50 PM, Dave Young <dyoung@redhat.com> wrote:
+> > On 04/23/14 at 07:43pm, Kees Cook wrote:
+> >> On Wed, Apr 23, 2014 at 7:35 PM, Dave Young <dyoung@redhat.com> wrote:
+> >> > Hello Kees
+> >> >
+> >> > I'm worrying that setup_data regions could be overwitten by randomize
+> >> > kernel base. Would you like to fix it in kaslr code?
+> >> >
+> >> > One problem is there could be a lot of setup_data regions but current
+> >> > mem_avoid is an fixed array.
+> >>
+> >> Sure, can you give me some examples? Seems like it shouldn't be too
+> >> hard to have the mem_avoid logic walk additional areas.
+> >
+> > Great, To walk through the list just like the function parse_setup_data in
+> > arch/x86/kernel/setup.c
+> >
+> > Thanks
+> > Dave
+> 
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
