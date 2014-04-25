@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaDYOTF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:19:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47679 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754477AbaDYOSy (ORCPT
+	id S1754343AbaDYOTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:19:21 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58958 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaDYOTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:18:54 -0400
-Date: Fri, 25 Apr 2014 16:18:49 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 03/18] usb: host: xhci-plat: Add support for the
- Armada 38x
-Message-ID: <20140425161849.5616821e@skate>
-In-Reply-To: <1398434836-18908-4-git-send-email-gregory.clement@free-electrons.com>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
-	<1398434836-18908-4-git-send-email-gregory.clement@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 10:19:13 -0400
+Date: Fri, 25 Apr 2014 09:15:51 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
+Message-ID: <20140425141551.GL5546@joshc.qualcomm.com>
+References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Gregory CLEMENT,
+On Fri, Apr 25, 2014 at 03:32:51PM +0300, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> 
+> Currently functions that exist in both the controller at the
+> same address offset can not be specified with the same names.
 
-On Fri, 25 Apr 2014 16:07:01 +0200, Gregory CLEMENT wrote:
+The terminology here is a bit confusing.  When I read "controller", I
+hear "SPMI controller", but this is really not a limitation of the SPMI
+core, but rather a limitation of of_platform_populate() used by this
+particular SPMI slave MFD driver.
 
-> +#define USB3_MAX_WINDOWS	4
-> +#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
-> +#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
-> +
-> +static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
-> +			const struct mbus_dram_target_info *dram)
+> Adding Unique Slave ID device address to prefix function
+> device names fixes this.
+> 
+> Function devices are SPMI devices, so register them on
+> SPMI bus.
 
-That's a nitpick, but the name of this function looks like it was
-copy/pasted from the Marvell LSP, and isn't very consistent with the
-other function name. What about:
+This is a step backwards.  The PMIC functions are not individually
+addressable SPMI slaves, and as such should not be represented as
+independent devices to the SPMI core.
 
-	xhci_mvebu_mbus_config()
+They really are subfunctions of a particular SPMI slave, and should be
+modeled as children of that slave device.  With this driver, we've
+chosen to model the child devices as platform devices, but it could
+also be a separate bus type.
 
-instead, or something like that?
+  Josh
 
-> +int xhci_mvebu_mbus_init_quirk(struct platform_device *pdev)
-
-I believe this should give you a warning about section mismatch: you
-have a non-init function calling an __init function, no?
-
-Thomas
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
