@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaDYRQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:16:58 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:58824 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298AbaDYRQn (ORCPT
+	id S1753090AbaDYRQz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:16:55 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:50897 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158AbaDYRQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:16:43 -0400
-Subject: [PATCH 2/4] x86/PCI: Mark HPET BAR as IORESOURCE_PCI_FIXED
+	Fri, 25 Apr 2014 13:16:35 -0400
+Subject: [PATCH 1/4] x86/PCI: Don't try to move IORESOURCE_PCI_FIXED
+ resources
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: David Airlie <airlied@linux.ie>, Bodo Eggert <7eggert@gmx.de>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 25 Apr 2014 11:16:39 -0600
-Message-ID: <20140425171639.312.28185.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Fri, 25 Apr 2014 11:16:31 -0600
+Message-ID: <20140425171631.312.6079.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,65 +25,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bodo reported that on the Asrock M3A UCC, v3.12.6 hangs during boot unless
-he uses "pci=nocrs".  This regression was caused by 7bc5e3f2be32 ("x86/PCI:
-use host bridge _CRS info by default on 2008 and newer machines"), which
-appeared in v2.6.34.
+Don't attempt to move resource marked IORESOURCE_PCI_FIXED, even if
+pci_claim_resource() fails.  In some cases, these are legacy resources that
+cannot be moved.
 
-The reason is that the HPET address appears in a PCI device BAR, and this
-address is not contained in any of the host bridge windows.  Linux moves
-the PCI BAR into a window, but the original address was published via the
-HPET table and an ACPI device, so changing the BAR is a bad idea:
-
-  ACPI: HPET id: 0x43538301 base: 0xfed00000
-  pci_root PNP0A03:00: host bridge window [mem 0xd0000000-0xdfffffff]
-  pci_root PNP0A03:00: host bridge window [mem 0xf0000000-0xfebfffff]
-  pci 0000:00:14.0: [1002:4385] type 0 class 0x000c05
-  pci 0000:00:14.0: reg 14: [mem 0xfed00000-0xfed003ff]
-  hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0, 0
-  pnp 00:06: Plug and Play ACPI device, IDs PNP0103 (active)
-  pnp 00:06: [mem 0xfed00000-0xfed003ff]
-
-This patch marks the BAR as IORESOURCE_PCI_FIXED to prevent Linux from
-moving it.  This depends on a previous patch ("x86/PCI: Don't try to move
-IORESOURCE_PCI_FIXED resources") to check for this flag when
-pci_claim_resource() fails.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=68591
-Reported-by: Bodo Eggert <7eggert@gmx.de>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/x86/pci/fixup.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/x86/pci/i386.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 94ae9ae9574f..d4359f9d74b6 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -6,6 +6,7 @@
- #include <linux/dmi.h>
- #include <linux/pci.h>
- #include <linux/vgaarb.h>
-+#include <asm/hpet.h>
- #include <asm/pci_x86.h>
- 
- static void pci_fixup_i450nx(struct pci_dev *d)
-@@ -526,6 +527,17 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
- 
-+static void sb600_hpet_quirk(struct pci_dev *dev)
-+{
-+	struct resource *r = &dev->resource[0];
-+
-+	if (r->flags & IORESOURCE_MEM && r->start == hpet_address) {
-+		r->flags |= IORESOURCE_PCI_FIXED;
-+		dev_info(&dev->dev, "reg 0x10 contains HPET; making it immovable\n");
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 0x4385, sb600_hpet_quirk);
-+
- /*
-  * Twinhead H12Y needs us to block out a region otherwise we map devices
-  * there and any access kills the box.
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index db6b1ab43255..6db58d68feb5 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -271,11 +271,16 @@ static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
+ 					"BAR %d: reserving %pr (d=%d, p=%d)\n",
+ 					idx, r, disabled, pass);
+ 				if (pci_claim_resource(dev, idx) < 0) {
+-					/* We'll assign a new address later */
+-					pcibios_save_fw_addr(dev,
+-							idx, r->start);
+-					r->end -= r->start;
+-					r->start = 0;
++					if (r->flags & IORESOURCE_PCI_FIXED) {
++						dev_info(&dev->dev, "BAR %d %pR is immovable\n",
++							 idx, r);
++					} else {
++						/* We'll assign a new address later */
++						pcibios_save_fw_addr(dev,
++								idx, r->start);
++						r->end -= r->start;
++						r->start = 0;
++					}
+ 				}
+ 			}
+ 		}
 
