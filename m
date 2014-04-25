@@ -1,315 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947AbaDYNRr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:17:47 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:39856 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753916AbaDYNRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:17:43 -0400
+	id S1753988AbaDYNSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:18:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1257 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096AbaDYNSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:18:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="528296777"
+Message-ID: <535A6070.90803@intel.com>
+Date: Fri, 25 Apr 2014 21:17:36 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1398346054-3322-2-git-send-email-namhyung@kernel.org>
-References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
-	<1398346054-3322-2-git-send-email-namhyung@kernel.org>
-Date: Fri, 25 Apr 2014 15:17:43 +0200
-Message-ID: <CABPqkBRvfU=vC8sxNWzFwOvwNeDx7fVPuHvBvSS9698_p6=6+w@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
- line workload
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com> <5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com> <20140424112715.GQ11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140424112715.GQ11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 3:27 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Currently perf record doesn't propagate the exit status of a workload
-> given by the command line.  But sometimes it'd useful if it's
-> propagated so that a monitoring script can handle errors
-> appropriately.
->
-> To do that, it got rid of exit handlers and run/call them directly in
-> the __cmd_record().  I don't see any reason why those are in a form of
-> exit handlers in the first place.  Also it cleaned up the resouce
-> management code in record__exit().
->
-> With this change, perf record returns the child exit status in case of
-> normal termination.  (Not sure what should be returned on abnormal
-> cases though).
->
-> Example run of Stephane's case:
->
->   $ perf record true && echo yes || echo no
->   [ perf record: Woken up 1 times to write data ]
->   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
->   yes
->
->   $ perf record false && echo yes || echo no
->   [ perf record: Woken up 1 times to write data ]
->   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
->   no
->
-> And Jiri's case (error in parent):
->
->   $ perf record -m 10G true && echo yes || echo no
->   rounding mmap pages size to 17179869184 bytes (4194304 pages)
->   failed to mmap with 12 (Cannot allocate memory)
->   no
->
-Works for me, now. Thanks.
-Acked-by: Stephane Eranian <eranian@google.com>
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-record.c |  121 ++++++++++++++++++-------------------------
->  1 file changed, 51 insertions(+), 70 deletions(-)
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index eb524f91bffe..b1523d8a6191 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -152,26 +152,6 @@ static void sig_handler(int sig)
->         signr = sig;
->  }
->
-> -static void record__sig_exit(int exit_status __maybe_unused, void *arg)
-> -{
-> -       struct record *rec = arg;
-> -       int status;
-> -
-> -       if (rec->evlist->workload.pid > 0) {
-> -               if (!child_finished)
-> -                       kill(rec->evlist->workload.pid, SIGTERM);
-> -
-> -               wait(&status);
-> -               if (WIFSIGNALED(status))
-> -                       psignal(WTERMSIG(status), rec->progname);
-> -       }
-> -
-> -       if (signr == -1 || signr == SIGUSR1)
-> -               return;
-> -
-> -       signal(signr, SIG_DFL);
-> -}
-> -
->  static int record__open(struct record *rec)
->  {
->         char msg[512];
-> @@ -243,27 +223,6 @@ static int process_buildids(struct record *rec)
->                                               size, &build_id__mark_dso_hit_ops);
->  }
->
-> -static void record__exit(int status, void *arg)
-> -{
-> -       struct record *rec = arg;
-> -       struct perf_data_file *file = &rec->file;
-> -
-> -       if (status != 0)
-> -               return;
-> -
-> -       if (!file->is_pipe) {
-> -               rec->session->header.data_size += rec->bytes_written;
-> -
-> -               if (!rec->no_buildid)
-> -                       process_buildids(rec);
-> -               perf_session__write_header(rec->session, rec->evlist,
-> -                                          file->fd, true);
-> -               perf_session__delete(rec->session);
-> -               perf_evlist__delete(rec->evlist);
-> -               symbol__exit();
-> -       }
-> -}
-> -
->  static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
->  {
->         int err;
-> @@ -356,6 +315,7 @@ static void workload_exec_failed_signal(int signo, siginfo_t *info,
->  static int __cmd_record(struct record *rec, int argc, const char **argv)
->  {
->         int err;
-> +       int status = 0;
->         unsigned long waking = 0;
->         const bool forks = argc > 0;
->         struct machine *machine;
-> @@ -367,7 +327,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->         rec->progname = argv[0];
->
-> -       on_exit(record__sig_exit, rec);
->         signal(SIGCHLD, sig_handler);
->         signal(SIGINT, sig_handler);
->         signal(SIGTERM, sig_handler);
-> @@ -394,26 +353,21 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->         if (record__open(rec) != 0) {
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
->         if (!rec->evlist->nr_groups)
->                 perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
->
-> -       /*
-> -        * perf_session__delete(session) will be called at record__exit()
-> -        */
-> -       on_exit(record__exit, rec);
-> -
->         if (file->is_pipe) {
->                 err = perf_header__write_pipe(file->fd);
->                 if (err < 0)
-> -                       goto out_delete_session;
-> +                       goto out_child;
->         } else {
->                 err = perf_session__write_header(session, rec->evlist,
->                                                  file->fd, false);
->                 if (err < 0)
-> -                       goto out_delete_session;
-> +                       goto out_child;
->         }
->
->         if (!rec->no_buildid
-> @@ -421,7 +375,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 pr_err("Couldn't generate buildids. "
->                        "Use --no-buildid to profile anyway.\n");
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
->         machine = &session->machines.host;
-> @@ -431,7 +385,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                                                    process_synthesized_event);
->                 if (err < 0) {
->                         pr_err("Couldn't synthesize attrs.\n");
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->
->                 if (have_tracepoints(&rec->evlist->entries)) {
-> @@ -447,7 +401,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                                                                   process_synthesized_event);
->                         if (err <= 0) {
->                                 pr_err("Couldn't record tracing data.\n");
-> -                               goto out_delete_session;
-> +                               goto out_child;
->                         }
->                         rec->bytes_written += err;
->                 }
-> @@ -475,7 +429,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->         err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
->                                             process_synthesized_event, opts->sample_address);
->         if (err != 0)
-> -               goto out_delete_session;
-> +               goto out_child;
->
->         if (rec->realtime_prio) {
->                 struct sched_param param;
-> @@ -484,7 +438,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 if (sched_setscheduler(0, SCHED_FIFO, &param)) {
->                         pr_err("Could not set realtime priority.\n");
->                         err = -1;
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->         }
->
-> @@ -512,13 +466,15 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->                 if (record__mmap_read_all(rec) < 0) {
->                         err = -1;
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->
->                 if (hits == rec->samples) {
->                         if (done)
->                                 break;
->                         err = poll(rec->evlist->pollfd, rec->evlist->nr_fds, -1);
-> +                       if (err < 0 && errno == EINTR)
-> +                               err = 0;
->                         waking++;
->                 }
->
-> @@ -538,28 +494,52 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
->                 pr_err("Workload failed: %s\n", emsg);
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
-> -       if (quiet || signr == SIGUSR1)
-> -               return 0;
-> +       if (!quiet) {
-> +               fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
->
-> -       fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
-> +               /*
-> +                * Approximate RIP event size: 24 bytes.
-> +                */
-> +               fprintf(stderr,
-> +                       "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-> +                       (double)rec->bytes_written / 1024.0 / 1024.0,
-> +                       file->path,
-> +                       rec->bytes_written / 24);
-> +       }
->
-> -       /*
-> -        * Approximate RIP event size: 24 bytes.
-> -        */
-> -       fprintf(stderr,
-> -               "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-> -               (double)rec->bytes_written / 1024.0 / 1024.0,
-> -               file->path,
-> -               rec->bytes_written / 24);
-> +out_child:
-> +       if (forks) {
-> +               int exit_status;
->
-> -       return 0;
-> +               if (!child_finished)
-> +                       kill(rec->evlist->workload.pid, SIGTERM);
-> +
-> +               wait(&exit_status);
-> +
-> +               if (err < 0)
-> +                       status = err;
-> +               else if (WIFEXITED(exit_status))
-> +                       status = WEXITSTATUS(exit_status);
-> +               else if (WIFSIGNALED(status))
-> +                       psignal(WTERMSIG(status), rec->progname);
-> +       } else
-> +               status = err;
-> +
-> +       if (!err && !file->is_pipe) {
-> +               rec->session->header.data_size += rec->bytes_written;
-> +
-> +               if (!rec->no_buildid)
-> +                       process_buildids(rec);
-> +               perf_session__write_header(rec->session, rec->evlist,
-> +                                          file->fd, true);
-> +       }
->
->  out_delete_session:
->         perf_session__delete(session);
-> -       return err;
-> +       return status;
->  }
->
->  #define BRANCH_OPT(n, m) \
-> @@ -988,6 +968,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
->
->         err = __cmd_record(&record, argc, argv);
->  out_symbol_exit:
-> +       perf_evlist__delete(rec->evlist);
->         symbol__exit();
->         return err;
->  }
-> --
-> 1.7.9.2
->
+On 04/24/2014 07:27 PM, Peter Zijlstra wrote:
+> On Thu, Apr 24, 2014 at 12:36:01PM +0200, Stephane Eranian wrote:
+>>> Most of hardware specific codes in the Intel uncore driver are for
+>>> SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are
+>>> similar. One module per CPU type means we have to duplicate lots of
+>>> code. I don't think it's a good idea.
+>>>
+>> Then, at least split nhm_ex from the rest. It is very big.
+> 
+> Aren't the EX parts in general far more complex and different from the
+> EP parts? Or will the SNB/IVB/HSW-EX parts also be similar again? (this
+> would be a good thing).
+
+SNB/IVB/HSW-EX are almost identical to SNB/IVB/HSW-EP. NHM/WSM-EX are complete
+different from SNB/IVB/HSW-EX
+
+Regards
+Yan, Zheng
+
+
+> 
+> But yes, it makes sense to at least split the EP and EX parts, and split
+> where the families are different.
+> 
+
