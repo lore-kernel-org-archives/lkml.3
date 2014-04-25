@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362AbaDYEak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 00:30:40 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:43900 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaDYEai (ORCPT
+	id S1751334AbaDYEjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 00:39:06 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58223 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773AbaDYEjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 00:30:38 -0400
-Message-ID: <5359E4E6.90102@linaro.org>
-Date: Fri, 25 Apr 2014 10:00:30 +0530
+	Fri, 25 Apr 2014 00:39:03 -0400
+Message-ID: <5359E6DD.6000608@linaro.org>
+Date: Fri, 25 Apr 2014 10:08:53 +0530
 From: Tushar Behera <tushar.behera@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -21,10 +21,16 @@ CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
         yj44.cho@samsung.com, chanho61.park@samsung.com,
         sajjan.linux@gmail.com, sachin.kamat@linaro.org,
         linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv4 3/7] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-4-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1398388572-30239-4-git-send-email-cw00.choi@samsung.com>
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
+References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,53 +38,20 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/25/2014 06:46 AM, Chanwoo Choi wrote:
-> This patch fix the offset of CPU boot address and don't need to send smc call
-> of SMC_CMD_CPU1BOOT command for secondary CPU boot because Exynos3250 removes
-> WFE in secure mode.
+> From: Tomasz Figa <t.figa@samsung.com>
 > 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> This patch add new exynos3250.dtsi to support Exynos3250 SoC based on Cortex-A7
+> dual core and includes following dt nodes:
+> 
+
+[ ... ]
+
 > ---
->  arch/arm/mach-exynos/firmware.c | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-> index aa01c42..386d01d 100644
-> --- a/arch/arm/mach-exynos/firmware.c
-> +++ b/arch/arm/mach-exynos/firmware.c
-> @@ -31,11 +31,17 @@ static int exynos_do_idle(void)
->  static int exynos_cpu_boot(int cpu)
->  {
->  	/*
-> +	 * Exynos3250 doesn't need to send smc command for secondary CPU boot
-> +	 * because Exynos3250 removes WFE in secure mode.
-> +	 */
-> +	if (soc_is_exynos3250())
-> +		return 0;
-> +	/*
->  	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
->  	 * But, Exynos4212 has only one secondary CPU so second parameter
->  	 * isn't used for informing secure firmware about CPU id.
->  	 */
-> -	if (soc_is_exynos4212())
-> +	else if (soc_is_exynos4212())
+>  arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 +++++++++++++++
+>  arch/arm/boot/dts/exynos3250.dtsi         | 405 +++++++++++++
+>  arch/arm/boot/dts/exynos4212-tizenw.dts   | 926 ++++++++++++++++++++++++++++++
 
-This changes is not required.
-
->  		cpu = 0;
->  
->  	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
-> @@ -46,7 +52,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
->  {
->  	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
->  
-> -	if (!soc_is_exynos4212())
-> +	if (!soc_is_exynos4212() && !soc_is_exynos3250())
->  		boot_reg += 4*cpu;
->  
->  	__raw_writel(boot_addr, boot_reg);
-> 
-
+exynos4412-tizenw.dts related changes are unrelated.
 
 -- 
 Tushar Behera
