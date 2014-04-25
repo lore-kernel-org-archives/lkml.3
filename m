@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaDYAiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:38:52 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:59786 "EHLO
+	id S1752114AbaDYAiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:38:09 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:59657 "EHLO
 	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaDYAis (ORCPT
+	with ESMTP id S1751508AbaDYAhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:38:48 -0400
+	Thu, 24 Apr 2014 20:37:25 -0400
 From: Bill Sumner <bill.sumner@hp.com>
 To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
         joro@8bytes.org
@@ -15,9 +15,9 @@ Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, ddutile@redhat.com,
         ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
         doug.hatch@hp.com, zhenhua@hp.com, jerry.hoemann@hp.com
-Subject: [PATCH 6/8] iommu/vt-d: Create intel-iommu-kdump.c
-Date: Thu, 24 Apr 2014 18:36:36 -0600
-Message-Id: <1398386198-19304-7-git-send-email-bill.sumner@hp.com>
+Subject: [PATCH 3/8] iommu/vt-d: Create intel-iommu-private.h
+Date: Thu, 24 Apr 2014 18:36:33 -0600
+Message-Id: <1398386198-19304-4-git-send-email-bill.sumner@hp.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
 References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
@@ -25,40 +25,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create intel-iommu-kdump.c
-Populate it with support functions to copy iommu translation tables from
-from the panicked kernel into the kdump kernel in the event of a crash.
+ Move the single block of #define, static inline ... ; struct definitions
+ to intel-iommu-private.h from intel-iommu.c
+ Replace them with #include "intel-iommu-private.h"
 
-Update Makefile to build intel-iommu-kdump.o
+ This introduces no functional change from current behaviour.
 
 Signed-off-by: Bill Sumner <bill.sumner@hp.com>
 ---
- drivers/iommu/Makefile            |   2 +-
- drivers/iommu/intel-iommu-kdump.c | 590 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 591 insertions(+), 1 deletion(-)
- create mode 100644 drivers/iommu/intel-iommu-kdump.c
+ drivers/iommu/intel-iommu-private.h | 363 ++++++++++++++++++++++++++++++++++++
+ drivers/iommu/intel-iommu.c         | 345 +---------------------------------
+ 2 files changed, 364 insertions(+), 344 deletions(-)
+ create mode 100644 drivers/iommu/intel-iommu-private.h
 
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 5d58bf1..bd61452 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -6,7 +6,7 @@ obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o amd_iommu_init.o
- obj-$(CONFIG_AMD_IOMMU_V2) += amd_iommu_v2.o
- obj-$(CONFIG_ARM_SMMU) += arm-smmu.o
- obj-$(CONFIG_DMAR_TABLE) += dmar.o
--obj-$(CONFIG_INTEL_IOMMU) += iova.o intel-iommu.o
-+obj-$(CONFIG_INTEL_IOMMU) += iova.o intel-iommu.o intel-iommu-kdump.o
- obj-$(CONFIG_IRQ_REMAP) += intel_irq_remapping.o irq_remapping.o
- obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
- obj-$(CONFIG_OMAP_IOMMU) += omap-iommu2.o
-diff --git a/drivers/iommu/intel-iommu-kdump.c b/drivers/iommu/intel-iommu-kdump.c
+diff --git a/drivers/iommu/intel-iommu-private.h b/drivers/iommu/intel-iommu-private.h
 new file mode 100644
-index 0000000..4e653e048
+index 0000000..480399c
 --- /dev/null
-+++ b/drivers/iommu/intel-iommu-kdump.c
-@@ -0,0 +1,590 @@
++++ b/drivers/iommu/intel-iommu-private.h
+@@ -0,0 +1,363 @@
 +/*
-+ * Copyright (C) 2014 Hewlett-Packard Development Company, L.P.
++ * Copyright (c) 2006, Intel Corporation.
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -69,584 +56,713 @@ index 0000000..4e653e048
 + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 + * more details.
 + *
-+ * Copyright (C) 2014 Hewlett-Packard Development Company, L.P.
-+ * Author: Bill Sumner <bill.sumner@hp.com>
++ * Copyright (C) 2006-2008 Intel Corporation
++ * Author: Ashok Raj <ashok.raj@intel.com>
++ * Author: Shaohua Li <shaohua.li@intel.com>
++ * Author: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
++ * Author: Fenghua Yu <fenghua.yu@intel.com>
 + */
-+#include <linux/init.h>
-+#include <linux/bitmap.h>
-+#include <linux/debugfs.h>
-+#include <linux/export.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/spinlock.h>
-+#include <linux/pci.h>
-+#include <linux/dmar.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/mempool.h>
-+#include <linux/timer.h>
-+#include <linux/iova.h>
-+#include <linux/iommu.h>
-+#include <linux/intel-iommu.h>
-+#include <linux/syscore_ops.h>
-+#include <linux/tboot.h>
-+#include <linux/dmi.h>
-+#include <linux/pci-ats.h>
-+#include <linux/memblock.h>
-+#include <asm/irq_remapping.h>
-+#include <asm/cacheflush.h>
-+#include <linux/iommu.h>
 +
-+#include "irq_remapping.h"
-+#include "pci.h"
++
++#define ROOT_SIZE		VTD_PAGE_SIZE
++#define CONTEXT_SIZE		VTD_PAGE_SIZE
++
++#define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
++#define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
++#define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
++
++#define IOAPIC_RANGE_START	(0xfee00000)
++#define IOAPIC_RANGE_END	(0xfeefffff)
++#define IOVA_START_ADDR		(0x1000)
++
++#define DEFAULT_DOMAIN_ADDRESS_WIDTH 48
++
++#define MAX_AGAW_WIDTH 64
++#define MAX_AGAW_PFN_WIDTH	(MAX_AGAW_WIDTH - VTD_PAGE_SHIFT)
++
++#define __DOMAIN_MAX_PFN(gaw)  ((((uint64_t)1) << (gaw-VTD_PAGE_SHIFT)) - 1)
++#define __DOMAIN_MAX_ADDR(gaw) ((((uint64_t)1) << gaw) - 1)
++
++/* We limit DOMAIN_MAX_PFN to fit in an unsigned long, and DOMAIN_MAX_ADDR
++   to match. That way, we can use 'unsigned long' for PFNs with impunity. */
++#define DOMAIN_MAX_PFN(gaw)	((unsigned long) min_t(uint64_t, \
++				__DOMAIN_MAX_PFN(gaw), (unsigned long)-1))
++#define DOMAIN_MAX_ADDR(gaw) (((uint64_t)__DOMAIN_MAX_PFN(gaw)) << \
++					VTD_PAGE_SHIFT)
++
++#define IOVA_PFN(addr)		((addr) >> PAGE_SHIFT)
++#define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
++#define DMA_64BIT_PFN		IOVA_PFN(DMA_BIT_MASK(64))
++
++/* page table handling */
++#define LEVEL_STRIDE		(9)
++#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
++
++/*
++ * This bitmap is used to advertise the page sizes our hardware support
++ * to the IOMMU core, which will then use this information to split
++ * physically contiguous memory regions it is mapping into page sizes
++ * that we support.
++ *
++ * Traditionally the IOMMU core just handed us the mappings directly,
++ * after making sure the size is an order of a 4KiB page and that the
++ * mapping has natural alignment.
++ *
++ * To retain this behavior, we currently advertise that we support
++ * all page sizes that are an order of 4KiB.
++ *
++ * If at some point we'd like to utilize the IOMMU core's new behavior,
++ * we could change this to advertise the real page sizes we support.
++ */
++#define INTEL_IOMMU_PGSIZES	(~0xFFFUL)
++
++static inline int agaw_to_level(int agaw)
++{
++	return agaw + 2;
++}
++
++static inline int agaw_to_width(int agaw)
++{
++	return min_t(int, 30 + agaw * LEVEL_STRIDE, MAX_AGAW_WIDTH);
++}
++
++static inline int width_to_agaw(int width)
++{
++	return DIV_ROUND_UP(width - 30, LEVEL_STRIDE);
++}
++
++static inline unsigned int level_to_offset_bits(int level)
++{
++	return (level - 1) * LEVEL_STRIDE;
++}
++
++static inline int pfn_level_offset(unsigned long pfn, int level)
++{
++	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
++}
++
++static inline unsigned long level_mask(int level)
++{
++	return -1UL << level_to_offset_bits(level);
++}
++
++static inline unsigned long level_size(int level)
++{
++	return 1UL << level_to_offset_bits(level);
++}
++
++static inline unsigned long align_to_level(unsigned long pfn, int level)
++{
++	return (pfn + level_size(level) - 1) & level_mask(level);
++}
++
++static inline unsigned long lvl_to_nr_pages(unsigned int lvl)
++{
++	return  1 << min_t(int, (lvl - 1) * LEVEL_STRIDE, MAX_AGAW_PFN_WIDTH);
++}
++
++/* VT-d pages must always be _smaller_ than MM pages. Otherwise things
++   are never going to work. */
++static inline unsigned long dma_to_mm_pfn(unsigned long dma_pfn)
++{
++	return dma_pfn >> (PAGE_SHIFT - VTD_PAGE_SHIFT);
++}
++
++static inline unsigned long mm_to_dma_pfn(unsigned long mm_pfn)
++{
++	return mm_pfn << (PAGE_SHIFT - VTD_PAGE_SHIFT);
++}
++static inline unsigned long page_to_dma_pfn(struct page *pg)
++{
++	return mm_to_dma_pfn(page_to_pfn(pg));
++}
++static inline unsigned long virt_to_dma_pfn(void *p)
++{
++	return page_to_dma_pfn(virt_to_page(p));
++}
++
++
++/*
++ * 0: Present
++ * 1-11: Reserved
++ * 12-63: Context Ptr (12 - (haw-1))
++ * 64-127: Reserved
++ */
++struct root_entry {
++	u64	val;
++	u64	rsvd1;
++};
++#define ROOT_ENTRY_NR (VTD_PAGE_SIZE/sizeof(struct root_entry))
++static inline bool root_present(struct root_entry *root)
++{
++	return root->val & 1;
++}
++static inline void set_root_present(struct root_entry *root)
++{
++	root->val |= 1;
++}
++static inline void set_root_value(struct root_entry *root, unsigned long value)
++{
++	root->val |= value & VTD_PAGE_MASK;
++}
++
++static inline struct context_entry *
++get_context_addr_from_root(struct root_entry *root)
++{
++	return (struct context_entry *)
++		(root_present(root)?phys_to_virt(
++		root->val & VTD_PAGE_MASK) :
++		NULL);
++}
++
++/*
++ * low 64 bits:
++ * 0: present
++ * 1: fault processing disable
++ * 2-3: translation type
++ * 12-63: address space root
++ * high 64 bits:
++ * 0-2: address width
++ * 3-6: aval
++ * 8-23: domain id
++ */
++struct context_entry {
++	u64 lo;
++	u64 hi;
++};
++
++static inline bool context_present(struct context_entry *context)
++{
++	return context->lo & 1;
++}
++static inline void context_set_present(struct context_entry *context)
++{
++	context->lo |= 1;
++}
++
++static inline void context_set_fault_enable(struct context_entry *context)
++{
++	context->lo &= (((u64)-1) << 2) | 1;
++}
++
++static inline void context_set_translation_type(struct context_entry *context,
++						unsigned long value)
++{
++	context->lo &= (((u64)-1) << 4) | 3;
++	context->lo |= (value & 3) << 2;
++}
++
++static inline void context_set_address_root(struct context_entry *context,
++					    unsigned long value)
++{
++	context->lo |= value & VTD_PAGE_MASK;
++}
++
++static inline void context_set_address_width(struct context_entry *context,
++					     unsigned long value)
++{
++	context->hi |= value & 7;
++}
++
++static inline void context_set_domain_id(struct context_entry *context,
++					 unsigned long value)
++{
++	context->hi |= (value & ((1 << 16) - 1)) << 8;
++}
++
++static inline void context_clear_entry(struct context_entry *context)
++{
++	context->lo = 0;
++	context->hi = 0;
++}
++
++/*
++ * 0: readable
++ * 1: writable
++ * 2-6: reserved
++ * 7: super page
++ * 8-10: available
++ * 11: snoop behavior
++ * 12-63: Host physcial address
++ */
++struct dma_pte {
++	u64 val;
++};
++
++static inline void dma_clear_pte(struct dma_pte *pte)
++{
++	pte->val = 0;
++}
++
++static inline u64 dma_pte_addr(struct dma_pte *pte)
++{
++#ifdef CONFIG_64BIT
++	return pte->val & VTD_PAGE_MASK;
++#else
++	/* Must have a full atomic 64-bit read */
++	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
++#endif
++}
++
++static inline bool dma_pte_present(struct dma_pte *pte)
++{
++	return (pte->val & 3) != 0;
++}
++
++static inline bool dma_pte_superpage(struct dma_pte *pte)
++{
++	return pte->val & (1 << 7);
++}
++
++static inline int first_pte_in_page(struct dma_pte *pte)
++{
++	return !((unsigned long)pte & ~VTD_PAGE_MASK);
++}
++
++/* devices under the same p2p bridge are owned in one domain */
++#define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
++
++/* domain represents a virtual machine, more than one devices
++ * across iommus may be owned in one domain, e.g. kvm guest.
++ */
++#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 1)
++
++/* si_domain contains mulitple devices */
++#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
++
++/* define the limit of IOMMUs supported in each domain */
++#ifdef	CONFIG_X86
++# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
++#else
++# define	IOMMU_UNITS_SUPPORTED	64
++#endif
++
++struct dmar_domain {
++	int	id;			/* domain id */
++	int	nid;			/* node id */
++	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
++					/* bitmap of iommus this domain uses*/
++
++	struct list_head devices;	/* all devices' list */
++	struct iova_domain iovad;	/* iova's that belong to this domain */
++
++	struct dma_pte	*pgd;		/* virtual address */
++	int		gaw;		/* max guest address width */
++
++	/* adjusted guest address width, 0 is level 2 30-bit */
++	int		agaw;
++
++	int		flags;		/* flags to find out type of domain */
++
++	int		iommu_coherency;/* indicate coherency of iommu access */
++	int		iommu_snooping; /* indicate snooping control feature*/
++	int		iommu_count;	/* reference count of iommu */
++	int		iommu_superpage;/* Level of superpages supported:
++					   0 == 4KiB (no superpages), 1 == 2MiB,
++					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
++	spinlock_t	iommu_lock;	/* protect iommu set in domain */
++	u64		max_addr;	/* maximum mapped address */
++};
++
++/* PCI domain-device relationship */
++struct device_domain_info {
++	struct list_head link;	/* link to domain siblings */
++	struct list_head global; /* link to global list */
++	u8 bus;			/* PCI bus number */
++	u8 devfn;		/* PCI devfn number */
++	struct device *dev; /* it's NULL for PCIe-to-PCI bridge */
++	struct intel_iommu *iommu; /* IOMMU used by this device */
++	struct dmar_domain *domain; /* pointer to domain */
++};
++
++struct dmar_rmrr_unit {
++	struct list_head list;		/* list of rmrr units	*/
++	struct acpi_dmar_header *hdr;	/* ACPI header		*/
++	u64	base_address;		/* reserved base address*/
++	u64	end_address;		/* reserved end address */
++	struct dmar_dev_scope *devices;	/* target devices */
++	int	devices_cnt;		/* target device count */
++};
++
++struct dmar_atsr_unit {
++	struct list_head list;		/* list of ATSR units */
++	struct acpi_dmar_header *hdr;	/* ACPI header */
++	struct dmar_dev_scope *devices;	/* target devices */
++	int devices_cnt;		/* target device count */
++	u8 include_all:1;		/* include all ports */
++};
++
++static inline void *alloc_pgtable_page(int node)
++{
++	struct page *page;
++	void *vaddr = NULL;
++
++	page = alloc_pages_node(node, GFP_ATOMIC | __GFP_ZERO, 0);
++	if (page)
++		vaddr = page_address(page);
++	return vaddr;
++}
++
++static inline void free_pgtable_page(void *vaddr)
++{
++	free_page((unsigned long)vaddr);
++}
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 49fdac5..4116377 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -45,350 +45,7 @@
+ 
+ #include "irq_remapping.h"
+ #include "pci.h"
+-
+-#define ROOT_SIZE		VTD_PAGE_SIZE
+-#define CONTEXT_SIZE		VTD_PAGE_SIZE
+-
+-#define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+-#define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
+-#define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
+-
+-#define IOAPIC_RANGE_START	(0xfee00000)
+-#define IOAPIC_RANGE_END	(0xfeefffff)
+-#define IOVA_START_ADDR		(0x1000)
+-
+-#define DEFAULT_DOMAIN_ADDRESS_WIDTH 48
+-
+-#define MAX_AGAW_WIDTH 64
+-#define MAX_AGAW_PFN_WIDTH	(MAX_AGAW_WIDTH - VTD_PAGE_SHIFT)
+-
+-#define __DOMAIN_MAX_PFN(gaw)  ((((uint64_t)1) << (gaw-VTD_PAGE_SHIFT)) - 1)
+-#define __DOMAIN_MAX_ADDR(gaw) ((((uint64_t)1) << gaw) - 1)
+-
+-/* We limit DOMAIN_MAX_PFN to fit in an unsigned long, and DOMAIN_MAX_ADDR
+-   to match. That way, we can use 'unsigned long' for PFNs with impunity. */
+-#define DOMAIN_MAX_PFN(gaw)	((unsigned long) min_t(uint64_t, \
+-				__DOMAIN_MAX_PFN(gaw), (unsigned long)-1))
+-#define DOMAIN_MAX_ADDR(gaw) (((uint64_t)__DOMAIN_MAX_PFN(gaw)) << \
+-					VTD_PAGE_SHIFT)
+-
+-#define IOVA_PFN(addr)		((addr) >> PAGE_SHIFT)
+-#define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
+-#define DMA_64BIT_PFN		IOVA_PFN(DMA_BIT_MASK(64))
+-
+-/* page table handling */
+-#define LEVEL_STRIDE		(9)
+-#define LEVEL_MASK		(((u64)1 << LEVEL_STRIDE) - 1)
+-
+-/*
+- * This bitmap is used to advertise the page sizes our hardware support
+- * to the IOMMU core, which will then use this information to split
+- * physically contiguous memory regions it is mapping into page sizes
+- * that we support.
+- *
+- * Traditionally the IOMMU core just handed us the mappings directly,
+- * after making sure the size is an order of a 4KiB page and that the
+- * mapping has natural alignment.
+- *
+- * To retain this behavior, we currently advertise that we support
+- * all page sizes that are an order of 4KiB.
+- *
+- * If at some point we'd like to utilize the IOMMU core's new behavior,
+- * we could change this to advertise the real page sizes we support.
+- */
+-#define INTEL_IOMMU_PGSIZES	(~0xFFFUL)
+-
+-static inline int agaw_to_level(int agaw)
+-{
+-	return agaw + 2;
+-}
+-
+-static inline int agaw_to_width(int agaw)
+-{
+-	return min_t(int, 30 + agaw * LEVEL_STRIDE, MAX_AGAW_WIDTH);
+-}
+-
+-static inline int width_to_agaw(int width)
+-{
+-	return DIV_ROUND_UP(width - 30, LEVEL_STRIDE);
+-}
+-
+-static inline unsigned int level_to_offset_bits(int level)
+-{
+-	return (level - 1) * LEVEL_STRIDE;
+-}
+-
+-static inline int pfn_level_offset(unsigned long pfn, int level)
+-{
+-	return (pfn >> level_to_offset_bits(level)) & LEVEL_MASK;
+-}
+-
+-static inline unsigned long level_mask(int level)
+-{
+-	return -1UL << level_to_offset_bits(level);
+-}
+-
+-static inline unsigned long level_size(int level)
+-{
+-	return 1UL << level_to_offset_bits(level);
+-}
+-
+-static inline unsigned long align_to_level(unsigned long pfn, int level)
+-{
+-	return (pfn + level_size(level) - 1) & level_mask(level);
+-}
+-
+-static inline unsigned long lvl_to_nr_pages(unsigned int lvl)
+-{
+-	return  1 << min_t(int, (lvl - 1) * LEVEL_STRIDE, MAX_AGAW_PFN_WIDTH);
+-}
+-
+-/* VT-d pages must always be _smaller_ than MM pages. Otherwise things
+-   are never going to work. */
+-static inline unsigned long dma_to_mm_pfn(unsigned long dma_pfn)
+-{
+-	return dma_pfn >> (PAGE_SHIFT - VTD_PAGE_SHIFT);
+-}
+-
+-static inline unsigned long mm_to_dma_pfn(unsigned long mm_pfn)
+-{
+-	return mm_pfn << (PAGE_SHIFT - VTD_PAGE_SHIFT);
+-}
+-static inline unsigned long page_to_dma_pfn(struct page *pg)
+-{
+-	return mm_to_dma_pfn(page_to_pfn(pg));
+-}
+-static inline unsigned long virt_to_dma_pfn(void *p)
+-{
+-	return page_to_dma_pfn(virt_to_page(p));
+-}
+-
+-
+-/*
+- * 0: Present
+- * 1-11: Reserved
+- * 12-63: Context Ptr (12 - (haw-1))
+- * 64-127: Reserved
+- */
+-struct root_entry {
+-	u64	val;
+-	u64	rsvd1;
+-};
+-#define ROOT_ENTRY_NR (VTD_PAGE_SIZE/sizeof(struct root_entry))
+-static inline bool root_present(struct root_entry *root)
+-{
+-	return root->val & 1;
+-}
+-static inline void set_root_present(struct root_entry *root)
+-{
+-	root->val |= 1;
+-}
+-static inline void set_root_value(struct root_entry *root, unsigned long value)
+-{
+-	root->val |= value & VTD_PAGE_MASK;
+-}
+-
+-static inline struct context_entry *
+-get_context_addr_from_root(struct root_entry *root)
+-{
+-	return (struct context_entry *)
+-		(root_present(root)?phys_to_virt(
+-		root->val & VTD_PAGE_MASK) :
+-		NULL);
+-}
+-
+-/*
+- * low 64 bits:
+- * 0: present
+- * 1: fault processing disable
+- * 2-3: translation type
+- * 12-63: address space root
+- * high 64 bits:
+- * 0-2: address width
+- * 3-6: aval
+- * 8-23: domain id
+- */
+-struct context_entry {
+-	u64 lo;
+-	u64 hi;
+-};
+-
+-static inline bool context_present(struct context_entry *context)
+-{
+-	return context->lo & 1;
+-}
+-static inline void context_set_present(struct context_entry *context)
+-{
+-	context->lo |= 1;
+-}
+-
+-static inline void context_set_fault_enable(struct context_entry *context)
+-{
+-	context->lo &= (((u64)-1) << 2) | 1;
+-}
+-
+-static inline void context_set_translation_type(struct context_entry *context,
+-						unsigned long value)
+-{
+-	context->lo &= (((u64)-1) << 4) | 3;
+-	context->lo |= (value & 3) << 2;
+-}
+-
+-static inline void context_set_address_root(struct context_entry *context,
+-					    unsigned long value)
+-{
+-	context->lo |= value & VTD_PAGE_MASK;
+-}
+-
+-static inline void context_set_address_width(struct context_entry *context,
+-					     unsigned long value)
+-{
+-	context->hi |= value & 7;
+-}
+-
+-static inline void context_set_domain_id(struct context_entry *context,
+-					 unsigned long value)
+-{
+-	context->hi |= (value & ((1 << 16) - 1)) << 8;
+-}
+-
+-static inline void context_clear_entry(struct context_entry *context)
+-{
+-	context->lo = 0;
+-	context->hi = 0;
+-}
+-
+-/*
+- * 0: readable
+- * 1: writable
+- * 2-6: reserved
+- * 7: super page
+- * 8-10: available
+- * 11: snoop behavior
+- * 12-63: Host physcial address
+- */
+-struct dma_pte {
+-	u64 val;
+-};
+-
+-static inline void dma_clear_pte(struct dma_pte *pte)
+-{
+-	pte->val = 0;
+-}
+-
+-static inline u64 dma_pte_addr(struct dma_pte *pte)
+-{
+-#ifdef CONFIG_64BIT
+-	return pte->val & VTD_PAGE_MASK;
+-#else
+-	/* Must have a full atomic 64-bit read */
+-	return  __cmpxchg64(&pte->val, 0ULL, 0ULL) & VTD_PAGE_MASK;
+-#endif
+-}
+-
+-static inline bool dma_pte_present(struct dma_pte *pte)
+-{
+-	return (pte->val & 3) != 0;
+-}
+-
+-static inline bool dma_pte_superpage(struct dma_pte *pte)
+-{
+-	return pte->val & (1 << 7);
+-}
+-
+-static inline int first_pte_in_page(struct dma_pte *pte)
+-{
+-	return !((unsigned long)pte & ~VTD_PAGE_MASK);
+-}
+-
+-/* devices under the same p2p bridge are owned in one domain */
+-#define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
+-
+-/* domain represents a virtual machine, more than one devices
+- * across iommus may be owned in one domain, e.g. kvm guest.
+- */
+-#define DOMAIN_FLAG_VIRTUAL_MACHINE	(1 << 1)
+-
+-/* si_domain contains mulitple devices */
+-#define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
+-
+-/* define the limit of IOMMUs supported in each domain */
+-#ifdef	CONFIG_X86
+-# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
+-#else
+-# define	IOMMU_UNITS_SUPPORTED	64
+-#endif
+-
+-struct dmar_domain {
+-	int	id;			/* domain id */
+-	int	nid;			/* node id */
+-	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
+-					/* bitmap of iommus this domain uses*/
+-
+-	struct list_head devices;	/* all devices' list */
+-	struct iova_domain iovad;	/* iova's that belong to this domain */
+-
+-	struct dma_pte	*pgd;		/* virtual address */
+-	int		gaw;		/* max guest address width */
+-
+-	/* adjusted guest address width, 0 is level 2 30-bit */
+-	int		agaw;
+-
+-	int		flags;		/* flags to find out type of domain */
+-
+-	int		iommu_coherency;/* indicate coherency of iommu access */
+-	int		iommu_snooping; /* indicate snooping control feature*/
+-	int		iommu_count;	/* reference count of iommu */
+-	int		iommu_superpage;/* Level of superpages supported:
+-					   0 == 4KiB (no superpages), 1 == 2MiB,
+-					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
+-	spinlock_t	iommu_lock;	/* protect iommu set in domain */
+-	u64		max_addr;	/* maximum mapped address */
+-};
+-
+-/* PCI domain-device relationship */
+-struct device_domain_info {
+-	struct list_head link;	/* link to domain siblings */
+-	struct list_head global; /* link to global list */
+-	u8 bus;			/* PCI bus number */
+-	u8 devfn;		/* PCI devfn number */
+-	struct device *dev; /* it's NULL for PCIe-to-PCI bridge */
+-	struct intel_iommu *iommu; /* IOMMU used by this device */
+-	struct dmar_domain *domain; /* pointer to domain */
+-};
+-
+-struct dmar_rmrr_unit {
+-	struct list_head list;		/* list of rmrr units	*/
+-	struct acpi_dmar_header *hdr;	/* ACPI header		*/
+-	u64	base_address;		/* reserved base address*/
+-	u64	end_address;		/* reserved end address */
+-	struct dmar_dev_scope *devices;	/* target devices */
+-	int	devices_cnt;		/* target device count */
+-};
+-
+-struct dmar_atsr_unit {
+-	struct list_head list;		/* list of ATSR units */
+-	struct acpi_dmar_header *hdr;	/* ACPI header */
+-	struct dmar_dev_scope *devices;	/* target devices */
+-	int devices_cnt;		/* target device count */
+-	u8 include_all:1;		/* include all ports */
+-};
+-
+-static inline void *alloc_pgtable_page(int node)
+-{
+-	struct page *page;
+-	void *vaddr = NULL;
+-
+-	page = alloc_pages_node(node, GFP_ATOMIC | __GFP_ZERO, 0);
+-	if (page)
+-		vaddr = page_address(page);
+-	return vaddr;
+-}
+-
+-static inline void free_pgtable_page(void *vaddr)
+-{
+-	free_page((unsigned long)vaddr);
+-}
 +#include "intel-iommu-private.h"
-+#include <linux/crash_dump.h>
-+
-+#ifdef CONFIG_CRASH_DUMP
-+
-+
-+/* Lists of domain_values_entry to hold domain values found during the copy.
-+ * One list for each iommu in g_number_of_iommus.
-+ */
-+static struct list_head *domain_values_list;
-+
-+
-+/* ========================================================================
-+ * Copy iommu translation tables from old kernel into new  kernel.
-+ * Entry to this set of functions is: intel_iommu_copy_translation_tables()
-+ * ------------------------------------------------------------------------
-+ */
-+#define RET_BADCOPY -1	/* Return-code: Cannot copy translate tables */
-+
-+/*
-+ * Copy memory from a physically-addressed area into a virtually-addressed area
-+ */
-+static int oldcopy(void *to, void *from, int size)
-+{
-+	size_t ret = 0;			/* Length copied */
-+	unsigned long pfn;		/* Page Frame Number */
-+	char *buf = to;			/* Adr(Output buffer) */
-+	size_t csize = (size_t)size;	/* Num(bytes to copy) */
-+	unsigned long offset;		/* Lower 12 bits of from */
-+	int userbuf = 0;		/* to is in kernel space */
-+
-+
-+	pfn = ((unsigned long) from) >> VTD_PAGE_SHIFT;
-+	offset = ((unsigned long) from) & (~VTD_PAGE_MASK);
-+	ret = copy_oldmem_page(pfn, buf, csize, offset, userbuf);
-+
-+	return (int) ret;
-+}
-+
-+
-+
-+/*
-+ * Struct copy_page_addr_parms is used to allow copy_page_addr()
-+ * to accumulate values across multiple calls and returns.
-+ */
-+struct copy_page_addr_parms {
-+	u32 first;	/* flag: first-time  */
-+	u32 last;	/* flag: last-time */
-+	u32 bus;	/* last bus number we saw */
-+	u32 devfn;	/* last devfn we saw */
-+	u32 shift;	/* last shift we saw */
-+	u64 pte;	/* Page Table Entry */
-+	u64 next_addr;	/* next-expected page_addr */
-+
-+	u64 page_addr;	/* page_addr accumulating size */
-+	u64 page_size;	/* page_size accumulated */
-+
-+	struct domain_values_entry *dve;	/* to accumulate iova ranges */
-+};
-+
-+/*
-+ * constant for initializing instances of copy_page_addr_parms properly.
-+ */
-+static struct copy_page_addr_parms copy_page_addr_parms_init = {1, 0};
-+
-+
-+
-+/*
-+ * Lowest-level function in the 'Copy Page Tables' set
-+ * Called once for each page_addr present in an iommu page-address table.
-+ *
-+ * Because of the depth-first traversal of the page-tables by the
-+ * higher-level functions that call 'copy_page_addr', all pages
-+ * of a domain will be presented in ascending order of IO Virtual Address.
-+ *
-+ * This function accumulates each contiguous range of these IOVAs and
-+ * reserves it within the proper domain in the crashdump kernel when a
-+ * non-contiguous range is detected, as determined by any of the following:
-+ * 1. a change in the bus or device owning the presented page
-+ * 2. a change in the page-size of the presented page (parameter shift)
-+ * 3. a change in the page-table entry of the presented page
-+ * 4. a presented IOVA that does not match the expected next-page address
-+ * 5. the 'last' flag is set, indicating that all IOVAs have been seen.
-+ */
-+static int copy_page_addr(u64 page_addr, u32 shift, u32 bus, u32 devfn,
-+				u64 pte, struct domain_values_entry *dve,
-+				void *parms)
-+{
-+	struct copy_page_addr_parms *ppap = parms;
-+
-+	u64 page_size = ((u64)1 << shift);	/* page_size */
-+	u64 pfn_lo;				/* For reserving IOVA range */
-+	u64 pfn_hi;				/* For reserving IOVA range */
-+	struct iova *iova_p;			/* For reserving IOVA range */
-+
-+	if (!ppap) {
-+		pr_err("ERROR: ppap is NULL: 0x%3.3x(%3.3d) DevFn: 0x%3.3x(%3.3d) Page: 0x%16.16llx Size: 0x%16.16llx(%lld)\n",
-+			bus, bus, devfn, devfn,  page_addr,
-+			page_size, page_size);
-+		return 0;
-+	}
-+
-+	/* If (only extending current addr range) */
-+	if (ppap->first     == 0      &&
-+	    ppap->last      == 0      &&
-+	    ppap->bus       == bus    &&
-+	    ppap->devfn     == devfn  &&
-+	    ppap->shift     == shift  &&
-+	    (ppap->pte & ~VTD_PAGE_MASK) == (pte & ~VTD_PAGE_MASK) &&
-+	    ppap->next_addr == page_addr) {
-+
-+		/* Update page size and next-expected address */
-+		ppap->next_addr += page_size;
-+		ppap->page_size += page_size;
-+		return 0;
-+	}
-+
-+	if (!ppap->first) {
-+		/* Close-out the accumulated IOVA address range */
-+
-+		if (!ppap->dve) {
-+			pr_err("%s ERROR: ppap->dve is NULL -- needed to reserve range for B:D:F=%2.2x:%2.2x:%1.1x\n",
-+				__func__,
-+				ppap->bus, ppap->devfn >> 3, ppap->devfn & 0x7);
-+			return RET_BADCOPY;
-+		}
-+		pfn_lo = IOVA_PFN(ppap->page_addr);
-+		pfn_hi = IOVA_PFN(ppap->page_addr + ppap->page_size);
-+		iova_p = reserve_iova(&ppap->dve->iovad, pfn_lo, pfn_hi);
-+	}
-+
-+	/* Prepare for a new IOVA address range */
-+	ppap->first     = 0;		/* Not first-time anymore */
-+	ppap->bus       = bus;
-+	ppap->devfn     = devfn;
-+	ppap->shift     = shift;
-+	ppap->pte       = pte;
-+	ppap->next_addr = page_addr + page_size; /* Next-expected page_addr */
-+
-+	ppap->page_addr = page_addr;	/* Addr(new page) */
-+	ppap->page_size = page_size;	/* Size(new page) */
-+
-+	ppap->dve	= dve;	/* adr(device_values_entry for new range) */
-+
-+	return 0;
-+}
-+
-+/*
-+ * Recursive function to copy the tree of page tables (max 6 recursions)
-+ * Parameter 'shift' controls the recursion
-+ */
-+static int copy_page_table(struct dma_pte **dma_pte_new_p,
-+			   struct dma_pte *dma_pte_phys,
-+			   u32 shift, u64 page_addr,
-+			   struct intel_iommu *iommu,
-+			   u32 bus, u32 devfn,
-+			   struct domain_values_entry *dve, void *ppap)
-+{
-+	int ret;			/* Integer return code */
-+	struct dma_pte *p;		/* Physical adr(each entry) iterator */
-+	struct dma_pte *pgt_new_virt;	/* Adr(dma_pte in new kernel) */
-+	struct dma_pte *dma_pte_next;	/* Adr(next table down)  */
-+	u64 u;				/* index(each entry in page_table) */
-+
-+
-+	/* If (already done all levels -- problem) */
-+	if (shift < 12) {
-+		pr_err("ERROR %s shift < 12 %p\n", __func__, dma_pte_phys);
-+		pr_err("shift %d, page_addr %16.16llu bus %3.3u devfn %3.3u\n",
-+			shift, page_addr, bus, devfn);
-+		return RET_BADCOPY;
-+	}
-+
-+	/* allocate a page table in the new kernel
-+	 * copy contents from old kernel
-+	 * then update each entry in the table in the new kernel
-+	 */
-+
-+	pgt_new_virt = (struct dma_pte *)alloc_pgtable_page(iommu->node);
-+	if (!pgt_new_virt)
-+		return -ENOMEM;
-+
-+	ret = oldcopy(pgt_new_virt, dma_pte_phys, VTD_PAGE_SIZE);
-+	if (ret <= 0)
-+		return ret;
-+
-+	for (u = 0, p = pgt_new_virt; u < 512; u++, p++) {
-+
-+		if (((p->val & DMA_PTE_READ) == 0) &&
-+		    ((p->val & DMA_PTE_WRITE) == 0))
-+			continue;
-+
-+		if (dma_pte_superpage(p) || (shift == 12)) {
-+
-+			ret = copy_page_addr(page_addr | (u << shift),
-+				shift, bus, devfn, p->val, dve, ppap);
-+			if (ret)
-+				return ret;
-+			continue;
-+		}
-+
-+		ret = copy_page_table(&dma_pte_next,
-+				(struct dma_pte *)(p->val & VTD_PAGE_MASK),
-+				shift-9, page_addr | (u << shift),
-+				iommu, bus, devfn, dve, ppap);
-+		if (ret)
-+			return ret;
-+
-+		p->val &= ~VTD_PAGE_MASK;	/* Clear old and set new pgd */
-+		p->val |= ((u64)dma_pte_next & VTD_PAGE_MASK);
-+	}
-+
-+	*dma_pte_new_p = (struct dma_pte *)virt_to_phys(pgt_new_virt);
-+	__iommu_flush_cache(iommu, pgt_new_virt, VTD_PAGE_SIZE);
-+
-+	return 0;
-+}
-+
-+
-+/*
-+ * Called once for each context_entry found in a copied context_entry_table
-+ * Each context_entry represents one PCIe device handled by the IOMMU.
-+ *
-+ * The 'domain_values_list' contains one 'domain_values_entry' for each
-+ * unique domain-id found while copying the context entries for each iommu.
-+ *
-+ * The Intel-iommu spec. requires that every context_entry that contains
-+ * the same domain-id point to the same set of page translation tables.
-+ * The hardware uses this to improve the use of its translation cache.
-+ * In order to insure that the copied translate tables abide by this
-+ * requirement, this function keeps a list of domain-ids (dids) that
-+ * have already been seen for this iommu. This function checks each entry
-+ * already on the list for a domain-id that matches the domain-id in this
-+ * context_entry.  If found, this function places the address of the previous
-+ * context's tree of page translation tables into this context_entry.
-+ * If a matching previous entry is not found, a new 'domain_values_entry'
-+ * structure is created for the domain-id in this context_entry and
-+ * copy_page_table is called to duplicate its tree of page tables.
-+ */
-+
-+enum returns_from_copy_context_entry {
-+RET_CCE_NOT_PRESENT = 1,
-+RET_CCE_NEW_PAGE_TABLES,
-+RET_CCE_PASS_THROUGH_1,
-+RET_CCE_PASS_THROUGH_2,
-+RET_CCE_RESERVED_VALUE,
-+RET_CCE_PREVIOUS_DID
-+};
-+static int copy_context_entry(struct intel_iommu *iommu, u32 bus, u32 devfn,
-+			      void *ppap, struct context_entry *ce)
-+{
-+	int ret = 0;			/* Integer Return Code */
-+	u32 shift = 0;			/* bits to shift page_addr  */
-+	u64 page_addr = 0;		/* Address of translated page */
-+	struct dma_pte *pgt_old_phys;	/* Adr(page_table in the old kernel) */
-+	struct dma_pte *pgt_new_phys;	/* Adr(page_table in the new kernel) */
-+	unsigned long asr;		/* New asr value for new context */
-+	u8  t;				/* Translation-type from context */
-+	u8  aw;				/* Address-width from context */
-+	u32 aw_shift[8] = {
-+		12+9+9,		/* [000b] 30-bit AGAW (2-level page table) */
-+		12+9+9+9,	/* [001b] 39-bit AGAW (3-level page table) */
-+		12+9+9+9+9,	/* [010b] 48-bit AGAW (4-level page table) */
-+		12+9+9+9+9+9,	/* [011b] 57-bit AGAW (5-level page table) */
-+		12+9+9+9+9+9+9,	/* [100b] 64-bit AGAW (6-level page table) */
-+		0,		/* [111b] Reserved */
-+		0,		/* [110b] Reserved */
-+		0,		/* [111b] Reserved */
-+	};
-+
-+	struct domain_values_entry *dve = NULL;
-+
-+
-+	if (!context_get_p(ce)) {	/* If (context not present) */
-+		ret = RET_CCE_NOT_PRESENT;		/* Skip it */
-+		goto exit;
-+	}
-+
-+	t = context_get_t(ce);
-+
-+	/* If we have seen this domain-id before on this iommu,
-+	 * give this context the same page-tables and we are done.
-+	 */
-+	list_for_each_entry(dve, &domain_values_list[iommu->seq_id], link) {
-+		if (dve->did == (int) context_get_did(ce)) {
-+			switch (t) {
-+			case 0:	/* page tables */
-+			case 1:	/* page tables */
-+				asr = virt_to_phys(dve->pgd) >> VTD_PAGE_SHIFT;
-+				context_put_asr(ce, asr);
-+				ret = RET_CCE_PREVIOUS_DID;
-+				break;
-+
-+			case 2:	/* Pass through */
-+				if (dve->pgd == NULL)
-+					ret =  RET_CCE_PASS_THROUGH_2;
-+				else
-+					ret = RET_BADCOPY;
-+				break;
-+
-+			default: /* Bad value of 't'*/
-+				ret = RET_BADCOPY;
-+				break;
-+			}
-+			goto exit;
-+		}
-+	}
-+
-+	/* Since we now know that this is a new domain-id for this iommu,
-+	 * create a new entry, add it to the list, and handle its
-+	 * page tables.
-+	 */
-+
-+	dve = kcalloc(1, sizeof(struct domain_values_entry), GFP_KERNEL);
-+	if (!dve) {
-+		ret = -ENOMEM;
-+		goto exit;
-+	}
-+
-+	dve->did = (int) context_get_did(ce);
-+	dve->gaw = (int) agaw_to_width(context_get_aw(ce));
-+	dve->pgd = NULL;
-+	init_iova_domain(&dve->iovad, DMA_32BIT_PFN);
-+
-+	list_add(&dve->link, &domain_values_list[iommu->seq_id]);
-+
-+
-+	if (t == 0 || t == 1) {		/* If (context has page tables) */
-+		aw = context_get_aw(ce);
-+		shift = aw_shift[aw];
-+
-+		pgt_old_phys = (struct dma_pte *)(context_get_asr(ce) << 12);
-+
-+		ret = copy_page_table(&pgt_new_phys, pgt_old_phys,
-+			shift-9, page_addr, iommu, bus, devfn, dve, ppap);
-+
-+		if (ret)		/* if (problem) bail out */
-+			goto exit;
-+
-+		asr = ((unsigned long)(pgt_new_phys)) >> VTD_PAGE_SHIFT;
-+		context_put_asr(ce, asr);
-+		dve->pgd = phys_to_virt((unsigned long)pgt_new_phys);
-+		ret = RET_CCE_NEW_PAGE_TABLES;
-+		goto exit;
-+	}
-+
-+	if (t == 2) {		/* If (Identity mapped pass-through) */
-+		ret = RET_CCE_PASS_THROUGH_1;	/* REVISIT: Skip for now */
-+		goto exit;
-+	}
-+
-+	ret = RET_CCE_RESERVED_VALUE;	/* Else ce->t is a Reserved value */
-+	/* Note fall-through */
-+
-+exit:	/* all returns come through here to insure good clean-up */
-+	return ret;
-+}
-+
-+
-+/*
-+ * Called once for each context_entry_table found in the root_entry_table
-+ */
-+static int copy_context_entry_table(struct intel_iommu *iommu,
-+				    u32 bus, void *ppap,
-+				    struct context_entry **context_new_p,
-+				    struct context_entry *context_old_phys)
-+{
-+	int ret = 0;				/* Integer return code */
-+	struct context_entry *ce;		/* Iterator */
-+	struct context_entry *context_new_phys;	/* adr(table in new kernel) */
-+	struct context_entry *context_new_virt;	/* adr(table in new kernel) */
-+	u32 devfn = 0;				/* PCI Device & function */
-+
-+	/* allocate a context-entry table in the new kernel
-+	 * copy contents from old kernel
-+	 * then update each entry in the table in the new kernel
-+	 */
-+	context_new_virt =
-+		(struct context_entry *)alloc_pgtable_page(iommu->node);
-+	if (!context_new_virt)
-+		return -ENOMEM;
-+
-+	context_new_phys =
-+		(struct context_entry *)virt_to_phys(context_new_virt);
-+
-+	oldcopy(context_new_virt, context_old_phys, VTD_PAGE_SIZE);
-+
-+	for (devfn = 0, ce = context_new_virt; devfn < 256; devfn++, ce++) {
-+
-+		if (!context_get_p(ce))		/* If (context not present) */
-+			continue;		/* Skip it */
-+
-+		ret = copy_context_entry(iommu, bus, devfn, ppap, ce);
-+		if (ret < 0)		/* if (problem) */
-+			return RET_BADCOPY;
-+
-+		switch (ret) {
-+		case RET_CCE_NOT_PRESENT:
-+			continue;
-+		case RET_CCE_NEW_PAGE_TABLES:
-+			continue;
-+		case RET_CCE_PASS_THROUGH_1:
-+			continue;
-+		case RET_CCE_PASS_THROUGH_2:
-+			continue;
-+		case RET_CCE_RESERVED_VALUE:
-+			return RET_BADCOPY;
-+		case RET_CCE_PREVIOUS_DID:
-+			continue;
-+		default:
-+			return RET_BADCOPY;
-+		};
-+	}
-+
-+	*context_new_p = context_new_phys;
-+	__iommu_flush_cache(iommu, context_new_virt, VTD_PAGE_SIZE);
-+	return 0;
-+}
-+
-+
-+/*
-+ * Highest-level function in the 'copy translation tables' set of functions
-+ */
-+static int copy_root_entry_table(struct intel_iommu *iommu, void *ppap,
-+				 struct root_entry  **root_new_virt_p,
-+				 struct root_entry  *root_old_phys)
-+{
-+	int ret = 0;				/* Integer return code */
-+	u32 bus;				/* Index: root-entry-table */
-+	struct root_entry  *re;			/* Virt(iterator: new table) */
-+	struct root_entry  *root_new_virt;	/* Virt(table in new kernel) */
-+	struct context_entry *context_old_phys;	/* Phys(context table entry) */
-+	struct context_entry *context_new_phys;	/* Phys(new context_entry) */
-+
-+	/*
-+	 * allocate a root-entry table in the new kernel
-+	 * copy contents from old kernel
-+	 * then update each entry in the table in the new kernel
-+	 */
-+
-+	root_new_virt = (struct root_entry *)alloc_pgtable_page(iommu->node);
-+	if (!root_new_virt)
-+		return -ENOMEM;
-+
-+	oldcopy(root_new_virt, root_old_phys, VTD_PAGE_SIZE);
-+
-+	for (bus = 0, re = root_new_virt; bus < 256; bus += 1, re += 1) {
-+
-+		if (!root_present(re))
-+			continue;
-+
-+		context_old_phys = get_context_phys_from_root(re);
-+
-+		if (!context_old_phys)
-+			continue;
-+
-+		ret = copy_context_entry_table(iommu, bus, ppap,
-+						&context_new_phys,
-+						context_old_phys);
-+		if (ret)
-+			return ret;
-+
-+		re->val &= ~VTD_PAGE_MASK;
-+		set_root_value(re, (unsigned long)context_new_phys);
-+	}
-+
-+	*root_new_virt_p = root_new_virt;
-+	__iommu_flush_cache(iommu, root_new_virt, VTD_PAGE_SIZE);
-+	return 0;
-+}
-+
-+/*
-+ * Interface to the "copy translation tables" set of functions
-+ * from mainline code.
-+ */
-+int intel_iommu_copy_translation_tables(struct dmar_drhd_unit *drhd,
-+		struct root_entry **root_old_phys_p,
-+		struct root_entry **root_new_virt_p,
-+		int g_num_of_iommus)
-+{
-+	struct intel_iommu *iommu;	/* Virt(iommu hardware registers) */
-+	unsigned long long q;		/* quadword scratch */
-+	struct root_entry *root_phys;	/* Phys(table in old kernel) */
-+	struct root_entry *root_new;	/* Virt(table in new kernel) */
-+	int ret = 0;			/* Integer return code */
-+	int i = 0;			/* Loop index */
-+
-+	/* Structure so copy_page_addr() can accumulate things
-+	 * over multiple calls and returns
-+	 */
-+	struct copy_page_addr_parms ppa_parms = copy_page_addr_parms_init;
-+	struct copy_page_addr_parms *ppap = &ppa_parms;
-+
-+
-+	iommu = drhd->iommu;
-+	q = readq(iommu->reg + DMAR_RTADDR_REG);
-+
-+	if (!q)
-+		return -1;
-+
-+	*root_old_phys_p = (struct root_entry *)q;	/* Returned to caller */
-+
-+	/* If (list needs initializing) do it here */
-+	if (!domain_values_list) {
-+		domain_values_list =
-+			 kcalloc(g_num_of_iommus, sizeof(struct list_head),
-+					GFP_KERNEL);
-+
-+		if (!domain_values_list) {
-+			pr_err("Allocation failed for domain_values_list array\n");
-+			return -ENOMEM;
-+		}
-+		for (i = 0; i < g_num_of_iommus; i++)
-+			INIT_LIST_HEAD(&domain_values_list[i]);
-+	}
-+
-+	/* Copy the root-entry table from the old kernel
-+	 * foreach context_entry_table in root_entry
-+	 *    foreach context_entry in context_entry_table
-+	 *       foreach level-1 page_table_entry in context_entry
-+	 *          foreach level-2 page_table_entry in level 1 page_table_entry
-+	 *             Above pattern continues up to 6 levels of page tables
-+	 *                Sanity-check the entry
-+	 *                Process the bus, devfn, page_address, page_size
-+	 */
-+
-+	root_phys = (struct root_entry *)q;
-+	ret = copy_root_entry_table(iommu, ppap, &root_new, root_phys);
-+	if (ret)
-+		return ret;
-+
-+
-+	ppa_parms.last = 1;
-+	copy_page_addr(0, 0, 0, 0, 0, NULL, ppap);
-+	*root_new_virt_p = root_new;			/* Returned to caller */
-+
-+	/* The translation tables in the new kernel should now contain
-+	 * the same translations as the tables in the old kernel.
-+	 * This will allow us to update the iommu hdw to use the new tables.
-+	 *
-+	 * NOTE: Neither the iommu hardware nor the iommu->root_entry
-+	 *       struct-value is updated herein.
-+	 *       These are left for the caller to do.
-+	 */
-+
-+	return 0;
-+}
-+#endif /* CONFIG_CRASH_DUMP */
+ 
+ static LIST_HEAD(dmar_atsr_units);
+ static LIST_HEAD(dmar_rmrr_units);
 -- 
 Bill Sumner <bill.sumner@hp.com>
 
