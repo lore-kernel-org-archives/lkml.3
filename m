@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaDYKRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 06:17:51 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:23950 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaDYKQq (ORCPT
+	id S1753280AbaDYKSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 06:18:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:28122 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866AbaDYKQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 06:16:46 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-14-535a360c2752
+	Fri, 25 Apr 2014 06:16:41 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-00-535a3608b5d1
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-iio@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         dianders@chromium.org, gregkh@linuxfoundation.org,
         naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
         grundler@chromium.org
-Subject: [PATCH 5/5] iio: exynos_adc: do a reinit_completion before the
- conversion
-Date: Fri, 25 Apr 2014 15:44:47 +0530
-Message-id: <1398420888-5506-6-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 3/5] iio: exynos_adc: reduce timeout and use
+ wait_for_completion_timeout
+Date: Fri, 25 Apr 2014 15:44:45 +0530
+Message-id: <1398420888-5506-4-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>
 References: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42JZI2JSq8tjFhVscPKMkcXLQ5oWZ5cdZLNo
-	XryezeLVkR9MFksmz2e1mHfkHYvF5V1z2CxmnN/HZLFo239mB06P2Q0XWTx2zrrL7rF/7hp2
-	jyVvDrF69G1ZxejxeZNcAFsUl01Kak5mWWqRvl0CV8bRK9tZCt6zVvx4NIO1gfEvSxcjJ4eE
-	gInExKaVULaYxIV769m6GLk4hASWMkqcer2bEabo3e1JUInpjBKvv01lgXD6mSRWN3xlA6li
-	EzCTOLhoNXsXIweHiICsxMxuPZAaZoELjBI/v0xgBYkLC4RI7HiUBVLOIqAqcX/TQ1YQm1fA
-	RWLSwUlMICUSAgoScybZgIQ5BVwl1u8+BlYiBFRyf8sfVpCREgLb2CVab/5jhpgjIPFt8iEW
-	iF5ZiU0HmCFulpQ4uOIGywRG4QWMDKsYRVMLkguKk9KLjPSKE3OLS/PS9ZLzczcxAiPg9L9n
-	fTsYbx6wPsSYDDRuIrOUaHI+MILySuINjc2MLExNTI2NzC3NSBNWEudd9DApSEggPbEkNTs1
-	tSC1KL6oNCe1+BAjEwenVAOj4b63NtGzu2LDUi57bT939UDL75BLzG1bBF2YhfcpR+/6UROU
-	pcLPMHPrce8rumbumpximkq6FXv3sbb+PLOWry55+YId5dvfr/tVo33QfnV6pLbCQ7t46674
-	42IOU24LWRS3qbIvOur+OMKuNFX8Ta/w5rfh/rF2L35qh6kUrXhUMz2D+Z4SS3FGoqEWc1Fx
-	IgC8ZMPrlgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t9jQV0es6hgg8mvtS1eHtK0OLvsIJtF
-	8+L1bBavjvxgslgyeT6rxbwj71gsLu+aw2Yx4/w+JotF2/4zO3B6zG64yOKxc9Zddo/9c9ew
-	eyx5c4jVo2/LKkaPz5vkAtiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU
-	8hJzU22VXHwCdN0yc4CuUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm
-	HL2ynaXgPWvFj0czWBsY/7J0MXJySAiYSLy7PYkNwhaTuHBvPZDNxSEkMJ1R4vW3qSwQTj+T
-	xOqGr2BVbAJmEgcXrWbvYuTgEBGQlZjZrQdSwyxwgVHi55cJrCBxYYEQiR2PskDKWQRUJe5v
-	esgKYvMKuEhMOjiJCaREQkBBYs4kG5Awp4CrxPrdx8BKhIBK7m/5wzqBkXcBI8MqRtHUguSC
-	4qT0XCO94sTc4tK8dL3k/NxNjOD4eia9g3FVg8UhRgEORiUe3gmykcFCrIllxZW5hxglOJiV
-	RHhlTaKChXhTEiurUovy44tKc1KLDzEmAx01kVlKNDkfGPt5JfGGxibmpsamliYWJmaWpAkr
-	ifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDoLPrRZvK6rc99G5br3IhY+s/v2qJ/Ji9SrE6w
-	M37iWGjSMHv++ZU7LBlXap4JSI/nitfo6nrY3Kfes7rQ0/dBccXNnMaG+8sz7QUfTCqed9uH
-	d/769zU7n1k6ibI5G9e9uhf85Pmted5pv+8VzU+7prl3wq3YzPmmncfbWE3do2o73rxT7Vyr
-	xFKckWioxVxUnAgA9NKzMfMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpikeLIzCtJLcpLzFFi42JZI2JSq8thFhVs0DSD1+LlIU2Ls8sOslk0
+	L17PZvHqyA8miyWT57NazDvyjsXi8q45bBYzzu9jsli07T+zA6fH7IaLLB47Z91l99g/dw27
+	x5I3h1g9+rasYvT4vEkugC2KyyYlNSezLLVI3y6BK2P2lvOsBTP4K5r37mRuYNzD08XIySEh
+	YCLxcOFFNghbTOLCvfVANheHkMBSRonTTy8wdzFygBX17C6HiE9nlFiw5AALhNPPJLH870Ym
+	kG42ATOJg4tWs4M0iAjISszs1gOpYRa4wCjx88sEVpAaYYEoiclLvzCB1LAIqErsmywCEuYV
+	cJGY8uIdK8QuBYk5k2xAwpwCrhLrdx8D6xQCKrm/5Q8ryEgJgW3sEhefdIOtZREQkPg2+RAL
+	RK+sxKYDzBC/SEocXHGDZQKj8AJGhlWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsYgeF/+t+z
+	CTsY7x2wPsSYDDRuIrOUaHI+MH7ySuINjc2MLExNTI2NzC3NSBNWEudVe5QUJCSQnliSmp2a
+	WpBaFF9UmpNafIiRiYNTqoGxsX3K4kNPQs/W8S0MffdFWbsyNHrFm8jFogIezF0Mn5acPRqa
+	E3GjT43LubdY/uPkxsPBW6Z7am9KFn3Wadr2wUpO889uEaOTcx7u3rDLOeZiLZPVzux7Tq1x
+	lk/9f1+45Lh1+W11S3FPrmcvjh3sOspTcu6YqsnZ9qe966JZ3XP+/TAvlZBQYinOSDTUYi4q
+	TgQA2LCJupUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jQV0Os6hgg8YDLBYvD2lanF12kM2i
+	efF6NotXR34wWSyZPJ/VYt6RdywWl3fNYbOYcX4fk8Wibf+ZHTg9ZjdcZPHYOesuu8f+uWvY
+	PZa8OcTq0bdlFaPH501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koK
+	eYm5qbZKLj4Bum6ZOUBXKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz
+	Zm85z1owg7+iee9O5gbGPTxdjBwcEgImEj27y7sYOYFMMYkL99azdTFycQgJTGeUWLDkAAuE
+	088ksfzvRiaQKjYBM4mDi1azgzSLCMhKzOzWA6lhFrjAKPHzywRWkBphgSiJyUu/MIHUsAio
+	SuybLAIS5hVwkZjy4h0rxF4FiTmTbEDCnAKuEut3HwPrFAIqub/lD+sERt4FjAyrGEVTC5IL
+	ipPScw31ihNzi0vz0vWS83M3MYKj65nUDsaVDRaHGAU4GJV4eD+oRQYLsSaWFVfmHmKU4GBW
+	EuGVNYkKFuJNSaysSi3Kjy8qzUktPsSYDHTTRGYp0eR8YOTnlcQbGpuYmxqbWppYmJhZkias
+	JM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAPj0dAe3jpejcDHN/ctPrkhvfysxtx0C2ah+b7Z
+	1x3PLvrLlf7FZ/+tJez73QTW1jn9f7LoyKWWWXJFt8PyU83v/E3cEaOznklQ3sk40vzlr9dW
+	89N6dAyqSmyztqUvN3Kf0SWgFDFj3fLQmdenKLtXRdZMepopeVI+zXzGcrU9EXole46zdvMr
+	sRRnJBpqMRcVJwIAKvk3fPICAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,27 +53,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add reinit_completion() before the wait_for_completion_timeout in
-raw_read() call.
+ADC module on Exynos5 SoCs runs at 600KSPS. At this conversion rate,
+waiting for 1000 msecs is wasteful (incase of h/w failure).
 
-Change-Id: I70fa00841bc49eba838a5bd6779015844297dfdb
+Hence, reduce the time out to 100msecs and use
+wait_for_completion_timeout() instead of
+wait_for_completion_interruptible_timeout()
+
+Also, handle the return values in exynos_raw_read() call.
+
+Change-Id: Icb8cade162094b2777c9f3c77120635deef5947c
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
- drivers/iio/adc/exynos_adc.c |    1 +
- 1 file changed, 1 insertion(+)
+This change is a part of the patch reviewd at https://lkml.org/lkml/2013/11/5/92
+
+ drivers/iio/adc/exynos_adc.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index 805c9f6..32290e6 100644
+index a2b8b1a..4d2467a 100644
 --- a/drivers/iio/adc/exynos_adc.c
 +++ b/drivers/iio/adc/exynos_adc.c
-@@ -151,6 +151,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+@@ -82,7 +82,7 @@ enum adc_version {
+ #define ADC_CON_EN_START	(1u << 0)
+ #define ADC_DATX_MASK		0xFFF
+ 
+-#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(1000))
++#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
+ 
+ struct exynos_adc {
+ 	void __iomem		*regs;
+@@ -121,6 +121,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+ 	struct exynos_adc *info = iio_priv(indio_dev);
+ 	unsigned long timeout;
+ 	u32 con1, con2;
++	int ret;
+ 
+ 	if (mask != IIO_CHAN_INFO_RAW)
  		return -EINVAL;
+@@ -145,16 +146,19 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+ 				ADC_V1_CON(info->regs));
+ 	}
  
- 	mutex_lock(&indio_dev->mlock);
-+	reinit_completion(&info->completion);
+-	timeout = wait_for_completion_interruptible_timeout
++	timeout = wait_for_completion_timeout
+ 			(&info->completion, EXYNOS_ADC_TIMEOUT);
+-	*val = info->value;
++	if (timeout == 0) {
++		ret = -ETIMEDOUT;
++	} else {
++		*val = info->value;
++		*val2 = 0;
++		ret = IIO_VAL_INT;
++	}
  
- 	/* Select the channel to be used and Trigger conversion */
- 	if (info->version == ADC_V2) {
+ 	mutex_unlock(&indio_dev->mlock);
+ 
+-	if (timeout == 0)
+-		return -ETIMEDOUT;
+-
+-	return IIO_VAL_INT;
++	return ret;
+ }
+ 
+ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
 -- 
 1.7.9.5
 
