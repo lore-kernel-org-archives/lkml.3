@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaDYRDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:03:25 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:32865 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821AbaDYRDW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:03:22 -0400
-X-AuditID: cbfec37d-b7f966d000005e7e-a9-535a955a9f6e
-Message-id: <535A9557.4040805@samsung.com>
-Date: Fri, 25 Apr 2014 11:03:19 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.10 00/23] 3.10.38-stable review
-References: <20140424214825.933835556@linuxfoundation.org>
-In-reply-to: <20140424214825.933835556@linuxfoundation.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.8]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsVy+t9hX92oqVHBBlu6eSzmrF/DZtG8eD2b
-	xeVdc9gsniw8w2Qx9dQEFosFGx8xWjzqe8vuwO6xc9Zddo8TM36zeOyfuwbI/d7A7vF5k1wA
-	axSXTUpqTmZZapG+XQJXxu4zi5gLtrBVXP1wm6mBsYe1i5GTQ0LAROJE02N2CFtM4sK99Wxd
-	jFwcQgLLGCV62/rAEkICvUwS21ocIBIbGCX2ts8HSnBw8ApoSRz+lw5SwyKgKjHhRD/YUDYB
-	dYnPr3dA9cpJNC1ZzQxiiwpESNxrPAxWwysgKPFj8j0WEFtEIFhi7deFjCDzmQVWMUpcv7yc
-	DWS+sICpxIqVURBzrCRedP0Bm8kpYC2x/OYZsDnMQPbKSdsYIWx5ic1r3jJD1CtL/Ll8iglk
-	jISAgsTXHocJjCKzkGyehaR7FpLuBYzMqxjFSouTC4qT0lMrTPSKE3OLS/PS9ZLzczcxQqKo
-	dgfj/a82hxgFOBiVeHh35EQFC7EmlhVX5h5ilOBgVhLh5egBCvGmJFZWpRblxxeV5qQWH2Jk
-	4uCUamB0Y5TgP/B4urk7B+tSsRdG0em5n2Z9Db7YJ2I2Y9Iq4++LdvYUGKaovw9IutK0sWMF
-	n4Sz586w0hWGNxewn9fas6Xh5rSP916ZOqa0M881SDpeMbun9s8Zn1uPT0jJymWafHY6Nelx
-	lLjJ3bROkVUfJ+hv27dptdCq8PrZ9iW1bSxLvk0XPbFeiaU4I9FQi7moOBEAMRtPUIACAAA=
+	id S1753255AbaDYRGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:06:15 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:26516 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353AbaDYRGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:06:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,928,1389744000"; 
+   d="scan'208";a="124654613"
+Date: Fri, 25 Apr 2014 18:05:41 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Julien Grall <julien.grall@linaro.org>, <stefano.stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>, <ian.campbell@citrix.com>,
+        <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] arm/xen: Remove definiition of virt_to_pfn in
+ asm/xen/page.h
+In-Reply-To: <53591B8F.8070300@citrix.com>
+Message-ID: <alpine.DEB.2.02.1404251801060.8072@kaball.uk.xensource.com>
+References: <1397836474-10478-1-git-send-email-julien.grall@linaro.org> <535901F0.3010908@citrix.com> <53590845.1090405@linaro.org> <53591B8F.8070300@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="1342847746-1412538136-1398445541=:8072"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 03:48 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.38 release.
-> There are 23 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Apr 26 21:48:09 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.38-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+--1342847746-1412538136-1398445541=:8072
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Compiled and booted. No dmesg regressions.
+On Thu, 24 Apr 2014, David Vrabel wrote:
+> On 24/04/14 13:49, Julien Grall wrote:
+> > Hi David,
+> >=20
+> > On 04/24/2014 01:22 PM, David Vrabel wrote:
+> >> On 18/04/14 16:54, Julien Grall wrote:
+> >>> virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "A=
+RM: Better
+> >>> virt_to_page() handling"
+> >>>
+> >>> This will result of a compilation warning when CONFIG_XEN is enabled.
+> >>>
+> >>> arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefine=
+d [enabled by default]
+> >>>  #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
+> >>>  ^
+> >>> In file included from arch/arm/include/asm/page.h:163:0,
+> >>>                  from arch/arm/include/asm/xen/page.h:4,
+> >>>                  from include/xen/page.h:4,
+> >>>                  from arch/arm/xen/grant-table.c:33:
+> >>>
+> >>> The definition in memory.h is nearly the same (it directly expand PFN=
+_DOWN),
+> >>> so we can safely drop virt_to_pfn in xen include.
+> >>
+> >>
+> >> This breaks the arm build for me.
+> >>
+> >> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c: In functio=
+n
+> >> =E2=80=98setup_blkring=E2=80=99:
+> >> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c:1236:2:
+> >> error: implicit declaration of function =E2=80=98virt_to_pfn=E2=80=99
+> >> [-Werror=3Dimplicit-function-declaration]
+> >>   err =3D xenbus_grant_ring(dev, virt_to_mfn(info->ring.sring));
+> >>   ^
+> >=20
+> > I don't have any issue to build the following branch with this patch on=
+:
+> > =09- v3.15-rc2
+> > =09- xentip master
+> > =09- xentip for-linus-3.16
+>=20
+> Applied to devel/for-linus-3.16.
+>=20
+> If something else turns up for 3.15 (and I remember) I'll take it for
+> 3.15 instead.
 
--- Shuah
+David,
+thank you very much for taking the patch in my absence.
 
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Considering that the problem is affecting everybody enabling CONFIG_XEN
+on ARM on v3.15, I don't think we can wait for the next merge window to
+send this fix upstream.
+Too many warnings for too many people.
+
+Cheers,
+
+Stefano
+--1342847746-1412538136-1398445541=:8072--
