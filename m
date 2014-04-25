@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaDYX47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 19:56:59 -0400
-Received: from ring0.de ([5.45.105.125]:53237 "EHLO ring0.de"
+	id S1752486AbaDYX5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 19:57:50 -0400
+Received: from ring0.de ([5.45.105.125]:53201 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208AbaDYX4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 19:56:42 -0400
+	id S1750860AbaDYX4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 19:56:35 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
@@ -20,9 +20,9 @@ Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         Sebastian Reichel <sre@kernel.org>
-Subject: [PATCHv3 5/5] Documentation: dt: Document TSC2005 DT binding
-Date: Sat, 26 Apr 2014 01:56:19 +0200
-Message-Id: <1398470179-20880-6-git-send-email-sre@kernel.org>
+Subject: [PATCHv3 3/5] Input: tsc2005: convert driver to use devm_*
+Date: Sat, 26 Apr 2014 01:56:17 +0200
+Message-Id: <1398470179-20880-4-git-send-email-sre@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398470179-20880-1-git-send-email-sre@kernel.org>
 References: <1398470179-20880-1-git-send-email-sre@kernel.org>
@@ -30,59 +30,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devicetree binding documentation for TSC2005 touchscreen.
+Simplify the driver by using managed resources for memory allocation of
+internal struct, input device allocation and irq request.
 
 Signed-off-by: Sebastian Reichel <sre@kernel.org>
 ---
- .../bindings/input/touchscreen/tsc2005.txt         | 39 ++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
+ drivers/input/touchscreen/tsc2005.c | 30 ++++++++++--------------------
+ 1 file changed, 10 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
-new file mode 100644
-index 0000000..663f8ab
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/tsc2005.txt
-@@ -0,0 +1,39 @@
-+* Texas Instruments tsc2005 touchscreen controller
-+
-+Required properties:
-+ - compatible		      : "ti,tsc2005"
-+ - reg			      : SPI device address
-+ - spi-max-frequency	      : Maximal SPI speed
-+ - interrupts		      : IRQ specifier
-+ - reset-gpios		      : GPIO specifier
-+
-+Optional properties:
-+ - ti,x-plate-ohms	      : integer, resistance of the touchscreen's X plates
-+				in ohm (defaults to 280)
-+ - ti,esd-recovery-timeout-ms : integer, if the touchscreen does not respond after
-+				the configured time (in milli seconds), the driver
-+				will reset it. This is disabled by default.
-+ - properties defined in touchscreen.txt
-+
-+Example:
-+
-+&mcspi1 {
-+	tsc2005@0 {
-+		compatible = "ti,tsc2005";
-+		spi-max-frequency = <6000000>;
-+		reg = <0>;
-+
-+		reset-gpios = <&gpio4 8 GPIO_ACTIVE_HIGH>; /* 104 */
-+		interrupts-extended = <&gpio4 4 IRQ_TYPE_NONE>; /* 100 */
-+
-+		touchscreen-fuzz-x = <4>;
-+		touchscreen-fuzz-y = <7>;
-+		touchscreen-fuzz-pressure = <2>;
-+		touchscreen-max-x = <4096>;
-+		touchscreen-max-y = <4096>;
-+		touchscreen-max-pressure = <2048>;
-+
-+		ti,x-plate-ohms = <280>;
-+		ti,esd-recovery-timeout-ms = <8000>;
-+	};
-+}
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index 520e673..9daaddd 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -604,12 +604,10 @@ static int tsc2005_probe(struct spi_device *spi)
+ 	if (error)
+ 		return error;
+ 
+-	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
+-	input_dev = input_allocate_device();
+-	if (!ts || !input_dev) {
+-		error = -ENOMEM;
+-		goto err_free_mem;
+-	}
++	ts = devm_kzalloc(&spi->dev, sizeof(*ts), GFP_KERNEL);
++	input_dev = devm_input_allocate_device(&spi->dev);
++	if (!ts || !input_dev)
++		return -ENOMEM;
+ 
+ 	ts->spi = spi;
+ 	ts->idev = input_dev;
+@@ -649,12 +647,13 @@ static int tsc2005_probe(struct spi_device *spi)
+ 	/* Ensure the touchscreen is off */
+ 	tsc2005_stop_scan(ts);
+ 
+-	error = request_threaded_irq(spi->irq, NULL, tsc2005_irq_thread,
+-				     IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+-				     "tsc2005", ts);
++	error = devm_request_threaded_irq(&spi->dev, spi->irq, NULL,
++					  tsc2005_irq_thread,
++					  IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++					  "tsc2005", ts);
+ 	if (error) {
+ 		dev_err(&spi->dev, "Failed to request irq, err: %d\n", error);
+-		goto err_free_mem;
++		return error;
+ 	}
+ 
+ 	spi_set_drvdata(spi, ts);
+@@ -662,7 +661,7 @@ static int tsc2005_probe(struct spi_device *spi)
+ 	if (error) {
+ 		dev_err(&spi->dev,
+ 			"Failed to create sysfs attributes, err: %d\n", error);
+-		goto err_clear_drvdata;
++		return error;
+ 	}
+ 
+ 	error = input_register_device(ts->idev);
+@@ -677,11 +676,6 @@ static int tsc2005_probe(struct spi_device *spi)
+ 
+ err_remove_sysfs:
+ 	sysfs_remove_group(&spi->dev.kobj, &tsc2005_attr_group);
+-err_clear_drvdata:
+-	free_irq(spi->irq, ts);
+-err_free_mem:
+-	input_free_device(input_dev);
+-	kfree(ts);
+ 	return error;
+ }
+ 
+@@ -691,10 +685,6 @@ static int tsc2005_remove(struct spi_device *spi)
+ 
+ 	sysfs_remove_group(&ts->spi->dev.kobj, &tsc2005_attr_group);
+ 
+-	free_irq(ts->spi->irq, ts);
+-	input_unregister_device(ts->idev);
+-	kfree(ts);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.9.2
 
