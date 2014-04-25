@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaDYJVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:21:18 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48860 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaDYJT7 (ORCPT
+	id S1753423AbaDYJVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:21:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:46863 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaDYJVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:19:59 -0400
+	Fri, 25 Apr 2014 05:21:38 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 13/13] PCI, pciehp: Use new pci_is_bridge() to simplify code
-Date: Fri, 25 Apr 2014 17:18:35 +0800
-Message-ID: <1398417515-8740-14-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 05/13] IA64/PCI: Use new pci_is_bridge() to simplify code
+Date: Fri, 25 Apr 2014 17:18:27 +0800
+Message-ID: <1398417515-8740-6-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
 References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
@@ -34,23 +34,24 @@ to simplify code.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/hotplug/pciehp_pci.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ arch/ia64/pci/fixup.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-index 1b53306..b6cb1df 100644
---- a/drivers/pci/hotplug/pciehp_pci.c
-+++ b/drivers/pci/hotplug/pciehp_pci.c
-@@ -62,8 +62,7 @@ int pciehp_configure_device(struct slot *p_slot)
- 	}
- 
- 	list_for_each_entry(dev, &parent->devices, bus_list)
--		if ((dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
--				(dev->hdr_type == PCI_HEADER_TYPE_CARDBUS))
-+		if (pci_is_bridge(dev))
- 			pci_hp_add_bridge(dev);
- 
- 	pci_assign_unassigned_bridge_resources(bridge);
+diff --git a/arch/ia64/pci/fixup.c b/arch/ia64/pci/fixup.c
+index eee069a..1fe9aa5 100644
+--- a/arch/ia64/pci/fixup.c
++++ b/arch/ia64/pci/fixup.c
+@@ -49,9 +49,7 @@ static void pci_fixup_video(struct pci_dev *pdev)
+ 		 * type BRIDGE, or CARDBUS. Host to PCI controllers use
+ 		 * PCI header type NORMAL.
+ 		 */
+-		if (bridge
+-		    &&((bridge->hdr_type == PCI_HEADER_TYPE_BRIDGE)
+-		       ||(bridge->hdr_type == PCI_HEADER_TYPE_CARDBUS))) {
++		if (bridge && (pci_is_bridge(bridge))) {
+ 			pci_read_config_word(bridge, PCI_BRIDGE_CONTROL,
+ 						&config);
+ 			if (!(config & PCI_BRIDGE_CTL_VGA))
 -- 
 1.7.1
 
