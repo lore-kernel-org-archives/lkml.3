@@ -1,149 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaDYTFm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:05:42 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:37137 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200AbaDYTF2 (ORCPT
+	id S1754553AbaDYTSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:18:09 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:52973 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaDYTSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:05:28 -0400
+	Fri, 25 Apr 2014 15:18:06 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        john.johansen@canonical.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@ZenIV.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com
-References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com>
-	<20140425182310.GA9128@redhat.com>
-Date: Fri, 25 Apr 2014 12:04:50 -0700
-In-Reply-To: <20140425182310.GA9128@redhat.com> (Oleg Nesterov's message of
-	"Fri, 25 Apr 2014 20:23:10 +0200")
-Message-ID: <87sip15iy5.fsf@x220.int.ebiederm.org>
+Cc: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, David Howells <dhowells@redhat.com>
+References: <1398415405-19872-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+	<20140425185645.GA10637@redhat.com>
+Date: Fri, 25 Apr 2014 12:17:33 -0700
+In-Reply-To: <20140425185645.GA10637@redhat.com> (Oleg Nesterov's message of
+	"Fri, 25 Apr 2014 20:56:45 +0200")
+Message-ID: <87a9b95icy.fsf@x220.int.ebiederm.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19JsdgwlFdBIIQL5xDma1yJKpijEdms6NQ=
+X-XM-AID: U2FsdGVkX19nkW2Uh7KWwoWcCcXhux8ugJvR1IpeeIE=
 X-SA-Exim-Connect-IP: 98.234.51.111
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
 	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
 	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.5000]
+	*      [score: 0.4957]
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_12 obfuscated drug references
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Oleg Nesterov <oleg@redhat.com>
+	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Oleg Nesterov <oleg@redhat.com>
 X-Spam-Relay-Country: 
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+Subject: Re: [Resend][PATCH] ns,proc: introduce pid_in_ns
 X-Spam-Flag: No
 X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Oleg Nesterov <oleg@redhat.com> writes:
 
-> On 04/25, Dmitry Kasatkin wrote:
+> On 04/25, Chen Hanxiao wrote:
 >>
->> On 25/04/14 16:00, Dmitry Kasatkin wrote:
->> > Hello,
->> >
->> > I discovered a kernel panic on system running Ubuntu when IMA is enabled.
->> > It happens on reboot.
->> >
->> > ----------------------
->> > [  106.750100] NSPROXY is NULL: error.log (/var/log/mysql/error.log)
->> > [  106.750167] BUG: unable to handle kernel NULL pointer dereference at
->> > 0000000000000018
->> > [  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-> ...
->> > [  106.751149] Call Trace:
->> > [  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
->> > [  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
->> > [  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
->> > [  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
->> > [  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
->> > [  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
->> > [  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
->> > [  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
->> > [  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
->> > [  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
->> > [  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
->> > [  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
->> > [  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
->> > [  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
->> > [  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
->> > [  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
->> > [  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
->> > [  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
->> > [  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
->
-> fantastic ;)
->
->> > [  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
->> > [  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
->> > [  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
->> > [  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
->> > [  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-> ...
->> It seems the problem is the order of functions in do_exit
+>> We lacked of convenient method of getting the pid inside containers.
+
+Are unix domain sockets not convinient?
+
+>> If some issues occurred inside container guest, host user
+>> could not know which process is in trouble just by guest pid:
+>> the users of container guest only knew the pid inside containers.
+>> This will bring obstacle for trouble shooting.
 >>
->> do_exit()
->> {
->>     ...
->>     exit_task_namespaces(tsk);
->>     exit_task_work(tsk);
+>> This patch introduces pid_in_ns:
+>> If one process is in init_pid_ns, /proc/PID/pid_in_ns
+>> equals to /proc/PID;
+>> if one process is in pidns, /proc/PID/pid_in_ns
+>> will tell the pid inside containers;
+>> if pidns is nested, it depends on which pidns are you in.
 >
-> Yes.
+> Yes another /proc/pid/ file...
 >
-> Eric, this makes me think again that we should do exit_task_namespaces()
-> after exit_task_work(). We already discussed this before, but this looks
-> like another indication this change makes sense.
-
-I know you mentioned something about that.  I haven't actually had much
-time to think about it.
-
-> The problem with fput() from free_nsproxy() was hopefully also fixed by
-> e7b2c4069252. The main motivation for "move" was "outside of exit_notify".
-> Even if we fix the paths above task_work_add() can have another user which
-> wants ->nsproxy.
+> Perhaps it would be better to change /proc/pid/status["Pid:"] to report the
+> list of pid_nr's, from its namespace up to the observer's namespace. The same
+> for "Tgid:".
 >
-> What do you think?
+> (Hmm. And why "Ngid:" was inserted between tid and tgid ?)
 
-I am scratching my head.  Delayed work that depends on current sort of
-blows my mind. 
+Add to that Ngid has a completely hosed implementation.  It is a pid
+stored in a pid_t, not a struct pid *.  Sigh.
 
-As I read this it is coming from __fput.  Hmm.
+I am getting more and more tempted to obliterate task->pid.  It just
+encourages bad code.
 
-So I think the blinkered thing is having a security_file_permission
-inside of kernel_read.  That is utter nonsense.  At least for a
-kernel_read we are doing from ima.
+>> +int proc_pid_in_ns(struct seq_file *m, struct pid_namespace *ns,
+>> +			struct pid *pid, struct task_struct *task)
+>> +{
+>> +	pid_t pid_in_ns;
+>> +	unsigned int level;
+>> +
+>> +	level = pid->level;
+>> +	pid_in_ns = task_pid_nr_ns(task, pid->numbers[level].ns);
+>
+> This looks overcomplicated or I missed something?
 
-apparmor should not be trying to limit ima.
-
-Show me a legitimate bug caused by the ordering and we can discuss
-reordering.
-
-
-Looking at kernel_read it is used elsewhere by the binfmt routines, and
-doing permissions checks there on the part of the user that is doing
-exec seems appropriate.
-
-So I think the deep bug here is ima is using kernel_read which is
-inappropriate for what it is trying to do.   Permission checks on an
-integrity mechanism?
-
-Even if we ignore insane the security_file_permission in rw_verify_area
-we still have mandatory locks that could cause this to fail.  Which
-looks like an evil user could bypass ima by simply setting a mandatory
-lock on a file and not letting anyone else read it.  Which makes
-vfs_read and thus kernel_read wildly inappropriate for what ima is
-trying to do.
+I do think if we care we need to print the entire set of pids.
+I don't know if /proc/pid/status is the proper place but ...
 
 Eric
 
