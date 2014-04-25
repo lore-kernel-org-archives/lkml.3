@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaDYWoB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:44:01 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:64237 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaDYWn7 (ORCPT
+	id S1752577AbaDYWpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:45:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:42881 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaDYWpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:43:59 -0400
-Message-ID: <535AE52B.4010104@gmail.com>
-Date: Sat, 26 Apr 2014 00:43:55 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v2 00/10] ARM: Exynos: PMU cleanup and refactoring for
- using DT
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 18:45:05 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [RFC/PATCH 0/4] Use wound/wait mutexes in the common clock framework
+Date: Fri, 25 Apr 2014 15:44:44 -0700
+Message-Id: <1398465888-12610-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+The prepare mutex in the common clock framework can lead to tasks waiting a
+long time for other tasks to finish a frequency switch or prepare/unprepare
+step. In my particular case I have a clock controlled by a co-processor that
+can take 10s of millliseconds to change rate. I've seen scenarios where it can
+take more than 20ms for another thread to acquire the prepare mutex because
+it's waiting on the co-processor to finish changing the rate. Pair this with a
+display driver that wants to scale it's clock up before drawing a frame and you
+may start dropping frames at 60FPS (one frame is budgeted 16ms). Similar
+scenarios exist like CPUfreq scaling getting blocked for large amounts of time.
 
-Just a small note - please refrain from sending next versions of series 
-in reply to previous version. With threading applied, it gets hard to 
-notice that a new version was posted, because the first message of the 
-thread is always v1. Also it makes threads unnecessarily long.
+This patchset attempts to remedy this problem by introducing a per-clock
+wwmutex. This allows multiple threads to be traversing and updating the tree at
+the same time granted they don't touch the same subtree. In my testcase
+this removes the contention on the co-processor clocks and allows the display
+driver to scale the clock up and down in parallel.
 
-Best regards,
-Tomasz
+There is a drawback though, we lose the recursive mutex property. I don't have
+a good solution for this besides "don't do that" and I believe we actually have
+usecases for such a thing? Technically a thread recursing into the clock
+framework probably wouldn't be acquiring the same locks (and even if it was we
+could recognize that this is the same thread acquiring it again) but due to the
+way wound/wait mutexes work we may need to release all locks and try again the
+second time we're in the clock framework and that sounds really annoying to
+handle. We'd need to have some list of threads and acquire contexts and then we
+would need to rely on drivers returning -EDEADLK through the ops, etc. At least
+lockdep will complain loudly when you try this so it isn't a silent failure.
 
-On 25.04.2014 14:32, Pankaj Dubey wrote:
-> This patch series, does some minor cleanup and modifies Exynos PMU related
-> code for mapping and initialization of Exynos Power Management Unit (PMU)
-> base address from device tree. This is also preparation for moving PMU
-> related code out of machine folder and moving into a "drivers/mfd", so that
-> ARM64 based SoC can utilize common piece of code. These patches require change
-> in Exynos4210, Exynos4212 and Exynos4412 dtsi files, which has been posted
-> as separate patch series [2]
->
-> These patches are created on top of Kukjin Kim's for-next (v3.15-rc1 tag)
-> branch.
->
-> These patches depends on following two patch series:
-> 1) mfd: syscon: Support early initialization
->     https://lkml.org/lkml/2014/4/8/239
-> 2) Add PMU node for Exynos SoCs
->     http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg29329.html
->
-> We have tested these patches on SMDK5250 and Arndale (Exynos5250) boards for
-> System boot and PMU initialization and S2R.
->
-> For testing on Arndale (Exynos5250) board:
-> Tested-by: Pankaj Dubey <pankaj.dubey@samsung.com>
->
-> Changes Since v1:
->   - Rebased on latest for-next of Kukjin Kim's tree.
->   - Added patch: "Make exynos machine_ops as static".
-> 	For making more cleanup in "mach-exynos/common.h"
-> 	as suggested by Tomasz Figa.
->   - Addressed comments of Tomasz Figa for cleaning "mach-exynos/common.h".
->   - Updated patch: Remove file path from comment section
-> 	As suggested by Michel Simek, instead of updating file path
-> 	lets remove them from each file under "mach-exynos".
-> 	Even though Kukjin pointed out that there is similar patch pending from
-> 	Sachin/Tushar but since I could not find I have included this here. If
-> 	I have missed something please point to any existing such patch.
->   - Updated patch: Add support for mapping PMU base address via DT
-> 	- Removed __initdata from declaration of "exynos_pmu_base", as it caused
-> 	kernel crash as pointed out by Vikas Sajjan.
-> 	- Added support for Syscon initialization and getting PMU regmap handle
-> 	as suggested by Sylwester. Since current implementation of early
-> 	intialization [1] has limitation that "early_syscon_init" requires
-> 	DT to be unflattened and system should be able to allocate memory,
-> 	we can't use regmap handles for platsmp.c file as "smp_secondary_init"
-> 	will be called before DT unflattening. So I have kept both method for
-> 	accessing PMU base address. platsmp.c will use ioremmaped address where
-> 	as rest other files can use regmap handle.
->   - Added patch: Remove "linux/bug.h" from pmu.c.
->   - Updated patch: Refactored code for PMU register mapping via DT
-> 	- Modified to use regmap_read/write when using regmap handle.
->   - Added patch: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->   - Added patch: Add device tree based initialization support for PMU.
-> 	- Convert existing PMU implementation to be a device tree based
-> 	 before moving it to "drivers/mfd" folder. As suggested by Bartlomiej.
-> 	- Dropped making a platform_driver for PMU, as currently PMU binding
-> 	has two compatibility strings as "samsung, exynosxxx-pmu", "syscon",
-> 	once we	enable MFD_SYSCON config option, current "syscon" driver probe
-> 	gets called and PMU probe never gets called. So modified PMU
-> 	initialization code to scan DT and match against supported compatiblity
-> 	string in driver code, and once we get matching node use that for
-> 	accessing PMU regmap handle using "syscon_early_regmap_lookup_by_phandle".
-> 	If there is any better solution please suggest.
->
-> Pankaj Dubey (6):
->    ARM: EXYNOS: Make exynos machine_ops as static
->    ARM: EXYNOS: Cleanup "mach-exynos/common.h" file
->    ARM: EXYNOS: Remove file path from comment section
->    ARM: EXYNOS: Refactored code for using PMU address via DT
->    ARM: EXYNOS: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->    ARM: EXYNOS: Add device tree based initialization support for PMU.
->
-> Young-Gun Jang (4):
->    ARM: EXYNOS: Move SYSREG definition into sys-reg specific file.
->    ARM: EXYNOS: Remove regs-pmu.h header dependency from pm_domain
->    ARM: EXYNOS: Add support for mapping PMU base address via DT
->    ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
->
->   arch/arm/mach-exynos/Kconfig               |    2 +
->   arch/arm/mach-exynos/common.h              |   13 +-
->   arch/arm/mach-exynos/cpuidle.c             |   37 +-
->   arch/arm/mach-exynos/exynos.c              |  104 +++++-
->   arch/arm/mach-exynos/headsmp.S             |    2 -
->   arch/arm/mach-exynos/hotplug.c             |    7 +-
->   arch/arm/mach-exynos/include/mach/map.h    |    3 -
->   arch/arm/mach-exynos/include/mach/memory.h |    3 +-
->   arch/arm/mach-exynos/platsmp.c             |   17 +-
->   arch/arm/mach-exynos/pm.c                  |   61 ++--
->   arch/arm/mach-exynos/pm_domains.c          |    2 +-
->   arch/arm/mach-exynos/pmu.c                 |  191 ++++++++---
->   arch/arm/mach-exynos/regs-pmu.h            |  512 ++++++++++++++--------------
->   arch/arm/mach-exynos/regs-sys.h            |   22 ++
->   14 files changed, 585 insertions(+), 391 deletions(-)
->   create mode 100644 arch/arm/mach-exynos/regs-sys.h
->
+Due to the loss of recursion we can't allow clock drivers to call the
+non-underscore versions of the clock APIs either. I don't see too many users
+right now under drivers/clk but those would need to be updated before these
+patches could be applied.
+
+Please note these patches are based on some cleanup patches I sent already[1]
+
+Stephen Boyd (4):
+  clk: Recalc rate and accuracy in underscore functions if not caching
+  clk: Make __clk_lookup() use a list instead of tree search
+  clk: Use lockless functions for debug printing
+  clk: Use ww_mutexes for clk_prepare_{lock/unlock}
+
+ drivers/clk/clk.c           | 598 +++++++++++++++++++++++++++++++++++---------
+ include/linux/clk-private.h |   4 +
+ 2 files changed, 478 insertions(+), 124 deletions(-)
+
+[1] https://lkml.org/lkml/2014/3/26/423
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
