@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaDYAtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:49:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19601 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906AbaDYAtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:49:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,923,1389772800"; 
-   d="scan'208";a="527968089"
-From: xiao jin <jin.xiao@intel.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, trivial@kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: david.a.cohen@linux.intel.com, xiao jin <jin.xiao@intel.com>
-Subject: [PATCH] inetpeer_gc_worker: trivial cleanup
-Date: Fri, 25 Apr 2014 08:53:29 +0800
-Message-Id: <1398387209-12322-1-git-send-email-jin.xiao@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751075AbaDYAwy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:52:54 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:65269 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaDYAww (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 20:52:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396646870-29695-1-git-send-email-rabin@rab.in>
+References: <1396646870-29695-1-git-send-email-rabin@rab.in>
+Date: Thu, 24 Apr 2014 17:52:51 -0700
+X-Google-Sender-Auth: BQDTl-XScYIkYD6hJ9XUL15-a-I
+Message-ID: <CAD=FV=UuYpc-kFMymy7P_mL+iYziKqJii8=32P6kMELDFnC1pQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] arm: fixmap: implement __set_fixmap()
+From: Doug Anderson <dianders@chromium.org>
+To: Rabin Vincent <rabin@rab.in>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Laura Abbott <lauraa@codeaurora.org>, Jon Medhurst <tixy@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not initialize list twice.
-list_replace_init() already takes care of initializing list.
-We don't need to initialize it with LIST_HEAD() beforehand.
+Rabin,
 
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
----
- net/ipv4/inetpeer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, Apr 4, 2014 at 2:27 PM, Rabin Vincent <rabin@rab.in> wrote:
+> This is used from set_fixmap() and clear_fixmap() via
+> asm-generic/fixmap.h.
+>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> ---
+> Needs "arm: use generic fixmap.h", available in linux-next.
+>
+>  arch/arm/include/asm/fixmap.h | 2 ++
+>  arch/arm/mm/mmu.c             | 7 +++++++
+>  2 files changed, 9 insertions(+)
+>
+> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+> index 68ea615..55ed076 100644
+> --- a/arch/arm/include/asm/fixmap.h
+> +++ b/arch/arm/include/asm/fixmap.h
+> @@ -23,6 +23,8 @@ enum fixed_addresses {
+>         __end_of_fixed_addresses
+>  };
+>
+> +void __set_fixmap(enum fixed_addresses idx, unsigned long phys, pgprot_t prot);
 
-diff --git a/net/ipv4/inetpeer.c b/net/ipv4/inetpeer.c
-index 48f4244..c98cf14 100644
---- a/net/ipv4/inetpeer.c
-+++ b/net/ipv4/inetpeer.c
-@@ -120,7 +120,7 @@ int inet_peer_maxttl __read_mostly = 10 * 60 * HZ;	/* usual time to live: 10 min
- static void inetpeer_gc_worker(struct work_struct *work)
- {
- 	struct inet_peer *p, *n, *c;
--	LIST_HEAD(list);
-+	struct list_head list;
- 
- 	spin_lock_bh(&gc_lock);
- 	list_replace_init(&gc_list, &list);
--- 
-1.7.9.5
+nit: I think you should use phys_addr_t for the physical address, right?
 
+void __set_fixmap(enum fixed_addresses idx, phys_addr_t phys, pgprot_t prot);
+
+
+...I'm no expert at fixmap, but otherwise this looks pretty reasonable to me.
+
+-Doug
