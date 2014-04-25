@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaDYWaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:30:23 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:47674 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaDYWaT (ORCPT
+	id S1752245AbaDYWbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:31:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51137 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaDYWbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:30:19 -0400
-Date: Fri, 25 Apr 2014 18:30:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
-        eparis@parisplace.org, serge.hallyn@ubuntu.com, lennart@poettering.net,
-        kay@vrfy.org, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement cgroup.populated
-Message-ID: <20140425223006.GB20460@htj.dyndns.org>
-References: <1397056052-2829-1-git-send-email-tj@kernel.org>
+	Fri, 25 Apr 2014 18:31:04 -0400
+Date: Fri, 25 Apr 2014 15:33:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        tulinizer@gmail.com, viro@zeniv.linux.org.uk, lorenz@badgers.com
+Subject: Re: [PATCH] staging: silicom: Add appropriate ifdef conditions in
+ bpctl_mod.c
+Message-ID: <20140425223356.GA7045@kroah.com>
+References: <5315479.ef9aFRk9hG@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397056052-2829-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5315479.ef9aFRk9hG@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 11:07:29AM -0400, Tejun Heo wrote:
-> Hello,
+On Mon, Apr 07, 2014 at 12:03:41PM +0900, Daeseok Youn wrote:
 > 
-> (inotify folks, can you please review the second patch which hooks up
->  kernfs_notify() with fsnotify?  It works but directly invoking
->  fsnotify_parent() and fsnotify() feels a bit dirty.  Maybe something
->  like fsnotify_notify_modify_by_dentry() would make more sense?)
+> The bp_proc_create() can be called if BP_PROC_SUPPORT is defined.
 > 
-> cgroup users often need a way to determine when a cgroup's
-> subhierarchy becomes empty so that it can be cleaned up.  cgroup
-> currently provides release_agent for it; unfortunately, this mechanism
-> is riddled with issues.  This patchset implements a replacement
-> mechanism "cgroup.subtree_populated" which can be used to monitor
-> whether the cgroup's subhierarchy has tasks in it or not and triggers
-> poll and [di]notify events when its content changes.
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/silicom/bpctl_mod.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> This patchset contains the following three patches.
-> 
->  0001-kernfs-implement-kernfs_root-supers-list.patch
->  0002-kernfs-make-kernfs_notify-trigger-inotify-events-too.patch
->  0003-cgroup-implement-cgroup.subtree_populated-for-the-de.patch
+> diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+> index 6b9365b..5a3d758 100644
+> --- a/drivers/staging/silicom/bpctl_mod.c
+> +++ b/drivers/staging/silicom/bpctl_mod.c
+> @@ -119,7 +119,10 @@ static void if_scan_init(void);
+>  
+>  static int bypass_proc_create_dev_sd(struct bpctl_dev *pbp_device_block);
+>  static int bypass_proc_remove_dev_sd(struct bpctl_dev *pbp_device_block);
+> +
+> +#ifdef BP_PROC_SUPPORT
+>  static int bp_proc_create(void);
+> +#endif
 
-0001-0002 are applied to driver-core-next, which was pulled into
-cgroup/for-3.16.   0003 applied to cgroup/for-3.16.
+No, this code should just be removed, right?
 
-Thanks.
-
--- 
-tejun
