@@ -1,68 +1,678 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635AbaDYQL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:11:57 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45251 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610AbaDYQLw (ORCPT
+	id S1753442AbaDYQKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:10:42 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37494 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371AbaDYQKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:11:52 -0400
-Date: Fri, 25 Apr 2014 17:11:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Message-ID: <20140425161138.GR12304@sirena.org.uk>
-References: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Na2NVb1+pUrRV9Hf"
-Content-Disposition: inline
-In-Reply-To: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] regulator: arizona-micsupp: Fix build errors with
- CONFIG_OF not defined
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 25 Apr 2014 12:10:33 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: matt.fleming@intel.com, catalin.marinas@arm.com, msalter@redhat.com,
+        grant.likely@linaro.org, roy.franz@linaro.org,
+        ard.biesheuvel@linaro.org, mark.rutland@arm.com,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2 08/10] arm64: efi: add EFI stub
+Date: Fri, 25 Apr 2014 17:09:12 +0100
+Message-Id: <1398442154-19974-9-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mark Salter <msalter@redhat.com>
 
---Na2NVb1+pUrRV9Hf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch adds PE/COFF header fields to the start of the kernel
+Image so that it appears as an EFI application to UEFI firmware.
+An EFI stub is included to allow direct booting of the kernel
+Image.
 
-On Fri, Apr 25, 2014 at 04:55:40PM +0100, Charles Keepax wrote:
+Signed-off-by: Mark Salter <msalter@redhat.com>
+[Add support in PE/COFF header for signed images]
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+---
+ arch/arm64/Kconfig              |    5 +-
+ arch/arm64/kernel/Makefile      |    4 +-
+ arch/arm64/kernel/efi-entry.S   |  109 +++++++++++++++++
+ arch/arm64/kernel/efi-stub.c    |   81 +++++++++++++
+ arch/arm64/kernel/head.S        |  112 ++++++++++++++++++
+ drivers/firmware/efi/arm-stub.c |  247 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 555 insertions(+), 3 deletions(-)
+ create mode 100644 arch/arm64/kernel/efi-entry.S
+ create mode 100644 arch/arm64/kernel/efi-stub.c
+ create mode 100644 drivers/firmware/efi/arm-stub.c
 
-> Some of the OF handling functions do not have empty alternatives defined
-> if CONFIG_OF is not defined. This patch ifdefs out the offending code.
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 392a2d5..a863663 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -290,8 +290,9 @@ config EFI
+ 	help
+ 	  This option provides support for runtime services provided
+ 	  by UEFI firmware (such as non-volatile variables, realtime
+-          clock, and platform reset). This is only useful on systems
+-	  that have UEFI firmware.
++          clock, and platform reset). A UEFI stub is also provided to
++	  allow the kernel to be booted as an EFI application. This
++	  is only useful on systems that have UEFI firmware.
+ 
+ endmenu
+ 
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index f57ccd7..db63a0a 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -4,6 +4,8 @@
+ 
+ CPPFLAGS_vmlinux.lds	:= -DTEXT_OFFSET=$(TEXT_OFFSET)
+ AFLAGS_head.o		:= -DTEXT_OFFSET=$(TEXT_OFFSET)
++CFLAGS_efi-stub.o 	:= -DTEXT_OFFSET=$(TEXT_OFFSET) \
++			   -I$(src)/../../../scripts/dtc/libfdt
+ 
+ # Object file lists.
+ arm64-obj-y		:= cputable.o debug-monitors.o entry.o irq.o fpsimd.o	\
+@@ -22,7 +24,7 @@ arm64-obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+ arm64-obj-$(CONFIG_ARM64_CPU_SUSPEND)	+= sleep.o suspend.o
+ arm64-obj-$(CONFIG_JUMP_LABEL)		+= jump_label.o
+ arm64-obj-$(CONFIG_KGDB)		+= kgdb.o
+-arm64-obj-$(CONFIG_EFI)			+= efi.o
++arm64-obj-$(CONFIG_EFI)			+= efi.o efi-stub.o efi-entry.o
+ 
+ obj-y					+= $(arm64-obj-y) vdso/
+ obj-m					+= $(arm64-obj-m)
+diff --git a/arch/arm64/kernel/efi-entry.S b/arch/arm64/kernel/efi-entry.S
+new file mode 100644
+index 0000000..66716c9
+--- /dev/null
++++ b/arch/arm64/kernel/efi-entry.S
+@@ -0,0 +1,109 @@
++/*
++ * EFI entry point.
++ *
++ * Copyright (C) 2013, 2014 Red Hat, Inc.
++ * Author: Mark Salter <msalter@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/linkage.h>
++#include <linux/init.h>
++
++#include <asm/assembler.h>
++
++#define EFI_LOAD_ERROR 0x8000000000000001
++
++	__INIT
++
++	/*
++	 * We arrive here from the EFI boot manager with:
++	 *
++	 *    * CPU in little-endian mode
++	 *    * MMU on with identity-mapped RAM
++	 *    * Icache and Dcache on
++	 *
++	 * We will most likely be running from some place other than where
++	 * we want to be. The kernel image wants to be placed at TEXT_OFFSET
++	 * from start of RAM.
++	 */
++ENTRY(efi_stub_entry)
++	/*
++	 * Create a stack frame to save FP/LR with extra space
++	 * for image_addr variable passed to efi_entry().
++	 */
++	stp	x29, x30, [sp, #-32]!
++
++	/*
++	 * Call efi_entry to do the real work.
++	 * x0 and x1 are already set up by firmware. Current runtime
++	 * address of image is calculated and passed via *image_addr.
++	 *
++	 * unsigned long efi_entry(void *handle,
++	 *                         efi_system_table_t *sys_table,
++	 *                         unsigned long *image_addr) ;
++	 */
++	adrp	x8, _text
++	add	x8, x8, #:lo12:_text
++	add	x2, sp, 16
++	str	x8, [x2]
++	bl	efi_entry
++	cmn	x0, #1
++	b.eq	efi_load_fail
++
++	/*
++	 * efi_entry() will have relocated the kernel image if necessary
++	 * and we return here with device tree address in x0 and the kernel
++	 * entry point stored at *image_addr. Save those values in registers
++	 * which are callee preserved.
++	 */
++	mov	x20, x0		// DTB address
++	ldr	x0, [sp, #16]	// relocated _text address
++	mov	x21, x0
++
++	/*
++	 * Flush dcache covering current runtime addresses
++	 * of kernel text/data. Then flush all of icache.
++	 */
++	adrp	x1, _text
++	add	x1, x1, #:lo12:_text
++	adrp	x2, _edata
++	add	x2, x2, #:lo12:_edata
++	sub	x1, x2, x1
++
++	bl	__flush_dcache_area
++	ic	ialluis
++
++	/* Turn off Dcache and MMU */
++	mrs	x0, CurrentEL
++	cmp	x0, #PSR_MODE_EL2t
++	ccmp	x0, #PSR_MODE_EL2h, #0x4, ne
++	b.ne	1f
++	mrs	x0, sctlr_el2
++	bic	x0, x0, #1 << 0	// clear SCTLR.M
++	bic	x0, x0, #1 << 2	// clear SCTLR.C
++	msr	sctlr_el2, x0
++	isb
++	b	2f
++1:
++	mrs	x0, sctlr_el1
++	bic	x0, x0, #1 << 0	// clear SCTLR.M
++	bic	x0, x0, #1 << 2	// clear SCTLR.C
++	msr	sctlr_el1, x0
++	isb
++2:
++	/* Jump to kernel entry point */
++	mov	x0, x20
++	mov	x1, xzr
++	mov	x2, xzr
++	mov	x3, xzr
++	br	x21
++
++efi_load_fail:
++	mov	x0, #EFI_LOAD_ERROR
++	ldp	x29, x30, [sp], #32
++	ret
++
++ENDPROC(efi_stub_entry)
+diff --git a/arch/arm64/kernel/efi-stub.c b/arch/arm64/kernel/efi-stub.c
+new file mode 100644
+index 0000000..60e98a63
+--- /dev/null
++++ b/arch/arm64/kernel/efi-stub.c
+@@ -0,0 +1,81 @@
++/*
++ * Copyright (C) 2013, 2014 Linaro Ltd;  <roy.franz@linaro.org>
++ *
++ * This file implements the EFI boot stub for the arm64 kernel.
++ * Adapted from ARM version by Mark Salter <msalter@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++#include <linux/efi.h>
++#include <linux/libfdt.h>
++#include <asm/sections.h>
++#include <generated/compile.h>
++#include <generated/utsrelease.h>
++
++/*
++ * AArch64 requires the DTB to be 8-byte aligned in the first 512MiB from
++ * start of kernel and may not cross a 2MiB boundary. We set alignment to
++ * 2MiB so we know it won't cross a 2MiB boundary.
++ */
++#define EFI_FDT_ALIGN	SZ_2M   /* used by allocate_new_fdt_and_exit_boot() */
++#define MAX_FDT_OFFSET	SZ_512M
++
++#define efi_call_early(f, ...) sys_table_arg->boottime->f(__VA_ARGS__)
++
++static void efi_char16_printk(efi_system_table_t *sys_table_arg,
++			      efi_char16_t *str);
++
++static efi_status_t efi_open_volume(efi_system_table_t *sys_table,
++				    void *__image, void **__fh);
++static efi_status_t efi_file_close(void *handle);
++
++static efi_status_t
++efi_file_read(void *handle, unsigned long *size, void *addr);
++
++static efi_status_t
++efi_file_size(efi_system_table_t *sys_table, void *__fh,
++	      efi_char16_t *filename_16, void **handle, u64 *file_sz);
++
++/* Include shared EFI stub code */
++#include "../../../drivers/firmware/efi/efi-stub-helper.c"
++#include "../../../drivers/firmware/efi/fdt.c"
++#include "../../../drivers/firmware/efi/arm-stub.c"
++
++
++static efi_status_t handle_kernel_image(efi_system_table_t *sys_table,
++					unsigned long *image_addr,
++					unsigned long *image_size,
++					unsigned long *reserve_addr,
++					unsigned long *reserve_size,
++					unsigned long dram_base,
++					efi_loaded_image_t *image)
++{
++	efi_status_t status;
++	unsigned long kernel_size, kernel_memsize = 0;
++
++	/* Relocate the image, if required. */
++	kernel_size = _edata - _text;
++	if (*image_addr != (dram_base + TEXT_OFFSET)) {
++		kernel_memsize = kernel_size + (_end - _edata);
++		status = efi_relocate_kernel(sys_table, image_addr,
++					     kernel_size, kernel_memsize,
++					     dram_base + TEXT_OFFSET,
++					     PAGE_SIZE);
++		if (status != EFI_SUCCESS) {
++			pr_efi_err(sys_table, "Failed to relocate kernel\n");
++			return status;
++		}
++		if (*image_addr != (dram_base + TEXT_OFFSET)) {
++			pr_efi_err(sys_table, "Failed to alloc kernel memory\n");
++			efi_free(sys_table, kernel_memsize, *image_addr);
++			return EFI_ERROR;
++		}
++		*image_size = kernel_memsize;
++	}
++
++
++	return EFI_SUCCESS;
++}
+diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S
+index 0fd5650..738291b 100644
+--- a/arch/arm64/kernel/head.S
++++ b/arch/arm64/kernel/head.S
+@@ -108,8 +108,18 @@
+ 	/*
+ 	 * DO NOT MODIFY. Image header expected by Linux boot-loaders.
+ 	 */
++#ifdef CONFIG_EFI
++efi_head:
++	/*
++	 * This add instruction has no meaningful effect except that
++	 * its opcode forms the magic "MZ" signature required by UEFI.
++	 */
++	add	x13, x18, #0x16
++	b	stext
++#else
+ 	b	stext				// branch to kernel start, magic
+ 	.long	0				// reserved
++#endif
+ 	.quad	TEXT_OFFSET			// Image load offset from start of RAM
+ 	.quad	0				// reserved
+ 	.quad	0				// reserved
+@@ -120,7 +130,109 @@
+ 	.byte	0x52
+ 	.byte	0x4d
+ 	.byte	0x64
++#ifdef CONFIG_EFI
++	.long	pe_header - efi_head		// Offset to the PE header.
++#else
+ 	.word	0				// reserved
++#endif
++
++#ifdef CONFIG_EFI
++	.align 3
++pe_header:
++	.ascii	"PE"
++	.short 	0
++coff_header:
++	.short	0xaa64				// AArch64
++	.short	2				// nr_sections
++	.long	0 				// TimeDateStamp
++	.long	0				// PointerToSymbolTable
++	.long	1				// NumberOfSymbols
++	.short	section_table - optional_header	// SizeOfOptionalHeader
++	.short	0x206				// Characteristics.
++						// IMAGE_FILE_DEBUG_STRIPPED |
++						// IMAGE_FILE_EXECUTABLE_IMAGE |
++						// IMAGE_FILE_LINE_NUMS_STRIPPED
++optional_header:
++	.short	0x20b				// PE32+ format
++	.byte	0x02				// MajorLinkerVersion
++	.byte	0x14				// MinorLinkerVersion
++	.long	_edata - stext			// SizeOfCode
++	.long	0				// SizeOfInitializedData
++	.long	0				// SizeOfUninitializedData
++	.long	efi_stub_entry - efi_head	// AddressOfEntryPoint
++	.long	stext - efi_head		// BaseOfCode
++
++extra_header_fields:
++	.quad	0				// ImageBase
++	.long	0x20				// SectionAlignment
++	.long	0x8				// FileAlignment
++	.short	0				// MajorOperatingSystemVersion
++	.short	0				// MinorOperatingSystemVersion
++	.short	0				// MajorImageVersion
++	.short	0				// MinorImageVersion
++	.short	0				// MajorSubsystemVersion
++	.short	0				// MinorSubsystemVersion
++	.long	0				// Win32VersionValue
++
++	.long	_edata - efi_head		// SizeOfImage
++
++	// Everything before the kernel image is considered part of the header
++	.long	stext - efi_head		// SizeOfHeaders
++	.long	0				// CheckSum
++	.short	0xa				// Subsystem (EFI application)
++	.short	0				// DllCharacteristics
++	.quad	0				// SizeOfStackReserve
++	.quad	0				// SizeOfStackCommit
++	.quad	0				// SizeOfHeapReserve
++	.quad	0				// SizeOfHeapCommit
++	.long	0				// LoaderFlags
++	.long	0x6				// NumberOfRvaAndSizes
++
++	.quad	0				// ExportTable
++	.quad	0				// ImportTable
++	.quad	0				// ResourceTable
++	.quad	0				// ExceptionTable
++	.quad	0				// CertificationTable
++	.quad	0				// BaseRelocationTable
++
++	// Section table
++section_table:
++
++	/*
++	 * The EFI application loader requires a relocation section
++	 * because EFI applications must be relocatable.  This is a
++	 * dummy section as far as we are concerned.
++	 */
++	.ascii	".reloc"
++	.byte	0
++	.byte	0			// end of 0 padding of section name
++	.long	0
++	.long	0
++	.long	0			// SizeOfRawData
++	.long	0			// PointerToRawData
++	.long	0			// PointerToRelocations
++	.long	0			// PointerToLineNumbers
++	.short	0			// NumberOfRelocations
++	.short	0			// NumberOfLineNumbers
++	.long	0x42100040		// Characteristics (section flags)
++
++
++	.ascii	".text"
++	.byte	0
++	.byte	0
++	.byte	0        		// end of 0 padding of section name
++	.long	_edata - stext		// VirtualSize
++	.long	stext - efi_head	// VirtualAddress
++	.long	_edata - stext		// SizeOfRawData
++	.long	stext - efi_head	// PointerToRawData
++
++	.long	0		// PointerToRelocations (0 for executables)
++	.long	0		// PointerToLineNumbers (0 for executables)
++	.short	0		// NumberOfRelocations  (0 for executables)
++	.short	0		// NumberOfLineNumbers  (0 for executables)
++	.long	0xe0500020	// Characteristics (section flags)
++	.align 5
++#endif
+ 
+ ENTRY(stext)
+ 	mov	x21, x0				// x21=FDT
+diff --git a/drivers/firmware/efi/arm-stub.c b/drivers/firmware/efi/arm-stub.c
+new file mode 100644
+index 0000000..19239a9
+--- /dev/null
++++ b/drivers/firmware/efi/arm-stub.c
+@@ -0,0 +1,247 @@
++/*
++ * EFI stub implementation that is shared by arm and arm64 architectures.
++ * This should be #included by the EFI stub implementation files.
++ *
++ * Copyright (C) 2013,2014 Linaro Limited
++ *     Roy Franz <roy.franz@linaro.org
++ * Copyright (C) 2013 Red Hat, Inc.
++ *     Mark Salter <msalter@redhat.com>
++ *
++ * This file is part of the Linux kernel, and is made available under the
++ * terms of the GNU General Public License version 2.
++ *
++ */
++
++static efi_status_t efi_open_volume(efi_system_table_t *sys_table_arg,
++				    void *__image, void **__fh)
++{
++	efi_file_io_interface_t *io;
++	efi_loaded_image_t *image = __image;
++	efi_file_handle_t *fh;
++	efi_guid_t fs_proto = EFI_FILE_SYSTEM_GUID;
++	efi_status_t status;
++	void *handle = (void *)(unsigned long)image->device_handle;
++
++	status = sys_table_arg->boottime->handle_protocol(handle,
++				 &fs_proto, (void **)&io);
++	if (status != EFI_SUCCESS) {
++		efi_printk(sys_table_arg, "Failed to handle fs_proto\n");
++		return status;
++	}
++
++	status = io->open_volume(io, &fh);
++	if (status != EFI_SUCCESS)
++		efi_printk(sys_table_arg, "Failed to open volume\n");
++
++	*__fh = fh;
++	return status;
++}
++static efi_status_t efi_file_close(void *handle)
++{
++	efi_file_handle_t *fh = handle;
++
++	return fh->close(handle);
++}
++
++static efi_status_t
++efi_file_read(void *handle, unsigned long *size, void *addr)
++{
++	efi_file_handle_t *fh = handle;
++
++	return fh->read(handle, size, addr);
++}
++
++
++static efi_status_t
++efi_file_size(efi_system_table_t *sys_table_arg, void *__fh,
++	      efi_char16_t *filename_16, void **handle, u64 *file_sz)
++{
++	efi_file_handle_t *h, *fh = __fh;
++	efi_file_info_t *info;
++	efi_status_t status;
++	efi_guid_t info_guid = EFI_FILE_INFO_ID;
++	unsigned long info_sz;
++
++	status = fh->open(fh, &h, filename_16, EFI_FILE_MODE_READ, (u64)0);
++	if (status != EFI_SUCCESS) {
++		efi_printk(sys_table_arg, "Failed to open file: ");
++		efi_char16_printk(sys_table_arg, filename_16);
++		efi_printk(sys_table_arg, "\n");
++		return status;
++	}
++
++	*handle = h;
++
++	info_sz = 0;
++	status = h->get_info(h, &info_guid, &info_sz, NULL);
++	if (status != EFI_BUFFER_TOO_SMALL) {
++		efi_printk(sys_table_arg, "Failed to get file info size\n");
++		return status;
++	}
++
++grow:
++	status = sys_table_arg->boottime->allocate_pool(EFI_LOADER_DATA,
++				 info_sz, (void **)&info);
++	if (status != EFI_SUCCESS) {
++		efi_printk(sys_table_arg, "Failed to alloc mem for file info\n");
++		return status;
++	}
++
++	status = h->get_info(h, &info_guid, &info_sz,
++						   info);
++	if (status == EFI_BUFFER_TOO_SMALL) {
++		sys_table_arg->boottime->free_pool(info);
++		goto grow;
++	}
++
++	*file_sz = info->file_size;
++	sys_table_arg->boottime->free_pool(info);
++
++	if (status != EFI_SUCCESS)
++		efi_printk(sys_table_arg, "Failed to get initrd info\n");
++
++	return status;
++}
++
++
++
++static void efi_char16_printk(efi_system_table_t *sys_table_arg,
++			      efi_char16_t *str)
++{
++	struct efi_simple_text_output_protocol *out;
++
++	out = (struct efi_simple_text_output_protocol *)sys_table_arg->con_out;
++	out->output_string(out, str);
++}
++
++
++/*
++ * This function handles the architcture specific differences between arm and
++ * arm64 regarding where the kernel image must be loaded and any memory that
++ * must be reserved. On failure it is required to free all
++ * all allocations it has made.
++ */
++static efi_status_t handle_kernel_image(efi_system_table_t *sys_table,
++					unsigned long *image_addr,
++					unsigned long *image_size,
++					unsigned long *reserve_addr,
++					unsigned long *reserve_size,
++					unsigned long dram_base,
++					efi_loaded_image_t *image);
++/*
++ * EFI entry point for the arm/arm64 EFI stubs.  This is the entrypoint
++ * that is described in the PE/COFF header.  Most of the code is the same
++ * for both archictectures, with the arch-specific code provided in the
++ * handle_kernel_image() function.
++ */
++unsigned long __init efi_entry(void *handle, efi_system_table_t *sys_table,
++			       unsigned long *image_addr)
++{
++	efi_loaded_image_t *image;
++	efi_status_t status;
++	unsigned long image_size = 0;
++	unsigned long dram_base;
++	/* addr/point and size pairs for memory management*/
++	unsigned long initrd_addr;
++	u64 initrd_size = 0;
++	unsigned long fdt_addr;  /* Original DTB */
++	u64 fdt_size = 0;  /* We don't get size from configuration table */
++	char *cmdline_ptr = NULL;
++	int cmdline_size = 0;
++	unsigned long new_fdt_addr;
++	efi_guid_t loaded_image_proto = LOADED_IMAGE_PROTOCOL_GUID;
++	unsigned long reserve_addr = 0;
++	unsigned long reserve_size = 0;
++
++	/* Check if we were booted by the EFI firmware */
++	if (sys_table->hdr.signature != EFI_SYSTEM_TABLE_SIGNATURE)
++		goto fail;
++
++	pr_efi(sys_table, "Booting Linux Kernel...\n");
++
++	/*
++	 * Get a handle to the loaded image protocol.  This is used to get
++	 * information about the running image, such as size and the command
++	 * line.
++	 */
++	status = sys_table->boottime->handle_protocol(handle,
++					&loaded_image_proto, (void *)&image);
++	if (status != EFI_SUCCESS) {
++		pr_efi_err(sys_table, "Failed to get loaded image protocol\n");
++		goto fail;
++	}
++
++	dram_base = get_dram_base(sys_table);
++	if (dram_base == EFI_ERROR) {
++		pr_efi_err(sys_table, "Failed to find DRAM base\n");
++		goto fail;
++	}
++	status = handle_kernel_image(sys_table, image_addr, &image_size,
++				     &reserve_addr,
++				     &reserve_size,
++				     dram_base, image);
++	if (status != EFI_SUCCESS) {
++		pr_efi_err(sys_table, "Failed to relocate kernel\n");
++		goto fail;
++	}
++
++	/*
++	 * Get the command line from EFI, using the LOADED_IMAGE
++	 * protocol. We are going to copy the command line into the
++	 * device tree, so this can be allocated anywhere.
++	 */
++	cmdline_ptr = efi_convert_cmdline(sys_table, image, &cmdline_size);
++	if (!cmdline_ptr) {
++		pr_efi_err(sys_table, "getting command line via LOADED_IMAGE_PROTOCOL\n");
++		goto fail_free_image;
++	}
++
++	/* Load a device tree from the configuration table, if present. */
++	fdt_addr = (uintptr_t)get_fdt(sys_table);
++	if (!fdt_addr) {
++		status = handle_cmdline_files(sys_table, image, cmdline_ptr,
++					      "dtb=",
++					      ~0UL, (unsigned long *)&fdt_addr,
++					      (unsigned long *)&fdt_size);
++
++		if (status != EFI_SUCCESS) {
++			pr_efi_err(sys_table, "Failed to load device tree!\n");
++			goto fail_free_cmdline;
++		}
++	}
++
++	status = handle_cmdline_files(sys_table, image, cmdline_ptr,
++				      "initrd=", dram_base + SZ_512M,
++				      (unsigned long *)&initrd_addr,
++				      (unsigned long *)&initrd_size);
++	if (status != EFI_SUCCESS)
++		pr_efi_err(sys_table, "Failed initrd from command line!\n");
++
++	new_fdt_addr = fdt_addr;
++	status = allocate_new_fdt_and_exit_boot(sys_table, handle,
++				&new_fdt_addr, dram_base + MAX_FDT_OFFSET,
++				initrd_addr, initrd_size, cmdline_ptr,
++				fdt_addr, fdt_size);
++
++	/*
++	 * If all went well, we need to return the FDT address to the
++	 * calling function so it can be passed to kernel as part of
++	 * the kernel boot protocol.
++	 */
++	if (status == EFI_SUCCESS)
++		return new_fdt_addr;
++
++	pr_efi_err(sys_table, "Failed to update FDT and exit boot services\n");
++
++	efi_free(sys_table, initrd_size, initrd_addr);
++	efi_free(sys_table, fdt_size, fdt_addr);
++
++fail_free_cmdline:
++	efi_free(sys_table, cmdline_size, (unsigned long)cmdline_ptr);
++
++fail_free_image:
++	efi_free(sys_table, image_size, *image_addr);
++	efi_free(sys_table, reserve_size, reserve_addr);
++fail:
++	return EFI_ERROR;
++}
+-- 
+1.7.10.4
 
-Which functions and why is it not better to provide the stubs?
-
---Na2NVb1+pUrRV9Hf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWok3AAoJELSic+t+oim94iQP/0c4gBiJCuPVsCUxqrh7bgSV
-q08Hwy2kJLhpq65y8pWyA4xGVdkjQvLXFVKR+Yd2vnsdkvFE9ZMsPs7KReotYjz2
-5xCKTN1BaAd0xhvx6SahmVscHIKvkrFfkgSqvZvD2/GUilbM6fr936Nov2rVmN5I
-EGa49eupyCag0/6Qhhpznq+GzFpaoCGJrbUBXjMIuLHa1QjK5b5dma7b9pZRs482
-BEil6vc/EdUUo8KfdmkiVcOQ8o7JtVq3ke5064bK6OwCrk5EYg1AAbvl+e5kyi7P
-cGurbuxdSLxl7qjeKDStKLK21PkCX835PZgvEtwhwU5xDqN9VJpTkAA5LBAmzBZs
-uWj/ZtzKc0ilxmPu1EVJWqIOmuKCsInEB3+Kdk233hIUdIbnjOCrguvyWyt8A9W/
-xvgZGBJB4QEdeHjPWBqSCiotOaA7ARV3QZi93M8GgIPjMRh66dt1eMLXWr43KLDS
-RQJJL6bgNuoWNml7bp3k+m4ufmRtcRcTi40QqbS2AUwljFAZcD4LjXVM19Aq+EFj
-gjgeslgjUkcQ8DY280+Zl+N1q0S9AxXWIxJzVFdLYx55Q/Yh2FSch8W8fBL26OE+
-/Tx1uRmWneoOatxCw5OxURsNKwiXmt1L+0PVvZZcNa8piTBlI9q9ut0DXm8aNDNK
-sCox9lhW5by18QKy8W9s
-=nwog
------END PGP SIGNATURE-----
-
---Na2NVb1+pUrRV9Hf--
