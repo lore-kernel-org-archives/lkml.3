@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaDYAmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:42:47 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:57252 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbaDYAmh (ORCPT
+	id S1751297AbaDYAmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:42:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8761 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaDYAmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:42:37 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-16-5359af798daa
+	Thu, 24 Apr 2014 20:42:38 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-e6-5359af7cbd9f
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
         ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
         k.kozlowski@samsung.com, kyungmin.park@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv4 4/9] extcon: max77693: Use devm_extcon_dev_allocate for
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCHv4 9/9] extcon: palmas: Use devm_extcon_dev_allocate for
  extcon_dev
-Date: Fri, 25 Apr 2014 09:42:19 +0900
-Message-id: <1398386544-16295-5-git-send-email-cw00.choi@samsung.com>
+Date: Fri, 25 Apr 2014 09:42:24 +0900
+Message-id: <1398386544-16295-10-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
 References: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42JZI2JSqFu5PjLY4OlGFYuD9+stpj58wmbx
-	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbA5fHplWdbB4vJ/5m8+jb
-	sorRY+qUv4wex29sZ/L4vEkugC2KyyYlNSezLLVI3y6BK+Ptos2MBfO4K158P8jawLiEs4uR
-	k0NCwESi/89sRghbTOLCvfVsXYxcHEICSxklLs66ywJTdKrjFCtEYjqjxK91e5khnCYmiXXt
-	X5hAqtgEtCT2v7jBBmKLCChIbO59BtbBLPCMUeLE1RPMIAlhgTCJBevWsoPYLAKqEsdut4A1
-	8Aq4SrzsbGaGWCcn8WHPI7AaTgE3iUMnesHOEAKqeXVuDhPIUAmBbewST889YIMYJCDxbfIh
-	oCIOoISsxKYDUHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYzAaDj9
-	79nEHYz3D1gfYkwGGjeRWUo0OR8YTXkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhPLEnN
-	Tk0tSC2KLyrNSS0+xMjEwSnVwNjB66xhzf0w4ECl3dfdR3S524R3TeV6Vf1swdkLfvMkwn1b
-	+e0kWm/mzlLQun/e/cUhhhamU1fPZDF0JO3JX6Zo08JR/N/ORn6h2Pdw+/OxvcdXuUmcf+G7
-	U29KoGDk8fsVq2MLS9dGJDZ6LTt6suxt4daa16y/vv3f2aloOHPK+omn+JUOPFBiKc5INNRi
-	LipOBADOGjYKnAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jQd3K9ZHBBn/nyVocvF9vMfXhEzaL
-	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYHLg8Nq3qZPN4OfE3m0ff
-	llWMHlOn/GX0OH5jO5PH501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
-	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
-	axgz3i7azFgwj7vixfeDrA2MSzi7GDk5JARMJE51nGKFsMUkLtxbz9bFyMUhJDCdUeLXur3M
-	EE4Tk8S69i9MIFVsAloS+1/cYAOxRQQUJDb3PmMFKWIWeMYoceLqCWaQhLBAmMSCdWvZQWwW
-	AVWJY7dbwBp4BVwlXnY2M0Osk5P4sOcRWA2ngJvEoRO9LCC2EFDNq3NzmCYw8i5gZFjFKJpa
-	kFxQnJSea6RXnJhbXJqXrpecn7uJERxrz6R3MK5qsDjEKMDBqMTDO0E2MliINbGsuDL3EKME
-	B7OSCK/yKqAQb0piZVVqUX58UWlOavEhxmSgqyYyS4km5wPTQF5JvKGxiZmRpZG5oYWRsTlp
-	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MPbMj5o+4+2/pd03k77uC5wS4n9M7fVitUkH
-	A9/yes0w3+C674C0WsZEbm9vgd1FSrt3/dG436Ll9uF/1OSCald3h6+X13awuasy20bst5ut
-	xm05dZ+bzNpyo9Z7/M6cL15Zmf9K/HvchLNd/OKMlBJjBy7960sOf/3gfD9hJhuTZ7nFwjPm
-	C5RYijMSDbWYi4oTAbhobKD5AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsWyRsSkSLd2fWSwwa0/rBYH79dbTH34hM3i
+	35Qb7BbXvzxntejf4mLx+oWhxYWnPWwWZ5vesFvc/3qU0eLyrjlsFrcbV7BZnO5mdeDx2LSq
+	k83jzrU9bB7zTgZ6vJz4m82jb8sqRo+pU/4yehy/sZ3J4/MmuQCOKC6blNSczLLUIn27BK6M
+	6Wc+MBfc0alY9OkzawPjF9UuRg4OCQETiVsL7LsYOYFMMYkL99azdTFycQgJLGWU6L7VzA5T
+	c3qJBkiNkMB0Rom2O5kQdhOTxIYpkSA2m4CWxP4XN9hAbBEBBYnNvc9YQeYwC2xgklh2aglY
+	QlggROJF9112EJtFQFXiw8cprCA2r4CbxM39v1ghjpCT+LDnEVgNJ1D80IleFohlrhKvzs1h
+	AhkqIXCOXeL4uqcsEIMEJL5NPsQCcaisxKYDzBBzJCUOrrjBMoFReAEjwypG0dSC5ILipPQi
+	Q73ixNzi0rx0veT83E2MwEg5/e9Z7w7G2wesDzEmA42byCwlmpwPjLS8knhDYzMjC1MTU2Mj
+	c0sz0oSVxHmTHiYFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamBMYX2vIbzx7sfWyYEnfk1a
+	6mJvwZz+l2VJvMbKjU8+Lbzlk++ndnj/7OCrSYYfCzZ93+D69tkJ159bZfOmONyc9bd0x6nt
+	3usbHjH4y3HJs+6e7RV7x8Nv5aKcrQcUwhj5jm8Tfyd5eFfZaa3WlQdt/m5vnN+9RWwtu5r0
+	GYEHS/rqjiednbtAXomlOCPRUIu5qDgRAPSCB3WqAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jQd2a9ZHBBndWW1ocvF9vMfXhEzaL
+	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25x/+tRRovLu+awWdxuXMFmcbqb1YHHY9Oq
+	TjaPO9f2sHnMOxno8XLibzaPvi2rGD2mTvnL6HH8xnYmj8+b5AI4ohoYbTJSE1NSixRS85Lz
+	UzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOATlVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYwZkw/84G54I5OxaJPn1kbGL+odjFycEgImEicXqLRxcgJ
+	ZIpJXLi3ng3EFhKYzijRdicTwm5iktgwJRLEZhPQktj/4gZYjYiAgsTm3mesXYxcHMwCG5gk
+	lp1aApYQFgiReNF9lx3EZhFQlfjwcQoriM0r4CZxc/8vVohlchIf9jwCq+EEih860csCscxV
+	4tW5OUwTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOxGfSOxhXNVgcYhTgYFTi
+	4Z0gGxksxJpYVlyZe4hRgoNZSYRXeRVQiDclsbIqtSg/vqg0J7X4EGMy0FUTmaVEk/OBSSKv
+	JN7Q2MTMyNLI3NDCyNicNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhg1Dz66o3p91ayi
+	Xk5xwYrOb1WnMkzbn8xL7nH7X5kjZezFcOOPXmb6kRmfhY/Mfcpf9dem4f+pLuaDzPIbX993
+	j1T/eD2n4ke0RrtVnsyfTaddS4qMLl9jPrh47vO005uPT/X/ddSSSdXsSvJdu+9T1pwQ/hvT
+	WGvCcvLEAaf8FcZnDlSZz/6oxFKckWioxVxUnAgAjzbvsAgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,44 +57,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch use devm_extcon_dev_allocate() to simplify the memory control
 of extcon device.
 
+Cc: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/extcon/extcon-max77693.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/extcon/extcon-palmas.c | 35 ++++++++++++++++++++---------------
+ include/linux/mfd/palmas.h     |  2 +-
+ 2 files changed, 21 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index f0f18e2..2c7c3e1 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1175,23 +1175,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 1a770e0..7417ce8 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -57,7 +57,7 @@ static irqreturn_t palmas_vbus_irq_handler(int irq, void *_palmas_usb)
+ 	if (vbus_line_state & PALMAS_INT3_LINE_STATE_VBUS) {
+ 		if (palmas_usb->linkstat != PALMAS_USB_STATE_VBUS) {
+ 			palmas_usb->linkstat = PALMAS_USB_STATE_VBUS;
+-			extcon_set_cable_state(&palmas_usb->edev, "USB", true);
++			extcon_set_cable_state(palmas_usb->edev, "USB", true);
+ 			dev_info(palmas_usb->dev, "USB cable is attached\n");
+ 		} else {
+ 			dev_dbg(palmas_usb->dev,
+@@ -66,7 +66,7 @@ static irqreturn_t palmas_vbus_irq_handler(int irq, void *_palmas_usb)
+ 	} else if (!(vbus_line_state & PALMAS_INT3_LINE_STATE_VBUS)) {
+ 		if (palmas_usb->linkstat == PALMAS_USB_STATE_VBUS) {
+ 			palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
+-			extcon_set_cable_state(&palmas_usb->edev, "USB", false);
++			extcon_set_cable_state(palmas_usb->edev, "USB", false);
+ 			dev_info(palmas_usb->dev, "USB cable is detached\n");
+ 		} else {
+ 			dev_dbg(palmas_usb->dev,
+@@ -93,7 +93,7 @@ static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
+ 			PALMAS_USB_ID_INT_LATCH_CLR,
+ 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_GND);
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
+-		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
++		extcon_set_cable_state(palmas_usb->edev, "USB-HOST", true);
+ 		dev_info(palmas_usb->dev, "USB-HOST cable is attached\n");
+ 	} else if ((set & PALMAS_USB_ID_INT_SRC_ID_FLOAT) &&
+ 				(id_src & PALMAS_USB_ID_INT_SRC_ID_FLOAT)) {
+@@ -101,17 +101,17 @@ static irqreturn_t palmas_id_irq_handler(int irq, void *_palmas_usb)
+ 			PALMAS_USB_ID_INT_LATCH_CLR,
+ 			PALMAS_USB_ID_INT_EN_HI_CLR_ID_FLOAT);
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
+-		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", false);
++		extcon_set_cable_state(palmas_usb->edev, "USB-HOST", false);
+ 		dev_info(palmas_usb->dev, "USB-HOST cable is detached\n");
+ 	} else if ((palmas_usb->linkstat == PALMAS_USB_STATE_ID) &&
+ 				(!(set & PALMAS_USB_ID_INT_SRC_ID_GND))) {
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_DISCONNECT;
+-		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", false);
++		extcon_set_cable_state(palmas_usb->edev, "USB-HOST", false);
+ 		dev_info(palmas_usb->dev, "USB-HOST cable is detached\n");
+ 	} else if ((palmas_usb->linkstat == PALMAS_USB_STATE_DISCONNECT) &&
+ 				(id_src & PALMAS_USB_ID_INT_SRC_ID_GND)) {
+ 		palmas_usb->linkstat = PALMAS_USB_STATE_ID;
+-		extcon_set_cable_state(&palmas_usb->edev, "USB-HOST", true);
++		extcon_set_cable_state(palmas_usb->edev, "USB-HOST", true);
+ 		dev_info(palmas_usb->dev, " USB-HOST cable is attached\n");
  	}
  
- 	/* Initialize extcon device */
--	info->edev = devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
--				  GFP_KERNEL);
--	if (!info->edev) {
-+	info->edev = devm_extcon_dev_allocate(&pdev->dev,
-+					      max77693_extcon_cable);
-+	if (IS_ERR(info->edev)) {
- 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
- 		ret = -ENOMEM;
- 		goto err_irq;
- 	}
- 	info->edev->name = DEV_NAME;
- 	info->edev->dev.parent = &pdev->dev;
--	info->edev->supported_cable = max77693_extcon_cable;
-+
- 	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
- 	if (ret) {
+@@ -187,15 +187,20 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, palmas_usb);
+ 
+-	palmas_usb->edev.supported_cable = palmas_extcon_cable;
+-	palmas_usb->edev.dev.parent = palmas_usb->dev;
+-	palmas_usb->edev.name = kstrdup(node->name, GFP_KERNEL);
+-	palmas_usb->edev.mutually_exclusive = mutually_exclusive;
++	palmas_usb->edev = devm_extcon_dev_allocate(&pdev->dev,
++						    palmas_extcon_cable);
++	if (IS_ERR(palmas_usb->edev)) {
++		dev_err(&pdev->dev, "failed to allocate extcon device\n");
++		return -ENOMEM;
++	}
++	palmas_usb->edev->name = kstrdup(node->name, GFP_KERNEL);
++	palmas_usb->edev->dev.parent = palmas_usb->dev;
++	palmas_usb->edev->mutually_exclusive = mutually_exclusive;
+ 
+-	status = devm_extcon_dev_register(&pdev->dev, &palmas_usb->edev);
++	status = devm_extcon_dev_register(&pdev->dev, palmas_usb->edev);
+ 	if (status) {
  		dev_err(&pdev->dev, "failed to register extcon device\n");
- 		goto err_irq;
+-		kfree(palmas_usb->edev.name);
++		kfree(palmas_usb->edev->name);
+ 		return status;
  	}
  
--
- 	/* Initialize MUIC register by using platform data or default data */
- 	if (pdata && pdata->muic_data) {
- 		init_data = pdata->muic_data->init_data;
+@@ -209,7 +214,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 		if (status < 0) {
+ 			dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 					palmas_usb->id_irq, status);
+-			kfree(palmas_usb->edev.name);
++			kfree(palmas_usb->edev->name);
+ 			return status;
+ 		}
+ 	}
+@@ -224,7 +229,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 		if (status < 0) {
+ 			dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 					palmas_usb->vbus_irq, status);
+-			kfree(palmas_usb->edev.name);
++			kfree(palmas_usb->edev->name);
+ 			return status;
+ 		}
+ 	}
+@@ -238,7 +243,7 @@ static int palmas_usb_remove(struct platform_device *pdev)
+ {
+ 	struct palmas_usb *palmas_usb = platform_get_drvdata(pdev);
+ 
+-	kfree(palmas_usb->edev.name);
++	kfree(palmas_usb->edev->name);
+ 
+ 	return 0;
+ }
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 9974e38..b8f87b7 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -415,7 +415,7 @@ struct palmas_usb {
+ 	struct palmas *palmas;
+ 	struct device *dev;
+ 
+-	struct extcon_dev edev;
++	struct extcon_dev *edev;
+ 
+ 	int id_otg_irq;
+ 	int id_irq;
 -- 
 1.8.0
 
