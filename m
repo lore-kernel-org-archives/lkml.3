@@ -1,144 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951AbaDYMdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:33:50 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:59888 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849AbaDYMds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:33:48 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Rob Herring <robherring2@gmail.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: [RFC PATCH] mfd: pm8x41: Naive function devices registration
-Date: Fri, 25 Apr 2014 15:32:51 +0300
-Message-Id: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753900AbaDYMdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:33:23 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33594 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850AbaDYMdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 08:33:17 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
+        <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH -mm 1/6] memcg: get rid of memcg_create_cache_name
+Date: Fri, 25 Apr 2014 16:33:07 +0400
+Message-ID: <5e485fc5c7374726eecace315cad91ff4d8be38f.1398428532.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1398428532.git.vdavydov@parallels.com>
+References: <cover.1398428532.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Instead of calling back to memcontrol.c from kmem_cache_create_memcg in
+order to just create the name of a per memcg cache, let's allocate it in
+place. We only need to pass the memcg name to kmem_cache_create_memcg
+for that - everything else can be done in slab_common.c.
 
-Currently functions that exist in both the controller at the
-same address offset can not be specified with the same names.
+This patch also turns the buffer used to store memcg names to be
+statically allocated while before it was kmalloc'ed on first use.
+Saving those 256 bytes isn't worth complicating the code. If someone is
+so tight on memory, they'd better disable CONFIG_MEMCG_KMEM altogether.
 
-Adding Unique Slave ID device address to prefix function
-device names fixes this.
-
-Function devices are SPMI devices, so register them on
-SPMI bus.
-
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- drivers/mfd/pm8x41.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 57 insertions(+), 4 deletions(-)
+ include/linux/memcontrol.h |    2 --
+ include/linux/slab.h       |    3 ++-
+ mm/memcontrol.c            |   27 +++------------------------
+ mm/slab_common.c           |    7 +++++--
+ 4 files changed, 10 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/mfd/pm8x41.c b/drivers/mfd/pm8x41.c
-index c85e0d6..29bc1e7 100644
---- a/drivers/mfd/pm8x41.c
-+++ b/drivers/mfd/pm8x41.c
-@@ -11,9 +11,10 @@
-  */
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/spmi.h>
-+#include <linux/of.h>
- #include <linux/regmap.h>
--#include <linux/of_platform.h>
-+#include <linux/slab.h>
-+#include <linux/spmi.h>
-
- static const struct regmap_config pm8x41_regmap_config = {
- 	.reg_bits	= 16,
-@@ -23,7 +24,7 @@ static const struct regmap_config pm8x41_regmap_config = {
-
- static int pm8x41_remove_child(struct device *dev, void *unused)
- {
--	platform_device_unregister(to_platform_device(dev));
-+	device_unregister(dev);
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 1fa23244fe37..dfc2929a3877 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -492,8 +492,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+ 
+ int memcg_cache_id(struct mem_cgroup *memcg);
+ 
+-char *memcg_create_cache_name(struct mem_cgroup *memcg,
+-			      struct kmem_cache *root_cache);
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache);
+ void memcg_free_cache_params(struct kmem_cache *s);
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index ecbec9ccb80d..86e5b26fbdab 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -117,7 +117,8 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
+ 			void (*)(void *));
+ #ifdef CONFIG_MEMCG_KMEM
+ struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *,
+-					   struct kmem_cache *);
++					   struct kmem_cache *,
++					   const char *);
+ #endif
+ void kmem_cache_destroy(struct kmem_cache *);
+ int kmem_cache_shrink(struct kmem_cache *);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 19d620b3d69c..605d72044533 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3105,29 +3105,6 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
  	return 0;
  }
-
-@@ -32,9 +33,40 @@ static void pm8x41_remove(struct spmi_device *sdev)
- 	device_for_each_child(&sdev->dev, NULL, pm8x41_remove_child);
- }
-
-+static struct spmi_device *pm8x41_function_alloc(struct spmi_controller *ctrl,
-+					       struct spmi_device *parent,
-+					       struct device_node *node)
-+{
-+	struct spmi_device *function;
-+	u32 reg;
-+	int err;
-+
-+	err = of_property_read_u32(node, "reg", &reg);
-+	if (err) {
-+		dev_err(&parent->dev,
-+			"node %s err (%d) does not have 'reg' property\n",
-+			node->full_name, err);
-+		return NULL;
-+	}
-+
-+	function = spmi_device_alloc(ctrl);
-+	if (!function)
-+		return NULL;
-+
-+	function->dev.parent = &parent->dev;
-+	function->dev.of_node = node;
-+	function->usid = parent->usid;
-+
-+	dev_set_name(&function->dev, "%02x-%04x", function->usid, reg);
-+
-+	return function;
-+}
-+
- static int pm8x41_probe(struct spmi_device *sdev)
+ 
+-char *memcg_create_cache_name(struct mem_cgroup *memcg,
+-			      struct kmem_cache *root_cache)
+-{
+-	static char *buf = NULL;
+-
+-	/*
+-	 * We need a mutex here to protect the shared buffer. Since this is
+-	 * expected to be called only on cache creation, we can employ the
+-	 * slab_mutex for that purpose.
+-	 */
+-	lockdep_assert_held(&slab_mutex);
+-
+-	if (!buf) {
+-		buf = kmalloc(NAME_MAX + 1, GFP_KERNEL);
+-		if (!buf)
+-			return NULL;
+-	}
+-
+-	cgroup_name(memcg->css.cgroup, buf, NAME_MAX + 1);
+-	return kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
+-			 memcg_cache_id(memcg), buf);
+-}
+-
+ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
+ 			     struct kmem_cache *root_cache)
  {
-+	struct device_node *node;
- 	struct regmap *regmap;
-+	int err = 0;
-
- 	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
- 	if (IS_ERR(regmap)) {
-@@ -42,7 +74,24 @@ static int pm8x41_probe(struct spmi_device *sdev)
- 		return PTR_ERR(regmap);
- 	}
-
--	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
-+	for_each_available_child_of_node(sdev->dev.of_node, node) {
-+		struct spmi_device *function;
-+
-+		dev_dbg(&sdev->dev, "adding child %s\n", node->full_name);
-+
-+		function = pm8x41_function_alloc(sdev->ctrl, sdev, node);
-+		if (!function)
-+			continue;
-+
-+		err = device_add(&function->dev);
-+		if (err < 0) {
-+			dev_err(&function->dev, "Can't add %s, status %d\n",
-+				dev_name(&function->dev), err);
-+			break;
-+		}
-+	}
-+
-+	return err;
- }
-
- static const struct of_device_id pm8x41_id_table[] = {
-@@ -61,3 +110,7 @@ static struct spmi_driver pm8x41_driver = {
- 	},
- };
- module_spmi_driver(pm8x41_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Qualcomm SPMI PMIC core driver");
-+MODULE_ALIAS("spmi:pm8x41");
---
-1.8.3.2
+@@ -3168,6 +3145,7 @@ void memcg_free_cache_params(struct kmem_cache *s)
+ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+ 				    struct kmem_cache *root_cache)
+ {
++	static char memcg_name[NAME_MAX + 1];
+ 	struct kmem_cache *cachep;
+ 	int id;
+ 
+@@ -3183,7 +3161,8 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+ 	if (cache_from_memcg_idx(root_cache, id))
+ 		return;
+ 
+-	cachep = kmem_cache_create_memcg(memcg, root_cache);
++	cgroup_name(memcg->css.cgroup, memcg_name, NAME_MAX + 1);
++	cachep = kmem_cache_create_memcg(memcg, root_cache, memcg_name);
+ 	/*
+ 	 * If we could not create a memcg cache, do not complain, because
+ 	 * that's not critical at all as we can always proceed with the root
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 4f16f374392a..6b6397d2e05e 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -264,13 +264,15 @@ EXPORT_SYMBOL(kmem_cache_create);
+  * kmem_cache_create_memcg - Create a cache for a memory cgroup.
+  * @memcg: The memory cgroup the new cache is for.
+  * @root_cache: The parent of the new cache.
++ * @memcg_name: The name of the memory cgroup.
+  *
+  * This function attempts to create a kmem cache that will serve allocation
+  * requests going from @memcg to @root_cache. The new cache inherits properties
+  * from its parent.
+  */
+ struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
+-					   struct kmem_cache *root_cache)
++					   struct kmem_cache *root_cache,
++					   const char *memcg_name)
+ {
+ 	struct kmem_cache *s = NULL;
+ 	char *cache_name;
+@@ -280,7 +282,8 @@ struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
+ 
+ 	mutex_lock(&slab_mutex);
+ 
+-	cache_name = memcg_create_cache_name(memcg, root_cache);
++	cache_name = kasprintf(GFP_KERNEL, "%s(%d:%s)", root_cache->name,
++			       memcg_cache_id(memcg), memcg_name);
+ 	if (!cache_name)
+ 		goto out_unlock;
+ 
+-- 
+1.7.10.4
 
