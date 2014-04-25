@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047AbaDYQJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:09:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29604 "EHLO mga02.intel.com"
+	id S1753135AbaDYQJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:09:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58325 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751892AbaDYQJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:09:17 -0400
+	id S1753058AbaDYQJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:09:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="519794170"
+   d="scan'208";a="519794212"
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 To: <gregkh@linuxfoundation.org>
 Cc: <linux-usb@vger.kernel.org>, <sarah.a.sharp@linux.intel.com>,
         <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>,
+        Denis Turischev <denis@compulab.co.il>, stable@vger.kernel.org,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH v2 0/4] xhci: fixes for 3.15-rc usb-linus
-Date: Fri, 25 Apr 2014 19:20:12 +0300
-Message-Id: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+Subject: [PATCH v2 2/4] xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
+Date: Fri, 25 Apr 2014 19:20:14 +0300
+Message-Id: <1398442816-32538-3-git-send-email-mathias.nyman@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg                                                                                                
-                                                                                                       
-Second try at this xhci fixes series for 3.15-rc usb-linus.                                                         
-Most of them are very small fixes that didn't make                                                     
-it to 3.14, sitting and waiting for 3.15-rc1 to come out.                                              
-                                                                                                       
-Only the "Prefer endpoint context.." patch  by Julius has a bit more content.                          
-                                                                                                       
-These patches are picked together with Sarah, they are tested on top of                                
-3.15-rc1, and apply on your current usb-linus branch                                                   
+From: Denis Turischev <denis.turischev@compulab.co.il>
 
-changes since v1:
+The same issue like with Panther Point chipsets. If the USB ports are
+switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+which will wake the system. Some BIOS have work around for this, but not all.
+One example is Compulab's mini-desktop, the Intense-PC2.
 
-Drop "xhci: Use pci_enable_msix_exact() instead of pci_enable_msix()"
-from this fixes series, and move to for-usb-next (3.16) instead
+The bug can be avoided if the USB ports are switched back to EHCI on
+shutdown.
 
-Add proper stable tags and information to commit messages    
+This patch should be backported to stable kernels as old as 3.12,
+that contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
+"xhci: Fix spurious wakeups after S5 on Haswell"
 
--Mathias                                   
+Signed-off-by: Denis Turischev <denis@compulab.co.il>
+Cc: stable@vger.kernel.org
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-pci.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-
-David Cohen (1):
-  usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
-
-Denis Turischev (1):
-  xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
-
-Igor Gnatenko (1):
-  xhci: extend quirk for Renesas cards
-
-Julius Werner (1):
-  usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
-
- drivers/usb/host/xhci-pci.c  |  6 ++--
- drivers/usb/host/xhci-ring.c | 67 ++++++++++++++++++++------------------------
- drivers/usb/host/xhci.c      |  7 ++---
- drivers/usb/host/xhci.h      |  2 --
- 4 files changed, 37 insertions(+), 45 deletions(-)
-
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 47390e3..1715063 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 		 */
+ 		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
+ 			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++
++		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 -- 
 1.8.3.2
 
