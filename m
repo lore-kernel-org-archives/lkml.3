@@ -1,137 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663AbaDYFRn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 01:17:43 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38153 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaDYFRm (ORCPT
+	id S1751685AbaDYFV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 01:21:58 -0400
+Received: from inet-tsb5.toshiba.co.jp ([202.33.96.24]:64346 "EHLO
+	imx2.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaDYFV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 01:17:42 -0400
-Message-ID: <5359EEBE.2030808@linux.vnet.ibm.com>
-Date: Fri, 25 Apr 2014 10:42:30 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Fri, 25 Apr 2014 01:21:56 -0400
+Message-Id: <201404250521.s3P5L9xO004507@toshiba.co.jp>
+Date: Fri, 25 Apr 2014 14:21:07 +0900
+From: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jason Low <jason.low2@hp.com>
-CC: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com> <1398303035-18255-2-git-send-email-jason.low2@hp.com> <5358E417.8090503@linux.vnet.ibm.com> <20140424120415.GS11096@twins.programming.kicks-ass.net> <20140424124438.GT13658@twins.programming.kicks-ass.net> <1398358417.3509.11.camel@j-VirtualBox> <20140424171453.GZ11096@twins.programming.kicks-ass.net> <1398377917.3509.32.camel@j-VirtualBox>
-In-Reply-To: <1398377917.3509.32.camel@j-VirtualBox>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYg==?= =?UTF-8?B?ZWNrZXI=?= 
+	<fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
+References: <cover.1395322529.git.viresh.kumar@linaro.org>	<201404240725.s3O7PrUv003720@toshiba.co.jp>	<CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>	<201404240832.s3O8WHd0011014@toshiba.co.jp>	<CAKohpokk4rGeP3QfVT5_HBO4pc=22yPBLV78D++y1Ab72y1OJQ@mail.gmail.com>	<201404240924.s3O9OYCC021688@toshiba.co.jp>	<CAKohponA4-cm2_FB=8R8aVEWNhtUfOUebcfzn7W+XR0zKHCtxw@mail.gmail.com>	<201404250031.s3P0V2DY022219@toshiba.co.jp> <CAKohpomQH01gCeUfqFFeHVNX7N7CSyo7zdj3LGBv9=U=cE46EA@mail.gmail.com>
+In-Reply-To: <CAKohpomQH01gCeUfqFFeHVNX7N7CSyo7zdj3LGBv9=U=cE46EA@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042505-7164-0000-0000-0000014C2A6F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
 
-On 04/25/2014 03:48 AM, Jason Low wrote:
-> On Thu, 2014-04-24 at 19:14 +0200, Peter Zijlstra wrote:
->> On Thu, Apr 24, 2014 at 09:53:37AM -0700, Jason Low wrote:
+
+On 2014/04/25 13:51, Viresh Kumar wrote:
+> On 25 April 2014 06:01, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
+>>
+>>>> I can't keep it as a separate patch and so would be required to merge
+>>>> it into my original patch..
 >>>
->>> So I thought that the original rationale (commit 1bd77f2d) behind
->>> updating rq->next_balance in idle_balance() is that, if we are going
->>> idle (!pulled_task), we want to ensure that the next_balance gets
->>> calculated without the busy_factor.
->>>
->>> If the rq is busy, then rq->next_balance gets updated based on
->>> sd->interval * busy_factor. However, when the rq goes from "busy"
->>> to idle, rq->next_balance might still have been calculated under
->>> the assumption that the rq is busy. Thus, if we are going idle, we
->>> would then properly update next_balance without the busy factor
->>> if we update when !pulled_task.
->>>
+>>> And the reason being: "No patch is supposed to break things, otherwise
+>>> git bisect wouldn't work smoothly".. And so git bisect would complain
+>>> this issue after my patch and so I have to merge the fixes you gave into
+>>> the original patch as its not yet merged.
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>
->> Its late here and I'm confused!
->>
->> So the for_each_domain() loop calculates a new next_balance based on
->> ->balance_interval (which has that busy_factor on, right).
->>
->> But if it fails to pull anything, we'll (potentially) iterate the entire
->> tree up to the largest domain; and supposedly set next_balanced to the
->> largest possible interval.
->>
->> So when we go from busy to idle (!pulled_task), we actually set
->> ->next_balance to the longest interval. Whereas the commit you
->> referenced says it sets it to a shorter while.
->>
->> Not seeing it.
+>> Ok, no problem then.
 > 
-> So this is the way I understand that code:
-> 
-> In rebalance_domain, next_balance is suppose to be set to the
-> minimum of all sd->last_balance + interval so that we properly call
-> into rebalance_domains() if one of the domains is due for a balance.
-> 
-> In the domain traversals:
-> 
-> 	if (time_after(next_balance, sd->last_balance + interval))
-> 		next_balance = sd->last_balance + interval;
-> 
-> we update next_balance to a new value if the current next_balance
-> is after, and we only update next_balance to a smaller value.
-> 
-> In rebalance_domains, we have code:
-> 
-> 	interval = sd->balance_interval;
-> 	if (idle != CPU_IDLE)
-> 		interval *= sd->busy_factor;
-> 
-> 	...
-> 
-> 	if (time_after(next_balance, sd->last_balance + interval)) {
-> 		next_balance = sd->last_balance + interval;
-> 
-> 	...
-> 
-> 	rq->next_balance = next_balance;
-> 
-> In the CPU_IDLE case, interval would not include the busy factor,
-> whereas in the !CPU_IDLE case, we multiply the interval by the
-> sd->busy_factor.
-> 
-> So as an example, if a CPU is not idle and we run this:
-> 
-> rebalance_domain()
-> 	interval = 1 ms;
-> 	if (idle != CPU_IDLE)
-> 		interval *= 64;
-> 
-> 	next_balance = sd->last_balance + 64 ms
-> 
-> 	rq->next_balance = next_balance
-> 
-> The rq->next_balance is set to a large value since the CPU is not idle.
-> 
-> Then, let's say the CPU then goes idle 1 ms later. The
-> rq->next_balance can be up to 63 ms later, because we computed
-> it when the CPU is not idle. Now that we are going idle,
-> we would have to wait a long time for the next balance.
-> 
-> So I believe that the initial reason why rq->next_balance was
-> updated in idle_balance is that if the CPU is in the process 
-> of going idle (!pulled_task in idle_balance()), we can reset the
-> rq->next_balance based on the interval = 1 ms, as oppose to
-> having it remain up to 64 ms later (in idle_balance(), interval
-> doesn't get multiplied by sd->busy_factor).
-
-I agree with this. However I am concerned with an additional point that
-I have mentioned in my reply to Peter's mail on this thread.
-
-Should we verify if rq->next_balance update is independent of
-pulled_tasks? sd->balance_interval is changed during load_balance() and
-rq->next_balance should perhaps consider that?
-
-Regards
-Preeti U Murthy
-> 
+> Do you want me to add your Tested-by for my next version ?
 > 
 > 
 
+Sure.
+
+Tested-by: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
+
+-- 
+Toshiba Corporate Software Engineering Center
+Daniel SANGORRIN
+E-mail:  daniel.sangorrin@toshiba.co.jp
