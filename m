@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaDYSmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346AbaDYSmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:42:16 -0400
-Date: Fri, 25 Apr 2014 14:41:47 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, lwoodman@redhat.com, peterz@infradead.org,
-        mgorman@suse.de, dave.hansen@intel.com, sunil.k.pandey@intel.com
-Subject: [PATCH] mm,numa: remove BUG_ON in __handle_mm_fault
-Message-ID: <20140425144147.679a7608@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S1753973AbaDYSnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:43:41 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38689 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706AbaDYSnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 14:43:40 -0400
+Date: Fri, 25 Apr 2014 20:43:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Message-ID: <20140425184327.GH26782@laptop.programming.kicks-ass.net>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+ <535911DC.9050109@linaro.org>
+ <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com>
+ <2713863.BLQTYQm2Oa@vostro.rjw.lan>
+ <20140425132055.GC11096@twins.programming.kicks-ass.net>
+ <535A94E3.5080004@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535A94E3.5080004@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
-mmap_sem held for reading, which means a pmd can be instantiated
-and/or turned into a numa one while __handle_mm_fault is examining
-the value of orig_pmd.
+On Fri, Apr 25, 2014 at 07:01:23PM +0200, Daniel Lezcano wrote:
+> As the sysctl is some kind of ABI, I would like to make sure we reach a
+> consensus and discuss a bit about that.
 
-If that happens, __handle_mm_fault should just return and let
-the page fault retry, instead of throwing an oops.
+We could make it a sysfs file, like /sys/power/state, which when read
+provides the words it takes.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
----
- mm/memory.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index d0f0bef..9edccb2 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3900,8 +3900,9 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 	}
- 
--	/* THP should already have been handled */
--	BUG_ON(pmd_numa(*pmd));
-+	/* The PMD became NUMA while we examined orig_pmd. Return & retry */
-+	if (pmd_numa(*pmd))
-+		return 0;
- 
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+That is more flexible than a numeric sysctl for which we have to keep an
+enumeration.
