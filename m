@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaDYFrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 01:47:05 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:34510 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaDYFqu (ORCPT
+	id S1751486AbaDYFyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 01:54:46 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:47579 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaDYFyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 01:46:50 -0400
-Message-ID: <1398404806.7893.18.camel@marge.simpson.net>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com,
-        chegu_vinod@hp.com
-Date: Fri, 25 Apr 2014 07:46:46 +0200
-In-Reply-To: <1398396806.12047.6.camel@j-VirtualBox>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-	 <20140424071541.GZ26782@laptop.programming.kicks-ass.net>
-	 <1398357789.3509.6.camel@j-VirtualBox>
-	 <20140424165219.GX11096@twins.programming.kicks-ass.net>
-	 <1398393955.5273.4.camel@marge.simpson.net>
-	 <1398396806.12047.6.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Fri, 25 Apr 2014 01:54:44 -0400
+Message-ID: <5359F894.4070205@linaro.org>
+Date: Fri, 25 Apr 2014 11:24:28 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: kgene.kim@samsung.com, t.figa@samsung.com, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
+        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, sajjan.linux@gmail.com,
+        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv4 3/7] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
+References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-4-git-send-email-cw00.choi@samsung.com> <5359E4E6.90102@linaro.org> <5359F5F5.7030109@samsung.com>
+In-Reply-To: <5359F5F5.7030109@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 20:33 -0700, Jason Low wrote: 
-> On Fri, 2014-04-25 at 04:45 +0200, Mike Galbraith wrote:
-> > On Thu, 2014-04-24 at 18:52 +0200, Peter Zijlstra wrote: 
-> > > On Thu, Apr 24, 2014 at 09:43:09AM -0700, Jason Low wrote:
-> > > > If the below patch is what you were referring to, I believe this
-> > > > can help too. This was also something that I was testing out before
-> > > > we went with those patches which compares avg_idle with idle balance
-> > > > cost. I recall seeing somewhere around a +7% performance improvement
-> > > > in at least least 1 of the AIM7 workloads. I can do some more testing
-> > > > with this.
-> > > 
-> > > Yes, exactly that.
-> > > 
-> > > I can't remember the details, but I suspect we feared the less agressive
-> > > idle balance due to that patch (it will only pull a single task, instead
-> > > of multiple) would cause more idle_balance invocations and thereby
-> > > decrease throughput.
-> > > 
-> > > So I suppose something with _many_ bursty threads which leads to severe
-> > > inequalities would be the workload to trigger that.
-> > > 
-> > > Not sure we've ever seen that.. maybe Mike remembers, he seems to have a
-> > > head for such details.
-> > 
-> > I don't recall ever seeing such.
+On 04/25/2014 11:13 AM, Chanwoo Choi wrote:
+> Hi,
 > 
-> Hmmm, could commit: 1b9508f6831e (sched: Rate-limit newidle) be related
-> to what Peter's referring to? The patch mentioned that the rate-limit
-> benefited "sysbench oltp".
+> On 04/25/2014 01:30 PM, Tushar Behera wrote:
+>> On 04/25/2014 06:46 AM, Chanwoo Choi wrote:
+>>> This patch fix the offset of CPU boot address and don't need to send smc call
+>>> of SMC_CMD_CPU1BOOT command for secondary CPU boot because Exynos3250 removes
+>>> WFE in secure mode.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>  arch/arm/mach-exynos/firmware.c | 10 ++++++++--
+>>>  1 file changed, 8 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+>>> index aa01c42..386d01d 100644
+>>> --- a/arch/arm/mach-exynos/firmware.c
+>>> +++ b/arch/arm/mach-exynos/firmware.c
+>>> @@ -31,11 +31,17 @@ static int exynos_do_idle(void)
+>>>  static int exynos_cpu_boot(int cpu)
+>>>  {
+>>>  	/*
+>>> +	 * Exynos3250 doesn't need to send smc command for secondary CPU boot
+>>> +	 * because Exynos3250 removes WFE in secure mode.
+>>> +	 */
+>>> +	if (soc_is_exynos3250())
+>>> +		return 0;
+>>> +	/*
+>>>  	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
+>>>  	 * But, Exynos4212 has only one secondary CPU so second parameter
+>>>  	 * isn't used for informing secure firmware about CPU id.
+>>>  	 */
+>>> -	if (soc_is_exynos4212())
+>>> +	else if (soc_is_exynos4212())
+>>
+>> This changes is not required.
+> 
+> Do you mean it as following?
+> 
+> 	if (soc_is_exynos3250())
+> 		return 0
+> 
+> 	if (soc_is_exynos4212())
+> 		cpu = 0;
+> 
 
-That's the opposite, was to prevent way too much idle balancing, which
-was demolishing fast mover loads.
+Yes, logically the flow would be same and code would be more readable.
 
--Mike
+>>
+>>>  		cpu = 0;
+>>>  
+>>>  	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
+>>> @@ -46,7 +52,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+>>>  {
+>>>  	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
+>>>  
+>>> -	if (!soc_is_exynos4212())
+>>> +	if (!soc_is_exynos4212() && !soc_is_exynos3250())
+>>>  		boot_reg += 4*cpu;
+>>>  
+>>>  	__raw_writel(boot_addr, boot_reg);
+>>>
+>>
+>>
+> 
 
+
+-- 
+Tushar Behera
