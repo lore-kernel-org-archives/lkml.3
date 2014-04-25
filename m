@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaDYHNP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 03:13:15 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:21115 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaDYHNM (ORCPT
+	id S1751552AbaDYHUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 03:20:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49364 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaDYHUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 03:13:12 -0400
-Message-ID: <1398409990.12047.27.camel@j-VirtualBox>
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-From: Jason Low <jason.low2@hp.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Date: Fri, 25 Apr 2014 00:13:10 -0700
-In-Reply-To: <5359EEBE.2030808@linux.vnet.ibm.com>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-2-git-send-email-jason.low2@hp.com>
-	 <5358E417.8090503@linux.vnet.ibm.com>
-	 <20140424120415.GS11096@twins.programming.kicks-ass.net>
-	 <20140424124438.GT13658@twins.programming.kicks-ass.net>
-	 <1398358417.3509.11.camel@j-VirtualBox>
-	 <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-	 <1398377917.3509.32.camel@j-VirtualBox>
-	 <5359EEBE.2030808@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 25 Apr 2014 03:20:12 -0400
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>
+CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH] sctp: reset flowi4_oif parameter on route lookup
+Date: Fri, 25 Apr 2014 15:29:38 +0800
+Message-ID: <1398410978-15954-1-git-send-email-xufeng.zhang@windriver.com>
+X-Mailer: git-send-email 1.7.0.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 10:42 +0530, Preeti U Murthy wrote:
-> I agree with this. However I am concerned with an additional point that
-> I have mentioned in my reply to Peter's mail on this thread.
-> 
-> Should we verify if rq->next_balance update is independent of
-> pulled_tasks? sd->balance_interval is changed during load_balance() and
-> rq->next_balance should perhaps consider that?
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in ip_route_output_slow()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-Hi Preeti,
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-I agree that we may want to consider having rq->next balance update be
-independent of pulled_task. As you mentioned, load_balance() can modify
-the balance_interval.
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+---
+ net/sctp/protocol.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-There are a few things I'm wondering if we would need to also add then:
-
-1. In the case that this_rq->avg_idle < sysctl_sched_migration_cost, we
-   would need to also traverse the domains to properly compute
-   next_balance (without the sd->busy_factor) as we would be going idle.
-   Otherwise, next_balance could get set to jiffies + HZ while the
-   CPU goes idle.
-
-2. In the domain traversal, when we pulled_task, we might want to
-   multiply interval by sd->busy_factor because the rq will remain busy.
-
-3. If this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost, then we
-   may still want to compute next_balance, rather than simply break out
-   of the sched domain traversal loop. This is also to avoid having
-   the next_balance = jiffies + HZ when a domain should rebalance
-   less than 1 second later.
-
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index c09757f..f8a5968 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -493,6 +493,10 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+ 			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			/* Reset flowi4_oif so that it won't be incorrectly used
++			 * as input parameter to routing lookups.
++			 */
++			fl4->flowi4_oif = 0;
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
+-- 
+1.7.0.2
 
