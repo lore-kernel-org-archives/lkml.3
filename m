@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944AbaDYAiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:38:04 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:20553 "EHLO
+	id S1751865AbaDYAiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:38:01 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:20551 "EHLO
 	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbaDYAhR (ORCPT
+	with ESMTP id S1751438AbaDYAhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:37:17 -0400
+	Thu, 24 Apr 2014 20:37:16 -0400
 From: Bill Sumner <bill.sumner@hp.com>
 To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
         joro@8bytes.org
@@ -15,9 +15,9 @@ Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, ddutile@redhat.com,
         ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
         doug.hatch@hp.com, zhenhua@hp.com, jerry.hoemann@hp.com
-Subject: [PATCH 2/8] iommu/vt-d: Consolidate lines for a new private header
-Date: Thu, 24 Apr 2014 18:36:32 -0600
-Message-Id: <1398386198-19304-3-git-send-email-bill.sumner@hp.com>
+Subject: [PATCH 4/8] iommu/vt-d: Update iommu_attach_domain() and its callers
+Date: Thu, 24 Apr 2014 18:36:34 -0600
+Message-Id: <1398386198-19304-5-git-send-email-bill.sumner@hp.com>
 X-Mailer: git-send-email 1.7.11.3
 In-Reply-To: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
 References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
@@ -25,130 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- In intel-iommu.c, move downward the few lines near the
- front that should not move to an intel-iommu-private.h
- file (mostly data-item definitions.) Also move upward
- a couple of inline functions that allocate and free pages.
- This leaves at the front of the file a consolidated block
- of the lines that would move to an intel-iommu-private.h file.
+Allow specification of the domain-id for the new domain.
+This patch only adds the 'did' parameter to iommu_attach_domain()
+and modifies all of its callers to specify the default value of -1
+which says "no did specified, allocate a new one".
+
+This is no functional change from current behaviour -- just enables
+a functional change to be made in a later patch.
 
 Signed-off-by: Bill Sumner <bill.sumner@hp.com>
 ---
- drivers/iommu/intel-iommu.c | 74 +++++++++++++++++++++++----------------------
- 1 file changed, 38 insertions(+), 36 deletions(-)
+ drivers/iommu/intel-iommu.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index f80b4bb..49fdac5 100644
+index 4116377..226c1d0 100644
 --- a/drivers/iommu/intel-iommu.c
 +++ b/drivers/iommu/intel-iommu.c
-@@ -163,17 +163,6 @@ static inline unsigned long virt_to_dma_pfn(void *p)
- 	return page_to_dma_pfn(virt_to_page(p));
+@@ -1181,7 +1181,8 @@ static struct dmar_domain *alloc_domain(bool vm)
  }
  
--/* global iommu list, set NULL for ignored DMAR units */
--static struct intel_iommu **g_iommus;
--
--static void __init check_tylersburg_isoch(void);
--static int rwbf_quirk;
--
--/*
-- * set to 1 to panic kernel if can't successfully enable VT-d
-- * (used when kernel is launched w/ TXT)
-- */
--static int force_on;
- 
- /*
-  * 0: Present
-@@ -312,15 +301,6 @@ static inline int first_pte_in_page(struct dma_pte *pte)
- 	return !((unsigned long)pte & ~VTD_PAGE_MASK);
- }
- 
--/*
-- * This domain is a statically identity mapping domain.
-- *	1. This domain creats a static 1:1 mapping to all usable memory.
-- *	2. It maps to each iommu if successful.
-- *	3. Each iommu mapps to this domain if successful.
-- */
--static struct dmar_domain *si_domain;
--static int hw_pass_through = 1;
--
- /* devices under the same p2p bridge are owned in one domain */
- #define DOMAIN_FLAG_P2P_MULTIPLE_DEVICES (1 << 0)
- 
-@@ -394,12 +374,50 @@ struct dmar_atsr_unit {
- 	u8 include_all:1;		/* include all ports */
- };
- 
-+static inline void *alloc_pgtable_page(int node)
-+{
-+	struct page *page;
-+	void *vaddr = NULL;
-+
-+	page = alloc_pages_node(node, GFP_ATOMIC | __GFP_ZERO, 0);
-+	if (page)
-+		vaddr = page_address(page);
-+	return vaddr;
-+}
-+
-+static inline void free_pgtable_page(void *vaddr)
-+{
-+	free_page((unsigned long)vaddr);
-+}
-+
- static LIST_HEAD(dmar_atsr_units);
- static LIST_HEAD(dmar_rmrr_units);
- 
- #define for_each_rmrr_units(rmrr) \
- 	list_for_each_entry(rmrr, &dmar_rmrr_units, list)
- 
-+
-+static void __init check_tylersburg_isoch(void);
-+
-+/* global iommu list, set NULL for ignored DMAR units */
-+static struct intel_iommu **g_iommus;
-+static int rwbf_quirk;
-+
-+/*
-+ * set to 1 to panic kernel if can't successfully enable VT-d
-+ * (used when kernel is launched w/ TXT)
-+ */
-+static int force_on;
-+
-+/*
-+ * This domain is a statically identity mapping domain.
-+ *	1. This domain creats a static 1:1 mapping to all usable memory.
-+ *	2. It maps to each iommu if successful.
-+ *	3. Each iommu mapps to this domain if successful.
-+ */
-+static struct dmar_domain *si_domain;
-+static int hw_pass_through = 1;
-+
- static void flush_unmaps_timeout(unsigned long data);
- 
- static DEFINE_TIMER(unmap_timer,  flush_unmaps_timeout, 0, 0);
-@@ -494,22 +512,6 @@ static struct kmem_cache *iommu_domain_cache;
- static struct kmem_cache *iommu_devinfo_cache;
- static struct kmem_cache *iommu_iova_cache;
- 
--static inline void *alloc_pgtable_page(int node)
--{
--	struct page *page;
--	void *vaddr = NULL;
--
--	page = alloc_pages_node(node, GFP_ATOMIC | __GFP_ZERO, 0);
--	if (page)
--		vaddr = page_address(page);
--	return vaddr;
--}
--
--static inline void free_pgtable_page(void *vaddr)
--{
--	free_page((unsigned long)vaddr);
--}
--
- static inline void *alloc_domain_mem(void)
+ static int iommu_attach_domain(struct dmar_domain *domain,
+-			       struct intel_iommu *iommu)
++			       struct intel_iommu *iommu,
++			       int domain_number)
  {
- 	return kmem_cache_alloc(iommu_domain_cache, GFP_ATOMIC);
+ 	int num;
+ 	unsigned long ndomains;
+@@ -1191,12 +1192,15 @@ static int iommu_attach_domain(struct dmar_domain *domain,
+ 
+ 	spin_lock_irqsave(&iommu->lock, flags);
+ 
+-	num = find_first_zero_bit(iommu->domain_ids, ndomains);
+-	if (num >= ndomains) {
+-		spin_unlock_irqrestore(&iommu->lock, flags);
+-		printk(KERN_ERR "IOMMU: no free domain ids\n");
+-		return -ENOMEM;
+-	}
++	if (domain_number < 0) {
++		num = find_first_zero_bit(iommu->domain_ids, ndomains);
++		if (num >= ndomains) {
++			spin_unlock_irqrestore(&iommu->lock, flags);
++			pr_err("IOMMU: no free domain ids\n");
++			return -ENOMEM;
++		}
++	} else
++		num = domain_number;
+ 
+ 	domain->id = num;
+ 	domain->iommu_count++;
+@@ -1875,6 +1879,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 	struct pci_dev *dev_tmp = NULL;
+ 	unsigned long flags;
+ 	u8 bus, devfn, bridge_bus, bridge_devfn;
++	int did = -1;   /* Default to "no domain_id supplied" */
+ 
+ 	domain = find_domain(dev);
+ 	if (domain)
+@@ -1915,7 +1920,7 @@ static struct dmar_domain *get_domain_for_dev(struct device *dev, int gaw)
+ 	domain = alloc_domain(false);
+ 	if (!domain)
+ 		goto error;
+-	if (iommu_attach_domain(domain, iommu)) {
++	if (iommu_attach_domain(domain, iommu, did)) {
+ 		free_domain_mem(domain);
+ 		domain = NULL;
+ 		goto error;
+@@ -2083,7 +2088,7 @@ static int __init si_domain_init(int hw)
+ 	si_domain->flags = DOMAIN_FLAG_STATIC_IDENTITY;
+ 
+ 	for_each_active_iommu(iommu, drhd) {
+-		ret = iommu_attach_domain(si_domain, iommu);
++		ret = iommu_attach_domain(si_domain, iommu, (int) -1);
+ 		if (ret) {
+ 			domain_exit(si_domain);
+ 			return -EFAULT;
 -- 
 Bill Sumner <bill.sumner@hp.com>
 
