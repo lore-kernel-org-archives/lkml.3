@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaDYAb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:31:59 -0400
-Received: from imx12.toshiba.co.jp ([61.202.160.132]:36202 "EHLO
-	imx12.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaDYAb5 (ORCPT
+	id S1751351AbaDYAhC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:37:02 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:59647 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaDYAg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:31:57 -0400
-Message-Id: <201404250031.s3P0V2DY022219@toshiba.co.jp>
-Date: Fri, 25 Apr 2014 09:31:02 +0900
-From: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYg==?= =?UTF-8?B?ZWNrZXI=?= 
-	<fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
-References: <cover.1395322529.git.viresh.kumar@linaro.org>	<201404240725.s3O7PrUv003720@toshiba.co.jp>	<CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>	<201404240832.s3O8WHd0011014@toshiba.co.jp>	<CAKohpokk4rGeP3QfVT5_HBO4pc=22yPBLV78D++y1Ab72y1OJQ@mail.gmail.com>	<201404240924.s3O9OYCC021688@toshiba.co.jp> <CAKohponA4-cm2_FB=8R8aVEWNhtUfOUebcfzn7W+XR0zKHCtxw@mail.gmail.com>
-In-Reply-To: <CAKohponA4-cm2_FB=8R8aVEWNhtUfOUebcfzn7W+XR0zKHCtxw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Apr 2014 20:36:59 -0400
+From: Bill Sumner <bill.sumner@hp.com>
+To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
+        joro@8bytes.org
+Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
+        doug.hatch@hp.com, zhenhua@hp.com, jerry.hoemann@hp.com
+Subject: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy DMA/IO
+Date: Thu, 24 Apr 2014 18:36:30 -0600
+Message-Id: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following series implements a fix for:
+A kdump problem about DMA that has been discussed for a long time.
+That is, when a kernel panics and boots into the kdump kernel, DMA that was
+started by the panicked kernel is not stopped before the kdump kernel is booted;
+and the kdump kernel disables the IOMMU while this DMA continues.
+This causes the IOMMU to stop translating the DMA addresses as IOVAs and
+begin to treat them as physical memory addresses -- which causes the DMA to either:
+1. generate DMAR errors or
+2. generate PCI SERR errors or
+3. transfer data to or from incorrect areas of memory.
+Often this causes the dump to fail.
 
->> I can't keep it as a separate patch and so would be required to merge
->> it into my original patch..
-> 
-> And the reason being: "No patch is supposed to break things, otherwise
-> git bisect wouldn't work smoothly".. And so git bisect would complain
-> this issue after my patch and so I have to merge the fixes you gave into
-> the original patch as its not yet merged.
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This patch set modifies the behavior of the Intel iommu in the crashdump kernel: 
+1. to accept the iommu hardware in an active state,
+2. to leave the current translations in-place so that legacy DMA will continue
+   using its current buffers until the device drivers in the crashdump kernel
+   initialize and initialize their devices,
+3. to use different portions of the iova address ranges for the device drivers
+   in the crashdump kernel than the iova ranges that were in-use at the time
+   of the panic.  
 
-Ok, no problem then.
+Advantages of this approach:
+1. All manipulation of the IO-device is done by the Linux device-driver
+   for that device.
+2. This approach behaves in a manner very similar to operation without an
+   active iommu.
+3. Any activity between the IO-device and its RMRR areas is handled by the
+   device-driver in the same manner as during a non-kdump boot.
+4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
+   This supports the practice of creating a special kdump kernel without
+   drivers for any devices that are not required for taking a crashdump. 
+5. Minimal code-changes among the existing mainline intel-iommu code.
 
-Thanks,
-Daniel
+Summary of changes in this patch set:
+1. Updated to a more current top-of-tree and merged the code with the
+   large number of changes that were recently taken-in to intel-iommu.c
+2. Returned to the structure of a patch-set
+3. Enabled the intel-iommu driver to consist of multiple *.c files
+   by moving many of the #defines, prototypes, and inline functions
+   into a new file: intel-iommu-private.h (First three patches implement
+   only this enhancement -- could be applied independent of the last 5)
+4. Moved the new "crashdump fix" code into a new file: intel-iommu-kdump.c 
+5. Removed the pr_debug constructs from the new code that implements the
+   "crashdump fix" -- making the code much cleaner and easier to read.
+6. Miscellaneous cleanups such as enum-values for return-codes.
+7. Simplified the code that retrieves the values needed to initialize a new
+   domain by using the linked-list of previously-collected values
+   instead of stepping back into the tree of translation tables.
+
+Bill Sumner (8):
+  Fix a few existing lines for checkpatch.pl
+  Consolidate lines for a new private header
+  Create intel-iommu-private.h
+  Update iommu_attach_domain() and its callers
+  Add Items needed for fixing crashdump to private header
+  Create intel-iommu-kdump.c
+  Add domain-id functions to intel-iommu-kdump.c
+  Add remaining changes to intel-iommu.c to fix crashdump
+
+ drivers/iommu/Makefile              |   2 +-
+ drivers/iommu/intel-iommu-kdump.c   | 629 ++++++++++++++++++++++++++++++++++++
+ drivers/iommu/intel-iommu-private.h | 457 ++++++++++++++++++++++++++
+ drivers/iommu/intel-iommu.c         | 512 ++++++++---------------------
+ 4 files changed, 1229 insertions(+), 371 deletions(-)
+ create mode 100644 drivers/iommu/intel-iommu-kdump.c
+ create mode 100644 drivers/iommu/intel-iommu-private.h
 
 -- 
-Toshiba Corporate Software Engineering Center
-Daniel SANGORRIN
-E-mail:  daniel.sangorrin@toshiba.co.jp
+Bill Sumner <bill.sumner@hp.com>
+
