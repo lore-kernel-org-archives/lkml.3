@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaDYRkZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:40:25 -0400
-Received: from f179.i.mail.ru ([94.100.185.139]:55201 "EHLO f179.i.mail.ru"
+	id S1754167AbaDYRkv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:40:51 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:58167 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751989AbaDYRkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:40:21 -0400
-X-Greylist: delayed 11209 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 13:40:21 EDT
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?R3JlZyBLSA==?= <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>, jon@ringle.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSCB2NyAxLzJdIHNlcmlhbDogc2MxNmlzN3h4?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.0]
-Date: Fri, 25 Apr 2014 21:40:18 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1398447618.26477952@f179.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <20140425172640.GA27841@kroah.com>
-References: <1398387367-4047-1-git-send-email-jon@ringle.org>
- <20140425172640.GA27841@kroah.com>
+	id S1752592AbaDYRkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:40:23 -0400
+From: Mathieu Souchaud <mattieu.souchaud@free.fr>
+To: tony.luck@intel.com, bp@alien8.de, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Cc: Mathieu Souchaud <mattieu.souchaud@free.fr>
+Subject: [PATCH] x86/mce: Improve mcheck_init_device() error handling.
+Date: Fri, 25 Apr 2014 19:40:04 +0200
+Message-Id: <1398447604-21471-1-git-send-email-mattieu.souchaud@free.fr>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3PHeaWQ009322
 
-Fri, 25 Apr 2014 10:26:40 -0700 Ğ¾Ñ‚ Greg KH <gregkh@linuxfoundation.org>:
-> On Thu, Apr 24, 2014 at 08:56:06PM -0400, jon@ringle.org wrote:
-> > From: Jon Ringle <jringle@gridpoint.com>
-> > 
-> > The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
-> > high performance UART. The SC16IS7xx's internal register set is
-> > backward-compatible with the widely used and widely popular 16C450.
-> > 
-> > The SC16IS7xx also provides additional advanced features such as
-> > auto hardware and software flow control, automatic RS-485 support, and
-> > software reset.
-> > 
-> > Signed-off-by: Jon Ringle <jringle@gridpoint.com>
-> > ---
-> >  drivers/tty/serial/Kconfig       |    9 +
-> >  drivers/tty/serial/Makefile      |    1 +
-> >  drivers/tty/serial/sc16is7xx.c   | 1279 ++++++++++++++++++++++++++++++++++++++
-> >  include/uapi/linux/serial_core.h |    3 +
-> >  4 files changed, 1292 insertions(+)
-> >  create mode 100644 drivers/tty/serial/sc16is7xx.c
-> 
-> I get a few build warnings with this patch applied:
-> 
-> drivers/tty/serial/sc16is7xx.c:1059:12: warning: â€˜sc16is7xx_probeâ€™ defined but not used [-Wunused-function]
->  static int sc16is7xx_probe(struct device *dev,
->             ^
-> drivers/tty/serial/sc16is7xx.c:1175:12: warning: â€˜sc16is7xx_removeâ€™ defined but not used [-Wunused-function]
->  static int sc16is7xx_remove(struct device *dev)
->             ^
-> drivers/tty/serial/sc16is7xx.c:1214:29: warning: â€˜regcfgâ€™ defined but not used [-Wunused-variable]
->  static struct regmap_config regcfg = {
->                              ^
-> 
-> Can you send a follow-on patch to fix them?
+Check return code of every function called.
 
-Seems this just should contain: "depends on I2C" in the Kconfig.
-
+Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
 ---
+ arch/x86/kernel/cpu/mcheck/mce.c |   30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 68317c8..b865285 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -2437,33 +2437,49 @@ static __init int mcheck_init_device(void)
+ 	int err;
+ 	int i = 0;
+ 
+-	if (!mce_available(&boot_cpu_data))
+-		return -EIO;
++	if (!mce_available(&boot_cpu_data)) {
++		err = -EIO;
++		goto err_out;
++	}
+ 
+-	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
++	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
++		err = -ENOMEM;
++		goto err_out;
++	}
+ 
+ 	mce_init_banks();
+ 
+ 	err = subsys_system_register(&mce_subsys, NULL);
+ 	if (err)
+-		return err;
++		goto err_out_mem;
+ 
+ 	cpu_notifier_register_begin();
+ 	for_each_online_cpu(i) {
+ 		err = mce_device_create(i);
+ 		if (err) {
+ 			cpu_notifier_register_done();
+-			return err;
++			goto err_out_mem;
+ 		}
+ 	}
+ 
+ 	register_syscore_ops(&mce_syscore_ops);
+-	__register_hotcpu_notifier(&mce_cpu_notifier);
++	err = __register_hotcpu_notifier(&mce_cpu_notifier);
+ 	cpu_notifier_register_done();
++	if (err)
++		goto err_out_mem;
+ 
+ 	/* register character device /dev/mcelog */
+-	misc_register(&mce_chrdev_device);
++	err = misc_register(&mce_chrdev_device);
++	if (err)
++		goto err_out_mem;
++
++	return 0;
++
++err_out_mem:
++	free_cpumask_var(mce_device_initialized);
+ 
++err_out:
++	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
+ 	return err;
+ }
+ device_initcall_sync(mcheck_init_device);
+-- 
+1.7.9.5
+
