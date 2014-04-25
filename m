@@ -1,314 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbaDYHZT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 03:25:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:50877 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbaDYHZP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 03:25:15 -0400
-Message-ID: <535A0DD7.4080204@monstr.eu>
-Date: Fri, 25 Apr 2014 09:25:11 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1752155AbaDYH2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 03:28:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38341 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421AbaDYH2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 03:28:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,925,1389772800"; 
+   d="scan'208";a="528129005"
+Message-ID: <535A0E6E.7000900@linux.intel.com>
+Date: Fri, 25 Apr 2014 15:27:42 +0800
+From: "Jin, Yao" <yao.jin@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Microblaze image hanging in qemu with 3.15-rc
-References: <20140422172356.GA15672@roeck-us.net> <53575074.6010602@monstr.eu> <5357C246.7050604@roeck-us.net> <5357CA6B.1070101@monstr.eu> <20140423154533.GA15644@roeck-us.net> <5358AC50.7020308@monstr.eu> <535913E1.70509@roeck-us.net>
-In-Reply-To: <535913E1.70509@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="RfhrHbLRf7aUJF3ve4NVcwrxHvf7R5K66"
+To: Adam Williamson <awilliam@redhat.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>	 <1398007690.2674.0.camel@adam.happyassassin.net>	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>	 <1398230210.2704.8.camel@adam.happyassassin.net>	 <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com>	 <5359120E.2030007@linux.intel.com> <1398375234.2708.122.camel@adam.happyassassin.net>
+In-Reply-To: <1398375234.2708.122.camel@adam.happyassassin.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---RfhrHbLRf7aUJF3ve4NVcwrxHvf7R5K66
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 04/24/2014 03:38 PM, Guenter Roeck wrote:
-> On 04/23/2014 11:16 PM, Michal Simek wrote:
->> On 04/23/2014 05:45 PM, Guenter Roeck wrote:
->>> On Wed, Apr 23, 2014 at 04:12:59PM +0200, Michal Simek wrote:
->>>> On 04/23/2014 03:38 PM, Guenter Roeck wrote:
->>>>> On 04/22/2014 10:32 PM, Michal Simek wrote:
->>>>>> Hi Guenter,
->>>>>>
->>>>>>
->>>>>> On 04/22/2014 07:23 PM, Guenter Roeck wrote:
->>>>>>> Hi all,
->>>>>>>
->>>>>>> when trying to run a microblaze image with 3.15-rc1 or 3.15-rc2 i=
-n qemu,
->>>>>>> I get the following hangup. This used to work with earlier kernel=
-s
->>>>>>> with the same configuration.
->>>>>>>
->>>>>>> Is this a known problem, or is something wrong with my configurat=
-ion
->>>>>>> or with my qemu command line ?
->>>>>>
->>>>>> Is this BE/LE version? Which qemu do you use?
->>>>>
->>>>> BE.
->>>>>
->>>>> file vmlinux:
->>>>>
->>>>> vmlinux: ELF 32-bit MSB  executable, version 1 (SYSV), statically l=
-inked, BuildID[sha1]=3D5e1872c08df2956eddaed6fc1f6528a8540375b7, not stri=
-pped
->>>>>
->>>>> qemu-system-microblaze --version:
->>>>>
->>>>> QEMU emulator version 1.7.0, Copyright (c) 2003-2008 Fabrice Bellar=
-d
->>>>>
->>>>> gcc --version:
->>>>>
->>>>> microblaze-linux-gcc (GCC) 4.8.0
->>>>> Copyright (C) 2013 Free Software Foundation, Inc.
->>>>> This is free software; see the source for copying conditions.  Ther=
-e is NO
->>>>> warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR =
-PURPOSE.
->>>>>
->>>>>> There is endian autodetection in timer and intc driver
->>>>>> which can caused this problem.
->>>>>>
->>>>> Is this new code ? I didn't see the problem in 3.13 (same compile o=
-ptions,
->>>>> same configuration, same compiler, same qemu version).
->>>>
->>>> yes it was added to 3.15-rc1.
->>>>
->>>> Try to rever this one
->>>> a66a626 microblaze: Use asm-generic/io.h
->>>>
->>>> but the problem is probably here because you are not getting proper
->>>> reaction from qemu model.
->>>> a1715bb microblaze: Make timer driver endian aware
->>>> 1aa1243 microblaze: Make intc driver endian aware
->>>>
->>>> I have tested it on the latest petalinux qemu and there shouldn't be=
 
->>>> any problem.
->>>>
->>> Hi Michal,
+On 2014/4/25 5:33, Adam Williamson wrote:
+> On Thu, 2014-04-24 at 21:30 +0800, Jin, Yao wrote:
+> 
+>>> Jin, do you have any idea what is going on?
 >>>
->>> qemu 2.0.0 still has the problem. Bisect points to
->>>
->>> commit a66a626538af65cbfc611e2b2fce500ed3f24518
->>> Author: Michal Simek <michal.simek@xilinx.com>
->>> Date:   Thu Feb 7 15:12:24 2013 +0100
->>>
->>>      microblaze: Use asm-generic/io.h
->>>
->>> as the culprit, so you were right on the money. Reverting this commit=
-
->>> fixes the problem.
 >>
->> yep. But it is just side effect of previous two commits I have mention=
-ed.
->> Can you just please check if you are setting up correct IO functions?
+>> Maybe neither the patch (http://dougvj.net/baytrail_gpio_quirk_v3.patch)
+>> nor my patch breaks the touch screen.
 >>
->>     write_fn =3D timer_write32;
->>     read_fn =3D timer_read32;
+>> I have tried the clean 3.15-rc2 with following patch which just adds
+>> back the ACPIID "INT33FC", but the touch screen still doesn't work (To
+>> avoid the i915 crash issue, I use with the boot option "nomodeset" in test).
 >>
->>     write_fn(TCSR_MDT, timer_baseaddr + TCSR0);
->>     if (!(read_fn(timer_baseaddr + TCSR0) & TCSR_MDT)) {
->>         write_fn =3D timer_write32_be;
->>         read_fn =3D timer_read32_be;
->>     }
->> git
+>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+>> index 69e29f4..d79c6d7 100644
+>> --- a/drivers/acpi/acpi_lpss.c
+>> +++ b/drivers/acpi/acpi_lpss.c
+>> @@ -180,6 +180,7 @@ static const struct acpi_device_id
+>> acpi_lpss_device_ids[] = {
+>>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>>         { "INT33B2", },
+>> +       { "INT33FC", },
 >>
->=20
-> The read returns 0x1, so the access functions are not updated. If I cha=
-nge the code
-> to force the update to the _be versions, the calibration loop still han=
-gs (obviously,
-> because then the result is 0x01000000, which is really wrong).
-
-It means in model there is missing masking that upper bits in register
-and model is just wrong.
-
-HW behaviour
-
-U-Boot-PetaLinux> md 41c00000
-41c00000: 000000d2 000124f8 000023cb 00000000    .....$...#......
-41c00010: 00000000 00000000 00000000 00000000    ................
-41c00020: 000000d2 000124f8 000075b6 00000000    .....$...u......
-41c00030: 00000000 00000000 00000000 00000000    ................
-41c00040: 000000d2 000124f8 0000c7a4 00000000    .....$..........
-41c00050: 00000000 00000000 00000000 00000000    ................
-41c00060: 000000d2 000124f8 000119a8 00000000    .....$..........
-41c00070: 00000000 00000000 00000000 00000000    ................
-41c00080: 000000d2 000124f8 0000469b 00000000    .....$...F......
-41c00090: 00000000 00000000 00000000 00000000    ................
-41c000a0: 000000d2 000124f8 00009893 00000000    .....$..........
-41c000b0: 00000000 00000000 00000000 00000000    ................
-41c000c0: 000000d2 000124f8 0000ea8e 00000000    .....$..........
-41c000d0: 00000000 00000000 00000000 00000000    ................
-41c000e0: 000000d2 000124f8 0000178f 00000000    .....$..........
-41c000f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux> mw 41c00010 10000000
-U-Boot-PetaLinux> md 41c00000
-41c00000: 000000d2 000124f8 00002e68 00000000    .....$..h.......
-41c00010: 00000000 00000000 00000000 00000000    ................
-41c00020: 000000d2 000124f8 00008052 00000000    .....$..R.......
-41c00030: 00000000 00000000 00000000 00000000    ................
-41c00040: 000000d2 000124f8 0000d245 00000000    .....$..E.......
-41c00050: 00000000 00000000 00000000 00000000    ................
-41c00060: 000000d2 000124f8 000123b7 00000000    .....$...#......
-41c00070: 00000000 00000000 00000000 00000000    ................
-41c00080: 000000d2 000124f8 0000513d 00000000    .....$..=3DQ......
-41c00090: 00000000 00000000 00000000 00000000    ................
-41c000a0: 000000d2 000124f8 0000a333 00000000    .....$..3.......
-41c000b0: 00000000 00000000 00000000 00000000    ................
-41c000c0: 000000d2 000124f8 0000f52e 00000000    .....$..........
-41c000d0: 00000000 00000000 00000000 00000000    ................
-41c000e0: 000000d2 000124f8 0000222a 00000000    .....$..*"......
-41c000f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux>
-
-QEMU behaviour:
-U-Boot-PetaLinux> mw 41c00010 1
-U-Boot-PetaLinux> md 41c00000
-41c00000: 000000d2 000124f8 0000cfbb 00000000    .....$..........
-41c00010: 00000001 00000000 ffffffff 00000000    ................
-41c00020: 00000000 00000000 00000000 00000000    ................
-41c00030: 00000000 00000000 00000000 00000000    ................
-41c00040: 00000000 00000000 00000000 00000000    ................
-41c00050: 00000000 00000000 00000000 00000000    ................
-41c00060: 00000000 00000000 00000000 00000000    ................
-41c00070: 00000000 00000000 00000000 00000000    ................
-41c00080: 00000000 00000000 00000000 00000000    ................
-41c00090: 00000000 00000000 00000000 00000000    ................
-41c000a0: 00000000 00000000 00000000 00000000    ................
-41c000b0: 00000000 00000000 00000000 00000000    ................
-41c000c0: 00000000 00000000 00000000 00000000    ................
-41c000d0: 00000000 00000000 00000000 00000000    ................
-41c000e0: 00000000 00000000 00000000 00000000    ................
-41c000f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux> mw 41c00010 0
-U-Boot-PetaLinux> md 41c00000
-41c00000: 000000d2 000124f8 00007362 00000000    .....$..bs......
-41c00010: 00000000 00000000 ffffffff 00000000    ................
-41c00020: 00000000 00000000 00000000 00000000    ................
-41c00030: 00000000 00000000 00000000 00000000    ................
-41c00040: 00000000 00000000 00000000 00000000    ................
-41c00050: 00000000 00000000 00000000 00000000    ................
-41c00060: 00000000 00000000 00000000 00000000    ................
-41c00070: 00000000 00000000 00000000 00000000    ................
-41c00080: 00000000 00000000 00000000 00000000    ................
-41c00090: 00000000 00000000 00000000 00000000    ................
-41c000a0: 00000000 00000000 00000000 00000000    ................
-41c000b0: 00000000 00000000 00000000 00000000    ................
-41c000c0: 00000000 00000000 00000000 00000000    ................
-41c000d0: 00000000 00000000 00000000 00000000    ................
-41c000e0: 00000000 00000000 00000000 00000000    ................
-41c000f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux> mw 41c00010 10000000
-U-Boot-PetaLinux> md 41c00000
-41c00000: 000000d2 000124f8 0000e937 00000000    .....$..7.......
-41c00010: 10000000 00000000 ffffffff 00000000    ................
-41c00020: 00000000 00000000 00000000 00000000    ................
-41c00030: 00000000 00000000 00000000 00000000    ................
-41c00040: 00000000 00000000 00000000 00000000    ................
-41c00050: 00000000 00000000 00000000 00000000    ................
-41c00060: 00000000 00000000 00000000 00000000    ................
-41c00070: 00000000 00000000 00000000 00000000    ................
-41c00080: 00000000 00000000 00000000 00000000    ................
-41c00090: 00000000 00000000 00000000 00000000    ................
-41c000a0: 00000000 00000000 00000000 00000000    ................
-41c000b0: 00000000 00000000 00000000 00000000    ................
-41c000c0: 00000000 00000000 00000000 00000000    ................
-41c000d0: 00000000 00000000 00000000 00000000    ................
-41c000e0: 00000000 00000000 00000000 00000000    ................
-41c000f0: 00000000 00000000 00000000 00000000    ................
-U-Boot-PetaLinux> QEMU: Terminated
-
-It should be pretty easy to fix it in timer_write function like this.
-
-diff --git a/hw/timer/xilinx_timer.c b/hw/timer/xilinx_timer.c
-index 6113b97..3ff1da9 100644
---- a/hw/timer/xilinx_timer.c
-+++ b/hw/timer/xilinx_timer.c
-@@ -169,7 +169,7 @@ timer_write(void *opaque, hwaddr addr,
-             if (value & TCSR_TINT)
-                 value &=3D ~TCSR_TINT;
-
--            xt->regs[addr] =3D value;
-+            xt->regs[addr] =3D value & 0x7ff;
-             if (value & TCSR_ENT)
-                 timer_enable(xt);
-             break;
-
-
->>> Assuming this is in fact a problem with qemu, can you point me to a s=
-et
->>> of qemu patches necessary to fix it ? Also, do you know if there are =
-plans
->>> to send the patches upstream ? I don't find anything related in the q=
-emu
->>> repository (though of course I may have missed it).
+>>         { "INT3430", (unsigned long)&lpt_dev_desc },
+>>         { "INT3431", (unsigned long)&lpt_dev_desc },
+>> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
+>> b/drivers/pinctrl/pinctrl-baytrail.c
+>> index 6e8301f..447f1dc 100644
+>> --- a/drivers/pinctrl/pinctrl-baytrail.c
+>> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+>> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
 >>
->> Yes, it should be qemu issue. I am not aware about particular qemu pat=
-ches
->> but you can try to use https://github.com/Xilinx/qemu
->> but now sure if Peter updating this repository.
+>>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>>         { "INT33B2", 0 },
+>> +       { "INT33FC", 0 },
+>>         { }
+>>  };
+>>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
 >>
-> Last commit in that repository is from a year ago, so it looks like he =
-doesn't
-> update it.
+>> Since the clean 3.15-rc2 doesn't contain "INT33FC", so the baytrail gpio
+>> doesn't actually go into effect.
+> 
+> Well, I just ran another test too. I built a kernel (3.15rc2) with both
+> v3 of Doug's SDIO device enumeration patch -
+> http://dougvj.net/baytrail_gpio_quirk_v3.patch - and the new patch for
+> the IRQ allocation issue by Thomas Gleixner,
+> https://patchwork.kernel.org/patch/4051581/ . That kernel gives me a
+> working touchscreen. Note that
+> http://dougvj.net/baytrail_gpio_quirk_v3.patch includes both the blocks
+> you mention (i.e. it adds INT33FC in both places).
+> 
+> So, it really seems like for me at least, it's the combination of Doug's
+> patch and your approach to fixing the IRQ allocation issue that breaks
+> the touchscreen. Thomas' approach, even combined with Doug's patch,
+> seems to work fine.
+> 
 
-That's too bad. :-(
+I'm trying the clean upstream 3.15-rc2 with the patch by Thomas Gleixner
+(https://patchwork.kernel.org/patch/4051581/) and the patch as following
+which only adds INT33FC, the touch screen doesn't work. I didn't add
+Doug's SDIO device enumeration patch in this test.
 
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index 69e29f4..d79c6d7 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -180,6 +180,7 @@ static const struct acpi_device_id
+acpi_lpss_device_ids[] = {
+        { "80860F14", (unsigned long)&byt_sdio_dev_desc },
+        { "80860F41", (unsigned long)&byt_i2c_dev_desc },
+        { "INT33B2", },
++       { "INT33FC", },
 
->> Anyway if you look at code above and I expect that the problem is just=
+        { "INT3430", (unsigned long)&lpt_dev_desc },
+        { "INT3431", (unsigned long)&lpt_dev_desc },
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c
+b/drivers/pinctrl/pinctrl-baytrail.c
+index 6e8301f..447f1dc 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
 
->> that autodetection is broken in your qemu it should be pretty simple
->> to fix it.
->>
-> Not sure I understand what you'd expect qemu to return in this case,
-> and why it worked previously. Any idea ?
+ static const struct acpi_device_id byt_gpio_acpi_match[] = {
+        { "INT33B2", 0 },
++       { "INT33FC", 0 },
+        { }
+ };
+ MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
 
-Look at logs above and you will understand that.
-It is just trying to write one bit in register. If it is written
-correctly then you are using proper endianness. If not, you should use
-different one.
-Someone also pointed that maybe it is worth to also write the same bit
-with BE helper functions and check it to ensure that IP is working
-well.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---RfhrHbLRf7aUJF3ve4NVcwrxHvf7R5K66
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNaDdgACgkQykllyylKDCGRNgCgjBqUWO1Jk4XII31NEG3cdmU5
-2ZkAnii6kGpqYWkUtMZu1rwaPo6urM0B
-=ImSS
------END PGP SIGNATURE-----
-
---RfhrHbLRf7aUJF3ve4NVcwrxHvf7R5K66--
+It's still not clear to me why the touch screen doesn't work. As above
+test, my patch is not added in.
