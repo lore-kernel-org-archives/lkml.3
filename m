@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944AbaDYWqW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:46:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42929 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816AbaDYWpU (ORCPT
+	id S1752458AbaDYWuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:50:09 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55386 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156AbaDYWuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:45:20 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC/PATCH 3/4] clk: Use lockless functions for debug printing
-Date: Fri, 25 Apr 2014 15:44:47 -0700
-Message-Id: <1398465888-12610-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.9.0.1.gd5ccf8c
-In-Reply-To: <1398465888-12610-1-git-send-email-sboyd@codeaurora.org>
-References: <1398465888-12610-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 25 Apr 2014 18:50:02 -0400
+Date: Fri, 25 Apr 2014 15:49:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [GIT PULL] SCSI fixes for 3.15-rc3
+In-Reply-To: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.DEB.2.02.1404251547020.6936@chino.kir.corp.google.com>
+References: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the near future we're going to move the prepare lock to a
-per-clock ww_mutex. Use the lockless functions here for printing
-the rate and accuracy so that we don't run into AA deadlocks in
-the future.
+On Fri, 25 Apr 2014, James Bottomley wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 65a123d..9db097a 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -137,6 +137,7 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+>  	 * lock such that the kblockd_schedule_work() call happens
+>  	 * before blk_cleanup_queue() finishes.
+>  	 */
+> +	cmd->result = 0;
+>  	spin_lock_irqsave(q->queue_lock, flags);
+>  	blk_requeue_request(q, cmd->request);
+>  	kblockd_schedule_work(q, &device->requeue_work);
+> @@ -1044,6 +1045,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
+>   */
+>  int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
+>  {
+> +	struct scsi_device *sdev = cmd->device;
+>  	struct request *rq = cmd->request;
+>  
+>  	int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
+> @@ -1091,7 +1093,7 @@ err_exit:
+>  	scsi_release_buffers(cmd);
+>  	cmd->request->special = NULL;
+>  	scsi_put_command(cmd);
+> -	put_device(&cmd->device->sdev_gendev);
+> +	put_device(&sdev->sdev_gendev);
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(scsi_init_io);
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index fd22a4583013..48b3a5594839 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -111,8 +111,8 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
- 	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
- 		   level * 3 + 1, "",
- 		   30 - level * 3, c->name,
--		   c->enable_count, c->prepare_count, clk_get_rate(c),
--		   clk_get_accuracy(c));
-+		   c->enable_count, c->prepare_count, __clk_get_rate(c),
-+		   __clk_get_accuracy(c));
- 	seq_printf(s, "\n");
- }
- 
-@@ -171,8 +171,8 @@ static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
- 	seq_printf(s, "\"%s\": { ", c->name);
- 	seq_printf(s, "\"enable_count\": %d,", c->enable_count);
- 	seq_printf(s, "\"prepare_count\": %d,", c->prepare_count);
--	seq_printf(s, "\"rate\": %lu", clk_get_rate(c));
--	seq_printf(s, "\"accuracy\": %lu", clk_get_accuracy(c));
-+	seq_printf(s, "\"rate\": %lu", __clk_get_rate(c));
-+	seq_printf(s, "\"accuracy\": %lu", __clk_get_accuracy(c));
- }
- 
- static void clk_dump_subtree(struct seq_file *s, struct clk *c, int level)
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Hmm, I see why this is needed because of the scsi_put_command(cmd), but I 
+think you need to do struct scsi_device *sdev = ACCESS_ONCE(cmd->device) 
+instead to prevent gcc from messing with the code generation.
