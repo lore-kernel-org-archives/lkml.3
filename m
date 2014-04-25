@@ -1,115 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaDYNUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:20:03 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32069 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaDYNT5 (ORCPT
+	id S1754071AbaDYNUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:20:16 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:34585 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753189AbaDYNUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:19:57 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-54-535a60fbfe30
-Message-id: <535A60FF.4000806@samsung.com>
-Date: Fri, 25 Apr 2014 15:19:59 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Mark Brown <broonie@kernel.org>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
-        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
-        rongjun.ying@csr.com, linux@roeck-us.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, aaro.koskinen@iki.fi,
-        m.szyprowski@samsung.com, t.figa@samsung.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH v2 01/13] Documentation: add extcon devicetree bindings
-References: <20140422195117.GG12304@sirena.org.uk>
-In-reply-to: <20140422195117.GG12304@sirena.org.uk>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA03Sa0iTURjAcc/e9z2b5uh1Xjj4IWFRlJi6EjqmhR8qTgQRSFQD06lLBaey
-	pWZFaaLhdV4ybXm/O2eSN9S8a3bRZCEqlZfMic1SpyiaSsVcH/z2Ow9/zvPl4VECPW3PCwm7
-	I5WHSUKF0IIe+vN27MSOn9jbdUEDseaHF+5tPo57Zx7hnFkdxBPrCwzO0q1QuGhghMGZNdkU
-	Vv4qYbCy6Tzu2W0FOL6sHuKRxRqAkz7qKKydT4W4oquWxjMbbwAuSSyn8Wh7PsQvypU0Lq1M
-	oLCuZJiD6wamuLhi4hMHf42rhrhq6S/EGbl1NH6pz6VxQucAF3dpdxlcn/eT9nIgmkINIKPp
-	aRzS3pbPkAzlGiBtqikuqalah6R/o4QmjdWOpEGdBMli7XOGTI53QNJdoOGStPhlSPSZO5C0
-	bcZySXqTGly1Flt4BkpDQ6KkcpdzfhbBk4tfmIgWm7upr7UwFrxjk4E5D7FuqDn9G2WyHdJO
-	18NkYMETsBUA5Q92UqbHKkDzpdtcY8VnHVFPWhFjNM0eQTvxlXtzyDqhps0MYLQtewNNx/Uz
-	pt4KbWVP00bbsIfR2Gbnnil2hkFbizKjrdnLaCTVsDcXsCfRsLZ3709z9hTKN6z8751Qd8Iz
-	aLIDatQsURmAVe1bodqXqfZlxYBSA1tpZECEwj9IJnJWSGSKyLAg54BwWQMwncd6KygbPNMH
-	WB4QWvINR296CxhJlCJG1gcQjxLa8A1XxN4CfqAk5p5UHu4rjwyVKvoAh2duHwtc0tb9r11y
-	F50ViseV0sAC3wW7Os/H6qjcQ+02vw+mOJJl99mYpmLR2taDQavPBzhDmcOJ4mNyXiFd/qGh
-	Rf3K7qLzk8JbetGF+2FZfdm66y7NKXOSED50VT31MXsY35E0l7P6XRKtdzP3sXSNlud1mQWf
-	nlGU1wTf1m1bvvfwENKKYInIkZIrJP8AdfaVi/wCAAA=
+	Fri, 25 Apr 2014 09:20:02 -0400
+Message-ID: <535A60F2.7000003@mentor.com>
+Date: Fri, 25 Apr 2014 21:19:46 +0800
+From: Chung-Lin Tang <chunglin_tang@mentor.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>, Ley Foon Tan <lftan@altera.com>,
+        Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Andrew Pinski <apinski@cavium.com>
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <5354AD36.5090809@zytor.com> <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com> <16597012.pEkDc99HDN@wuerfel> <CAFiDJ5_dUpVTSeC36AfNKVN7BOa9GQ5vwSEWricm=8Sam9mR2A@mail.gmail.com> <5357FF8E.9010809@codesourcery.com> <E780DB23-B6A3-427B-8F33-71378088A3F5@caviumnetworks.com> <5358AE96.9010006@codesourcery.com> <5358D17D.1040609@codesourcery.com> <20140424152819.GI8521@arm.com>,<535959DF.6050009@codesourcery.com> <3AD1421B-E5FC-41F3-AE33-29655052DA4B@caviumnetworks.com>,<5359FB48.1020007@codesourcery.com> <9F7B4786-D935-47E3-9AB0-258E2A6EB98F@caviumnetworks.com>
+In-Reply-To: <9F7B4786-D935-47E3-9AB0-258E2A6EB98F@caviumnetworks.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 25 Apr 2014 13:19:55.0683 (UTC) FILETIME=[0CB24730:01CF6089]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 09:51 PM, Mark Brown wrote:
-> On Mon, Apr 14, 2014 at 01:46:12PM +0200, Robert Baldyga wrote:
+On 14/4/25 下午4:37, Pinski, Andrew wrote:
 > 
-> That's quite some CC list you've got there, and the mail seems a bit
-> corrupted too (it confused my MUA).
 > 
->> This patch adds extcon devicetree bindings. Documentation describes in general
->> client and provider bindings, and contains detailed desctiprion of bindings
->> for each extcon provider.
+>> On Apr 24, 2014, at 11:06 PM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
 >>
->> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
->> ---
->>  .../devicetree/bindings/extcon/extcon-adc-jack.txt |   60 +++++++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-arizona.txt  |   47 +++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-bindings.txt |   36 +++++++++++
->>  .../devicetree/bindings/extcon/extcon-gpio.txt     |   63 ++++++++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-max14577.txt |   49 +++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-max77693.txt |   56 +++++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-max8997.txt  |   49 +++++++++++++++
->>  .../devicetree/bindings/extcon/extcon-palmas.txt   |   37 ++++++++++--
+>>> On 2014/4/25 02:42 AM, Pinski, Andrew wrote:
+>>>
+>>>
+>>>>> On Apr 24, 2014, at 11:37 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
+>>>>>
+>>>>>> On 2014/4/24 11:28 PM, Catalin Marinas wrote:
+>>>>>>> On Thu, Apr 24, 2014 at 09:55:25AM +0100, Chung-Lin Tang wrote:
+>>>>>>>> On 2014/4/24 02:26 PM, Chung-Lin Tang wrote:
+>>>>>>>> On 2014/4/24 上午 02:15, Pinski, Andrew wrote:
+>>>>>>>>
+>>>>>>>>>> On Apr 23, 2014, at 10:59 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
+>>>>>>>>>>
+>>>>>>>>>>>> On 2014/4/22 07:20 PM, Ley Foon Tan wrote:
+>>>>>>>>>>>> On Tue, Apr 22, 2014 at 6:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>>>>>>>>>>>>> On Tuesday 22 April 2014 18:37:11 Ley Foon Tan wrote:
+>>>>>>>>>>>>>>>>>>>> Hi Arnd and Peter Anvin,
+>>>>>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>>>>> Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
+>>>>>>>>>>>>>>>>>>>> that we don't need to have 64 bit off_t? See detail in link below.
+>>>>>>>>>>>>>>>>>>>> I can submit the patches for 64-bit time changes
+>>>>>>>>>>>>>>>>>>>> (include/asm-generic/posix_types.h and other archs) if everyone is
+>>>>>>>>>>>>>>>>>>>> agreed on this.
+>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> Yes.
+>>>>>>>>>>>> Okay, will doing that.
+>>>>>>>>>>
+>>>>>>>>>> I believe that arm64 ILP32 will also be affected. What is the status of
+>>>>>>>>>> this configuration? Has the glibc/kernel ABI been finalized?
+>>>>>>>> Not yet.  I am still working out the signal handling part. But we
+>>>>>>>> already agreed on 64bit time_t, clock_t, and suseconds_t.  And we
+>>>>>>>> agreed to a 64bit offset_t too. 
+>>>>>>>>
+>>>>>>>> On a related note suseconds in the timespec in posix is defined to
+>>>>>>>> be long. So it would nice if the kernel ignores the upper 32bits so
+>>>>>>>> we (glibc developers) can fix this for new targets including x32
+>>>>>>>> and arm64/ilp32.
+>>>>>>>
+>>>>>>> Hmm, but that means for purely 32-bit architectures like nios2, which
+>>>>>>> unlike x86_64 or arm64, never has a 64-bit mode, suseconds_t as a 64-bit
+>>>>>>> type in the kernel is simply wasted.
+>>>>>>
+>>>>>> The more I think of this, the more I feel that suseconds_t should jsut
+>>>>>> be 'long', not strictly 64-bitified. An ILP32 sub-mode in a 64-bit
+>>>>>> kernel should be using compat_* code paths, something like a
+>>>>>> COMPAT_USE_32BIT_SUSECONDS case.
+>>>>>
+>>>>> ILP32 mode should use LP64 syscalls as much as possible and that's the
+>>>>> aim with arm64 as well (of course, we still have a few that wouldn't be
+>>>>> possible and we route them via compat).
+>>>>>
+>>>>> But here if time_t is 64-bit while susecconds_t is 32-bit, the compat
+>>>>> code wouldn't help.
+>>>>
+>>>> Why not? You can define the arm64 'struct compat_timeval' with
+>>>> suseconds_t as s32, and add the 32<-->64 case in the
+>>>> compat_get/put_timeval path, triggered when the process is ILP32 (test
+>>>> wrapped in the above hypothetical COMPAT_USE_32BIT_SUSECONDS macro).
+>>>> Similar to how x32 does COMPAT_USE_64BIT_TIME.
+>>>
+>>> We would three timeval then. One for aarch32, one for lp64 and one for ilp32. We really don't want three. Two is already one too many in my mind after developing the ilp32 syscall abi. 
+>>>
+>>> Thanks,
+>>> Andrew
+>>
+>> Okay I now see you're already doing that for 32-bit ARM.
+>>
+>> Still, you would probably just need to have an arm64-ILP32 specific case
+>> to be careful about the last padding word upon kernel entry/exit.
+>> (accommodating the difference in sizeof(long))  Penalizing all
+>> architectures does not seem like the best solution.
 > 
-> This is creating device tree bindings for MFD components as devices when
-> those MFD components aren't well isolated from the rest of the device.
-> If we need to add extcon bindings the device should have the flexibility
-> to decide where to add the properties, and really things should be set
-> up so there's less duplication in the documentation.
-
-Those components has their own addresses on i2c bus, so they are,
-technically, separate devices, and they can (should?) be described by
-separate nodes. And I think it doesn't matter if they are grouped in one
-chip.
-
-However, it's easy to change it (give mfd master driver node to extcon),
-and we can have extcon device defined without additional node, and then
-parent node is an extcon node.
-
-Best regards
-Robert Baldyga
-Samsung R&D Institute Poland
-
+> Considering the alignment of long long would be 64bits, the struct does not change sizes if suseconds_t is 32bits or 64bits. 
 > 
->> +The following is the list of cables detected by the controller. Each
->> +cable is assigned an identifier and client nodes use this identifies
->> +to specify the cable which they are interested in.
->> +
->> +  Cable			ID
->> +  ----------------------------
->> +
->> +  Mechanical	0
->> +  Microphone	1
->> +  Headphone		2
->> +  Line-out		3
->> +
->> +Example 1: An example of a extcon controller node is listed below.
->> +
->> +	extcon: arizona-extcon {
+>>
+>> Having suseconds_t as a strictly 64-bit C type in the kernel, while
+>> defined as <= long in user-space may cause other problems.
+>>
+>> I'll try to explain a probable situation for Nios II. I'm not sure about
+>> other soft-cores, but nios2 is sort of uncommon in that the maximum
+>> alignment is 4-bytes (32-bits), even for doubles/long-longs.
 > 
-> The above doesn't entirely reflect what the hardware is capable of doing
-> - it reflects the default software configuration for the device but it's
-> got a wider feature set.
-> 
+> Yes does that include even if users of aligned?  If so that seems broken.  Also yes nios ii is unstandard when it comes to alignment here. 
 
+You mean using '__attribute__((aligned(8)))'? Sure of course that
+enlarges the alignment as expected, but sprinkling that over glibc, or
+getting it into the main glibc bits/time.h header is probably not going
+to happen...
+
+Thanks,
+Chung-Lin
+
+>>
+>> So if time_t is 64-bits (which makes sense), then struct timeval, which
+>> is time_t+suseconds_t in userspace is 12-bytes/aligned-4 (unlike many
+>> archs where a 64-bit time_t will expand the size to 16-bytes, due to
+>> align-8)
+> 
+> Unlike most other targets where the struct would 16bits no matter what. 
+> 
+> Thanks,
+> Andrew
+> 
+> 
+>>
+>> If the kernel suseconds_t is forced to be 64-bits, then nios2 will have
+>> a 16-byte kernel timeval vs. 12-byte userspace timeval situation. Just
+>> this will require us to do something using compat_*, or weird hacks in
+>> glibc, which is unfair. Nios II has no "other-mode". We are just
+>> strictly ILP32, everywhere.
+>>
+>> Of course, we can probably still at the end just use a Nios II specific
+>> posix_types.h header to override things, but I'm just stating this as a
+>> matter of which are the most reasonable default settings in the generic
+>> headers. Making pure ILP32 archs diverge from POSIX standards by default
+>> does not seem to be right.
+>>
+>> Thanks,
+>> Chung-Lin
+>>
 
