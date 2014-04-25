@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaDYDcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 23:32:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42690 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaDYDcI (ORCPT
+	id S1751889AbaDYDdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 23:33:32 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:48047 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaDYDda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 23:32:08 -0400
-Message-ID: <5359D70B.2070604@oracle.com>
-Date: Thu, 24 Apr 2014 23:31:23 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: fs: dcookie: freeing active timer
-References: <53594244.6070305@oracle.com> <20140424172708.GY18016@ZenIV.linux.org.uk> <53594B16.4000901@oracle.com> <20140424215558.GZ18016@ZenIV.linux.org.uk> <20140424234941.GA18016@ZenIV.linux.org.uk>
-In-Reply-To: <20140424234941.GA18016@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Apr 2014 23:33:30 -0400
+Message-ID: <1398396806.12047.6.camel@j-VirtualBox>
+Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
+ balance if there are runnable tasks
+From: Jason Low <jason.low2@hp.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
+        alex.shi@linaro.org, preeti@linux.vnet.ibm.com,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com,
+        chegu_vinod@hp.com
+Date: Thu, 24 Apr 2014 20:33:26 -0700
+In-Reply-To: <1398393955.5273.4.camel@marge.simpson.net>
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
+	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
+	 <20140424071541.GZ26782@laptop.programming.kicks-ass.net>
+	 <1398357789.3509.6.camel@j-VirtualBox>
+	 <20140424165219.GX11096@twins.programming.kicks-ass.net>
+	 <1398393955.5273.4.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 07:49 PM, Al Viro wrote:
-> On Thu, Apr 24, 2014 at 10:55:58PM +0100, Al Viro wrote:
->> On Thu, Apr 24, 2014 at 01:34:14PM -0400, Sasha Levin wrote:
->>
->>>> Why does that code bother with destroying/creating that sucker dynamically?
->>>> Is there any point at all?
->>>
->>> I'm not sure about the dynamic allocation part, but I fear that if we just
->>> switch to using static allocations it'll hide the underlying issue that
->>> triggered this bug instead of fixing it.
->>
->> FWIW, slub.c variant of kmem_cache_destroy() is buggered - struct kobject
->> embedded into struct kmem_cache, its ktype is slab_ktype, which has
->> NULL ->release()...
+On Fri, 2014-04-25 at 04:45 +0200, Mike Galbraith wrote:
+> On Thu, 2014-04-24 at 18:52 +0200, Peter Zijlstra wrote: 
+> > On Thu, Apr 24, 2014 at 09:43:09AM -0700, Jason Low wrote:
+> > > If the below patch is what you were referring to, I believe this
+> > > can help too. This was also something that I was testing out before
+> > > we went with those patches which compares avg_idle with idle balance
+> > > cost. I recall seeing somewhere around a +7% performance improvement
+> > > in at least least 1 of the AIM7 workloads. I can do some more testing
+> > > with this.
+> > 
+> > Yes, exactly that.
+> > 
+> > I can't remember the details, but I suspect we feared the less agressive
+> > idle balance due to that patch (it will only pull a single task, instead
+> > of multiple) would cause more idle_balance invocations and thereby
+> > decrease throughput.
+> > 
+> > So I suppose something with _many_ bursty threads which leads to severe
+> > inequalities would be the workload to trigger that.
+> > 
+> > Not sure we've ever seen that.. maybe Mike remembers, he seems to have a
+> > head for such details.
 > 
-> BTW, if your config has CONFIG_DEBUG_KOBJECT_RELEASE, that's exactly where
-> that warning comes from.  Got broken by commit b7454a,
-> Author: Glauber Costa <glommer@parallels.com>
-> Date:   Fri Oct 19 18:20:25 2012 +0400
-> 
->     mm/sl[au]b: Move slabinfo processing to slab_common.c
-> 
-> We *do* need ->release().  Greg and guilty parties Cc'd...
+> I don't recall ever seeing such.
 
-We actually had that conversation a long time ago, and Christoph has
-sent out a patch to fix that (http://www.spinics.net/lists/netdev/msg259431.html).
+Hmmm, could commit: 1b9508f6831e (sched: Rate-limit newidle) be related
+to what Peter's referring to? The patch mentioned that the rate-limit
+benefited "sysbench oltp".
 
-I was assuming that it was merged upstream and went straight to blaming
-fs/ (and Greg's drivers/usb/ actually) without checking that first. Sorry!
-
-Could someone pretty please merge that patch? Specially since Greg acked it?
-
-
-Thanks,
-Sasha
 
