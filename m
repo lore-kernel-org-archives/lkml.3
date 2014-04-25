@@ -1,194 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbaDYNPv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:15:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40568 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaDYNPf (ORCPT
+	id S1753876AbaDYNQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:16:32 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52500 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaDYNQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:15:35 -0400
-Date: Fri, 25 Apr 2014 06:15:24 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-c3b789527b236873557f53740ceac47747e0e1cb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1398327843-31845-12-git-send-email-namhyung@kernel.org>
-References: <1398327843-31845-12-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf hists/tui: Count callchain rows separately
-Git-Commit-ID: c3b789527b236873557f53740ceac47747e0e1cb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Apr 2014 09:16:24 -0400
+Date: Fri, 25 Apr 2014 15:16:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Roman Gushchin <klamm@yandex-team.ru>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tkhai@yandex.ru" <tkhai@yandex.ru>
+Subject: Re: Real-time scheduling policies and hyper-threading
+Message-ID: <20140425131620.GB11096@twins.programming.kicks-ass.net>
+References: <36851398363372@webcorp2g.yandex-team.ru>
+ <20140424185858.GB26782@laptop.programming.kicks-ass.net>
+ <17051398423889@webcorp2e.yandex-team.ru>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <17051398423889@webcorp2e.yandex-team.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c3b789527b236873557f53740ceac47747e0e1cb
-Gitweb:     http://git.kernel.org/tip/c3b789527b236873557f53740ceac47747e0e1cb
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 22 Apr 2014 15:56:17 +0900
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Thu, 24 Apr 2014 16:34:27 +0200
+On Fri, Apr 25, 2014 at 03:04:49PM +0400, Roman Gushchin wrote:
+> 24.04.2014, 22:59, "Peter Zijlstra" <peterz@infradead.org>:
+> > On Thu, Apr 24, 2014 at 10:16:12PM +0400, Roman Gushchin wrote:
+> >
+> >>  Are there any known solutions of this problem except disabling
+> >>  hyper-threading and frequency scaling at all?
+> >
+> > This is what we generally tell people to do; disable HT in the BIOS,
+> > offline the siblings or similar approaches.
+> 
+> It's a good, but expensive approach, if you have many machines.
 
-perf hists/tui: Count callchain rows separately
+Expensive how? If you require the latency, there's really no option.
 
-When TUI hist browser expands/collapses callchains it accounted number
-of callchain nodes into total entries to show.  However this code
-ignores filtering so that it can make the cursor go to out of screen.
+That said, if only a small part of your workload is RT then you don't
+need to disable all SMT siblings, you can only disable the few that are
+in your RT partition.
 
-Thanks to Jiri Olsa for pointing out a bug (and a fix) in the code.
+> > You, and only you, know your workload and can devise a correct placement
+> > policy. We have cpusets and cpu affinity available to carve up your
+> > system for this.
+> 
+> The problem here is that _all_ userspace tasks should care about cpu placement.
+> In reality, there is always a number of monitoring/administration/system tasks,
+> which execution increases latencies. Use of nice/SCHED_BATCH/... doesn't solve
+> the problem, because of hyper-threading.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398327843-31845-12-git-send-email-namhyung@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 63 ++++++++++++++++++++++++++++--------------
- 1 file changed, 43 insertions(+), 20 deletions(-)
+The thing is, normal tasks don't care and its perfectly fine to have
+heuristics that work more or less most of the time.
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 886eee0..b0861e3 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -27,6 +27,7 @@ struct hist_browser {
- 	bool		     show_dso;
- 	float		     min_pcnt;
- 	u64		     nr_non_filtered_entries;
-+	u64		     nr_callchain_rows;
- };
- 
- extern void hist_browser__init_hpp(void);
-@@ -35,11 +36,27 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
-+static struct rb_node *hists__filter_entries(struct rb_node *nd,
-+					     struct hists *hists,
-+					     float min_pcnt);
-+
- static bool hist_browser__has_filter(struct hist_browser *hb)
- {
- 	return hists__has_filter(hb->hists) || hb->min_pcnt;
- }
- 
-+static u32 hist_browser__nr_entries(struct hist_browser *hb)
-+{
-+	u32 nr_entries;
-+
-+	if (hist_browser__has_filter(hb))
-+		nr_entries = hb->nr_non_filtered_entries;
-+	else
-+		nr_entries = hb->hists->nr_entries;
-+
-+	return nr_entries + hb->nr_callchain_rows;
-+}
-+
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
- 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-@@ -49,8 +66,14 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- 
- static void hist_browser__reset(struct hist_browser *browser)
- {
-+	/*
-+	 * The hists__remove_entry_filter() already folds non-filtered
-+	 * entries so we can assume it has 0 callchain rows.
-+	 */
-+	browser->nr_callchain_rows = 0;
-+
- 	hist_browser__update_nr_entries(browser);
--	browser->b.nr_entries = browser->nr_non_filtered_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	hist_browser__refresh_dimensions(browser);
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -205,14 +228,16 @@ static bool hist_browser__toggle_fold(struct hist_browser *browser)
- 		struct hist_entry *he = browser->he_selection;
- 
- 		hist_entry__init_have_children(he);
--		browser->hists->nr_entries -= he->nr_rows;
-+		browser->b.nr_entries -= he->nr_rows;
-+		browser->nr_callchain_rows -= he->nr_rows;
- 
- 		if (he->ms.unfolded)
- 			he->nr_rows = callchain__count_rows(&he->sorted_chain);
- 		else
- 			he->nr_rows = 0;
--		browser->hists->nr_entries += he->nr_rows;
--		browser->b.nr_entries = browser->hists->nr_entries;
-+
-+		browser->b.nr_entries += he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 
- 		return true;
- 	}
-@@ -287,23 +312,27 @@ static void hist_entry__set_folding(struct hist_entry *he, bool unfold)
- 		he->nr_rows = 0;
- }
- 
--static void hists__set_folding(struct hists *hists, bool unfold)
-+static void
-+__hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
- 	struct rb_node *nd;
-+	struct hists *hists = browser->hists;
- 
--	hists->nr_entries = 0;
--
--	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&hists->entries);
-+	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
-+	     nd = rb_next(nd)) {
- 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
- 		hist_entry__set_folding(he, unfold);
--		hists->nr_entries += 1 + he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 	}
- }
- 
- static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
--	hists__set_folding(browser->hists, unfold);
--	browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->nr_callchain_rows = 0;
-+	__hist_browser__set_folding(browser, unfold);
-+
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	/* Go to the start, we may be way after valid entries after a collapse */
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -325,10 +354,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 	int delay_secs = hbt ? hbt->refresh : 0;
- 
- 	browser->b.entries = &browser->hists->entries;
--	if (hist_browser__has_filter(browser))
--		browser->b.nr_entries = browser->nr_non_filtered_entries;
--	else
--		browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -345,13 +371,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			u64 nr_entries;
- 			hbt->timer(hbt->arg);
- 
--			if (hist_browser__has_filter(browser)) {
-+			if (hist_browser__has_filter(browser))
- 				hist_browser__update_nr_entries(browser);
--				nr_entries = browser->nr_non_filtered_entries;
--			} else {
--				nr_entries = browser->hists->nr_entries;
--			}
- 
-+			nr_entries = hist_browser__nr_entries(browser);
- 			ui_browser__update_nr_entries(&browser->b, nr_entries);
- 
- 			if (browser->hists->stats.nr_lost_warned !=
+But realtime does care, it must absolutely always work in a predictable
+fashion.
+
+> Of course, it's possible to divide cpus statically via cpusets/partitioning,
+> but it's also not cheap in terms of overall performance utilization.
+
+Well, realtime isn't about getting full utilization from your hardware
+to begin with. Its about getting deterministic behaviour from your
+hardware.
+
+If your workload allows both, then yay, but its absolutely not true in
+general.
+
+> Probably, it's important, that CPU load in our case is never 100% for a period 
+> longer than few hundreds milliseconds.
+
+Yeah, that's not a problem. Pegging the CPU for 10s of seconds and
+upwards will get funny real quick though.
