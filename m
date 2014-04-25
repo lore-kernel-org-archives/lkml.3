@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563AbaDYQhQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:37:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47891 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376AbaDYQhM (ORCPT
+	id S1752324AbaDYQjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:39:42 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34841 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaDYQjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:37:12 -0400
-Date: Fri, 25 Apr 2014 09:35:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, sarah.a.sharp@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] xhci: fixes for 3.15-rc usb-linus
-Message-ID: <20140425163505.GA8382@kroah.com>
-References: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+	Fri, 25 Apr 2014 12:39:40 -0400
+Message-ID: <535A8FC9.8040707@wwwdotorg.org>
+Date: Fri, 25 Apr 2014 10:39:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Brian Norris <computersforpeace@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Marek Vasut <marex@denx.de>, linux-mtd@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
+ for M25P80)
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com> <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+In-Reply-To: <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 07:20:12PM +0300, Mathias Nyman wrote:
-> Hi Greg                                                                                                
->                                                                                                        
-> Second try at this xhci fixes series for 3.15-rc usb-linus.                                                         
-> Most of them are very small fixes that didn't make                                                     
-> it to 3.14, sitting and waiting for 3.15-rc1 to come out.                                              
->                                                                                                        
-> Only the "Prefer endpoint context.." patch  by Julius has a bit more content.                          
->                                                                                                        
-> These patches are picked together with Sarah, they are tested on top of                                
-> 3.15-rc1, and apply on your current usb-linus branch                                                   
+On 04/17/2014 01:21 AM, Brian Norris wrote:
+> These defconfigs contain the CONFIG_M25P80 symbol, which is now
+> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+> relevant defconfigs.
+> 
+> At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
 
-Much better, all now applied.
+I hadn't realized that the problem this patch solves was already present
+in the code, so this patch is simply catching up the defconfigs rather
+than part of a series which changed the code to cause the problem.
 
-What's with all that trailing whitespace in your email text?
+So, this needs to be applied ASAP.
 
-greg k-h
+I think this should be split it up so that each defconfig can go through
+the tree that owns it to avoid conflicts. If you repost split up, I can
+apply the tegra_defconfig change to the Tegra tree.
