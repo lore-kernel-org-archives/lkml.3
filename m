@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676AbaDYTZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:25:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23074 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaDYTZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:25:55 -0400
-Date: Fri, 25 Apr 2014 21:25:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        john.johansen@canonical.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@ZenIV.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-Message-ID: <20140425192543.GA11908@redhat.com>
-References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com> <20140425182310.GA9128@redhat.com> <87sip15iy5.fsf@x220.int.ebiederm.org>
+	id S1754024AbaDYTci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:32:38 -0400
+Received: from 4dim-gw.4dim.as ([81.7.137.98]:28392 "EHLO
+	SECOEXCHANGE.secomea.local" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752959AbaDYTcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 15:32:36 -0400
+Message-ID: <535AB84B.20207@secomea.com>
+Date: Fri, 25 Apr 2014 21:32:27 +0200
+From: =?UTF-8?B?U3Zlbm5pbmcgU8O4cmVuc2Vu?= <sss@secomea.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87sip15iy5.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH] net: guard against coalescing packets from buggy network
+ drivers
+References: <535A78ED.3020309@secomea.com>	 <1398440595.29914.77.camel@edumazet-glaptop2.roam.corp.google.com>	 <535A86F3.5010602@secomea.com> <1398444575.29914.93.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1398444575.29914.93.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [178.21.90.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Eric W. Biederman wrote:
+
+On 25-04-2014 18:49, Eric Dumazet wrote:
+> On Fri, 2014-04-25 at 18:01 +0200, Svenning Sørensen wrote:
 >
-> Oleg Nesterov <oleg@redhat.com> writes:
+>> You are right, of course, there are more effective ways to catch buggy
+>> drivers.
+>> But they will probably also be much more expensive.
+>> This one is very cheap, being in a relatively cold path, especially
+>> compared to the memcpy in the same path.
+> It seems you missed the recent tipc thread then.
+Yes, I'm not subscribed to the mailing list at the moment - too much 
+traffic and too little time..
+
 >
-> > Eric, this makes me think again that we should do exit_task_namespaces()
-> > after exit_task_work(). We already discussed this before, but this looks
-> > like another indication this change makes sense.
+> They are many ways this code path can be abused, your patch only takes
+> care of one case.
 >
-> I know you mentioned something about that.  I haven't actually had much
-> time to think about it.
+> In tipc case, they added skb to shinfo->frag_list without changing
+> skb->data_len.
 >
-> > The problem with fput() from free_nsproxy() was hopefully also fixed by
-> > e7b2c4069252. The main motivation for "move" was "outside of exit_notify".
-> > Even if we fix the paths above task_work_add() can have another user which
-> > wants ->nsproxy.
-> >
-> > What do you think?
+> So skb_tailroom(to) was not returning 0 as it should.
 >
-> I am scratching my head.  Delayed work that depends on current sort of
-> blows my mind.
+> The invariant should be more strict.
+>
+> BUG_ON(to->data + to->len != skb_tail_pointer(to));
+>
+> I still think a BUG() to catch this is better.
+>
+> There is no guarantee the developer/user will catch a WARN(),
+> the bug could sit there a long time.
+>
+> I have no pity for serious bugs like that.
+Neither do I.
+Either BUG or WARN would have worked for me and would have saved me a 
+lot of time in chasing this bug in a monster size (almost 800 files!) 
+third party driver for this unfamiliar chip on newly developed embedded 
+hardware (so I couldn't be sure it wasn't a hardware bug) with nothing 
+else than a serial port and a few MB flash to store log files on.
 
-But task_work_add(task) was specially introduced to run a callback in the
-task's context.
 
-> That is utter nonsense.
-
-Yes I agree, _perhaps_ we can fix this particular problem without changing
-the exit_namespace/work ordering, and perhaps this makes sense anyway.
-
-Well. I _think_ that __fput() and ima_file_free() in particular should not
-depend on current and/or current->nsproxy. If nothing else, fput() can be
-called by the unrelated task which looks into /proc/pid/.
-
-But again, task_work_add() has more and more users, and it seems that even
-__fput() paths can do "everything", so perhaps it would be safer to allow
-to use ->nsproxy in task_work_run.
-
-Oleg.
-
+>
+> Since you spot buggy drivers, please provide their fixes or at least
+> name them so that we can take care of them.
+>
+> Thanks
+>
+>
+Strange, I was almost certain that I saw at least one with the same bug, 
+but I can't seem to find it any longer.
+Maybe I looked too quick, or maybe it's been fixed by the git pull I've 
+made in the meantime.
+I'll take a closer look if I get some spare time some day..
