@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaDYTUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:20:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28521 "EHLO mx1.redhat.com"
+	id S1753676AbaDYTZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:25:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23074 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751666AbaDYTUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:20:45 -0400
-Message-ID: <535AB0B5.8060305@redhat.com>
-Date: Fri, 25 Apr 2014 15:00:05 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1751666AbaDYTZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 15:25:55 -0400
+Date: Fri, 25 Apr 2014 21:25:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        john.johansen@canonical.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, viro@ZenIV.linux.org.uk,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+Message-ID: <20140425192543.GA11908@redhat.com>
+References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com> <20140425182310.GA9128@redhat.com> <87sip15iy5.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Miroslav Lichvar <mlichvar@redhat.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering
-References: <1398380677-8684-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1398380677-8684-1-git-send-email-john.stultz@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sip15iy5.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/25, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Eric, this makes me think again that we should do exit_task_namespaces()
+> > after exit_task_work(). We already discussed this before, but this looks
+> > like another indication this change makes sense.
+>
+> I know you mentioned something about that.  I haven't actually had much
+> time to think about it.
+>
+> > The problem with fput() from free_nsproxy() was hopefully also fixed by
+> > e7b2c4069252. The main motivation for "move" was "outside of exit_notify".
+> > Even if we fix the paths above task_work_add() can have another user which
+> > wants ->nsproxy.
+> >
+> > What do you think?
+>
+> I am scratching my head.  Delayed work that depends on current sort of
+> blows my mind.
 
+But task_work_add(task) was specially introduced to run a callback in the
+task's context.
 
-On 04/24/2014 07:04 PM, John Stultz wrote:
-> Continuing the sporadic work on improving the timekeeping
-> frequency steering logic when NOHZ is enabled, I've made a number
-> of changes to my re-implementation of Miroslav's patch (most
-> recently posted here: https://lkml.org/lkml/2014/2/12/401 ),
-> and I'm getting much closer results in the simulator.
-> 
-> Compared with Miroslav's patch, this avoids doing any extra
-> divisions, and instead approximates the correction
-> logarithmically. In addition to trying to lower overhead, this
-> allows the other accounting bits to be managed in much the
-> same way we have been doing for awhile.
-> 
-> This patch set contains one portion from Miroslav's patch
-> (ntp_tick caching) split out into a separate logical patch.
-> 
-> Below are some of the simulator results (BTW Miroslav, w/ 3.15-rc,
-> you'll need to revert b399fe355b30d01 to get the simulator building)
-> comparing this patchset to Miroslav's patch to show we're getting in
-> the right order of magnitude.
-> 
+> That is utter nonsense.
 
-John, I'm going to put this into a weekend long test right away (along with
-another unrelated cpupower patch).  I'll ping back Monday to let you know how it
-went.
+Yes I agree, _perhaps_ we can fix this particular problem without changing
+the exit_namespace/work ordering, and perhaps this makes sense anyway.
 
-P.
+Well. I _think_ that __fput() and ima_file_free() in particular should not
+depend on current and/or current->nsproxy. If nothing else, fput() can be
+called by the unrelated task which looks into /proc/pid/.
+
+But again, task_work_add() has more and more users, and it seems that even
+__fput() paths can do "everything", so perhaps it would be safer to allow
+to use ->nsproxy in task_work_run.
+
+Oleg.
+
