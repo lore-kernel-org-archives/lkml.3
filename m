@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaDYBpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:45:21 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:33966 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaDYBpR (ORCPT
+	id S1751517AbaDYBrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:47:06 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:45560 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaDYBrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:45:17 -0400
-Date: Thu, 24 Apr 2014 21:44:47 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth 2014-04-24
-Message-ID: <20140425014446.GC3410@tuxdriver.com>
-References: <20140424145329.GD7832@joana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424145329.GD7832@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Apr 2014 21:47:04 -0400
+Message-ID: <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
+ device online store callbacks
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, toshi.kani@hp.com
+Date: Fri, 25 Apr 2014 09:46:55 +0800
+In-Reply-To: <5358E12C.2050800@intel.com>
+References: <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140416151749.GE1257@htj.dyndns.org>
+	 <1397717444.4034.15.camel@ThinkPad-T5421>
+	 <20140417151728.GK15326@htj.dyndns.org>
+	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
+	 <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140421224606.GE22730@htj.dyndns.org>
+	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140422204455.GB3615@mtj.dyndns.org> <5356EB6D.3010102@intel.com>
+	 <20140423142346.GB4781@htj.dyndns.org> <5357E651.2040400@intel.com>
+	 <1398329996.2805.110.camel@ThinkPad-T5421.cn.ibm.com>
+	 <5358E12C.2050800@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042501-0342-0000-0000-0000088C7D2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This tag has a lot of stuff in it not in the wireless tree.
-Please only send me pull requests that only include patches related
-to Bluetooth.
+On Thu, 2014-04-24 at 12:02 +0200, Rafael J. Wysocki wrote:
+> On 4/24/2014 10:59 AM, Li Zhong wrote:
+> > On Wed, 2014-04-23 at 18:12 +0200, Rafael J. Wysocki wrote:
+> >> On 4/23/2014 4:23 PM, Tejun Heo wrote:
+> >>> Hello, Rafael.
+> >> Hi,
+> >>
+> >>> On Wed, Apr 23, 2014 at 12:21:33AM +0200, Rafael J. Wysocki wrote:
+> >>>> Can you please elaborate a bit?
+> >>> Because it can get involved in larger locking dependency issues by
+> >>> joining dependency graphs of two otherwise largely disjoint
+> >>> subsystems.  It has potential to create possible deadlocks which don't
+> >>> need to exist.
+> >> Well, I do my best not to add unnecessary locks if that's what you mean.
+> >>
+> >>>> It is there to protect hotplug operations involving multiple devices
+> >>>> (in different subsystems) from racing with each other.  Why exactly
+> >>>> is it bad?
+> >>> But why would different subsystems, say cpu and memory, use the same
+> >>> lock?  Wouldn't those subsystems already have proper locking inside
+> >>> their own subsystems?
+> >> That locking is not sufficient.
+> >>
+> >>> Why add this additional global lock across multiple subsystems?
+> >> That basically is because of how eject works when it is triggered via ACPI.
+> >>
+> >> It is signaled for a device at the top of a subtree.  It may be a
+> >> container of some sort and the eject involves everything below that
+> >> device in the ACPI namespace.  That may involve multiple subsystem
+> >> (CPUs, memory, PCI host bridge, etc.).
+> >>
+> >> We do that in two steps, offline (which can fail) and eject proper
+> >> (which can't fail and makes all of the involved devices go away). All
+> >> that has to be done in one go with respect to the sysfs-triggered
+> >> offline/online and that's why the lock is there.
+> > Thank you for the education. It's more clear to me now why we need this
+> > lock.
+> >
+> > I still have some small questions about when this lock is needed:
+> >
+> > I could understand sysfs-triggered online is not acceptable when
+> > removing devices in multiple subsystems. But maybe concurrent offline
+> > and remove(with proper per subsystem locks) seems not harmful?
+> >
+> > And if we just want to remove some devices in a specific subsystem, e.g.
+> > like writing /cpu/release, if it just wants to offline and remove some
+> > cpus, then maybe we don't require the device_hotplug_lock to be taken?
+> 
+> No and no.
+> 
+> If the offline phase fails for any device in the subtree, we roll back 
+> the operation
+> and online devices that have already been offlined by it.  Also the ACPI 
+> hot-addition
+> needs to acquire device_hotplug_lock so that it doesn't race with ejects 
+> and so
+> that lock needs to be taken by sysfs-triggered offline too.
 
-John
+I can understand that hot-addition needs the device_hotplug lock, but
+still not very clear about the offline. 
 
-On Thu, Apr 24, 2014 at 11:53:29AM -0300, Gustavo Padovan wrote:
-> Hi John,
-> 
-> Some fixes for 3.15. There is a revert for the intel driver, a new device id,
-> and two important SSP fixes from Johan.
-> Also we've noticed that your wireless.git tree is not up to date, so this pull
-> was rebased on top of net.git. If you pull from this you'll will be pulling
-> net/master from yesterday as well.
-> 
-> Please pull or let me know of any concerns you have. Thanks!
-> 
-> 	Gustavo
-> 
-> ---
-> The following changes since commit 6a51b5e4d59e00051e65e836520912cd7c717be1:
-> 
->   hisax/icc: add missing semicolon after label (2014-04-22 21:22:47 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
-> 
-> for you to fetch changes up to b66a81831359495b3768ace72452209cdf5d6614:
-> 
->   Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-24 12:43:33 +0300)
-> 
-> ----------------------------------------------------------------
-> Johan Hedberg (2):
->       Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
->       Bluetooth: Fix redundant encryption request for reauthentication
-> 
-> Marcel Holtmann (1):
->       Revert "Bluetooth: Enable autosuspend for Intel Bluetooth device"
-> 
-> Mohammed Habibulla (1):
->       Bluetooth: Add support for Lite-on [04ca:3007]
-> 
->  drivers/bluetooth/ath3k.c | 2 ++
->  drivers/bluetooth/btusb.c | 5 ++---
->  net/bluetooth/hci_conn.c  | 9 ++++++---
->  net/bluetooth/hci_event.c | 6 ++++++
->  4 files changed, 16 insertions(+), 6 deletions(-)
+I guess your are describing following scenario: 
+
+user A: (trying remove cpu 1 and memory 1-10)
+
+lock_device_hotplug
+offline cpu with cpu locks          -- successful
+offline memories with memory locks  -- failed, e.g. for memory8
+online cpu and memory with their locks
+unlock_device_hotplug
+
+user B: (trying offline cpu 1)
+
+offline cpu with cpu locks
+
+But I don't see any problem for user B not taking the device_hotplug
+lock. The result may be different for user B to take or not take the
+lock. But I think it could be seen as concurrent online/offline for cpu1
+under cpu hotplug locks, which just depends on which is executed last? 
+
+Or did I miss something here? 
+
+Thanks, Zhong
+
+> Thanks,
+> Rafael
 > 
 
 
-
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
