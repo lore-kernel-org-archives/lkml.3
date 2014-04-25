@@ -1,50 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaDYA2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:28:31 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:34505 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230AbaDYA23 (ORCPT
+	id S1754614AbaDYA3I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:29:08 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39015 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaDYA3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:28:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKo0uV9_SX5aAfgPyRSa0Cv5O=tdp4s1oSQs=76vZC+ww@mail.gmail.com>
-References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-	<CAL_JsqKo0uV9_SX5aAfgPyRSa0Cv5O=tdp4s1oSQs=76vZC+ww@mail.gmail.com>
-Date: Fri, 25 Apr 2014 08:28:28 +0800
-Message-ID: <CAD6h2NSZY5PNEmRVzVBuBnU_QoKVJ8WGyw4yxOQpcGRMEB_tMw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
-From: Haojian Zhuang <haojian.zhuang@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Xu Wei <xuwei5@hisilicon.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Apr 2014 20:29:05 -0400
+Subject: Re: [PATCH] uprobes/x86: Refuse to attach uprobe to "word-sized"
+ branch insns
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20140424173333.GA416@redhat.com>
+References: <1398359304-26472-1-git-send-email-dvlasenk@redhat.com>
+	 <20140424173333.GA416@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Apr 2014 17:28:57 -0700
+Message-ID: <1398385737.4536.13.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042500-9332-0000-0000-0000009AA489
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2014 02:52, Rob Herring <robherring2@gmail.com> wrote:
-> On Mon, Apr 21, 2014 at 8:35 PM, Haojian Zhuang
-> <haojian.zhuang@linaro.org> wrote:
->> If gpio base number isn't specified, the gpio base will be find from
->> the end of gpio number. In order to keep with schematics, use alias
->> to get the ID of gpio chip.
->
-> NAK. This is an abuse aliases.
->
->> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
->> ---
->>  .../devicetree/bindings/gpio/gpio-pl061.txt        | 31 ++++++++++++++++++++++
->
-> Is something wrong with the binding doc already in pl061-gpio.txt?
->
-Oh. I just copy my old patch to here. I didn't notice there's a new
-pl061-gpio.txt. Thanks for reminder.
+On Thu, 2014-04-24 at 19:33 +0200, Oleg Nesterov wrote:
+> Thanks!
+> 
+> Masami, Jim, any acks?
 
-Regards
-Haojian
+Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+
+> 
+> On 04/24, Denys Vlasenko wrote:
+> >
+> > All branch insns on x86 can be prefixed with the operand-size
+> > override prefix, 0x66. It was only ever useful for performing
+> > jumps to 32-bit offsets in 16-bit code segments.
+> >
+> > In 32-bit code, such instructions are useless since
+> > they cause IP truncation to 16 bits, and in case of call insns,
+> > they save only 16 bits of return address and misalign
+> > the stack pointer as a "bonus".
+> >
+> > In 64-bit code, such instructions are treated differently by Intel
+> > and AMD CPUs: Intel ignores the prefix altogether,
+> > AMD treats them the same as in 32-bit mode.
+> >
+> > Before this patch, the emulation code would execute
+> > the instructions as if they have no 0x66 prefix.
+> >
+> > With this patch, we refuse to attach uprobes to such insns.
+> >
+> > Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > ---
+> >  arch/x86/kernel/uprobes.c | 12 ++++++++++++
+> >  1 file changed, 12 insertions(+)
+> >
+> > diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> > index ace2291..29b152d 100644
+> > --- a/arch/x86/kernel/uprobes.c
+> > +++ b/arch/x86/kernel/uprobes.c
+> > @@ -582,6 +582,7 @@ static struct uprobe_xol_ops branch_xol_ops = {
+> >  /* Returns -ENOSYS if branch_xol_ops doesn't handle this insn */
+> >  static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+> >  {
+> > +	int i;
+> >  	u8 opc1 = OPCODE1(insn);
+> >
+> >  	/* has the side-effect of processing the entire instruction */
+> > @@ -612,6 +613,17 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+> >  			return -ENOSYS;
+> >  	}
+> >
+> > +	/*
+> > +	 * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
+> > +	 * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
+> > +	 * No one uses these insns.
+> > +	 * Reject any branch insns with such prefix.
+> > +	 */
+> > +	for (i = 0; i < insn->prefixes.nbytes; i++) {
+> > +		if (insn->prefixes.bytes[i] == 0x66)
+> > +			return -ENOTSUPP;
+> > +	}
+> > +
+> >  	auprobe->branch.opc1 = opc1;
+> >  	auprobe->branch.ilen = insn->length;
+> >  	auprobe->branch.offs = insn->immediate.value;
+> > --
+> > 1.8.1.4
+> >
+> 
+
+
