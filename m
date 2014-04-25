@@ -1,216 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaDYOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:20:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47232 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753892AbaDYOHg (ORCPT
+	id S1754585AbaDYOV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:21:27 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44265 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754232AbaDYOVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:07:36 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v2 03/18] usb: host: xhci-plat: Add support for the Armada 38x
-Date: Fri, 25 Apr 2014 16:07:01 +0200
-Message-Id: <1398434836-18908-4-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 25 Apr 2014 10:21:24 -0400
+Date: Fri, 25 Apr 2014 15:20:56 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH 1/2] printk: print initial logbuf contents before
+ re-enabling interrupts
+Message-ID: <20140425142056.GB12157@arm.com>
+References: <1397734570-12748-1-git-send-email-will.deacon@arm.com>
+ <20140425132937.GB10484@arm.com>
+ <20140425140120.GG11096@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425140120.GG11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the Armada 38x SoCs which come with an xhci controller, specific
-initialization must be done during probe related to the MBus windows
-configuration. This patch adds the support of this quirk.
+On Fri, Apr 25, 2014 at 03:01:20PM +0100, Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 02:29:37PM +0100, Will Deacon wrote:
+> > On Thu, Apr 17, 2014 at 12:36:09PM +0100, Will Deacon wrote:
+> > > When running on a hideously slow system (~10Mhz FPGA) with a bunch of
+> 
+> Hey, still faster then the 4.77 MHz 8088 chips I started with :-)
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/usb/host/Kconfig      |  7 +++++
- drivers/usb/host/Makefile     |  1 +
- drivers/usb/host/xhci-mvebu.c | 71 +++++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/xhci-mvebu.h | 22 ++++++++++++++
- drivers/usb/host/xhci-plat.c  |  5 +++
- 5 files changed, 106 insertions(+)
- create mode 100644 drivers/usb/host/xhci-mvebu.c
- create mode 100644 drivers/usb/host/xhci-mvebu.h
+... but you didn't have to run KVM guests on that sucker!
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 3d9e54062d62..e70943fac4a1 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -29,6 +29,13 @@ if USB_XHCI_HCD
- config USB_XHCI_PLATFORM
- 	tristate
- 
-+config USB_XHCI_MVEBU
-+	tristate "xHCI support for Marvell Armada 38x"
-+	select USB_XHCI_PLATFORM
-+	---help---
-+	  Say 'Y' to enable the support for the xHCI host controller
-+	  found in Marvell Armada 38x ARM SOCs.
-+
- endif # USB_XHCI_HCD
- 
- config USB_EHCI_HCD
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 7530468c9a4f..7a8db7f7dc01 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -19,6 +19,7 @@ xhci-hcd-$(CONFIG_PCI)	+= xhci-pci.o
- 
- ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
- 	xhci-hcd-y		+= xhci-plat.o
-+	xhci-hcd-$(CONFIG_USB_XHCI_MVEBU)	+= xhci-mvebu.o
- endif
- 
- obj-$(CONFIG_USB_WHCI_HCD)	+= whci/
-diff --git a/drivers/usb/host/xhci-mvebu.c b/drivers/usb/host/xhci-mvebu.c
-new file mode 100644
-index 000000000000..09cf437499fb
---- /dev/null
-+++ b/drivers/usb/host/xhci-mvebu.c
-@@ -0,0 +1,71 @@
-+/*
-+ * Copyright (C) 2014 Marvell
-+ * Author: Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/mbus.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+#define USB3_MAX_WINDOWS	4
-+#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
-+#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
-+
-+static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
-+			const struct mbus_dram_target_info *dram)
-+{
-+	int win;
-+
-+	/* Clear all existing windows */
-+	for (win = 0; win < USB3_MAX_WINDOWS; win++) {
-+		writel(0, base + USB3_WIN_CTRL(win));
-+		writel(0, base + USB3_WIN_BASE(win));
-+	}
-+
-+	/* Program each DRAM CS in a seperate window */
-+	for (win = 0; win < dram->num_cs; win++) {
-+		const struct mbus_dram_window *cs = dram->cs + win;
-+
-+		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
-+		       (dram->mbus_dram_target_id << 4) | 1,
-+		       base + USB3_WIN_CTRL(win));
-+
-+		writel((cs->base & 0xffff0000), base + USB3_WIN_BASE(win));
-+	}
-+}
-+
-+int xhci_mvebu_mbus_init_quirk(struct platform_device *pdev)
-+{
-+	struct resource	*res;
-+	void __iomem	*base;
-+	const struct mbus_dram_target_info *dram;
-+	int ret = 0;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res)
-+		return -ENODEV;
-+
-+	/*
-+	 * We don't use devm_ioremap() because this mapping should
-+	 * only exists for the duration of this probe function.
-+	 */
-+	base = ioremap(res->start, resource_size(res));
-+	if (!base)
-+		return -ENODEV;
-+
-+	dram = mv_mbus_dram_info();
-+	mv_usb3_conf_mbus_windows(base, dram);
-+
-+	/*
-+	 * This memory area was only needed to configure the MBus
-+	 * windows, and is therefore no longer useful.
-+	 */
-+	iounmap(base);
-+
-+	return ret;
-+}
-diff --git a/drivers/usb/host/xhci-mvebu.h b/drivers/usb/host/xhci-mvebu.h
-new file mode 100644
-index 000000000000..5d7e647b3d27
---- /dev/null
-+++ b/drivers/usb/host/xhci-mvebu.h
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright (C) 2014 Marvell
-+ *
-+ * Gregory Clement <gregory.clement@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifndef __LINUX_XHCI_MVEBU_H
-+#define __LINUX_XHCI_MVEBU_H
-+
-+#ifdef CONFIG_USB_XHCI_MVEBU
-+int xhci_mvebu_mbus_init_quirk(struct platform_device *pdev);
-+#else
-+static inline int xhci_mvebu_mbus_init_quirk(struct device dev)
-+{
-+	return 0;
-+}
-+#endif
-+#endif /* __LINUX_XHCI_MVEBU_H */
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index bb5d563f729c..c0e835b49e0d 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -19,6 +19,7 @@
- #include <linux/slab.h>
- 
- #include "xhci.h"
-+#include "xhci-mvebu.h"
- 
- static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
- {
-@@ -148,6 +149,9 @@ static int xhci_plat_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
-+	if (of_device_is_compatible(pdev->dev.of_node, "marvell,armada-380-xhci"))
-+		xhci_mvebu_mbus_init_quirk(pdev);
-+
- 	/* Initialize dma_mask and coherent_dma_mask to 32-bits */
- 	ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
- 	if (ret)
-@@ -279,6 +283,7 @@ static const struct dev_pm_ops xhci_plat_pm_ops = {
- static const struct of_device_id usb_xhci_of_match[] = {
- 	{ .compatible = "generic-xhci" },
- 	{ .compatible = "xhci-platform" },
-+	{ .compatible = "marvell,armada-380-xhci"},
- 	{ },
- };
- MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
--- 
-1.8.1.2
+> > > debug printk invocations on the timer interrupt path, we end up filling
+> > > the log buffer faster than we can drain it.
+> > > 
+> > > The reason is that console_unlock (which is responsible for moving
+> > > messages out of logbuf to hand over to the console driver) removes one
+> > > message at a time, briefly re-enabling interrupts between each of them.
+> > > If the interrupt path prints more than a single message, then we can
+> > > easily generate more messages than we can print for a regular, recurring
+> > > interrupt (e.g. a 1khz timer). This results in messages getting silently
+> > > dropped, leading to counter-intuitive, incomplete printk traces on the
+> > > console.
+> > > 
+> > > Rather than run the console_unlock loop with interrupts disabled (which
+> > > has obvious latency problems), this patch records the sequence number of
+> > > the last message in the log buffer after taking the logbuf_lock. We can
+> > > then print this fixed amount of work before re-enabling interrupts again,
+> > > making sure we keep up with ourself. Other CPUs could still potentially
+> > > flood the buffer, but there's little that we can do to protect against
+> > > that.
+> > 
+> > Any thoughts on these two patches? I can understand the reluctance to make
+> > changes to printk, but I had a horrible time debugging timers without these
+> > patches!
+> 
+> They look fine to me.
 
+Thanks, Peter. Andrew, would you mind taking these please? They look a bit
+out of place in the arm64 tree.
+
+I can repost them if necessary.
+
+Cheers,
+
+Will
