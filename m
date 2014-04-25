@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaDYInD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:43:03 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60293 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaDYIm6 (ORCPT
+	id S1751847AbaDYIog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:44:36 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:13543 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750820AbaDYIoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:42:58 -0400
-Message-ID: <535A1FE2.3080703@linux.vnet.ibm.com>
-Date: Fri, 25 Apr 2014 14:12:10 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 25 Apr 2014 04:44:34 -0400
+X-IronPort-AV: E=Sophos;i="4.97,926,1389715200"; 
+   d="scan'208";a="29725443"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        David Howells <dhowells@redhat.com>,
+        Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Subject: [Resend][PATCH] ns,proc: introduce pid_in_ns
+Date: Fri, 25 Apr 2014 16:43:25 +0800
+Message-ID: <1398415405-19872-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Meelis Roos <mroos@linux.ee>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] cpufreq, powernow-k6: Fix double invocation of cpufreq_freq_transition_begin/end
-References: <20140425081728.10258.63980.stgit@srivatsabhat.in.ibm.com> <20140425081815.10258.36201.stgit@srivatsabhat.in.ibm.com> <CAKohpomVzp7TE6sC0FfC4x9v+pM6R4hLhz-q2E+wWybK4UuV1g@mail.gmail.com>
-In-Reply-To: <CAKohpomVzp7TE6sC0FfC4x9v+pM6R4hLhz-q2E+wWybK4UuV1g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042508-2674-0000-0000-00000DF57EFA
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 01:58 PM, Viresh Kumar wrote:
-> On 25 April 2014 13:48, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> During frequency transitions, the cpufreq core takes the responsibility of
->> invoking cpufreq_freq_transition_begin() and cpufreq_freq_transition_end()
->> for those cpufreq drivers that define the ->target_index callback but don't
->> set the ASYNC_NOTIFICATION flag.
->>
->> The powernow-k6 cpufreq driver falls under this category, but this driver was
->> invoking the _begin() and _end() APIs itself around frequency transitions,
->> which led to double invocation of the _begin() API. The _begin API makes
->> contending callers wait until the previous invocation is complete. Hence,
->> the powernow-k6 driver ended up waiting on itself, leading to system hangs
->> during boot.
->>
->> Fix this by removing the calls to the _begin() and _end() APIs from the
->> powernow-k6 driver, since they rightly belong to the cpufreq core.
->>
->> (Note that during ->exit(), the powernow-k6 driver sets the frequency
->>  without any help from the cpufreq core. So add explicit calls to the
->>  _begin() and _end() APIs around that frequency transition alone, to take
->>  care of that special case. Also, add a missing 'break' statement there.)
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/cpufreq/powernow-k6.c |   20 +++++++++++---------
->>  1 file changed, 11 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
->> index 49f120e..6a4c34e 100644
->> --- a/drivers/cpufreq/powernow-k6.c
->> +++ b/drivers/cpufreq/powernow-k6.c
->> @@ -138,22 +138,14 @@ static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
->>  static int powernow_k6_target(struct cpufreq_policy *policy,
->>                 unsigned int best_i)
->>  {
->> -       struct cpufreq_freqs freqs;
->>
->>         if (clock_ratio[best_i].driver_data > max_multiplier) {
->>                 printk(KERN_ERR PFX "invalid target frequency\n");
->>                 return -EINVAL;
->>         }
->>
->> -       freqs.old = busfreq * powernow_k6_get_cpu_multiplier();
->> -       freqs.new = busfreq * clock_ratio[best_i].driver_data;
->> -
->> -       cpufreq_freq_transition_begin(policy, &freqs);
->> -
->>         powernow_k6_set_cpu_multiplier(best_i);
->>
->> -       cpufreq_freq_transition_end(policy, &freqs, 0);
->> -
->>         return 0;
->>  }
->>
->> @@ -228,8 +220,18 @@ static int powernow_k6_cpu_exit(struct cpufreq_policy *policy)
->>  {
->>         unsigned int i;
->>         for (i = 0; i < 8; i++) {
->> -               if (i == max_multiplier)
->> +               if (i == max_multiplier) {
-> 
-> This wouldn't work, it has to be: (clock_ratio[i].driver_data == max_multiplier)
->
+We lacked of convenient method of getting the pid inside containers.
 
-Hmm, looks like an existing bug in the driver. Will fix this in the next
-version.
+If some issues occurred inside container guest, host user
+could not know which process is in trouble just by guest pid:
+the users of container guest only knew the pid inside containers.
+This will bring obstacle for trouble shooting.
 
-Regards,
-Srivatsa S. Bhat
+This patch introduces pid_in_ns:
+If one process is in init_pid_ns, /proc/PID/pid_in_ns
+equals to /proc/PID;
+if one process is in pidns, /proc/PID/pid_in_ns
+will tell the pid inside containers;
+if pidns is nested, it depends on which pidns are you in.
+
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+---
+ fs/proc/array.c    | 13 +++++++++++++
+ fs/proc/base.c     |  1 +
+ fs/proc/internal.h |  2 ++
+ 3 files changed, 16 insertions(+)
+
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 64db2bc..3ff7050 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -562,6 +562,19 @@ int proc_tgid_stat(struct seq_file *m, struct pid_namespace *ns,
+ 	return do_task_stat(m, ns, pid, task, 1);
+ }
  
->> +                       struct cpufreq_freqs freqs;
->> +
->> +                       freqs.old = policy->cur;
->> +                       freqs.new = clock_ratio[i].frequency;
->> +                       freqs.flags = 0;
->> +
->> +                       cpufreq_freq_transition_begin(policy, &freqs);
->>                         powernow_k6_target(policy, i);
->> +                       cpufreq_freq_transition_end(policy, &freqs, 0);
->> +                       break;
->> +               }
->>         }
->>         return 0;
->>  }
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
++int proc_pid_in_ns(struct seq_file *m, struct pid_namespace *ns,
++			struct pid *pid, struct task_struct *task)
++{
++	pid_t pid_in_ns;
++	unsigned int level;
++
++	level = pid->level;
++	pid_in_ns = task_pid_nr_ns(task, pid->numbers[level].ns);
++	seq_put_decimal_ull(m, 0, pid_in_ns);
++	seq_putc(m, '\n');
++	return 0;
++}
++
+ int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
+ 			struct pid *pid, struct task_struct *task)
+ {
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 2d696b0..42904b7 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2574,6 +2574,7 @@ static const struct pid_entry tgid_base_stuff[] = {
+ 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
+ 	ONE("stat",       S_IRUGO, proc_tgid_stat),
+ 	ONE("statm",      S_IRUGO, proc_pid_statm),
++	ONE("pid_in_ns",  S_IRUGO, proc_pid_in_ns),
+ 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
+ #ifdef CONFIG_NUMA
+ 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 3ab6d14..573841a 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -155,6 +155,8 @@ extern int proc_pid_status(struct seq_file *, struct pid_namespace *,
+ 			   struct pid *, struct task_struct *);
+ extern int proc_pid_statm(struct seq_file *, struct pid_namespace *,
+ 			  struct pid *, struct task_struct *);
++extern int proc_pid_in_ns(struct seq_file *, struct pid_namespace *,
++			  struct pid *, struct task_struct *);
+ 
+ /*
+  * base.c
+-- 
+1.9.0
 
