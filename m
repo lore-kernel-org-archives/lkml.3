@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaDYMPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:15:38 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:43278 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaDYMPE (ORCPT
+	id S1753266AbaDYMPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:15:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:20365 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775AbaDYMPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:15:04 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-80-535a51c5b8c6
+	Fri, 25 Apr 2014 08:15:05 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-8e-535a51c7675d
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
@@ -15,38 +15,38 @@ Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
         chow.kim@samsung.com, yg1004.jang@samsung.com,
         vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
         b.zolnierkie@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v2 01/10] ARM: EXYNOS: Make exynos machine_ops as static
-Date: Fri, 25 Apr 2014 21:32:37 +0900
-Message-id: <1398429166-5539-2-git-send-email-pankaj.dubey@samsung.com>
+Subject: [PATCH v2 04/10] ARM: EXYNOS: Remove file path from comment section
+Date: Fri, 25 Apr 2014 21:32:40 +0900
+Message-id: <1398429166-5539-5-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
  <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+Zse7RwKhggwdrdS02zljParFs0l02
-	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGuxaOsXdovDb9pZLdbPeM1icfPZdiaLHS2rWRx4
-	PFqae9g8Ni+p9+jbsorR4/MmuQCWKC6blNSczLLUIn27BK6Ml3O2sxU85ayYtvszewPjZI4u
-	Rk4OCQETiVcvb7JB2GISF+6tB7K5OIQEljFKHJjfyQZTNHPfeUaIxCJGifb2x1BVbUwSj6fu
-	ZQKpYhPQlXjyfi4ziC0ikC1xpfE+mM0s8J5R4vNhdRBbWMBD4trXJewgNouAqsTVjnmMIDav
-	gLtEW8MXoHoOoG0KEnMm2YCEOYHKTyz/yA6xq5VR4vzv2ywgjoTALnaJd/fOMkEMEpD4NvkQ
-	C0SzrMSmA8wQV0tKHFxxg2UCo/ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCHRMHEH
-	4/0D1ocYk4HGTWSWEk3OB0ZTXkm8obGZkYWpiamxkbmlGWnCSuK86Y+SgoQE0hNLUrNTUwtS
-	i+KLSnNSiw8xMnFwSjUwlj4X+b6sRfNZ7+/T0Y5hk8748PRebr6xtMst/svDzeb7jL7tXvXa
-	dI7fxFKnPdXBCi1PlxplfTbcymUm0HzQdGnDnL/1G6s/PdH8k7Qn2Un02R6WtObvy4vnPHCY
-	f++PxqIvbQ786vw5Z7bq9lRvcGX5cuxyySmhjRcfnF7H8cO+2HHGHqX5e5RYijMSDbWYi4oT
-	AS0WcpKcAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jAd2jgVHBBit7NCw2zljParFs0l02
-	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGuxaOsXdovDb9pZLdbPeM1icfPZdiaLHS2rWRx4
-	PFqae9g8Ni+p9+jbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNL
-	C3MlhbzE3FRbJRefAF23zBygy5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCB
-	hHWMGS/nbGcreMpZMW33Z/YGxskcXYycHBICJhIz951nhLDFJC7cW8/WxcjFISSwiFGivf0x
-	lNPGJPF46l4mkCo2AV2JJ+/nMoPYIgLZElca74PZzALvGSU+H1YHsYUFPCSufV3CDmKzCKhK
-	XO2YB7aBV8Bdoq3hC1A9B9A2BYk5k2xAwpxA5SeWf2SH2NXKKHH+922WCYy8CxgZVjGKphYk
-	FxQnpeca6RUn5haX5qXrJefnbmIEx9oz6R2MqxosDjEKcDAq8fBOkI0MFmJNLCuuzD3EKMHB
-	rCTC+8EvKliINyWxsiq1KD++qDQntfgQYzLQVROZpUST84FpIK8k3tDYxMzI0sjMwsjE3Jw0
-	YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGOfozuX13PpeujjngkzOvaqVDWHfj//5pVV1
-	bPEW6dTgVyuzhOe3fZtlMTVu3pPnPIb3b0WZ2l15eHV+X5m0QOOudQHTjhxKnFwocb56aXHE
-	JdlknQnmsttvZzatrVioc2/5BcMPLze9uppX8S7QLZe5t5//6L1Chw91izoCJgqffTnFwXV2
-	d4YSS3FGoqEWc1FxIgDummAD+QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42I5/e+Zse7xwKhgg509ZhYbZ6xntVg26S6b
+	Re+Cq2wWmx5fY7W4vGsOm8WM8/uYLG5f5rVYtPULu8XhN+2sFutnvGaxuPlsO5PFjpbVLA48
+	Hi3NPWwem5fUe/RtWcXo8XmTXABLFJdNSmpOZllqkb5dAldG08sdzAU7+SumvpzB3MD4kaeL
+	kZNDQsBE4tzko+wQtpjEhXvr2boYuTiEBJYxSrQu/MYEU3Rw7hVGiMQiRon5PxYzQThtTBKN
+	1y6zgVSxCehKPHk/lxnEFhHIlrjSeB/MZhZ4zyjx+bA6iC0s4CNxtmkXC4jNIqAqcXLZD7DV
+	vALuEv2dO4DiHEDbFCTmTLIBCXMKeEicWP6RHWJXK6PE+d+3WUAcCYF97BJnb/azQQwSkPg2
+	+RBUs6zEpgPMEFdLShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxgh0TBx
+	B+P9A9aHGJOBxk1klhJNzgdGU15JvKGxmZGFqYmpsZG5pRlpwkrivOmPkoKEBNITS1KzU1ML
+	Uovii0pzUosPMTJxcEo1MFpyCOvIZsZMzfi8ns3s4eqL0tNdZxxvMVqzIOjduvZ7nIvvrl3x
+	K+g4a9vPu2/Sz/yXOfG3Q1D8j9uaEw+yDA5/M5L45Z4tOnGB9T+u/9krMpWs8v+VWjlqcc87
+	/1Zf4/BCOb49F8S1Dv4I92664mqqr7tg1jW770ePb680lBUT/da5SPzWuQIlluKMREMt5qLi
+	RAA19KPinAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jAd3jgVHBBs/eG1hsnLGe1WLZpLts
+	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsrh9mddi0dYv7BaH37SzWqyf8ZrF4uaz7UwWO1pWszjw
+	eLQ097B5bF5S79G3ZRWjx+dNcgEsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaW
+	FuZKCnmJuam2Si4+AbpumTlAlykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkAD
+	CesYM5pe7mAu2MlfMfXlDOYGxo88XYycHBICJhIH515hhLDFJC7cW8/WxcjFISSwiFFi/o/F
+	TBBOG5NE47XLbCBVbAK6Ek/ez2UGsUUEsiWuNN4Hs5kF3jNKfD6sDmILC/hInG3axQJiswio
+	Spxc9oMdxOYVcJfo79wBFOcA2qYgMWeSDUiYU8BD4sTyj+wQu1oZJc7/vs0ygZF3ASPDKkbR
+	1ILkguKk9FxDveLE3OLSvHS95PzcTYzgWHsmtYNxZYPFIUYBDkYlHt4PapHBQqyJZcWVuYcY
+	JTiYlUR4P/hFBQvxpiRWVqUW5ccXleakFh9iTAa6aiKzlGhyPjAN5JXEGxqbmBlZGplZGJmY
+	m5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QD49EAn/5PyvL7wqyrph9hjj5zyLm68nhe
+	4OObK3hsyvyZTHSKfT7bNh/beHva9veTdOInxi8TUDxy9OQP9d4s872afI+OphYIJ3wT26gl
+	vNdBUebhhGSrHONrFbNPvzi4N3bbrPsVfd9WnJB2yTvw4Gehfa/ckvQHM7WnLnjx2eX8wrqv
+	4pc+uSixFGckGmoxFxUnAgC8PFXU+QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,45 +54,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As machine function ops are used only in this file let's make
-them static.
+Many files under "arm/mach-exynos" are having file path in file
+comment section which is invalid now.
+So for better code maintainability let's remove them.
 
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
- arch/arm/mach-exynos/exynos.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-exynos/headsmp.S             |    2 --
+ arch/arm/mach-exynos/hotplug.c             |    3 +--
+ arch/arm/mach-exynos/include/mach/memory.h |    3 +--
+ arch/arm/mach-exynos/platsmp.c             |    3 +--
+ 4 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index b32a907..2388ee4 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -198,7 +198,7 @@ static struct map_desc exynos5_iodesc[] __initdata = {
- 	},
- };
- 
--void exynos_restart(enum reboot_mode mode, const char *cmd)
-+static void exynos_restart(enum reboot_mode mode, const char *cmd)
- {
- 	struct device_node *np;
- 	u32 val = 0x1;
-@@ -235,7 +235,7 @@ void __init exynos_cpufreq_init(void)
- 	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
- }
- 
--void __init exynos_init_late(void)
-+static void __init exynos_init_late(void)
- {
- 	if (of_machine_is_compatible("samsung,exynos5440"))
- 		/* to be supported later */
-@@ -296,7 +296,7 @@ static void __init exynos_map_io(void)
- 		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
- }
- 
--void __init exynos_init_io(void)
-+static void __init exynos_init_io(void)
- {
- 	debug_ll_io_init();
- 
+diff --git a/arch/arm/mach-exynos/headsmp.S b/arch/arm/mach-exynos/headsmp.S
+index cdd9d91..698c57f 100644
+--- a/arch/arm/mach-exynos/headsmp.S
++++ b/arch/arm/mach-exynos/headsmp.S
+@@ -1,6 +1,4 @@
+ /*
+- *  linux/arch/arm/mach-exynos4/headsmp.S
+- *
+  *  Cloned from linux/arch/arm/mach-realview/headsmp.S
+  *
+  *  Copyright (c) 2003 ARM Limited
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index 5eead53..73b0b5c 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -1,5 +1,4 @@
+-/* linux arch/arm/mach-exynos4/hotplug.c
+- *
++/*
+  *  Cloned from linux/arch/arm/mach-realview/hotplug.c
+  *
+  *  Copyright (C) 2002 ARM Ltd.
+diff --git a/arch/arm/mach-exynos/include/mach/memory.h b/arch/arm/mach-exynos/include/mach/memory.h
+index 2a4cdb7..e19df1f 100644
+--- a/arch/arm/mach-exynos/include/mach/memory.h
++++ b/arch/arm/mach-exynos/include/mach/memory.h
+@@ -1,5 +1,4 @@
+-/* linux/arch/arm/mach-exynos4/include/mach/memory.h
+- *
++/*
+  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
+diff --git a/arch/arm/mach-exynos/platsmp.c b/arch/arm/mach-exynos/platsmp.c
+index 03e5e9f..29c2286 100644
+--- a/arch/arm/mach-exynos/platsmp.c
++++ b/arch/arm/mach-exynos/platsmp.c
+@@ -1,5 +1,4 @@
+-/* linux/arch/arm/mach-exynos4/platsmp.c
+- *
++/*
+  * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+  *		http://www.samsung.com
+  *
 -- 
 1.7.10.4
 
