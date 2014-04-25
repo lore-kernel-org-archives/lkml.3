@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292AbaDYI7I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:59:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaDYI7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:59:04 -0400
-Date: Fri, 25 Apr 2014 11:00:30 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Shahed Shaikh <shahed.shaikh@qlogic.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dept-HSG Linux NIC Dev <Dept-HSGLinuxNICDev@qlogic.com>,
-        netdev <netdev@vger.kernel.org>, linux-pci <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH net-next 2/2] qlcnic: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-Message-ID: <20140425090029.GA2500@dhcp-26-207.brq.redhat.com>
-References: <cover.1398412015.git.agordeev@redhat.com>
- <0a0d5f5c33d86e3777c22c3c1bbd81035660d57c.1398412015.git.agordeev@redhat.com>
- <262CB373A6D1F14F9B81E82F74F77D5A46F9EE54@avmb2.qlogic.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F9EE54@avmb2.qlogic.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752457AbaDYJAX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:00:23 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:35245 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365AbaDYJAT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:00:19 -0400
+From: Kefeng Wang <kefeng.wang@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: wangkefeng.wang@huawei.com, kefeng.wang@linaro.org, xuwei5@hisilicon.com
+Subject: [PATCH v6 0/3] ahci: add support for hisilicon sata
+Date: Fri, 25 Apr 2014 16:59:08 +0800
+Message-Id: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 08:48:14AM +0000, Shahed Shaikh wrote:
-> > diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > index dbf7539..26f022b 100644
-> > --- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > +++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-> > @@ -690,8 +690,8 @@ int qlcnic_setup_tss_rss_intr(struct qlcnic_adapter
-> > *adapter)
-> >  		adapter->msix_entries[vector].entry = vector;
-> > 
-> >  restore:
-> > -	err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
-> > -	if (err > 0) {
-> > +	err = pci_enable_msix_exact(pdev, adapter->msix_entries,
-> > num_msix);
-> > +	if (err == -ENOSPC) {
-> >  		if (!adapter->drv_tss_rings && !adapter->drv_rss_rings)
-> >  			return -ENOSPC;
-> 
-> I think, it would be good if we return "err" instead of "-ENOSPC" .
->   
->                 if (!adapter->drv_tss_rings && !adapter->drv_rss_rings)
-> -                       return -ENOSPC;
-> +                       return err;
+change in v6:
+1) type of host_flags changed from unsigned int to unsigned long,
+   fix the building warning and error. 
 
-At this point "err" could only be -ENOSPC. I am not sure why returning
-"err" is better, but I'll repost if you insist.
+channge in v5:
+1) drop AHCI_HFLAGS(...) from ahci_xgene.c and do use host_flags
+   in ahci_platform_init_host, it's my carelessness.
 
-> 
-> Thanks,
-> Shahed
-> 
+changes in v4:
+1) add a dynamic host_flags parameter in ahci_platform_init_host
+   to make it more flexible, modify some driver to use new
+   way to pass host flags, suggested by Hans
+
+changes in v3:
+1) move NO_FBS chunk after YES_FBS, Tejun's suggestion
+2) use ata_port_info pointer to avoid struct ata_port_info
+   on the stack twice
+
+changes in v2:
+1) make code more concise according to Hans's advice
+
+Kefeng Wang (3):
+  ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
+  libahci_platform: add host_flags parameter in
+    ahci_platform_init_host()
+  ahci: add support for Hisilicon sata
+
+ .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
+ drivers/ata/ahci.h                                 |    1 +
+ drivers/ata/ahci_da850.c                           |    3 ++-
+ drivers/ata/ahci_imx.c                             |    3 ++-
+ drivers/ata/ahci_platform.c                        |    9 ++++++++-
+ drivers/ata/ahci_st.c                              |    2 +-
+ drivers/ata/ahci_sunxi.c                           |    9 ++++++---
+ drivers/ata/ahci_xgene.c                           |    7 +++++--
+ drivers/ata/libahci.c                              |    5 +++++
+ drivers/ata/libahci_platform.c                     |    5 ++++-
+ include/linux/ahci_platform.h                      |    1 +
+ 11 files changed, 37 insertions(+), 11 deletions(-)
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.9.5
+
