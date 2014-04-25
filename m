@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754055AbaDYU6p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:58:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44819 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaDYU6o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:58:44 -0400
-Message-ID: <535ACC62.102@ti.com>
-Date: Fri, 25 Apr 2014 15:58:10 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754640AbaDYU7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:59:37 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36511 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754465AbaDYU7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 16:59:33 -0400
+Date: Fri, 25 Apr 2014 22:59:27 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv3 07/14] HSI: Add common DT binding for HSI client devices
+Message-ID: <20140425205926.GA30032@earth.universe>
+References: <1396053110-21639-1-git-send-email-sre@kernel.org>
+ <1396053110-21639-8-git-send-email-sre@kernel.org>
+ <20140419191612.GG5148@amd.pavel.ucw.cz>
+ <20140425182535.GB22721@earth.universe>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-CC: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] power: twl4030_charger: clear IRQs after handling them
-References: <1397661299-31342-1-git-send-email-balbi@ti.com> <20140416163526.GA3049@atomide.com>
-In-Reply-To: <20140416163526.GA3049@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
+Content-Disposition: inline
+In-Reply-To: <20140425182535.GB22721@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 11:35 AM, Tony Lindgren wrote:
-> * Felipe Balbi <balbi@ti.com> [140416 08:18]:
->> TRM says we *must* write 1 to each bit we're handling
->> in order to clear the IRQ status and bring IRQ line
->> low. This patch implements that.
->>
->> Signed-off-by: Felipe Balbi <balbi@ti.com>
->> ---
->>
->> Russell, I don't have HW to test, but this should
->> solve the problem you saw when not using battery
->> with Zoom board. Let me know if it doesn't.
-> 
-> BTW, looks like we're enabling BCI automatically in twl4030.dtsi
-> while the legacy booting does not have TWL_COMMON_PDATA_BCI
-> enabled for LDP. Anyways, for LDP BCI should be enabled for
-> sure, that's the only way to power at least the earlier LDP
-> revisions.
-> 
-I picked up https://patchwork.kernel.org/patch/4002371/ for testing.
 
-Unfortunately, it does not seem to work in my tests:
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ldp-board-no-battery uses upstream u-boot in a chainloaded
-configuration + does not have battery plugged in, instead, just J58
-(charger) is connected - this is plugged on a remote farm setup for
-developers to work with.
+On Fri, Apr 25, 2014 at 08:25:36PM +0200, Sebastian Reichel wrote:
+> On Sat, Apr 19, 2014 at 09:16:12PM +0200, Pavel Machek wrote:
+> > On Sat 2014-03-29 01:31:43, Sebastian Reichel wrote:
+> > > Implement and document generic DT bindings for HSI clients.
+> > >=20
+> > > Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> >=20
+> > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> >=20
+> > > diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
+> > > index 07e1639..5973906 100644
+> > > --- a/drivers/hsi/hsi.c
+> > > +++ b/drivers/hsi/hsi.c
+> > > @@ -26,8 +26,14 @@
+> > >  #include <linux/slab.h>
+> > >  #include <linux/string.h>
+> > >  #include <linux/notifier.h>
+> > > +#include <linux/of.h>
+> > > +#include <linux/of_device.h>
+> > >  #include "hsi_core.h"
+> >=20
+> >=20
+> > > +	err =3D hsi_of_property_parse_mode(client, "hsi-mode", &mode);
+> > > +	if (err) {
+> > > +		err =3D hsi_of_property_parse_mode(client, "hsi-rx-mode",
+> > > +						 &cl->rx_cfg.mode);
+> > > +		if (err)
+> > > +			goto err;
+> > > +
+> > > +		err =3D hsi_of_property_parse_mode(client, "hsi-tx-mode",
+> > > +						 &cl->tx_cfg.mode);
+> > > +		if (err)
+> > > +			goto err;
+> >=20
+> > Will this need some #ifdef CONFIG_OF?
+>=20
+> It would only be needed to reduce the amount of kernel code for
+> disabled Device Tree. I don't think its worth it, since there is no
+> platform in the mainline kernel, which uses HSI without DT.
 
-ldp-board-with-battery uses legacy bootloader with a battery simulator.
+mh actually it is needed, since there is no stub provided for
+of_modalias_node in non DT mode (there are stubs for all other
+of_* methods used). I will include the ifdef in PATCHv5.
 
-omap2plus_defconfig + CONFIG_CHARGER_TWL4030 enabled.
+-- Sebastian
 
-Result:
- v3-15-rc2-ldp-board-no-battery:  Boot FAIL:
-http://slexy.org/raw/s20riTwu04
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- v3-15-rc2-ldp-board-with-battery:  Boot PASS:
-http://slexy.org/raw/s2elKdJpI7
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
- v3-15-rc2-with-felipe-fix-ldp-board-no-battery:  Boot FAIL:
-http://slexy.org/raw/s20lKp2o0s
+iQIcBAEBCgAGBQJTWsyuAAoJENju1/PIO/qakcEP/j+5K9uSIBjRtbyAKjaLqIqK
+AqH+qlv5IfUo8pI06LmIqAfno2BOvTN8SGjG8vPaJB6ObA4q34LRhmWwyIZxP9fX
+7pGY+ELRoICAIgRatVmAO/Qf2+cNhcfXkLh0fYTBJwOxq+qo+9FQWXmTp3VeI23o
+3kTLorhBq4PrO7zpay3H9FllclvwUxZ27iIajku5+Hofe38joWqYtfhBow9/0LsL
+wk5xL7rEhqJudgiOjBm+SBx0kTssxLXaUTV3fUeII2L9997TQzJ8TjdiCQBGsqQg
+NZuHy18wpaFwcPH9qVein1A9CqKCko9fr9AEE03366c4yO6rJWeoIj7t2XQZtGwG
+JoAFvtlxq2kNWvAnfM3RGZqxHSDF2Azofm9wqZZSSJCojzwZ1JrURJ+nJlmFZQnM
+KXq/+e5Pnmsuy5AzLyG5diIclBgcTKW+fd2vycaaB8rC546xjQwN+VWalgApGylV
+nT7OG3m93Ytw9+XClz4oPPxIiaCiH05iMIUVkebk0BWKJwUvZDyMepR2WzGMHqSs
+CXsKPCu8ElOFQWaZuvlXiVUJN6MB6lJxjdXqcAXgzEJKm2LKTG27NpY1kt2JhiYz
+7qOO1MUUOsGzXEp3S9l+bkJ7NXGLByMoLuyCRfBVd6kqm37vCH2UijNICsaC06JR
+mmQrl5kcwqYgxyCbU5wI
+=XRjv
+-----END PGP SIGNATURE-----
 
-
-This patch should probably also acknowledge that Russell reported this
-issue.
--- 
-Regards,
-Nishanth Menon
+--ew6BAiZeqk4r7MaW--
