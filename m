@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbaDYQCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:02:09 -0400
-Received: from 4dim-gw.4dim.as ([81.7.137.98]:22276 "EHLO
-	SECOEXCHANGE.secomea.local" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751351AbaDYQCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:02:04 -0400
-Message-ID: <535A86F3.5010602@secomea.com>
-Date: Fri, 25 Apr 2014 18:01:55 +0200
-From: =?UTF-8?B?U3Zlbm5pbmcgU8O4cmVuc2Vu?= <sss@secomea.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752455AbaDYQCH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:02:07 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:33296 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293AbaDYQCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:02:03 -0400
+Date: Fri, 25 Apr 2014 17:59:23 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 14/18] ARM: mvebu: Add support for USB cluster on the
+ Armada 375 SoC
+Message-ID: <20140425155923.GD12472@lunn.ch>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+ <1398434836-18908-15-git-send-email-gregory.clement@free-electrons.com>
+ <20140425154320.GA20801@arch.cereza>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH] net: guard against coalescing packets from buggy network
- drivers
-References: <535A78ED.3020309@secomea.com> <1398440595.29914.77.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1398440595.29914.77.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [178.21.90.126]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425154320.GA20801@arch.cereza>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > +			 * We can't use usb2 and usb3 in the same time, so let's
+> > +			 * disbale usb2 and complain about it to the user askinf
+> 
+> typos: disable, asking
 
-On 25-04-2014 17:43, Eric Dumazet wrote:
->
-> If you want a debugging patch, this should happen way before TCP stack
-> or even IP stack.
->
-> Say you want to use this buggy driver on a router, this code path will
-> never bit hit.
->
-You are right, of course, there are more effective ways to catch buggy 
-drivers.
-But they will probably also be much more expensive.
-This one is very cheap, being in a relatively cold path, especially 
-compared to the memcpy in the same path.
+And it should be "at the same time", not in.
 
-Svenning
+    Andrew
