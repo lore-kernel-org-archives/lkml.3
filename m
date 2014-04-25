@@ -1,59 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaDYO5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:57:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45575 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589AbaDYO5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:57:05 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
-Subject: [RFC] UAPI: Prevent kernel modules from using the exported headers
-Date: Fri, 25 Apr 2014 16:56:48 +0200
-Message-Id: <1398437808-9263-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
+	id S1751563AbaDYO71 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:59:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52177 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751165AbaDYO7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:59:25 -0400
+Message-ID: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] SCSI fixes for 3.15-rc3
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 25 Apr 2014 07:59:20 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandriva/Mageia and SUSE have been adding an #error statement to the
-/usr/include/linux/version.h header and it does trigger with broken out
-of tree modules occasionally. Adding it to all exported headers should
-not hurt and is easier to implement.
+This is a set of seven fixes, three (hpsa) and free'd command references
+correcting bugs in the last round of updates and the remaining four
+correcting problems within the SCSI error handler that was causing a
+deadlock within USB.
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+The patch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+
+The short changelog is:
+
+Alan Stern (1):
+      Fix command result state propagation
+
+Christoph Hellwig (2):
+      don't reference freed command in scsi_prep_return
+      don't reference freed command in scsi_init_sgtable
+
+Hannes Reinecke (1):
+      Fix USB deadlock caused by SCSI error handling
+
+James Bottomley (2):
+      More USB deadlock fixes
+      Fix spurious request sense in error handling
+
+scameron@beardog.cce.hp.com (1):
+      hpsa: fix NULL dereference in hpsa_put_ctlr_into_performant_mode()
+
+And the diffstat:
+
+ drivers/scsi/hpsa.c       |  8 ++++----
+ drivers/scsi/scsi_error.c | 12 ++++++++++++
+ drivers/scsi/scsi_lib.c   |  6 ++++--
+ 3 files changed, 20 insertions(+), 6 deletions(-)
+
+With full diffs below.
+
+James
+
 ---
- scripts/headers_install.sh | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/headers_install.sh b/scripts/headers_install.sh
-index 5de5660..1c787da 100644
---- a/scripts/headers_install.sh
-+++ b/scripts/headers_install.sh
-@@ -30,16 +30,19 @@ trap 'rm -f "$OUTDIR/$FILE" "$OUTDIR/$FILE.sed"' EXIT
- for i in "$@"
- do
- 	FILE="$(basename "$i")"
-+	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$SRCDIR/$i" \
-+		> "$OUTDIR/$FILE.sed"
- 	sed -r \
-+		-e '1i #ifdef __KERNEL__' \
-+		-e '1i #error Kernel modules must not include files from /usr/include/' \
-+		-e '1i #endif' \
- 		-e 's/([ \t(])(__user|__force|__iomem)[ \t]/\1/g' \
- 		-e 's/__attribute_const__([ \t]|$)/\1/g' \
- 		-e 's@^#include <linux/compiler.h>@@' \
- 		-e 's/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g' \
- 		-e 's/(^|[ \t(])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
- 		-e 's@#(ifndef|define|endif[ \t]*/[*])[ \t]*_UAPI@#\1 @' \
--		"$SRCDIR/$i" > "$OUTDIR/$FILE.sed" || exit 1
--	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$FILE.sed" \
--		> "$OUTDIR/$FILE"
-+		"$OUTDIR/$FILE.sed" >"$OUTDIR/$FILE" || exit 1
- 	[ $? -gt 1 ] && exit 1
- 	rm -f "$OUTDIR/$FILE.sed"
- done
--- 
-1.8.4.5
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 8cf4a0c..9a6e4a2 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+ 	if (hpsa_simple_mode)
+ 		return;
+ 
++	trans_support = readl(&(h->cfgtable->TransportSupport));
++	if (!(trans_support & PERFORMANT_MODE))
++		return;
++
+ 	/* Check for I/O accelerator mode support */
+ 	if (trans_support & CFGTBL_Trans_io_accel1) {
+ 		transMethod |= CFGTBL_Trans_io_accel1 |
+@@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+ 	}
+ 
+ 	/* TODO, check that this next line h->nreply_queues is correct */
+-	trans_support = readl(&(h->cfgtable->TransportSupport));
+-	if (!(trans_support & PERFORMANT_MODE))
+-		return;
+-
+ 	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
+ 	hpsa_get_max_perf_mode_cmds(h);
+ 	/* Performant mode ring buffer and supporting data structures */
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index 771c16b..f17aa7a 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -189,6 +189,7 @@ scsi_abort_command(struct scsi_cmnd *scmd)
+ 		/*
+ 		 * Retry after abort failed, escalate to next level.
+ 		 */
++		scmd->eh_eflags &= ~SCSI_EH_ABORT_SCHEDULED;
+ 		SCSI_LOG_ERROR_RECOVERY(3,
+ 			scmd_printk(KERN_INFO, scmd,
+ 				    "scmd %p previous abort failed\n", scmd));
+@@ -920,10 +921,12 @@ void scsi_eh_prep_cmnd(struct scsi_cmnd *scmd, struct scsi_eh_save *ses,
+ 	ses->prot_op = scmd->prot_op;
+ 
+ 	scmd->prot_op = SCSI_PROT_NORMAL;
++	scmd->eh_eflags = 0;
+ 	scmd->cmnd = ses->eh_cmnd;
+ 	memset(scmd->cmnd, 0, BLK_MAX_CDB);
+ 	memset(&scmd->sdb, 0, sizeof(scmd->sdb));
+ 	scmd->request->next_rq = NULL;
++	scmd->result = 0;
+ 
+ 	if (sense_bytes) {
+ 		scmd->sdb.length = min_t(unsigned, SCSI_SENSE_BUFFERSIZE,
+@@ -1157,6 +1160,15 @@ int scsi_eh_get_sense(struct list_head *work_q,
+ 					     __func__));
+ 			break;
+ 		}
++		if (status_byte(scmd->result) != CHECK_CONDITION)
++			/*
++			 * don't request sense if there's no check condition
++			 * status because the error we're processing isn't one
++			 * that has a sense code (and some devices get
++			 * confused by sense requests out of the blue)
++			 */
++			continue;
++
+ 		SCSI_LOG_ERROR_RECOVERY(2, scmd_printk(KERN_INFO, scmd,
+ 						  "%s: requesting sense\n",
+ 						  current->comm));
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 65a123d..9db097a 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -137,6 +137,7 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+ 	 * lock such that the kblockd_schedule_work() call happens
+ 	 * before blk_cleanup_queue() finishes.
+ 	 */
++	cmd->result = 0;
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	blk_requeue_request(q, cmd->request);
+ 	kblockd_schedule_work(q, &device->requeue_work);
+@@ -1044,6 +1045,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
+  */
+ int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
+ {
++	struct scsi_device *sdev = cmd->device;
+ 	struct request *rq = cmd->request;
+ 
+ 	int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
+@@ -1091,7 +1093,7 @@ err_exit:
+ 	scsi_release_buffers(cmd);
+ 	cmd->request->special = NULL;
+ 	scsi_put_command(cmd);
+-	put_device(&cmd->device->sdev_gendev);
++	put_device(&sdev->sdev_gendev);
+ 	return error;
+ }
+ EXPORT_SYMBOL(scsi_init_io);
+@@ -1273,7 +1275,7 @@ int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
+ 			struct scsi_cmnd *cmd = req->special;
+ 			scsi_release_buffers(cmd);
+ 			scsi_put_command(cmd);
+-			put_device(&cmd->device->sdev_gendev);
++			put_device(&sdev->sdev_gendev);
+ 			req->special = NULL;
+ 		}
+ 		break;
+
 
