@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbaDYPaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:30:21 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54570 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaDYPaS (ORCPT
+	id S1752016AbaDYPbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:31:38 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:47894 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaDYPbg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:30:18 -0400
-Message-ID: <535A7E49.8000809@wwwdotorg.org>
-Date: Fri, 25 Apr 2014 09:24:57 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 25 Apr 2014 11:31:36 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>,
-        Rob Herring <robherring2@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] gpio: of: Allow -gpio suffix for property names
-References: <1398266889-17489-1-git-send-email-thierry.reding@gmail.com> <1398266889-17489-2-git-send-email-thierry.reding@gmail.com> <CACRpkdadAUXgC-K6be6SFFn2ZTvCqkTK7VRJEzpFdUbybKc3YA@mail.gmail.com> <CAL_Jsq+DwCBLoNYsgHnoLQgSMnSBDM5XH_xoWS-RWdmx-JBeXg@mail.gmail.com> <20140424182243.GA27443@ulmo>
-In-Reply-To: <20140424182243.GA27443@ulmo>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Transfer-Encoding: 8BIT
+To: Maxime COQUELIN <maxime.coquelin@st.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1391012648-12481-2-git-send-email-maxime.coquelin@st.com>
+Cc: kernel@stlinux.com, maxime.coquelin@st.com
+References: <1391012648-12481-1-git-send-email-maxime.coquelin@st.com>
+ <1391012648-12481-2-git-send-email-maxime.coquelin@st.com>
+Message-ID: <20140425153126.23156.76868@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 1/3] clk: divider: Fix best div calculation for power-of-two and
+ table dividers
+Date: Fri, 25 Apr 2014 08:31:26 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 12:22 PM, Thierry Reding wrote:
-...
-> The downside of not allowing the gpiod API to support the -gpio suffix
-> is that we'll never be able to convert drivers that use such a binding
-> and will forever have a hodgepodge of GPIO APIs that we need to support.
+Quoting Maxime COQUELIN (2014-01-29 08:24:06)
+> The divider returned by clk_divider_bestdiv() is likely to be invalid in case
+> of power-of-two and table dividers when CLK_SET_RATE_PARENT flag isn't set.
+> 
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-Perhaps rather than making the existing gpiod API automatically search
-for both -gpios and -gpio, we could make a new API for the other suffix,
-so that driver indicate explicitly which property name they want. That
-way, someone can't accidentally write -gpio in the DT and have it still
-work. Or, add a parameter to the existing API, but that's probably a lot
-more churn.
+I've taken this into clk-fixes for 3.15-rcX.
 
+Thanks,
+Mike
+
+> ---
+>  drivers/clk/clk-divider.c |   37 ++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 36 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> index 5543b7d..2137d58 100644
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+> @@ -144,6 +144,37 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+>         return true;
+>  }
+>  
+> +static int _round_up_table(const struct clk_div_table *table, int div)
+> +{
+> +       const struct clk_div_table *clkt;
+> +       int up = _get_table_maxdiv(table);
+> +
+> +       for (clkt = table; clkt->div; clkt++) {
+> +               if (clkt->div == div)
+> +                       return clkt->div;
+> +               else if (clkt->div < div)
+> +                       continue;
+> +
+> +               if ((clkt->div - div) < (up - div))
+> +                       up = clkt->div;
+> +       }
+> +
+> +       return up;
+> +}
+> +
+> +static int _div_round_up(struct clk_divider *divider,
+> +               unsigned long parent_rate, unsigned long rate)
+> +{
+> +       int div = DIV_ROUND_UP(parent_rate, rate);
+> +
+> +       if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
+> +               div = __roundup_pow_of_two(div);
+> +       if (divider->table)
+> +               div = _round_up_table(divider->table, div);
+> +
+> +       return div;
+> +}
+> +
+>  static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>                 unsigned long *best_parent_rate)
+>  {
+> @@ -159,7 +190,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>  
+>         if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
+>                 parent_rate = *best_parent_rate;
+> -               bestdiv = DIV_ROUND_UP(parent_rate, rate);
+> +               bestdiv = _div_round_up(divider, parent_rate, rate);
+>                 bestdiv = bestdiv == 0 ? 1 : bestdiv;
+>                 bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
+>                 return bestdiv;
+> @@ -219,6 +250,10 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
+>         u32 val;
+>  
+>         div = parent_rate / rate;
+> +
+> +       if (!_is_valid_div(divider, div))
+> +               return -EINVAL;
+> +
+>         value = _get_val(divider, div);
+>  
+>         if (value > div_mask(divider))
+> -- 
+> 1.7.9.5
+> 
