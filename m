@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486AbaDYFyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 01:54:46 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:47579 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaDYFyo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 01:54:44 -0400
-Message-ID: <5359F894.4070205@linaro.org>
-Date: Fri, 25 Apr 2014 11:24:28 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: kgene.kim@samsung.com, t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
-        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv4 3/7] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-4-git-send-email-cw00.choi@samsung.com> <5359E4E6.90102@linaro.org> <5359F5F5.7030109@samsung.com>
-In-Reply-To: <5359F5F5.7030109@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751747AbaDYF4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 01:56:25 -0400
+Received: from 1wt.eu ([62.212.114.60]:33024 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750801AbaDYF4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 01:56:24 -0400
+Date: Fri, 25 Apr 2014 07:56:09 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Bastien Armand <armand.bastien@laposte.net>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Willy Tarreau <willy@meta-x.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] staging: panel: fix sparse warnings in lcd_write
+Message-ID: <20140425055609.GF19929@1wt.eu>
+References: <20140418161057.GC1258@plop.dartybox.com> <20140422100144.GE26890@mwanda> <20140423173435.GB10879@plop.dartybox.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423173435.GB10879@plop.dartybox.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 11:13 AM, Chanwoo Choi wrote:
-> Hi,
-> 
-> On 04/25/2014 01:30 PM, Tushar Behera wrote:
->> On 04/25/2014 06:46 AM, Chanwoo Choi wrote:
->>> This patch fix the offset of CPU boot address and don't need to send smc call
->>> of SMC_CMD_CPU1BOOT command for secondary CPU boot because Exynos3250 removes
->>> WFE in secure mode.
->>>
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>>  arch/arm/mach-exynos/firmware.c | 10 ++++++++--
->>>  1 file changed, 8 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
->>> index aa01c42..386d01d 100644
->>> --- a/arch/arm/mach-exynos/firmware.c
->>> +++ b/arch/arm/mach-exynos/firmware.c
->>> @@ -31,11 +31,17 @@ static int exynos_do_idle(void)
->>>  static int exynos_cpu_boot(int cpu)
->>>  {
->>>  	/*
->>> +	 * Exynos3250 doesn't need to send smc command for secondary CPU boot
->>> +	 * because Exynos3250 removes WFE in secure mode.
->>> +	 */
->>> +	if (soc_is_exynos3250())
->>> +		return 0;
->>> +	/*
->>>  	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
->>>  	 * But, Exynos4212 has only one secondary CPU so second parameter
->>>  	 * isn't used for informing secure firmware about CPU id.
->>>  	 */
->>> -	if (soc_is_exynos4212())
->>> +	else if (soc_is_exynos4212())
->>
->> This changes is not required.
-> 
-> Do you mean it as following?
-> 
-> 	if (soc_is_exynos3250())
-> 		return 0
-> 
-> 	if (soc_is_exynos4212())
-> 		cpu = 0;
-> 
+On Wed, Apr 23, 2014 at 07:35:02PM +0200, Bastien Armand wrote:
+> On Tue, Apr 22, 2014 at 01:01:45PM +0300, Dan Carpenter wrote:
+> > Btw, this whole function is terrible.  It should be reading larger
+> > chunks at once instead of get_user() for each character.
 
-Yes, logically the flow would be same and code would be more readable.
+Just for the record, very small character counts may be sent to an LCD
+panel, in general these are 2 lines of 16 characters, and at most 2x40,
+and changes are very rare. The worst case will be if someone displays
+the time of day, it will change every second.
 
->>
->>>  		cpu = 0;
->>>  
->>>  	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
->>> @@ -46,7 +52,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
->>>  {
->>>  	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
->>>  
->>> -	if (!soc_is_exynos4212())
->>> +	if (!soc_is_exynos4212() && !soc_is_exynos3250())
->>>  		boot_reg += 4*cpu;
->>>  
->>>  	__raw_writel(boot_addr, boot_reg);
->>>
->>
->>
+> > > +	if (lcd_enabled && lcd_initialized) {
+> > > +		for (; count-- > 0; tmp++) {
+> > > +			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
+> > > +				/* let's be a little nice with other processes
+> > > +				   that need some CPU */
+> > > +				schedule();
+> > 
+> > This schedule() isn't needed.  It just prints a line or two at start up
+> > and some other debug output or something.  Small small.
+> > 
 > 
+> I hesitated to remove it. I leave it here as it was allready in lcd_write.
+> Perhaps, I could send another patch to remove it.
 
+I believe it can go. I have some memories of it when I was developing the
+driver because I didn't know if some LCDs would need long pauses between
+each character. Hmmm well, thinking about it after re-reading the code,
+we could wait up to 20+40+120 = 180 microseconds when sending one command
+(eg: position change), or 20+40+45 = 105 microseconds when sending one
+char. That's basically 180+40*105 = 4.185 milliseconds for one full line,
+or 8 milliseconds for two lines of 40 chars. So maybe we should keep the
+schedule() in the end...
 
--- 
-Tushar Behera
+Best regards,
+Willy
+
