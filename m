@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaDYGWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 02:22:19 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59918 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaDYGWR (ORCPT
+	id S1751750AbaDYGXp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 02:23:45 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:53741 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaDYGXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 02:22:17 -0400
-Date: Fri, 25 Apr 2014 01:22:13 -0500
-From: Michael Welling <mwelling@ieee.org>
-To: gnomes@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, jslaby@suse.cz
-Subject: Re: [PATCH 1/2] tty serial: xr17c15x driver
-Message-ID: <20140425062213.GA2371@deathray>
-Reply-To: 20140410114648.68bfbf61@alan.etchedpixels.co.uk
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 Apr 2014 02:23:44 -0400
+Message-ID: <1398407020.7893.34.camel@marge.simpson.net>
+Subject: Re: [RFC] A new CPU load metric for power-efficient scheduler: CPU
+ ConCurrency
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Yuyang Du <yuyang.du@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, alan.cox@intel.com,
+        mark.gross@intel.com, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org
+Date: Fri, 25 Apr 2014 08:23:40 +0200
+In-Reply-To: <20140424193004.GA2467@intel.com>
+References: <20140424193004.GA2467@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe I found a related unresolved kernel bug:
-"Bug 61961 – My Exar Corp. XR17C/D152 Dual PCI UART modem does not
-work with 3.8.0"
+On Fri, 2014-04-25 at 03:30 +0800, Yuyang Du wrote:
 
-The issue appears to be the same and gave me a clue as to where to
-look.
+> To track CC, we intercept the scheduler in 1) enqueue, 2) dequeue, 3)
+> scheduler tick, and 4) enter/exit idle.
 
-Comparing the code from 3.5 to 3.8, I noticed that the UART_CAP_SLEEP
-flag was added to the XR17D15X Exar chip.
+Boo hiss to 1, 2 and 4.  Less fastpath math would be better.
 
-Then I noticed what appears to be a bug in the serial8250_set_sleep
-function:
-.
-.
-        if ((p->port.type == PORT_XR17V35X) ||
-           (p->port.type == PORT_XR17D15X)) {
-                serial_out(p, UART_EXAR_SLEEP, 0xff);
-                return;
-        }
-.
-.
+-Mike
 
-The if statement disregards the sleep parameter and always puts all of
-the ports to sleep.
-
-Something like this would be more appropriate:
-.
-.
-        if ((p->port.type == PORT_XR17V35X) ||
-           (p->port.type == PORT_XR17D15X)) {
-                serial_out(p, UART_EXAR_SLEEP, sleep ? 0xff : 0);
-                return;
-        }
-.
-.
-
-Now I don't know that this is the problem yet and I would like someone
-to confirm that I am not crazy.
-
-I can try the patch at work tomorrow and see if it fixes the issue.
-Then maybe we can close Bug 61961.
