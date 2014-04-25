@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaDYLxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 07:53:52 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:53651 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752074AbaDYLxu (ORCPT
+	id S1753320AbaDYLyG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:54:06 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:44142 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaDYLyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 07:53:50 -0400
-Date: Fri, 25 Apr 2014 12:53:45 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
-Message-ID: <20140425115345.GC26088@console-pimps.org>
-References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
+	Fri, 25 Apr 2014 07:54:02 -0400
+Message-ID: <535A4CBF.1090301@free.fr>
+Date: Fri, 25 Apr 2014 13:53:35 +0200
+From: mathieu souchaud <mattieu.souchaud@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] x86/mce: Check misc_register() return code.
+References: <1398419295-18590-1-git-send-email-mattieu.souchaud@free.fr> <20140425104256.GB18540@nazgul.tnic>
+In-Reply-To: <20140425104256.GB18540@nazgul.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr, at 05:36:58PM, Dave Young wrote:
-> earlyprint=efi,keep results a kernel hang after "Freeing unused kernel memory"
- 
-Are you sure it hangs and it's not just that nothing is output to the
-console after that point?
+Great,
 
-> Actually efi earlyprintk is using __init functions such as early_ioremap etc.
-> Thus efi earlyconsole can not be kept.
- 
-Urgh, good point, that's a bug. However I'm sure I've had this working
-in the past and have in fact used it to debug stuff.
+I will fix that soon.
 
-Could you try and fix this up so it works with 'keep'?
+Thanks.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Le 25/04/2014 12:42, Borislav Petkov a écrit :
+> On Fri, Apr 25, 2014 at 11:48:15AM +0200, Mathieu Souchaud wrote:
+>> The current code does not check the return from misc_register() so set
+>> the return variable with the return code of misc_register.
+>>
+>> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
+>> ---
+>>   arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+>> index 68317c8..45fb7aa 100644
+>> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+>> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+>> @@ -2462,7 +2462,7 @@ static __init int mcheck_init_device(void)
+>>   	cpu_notifier_register_done();
+>>   
+>>   	/* register character device /dev/mcelog */
+>> -	misc_register(&mce_chrdev_device);
+>> +	err = misc_register(&mce_chrdev_device);
+> This function mcheck_init_device() is a one big sloppy mess
+> of not handling the error cases responsibly. It doesn't check
+> zalloc_cpumask_var() retval, it doesn't free the mce_device_initialized
+> when subsys_system_register() fails, the same when mce_device_create
+> fails, the same with __register_hotcpu_notifier and finally with
+> misc_register.
+>
+> Would you be willing to fix this properly with goto labels and proper
+> unwinding, like it is done in other, saner places in the kernel, and
+> at the end maybe add a printk for the error case warning us that
+> /dev/mcelog didn't get registered?
+>
+> That would be a very nice cleanup! :-)
+>
+> Thanks.
+
