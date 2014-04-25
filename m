@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819AbaDYSrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:47:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:20276 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751255AbaDYSq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:46:58 -0400
-Date: Fri, 25 Apr 2014 14:46:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Bharath Ravi <rbharath@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] tracing: Replace usage of trace_flags with new
- accessors.
-Message-ID: <20140425144656.5fc07e54@gandalf.local.home>
-In-Reply-To: <1395684826-22931-2-git-send-email-rbharath@google.com>
-References: <1395684826-22931-1-git-send-email-rbharath@google.com>
-	<1395684826-22931-2-git-send-email-rbharath@google.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1753306AbaDYStK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:49:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59776 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247AbaDYStH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 14:49:07 -0400
+Date: Fri, 25 Apr 2014 20:49:01 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Carlos Chinea <carlos.chinea@nokia.com>
+Subject: Re: [PATCHv3 10/14] HSI: Introduce driver for SSI Protocol
+Message-ID: <20140425184900.GF22721@earth.universe>
+References: <1396053110-21639-1-git-send-email-sre@kernel.org>
+ <1396053110-21639-11-git-send-email-sre@kernel.org>
+ <20140419194936.GJ5148@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="Zi0sgQQBxRFxMTsj"
+Content-Disposition: inline
+In-Reply-To: <20140419194936.GJ5148@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Mar 2014 11:13:44 -0700
-Bharath Ravi <rbharath@google.com> wrote:
 
-> The trace_flags global variable stores various trace options that are
-> shared across all ftrace instances. This patch adds accessors function
-> for trace_flags - a getter and a setter - and replaces usages of
-> trace_flags with these.
-> 
-> This is in preparation for replacing the global trace_flags with
-> instance specific (local) trace_flags, allowing each instance to set
-> trace_flags independently.
-> 
-> Signed-off-by: Bharath Ravi <rbharath@google.com>
-> ---
->  kernel/trace/blktrace.c              |  3 +-
->  kernel/trace/ftrace.c                |  4 +--
->  kernel/trace/trace.c                 | 64 ++++++++++++++++++++++--------------
->  kernel/trace/trace.h                 |  2 ++
->  kernel/trace/trace_events.c          |  2 +-
->  kernel/trace/trace_functions_graph.c | 10 +++---
->  kernel/trace/trace_irqsoff.c         |  4 +--
->  kernel/trace/trace_kdb.c             |  6 ++--
->  kernel/trace/trace_output.c          |  8 ++---
->  kernel/trace/trace_printk.c          |  8 ++---
->  kernel/trace/trace_sched_wakeup.c    |  3 +-
->  kernel/trace/trace_syscalls.c        |  2 +-
->  12 files changed, 68 insertions(+), 48 deletions(-)
-> 
-> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-> index b418cb0..dd5112a 100644
-> --- a/kernel/trace/blktrace.c
-> +++ b/kernel/trace/blktrace.c
-> @@ -1368,7 +1368,7 @@ static enum print_line_t print_one_line(struct trace_iterator *iter,
->  
->  	t	   = te_blk_io_trace(iter->ent);
->  	what	   = t->action & ((1 << BLK_TC_SHIFT) - 1);
-> -	long_act   = !!(trace_flags & TRACE_ITER_VERBOSE);
-> +	long_act   = !!(global_trace_flags() & TRACE_ITER_VERBOSE);
+--Zi0sgQQBxRFxMTsj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Instead of having a global_trace_flags() function, use the trace_array
-that each tracer has. For here:
+On Sat, Apr 19, 2014 at 09:49:36PM +0200, Pavel Machek wrote:
+> Hi!
+>=20
+> > This adds a driver for the SSI McSAAB protocol as used in
+> > the Nokia N900.
+> >=20
+> > Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
+> > Signed-off-by: Sebastian Reichel <sre@kernel.org>
+>=20
+> > +#define SSIP_MIN_PN_HDR		6	/* FIXME: Revisit */
+> > +#define SSIP_WDTOUT		2000	/* FIXME: has to be 500 msecs> */
+>=20
+> Can they be fixed now, or do they have to wait?
 
-	tr->trace_flags;
+I would prefer to wait. The timing above works and having it in the
+git history doesn't hurt.
 
-As if you look at my for-next branch, several tracers can now be called
-by instance not just by the top directory.
+> > +#ifdef __LITTLE_ENDIAN
+> > +	((u16 *)skb->data)[2] =3D swab16(((u16 *)skb->data)[2]);
+> > +	dev_dbg(&dev->dev, "RX length fixed (%04x -> %u)\n",
+> > +			((u16 *)skb->data)[2], ntohs(((u16 *)skb->data)[2]));
+> > +#endif
+>=20
+> Uh. Can this be replaced by
+>     ((u16 *)skb->data)[2] =3D htons(((u16 *)skb->data)[2]);
+>=20
+> (without the ifdef?)
 
--- Steve
+Yes.
 
+> > +	/*
+> > +	 * Modem sends Phonet messages over SSI with its own endianess...
+> > +	 * Assume that modem has the same endianess as we do.
+> > +	 */
+> > +	if (skb_cow_head(skb, 0))
+> > +		goto drop;
+> > +#ifdef __LITTLE_ENDIAN
+> > +	((u16 *)skb->data)[2] =3D swab16(((u16 *)skb->data)[2]);
+> > +#endif
+>=20
+> Here, too?
 
->  	log_action = classic ? &blk_log_action_classic : &blk_log_action;
->  
->  	if (t->action == BLK_TN_MESSAGE) {
-> @@ -1429,6 +1429,7 @@ static enum print_line_t blk_tracer_print_line(struct trace_iterator *iter)
->  
->  static int blk_tracer_set_flag(u32 old_flags, u32 bit, int set)
->  {
-> +	unsigned long trace_flags = global_trace_flags();
->  	/* don't output context-info for blk_classic output */
->  	if (bit == TRACE_BLK_OPT_CLASSIC) {
->  		if (set)
+Fixed in PATCHv4.
+
+> But it looks like the comment does not match the code, because we
+> swap.
+
+The swap only converts the package length field from/to network byte
+order. I think the comment still applies for the other actual message.
+
+I added a comment for the length field and kept the other comment as
+is for PATCHv4.
+
+-- Sebastian
+
+--Zi0sgQQBxRFxMTsj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTWq4cAAoJENju1/PIO/qauXgP/AkArax6cNzm05x6VkLTcVwX
+sa+/H1kHdryPo8l+jiQyu6qcPA8gTnPIPXfEBN+ZwafamFlKgci47KYeCf+YDE1o
+IBbfoKZ/SFrzYCCON90HbayBBG/GoSK9ycFz1gdEwb37PTsgiIgo/507o8AzAljQ
+0Pl0mhLLXVi71OcevNwWA4+bO6xUl7HkNT1NoVafYZrHhTR7VDQ/D97y/4lH4mMz
+tT7ApT2sgtC8UwDc76hQaB1SXjQVjUa3pNs+7B1oOO9EfGbgcnelCOlva2ImD6vh
+YhIRfxb/DWpsRBMWuFkT3AB/vmIZ/aelxnvdCZryPQgdqGCKzBBAhHkkTjHa8oLT
+jjnlw52k2gthzH1G3f4ZZAuAHh1ZcZ9P5YScYkjNSIHgy9x6MMrMxA+T4NEPhOoW
+KBXvwpnqqhIFGn1chWTHOCd6o+LW2+/frfQwh4riD2duO4OGW8te367vaC5FNL80
+EJB5RAzpdQlsywEBAwKL2975XIL4rgtjgK371dCCLTOlWOybguaMAeoER7Mdy/kc
+jlkrf3MmQ+pKknR0kEX52ArvQfTLKjRrj3E3jvknkmAHWTqHinECEt3ta96QGdEb
+5JLEY3TQAhacft7eHh628i7VBoICcPoNqOSxHORmKML2RYrw8vkGavuR1iWtamWg
+MEb7Foi2ZH2LwxKtPK4b
+=cBwO
+-----END PGP SIGNATURE-----
+
+--Zi0sgQQBxRFxMTsj--
