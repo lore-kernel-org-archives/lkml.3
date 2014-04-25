@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaDYJS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:18:57 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:43921 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbaDYJMV (ORCPT
+	id S1753299AbaDYJSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:18:55 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:32961 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088AbaDYJMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 Apr 2014 05:12:21 -0400
 From: Christian Borntraeger <borntraeger@de.ibm.com>
@@ -15,164 +15,58 @@ Cc: KVM <kvm@vger.kernel.org>, linux-s390 <linux-s390@vger.kernel.org>,
         linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
         Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
         Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH 08/11] perf kvm: allow for variable string sizes
-Date: Fri, 25 Apr 2014 11:12:30 +0200
-Message-Id: <1398417153-57347-9-git-send-email-borntraeger@de.ibm.com>
+Subject: [PATCH 04/11] KVM: s390: Use intercept_insn decoder in trace event
+Date: Fri, 25 Apr 2014 11:12:26 +0200
+Message-Id: <1398417153-57347-5-git-send-email-borntraeger@de.ibm.com>
 X-Mailer: git-send-email 1.8.4.2
 In-Reply-To: <1398417153-57347-1-git-send-email-borntraeger@de.ibm.com>
 References: <1398417153-57347-1-git-send-email-borntraeger@de.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042509-6892-0000-0000-000008930C89
+x-cbid: 14042509-4966-0000-0000-0000092E7C9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-This makes it possible for other architectures to decode to different
-string lengths.
-
-Needed by follow-up patch "perf kvm: add stat support on s390".
+The current trace definition doesn't work very well with the perf tool.
+Perf shows a "insn_to_mnemonic not found" message. Let's handle the
+decoding completely in a parseable format.
 
 Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 ---
- tools/perf/builtin-kvm.c | 38 +++++++++++++++++++++++---------------
- 1 file changed, 23 insertions(+), 15 deletions(-)
+ arch/s390/kvm/trace.h | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 922706c..806c0e4 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -75,7 +75,7 @@ struct kvm_events_ops {
- 	bool (*is_end_event)(struct perf_evsel *evsel,
- 			     struct perf_sample *sample, struct event_key *key);
- 	void (*decode_key)(struct perf_kvm_stat *kvm, struct event_key *key,
--			   char decode[20]);
-+			   char *decode);
- 	const char *name;
- };
+diff --git a/arch/s390/kvm/trace.h b/arch/s390/kvm/trace.h
+index 00f57a5..579b42a 100644
+--- a/arch/s390/kvm/trace.h
++++ b/arch/s390/kvm/trace.h
+@@ -154,7 +154,6 @@ TRACE_EVENT(kvm_s390_intercept_instruction,
+ 	    TP_STRUCT__entry(
+ 		    VCPU_FIELD_COMMON
+ 		    __field(__u64, instruction)
+-		    __field(char, insn[8])
+ 		    ),
  
-@@ -84,6 +84,8 @@ struct exit_reasons_table {
- 	const char *reason;
- };
+ 	    TP_fast_assign(
+@@ -165,10 +164,8 @@ TRACE_EVENT(kvm_s390_intercept_instruction,
  
-+#define DECODE_STR_LEN_MAX 80
-+
- #define EVENTS_BITS		12
- #define EVENTS_CACHE_SIZE	(1UL << EVENTS_BITS)
+ 	    VCPU_TP_PRINTK("intercepted instruction %016llx (%s)",
+ 			   __entry->instruction,
+-			   insn_to_mnemonic((unsigned char *)
+-					    &__entry->instruction,
+-					 __entry->insn, sizeof(__entry->insn)) ?
+-			   "unknown" : __entry->insn)
++			   __print_symbolic(icpt_insn_decoder(__entry->instruction),
++					    icpt_insn_codes))
+ 	);
  
-@@ -101,6 +103,8 @@ struct perf_kvm_stat {
- 	struct exit_reasons_table *exit_reasons;
- 	const char *exit_reasons_isa;
- 
-+	int decode_str_len;
-+
- 	struct kvm_events_ops *events_ops;
- 	key_cmp_fun compare;
- 	struct list_head kvm_events_cache[EVENTS_CACHE_SIZE];
-@@ -182,12 +186,12 @@ static const char *get_exit_reason(struct perf_kvm_stat *kvm,
- 
- static void exit_event_decode_key(struct perf_kvm_stat *kvm,
- 				  struct event_key *key,
--				  char decode[20])
-+				  char *decode)
- {
- 	const char *exit_reason = get_exit_reason(kvm, kvm->exit_reasons,
- 						  key->key);
- 
--	scnprintf(decode, 20, "%s", exit_reason);
-+	scnprintf(decode, kvm->decode_str_len, "%s", exit_reason);
- }
- 
- static struct kvm_events_ops exit_events = {
-@@ -249,10 +253,11 @@ static bool mmio_event_end(struct perf_evsel *evsel, struct perf_sample *sample,
- 
- static void mmio_event_decode_key(struct perf_kvm_stat *kvm __maybe_unused,
- 				  struct event_key *key,
--				  char decode[20])
-+				  char *decode)
- {
--	scnprintf(decode, 20, "%#lx:%s", (unsigned long)key->key,
--				key->info == KVM_TRACE_MMIO_WRITE ? "W" : "R");
-+	scnprintf(decode, kvm->decode_str_len, "%#lx:%s",
-+		  (unsigned long)key->key,
-+		  key->info == KVM_TRACE_MMIO_WRITE ? "W" : "R");
- }
- 
- static struct kvm_events_ops mmio_events = {
-@@ -292,10 +297,11 @@ static bool ioport_event_end(struct perf_evsel *evsel,
- 
- static void ioport_event_decode_key(struct perf_kvm_stat *kvm __maybe_unused,
- 				    struct event_key *key,
--				    char decode[20])
-+				    char *decode)
- {
--	scnprintf(decode, 20, "%#llx:%s", (unsigned long long)key->key,
--				key->info ? "POUT" : "PIN");
-+	scnprintf(decode, kvm->decode_str_len, "%#llx:%s",
-+		  (unsigned long long)key->key,
-+		  key->info ? "POUT" : "PIN");
- }
- 
- static struct kvm_events_ops ioport_events = {
-@@ -523,13 +529,13 @@ static bool handle_end_event(struct perf_kvm_stat *kvm,
- 	time_diff = sample->time - time_begin;
- 
- 	if (kvm->duration && time_diff > kvm->duration) {
--		char decode[32];
-+		char decode[DECODE_STR_LEN_MAX];
- 
- 		kvm->events_ops->decode_key(kvm, &event->key, decode);
- 		if (strcmp(decode, "HLT")) {
--			pr_info("%" PRIu64 " VM %d, vcpu %d: %s event took %" PRIu64 "usec\n",
-+			pr_info("%" PRIu64 " VM %d, vcpu %d: %*s event took %" PRIu64 "usec\n",
- 				 sample->time, sample->pid, vcpu_record->vcpu_id,
--				 decode, time_diff/1000);
-+				 32, decode, time_diff/1000);
- 		}
- 	}
- 
-@@ -738,7 +744,7 @@ static void show_timeofday(void)
- 
- static void print_result(struct perf_kvm_stat *kvm)
- {
--	char decode[20];
-+	char decode[DECODE_STR_LEN_MAX];
- 	struct kvm_event *event;
- 	int vcpu = kvm->trace_vcpu;
- 
-@@ -749,7 +755,7 @@ static void print_result(struct perf_kvm_stat *kvm)
- 
- 	pr_info("\n\n");
- 	print_vcpu_info(kvm);
--	pr_info("%20s ", kvm->events_ops->name);
-+	pr_info("%*s ", kvm->decode_str_len, kvm->events_ops->name);
- 	pr_info("%10s ", "Samples");
- 	pr_info("%9s ", "Samples%");
- 
-@@ -768,7 +774,7 @@ static void print_result(struct perf_kvm_stat *kvm)
- 		min = get_event_min(event, vcpu);
- 
- 		kvm->events_ops->decode_key(kvm, &event->key, decode);
--		pr_info("%20s ", decode);
-+		pr_info("%*s ", kvm->decode_str_len, decode);
- 		pr_info("%10llu ", (unsigned long long)ecount);
- 		pr_info("%8.2f%% ", (double)ecount / kvm->total_count * 100);
- 		pr_info("%8.2f%% ", (double)etime / kvm->total_time * 100);
-@@ -839,9 +845,11 @@ static int cpu_isa_init(struct perf_kvm_stat *kvm, const char *cpuid)
- 	if (strstr(cpuid, "Intel")) {
- 		kvm->exit_reasons = vmx_exit_reasons;
- 		kvm->exit_reasons_isa = "VMX";
-+		kvm->decode_str_len = 20;
- 	} else if (strstr(cpuid, "AMD")) {
- 		kvm->exit_reasons = svm_exit_reasons;
- 		kvm->exit_reasons_isa = "SVM";
-+		kvm->decode_str_len = 20;
- 	} else {
- 		pr_err("CPU %s is not supported.\n", cpuid);
- 		return -ENOTSUP;
+ /*
 -- 
 1.8.4.2
 
