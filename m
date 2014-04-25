@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaDYKNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 06:13:36 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:58360 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbaDYKNc (ORCPT
+	id S1752601AbaDYKNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 06:13:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53860 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752545AbaDYKNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 06:13:32 -0400
+	Fri, 25 Apr 2014 06:13:45 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: Re: [PATCH 3.11 052/182] [SCSI] fix our current target reap infrastructure
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+	<1398329507-5911-53-git-send-email-luis.henriques@canonical.com>
+	<1398391948.7767.182.camel@deadeye.wl.decadent.org.uk>
+Date: Fri, 25 Apr 2014 11:13:29 +0100
+In-Reply-To: <1398391948.7767.182.camel@deadeye.wl.decadent.org.uk> (Ben
+	Hutchings's message of "Fri, 25 Apr 2014 03:12:28 +0100")
+Message-ID: <87a9b9d8dy.fsf@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <201404221552.00501.arnd@arndb.de>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397845149-3141-1-git-send-email-lftan@altera.com>
-	<1397845149-3141-4-git-send-email-lftan@altera.com>
-	<201404221552.00501.arnd@arndb.de>
-Date: Fri, 25 Apr 2014 18:13:31 +0800
-X-Google-Sender-Auth: cnSv5t4lUrPoG1A-Wk7n_3nNVao
-Message-ID: <CAFiDJ58__vjDk93crSxGe1us0K7a3kSUwScgk=VaJYy+VqXsWQ@mail.gmail.com>
-Subject: Re: [PATCH 14/28] nios2: DMA mapping API
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 April 2014, Ley Foon Tan wrote:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Ben Hutchings <ben@decadent.org.uk> writes:
+
+> On Thu, 2014-04-24 at 09:49 +0100, Luis Henriques wrote:
+>> 3.11.10.9 -stable review patch.  If anyone has any objections, please le=
+t me know.
+>>=20
+>> ------------------
+>>=20
+>> From: James Bottomley <JBottomley@Parallels.com>
+>>=20
+>> commit e63ed0d7a98014fdfc2cfeb3f6dada313dcabb59 upstream.
+>>=20
+>> This patch eliminates the reap_ref and replaces it with a proper kref.
+>> On last put of this kref, the target is removed from visibility in
+>> sysfs.  The final call to scsi_target_reap() for the device is done from
+>> __scsi_remove_device() and only if the device was made visible.  This
+>> ensures that the target disappears as soon as the last device is gone
+>> rather than waiting until final release of the device (which is often
+>> too long).
+>>=20
+>> Reviewed-by: Alan Stern <stern@rowland.harvard.edu>
+>> Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+>> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+>> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> [...]
 >
->> +static inline int dma_supported(struct device *dev, u64 mask)
->> +{
->> +     /* we fall back to GFP_DMA when the mask isn't all 1s,
->> +      * so we can't guarantee allocations that must be
->> +      * within a tighter range than GFP_DMA.
->> +      */
->> +     if (mask < 0x00ffffff)
->> +             return 0;
->> +
->> +     return 1;
->> +}
+> This and the next patch were commented "delay backport by 2 months for
+> field testing".
 >
->> +void *dma_alloc_coherent(struct device *dev, size_t size,
->> +                         dma_addr_t *dma_handle, gfp_t gfp)
->> +{
->> +     void *ret;
->> +
->> +     /* ignore region specifiers */
->> +     gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
->> +
->> +     /* optimized page clearing */
->> +     gfp |= __GFP_ZERO;
->> +
->> +     if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
->> +             gfp |= GFP_DMA;
->
-> What is the significance of ZONE_DMA on this architecture?
->
-> Do you actually have DMA masters with a 0x00ffffff mask?
-Actually, nios2 doesn't have DMA master with 0x00ffffff mask. I will
-change it to return 1, same as some other architectures
-implementation.
-And the ZONE_DMA stuff will remove as well, it shouldn't have ZONE_DMA
-limitation.
+> Ben.
+
+Thanks Ben.  I'll drop both patches from the 3.11 queue.
+
+Cheers,
+=2D-=20
+Lu=C3=ADs
+
+--=-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTWjVKAAoJENt0rrj9ziT8Zb0P/0pJGHq4MzdJVib0PnUQL3JN
+LomTs7mFHkwxHU7aCOR1gi2kth/Mfcjy+30xlAUvy1Whcjm1JAH3F/BxZITzB8sS
+NfIyYPF8ZIpb0yIbR99gQZNK18ygTc7d6gr9blh3sGaoVHSr8sObNs1ltMZMJgaV
+BA7N7HOLgIw8Hgv6BMsHipXJBFImMQ+D5G1fWNd7ztOssh4gzfSAW5bS8I1qxEv5
+FSlUeRSZnPngLYAHguLO+qFYCWQ9NLfrlwSwoUZB149eqrVQ8oRHf4H+bW4j94MI
+41gvl+bi1n1RkxsYVZJH+8ymxGD+R5sfpWDsUHscfyyI4ycEHVklBVES4qDp+90s
+vOfOJTW6d0QDk2YKhMsGhnz/4diCQO1pBEXzucfX/lF/FkPkn4TK2Rz9pClOqCvr
+XrdL9A1dBElWFN7iKhkQpr2T+r1tH7ZToyRaTX93cEQ3FRmYGuLPPjKJFAUuHXUv
+jYMcx11ZiMk6jBTbfvBJbzZZypIm1J9fKhg5kWy6CdDb4aEobn7rOxiR/NUsDQiH
+Xvd6YPp8kYompMTh7qMS0hrFyGHQ9zNtirbyS2ivMTPYJ3ifOlYVsr6zGmcbvx8k
+1DDpkw+as3sh6P6up/zjzXBg6dFyqKk9+uHQe1OINGD4eqHJbGyppD6fvwg2df4D
+9LM/sW6Q9K5YNtTGIlLS
+=pu68
+-----END PGP SIGNATURE-----
+--=-=-=--
