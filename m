@@ -1,59 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaDYVog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:44:36 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:41865 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbaDYVob (ORCPT
+	id S1751703AbaDYVqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:46:30 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:39189 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaDYVq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:44:31 -0400
-Message-ID: <535AD73C.5070809@gmail.com>
-Date: Fri, 25 Apr 2014 23:44:28 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 17:46:27 -0400
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v2 07/10] ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-8-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1398429166-5539-8-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87iopxxfpp.fsf@x220.int.ebiederm.org>
+References: <535A5C78.1070901@samsung.com>
+	<535A75C1.3050901@samsung.com>
+	<20140425182310.GA9128@redhat.com>
+	<87sip15iy5.fsf@x220.int.ebiederm.org>
+	<20140425192543.GA11908@redhat.com>
+	<878uqt42q7.fsf@x220.int.ebiederm.org>
+	<20140425200156.GA13727@redhat.com>
+	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
+	<874n1h16le.fsf@x220.int.ebiederm.org>
+	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
+	<87iopxxfpp.fsf@x220.int.ebiederm.org>
+Date: Sat, 26 Apr 2014 00:46:25 +0300
+Message-ID: <CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 26 April 2014 00:27, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+>
+>> On 25 April 2014 23:45, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+>>>
+>>>> On 25 April 2014 23:01, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>> On 04/25, Eric W. Biederman wrote:
+>>>>>>
+>>>>>> Oleg Nesterov <oleg@redhat.com> writes:
+>>>>>>
+>>>>>> > Well. I _think_ that __fput() and ima_file_free() in particular should not
+>>>>>> > depend on current and/or current->nsproxy. If nothing else, fput() can be
+>>>>>> > called by the unrelated task which looks into /proc/pid/.
+>>>>>> >
+>>>>>> > But again, task_work_add() has more and more users, and it seems that even
+>>>>>> > __fput() paths can do "everything", so perhaps it would be safer to allow
+>>>>>> > to use ->nsproxy in task_work_run.
+>>>>>>
+>>>>>> Like I said, give me a clear motivating case.
+>>>>>
+>>>>> I agree, we need a reason. Currently I do not see one.
+>>>>>
+>>>>>> Right now not allowing
+>>>>>> nsproxy is turning up bugs in __fput.  Which seems like a good thing.
+>>>>>
+>>>>> This is what I certainly agree with ;)
+>>>>>
+>>>>
+>>>> Hi,
+>>>>
+>>>> IMA uses kernel_read API which does not know anything about caller.
+>>>> And of course security frameworks are at guard as usual.
+>>>>
+>>>> Exactly after reading first Eric's respons, I thought why to scratch
+>>>> the head when task work queues are indeed designed for tasks...
+>>>
+>>> __fput has no guarantee of running in the task that close the file
+>>> descriptor.  If your code depends on that your code is broken.
+>>>
+>>>> And if you to dig for the history, IMA-appraisal was stuck due to
+>>>> lockdep reporting even though it was on non-everlaping cases.
+>>>> IIRC files vs. directories...
+>>>>
+>>>> After that IIRC Al Viro discussed about delayed fput and IIRC Oleg
+>>>> (sorry if I am wrong) introduced task work queues.
+>>>>
+>>>> So IMA-appraisal was able to be upstreamed... That was ~3.4 time frame, IIRC
+>>>>
+>>>> Name space also dated around ~3.4??
+>>>> Apparmor namespace change was also around that time.
+>>>>
+>>>> 3.10 introduces this name space order change and broke IMA-appraisal.
+>>>
+>>> IMA-appraisal is fundamentally broken because I can take a mandatory
+>>> file lock and prevent IMA-apprasial.
+>>>
+>>
+>> What file lock are you talking about?
+>> IMA-appraisal does not depends on file locks...
+>
+> It honors them.  Look at rw_verify_area, in vfs_read, in kernel_read.
+>
+> It sure looks like locks_mandatory_area can cause your kernel_read to
+> fail.
+>
+>>> Using kernel_read is what allows this.
+>>>
+>>>> Isn't it a clear motivating case???
+>>>
+>>> kernel_read is not appropriate for IMA use.  The rest of this is just
+>>> the messenger.
+>>>
+>>> IMA needs to use a cousin of kernel_read that operates at a lower level
+>>> than vfs_read.  A function that all of the permission checks and the
+>>> fsnotify work.
+>>>
+>>> I am sorry to be the bearer of bad news.  But kernel_read is totally
+>>> inappropriate for IMA.
+>>>
+>>
+>> So you break IMA-appraisal and declare that it cannot be used now?
+>
+> I didn't break it.  I read the code, and I read the back trace to see
+> where the bug was.
+>
+> I see IMA-appraisal trying to read file data as if it were a user space
+> application in such a way that it can get permission denied for a whole
+> host of reasons.
+>
+> My understanding of IMA-appraisal is that using a code path that can
+> give use permission denined when performing appraisal is a way for
+> clever people to attack and avoid IMA-appraisal without violating any
+> security policy.
+>
 
-On 25.04.2014 14:32, Pankaj Dubey wrote:
-> From: Young-Gun Jang <yg1004.jang@samsung.com>
->
-> This patch removes unnecessary header file inclusion from pmu.c.
->
-> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
-> ---
->   arch/arm/mach-exynos/pmu.c |    1 -
->   1 file changed, 1 deletion(-)
->
-> diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-> index 05c7ce1..4c3453a 100644
-> --- a/arch/arm/mach-exynos/pmu.c
-> +++ b/arch/arm/mach-exynos/pmu.c
-> @@ -11,7 +11,6 @@
->
->   #include <linux/io.h>
->   #include <linux/kernel.h>
-> -#include <linux/bug.h>
->
->   #include <plat/cpu.h>
->
+Interesting thing is that file was already open before and LSM gave OK for this.
+Then re-reading the file on close in fact does not need any LSM
+permission checks.
+But as kernel_read API is still the same, it goes via the same checks...
+
+But on close with delayed fput nsproxy is missing ....
+
+> Am I wrong.  Is it ok for IMA-appraisal to get permission denied when it
+> wants to appraise a file?
 >
 
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+IMA is called after may_open...
 
-Best regards,
-Tomasz
+
+> Eric
+
+
+
+-- 
+Thanks,
+Dmitry
