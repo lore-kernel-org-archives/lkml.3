@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaDYRto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:49:44 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:57817
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754106AbaDYRtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:49:41 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@kernel.org
-Subject: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
-Date: Fri, 25 Apr 2014 11:45:14 -0700
-Message-Id: <1398451514-25593-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754319AbaDYRub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:50:31 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:39442 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237AbaDYRu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:50:28 -0400
+Message-ID: <535AA05D.5080304@gmail.com>
+Date: Fri, 25 Apr 2014 23:20:21 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: ravi23ganiga@gmail.com
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: fix coding style issues in comedi_fops.c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do checksum offload only if the client of the driver wants checksum to be
-offloaded. Also Windows hosts support ip header checksum offload as well -
-take advantage of that.
+>From 7bdc654b12895889a539450528b52328901e6dc0 Mon Sep 17 00:00:00 2001
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Date: Fri, 25 Apr 2014 23:11:22 +0530
+Subject: [PATCH] staging: comedi: fix coding style issues in comedi_fops.c
 
-This patch fixes a bug that is exposed in gateway scenarios.
+This is a patch to fix coding style
+warnings found by the checkpatch.pl tool
 
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: stable@kernel.org
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
 ---
- drivers/net/hyperv/netvsc_drv.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 939e3af..706b341 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -467,6 +467,9 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	if (skb_is_gso(skb))
- 		goto do_lso;
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index ea6dc36..0cd67d0 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1435,13 +1435,15 @@ static int __comedi_get_user_cmd(struct comedi_device *dev,
+ 	s = &dev->subdevices[cmd->subdev];
  
-+	if (skb->ip_summed != CHECKSUM_PARTIAL)
-+		goto do_send;
-+
- 	rndis_msg_size += NDIS_CSUM_PPI_SIZE;
- 	ppi = init_ppi_data(rndis_msg, NDIS_CSUM_PPI_SIZE,
- 			    TCPIP_CHKSUM_PKTINFO);
-@@ -474,6 +477,9 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
- 			ppi->ppi_offset);
+ 	if (s->type == COMEDI_SUBD_UNUSED) {
+-		dev_dbg(dev->class_dev, "%d not valid subdevice\n", cmd->subdev);
++		dev_dbg(dev->class_dev,
++			"%d not valid subdevice\n", cmd->subdev);
+ 		return -EIO;
+ 	}
  
-+	ip_hdr(skb)->check = 0;
-+	csum_info->transmit.ip_header_checksum = 1;
-+
- 	if (net_trans_info & (INFO_IPV4 << 16))
- 		csum_info->transmit.is_ipv4 = 1;
- 	else
+ 	if (!s->do_cmd || !s->do_cmdtest || !s->async) {
+ 		dev_dbg(dev->class_dev,
+-			"subdevice %d does not support commands\n", cmd->subdev);
++			"subdevice %d does not support commands\n",
++			cmd->subdev);
+ 		return -EIO;
+ 	}
+ 
 -- 
-1.7.4.1
-
+1.7.10.4
