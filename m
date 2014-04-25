@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069AbaDYUR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:17:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46322 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044AbaDYURy (ORCPT
+	id S1754866AbaDYUQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:16:28 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:59839 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754819AbaDYUQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:17:54 -0400
-Date: Fri, 25 Apr 2014 16:17:53 -0400 (EDT)
-Message-Id: <20140425.161753.153968588224593753.davem@davemloft.net>
-To: aaro.koskinen@iki.fi
-Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hughd@google.com
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140425200908.GG575@drone.musicnaut.iki.fi>
-References: <20140414184353.GA5630@drone.musicnaut.iki.fi>
-	<20140416.145822.1317931249717152474.davem@davemloft.net>
-	<20140425200908.GG575@drone.musicnaut.iki.fi>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 25 Apr 2014 16:16:14 -0400
+Message-ID: <535AC28B.3030500@semaphore.gr>
+Date: Fri, 25 Apr 2014 23:16:11 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: [PATCH v5 5/8] mfd: db8500-prcmu: Use cpufreq_for_each_entry macro
+ for iteration
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 25 Apr 2014 13:17:54 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date: Fri, 25 Apr 2014 23:09:08 +0300
+The cpufreq core now supports the cpufreq_for_each_entry macro helper
+for iteration over the cpufreq_frequency_table, so use it.
 
-> On Wed, Apr 16, 2014 at 02:58:22PM -0400, David Miller wrote:
->> One thing you two can do to help me further confirm this is to run
->> with THP disabled for a while and see if you still get the log
->> messages.
->> 
->> Simply, as root:
->> 
->> bash# echo "never" >/sys/kernel/mm/transparent_hugepage/enabled
->> 
->> And then do your gcc bootstraps or whatever else seems to usually
->> run when you trigger this problem.
-> 
-> I'm running my Ultras with "# CONFIG_TRANSPARENT_HUGEPAGE is not set"
-> and I still see the issue.
+It should have no functional changes.
 
-Thanks, that's an important datapoint.
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/mfd/db8500-prcmu.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-> I tried reproducing the bug with function tracer running. It works
-> but reproducing the bug takes several days... This time it was "expect"
-> segfault during GCC testsuite that triggered the bug.
-> 
-> For the test I added tracing_off() after the "Bad rss-counter
-> state" printout. Now I see it should be done maybe earlier as warning/bug
-> printouts are polluting the trace.
-> 
-> Anyway, the results are here:
-> 
-> 	http://www.iki.fi/aaro/junk/linux-3.14-sparc-mm-bug-trace.txt
-> 	http://www.iki.fi/aaro/junk/linux-3.14-sparc-mm-bug-trace-dmesg.txt
-
-Thanks a lot for doing this, I'll take a look.
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 7694e07..b11fdd6 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -1734,18 +1734,17 @@ static struct cpufreq_frequency_table db8500_cpufreq_table[] = {
+ 
+ static long round_armss_rate(unsigned long rate)
+ {
++	struct cpufreq_frequency_table *pos;
+ 	long freq = 0;
+-	int i = 0;
+ 
+ 	/* cpufreq table frequencies is in KHz. */
+ 	rate = rate / 1000;
+ 
+ 	/* Find the corresponding arm opp from the cpufreq table. */
+-	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
+-		freq = db8500_cpufreq_table[i].frequency;
++	cpufreq_for_each_entry(pos, db8500_cpufreq_table) {
++		freq = pos->frequency;
+ 		if (freq == rate)
+ 			break;
+-		i++;
+ 	}
+ 
+ 	/* Return the last valid value, even if a match was not found. */
+@@ -1886,23 +1885,21 @@ static void set_clock_rate(u8 clock, unsigned long rate)
+ 
+ static int set_armss_rate(unsigned long rate)
+ {
+-	int i = 0;
++	struct cpufreq_frequency_table *pos;
+ 
+ 	/* cpufreq table frequencies is in KHz. */
+ 	rate = rate / 1000;
+ 
+ 	/* Find the corresponding arm opp from the cpufreq table. */
+-	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
+-		if (db8500_cpufreq_table[i].frequency == rate)
++	cpufreq_for_each_entry(pos, db8500_cpufreq_table)
++		if (pos->frequency == rate)
+ 			break;
+-		i++;
+-	}
+ 
+-	if (db8500_cpufreq_table[i].frequency != rate)
++	if (pos->frequency != rate)
+ 		return -EINVAL;
+ 
+ 	/* Set the new arm opp. */
+-	return db8500_prcmu_set_arm_opp(db8500_cpufreq_table[i].driver_data);
++	return db8500_prcmu_set_arm_opp(pos->driver_data);
+ }
+ 
+ static int set_plldsi_rate(unsigned long rate)
+-- 
+1.9.0
