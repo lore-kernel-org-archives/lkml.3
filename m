@@ -1,221 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091AbaDYRhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:37:50 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:27793
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752909AbaDYRhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:37:48 -0400
-From: Guenter Roeck <groeck@juniper.net>
+	id S1753148AbaDYRjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:39:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14841 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248AbaDYRji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:39:38 -0400
+Message-ID: <1398447576.24318.129.camel@ul30vt.home>
+Subject: Re: [PATCH v3] PCI: rework new_id interface for known vendor/device
+ values
+From: Alex Williamson <alex.williamson@redhat.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Rajat Jain <rajatxjain@gmail.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>
-Subject: RE: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
- per-port basis
-Thread-Topic: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
- per-port basis
-Thread-Index: AQHPTTw64Av0pi5eWUyOx5zeRBePnZshbocAgAE8dVCAAAWiAIAABRaQ
-Date: Fri, 25 Apr 2014 17:37:33 +0000
-Message-ID: <afddb2ca730f45d59318728d3e3e436f@CO1PR05MB523.namprd05.prod.outlook.com>
-References: <5339FF99.2050200@gmail.com> <20140424213106.GI29593@google.com>
- <e760e15b4f404c6cb3252480a7d8a78a@CO1PR05MB523.namprd05.prod.outlook.com>
- <CAErSpo4ymkPOx5Evi=nctWr5f7OY6vkQTzwGnvi1ck7t-OTAWg@mail.gmail.com>
-In-Reply-To: <CAErSpo4ymkPOx5Evi=nctWr5f7OY6vkQTzwGnvi1ck7t-OTAWg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.10]
-x-forefront-prvs: 0192E812EC
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(377454003)(13464003)(24454002)(92566001)(66066001)(33646001)(79102001)(80022001)(74316001)(83072002)(74502001)(20776003)(74662001)(81542001)(2656002)(80976001)(19580395003)(46102001)(4396001)(54356999)(81342001)(83322001)(85852003)(87936001)(31966008)(99936001)(19580405001)(99286001)(99396002)(50986999)(76482001)(76576001)(86362001)(77982001)(76176999)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB672;H:CO1PR05MB523.namprd05.prod.outlook.com;FPR:E01CF215.ABF8C819.B1F3E1B3.88F8C879.20455;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: multipart/mixed;
-	boundary="_002_afddb2ca730f45d59318728d3e3e436fCO1PR05MB523namprd05pro_"
-MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
+Cc: Bandan Das <bsd@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 25 Apr 2014 11:39:36 -0600
+In-Reply-To: <20140424224555.GK29593@google.com>
+References: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
+	 <20140424224555.GK29593@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_afddb2ca730f45d59318728d3e3e436fCO1PR05MB523namprd05pro_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+On Thu, 2014-04-24 at 16:45 -0600, Bjorn Helgaas wrote:
+> On Tue, Apr 01, 2014 at 09:32:59PM -0400, Bandan Das wrote:
+> > 
+> > While using the new_id interface, the user can unintentionally feed
+> > incorrect values if the driver static table has a matching entry.
+> > This is possible since only the device and vendor fields are
+> > mandatory and the rest are optional. As a result, store_new_id
+> > will fill in default values that are then passed on to the driver
+> > and can have unintended consequences.
+> > 
+> > As an example, consider the ixgbe driver and the 82599EB network card :
+> > echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
+> > 
+> > This will pass a driver_data value of 0 to the driver whereas
+> > the index 0 in ixgbe actually points to a different set of card
+> > operations.
+> > 
+> > This change returns an error if the user attempts to add a dynid for
+> > a vendor/device combination for which a static entry already exists.
+> > However, if the user intentionally wants a different set of values,
+> > she must provide all the 7 fields and that will be accepted.
+> > 
+> > In KVM/device assignment scenario, the user might want 
+> > to bind a device back to the host driver by writing to new_id
+> > and trip on a possible null pointer dereference.
+> 
+> I don't understand this last KVM comment.  If this patch fixes a null
+> pointer dereference, it must be because we return -EEXIST instead of
+> calling the driver's probe method.
 
-PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBCam9ybiBIZWxnYWFzIFttYWls
-dG86YmhlbGdhYXNAZ29vZ2xlLmNvbV0NCj4gU2VudDogRnJpZGF5LCBBcHJpbCAyNSwgMjAxNCA5
-OjQ0IEFNDQo+IFRvOiBHdWVudGVyIFJvZWNrDQo+IENjOiBSYWphdCBKYWluOyBsaW51eC1wY2lA
-dmdlci5rZXJuZWwub3JnOyBsaW51eC0NCj4ga2VybmVsQHZnZXIua2VybmVsLm9yZzsgUmFqYXQg
-SmFpbg0KPiBTdWJqZWN0OiBSZTogW1BBVENIXSBwY2kvcGNpZWhwOiBBbGxvdyBwb2xsaW5nL2ly
-cSBtb2RlIHRvIGJlIGRlY2lkZWQNCj4gb24gYSBwZXItcG9ydCBiYXNpcw0KPiANCj4gT24gRnJp
-LCBBcHIgMjUsIDIwMTQgYXQgMTA6MzQgQU0sIEd1ZW50ZXIgUm9lY2sgPGdyb2Vja0BqdW5pcGVy
-Lm5ldD4NCj4gd3JvdGU6DQo+ID4NCj4gPg0KPiA+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0t
-LQ0KPiA+PiBGcm9tOiBCam9ybiBIZWxnYWFzIFttYWlsdG86YmhlbGdhYXNAZ29vZ2xlLmNvbV0N
-Cj4gPj4gU2VudDogVGh1cnNkYXksIEFwcmlsIDI0LCAyMDE0IDI6MzEgUE0NCj4gPj4gVG86IFJh
-amF0IEphaW4NCj4gPj4gQ2M6IGxpbnV4LXBjaUB2Z2VyLmtlcm5lbC5vcmc7IGxpbnV4LWtlcm5l
-bEB2Z2VyLmtlcm5lbC5vcmc7IFJhamF0DQo+ID4+IEphaW47IEd1ZW50ZXIgUm9lY2sNCj4gPj4g
-U3ViamVjdDogUmU6IFtQQVRDSF0gcGNpL3BjaWVocDogQWxsb3cgcG9sbGluZy9pcnEgbW9kZSB0
-byBiZQ0KPiBkZWNpZGVkDQo+ID4+IG9uIGEgcGVyLXBvcnQgYmFzaXMNCj4gPj4NCj4gPj4gT24g
-TW9uLCBNYXIgMzEsIDIwMTQgYXQgMDQ6NTE6NTNQTSAtMDcwMCwgUmFqYXQgSmFpbiB3cm90ZToN
-Cj4gPj4gPiBUb2RheSwgdGhlcmUgaXMgYSBnbG9iYWwgcGNpZWhwX3BvbGxfbW9kZSBtb2R1bGUg
-cGFyYW1ldGVyIHVzaW5nDQo+ID4+IHdoaWNoDQo+ID4+ID4gZWl0aGVyIF9hbGxfIHRoZSBob3Qt
-cGx1Z2dhYmxlIHBvcnRzIGFyZSB0byB1c2UgcG9sbGluZywgb3IgX2FsbF8NCj4gPj4gPiB0aGUg
-cG9ydHMgYXJlIHRvIHVzZSBpbnRlcnJ1cHRzLg0KPiA+PiA+DQo+ID4+ID4gSW4gYSBzeXN0ZW0g
-d2hlcmUgYSBjZXJ0YWluIHBvcnQgaGFzIElSUSBpc3N1ZXMsIHRvZGF5IHRoZSBvbmx5DQo+ID4+
-IG9wdGlvbg0KPiA+PiA+IGlzIHRvIHVzZSB0aGUgcGFyYW1ldGVyIHRoYXQgY29udmVydHMgQUxM
-IHRoZSBwb3J0cyB0byB1c2UgcG9sbGluZw0KPiA+PiBtb2RlLg0KPiA+PiA+IFRoaXMgaXMgbm90
-IGdvb2QsIGFuZCBoZW5jZSB0aGlzIHBhdGNoIGludHJ1ZHVjZXMgYSBiaXQgZmllbGQgdGhhdA0K
-PiA+PiBjYW4NCj4gPj4gPiBiZSBzZXQgdXNpbmcgYSBQQ0kgcXVpcmsgdGhhdCBpbmRpY2F0ZXMg
-dGhhdCBwb2xsaW5nIHNob3VsZCBhbHdheXMNCj4gPj4gPiBiZSB1c2VkIGZvciB0aGlzIHBhcnRp
-Y3VsYXIgUENJZSBwb3J0LiBUaGUgcmVtYWluaW5nIHBvcnRzIGNhbg0KPiA+PiA+IHN0aWxsIGhv
-b3NlIHRvIGNvbnRpbnVlIHRvIG9wZXJhdGUgaW4gd2hhdGV2ZXIgbW9kZSB0aGV5IHdpc2ggdG8u
-DQo+ID4+ID4NCj4gPj4gPiBTaWduZWQtb2ZmLWJ5OiBSYWphdCBKYWluIDxyYWphdHhqYWluQGdt
-YWlsLmNvbT4NCj4gPj4gPiBTaWduZWQtb2ZmLWJ5OiBSYWphdCBKYWluIDxyYWphdGphaW5AanVu
-aXBlci5uZXQ+DQo+ID4+ID4gU2lnbmVkLW9mZi1ieTogR3VlbnRlciBSb2VjayA8Z3JvZWNrQGp1
-bmlwZXIubmV0Pg0KPiA+Pg0KPiA+PiBJJ20gd2lsbGluZyB0byBtZXJnZSB0aGlzLCBidXQgSSdk
-IHByZWZlciB0byBtZXJnZSBpdCBhbG9uZyB3aXRoIGENCj4gPj4gcXVpcmsgdGhhdCBhY3R1YWxs
-eSBzZXRzIGRldi0+aG90cGx1Z19wb2xsaW5nLiAgT3RoZXJ3aXNlIGl0J3MgZGVhZA0KPiA+PiBj
-b2RlIGFuZCBJJ2xsIGhhdmUgbm8gd2F5IHRvIHRlbGwgd2hldGhlciB3ZSBuZWVkIHRvIGtlZXAg
-aXQuDQo+ID4+DQo+ID4gQmpvcm4sDQo+ID4NCj4gPiB3aGF0IHdvdWxkIGJlIHRoZSBwcm9wZXIg
-bG9jYXRpb24gZm9yIHN1Y2ggYSBxdWlyayA/DQo+ID4gV2UgdXNlIGl0IHRvIGhlbHAgc2ltdWxh
-dGluZyBob3RwbHVnIHN1cHBvcnQgb24gYW4gSURUIFBFUzEyTlQzLg0KPiA+IFRoZSBjb2RlIGlz
-IGEgYml0IG1vcmUgaW52YXNpdmUgdGhhbiBqdXN0IHRoZSBxdWlyayBpdHNlbGYsIHNpbmNlIGl0
-DQo+ID4gYWxzbyBuZWVkcyB0byB0b3VjaCBsaW5rIGFuZCBzbG90IHN0YXR1cyByZWdpc3RlcnMs
-IHNvIHF1aXJrcy5jDQo+ID4gZG9lc24ndCBzZWVtIGFwcHJvcHJpYXRlLg0KPiA+DQo+ID4gZHJp
-dmVycy9wY2kvcGVzMTJudDMuYywgbWF5YmUsIHdpdGggYSBzZXBhcmF0ZSBjb25maWd1cmF0aW9u
-IG9wdGlvbiA/DQo+ID4gT3IgaW4gdGhlIGhvdHBsdWcgZGlyZWN0b3J5ID8NCj4gDQo+IElmIHRo
-aXMgaXMgb25seSBmb3IgZGVidWcsIGkuZS4sIHlvdSBkb24ndCBpbnRlbmQgdG8gc2hpcCBhIHBy
-b2R1Y3QNCj4gdXNpbmcgdGhpcyBzaW11bGF0ZWQgaG90cGx1ZywgbWF5YmUgeW91IHNob3VsZCBq
-dXN0IGtlZXAgYm90aCB0aGUgcXVpcmsNCj4gYW5kIHRoaXMgcGF0Y2ggb3V0IG9mIHRyZWUuDQo+
-IA0KPiBJZiB5b3UgZG8gd2FudCB0byBldmVudHVhbGx5IHNoaXAgdGhpcyBjb2RlIGZvciBzb21l
-IHByb2R1Y3QsIEkgdGhpbmsNCj4gaXQnZCBiZSBmaW5lIHRvIHB1dCB0aGUgcXVpcmsgaW4gZHJp
-dmVycy9wY2kvcXVpcmtzLmMsIG1heWJlIHdpdGggYQ0KPiBjb25maWcgb3B0aW9uIHRvIGVuYWJs
-ZSBpdC4gIEJ1dCB3aXRob3V0IHNlZWluZyB0aGUgcXVpcmssIEkgY2FuJ3QNCj4gcmVhbGx5IHRl
-bGwuICBBIG5ldyBmaWxlIHNlZW1zIG92ZXJraWxsIHVubGVzcyBpdCdzIHNvbWV0aGluZyByZWFs
-bHkNCj4gaHVnZSAtLSBJIGRvbid0IHRoaW5rIHdlIHJlYWxseSBoYXZlIGV4YW1wbGVzIG9mIGRl
-ZGljYXRlZCBmaWxlcyBmb3INCj4gb3RoZXIgY2hpcCBpZGlvc3luY3Jhc2llcy4NCj4gDQoNCkkn
-ZCBnaXZlIGl0IGEgNTA6NTAgcHJvYmFiaWxpdHkgdGhhdCBpdCB3aWxsIHNoaXAuIEN1cnJlbnQg
-cGxhbiBpcyB0aGF0DQppdCBpcyBmb3IgZGV2ZWxvcG1lbnQgb25seSwgYnV0IEkgc3VzcGVjdCB0
-aGF0IG1heSBjaGFuZ2UgYXQgc29tZSBwb2ludC4NCg0KSSBhZ3JlZSwgdGhpcyBpcyBraW5kIG9m
-IGFuIG91dGxpZXIuIElmIHdlIHB1c2ggaXQgdXBzdHJlYW0sIGl0IG1pZ2h0DQptb3N0bHkgc2Vy
-dmUgYXMgYSByZWZlcmVuY2UgZm9yIG90aGVycyB3aG8gbWlnaHQgaGF2ZSBzaW1pbGFyIHByb2Js
-ZW1zIC0NCm5vdCBqdXN0IGZvciB0aGUgcXVpcmsgaXRzZWxmLCBidXQgYXMgYW4gZXhhbXBsZSBv
-biBob3cgdG8gaW50ZXJjZXB0DQphbmQgbWFuaXB1bGF0ZSBwY2kgY29uZmlndXJhdGlvbiByZWdp
-c3RlciBhY2Nlc3Nlcy4NCg0KSSBhdHRhY2hlZCB0aGUgZmlsZSBzbyB5b3UgY2FuIGhhdmUgYSBs
-b29rLg0KDQpHdWVudGVyDQoNCg==
+Right, the NULL pointer dereference is because drivers implicitly trust
+the driver_data field supplied to their probe function.  This patch
+prevents the user from supplying a "shorthand" vendor/device new_id that
+would conflict with an existing static ID by returning -EEXIST on the
+new_id update.  This is not really a KVM problem, but prevention of a
+user error for the new_id interface; there is no reason for the user to
+add a new_id that duplicates an existing ID unless they want to modify
+the extended fields.
 
---_002_afddb2ca730f45d59318728d3e3e436fCO1PR05MB523namprd05pro_
-Content-Type: text/plain; name="pes12nt3.c.c"
-Content-Description: pes12nt3.c.c
-Content-Disposition: attachment; filename="pes12nt3.c.c"; size=5902;
-	creation-date="Fri, 25 Apr 2014 17:00:35 GMT";
-	modification-date="Wed, 16 Apr 2014 21:24:46 GMT"
-Content-Transfer-Encoding: base64
+> Can you outline the sequence of events and the drivers involved?  Did we
+> start with a device that was claimed by vfio, and now we're trying to get
+> ixgbe to claim it by writing to /sys/bus/pci/drivers/ixgbe/new_id?  If so,
+> does that mean the user has to know what driver_data value to supply?
 
-LyoNCiAqIFBUWDUwMDAgIFNJQiAtIFBDSSBmaXh1cCBjb2RlDQogKg0KICogUmFqYXQgSmFpbiA8
-cmFqYXRqYWluQGp1bmlwZXIubmV0Pg0KICogQ29weXJpZ2h0IDIwMTQgSnVuaXBlciBOZXR3b3Jr
-cw0KICoNCiAqIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5b3UgY2FuIHJlZGlzdHJp
-YnV0ZSAgaXQgYW5kL29yIG1vZGlmeSBpdA0KICogdW5kZXIgdGhlIHRlcm1zIG9mIHRoZSBHTlUg
-R2VuZXJhbCBQdWJsaWMgTGljZW5zZSB2MiBhcyBwdWJsaXNoZWQgYnkgdGhlDQogKiBGcmVlIFNv
-ZnR3YXJlIEZvdW5kYXRpb24NCiAqLw0KDQojaW5jbHVkZSA8bGludXgvbGlzdC5oPg0KI2luY2x1
-ZGUgPGxpbnV4L3BjaS5oPg0KI2luY2x1ZGUgPGxpbnV4L2pueC9wY2lfaWRzLmg+DQojaW5jbHVk
-ZSA8bGludXgvc3BpbmxvY2suaD4NCg0KI2RlZmluZSBJRFRfUEVTMTJOVDNfRExTVFMgICAgICAg
-ICAgICAgIDB4MjY4DQojZGVmaW5lIElEVF9QRVMxMk5UM19ETFNUU19ETEZTTSAgICAgICAgMHg3
-DQojZGVmaW5lIElEVF9QRVMxMk5UM19ETFNUU19MSU5LQUNUSVZFICAgMHg0DQoNCnN0cnVjdCBw
-ZXMxMm50M19wY2lfZGF0YSB7DQoJc3RydWN0IGxpc3RfaGVhZCBsaXN0Ow0KCXN0cnVjdCBkZXZp
-Y2UgKmRldjsNCglzdHJ1Y3QgcGNpX29wcyBvcHM7DQoJc3RydWN0IHBjaV9vcHMgKm9sZF9vcHM7
-DQoJYm9vbCBsbmtzdGFfZGxsbGE7DQoJYm9vbCBzbHRzdGFfZGxsc2M7DQp9Ow0KDQpzdGF0aWMg
-TElTVF9IRUFEKHBlczEybnQzX2xpc3QpOw0Kc3RhdGljIERFRklORV9TUElOTE9DSyhwZXMxMm50
-M19sb2NrKTsNCg0Kc3RhdGljIGludCBwZXMxMm50M191cGRhdGVfbGlua3N0YXR1cyhzdHJ1Y3Qg
-cGVzMTJudDNfcGNpX2RhdGEgKmRhdGEsDQoJCQkJICAgICAgc3RydWN0IHBjaV9idXMgKmJ1cywg
-dW5zaWduZWQgaW50IGRldmZuKQ0Kew0KCXUzMiBsaW5rYWN0aXZlOw0KCWJvb2wgZGxsbGE7DQoJ
-aW50IHJldHZhbDsNCg0KCXJldHZhbCA9IGRhdGEtPm9sZF9vcHMtPnJlYWQoYnVzLCBkZXZmbiwg
-SURUX1BFUzEyTlQzX0RMU1RTLA0KCQkJCSAgICAgNCwgJmxpbmthY3RpdmUpOw0KCWlmIChyZXR2
-YWwpDQoJCXJldHVybiByZXR2YWw7DQoJaWYgKGxpbmthY3RpdmUgPT0gMHhmZmZmZmZmZikNCgkJ
-ZGxsbGEgPSBmYWxzZTsNCgllbHNlDQoJCWRsbGxhID0gKGxpbmthY3RpdmUgJiBJRFRfUEVTMTJO
-VDNfRExTVFNfRExGU00pID09DQoJCQkJCQlJRFRfUEVTMTJOVDNfRExTVFNfTElOS0FDVElWRTsN
-CglpZiAoZGxsbGEgIT0gZGF0YS0+bG5rc3RhX2RsbGxhKQ0KCQlkYXRhLT5zbHRzdGFfZGxsc2Mg
-PSB0cnVlOw0KCWRhdGEtPmxua3N0YV9kbGxsYSA9IGRsbGxhOw0KCXJldHVybiAwOw0KfQ0KDQpz
-dGF0aWMgaW50IHBlczEybnQzX3BjaV9yZWFkKHN0cnVjdCBwY2lfYnVzICpidXMsIHVuc2lnbmVk
-IGludCBkZXZmbiwNCgkJCSAgICAgIGludCB3aGVyZSwgaW50IHNpemUsIHUzMiAqdmFsKQ0Kew0K
-CXN0cnVjdCBwZXMxMm50M19wY2lfZGF0YSAqZGF0YSA9DQoJCQljb250YWluZXJfb2YoYnVzLT5v
-cHMsIHN0cnVjdCBwZXMxMm50M19wY2lfZGF0YSwgb3BzKTsNCglpbnQgcmV0dmFsLCBwb3M7DQoN
-CglyZXR2YWwgPSBkYXRhLT5vbGRfb3BzLT5yZWFkKGJ1cywgZGV2Zm4sIHdoZXJlLCBzaXplLCB2
-YWwpOw0KDQoJLyogT25seSBuZWVkIHRvIGNoYW5nZSB0aGUgcmVnaXN0ZXJzIGF0IHBvcnQgbGVh
-ZGluZyB0byBURiBjaGlwICovDQoJaWYgKHJldHZhbCB8fCBkZXZmbiAhPSAwKQ0KCQlyZXR1cm4g
-cmV0dmFsOw0KDQoJcmV0dmFsID0gcGVzMTJudDNfdXBkYXRlX2xpbmtzdGF0dXMoZGF0YSwgYnVz
-LCBkZXZmbik7DQoJaWYgKHJldHZhbCkNCgkJcmV0dXJuIHJldHZhbDsNCg0KCXBvcyA9IHdoZXJl
-IC0gMHg0MDsNCg0KCS8qDQoJICogUENJIHJlZ2lzdGVycyBzbWFsbGVyIHRoYW4gMzIgYml0cyBt
-YXkgYmUgcmVhZCB1c2luZw0KCSAqIGRpZmZlcmVudCBsZW5ndGhzIGF0IGRpZmVyZW50IG9mZnNl
-dHMuIENvbnNpZGVyOg0KCSAqDQoJICogKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tKw0KCSAqIHwgIFJlZy0xIHwgIFJlZy0yIHwgIFJlZy0zIHwgIFJlZy00IHwNCgkgKiArLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0rDQoJICogXiAgICAgICAgXiAgICAgICAg
-XiAgICAgICAgXg0KCSAqIHB0ciAgICAgIHB0cisxICAgIHB0cisyICAgIHB0ciszDQoJICoNCgkg
-KiBSZWctNCBtYXkgYmUgcmVhZCBieSB1c2luZyBhOg0KCSAqIDEgYnl0ZSByZWFkIGF0IChwdHIr
-MykNCgkgKiAyIGJ5dGUgcmVhZCBhdCAocHRyKzIpDQoJICogNCBieXRlIHJlYWQgYXQgKHB0cikN
-CgkgKiBldGMNCgkgKg0KCSAqIFdlIG5lZWQgdG8gdGFrZSBvZiB0aGlzIGhlcmUuDQoJICovDQoN
-Cglzd2l0Y2ggKHNpemUpIHsNCgljYXNlIDQ6DQoJCXN3aXRjaCAocG9zKSB7DQoJCWNhc2UgMDoN
-CgkJCWlmICgqdmFsID09IDB4ZmZmZmZmZmYpDQoJCQkJKnZhbCA9IDA7DQoJCQllbHNlDQoJCQkJ
-KnZhbCB8PSAoUENJX0VYUF9GTEFHU19TTE9UIDw8IDE2KTsNCgkJCWJyZWFrOw0KCQljYXNlIFBD
-SV9FWFBfTE5LQ0FQOg0KCQkJaWYgKCp2YWwgPT0gMHhmZmZmZmZmZikNCgkJCQkqdmFsID0gMDsN
-CgkJCWVsc2UNCgkJCQkqdmFsIHw9IFBDSV9FWFBfTE5LQ0FQX0RMTExBUkM7DQoJCQlicmVhazsN
-CgkJY2FzZSBQQ0lfRVhQX1NMVENBUDoNCgkJCWlmICgqdmFsID09IDB4ZmZmZmZmZmYpIHsNCgkJ
-CQkqdmFsID0gMDsNCgkJCX0gZWxzZSB7DQoJCQkJKnZhbCB8PSBQQ0lfRVhQX1NMVENBUF9IUEM7
-DQoJCQkJKnZhbCA9ICgqdmFsICYgflBDSV9FWFBfU0xUQ0FQX1BTTikgfA0KCQkJCQkoYnVzLT5u
-dW1iZXIgPDwgMTkpOw0KCQkJfQ0KCQkJYnJlYWs7DQoJCWNhc2UgUENJX0VYUF9MTktDVEw6DQoJ
-CQlpZiAoKnZhbCA9PSAweGZmZmZmZmZmKSB7DQoJCQkJKnZhbCA9IDA7DQoJCQl9IGVsc2Ugew0K
-CQkJCWlmIChkYXRhLT5sbmtzdGFfZGxsbGEpDQoJCQkJCSp2YWwgfD0gUENJX0VYUF9MTktTVEFf
-RExMTEEgPDwgMTY7DQoJCQkJZWxzZQ0KCQkJCQkqdmFsICY9IH4oUENJX0VYUF9MTktTVEFfRExM
-TEEgPDwgMTYpOw0KCQkJfQ0KCQkJYnJlYWs7DQoJCX0NCgkJYnJlYWs7DQoNCgljYXNlIDI6DQoJ
-CXN3aXRjaCAocG9zKSB7DQoJCWNhc2UgUENJX0VYUF9GTEFHU19TTE9UOg0KCQkJaWYgKCp2YWwg
-PT0gMHhmZmZmKQ0KCQkJCSp2YWwgPSAwOw0KCQkJZWxzZQ0KCQkJCSp2YWwgfD0gUENJX0VYUF9G
-TEFHU19TTE9UOw0KCQkJYnJlYWs7DQoJCWNhc2UgUENJX0VYUF9MTktTVEE6DQoJCQlpZiAoKnZh
-bCA9PSAweGZmZmYpIHsNCgkJCQkqdmFsID0gMDsNCgkJCX0gZWxzZSB7DQoJCQkJaWYgKGRhdGEt
-Pmxua3N0YV9kbGxsYSkNCgkJCQkJKnZhbCB8PSBQQ0lfRVhQX0xOS1NUQV9ETExMQTsNCgkJCQll
-bHNlDQoJCQkJCSp2YWwgJj0gflBDSV9FWFBfTE5LU1RBX0RMTExBOw0KCQkJfQ0KCQkJYnJlYWs7
-DQoJCWNhc2UgUENJX0VYUF9TTFRTVEE6DQoJCQlpZiAoKnZhbCA9PSAweGZmZmYpDQoJCQkJKnZh
-bCA9IFBDSV9FWFBfU0xUU1RBX0RMTFNDOw0KCQkJZWxzZSBpZiAoZGF0YS0+c2x0c3RhX2RsbHNj
-KQ0KCQkJCSp2YWwgfD0gUENJX0VYUF9TTFRTVEFfRExMU0M7DQoJCQlicmVhazsNCgkJfQ0KCQli
-cmVhazsNCgl9DQoJcmV0dXJuIDA7DQp9DQoNCnN0YXRpYyBpbnQgcGVzMTJudDNfcGNpX3dyaXRl
-KHN0cnVjdCBwY2lfYnVzICpidXMsIHVuc2lnbmVkIGludCBkZXZmbiwNCgkJCSAgICAgIGludCB3
-aGVyZSwgaW50IHNpemUsIHUzMiB2YWwpDQp7DQoJc3RydWN0IHBlczEybnQzX3BjaV9kYXRhICpk
-YXRhID0NCgkJCWNvbnRhaW5lcl9vZihidXMtPm9wcywgc3RydWN0IHBlczEybnQzX3BjaV9kYXRh
-LCBvcHMpOw0KCWludCBwb3MgPSB3aGVyZSAtIDB4NDA7DQoJaW50IHJldHZhbDsNCg0KCWlmIChk
-ZXZmbiA9PSAwICYmIHNpemUgPT0gMikgew0KCQlzd2l0Y2ggKHBvcykgew0KCQljYXNlIFBDSV9F
-WFBfU0xUU1RBOg0KCQkJaWYgKHZhbCAmIFBDSV9FWFBfU0xUU1RBX0RMTFNDKQ0KCQkJCWRhdGEt
-PnNsdHN0YV9kbGxzYyA9IGZhbHNlOw0KCQkJYnJlYWs7DQoJCX0NCgl9DQoNCglyZXR2YWwgPSBk
-YXRhLT5vbGRfb3BzLT53cml0ZShidXMsIGRldmZuLCB3aGVyZSwgc2l6ZSwgdmFsKTsNCglpZiAo
-cmV0dmFsIHx8IGRldmZuICE9IDApDQoJCXJldHVybiByZXR2YWw7DQoNCgkvKiBDYXRjaCBzaXR1
-YXRpb25zIHdoZXJlIHRoZSBsaW5rIHN0YXR1cyBjaGFuZ2VkIGFmdGVyIGJlaW5nIGhhbmRsZWQg
-Ki8NCglyZXR1cm4gcGVzMTJudDNfdXBkYXRlX2xpbmtzdGF0dXMoZGF0YSwgYnVzLCBkZXZmbik7
-DQp9DQoNCnN0YXRpYyB2b2lkIHBlczEybnQzX2Zha2VfbGlua3N0YXRlX2hvdHBsdWcoc3RydWN0
-IHBjaV9kZXYgKmRldikNCnsNCglzdHJ1Y3QgcGVzMTJudDNfcGNpX2RhdGEgKmRhdGE7DQoNCglp
-ZiAocGNpX3BjaWVfdHlwZShkZXYpID09IFBDSV9FWFBfVFlQRV9VUFNUUkVBTSkgew0KCQlkYXRh
-ID0ga3phbGxvYyhzaXplb2YoKmRhdGEpLCBHRlBfS0VSTkVMKTsNCgkJaWYgKGRhdGEgPT0gTlVM
-TCkNCgkJCXJldHVybjsNCgkJZGF0YS0+b3BzLnJlYWQgPSBwZXMxMm50M19wY2lfcmVhZDsNCgkJ
-ZGF0YS0+b3BzLndyaXRlID0gcGVzMTJudDNfcGNpX3dyaXRlOw0KCQlkYXRhLT5vbGRfb3BzID0g
-cGNpX2J1c19zZXRfb3BzKGRldi0+c3Vib3JkaW5hdGUsICZkYXRhLT5vcHMpOw0KCQlkYXRhLT5k
-ZXYgPSAmZGV2LT5kZXY7DQoJCXNwaW5fbG9jaygmcGVzMTJudDNfbG9jayk7DQoJCWxpc3RfYWRk
-KCZkYXRhLT5saXN0LCAmcGVzMTJudDNfbGlzdCk7DQoJCXNwaW5fdW5sb2NrKCZwZXMxMm50M19s
-b2NrKTsNCgl9IGVsc2UgaWYgKHBjaV9wY2llX3R5cGUoZGV2KSA9PSBQQ0lfRVhQX1RZUEVfRE9X
-TlNUUkVBTSkgew0KCQlkZXYtPmhvdHBsdWdfcG9sbGluZyA9IDE7IC8qIE5vIElSUSBzdXBwb3J0
-ICovDQoJCWRldi0+cGNpZV9mbGFnc19yZWcgfD0gUENJX0VYUF9GTEFHU19TTE9UOw0KCX0NCn0N
-CkRFQ0xBUkVfUENJX0ZJWFVQX0ZJTkFMKFBDSV9WRU5ET1JfSURfSURULCBQQ0lfREVWSUNFX0lE
-X0lEVF9QRVMxMk5UM19UUkFOU19BQiwNCgkJCXBlczEybnQzX2Zha2VfbGlua3N0YXRlX2hvdHBs
-dWcpOw0KDQpzdGF0aWMgdm9pZCBwZXMxMm50M19jbGVhbnVwX2VudHJ5KHN0cnVjdCBkZXZpY2Ug
-KmRldikNCnsNCglzdHJ1Y3QgcGVzMTJudDNfcGNpX2RhdGEgKmRhdGEsICp0bXA7DQoNCglzcGlu
-X2xvY2soJnBlczEybnQzX2xvY2spOw0KCWxpc3RfZm9yX2VhY2hfZW50cnlfc2FmZShkYXRhLCB0
-bXAsICZwZXMxMm50M19saXN0LCBsaXN0KSB7DQoJCWlmIChkYXRhLT5kZXYgPT0gZGV2KSB7DQoJ
-CQlsaXN0X2RlbCgmZGF0YS0+bGlzdCk7DQoJCQlrZnJlZShkYXRhKTsNCgkJCWJyZWFrOw0KCQl9
-DQoJfQ0KCXNwaW5fdW5sb2NrKCZwZXMxMm50M19sb2NrKTsNCn0NCg0Kc3RhdGljIGludCBwZXMx
-Mm50M19ub3RpZmllcl9jYWxsKHN0cnVjdCBub3RpZmllcl9ibG9jayAqbiwNCgkJCQkgIHVuc2ln
-bmVkIGxvbmcgYWN0aW9uLCB2b2lkICpkZXYpDQp7DQoJaWYgKGFjdGlvbiA9PSBCVVNfTk9USUZZ
-X0RFTF9ERVZJQ0UpDQoJCXBlczEybnQzX2NsZWFudXBfZW50cnkoZGV2KTsNCg0KCXJldHVybiBO
-T1RJRllfRE9ORTsNCn0NCg0Kc3RhdGljIHN0cnVjdCBub3RpZmllcl9ibG9jayBwZXMxMm50M19u
-YiA9IHsNCgkubm90aWZpZXJfY2FsbCA9IHBlczEybnQzX25vdGlmaWVyX2NhbGwsDQp9Ow0KDQpz
-dGF0aWMgaW50IF9faW5pdCBwZXMxMm50M19pbml0KHZvaWQpDQp7DQoJYnVzX3JlZ2lzdGVyX25v
-dGlmaWVyKCZwY2lfYnVzX3R5cGUsICZwZXMxMm50M19uYik7DQoJcmV0dXJuIDA7DQp9DQoNCnN1
-YnN5c19pbml0Y2FsbChwZXMxMm50M19pbml0KTsNCg==
+I believe the driver is ixgbe, the device starts out bound to ixgbe, the
+user adds the vendor/device IDs to the new_id of a different driver
+(which could be pci-stub or vfio-pci or even some alternate host drive
+for the device).  They then finish with the alternate driver, use
+remove_id, and attempt to rebind back to ixgbe by writing vendor/device
+to ixgbe new_id.  This is clearly wrong, the driver already handles this
+device and the user should have used drivers_probe or even the ixgbe
+bind interface.  However, as it works now, ixgbe now has a new dynamic
+"shorthand" match for the device and since dynamic IDs are matched
+before static IDs, the device_data from that match (NULL) is passed to
+the driver probe() function.  Chaos follows since the driver implicitly
+trusts that device_data as something provided by the driver. 
 
---_002_afddb2ca730f45d59318728d3e3e436fCO1PR05MB523namprd05pro_--
+> I know you didn't add the new_id mechanism, and this patch makes it safer
+> than it was before, but I'm uneasy about it in general.  Most drivers do
+> not validate the driver_data value.  They assume it came out of the
+> id_table supplied by the driver and is therefore trustworthy.  But new_id
+> is a loophole that allows a user (hopefully only root) to pass arbitrary
+> junk to the driver.
+
+The sysfs files are only accessible to root by default.  Your uneasiness
+seems to be the new_id mechanism in general.  It is a gap that drivers
+implicitly trust a field that can be supplied by the user.  I believe
+there's a test in the code somewhere that verifies that device_data at
+least matches an existing device_data as a small sanity check.  This
+patch closes another gap by disallowing new_ids that are not fully
+specified to supersede an existing entry. 
+
+> I wonder if the device assignment machinery should be more integrated into
+> the PCI core instead of trying to be "just another driver."  It seems like
+> we're doing a lot of work to try to get the driver binding mechanism to do
+> what we need for device assignment.
+
+This problem is only tangentially related to device assignment, any PCI
+driver can hit this.  Maybe in practice the reason for touching these
+files is often device assignment, but this interface pre-dates KVM.  Do
+you have suggestions how device assignment could be more integrated to
+PCI core?  Note that vfio is intentionally device agnostic and support
+for assignment of platform devices using vfio is being actively
+developed.  We do have a new binding mechanism awaiting review that
+tries to avoid some of the faults with the new_id/remove_id interface.
+In this case the user would not need to add a new_id and would use
+drivers_probe on both sides of the attach/re-attach.  This is not a
+replacement for Bandan's patch, but you can find it on the list here:
+
+              Subject:
+[PATCH] PCI: Introduce new device
+binding path using
+pci_dev.driver_override
+               Date:
+Fri, 04 Apr 2014 14:19:20 -0600
+
+Thanks,
+Alex 
+
+> > Signed-off-by: Bandan Das <bsd@redhat.com>
+> > ---
+> > v3:
+> > relocate pdev decl
+> > v2:
+> > 1. Return error if there is a matching static entry
+> > and change commit message to reflect this behavior
+> > 3. Fill in a pdev and call pci_match_id instead of creating
+> > a new matching function
+> > 4. Change commit message to reflect that libvirt does not
+> > depend on this behavior
+> > 
+> >  drivers/pci/pci-driver.c | 22 +++++++++++++++++++++-
+> >  1 file changed, 21 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> > index 25f0bc6..a65a014 100644
+> > --- a/drivers/pci/pci-driver.c
+> > +++ b/drivers/pci/pci-driver.c
+> > @@ -107,7 +107,7 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+> >  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+> >  	unsigned long driver_data=0;
+> >  	int fields=0;
+> > -	int retval;
+> > +	int retval = 0;
+> >  
+> >  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
+> >  			&vendor, &device, &subvendor, &subdevice,
+> > @@ -115,6 +115,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+> >  	if (fields < 2)
+> >  		return -EINVAL;
+> >  
+> > +	if (fields != 7) {
+> > +		struct pci_dev *pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+> > +		if (!pdev)
+> > +			return -ENOMEM;
+> > +
+> > +		pdev->vendor = vendor;
+> > +		pdev->device = device;
+> > +		pdev->subsystem_vendor = subvendor;
+> > +		pdev->subsystem_device = subdevice;
+> > +		pdev->class = class;
+> > +
+> > +		if (pci_match_id(pdrv->id_table, pdev))
+> > +			retval = -EEXIST;
+> > +
+> > +		kfree(pdev);
+> > +
+> > +		if (retval)
+> > +			return retval;
+> > +	}
+> > +
+> >  	/* Only accept driver_data values that match an existing id_table
+> >  	   entry */
+> >  	if (ids) {
+> > -- 
+> > 1.8.3.1
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
