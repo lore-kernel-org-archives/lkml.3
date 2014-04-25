@@ -1,158 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaDYQO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:14:58 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:46574 "EHLO mail.ispras.ru"
+	id S1753586AbaDYQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:18:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60194 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486AbaDYQOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:14:53 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] [media] ivtv: avoid GFP_KERNEL in atomic context
-Date: Fri, 25 Apr 2014 18:14:37 +0200
-Message-Id: <1398442477-28876-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752139AbaDYQSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:18:22 -0400
+Date: Fri, 25 Apr 2014 11:18:03 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v5 2/5] ARM: dts: am43xx clock data
+Message-ID: <20140425161803.GU29632@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395223803-4714-1-git-send-email-george.cherian@ti.com>
+ <1395223803-4714-3-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iytlPraCFSCqrfnM"
+Content-Disposition: inline
+In-Reply-To: <1395223803-4714-3-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ivtv_yuv_init() is used in atomic context,
-so memory allocation should be done keeping that in mind.
+--iytlPraCFSCqrfnM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Call graph for ivtv_yuv_init() is as follows:
-- ivtv_yuv_next_free()
-  - ivtv_yuv_prep_frame() [ioctl handler]
-  - ivtv_yuv_setup_stream_frame()
-    - ivtv_irq_dec_data_req() -> ivtv_irq_handler() [ATOMIC CONTEXT]
-    - ivtv_yuv_udma_stream_frame() [with mutex held]
-    - ivtv_write() [with mutex held]
+On Wed, Mar 19, 2014 at 03:40:00PM +0530, George Cherian wrote:
+> Add USB and USB PHY reference clock data
+>=20
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 
-The patch adds gfp_t argument and implements its usage according to the context.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> ---
+>  arch/arm/boot/dts/am43xx-clocks.dtsi | 32 ++++++++++++++++++++++++++++++=
+++
+>  1 file changed, 32 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/am43xx-clocks.dtsi b/arch/arm/boot/dts/am4=
+3xx-clocks.dtsi
+> index 142009c..5171d3e 100644
+> --- a/arch/arm/boot/dts/am43xx-clocks.dtsi
+> +++ b/arch/arm/boot/dts/am43xx-clocks.dtsi
+> @@ -653,4 +653,36 @@
+>  		clocks =3D <&clk_32768_ck>, <&clk_32k_tpm_ck>;
+>  		reg =3D <0x4260>;
+>  	};
+> +
+> +	usb_phy0_always_on_clk32k: usb_phy0_always_on_clk32k {
+> +        	#clock-cells =3D <0>;
+> +	        compatible =3D "ti,gate-clock";
+> +	        clocks =3D <&usbphy_32khz_clkmux>;
+> +	        ti,bit-shift =3D <8>;
+> +	        reg =3D <0x2a40>;
+> +	};
+> +
+> +	usb_phy1_always_on_clk32k: usb_phy1_always_on_clk32k {
+> +        	#clock-cells =3D <0>;
+> +	        compatible =3D "ti,gate-clock";
+> +	        clocks =3D <&usbphy_32khz_clkmux>;
+> +	        ti,bit-shift =3D <8>;
+> +	        reg =3D <0x2a48>;
+> +	};
+> +
+> +	usb_otg_ss0_refclk960m: usb_otg_ss0_refclk960m {
+> +		#clock-cells =3D <0>;
+> +	        compatible =3D "ti,gate-clock";
+> +		clocks =3D <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift =3D <8>;
+> +	        reg =3D <0x8a60>;
+> +	};
+> +
+> +	usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
+> +		#clock-cells =3D <0>;
+> +	        compatible =3D "ti,gate-clock";
+> +		clocks =3D <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift =3D <8>;
+> +		reg =3D <0x8a68>;
+> +	};
+>  };
+> --=20
+> 1.8.3.1
+>=20
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/media/pci/ivtv/ivtv-fileops.c |  2 +-
- drivers/media/pci/ivtv/ivtv-irq.c     |  2 +-
- drivers/media/pci/ivtv/ivtv-yuv.c     | 16 ++++++++--------
- drivers/media/pci/ivtv/ivtv-yuv.h     |  2 +-
- 4 files changed, 11 insertions(+), 11 deletions(-)
+--=20
+balbi
 
-diff --git a/drivers/media/pci/ivtv/ivtv-fileops.c b/drivers/media/pci/ivtv/ivtv-fileops.c
-index 9caffd8aa995..2e8885c245e7 100644
---- a/drivers/media/pci/ivtv/ivtv-fileops.c
-+++ b/drivers/media/pci/ivtv/ivtv-fileops.c
-@@ -689,7 +689,7 @@ retry:
- 			int got_sig;
- 
- 			if (mode == OUT_YUV)
--				ivtv_yuv_setup_stream_frame(itv);
-+				ivtv_yuv_setup_stream_frame(itv, GFP_KERNEL);
- 
- 			mutex_unlock(&itv->serialize_lock);
- 			prepare_to_wait(&itv->dma_waitq, &wait, TASK_INTERRUPTIBLE);
-diff --git a/drivers/media/pci/ivtv/ivtv-irq.c b/drivers/media/pci/ivtv/ivtv-irq.c
-index 19a7c9b990a3..7a44f6b7aed4 100644
---- a/drivers/media/pci/ivtv/ivtv-irq.c
-+++ b/drivers/media/pci/ivtv/ivtv-irq.c
-@@ -822,7 +822,7 @@ static void ivtv_irq_dec_data_req(struct ivtv *itv)
- 	}
- 	else {
- 		if (test_bit(IVTV_F_I_DEC_YUV, &itv->i_flags))
--			ivtv_yuv_setup_stream_frame(itv);
-+			ivtv_yuv_setup_stream_frame(itv, GFP_ATOMIC);
- 		clear_bit(IVTV_F_S_NEEDS_DATA, &s->s_flags);
- 		ivtv_queue_move(s, &s->q_full, NULL, &s->q_predma, itv->dma_data_req_size);
- 		ivtv_dma_stream_dec_prepare(s, itv->dma_data_req_offset + IVTV_DECODER_OFFSET, 0);
-diff --git a/drivers/media/pci/ivtv/ivtv-yuv.c b/drivers/media/pci/ivtv/ivtv-yuv.c
-index 2ad65eb29832..9bf47b89f8a0 100644
---- a/drivers/media/pci/ivtv/ivtv-yuv.c
-+++ b/drivers/media/pci/ivtv/ivtv-yuv.c
-@@ -854,7 +854,7 @@ void ivtv_yuv_work_handler(struct ivtv *itv)
- 	yi->old_frame_info = f;
- }
- 
--static void ivtv_yuv_init(struct ivtv *itv)
-+static void ivtv_yuv_init(struct ivtv *itv, gfp_t gfp)
- {
- 	struct yuv_playback_info *yi = &itv->yuv_info;
- 
-@@ -936,7 +936,7 @@ static void ivtv_yuv_init(struct ivtv *itv)
- 	}
- 
- 	/* We need a buffer for blanking when Y plane is offset - non-fatal if we can't get one */
--	yi->blanking_ptr = kzalloc(720 * 16, GFP_KERNEL|__GFP_NOWARN);
-+	yi->blanking_ptr = kzalloc(720 * 16, gfp|__GFP_NOWARN);
- 	if (yi->blanking_ptr) {
- 		yi->blanking_dmaptr = pci_map_single(itv->pdev, yi->blanking_ptr, 720*16, PCI_DMA_TODEVICE);
- 	} else {
-@@ -952,13 +952,13 @@ static void ivtv_yuv_init(struct ivtv *itv)
- }
- 
- /* Get next available yuv buffer on PVR350 */
--static void ivtv_yuv_next_free(struct ivtv *itv)
-+static void ivtv_yuv_next_free(struct ivtv *itv, gfp_t gfp)
- {
- 	int draw, display;
- 	struct yuv_playback_info *yi = &itv->yuv_info;
- 
- 	if (atomic_read(&yi->next_dma_frame) == -1)
--		ivtv_yuv_init(itv);
-+		ivtv_yuv_init(itv, gfp);
- 
- 	draw = atomic_read(&yi->next_fill_frame);
- 	display = atomic_read(&yi->next_dma_frame);
-@@ -1119,12 +1119,12 @@ static int ivtv_yuv_udma_frame(struct ivtv *itv, struct ivtv_dma_frame *args)
- }
- 
- /* Setup frame according to V4L2 parameters */
--void ivtv_yuv_setup_stream_frame(struct ivtv *itv)
-+void ivtv_yuv_setup_stream_frame(struct ivtv *itv, gfp_t gfp)
- {
- 	struct yuv_playback_info *yi = &itv->yuv_info;
- 	struct ivtv_dma_frame dma_args;
- 
--	ivtv_yuv_next_free(itv);
-+	ivtv_yuv_next_free(itv, gfp);
- 
- 	/* Copy V4L2 parameters to an ivtv_dma_frame struct... */
- 	dma_args.y_source = NULL;
-@@ -1151,7 +1151,7 @@ int ivtv_yuv_udma_stream_frame(struct ivtv *itv, void __user *src)
- 	struct ivtv_dma_frame dma_args;
- 	int res;
- 
--	ivtv_yuv_setup_stream_frame(itv);
-+	ivtv_yuv_setup_stream_frame(itv, GFP_KERNEL);
- 
- 	/* We only need to supply source addresses for this */
- 	dma_args.y_source = src;
-@@ -1171,7 +1171,7 @@ int ivtv_yuv_prep_frame(struct ivtv *itv, struct ivtv_dma_frame *args)
- 	int res;
- 
- /*	IVTV_DEBUG_INFO("yuv_prep_frame\n"); */
--	ivtv_yuv_next_free(itv);
-+	ivtv_yuv_next_free(itv, GFP_KERNEL);
- 	ivtv_yuv_setup_frame(itv, args);
- 	/* Wait for frame DMA. Note that serialize_lock is locked,
- 	   so to allow other processes to access the driver while
-diff --git a/drivers/media/pci/ivtv/ivtv-yuv.h b/drivers/media/pci/ivtv/ivtv-yuv.h
-index ca5173fbf006..06753cfe64f3 100644
---- a/drivers/media/pci/ivtv/ivtv-yuv.h
-+++ b/drivers/media/pci/ivtv/ivtv-yuv.h
-@@ -34,7 +34,7 @@
- extern const u32 yuv_offset[IVTV_YUV_BUFFERS];
- 
- int ivtv_yuv_filter_check(struct ivtv *itv);
--void ivtv_yuv_setup_stream_frame(struct ivtv *itv);
-+void ivtv_yuv_setup_stream_frame(struct ivtv *itv, gfp_t gfp);
- int ivtv_yuv_udma_stream_frame(struct ivtv *itv, void __user *src);
- void ivtv_yuv_frame_complete(struct ivtv *itv);
- int ivtv_yuv_prep_frame(struct ivtv *itv, struct ivtv_dma_frame *args);
--- 
-1.8.3.2
+--iytlPraCFSCqrfnM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTWoq7AAoJEIaOsuA1yqREzNEP/02qpimll/4CLC1JI0N3pD04
+cnN6Ta0jqqq8GZ94kcunXk0ApvrfV8Ns4CFFwNNa3LycHpc5yiEHiUJeYq2+dH1c
+FpH0tlmHai7+0RaPUHSPPrDJXA1y2hdFpwpVSRP5FIiiS8ORqNIiC01vqDEHVCXy
+BMO2OIsLJxdEI6fTdnHMrjtwyNktWoUlwt6qAzvcoHE9xw7mi62Q7t4WOZ6Jvsir
+5hN8sOsqtyZqLpmpFHL9xaqJ517ZuwWFYMApnpQ39+iYiYalp7+IBxxpaR3oKD5i
+VuNbOZNpvLrxvd0lMHs5UYmA+C+9hvQHoUbviLjSSfGz97VKWG9KD4tqlnsTk5HP
+2AniHYdqAxPHP4T/N/AIma7I8IxxgLbN/kpgGBHXC8Th08TXGwk+W0/ipBZ3Pu3H
+OFXCSPQky1gyfFdMvIR/W8nLeROkABtkDmeJh+Vn98wzDBwpQ+J6QGlPE974xNr1
+ecFfr8plV6Vm9uBhYNLhf6m1hc2gcqd5NCh3uiVEQRPVkJ/iMIukWjVBmh+7F0Ob
+7DVyeAPZ3wUC+Jux7jb7ygnEwo/UFzmfKDpWWfU6tF42gZzLSPsOZSvqcRhnGsI9
+vmOo1zSkJfnVksiBtdSKH1ykzTe2iLCfeqSmWOIWkxVGJa60F1svsjys6KT9Vu3/
+If7tT6KtbUXSAe9kr4qT
+=BeiK
+-----END PGP SIGNATURE-----
+
+--iytlPraCFSCqrfnM--
