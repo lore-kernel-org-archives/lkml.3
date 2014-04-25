@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721AbaDYOGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:06:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8699 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184AbaDYOGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:06:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="528322254"
-Message-ID: <535A6BD7.4090709@intel.com>
-Date: Fri, 25 Apr 2014 22:06:15 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
-References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com> <5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com> <20140424112715.GQ11096@twins.programming.kicks-ass.net> <535A6070.90803@intel.com> <20140425135549.GF11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140425135549.GF11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754130AbaDYOHn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:07:43 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47260 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753864AbaDYOHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:07:39 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH v2 06/18] ARM: mvebu: Add Device Tree description of EHCI hosts on Armada 38x
+Date: Fri, 25 Apr 2014 16:07:04 +0200
+Message-Id: <1398434836-18908-7-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 09:55 PM, Peter Zijlstra wrote:
-> On Fri, Apr 25, 2014 at 09:17:36PM +0800, Yan, Zheng wrote:
->> On 04/24/2014 07:27 PM, Peter Zijlstra wrote:
->>> On Thu, Apr 24, 2014 at 12:36:01PM +0200, Stephane Eranian wrote:
->>>>> Most of hardware specific codes in the Intel uncore driver are for
->>>>> SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are
->>>>> similar. One module per CPU type means we have to duplicate lots of
->>>>> code. I don't think it's a good idea.
->>>>>
->>>> Then, at least split nhm_ex from the rest. It is very big.
->>>
->>> Aren't the EX parts in general far more complex and different from the
->>> EP parts? Or will the SNB/IVB/HSW-EX parts also be similar again? (this
->>> would be a good thing).
->>
->> SNB/IVB/HSW-EX are almost identical to SNB/IVB/HSW-EP.
-> 
-> Ah, good, sanity prevails!
-> 
->> NHM/WSM-EX are complete different from SNB/IVB/HSW-EX
-> 
-> Yeah, NHM/WSM-EX are different from pretty much anything.
-> 
-> Where do NHM/WSM-EP fall? I know they're radically different to the EX
-> parts but are they similar again to the SNB/IVB/HSW EP parts?
-> 
+The Marvell Armada 38x SoCs contain one EHCI host. This commit adds
+the Device Tree description of this interface at the SoC level, and
+also enables the USB2 port on the Armada 385 DB platform.
 
-the uncore driver does not support NHM/WSM-EP (I don't know the module numbers for NHM/WSM-EP, maybe I'm wrong)
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/boot/dts/armada-385-db.dts | 4 ++++
+ arch/arm/boot/dts/armada-38x.dtsi   | 8 ++++++++
+ 2 files changed, 12 insertions(+)
 
-> If not we'd have 3 groups:
-> 
-> NHM/WSM-EP
-> NHM/WSM-EX
-> SNB/IVB/HSW
-> 
-
-I think we'd have:
-
-NHM/WSM-EX
-SNB/IVB/HSW-EP
-Desktop version of NHM/SNB/IVB/HSW
-
-Regards
-Yan, Zheng
-
+diff --git a/arch/arm/boot/dts/armada-385-db.dts b/arch/arm/boot/dts/armada-385-db.dts
+index d5db1466da82..91e3e449067f 100644
+--- a/arch/arm/boot/dts/armada-385-db.dts
++++ b/arch/arm/boot/dts/armada-385-db.dts
+@@ -65,6 +65,10 @@
+ 				phy-mode = "rgmii-id";
+ 			};
+ 
++			usb@50000 {
++				status = "ok";
++			};
++
+ 			ethernet@70000 {
+ 				status = "okay";
+ 				phy = <&phy0>;
+diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
+index 5913ce1cc601..11f1f9e28cbc 100644
+--- a/arch/arm/boot/dts/armada-38x.dtsi
++++ b/arch/arm/boot/dts/armada-38x.dtsi
+@@ -283,6 +283,14 @@
+ 				status = "disabled";
+ 			};
+ 
++			usb@50000 {
++				compatible = "marvell,orion-ehci";
++				reg = <0x58000 0x500>;
++				interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&gateclk 18>;
++				status = "disabled";
++			};
++
+ 			xor@60800 {
+ 				compatible = "marvell,orion-xor";
+ 				reg = <0x60800 0x100
+-- 
+1.8.1.2
 
