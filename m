@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751424AbaDYWBV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:01:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62856 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139AbaDYWBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:01:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
-   d="scan'208";a="424129277"
-From: "Hohndel, Dirk" <dirk.hohndel@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Re: how to include already compiled object files to kernel
-Thread-Topic: how to include already compiled object files to kernel
-Thread-Index: Ac9gojb8jtX0K20pQFGL2vOl15VYggAalj8A
-Date: Fri, 25 Apr 2014 22:01:17 +0000
-Message-ID: <1398463280.37783.3.camel@rrmbp.gr8dns.org>
-References: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
-In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.19.17.220]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D029BC40924F5C4EADCA7ED257729429@intel.com>
+	id S1751321AbaDYWJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:09:50 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:62002 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaDYWJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:09:49 -0400
+Message-ID: <535ADDD3.2090006@gmail.com>
+Date: Fri, 25 Apr 2014 18:12:35 -0400
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26
 MIME-Version: 1.0
+To: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ed Tomlinson <edt@aei.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: Re: [git pull] drm fixes
+References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>	<2619529.mEMJol0YfM@grover>	<1549585.kmUPduLgev@grover>	<10435496.M4aSBzoVye@grover>	<CA+55aFwbOQCcd1qsW0rA+bQxN2Vgm9x832ZKmB7fndFX7DBE3w@mail.gmail.com> <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com> <5358325D.6010409@gmail.com> <5358C8B5.7020609@amd.com>
+In-Reply-To: <5358C8B5.7020609@amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3PM1eCO010794
 
-On Fri, 2014-04-25 at 16:24 +0000, Pallala, Ramakrishna wrote:
-> HI All,
-> 
-> I have received few kernel library .o (object files) from third party and I am planning to include in our kernel tree. As the library contains some proprietary algorithms  the sources are not shared.
-> 
-> How can I include this library .o files to my kernel and if this kernel is release to customers will there be any license issues? Third party says the sources are under GPL.
-> 
-
-Oh joy. Just what I wanted to read today...
-
-Our apologies; this is not a question or issue that should have been
-posted to LKML.  Legal questions (such as what is permitted by any
-particular license) by Intel employees are supposed to be directed to
-Intel's legal department and not to public mailing lists.  Intel also
-has a technical and business review process for reviewing *all* Open
-Source software activities, including all Linux kernel contributions,
-and the very first response from that review process would have been to
-direct questions about license interpretation and permissible licensing
-models to Intel's Legal Department.
- 
-We'll be following up with the development of this not-yet-released
-product to ensure that it is fully compliant with the GPL and other open
-source licenses as well as community-accepted practices, that it follows
-Intel's normal review processes, and that all the developers involved
-are familiar with Intel's policies for working with open source.
- 
-For those who have responded to the original mail, both privately and
-publicly: thank you for your diligence and suggestions; we have been
-working internally for the last few hours (literally since WE saw it on
-the mailing list). But it's good to see that the community is as
-responsive to these issues as we are.
-
-And now back to our regularly scheduled emergencies.
-
-/D
-
-
--- 
-Dirk Hohndel
-Chief Linux and Open Source Technologist
-Intel Open Source Technology Center
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Christian KÃ¶nig wrote:
+> Am 23.04.2014 23:36, schrieb Woody Suwalski:
+>> Dave Airlie wrote:
+>>> On Wed, Apr 23, 2014 at 1:59 AM, Linus Torvalds
+>>> <torvalds@linux-foundation.org> wrote:
+>>>> Dave, mind sending me a pull request for drm fixes?
+>>>>
+>>>> There's now at least these two:
+>>>>
+>>>>   - "drm/radeon/aux: fix hpd assignment for aux bus"
+>>>>   - "drm/radeon: use fixed PPL ref divider if needed"
+>>>>
+>>>> that look like fairly fatal regressions when they affect somebody.
+>>>>
+>>>> The fact that we already had *two* independent bugs be reported within
+>>>> days of that last out-of-merge-window pull request makes me very
+>>>> unhappy with the state of drm pulls.
+>>>>
+>>>> So please make sure that future fixes really are *fixes*. For
+>>>> regressions only. No more games like this.
+>>> The pll fallout is fixes for the initial feature that was in the 
+>>> merge window,
+>>> Tuning plls for monitors is always a pain in the ass, the previous 
+>>> algorithm
+>>> took a couple of kernels a few years back to get where it was, 
+>>> unfortunately
+>>> HDMI came along and showed up a bunch of its shortcomings. I'm happy
+>>> Alex and Christian are on top of things in terms of tracking 
+>>> regressions
+>>> and making sure they get fixed,
+>>>
+>>> the AUX fix yes I'm a bit pissed off about myself, but I missed a pull
+>>> from a few
+>>> weeks ago, felt guilty, and maybe should have chosen the other path 
+>>> and let it
+>>> wait a merge,
+>>>
+>>> Christian just sent me a -fixes pull with all of these in it and I'll
+>>> send it on to you
+>>> in a few mins.
+>>>
+>>> Dave.
+>>>
+>> That patch also fixes a shimmering (water floating) issue on Radeon 
+>> RV635 (Thinkpad T500)
+>> 1002:9591
+>
+> Was this a long outstanding bug or a regression introduced with one of 
+> the recent patches?
+>
+> Thanks for the info,
+> Christian.
+Regression from 3.15-rc1 (still OK in -rc1, shimmering in -rc2)
+Woody
