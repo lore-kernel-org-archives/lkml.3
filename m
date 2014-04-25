@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090AbaDYTv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:51:28 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:33231 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaDYTvK (ORCPT
+	id S1753965AbaDYTxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:53:25 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:62785 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876AbaDYTxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:51:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <87ha5h42va.fsf@x220.int.ebiederm.org>
-References: <CALCETrVSaboa0Y2v_sTbSz3xOxOZ-6jSq_D7DyQXMRB9VXJB8w@mail.gmail.com>
- <87ha5h42va.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 25 Apr 2014 12:50:49 -0700
-Message-ID: <CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
-Subject: Re: pid ns feature request
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Apr 2014 15:53:22 -0400
+From: jon@ringle.org
+To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, shc_work@mail.ru,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH 2/2] serial: sc16is7xx: fix implicit decl of func copy_{to,from}_user
+Date: Fri, 25 Apr 2014 15:53:10 -0400
+Message-Id: <1398455590-4374-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1398455590-4374-1-git-send-email-jon@ringle.org>
+References: <1398455590-4374-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 12:37 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> Unless I'm missing some trick, it's currently rather painful to mount
->> a namespace /proc.  You have to actually be in the pid namespace to
->> mount the correct /proc instance, and you can't unmount the old /proc
->> until you've mounted the new /proc.  This means that you have to fork
->> into the new pid namespace before you can finish setting it up.
->
-> Yes.  You have to be inside just about all namespaces before you can
-> finish setting them up.
->
-> I don't know the context in which needed to be inside the pid namespace
-> is a burden.
+From: Jon Ringle <jringle@gridpoint.com>
 
-I'm trying to sandbox myself.  I unshare everything, setup up new
-mounts, pivot_root, umount the old stuff, fork, and wait around for
-the child to finish.
+Fix by including linux/uaccess.h:
 
-This doesn't work: the parent can't mount the new /proc, and the child
-can't either because it's too late.
+   drivers/tty/serial/sc16is7xx.c: In function 'sc16is7xx_ioctl':
+>> drivers/tty/serial/sc16is7xx.c:861:3: error: implicit declaration of function 'copy_from_user' [-Werror=implicit-function-declaration]
+>> drivers/tty/serial/sc16is7xx.c:867:3: error: implicit declaration of function 'copy_to_user' [-Werror=implicit-function-declaration]
 
-The only solution I can think of without kernel changes is to fork the
-child (pid 1) before pivot_root, which makes everything more
-complicated.  I suppose I can unshare, fork immediately, have the
-child set up all the mounts, and then wake the parent, but this is an
-annoying bit of extra complexity for no obvious gain.
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+---
+ drivers/tty/serial/sc16is7xx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
->
->> Would it make sense to add a mount option to procfs to request a mount
->> for pid_ns_for_children instead of task_active_pid_ns?
->
-> This is about the using setns and unshare?
->
-> Adding a proc amount option that takes a pid namespace file descriptor
-> would be the general solution, and might be worth implementing.
->
-> Getting a pid namespace file descriptors when there are no pids might be
-> a challenge.
+diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
+index ed139f5..7206a64 100644
+--- a/drivers/tty/serial/sc16is7xx.c
++++ b/drivers/tty/serial/sc16is7xx.c
+@@ -25,6 +25,7 @@
+ #include <linux/serial.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
++#include <linux/uaccess.h>
+ 
+ #define SC16IS7XX_NAME			"sc16is7xx"
+ 
+-- 
+1.8.5.4
 
-Indeed, hence my request for a specific mode to mount /proc for
-pid_ns_for_children.
-
-FWIW, I also tried forking, having the child mount /proc and exit,
-then forking again later on.  That also doesn't work -- it looks like
-you can't recreate pid 1 after it does.
-
---Andy
