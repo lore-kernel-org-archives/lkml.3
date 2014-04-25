@@ -1,108 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaDYMWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:22:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48862 "EHLO mga11.intel.com"
+	id S1752200AbaDYM2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:28:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5598 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbaDYMWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:22:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,926,1389772800"; 
-   d="scan'208";a="527274737"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Len Brown <lenb@kernel.org>, Mika Westerberg <mika.westerberg@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Loic Poulain <loic.poulain@intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ACPI / LPSS: Support for fractional divider clock
-Date: Fri, 25 Apr 2014 15:22:21 +0300
-Message-Id: <1398428541-912-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc0
-In-Reply-To: <1398428541-912-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1398428541-912-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1751187AbaDYM2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 08:28:03 -0400
+Date: Fri, 25 Apr 2014 14:27:34 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/2] perf tests: Factor out fake_setup_machine()
+Message-ID: <20140425122734.GD4116@krava.brq.redhat.com>
+References: <1398396494-12811-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398396494-12811-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dividers are available for UART and SPI on both
-Lynxpoint and Baytrail. With SPI, handling the dividers is
-optional, but in case of UART they should be adjusted
-according to the requested baud rate.
+On Fri, Apr 25, 2014 at 12:28:13PM +0900, Namhyung Kim wrote:
+> The fake_setup_machine() is for setting up a environment for testing
+> various hists operations.  As it'll be used for other test cases it'd
+> better factoring it out.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/acpi/acpi_lpss.c | 37 ++++++++++++++++++++++++++++++-------
- 1 file changed, 30 insertions(+), 7 deletions(-)
+looks like print_hists could be in hists_common.c as well..
+within another update ;-)
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 69e29f4..508ac9f 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -58,6 +58,7 @@ struct lpss_device_desc {
- 	unsigned int prv_offset;
- 	size_t prv_size_override;
- 	bool clk_gate;
-+	bool clk_divider;
- 	struct lpss_shared_clock *shared_clock;
- 	void (*setup)(struct lpss_private_data *pdata);
- };
-@@ -119,16 +120,11 @@ static struct lpss_device_desc byt_pwm_dev_desc = {
- 	.shared_clock = &pwm_clock,
- };
- 
--static struct lpss_shared_clock uart_clock = {
--	.name = "uart_clk",
--	.rate = 44236800,
--};
--
- static struct lpss_device_desc byt_uart_dev_desc = {
- 	.clk_required = true,
- 	.prv_offset = 0x800,
- 	.clk_gate = true,
--	.shared_clock = &uart_clock,
-+	.clk_divider = true,
- 	.setup = lpss_uart_setup,
- };
- 
-@@ -246,8 +242,35 @@ static int register_device_clock(struct acpi_device *adev,
- 		parent = shared_clock->name;
- 	}
- 
-+	if (dev_desc->clk_divider) {
-+		char *name = kzalloc(strlen(dev_name(&adev->dev)) + 8,
-+				     GFP_KERNEL);
-+		if (!name)
-+			return -ENOMEM;
-+		strcpy(name, "div_clk-");
-+		strcat(name, dev_name(&adev->dev));
-+
-+		clk = clk_register_fractional_divider(NULL, name, parent, 0,
-+					pdata->mmio_base + dev_desc->prv_offset,
-+					1, 15, 16, 15, 0, NULL);
-+		parent = name;
-+
-+		name = kzalloc(strlen(dev_name(&adev->dev)) + 11, GFP_KERNEL);
-+		if (!name)
-+			return -ENOMEM;
-+		strcpy(name, "clk_update-");
-+		strcat(name, dev_name(&adev->dev));
-+
-+		clk = clk_register_gate(NULL, name, parent,
-+					CLK_SET_RATE_PARENT | CLK_SET_RATE_GATE,
-+					pdata->mmio_base + dev_desc->prv_offset,
-+					31, 0, NULL);
-+		parent = name;
-+	}
-+
- 	if (dev_desc->clk_gate) {
--		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
-+		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent,
-+					CLK_SET_RATE_PARENT,
- 					pdata->mmio_base + dev_desc->prv_offset,
- 					0, 0, NULL);
- 		pdata->clk = clk;
--- 
-2.0.0.rc0
+nice!
 
+Acked-by: Jiri Olsa <jolsa@kernel.org>
+
+for patchset
+
+thanks,
+jirka
+
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/Makefile.perf        |   1 +
+>  tools/perf/tests/hists_common.c | 148 ++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/tests/hists_common.h |  44 ++++++++++++
+>  tools/perf/tests/hists_link.c   | 141 +-------------------------------------
+>  4 files changed, 195 insertions(+), 139 deletions(-)
+>  create mode 100644 tools/perf/tests/hists_common.c
+>  create mode 100644 tools/perf/tests/hists_common.h
+> 
+> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+> index eb57e2cf1b4c..1490afeb7252 100644
+> --- a/tools/perf/Makefile.perf
+> +++ b/tools/perf/Makefile.perf
+> @@ -396,6 +396,7 @@ LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+>  LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
+>  LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
+>  LIB_OBJS += $(OUTPUT)tests/pmu.o
+> +LIB_OBJS += $(OUTPUT)tests/hists_common.o
+>  LIB_OBJS += $(OUTPUT)tests/hists_link.o
+>  LIB_OBJS += $(OUTPUT)tests/python-use.o
+>  LIB_OBJS += $(OUTPUT)tests/bp_signal.o
+> diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
+> new file mode 100644
+> index 000000000000..44655b395bb9
+> --- /dev/null
+> +++ b/tools/perf/tests/hists_common.c
+> @@ -0,0 +1,148 @@
+> +#include "perf.h"
+> +#include "util/debug.h"
+> +#include "util/symbol.h"
+> +#include "util/sort.h"
+> +#include "util/evsel.h"
+> +#include "util/evlist.h"
+> +#include "util/machine.h"
+> +#include "util/thread.h"
+> +#include "tests/hists_common.h"
+> +
+> +static struct {
+> +	u32 pid;
+> +	const char *comm;
+> +} fake_threads[] = {
+> +	{ 100, "perf" },
+> +	{ 200, "perf" },
+> +	{ 300, "bash" },
+> +};
+> +
+> +static struct {
+> +	u32 pid;
+> +	u64 start;
+> +	const char *filename;
+> +} fake_mmap_info[] = {
+> +	{ 100, 0x40000, "perf" },
+> +	{ 100, 0x50000, "libc" },
+> +	{ 100, 0xf0000, "[kernel]" },
+> +	{ 200, 0x40000, "perf" },
+> +	{ 200, 0x50000, "libc" },
+> +	{ 200, 0xf0000, "[kernel]" },
+> +	{ 300, 0x40000, "bash" },
+> +	{ 300, 0x50000, "libc" },
+> +	{ 300, 0xf0000, "[kernel]" },
+> +};
+> +
+> +struct fake_sym {
+> +	u64 start;
+> +	u64 length;
+> +	const char *name;
+> +};
+> +
+> +static struct fake_sym perf_syms[] = {
+> +	{ 700, 100, "main" },
+> +	{ 800, 100, "run_command" },
+> +	{ 900, 100, "cmd_record" },
+> +};
+> +
+> +static struct fake_sym bash_syms[] = {
+> +	{ 700, 100, "main" },
+> +	{ 800, 100, "xmalloc" },
+> +	{ 900, 100, "xfree" },
+> +};
+> +
+> +static struct fake_sym libc_syms[] = {
+> +	{ 700, 100, "malloc" },
+> +	{ 800, 100, "free" },
+> +	{ 900, 100, "realloc" },
+> +};
+> +
+> +static struct fake_sym kernel_syms[] = {
+> +	{ 700, 100, "schedule" },
+> +	{ 800, 100, "page_fault" },
+> +	{ 900, 100, "sys_perf_event_open" },
+> +};
+> +
+> +static struct {
+> +	const char *dso_name;
+> +	struct fake_sym *syms;
+> +	size_t nr_syms;
+> +} fake_symbols[] = {
+> +	{ "perf", perf_syms, ARRAY_SIZE(perf_syms) },
+> +	{ "bash", bash_syms, ARRAY_SIZE(bash_syms) },
+> +	{ "libc", libc_syms, ARRAY_SIZE(libc_syms) },
+> +	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
+> +};
+> +
+> +struct machine *setup_fake_machine(struct machines *machines)
+> +{
+> +	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
+> +	size_t i;
+> +
+> +	if (machine == NULL) {
+> +		pr_debug("Not enough memory for machine setup\n");
+> +		return NULL;
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
+> +		struct thread *thread;
+> +
+> +		thread = machine__findnew_thread(machine, fake_threads[i].pid,
+> +						 fake_threads[i].pid);
+> +		if (thread == NULL)
+> +			goto out;
+> +
+> +		thread__set_comm(thread, fake_threads[i].comm, 0);
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
+> +		union perf_event fake_mmap_event = {
+> +			.mmap = {
+> +				.header = { .misc = PERF_RECORD_MISC_USER, },
+> +				.pid = fake_mmap_info[i].pid,
+> +				.tid = fake_mmap_info[i].pid,
+> +				.start = fake_mmap_info[i].start,
+> +				.len = 0x1000ULL,
+> +				.pgoff = 0ULL,
+> +			},
+> +		};
+> +
+> +		strcpy(fake_mmap_event.mmap.filename,
+> +		       fake_mmap_info[i].filename);
+> +
+> +		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
+> +	}
+> +
+> +	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
+> +		size_t k;
+> +		struct dso *dso;
+> +
+> +		dso = __dsos__findnew(&machine->user_dsos,
+> +				      fake_symbols[i].dso_name);
+> +		if (dso == NULL)
+> +			goto out;
+> +
+> +		/* emulate dso__load() */
+> +		dso__set_loaded(dso, MAP__FUNCTION);
+> +
+> +		for (k = 0; k < fake_symbols[i].nr_syms; k++) {
+> +			struct symbol *sym;
+> +			struct fake_sym *fsym = &fake_symbols[i].syms[k];
+> +
+> +			sym = symbol__new(fsym->start, fsym->length,
+> +					  STB_GLOBAL, fsym->name);
+> +			if (sym == NULL)
+> +				goto out;
+> +
+> +			symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
+> +		}
+> +	}
+> +
+> +	return machine;
+> +
+> +out:
+> +	pr_debug("Not enough memory for machine setup\n");
+> +	machine__delete_threads(machine);
+> +	machine__delete(machine);
+> +	return NULL;
+> +}
+> diff --git a/tools/perf/tests/hists_common.h b/tools/perf/tests/hists_common.h
+> new file mode 100644
+> index 000000000000..2528b8fc105a
+> --- /dev/null
+> +++ b/tools/perf/tests/hists_common.h
+> @@ -0,0 +1,44 @@
+> +#ifndef __PERF_TESTS__HISTS_COMMON_H__
+> +#define __PERF_TESTS__HISTS_COMMON_H__
+> +
+> +struct machine;
+> +struct machines;
+> +
+> +/*
+> + * The setup_fake_machine() provides a test environment which consists
+> + * of 3 processes that have 3 mappings and in turn, have 3 symbols
+> + * respectively.  See below table:
+> + *
+> + * Command:  Pid  Shared Object               Symbol
+> + * .............  .............  ...................
+> + *    perf:  100           perf  main
+> + *    perf:  100           perf  run_command
+> + *    perf:  100           perf  comd_record
+> + *    perf:  100           libc  malloc
+> + *    perf:  100           libc  free
+> + *    perf:  100           libc  realloc
+> + *    perf:  100       [kernel]  schedule
+> + *    perf:  100       [kernel]  page_fault
+> + *    perf:  100       [kernel]  sys_perf_event_open
+> + *    perf:  200           perf  main
+> + *    perf:  200           perf  run_command
+> + *    perf:  200           perf  comd_record
+> + *    perf:  200           libc  malloc
+> + *    perf:  200           libc  free
+> + *    perf:  200           libc  realloc
+> + *    perf:  200       [kernel]  schedule
+> + *    perf:  200       [kernel]  page_fault
+> + *    perf:  200       [kernel]  sys_perf_event_open
+> + *    bash:  300           bash  main
+> + *    bash:  300           bash  xmalloc
+> + *    bash:  300           bash  xfree
+> + *    bash:  300           libc  malloc
+> + *    bash:  300           libc  free
+> + *    bash:  300           libc  realloc
+> + *    bash:  300       [kernel]  schedule
+> + *    bash:  300       [kernel]  page_fault
+> + *    bash:  300       [kernel]  sys_perf_event_open
+> + */
+> +struct machine *setup_fake_machine(struct machines *machines);
+> +
+> +#endif /* __PERF_TESTS__HISTS_COMMON_H__ */
+> diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
+> index 7ccbc7b6ae77..e42d6790811a 100644
+> --- a/tools/perf/tests/hists_link.c
+> +++ b/tools/perf/tests/hists_link.c
+> @@ -8,145 +8,7 @@
+>  #include "machine.h"
+>  #include "thread.h"
+>  #include "parse-events.h"
+> -
+> -static struct {
+> -	u32 pid;
+> -	const char *comm;
+> -} fake_threads[] = {
+> -	{ 100, "perf" },
+> -	{ 200, "perf" },
+> -	{ 300, "bash" },
+> -};
+> -
+> -static struct {
+> -	u32 pid;
+> -	u64 start;
+> -	const char *filename;
+> -} fake_mmap_info[] = {
+> -	{ 100, 0x40000, "perf" },
+> -	{ 100, 0x50000, "libc" },
+> -	{ 100, 0xf0000, "[kernel]" },
+> -	{ 200, 0x40000, "perf" },
+> -	{ 200, 0x50000, "libc" },
+> -	{ 200, 0xf0000, "[kernel]" },
+> -	{ 300, 0x40000, "bash" },
+> -	{ 300, 0x50000, "libc" },
+> -	{ 300, 0xf0000, "[kernel]" },
+> -};
+> -
+> -struct fake_sym {
+> -	u64 start;
+> -	u64 length;
+> -	const char *name;
+> -};
+> -
+> -static struct fake_sym perf_syms[] = {
+> -	{ 700, 100, "main" },
+> -	{ 800, 100, "run_command" },
+> -	{ 900, 100, "cmd_record" },
+> -};
+> -
+> -static struct fake_sym bash_syms[] = {
+> -	{ 700, 100, "main" },
+> -	{ 800, 100, "xmalloc" },
+> -	{ 900, 100, "xfree" },
+> -};
+> -
+> -static struct fake_sym libc_syms[] = {
+> -	{ 700, 100, "malloc" },
+> -	{ 800, 100, "free" },
+> -	{ 900, 100, "realloc" },
+> -};
+> -
+> -static struct fake_sym kernel_syms[] = {
+> -	{ 700, 100, "schedule" },
+> -	{ 800, 100, "page_fault" },
+> -	{ 900, 100, "sys_perf_event_open" },
+> -};
+> -
+> -static struct {
+> -	const char *dso_name;
+> -	struct fake_sym *syms;
+> -	size_t nr_syms;
+> -} fake_symbols[] = {
+> -	{ "perf", perf_syms, ARRAY_SIZE(perf_syms) },
+> -	{ "bash", bash_syms, ARRAY_SIZE(bash_syms) },
+> -	{ "libc", libc_syms, ARRAY_SIZE(libc_syms) },
+> -	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
+> -};
+> -
+> -static struct machine *setup_fake_machine(struct machines *machines)
+> -{
+> -	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
+> -	size_t i;
+> -
+> -	if (machine == NULL) {
+> -		pr_debug("Not enough memory for machine setup\n");
+> -		return NULL;
+> -	}
+> -
+> -	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
+> -		struct thread *thread;
+> -
+> -		thread = machine__findnew_thread(machine, fake_threads[i].pid,
+> -						 fake_threads[i].pid);
+> -		if (thread == NULL)
+> -			goto out;
+> -
+> -		thread__set_comm(thread, fake_threads[i].comm, 0);
+> -	}
+> -
+> -	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
+> -		union perf_event fake_mmap_event = {
+> -			.mmap = {
+> -				.header = { .misc = PERF_RECORD_MISC_USER, },
+> -				.pid = fake_mmap_info[i].pid,
+> -				.tid = fake_mmap_info[i].pid,
+> -				.start = fake_mmap_info[i].start,
+> -				.len = 0x1000ULL,
+> -				.pgoff = 0ULL,
+> -			},
+> -		};
+> -
+> -		strcpy(fake_mmap_event.mmap.filename,
+> -		       fake_mmap_info[i].filename);
+> -
+> -		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
+> -	}
+> -
+> -	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
+> -		size_t k;
+> -		struct dso *dso;
+> -
+> -		dso = __dsos__findnew(&machine->user_dsos,
+> -				      fake_symbols[i].dso_name);
+> -		if (dso == NULL)
+> -			goto out;
+> -
+> -		/* emulate dso__load() */
+> -		dso__set_loaded(dso, MAP__FUNCTION);
+> -
+> -		for (k = 0; k < fake_symbols[i].nr_syms; k++) {
+> -			struct symbol *sym;
+> -			struct fake_sym *fsym = &fake_symbols[i].syms[k];
+> -
+> -			sym = symbol__new(fsym->start, fsym->length,
+> -					  STB_GLOBAL, fsym->name);
+> -			if (sym == NULL)
+> -				goto out;
+> -
+> -			symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
+> -		}
+> -	}
+> -
+> -	return machine;
+> -
+> -out:
+> -	pr_debug("Not enough memory for machine setup\n");
+> -	machine__delete_threads(machine);
+> -	machine__delete(machine);
+> -	return NULL;
+> -}
+> +#include "hists_common.h"
+>  
+>  struct sample {
+>  	u32 pid;
+> @@ -156,6 +18,7 @@ struct sample {
+>  	struct symbol *sym;
+>  };
+>  
+> +/* For the numbers, see hists_common.c */
+>  static struct sample fake_common_samples[] = {
+>  	/* perf [kernel] schedule() */
+>  	{ .pid = 100, .ip = 0xf0000 + 700, },
+> -- 
+> 1.9.2
+> 
