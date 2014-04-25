@@ -1,189 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaDYQW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:22:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14327 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126AbaDYQWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:22:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="527399102"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v3 2/3] Input: gpio_keys - convert to use devm_*
-Date: Fri, 25 Apr 2014 19:22:16 +0300
-Message-Id: <1398442937-15309-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398442937-15309-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1398442937-15309-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1753317AbaDYQKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:10:24 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61738 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270AbaDYQKO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:10:14 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: matt.fleming@intel.com, catalin.marinas@arm.com, msalter@redhat.com,
+        grant.likely@linaro.org, roy.franz@linaro.org,
+        ard.biesheuvel@linaro.org, mark.rutland@arm.com,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2 04/10] arm64: Add function to create identity mappings
+Date: Fri, 25 Apr 2014 17:09:08 +0100
+Message-Id: <1398442154-19974-5-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the error handling much more simpler than open-coding everything and
-in addition makes the probe function smaller an tidier.
+From: Mark Salter <msalter@redhat.com>
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+At boot time, before switching to a virtual UEFI memory map, firmware
+expects UEFI memory and IO regions to be identity mapped whenever
+kernel makes runtime services calls. The existing early boot code
+creates an identity map of kernel text/data but this is not sufficient
+for UEFI. This patch adds a create_id_mapping() function which reuses
+the core code of the existing create_mapping().
+
+Signed-off-by: Mark Salter <msalter@redhat.com>
+[ Fixed error message formatting (%pa). ]
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
 ---
- drivers/input/keyboard/gpio_keys.c | 75 +++++++++++++-------------------------
- 1 file changed, 25 insertions(+), 50 deletions(-)
+ arch/arm64/include/asm/mmu.h |    2 ++
+ arch/arm64/mm/mmu.c          |   65 ++++++++++++++++++++++++++++++------------
+ 2 files changed, 49 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 209d4c6..8791d94 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -47,7 +47,7 @@ struct gpio_keys_drvdata {
- 	const struct gpio_keys_platform_data *pdata;
- 	struct input_dev *input;
- 	struct mutex disable_lock;
--	struct gpio_button_data data[0];
-+	struct gpio_button_data *data;
- };
+diff --git a/arch/arm64/include/asm/mmu.h b/arch/arm64/include/asm/mmu.h
+index f600d40..29ed1d8 100644
+--- a/arch/arm64/include/asm/mmu.h
++++ b/arch/arm64/include/asm/mmu.h
+@@ -28,5 +28,7 @@ extern void paging_init(void);
+ extern void setup_mm_for_reboot(void);
+ extern void __iomem *early_io_map(phys_addr_t phys, unsigned long virt);
+ extern void init_mem_pgprot(void);
++/* create an identity mapping for memory (or io if map_io is true) */
++extern void create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io);
  
- /*
-@@ -577,25 +577,22 @@ gpio_keys_get_devtree_pdata(struct device *dev)
- 	int i;
- 
- 	node = dev->of_node;
--	if (!node) {
--		error = -ENODEV;
--		goto err_out;
--	}
-+	if (!node)
-+		return ERR_PTR(-ENODEV);
- 
- 	nbuttons = of_get_child_count(node);
--	if (nbuttons == 0) {
--		error = -ENODEV;
--		goto err_out;
--	}
-+	if (nbuttons == 0)
-+		return ERR_PTR(-ENODEV);
- 
--	pdata = kzalloc(sizeof(*pdata) + nbuttons * (sizeof *button),
--			GFP_KERNEL);
--	if (!pdata) {
--		error = -ENOMEM;
--		goto err_out;
--	}
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pdata->buttons = devm_kcalloc(dev, nbuttons, sizeof (*button),
-+				      GFP_KERNEL);
-+	if (!pdata->buttons)
-+		return ERR_PTR(-ENOMEM);
- 
--	pdata->buttons = (struct gpio_keys_button *)(pdata + 1);
- 	pdata->nbuttons = nbuttons;
- 
- 	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
-@@ -618,7 +615,7 @@ gpio_keys_get_devtree_pdata(struct device *dev)
- 				dev_err(dev,
- 					"Failed to get gpio flags, error: %d\n",
- 					error);
--			goto err_free_pdata;
-+			return ERR_PTR(error);
- 		}
- 
- 		button = &pdata->buttons[i++];
-@@ -629,8 +626,7 @@ gpio_keys_get_devtree_pdata(struct device *dev)
- 		if (of_property_read_u32(pp, "linux,code", &button->code)) {
- 			dev_err(dev, "Button without keycode: 0x%x\n",
- 				button->gpio);
--			error = -EINVAL;
--			goto err_free_pdata;
-+			return ERR_PTR(-EINVAL);
- 		}
- 
- 		button->desc = of_get_property(pp, "label", NULL);
-@@ -645,17 +641,10 @@ gpio_keys_get_devtree_pdata(struct device *dev)
- 			button->debounce_interval = 5;
- 	}
- 
--	if (pdata->nbuttons == 0) {
--		error = -EINVAL;
--		goto err_free_pdata;
--	}
-+	if (pdata->nbuttons == 0)
-+		return ERR_PTR(-EINVAL);
- 
- 	return pdata;
--
--err_free_pdata:
--	kfree(pdata);
--err_out:
--	return ERR_PTR(error);
+ #endif
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+index 6b7e895..971eb45 100644
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -168,7 +168,8 @@ static void __init *early_alloc(unsigned long sz)
  }
  
- static struct of_device_id gpio_keys_of_match[] = {
-@@ -699,16 +688,18 @@ static int gpio_keys_probe(struct platform_device *pdev)
- 			return PTR_ERR(pdata);
- 	}
- 
--	ddata = kzalloc(sizeof(struct gpio_keys_drvdata) +
--			pdata->nbuttons * sizeof(struct gpio_button_data),
--			GFP_KERNEL);
--	input = input_allocate_device();
-+	ddata = devm_kzalloc(dev, sizeof(*ddata), GFP_KERNEL);
-+	input = devm_input_allocate_device(dev);
- 	if (!ddata || !input) {
- 		dev_err(dev, "failed to allocate state\n");
--		error = -ENOMEM;
--		goto fail1;
-+		return -ENOMEM;
- 	}
- 
-+	ddata->data = devm_kcalloc(dev, pdata->nbuttons,  sizeof(*ddata->data),
-+				   GFP_KERNEL);
-+	if (!ddata->data)
-+		return -ENOMEM;
-+
- 	ddata->pdata = pdata;
- 	ddata->input = input;
- 	mutex_init(&ddata->disable_lock);
-@@ -767,20 +758,12 @@ static int gpio_keys_probe(struct platform_device *pdev)
- 	while (--i >= 0)
- 		gpio_remove_key(&ddata->data[i]);
- 
-- fail1:
--	input_free_device(input);
--	kfree(ddata);
--	/* If we have no platform data, we allocated pdata dynamically. */
--	if (!dev_get_platdata(&pdev->dev))
--		kfree(pdata);
--
- 	return error;
- }
- 
- static int gpio_keys_remove(struct platform_device *pdev)
+ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
+-				  unsigned long end, unsigned long pfn)
++				  unsigned long end, unsigned long pfn,
++				  pgprot_t prot)
  {
- 	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
--	struct input_dev *input = ddata->input;
- 	int i;
+ 	pte_t *pte;
  
- 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
-@@ -790,14 +773,6 @@ static int gpio_keys_remove(struct platform_device *pdev)
- 	for (i = 0; i < ddata->pdata->nbuttons; i++)
- 		gpio_remove_key(&ddata->data[i]);
+@@ -180,16 +181,28 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
  
--	input_unregister_device(input);
--
--	/* If we have no platform data, we allocated pdata dynamically. */
--	if (!dev_get_platdata(&pdev->dev))
--		kfree(ddata->pdata);
--
--	kfree(ddata);
--
- 	return 0;
+ 	pte = pte_offset_kernel(pmd, addr);
+ 	do {
+-		set_pte(pte, pfn_pte(pfn, PAGE_KERNEL_EXEC));
++		set_pte(pte, pfn_pte(pfn, prot));
+ 		pfn++;
+ 	} while (pte++, addr += PAGE_SIZE, addr != end);
  }
  
+ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+-				  unsigned long end, phys_addr_t phys)
++				  unsigned long end, phys_addr_t phys,
++				  int map_io)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
++	pmdval_t prot_sect;
++	pgprot_t prot_pte;
++
++	if (map_io) {
++		prot_sect = PMD_TYPE_SECT | PMD_SECT_AF |
++			    PMD_ATTRINDX(MT_DEVICE_nGnRE);
++		prot_pte = __pgprot(PROT_DEVICE_nGnRE);
++	} else {
++		prot_sect = prot_sect_kernel;
++		prot_pte = PAGE_KERNEL_EXEC;
++	}
+ 
+ 	/*
+ 	 * Check for initial section mappings in the pgd/pud and remove them.
+@@ -205,7 +218,7 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+ 		/* try section mapping first */
+ 		if (((addr | next | phys) & ~SECTION_MASK) == 0) {
+ 			pmd_t old_pmd =*pmd;
+-			set_pmd(pmd, __pmd(phys | prot_sect_kernel));
++			set_pmd(pmd, __pmd(phys | prot_sect));
+ 			/*
+ 			 * Check for previous table entries created during
+ 			 * boot (__create_page_tables) and flush them.
+@@ -213,21 +226,23 @@ static void __init alloc_init_pmd(pud_t *pud, unsigned long addr,
+ 			if (!pmd_none(old_pmd))
+ 				flush_tlb_all();
+ 		} else {
+-			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys));
++			alloc_init_pte(pmd, addr, next, __phys_to_pfn(phys),
++				       prot_pte);
+ 		}
+ 		phys += next - addr;
+ 	} while (pmd++, addr = next, addr != end);
+ }
+ 
+ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+-				  unsigned long end, unsigned long phys)
++				  unsigned long end, unsigned long phys,
++				  int map_io)
+ {
+ 	pud_t *pud = pud_offset(pgd, addr);
+ 	unsigned long next;
+ 
+ 	do {
+ 		next = pud_addr_end(addr, end);
+-		alloc_init_pmd(pud, addr, next, phys);
++		alloc_init_pmd(pud, addr, next, phys, map_io);
+ 		phys += next - addr;
+ 	} while (pud++, addr = next, addr != end);
+ }
+@@ -236,30 +251,44 @@ static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+  * Create the page directory entries and any necessary page tables for the
+  * mapping specified by 'md'.
+  */
+-static void __init create_mapping(phys_addr_t phys, unsigned long virt,
+-				  phys_addr_t size)
++static void __init __create_mapping(pgd_t *pgd, phys_addr_t phys,
++				    unsigned long virt, phys_addr_t size,
++				    int map_io)
+ {
+ 	unsigned long addr, length, end, next;
+-	pgd_t *pgd;
+-
+-	if (virt < VMALLOC_START) {
+-		pr_warning("BUG: not creating mapping for 0x%016llx at 0x%016lx - outside kernel range\n",
+-			   phys, virt);
+-		return;
+-	}
+ 
+ 	addr = virt & PAGE_MASK;
+ 	length = PAGE_ALIGN(size + (virt & ~PAGE_MASK));
+ 
+-	pgd = pgd_offset_k(addr);
+ 	end = addr + length;
+ 	do {
+ 		next = pgd_addr_end(addr, end);
+-		alloc_init_pud(pgd, addr, next, phys);
++		alloc_init_pud(pgd, addr, next, phys, map_io);
+ 		phys += next - addr;
+ 	} while (pgd++, addr = next, addr != end);
+ }
+ 
++static void __init create_mapping(phys_addr_t phys, unsigned long virt,
++				  phys_addr_t size)
++{
++	if (virt < VMALLOC_START) {
++		pr_warn("BUG: not creating mapping for %pa at 0x%016lx - outside kernel range\n",
++			&phys, virt);
++		return;
++	}
++	__create_mapping(pgd_offset_k(virt & PAGE_MASK), phys, virt, size, 0);
++}
++
++void __init create_id_mapping(phys_addr_t addr, phys_addr_t size, int map_io)
++{
++	if ((addr >> PGDIR_SHIFT) >= ARRAY_SIZE(idmap_pg_dir)) {
++		pr_warn("BUG: not creating id mapping for %pa\n", &addr);
++		return;
++	}
++	__create_mapping(&idmap_pg_dir[pgd_index(addr)],
++			 addr, addr, size, map_io);
++}
++
+ static void __init map_mem(void)
+ {
+ 	struct memblock_region *reg;
 -- 
-1.9.2
+1.7.10.4
 
