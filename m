@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626AbaDYBR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:17:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39160 "EHLO
+	id S1751586AbaDYBRZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:17:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39132 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255AbaDYBQY (ORCPT
+	with ESMTP id S1751231AbaDYBQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 21:16:24 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-87-5359b762b5f5
+X-AuditID: cbfee68d-b7f4e6d000004845-f7-5359b7613dfb
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
@@ -18,49 +18,41 @@ Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
         chanho61.park@samsung.com, sajjan.linux@gmail.com,
         tushar.behera@linaro.org, sachin.kamat@linaro.org,
         linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCHv4 6/7] dt-bindings: add documentation for Exynos3250 clock
- controller
-Date: Fri, 25 Apr 2014 10:16:11 +0900
-Message-id: <1398388572-30239-7-git-send-email-cw00.choi@samsung.com>
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: [PATCHv4 4/7] ARM: EXYNOS: Enter a15 lowpower mode for Exynos3250
+ based on Cortex-a7
+Date: Fri, 25 Apr 2014 10:16:09 +0900
+Message-id: <1398388572-30239-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
 References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA5VS/S+UcQDv+9zzPHeu1JOXfLP4wdTWNeS1L8n8oj3zU2rLUpvOeYblju5o
-	bUXmZSQvT2hORTIWl7ddEnJej5CUeV2da5PjEsVOprzUnVt/QL993vb5/PLhcazyCHtejCSB
-	kUqEsU4kH6+18bruInp16cLJLDWOtgv6uaigvgtDY50n0NTaAoGeqEcIlL/0lECGlXQuGlms
-	AajgM4uj3PIJEr1LXeIi5ZdJAo21PSaR/H0Hhj6NWaJtzQ6JqqZGMaRjR0k0NGUgEVtch6Nl
-	TTGOMlRqLhrcygVorneVQPLCryRqkH/DUb+8EqDMbRWJVK2FINCBri2rBXR6Wg5Jb/4uAPRY
-	Xi5Gbyv0HLr14QyXrnm2RtIvqgW0UnGXpDWT7UZWeYceH0gl6LwmBaANSsdz+8P4/pFMbMwN
-	RuoWcJUffY/9RcSX2dwsrSjmpoCsg9nAggcpL5jGtuNmfAh+0DaQ2YDPs6KqAMzZ6SL/hWY3
-	RzGzUQxgS/0U10xSMaiYVu2mSEoAO/XTu9iGcoFFJRrCFOJQRSRcfdlBmAxrKhT+0ZRiJoxT
-	R6HheRbXhC2pINir1WLmOUe40j67q1tQZ2Fr26JR5xnXgmDVFm3qhNQGD641lZLmHgquF/bg
-	pgykHKCyi2OuOQy7q6dxFliXgz0KYMvEi+JlEVFSL1eZUCxLlES5iuLESmD8wtudebYFaLtO
-	9wCRse4+x95WFGf8iiQh3N3TxwN5e3l7epzy9fk/2cnO8thsxHkrKkqYwFxjmHhGGi5NjGVk
-	PQDjWdinALaRqilpjjowM2xJ8a8Y1PJmW9rn9RG/sIt9rr4hdvv9Wib2hc5VuwXrflQEAQn4
-	Gf1It+GT4bT+IDFDl56ZHClO0uc38OrGKzMDgrUf82pj5udCIm8nLYulCZe/n3GOuKWvbhzy
-	1w70+dkNc/QegYNvkvUh7MJeZ0m34PjwsBMuixa6CzhSmfAvItxg8CEDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNKsWRmVeSWpSXmKPExsVy+t9jQd2k7ZHBBg3fzCz+TjrGbjFp3QEm
-	i8v7tS2uf3nOajH/yDlWi/43C1ktPn9oYbc492olo8Wk+xNYLHoXXGWzONv0ht1i0+NrrBaX
-	d81hs5hxfh+Txe3LvBZ/7/xjs1h6/SKTxdMJF9ksTl3/zGYxYfpaFou3d6azWLTuPcJucfJP
-	L6PFk8MfWS1mTH7JZrF+xmsWi2MzljBatP/dy2axd+dkRgdZjzXz1jB6tDT3sHn8/jWJ0eNy
-	Xy+Tx99VL5g9ds66y+6xcvkXNo/NK7Q8Nq3qZPO4c20PkLek3uPKiSZWj74tqxg9Pm+SC+CL
-	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAEGj5JC
-	WWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxo3vCT9aCeSIVcxdNZ29g7BDs
-	YuTkkBAwkXj0+yIThC0mceHeerYuRi4OIYHpjBI71l1nh3CamCRW3djLBlLFJqAlsf/FDTBb
-	REBXYsrMO6wgRcwCU9gkPm7dxwqSEBYIl/h/Zy7YWBYBVYnPqzvYQWxeAVeJw/fuQa2Tk/iw
-	5xFYnFPATWLnrldAcQ6gba4SS/94TGDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
-	OOk8k9rBuLLB4hCjAAejEg/vB7XIYCHWxLLiytxDjBIczEoivMqrgEK8KYmVValF+fFFpTmp
-	xYcYk4GOmsgsJZqcD0yIeSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZ
-	wsTBKdXAuHSqH+vqlFYBj2X/C24mf2es5p/zrqRMx++IVHnsiWXSOS7XWPJO9Vxsr97NqbT3
-	uUttYOXivEcm+x6GKn5UuSTelcC+ie8Yb+ipzT/tfqtc9eEW3cPEnSn5Llz06hf1vwubD5pY
-	NbxoMo5ZOsciwO2wZTrL9tI1Pf9f33+oejT6s+XVUxFnlFiKMxINtZiLihMBclLqOn4DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsWyRsSkSDdxe2Swwbv9ChZ/Jx1jt5i07gCT
+	xeX92hbXvzxntZh/5ByrxecPLUDx+xNYLHoXXGWzONv0ht1i0+NrrBaXd81hs5hxfh+Txe3L
+	vBZ/7/xjszh1/TObxck/vYwWTw5/ZLWYMfklm8X6Ga9ZLI7NWMJo0f53L5vF3p2TGR3EPNbM
+	W8Po0dLcw+bx+9ckRo+/q14we+ycdZfd4861PWwem5fUe1w50cTq0bdlFaPH501yAVxRXDYp
+	qTmZZalF+nYJXBm/fl9hL3jBXfFsk0ID4xnOLkZODgkBE4mjS84wQthiEhfurWcDsYUEljJK
+	/P7lDFPzdtFNli5GLqD4dEaJV3OnMEE4TUwS264tYwWpYhPQktj/4gZYt4iArsSUmXfA4swC
+	rSwSfVtquhg5OIQF4iV2T9YHCbMIqEpcWnYVrIRXwFXiz8NLTBDL5CQ+7HnEDmJzCrhJ7Nz1
+	igmkVQioZukfD5C1EgIrOSTa1v9jhpgjIPFt8iEWkBoJAVmJTQeYIcZIShxccYNlAqPwAkaG
+	VYyiqQXJBcVJ6UWGesWJucWleel6yfm5mxiBMXr637PeHYy3D1gfYkwGGjeRWUo0OR8Y43kl
+	8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOhhZrV0
+	ptk1XatpwWodK032GwkLFQSq3Gio6vd9Vr5/8gemlSeX/zXWqO17ulVNXOKNV+yZO0dOXrtw
+	eWlInJtXJPflQx8jAxb3RSq7REl2P3XZ7+cVK8X41eDSvctWtV77FLmyo+4p/Bat6Co+9yny
+	2Ixthz8YRVwp4/k/76xqSWzx/k2xZ5VYijMSDbWYi4oTASkYRcXnAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQd3E7ZHBBucei1v8nXSM3WLSugNM
+	Fpf3a1tc//Kc1WL+kXOsFp8/tADF709gsehdcJXN4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv
+	81r8vfOPzeLU9c9sFif/9DJaPDn8kdVixuSXbBbrZ7xmsTg2YwmjRfvfvWwWe3dOZnQQ81gz
+	bw2jR0tzD5vH71+TGD3+rnrB7LFz1l12jzvX9rB5bF5S73HlRBOrR9+WVYwenzfJBXBFNTDa
+	ZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gA9qqRQlphT
+	ChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM+PX7CnvBC+6KZ5sUGhjPcHYxcnJI
+	CJhIvF10kwXCFpO4cG89WxcjF4eQwHRGiVdzpzBBOE1MEtuuLWMFqWIT0JLY/+IGG4gtIqAr
+	MWXmHbA4s0Ari0TflpouRg4OYYF4id2T9UHCLAKqEpeWXQUr4RVwlfjz8BITxDI5iQ97HrGD
+	2JwCbhI7d71iAmkVAqpZ+sdjAiPvAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBKeCZ
+	1A7GlQ0WhxgFOBiVeHg/qEUGC7EmlhVX5h5ilOBgVhLhVV4FFOJNSaysSi3Kjy8qzUktPsSY
+	DHTURGYp0eR8YHrKK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFqEcwWJg5O
+	qQZGq/MF6VbK1535r0toOj8yua5w5WOcd92sK6/y69V/zvE/+cz49dEU0WZRd/mnDfcsXPl+
+	rbg+N3JZ+4tdDgFzwl/4/tx8cXMId/z5ByLrprI+i/Np2Fu6NHz7x4i0w0c/+5qs4fkgaZC/
+	UVhqc0rl7s8ZFnMObP0vOzWb1aFF1ZFl9sQK3gZ+JZbijERDLeai4kQAfI+4/EUDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -68,74 +60,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Exynos3250 clocks are statically listed and registered using the
-Samsung specific common clock helper functions. Both device tree based
-clock lookup and clkdev based clock lookups are supported.
+This patch decide proper lowpower mode of either a15 or a9 according to own ID
+from Main ID register.
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Marc Zynigier <marc.zyngier@arm.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos3250-clock.txt | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+ arch/arm/mach-exynos/hotplug.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-new file mode 100644
-index 0000000..aadc9c5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
-@@ -0,0 +1,41 @@
-+* Samsung Exynos3250 Clock Controller
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index 5eead53..acf3119 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -135,16 +135,21 @@ void __ref exynos_cpu_die(unsigned int cpu)
+ 	int primary_part = 0;
+ 
+ 	/*
+-	 * we're ready for shutdown now, so do it.
+-	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
+-	 * number by reading the Main ID register and then perform the
+-	 * appropriate sequence for entering low power.
++	 * Prepare the CPU for shutting down. The required sequence of
++	 * operations depends on core type. CPUID part number can be used to
++	 * determine the right way.
+ 	 */
+-	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
+-	if ((primary_part & 0xfff0) == 0xc0f0)
++	primary_part = read_cpuid_part_number();
 +
-+The Exynos3250 clock controller generates and supplies clock to various
-+controllers within the Exynos3250 SoC.
-+
-+Required Properties:
-+
-+- compatible: should be one of the following.
-+  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
-+
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- #clock-cells: should be 1.
-+
-+Each clock is assigned an identifier and client nodes can use this identifier
-+to specify the clock which they consume.
-+
-+All available clocks are defined as preprocessor macros in
-+dt-bindings/clock/exynos3250.h header and can be used in device
-+tree sources.
-+
-+Example 1: An example of a clock controller node is listed below.
-+
-+	cmu: clock-controller@10030000 {
-+		compatible = "samsung,exynos3250-cmu";
-+		reg = <0x10030000 0x20000>;
-+		#clock-cells = <1>;
-+	};
-+
-+Example 2: UART controller node that consumes the clock generated by the clock
-+	   controller. Refer to the standard clock bindings for information
-+	   about 'clocks' and 'clock-names' property.
-+
-+	serial@13800000 {
-+		compatible = "samsung,exynos4210-uart";
-+		reg = <0x13800000 0x100>;
-+		interrupts = <0 109 0>;
-+		clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
-+		clock-names = "uart", "clk_uart_baud0";
-+	};
++	switch (primary_part) {
++	case ARM_CPU_PART_CORTEX_A7:
++	case ARM_CPU_PART_CORTEX_A15:
+ 		cpu_enter_lowpower_a15();
+-	else
++		break;
++	default:
+ 		cpu_enter_lowpower_a9();
++		break;
++	}
+ 
+ 	platform_do_lowpower(cpu, &spurious);
+ 
 -- 
 1.8.0
 
