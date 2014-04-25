@@ -1,152 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727AbaDYAh6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:37:58 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:20539 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaDYAg7 (ORCPT
+	id S1751015AbaDYAmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:42:35 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8729 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaDYAmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:36:59 -0400
-From: Bill Sumner <bill.sumner@hp.com>
-To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        joro@8bytes.org
-Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
-        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
-        doug.hatch@hp.com, zhenhua@hp.com, jerry.hoemann@hp.com
-Subject: [PATCH 1/8] iommu/vt-d: Fix a few existing lines for checkpatch.pl
-Date: Thu, 24 Apr 2014 18:36:31 -0600
-Message-Id: <1398386198-19304-2-git-send-email-bill.sumner@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
-References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
+	Thu, 24 Apr 2014 20:42:32 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-7e-5359af763eac
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
+        ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
+        k.kozlowski@samsung.com, kyungmin.park@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv4 0/9] extcon: Support devm_extcon_dev_allocate/free()
+Date: Fri, 25 Apr 2014 09:42:15 +0900
+Message-id: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkQLdsfWSwQdtTS4uD9+stpj58wmbx
+	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbA5fHplWdbB4vJ/5m8+jb
+	sorRY+qUv4wex29sZ/L4vEkugC2KyyYlNSezLLVI3y6BK2Pth7msBaf5Kz5t3c3WwPidp4uR
+	k0NCwESi9cYLVghbTOLCvfVsILaQwFJGiUtzuWFqXky8ydzFyAUUn84o8eblKzYIp4lJovXg
+	cbAONgEtif0vboDZIgIKEpt7n7GCFDELPGOUOHH1BDNIQljATeLHn71gNouAqsS05nfsIDav
+	gKvEowUdUGfISXzY84gdwp7HLjH1USFEvYDEt8mHWLoYOYDishKbDjBDlEhKHFxxg2UCo+AC
+	RoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIGBffrfs74djDcPWB9iTAYaN5FZSjQ5HxgZ
+	eSXxhsZmRhamJqbGRuaWZqQJK4nzLnqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBMbU6
+	k+nSDtF1O/v7br2t17MRj3v888a/9iC5V34O1fm3TgcUSSiv8Fhx+cve9Sv39zRfObKpy46T
+	/ZDDY453Vj2LuzW7/u8OiLVeOSfUzffDoXir7quCnu9q1RR/Gn1XmzN/TUPh4f0PDrqyXomT
+	OnVeYb3JwqdXi/ItfUvUN21wfLm8UyH9ixJLcUaioRZzUXEiAI+W0PCCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t9jQd2y9ZHBBvNWGVocvF9vMfXhEzaL
+	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYHLg8Nq3qZPN4OfE3m0ff
+	llWMHlOn/GX0OH5jO5PH501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
+	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
+	axgz1n6Yy1pwmr/i09bdbA2M33m6GDk5JARMJF5MvMkMYYtJXLi3nq2LkYtDSGA6o8Sbl6+g
+	nCYmidaDx9lAqtgEtCT2v7gBZosIKEhs7n3GClLELPCMUeLE1RNgo4QF3CR+/NkLZrMIqEpM
+	a37HDmLzCrhKPFrQwQqxTk7iw55H7BMYuRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93E
+	CI6dZ1I7GFc2WBxiFOBgVOLh/aAWGSzEmlhWXJl7iFGCg1lJhFd5FVCINyWxsiq1KD++qDQn
+	tfgQYzLQ9onMUqLJ+cC4ziuJNzQ2MTOyNDI3tDAyNidNWEmc90CrdaCQQHpiSWp2ampBahHM
+	FiYOTqkGxr3fay5O3Hw7iHXj/EkxefseKwgJGd1bwqfw3a+w5Mv2Bxc5J5kd/3rHyCPP+cGf
+	0De/A7oUdrIs0NN6Vteg8/ns6omHf4lsqv/BL8Z/2rQsbWZG0OOLV+qNddeZr7yfxbu1/fhn
+	D8bQjb26rjZ7OCfxfa2zuPFJk/2D8E3//KzOaQdYOI4qHVdiKc5INNRiLipOBAD7JBKI4QIA	AA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Things like:
-1. no space before tabs
-2. no initialization of static variables to 0 or NULL
-3. no extra parentheses around the value on the 'return' statement
-4. no line over 80-characters
+This patchset add devm_extcon_dev_allocate/free() for the resource management
+of extcon device. And devm_extcon_dev_allocate() handles all of supported cables.
 
-The first three patches in this set enable the intel-iommu driver to consist
-of multiple *.c source files by moving many of the existing definitions,
-prototypes, and structure definitions from the front of intel-iommu.c into
-a new intel-iommu-private.h file -- and replacing them with a #include
-of that file.  
+Changes from v3:
+- Change return value of extcon_dev_allocate()/devm_extcon_dev_allocate()
+  if failed to allocate the memory of extcon device (NULL -> ERR_PTR(-ENOMEM))
+- All of extcon provier drivers check return value using IS_ERR() macro
+- Fix the description of function due to changing return type if failure
 
+Changes from v2:
+- Resolve bisectable issue about patch-1
+  extcon: Add extcon_dev_allocate/free() to control the memory of extcon device
+- extcon_dev_allocate/free() don't handle all behaviors for supported cables
 
-The last five patches in this set use the above enablement to implement,
-within the new source file intel-iommu-kdump.c, a fix for:
+Changes from v1:
+- Rebase it on latest extcon-next branch
 
-A kdump problem about DMA that has been discussed for a long time.
-That is, when a kernel panics and boots into the kdump kernel, DMA that was
-started by the panicked kernel is not stopped before the kdump kernel is booted;
-and the kdump kernel disables the IOMMU while this DMA continues.
-This causes the IOMMU to stop translating the DMA addresses as IOVAs and
-begin to treat them as physical memory addresses -- which causes the DMA to either:
-1. generate DMAR errors or
-2. generate PCI SERR errors or
-3. transfer data to or from incorrect areas of memory.
-Often this causes the dump to fail.
+Chanwoo Choi (9):
+  extcon: Add extcon_dev_allocate/free() to control the memory of extcon device
+  extcon: Add devm_extcon_dev_allocate/free to manage the resource of extcon device
+  extcon: max8997: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: max77693: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: max14577: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: arizona: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: adc-jack: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: gpio: Use devm_extcon_dev_allocate for extcon_dev
+  extcon: palmas: Use devm_extcon_dev_allocate for extcon_dev
 
-This patch set modifies the behavior of the Intel iommu in the crashdump kernel: 
-1. to accept the iommu hardware in an active state,
-2. to leave the current translations in-place so that legacy DMA will continue
-   using its current buffers until the device drivers in the crashdump kernel
-   initialize and initialize their devices,
-3. to use different portions of the iova address ranges for the device drivers
-   in the crashdump kernel than the iova ranges that were in-use at the time
-   of the panic.  
+ drivers/extcon/extcon-adc-jack.c |  21 ++++----
+ drivers/extcon/extcon-arizona.c  |  30 ++++++-----
+ drivers/extcon/extcon-class.c    | 108 ++++++++++++++++++++++++++++++++++-----
+ drivers/extcon/extcon-gpio.c     |  23 ++++++---
+ drivers/extcon/extcon-max14577.c |   7 +--
+ drivers/extcon/extcon-max77693.c |   9 ++--
+ drivers/extcon/extcon-max8997.c  |   7 ++-
+ drivers/extcon/extcon-palmas.c   |  35 +++++++------
+ include/linux/extcon.h           |  24 +++++++++
+ include/linux/mfd/palmas.h       |   2 +-
+ 10 files changed, 196 insertions(+), 70 deletions(-)
 
-Advantages of this approach:
-1. All manipulation of the IO-device is done by the Linux device-driver
-   for that device.
-2. This approach behaves in a manner very similar to operation without an
-   active iommu.
-3. Any activity between the IO-device and its RMRR areas is handled by the
-   device-driver in the same manner as during a non-kdump boot.
-4. If an IO-device has no driver in the kdump kernel, it is simply left alone.
-   This supports the practice of creating a special kdump kernel without
-   drivers for any devices that are not required for taking a crashdump. 
-5. Minimal code-changes among the existing mainline intel-iommu code.
-
-
-Signed-off-by: Bill Sumner <bill.sumner@hp.com>
----
- drivers/iommu/intel-iommu.c | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 69fa7da..f80b4bb 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -69,7 +69,8 @@
-    to match. That way, we can use 'unsigned long' for PFNs with impunity. */
- #define DOMAIN_MAX_PFN(gaw)	((unsigned long) min_t(uint64_t, \
- 				__DOMAIN_MAX_PFN(gaw), (unsigned long)-1))
--#define DOMAIN_MAX_ADDR(gaw)	(((uint64_t)__DOMAIN_MAX_PFN(gaw)) << VTD_PAGE_SHIFT)
-+#define DOMAIN_MAX_ADDR(gaw) (((uint64_t)__DOMAIN_MAX_PFN(gaw)) << \
-+					VTD_PAGE_SHIFT)
- 
- #define IOVA_PFN(addr)		((addr) >> PAGE_SHIFT)
- #define DMA_32BIT_PFN		IOVA_PFN(DMA_BIT_MASK(32))
-@@ -172,7 +173,7 @@ static int rwbf_quirk;
-  * set to 1 to panic kernel if can't successfully enable VT-d
-  * (used when kernel is launched w/ TXT)
-  */
--static int force_on = 0;
-+static int force_on;
- 
- /*
-  * 0: Present
-@@ -187,7 +188,7 @@ struct root_entry {
- #define ROOT_ENTRY_NR (VTD_PAGE_SIZE/sizeof(struct root_entry))
- static inline bool root_present(struct root_entry *root)
- {
--	return (root->val & 1);
-+	return root->val & 1;
- }
- static inline void set_root_present(struct root_entry *root)
- {
-@@ -225,7 +226,7 @@ struct context_entry {
- 
- static inline bool context_present(struct context_entry *context)
- {
--	return (context->lo & 1);
-+	return context->lo & 1;
- }
- static inline void context_set_present(struct context_entry *context)
- {
-@@ -303,7 +304,7 @@ static inline bool dma_pte_present(struct dma_pte *pte)
- 
- static inline bool dma_pte_superpage(struct dma_pte *pte)
- {
--	return (pte->val & (1 << 7));
-+	return pte->val & (1 << 7);
- }
- 
- static inline int first_pte_in_page(struct dma_pte *pte)
-@@ -314,7 +315,7 @@ static inline int first_pte_in_page(struct dma_pte *pte)
- /*
-  * This domain is a statically identity mapping domain.
-  *	1. This domain creats a static 1:1 mapping to all usable memory.
-- * 	2. It maps to each iommu if successful.
-+ *	2. It maps to each iommu if successful.
-  *	3. Each iommu mapps to this domain if successful.
-  */
- static struct dmar_domain *si_domain;
-@@ -344,7 +345,7 @@ struct dmar_domain {
- 	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
- 					/* bitmap of iommus this domain uses*/
- 
--	struct list_head devices; 	/* all devices' list */
-+	struct list_head devices;	/* all devices' list */
- 	struct iova_domain iovad;	/* iova's that belong to this domain */
- 
- 	struct dma_pte	*pgd;		/* virtual address */
 -- 
-Bill Sumner <bill.sumner@hp.com>
+1.8.0
 
