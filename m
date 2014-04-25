@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaDYIQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:16:58 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:63575 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaDYIQl (ORCPT
+	id S1752712AbaDYIRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:17:47 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:56304 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaDYIR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:16:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1398375866-8898-1-git-send-email-tim.kryger@linaro.org>
-References: <1398375866-8898-1-git-send-email-tim.kryger@linaro.org>
-Date: Fri, 25 Apr 2014 10:16:40 +0200
-Message-ID: <CAPDyKFqUs+tq1+5xPLAjZrmTb1DjkLdVKzXs+-o1NH=b4HH-jQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: core: Try other signal levels during power up
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Linux MMC <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Apr 2014 04:17:27 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH 1/2] staging: comedi: addi_apci_1564: board does not have analog inputs
+Date: Fri, 25 Apr 2014 03:17:06 -0500
+Message-Id: <1398413826-19400-1-git-send-email-chase.southwood@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2014 23:44, Tim Kryger <tim.kryger@linaro.org> wrote:
-> The eMMC signalling voltage is determined by VCCQ which is provided to
-> the card by the host.  Signalling is not required to begin at 3.3v and,
-> if the host and card both support a particular VCC/VCCQ combination, it
-> can be used immediately.
->
-> In contrast, SD Cards must begin with 3.3v signalling and may switch to
-> a lower voltage signalling if instructed to do so in CMD11.  A message
-> is required to coordinate this operation because the card only receives
-> a 3.3v VDD and must know when to use the 1.8v produced by its internal
-> regulator.
->
-> It makes sense for the core to begin with 3.3v signalling but when that
-> can't be set, 1.8v and 1.2v signalling also should be attempted.  This
-> is especially important when an external regulator with a limited range
-> is used to supply VCCQ to an eMMC part.
->
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+This board does not have analog inputs.  Remove the subdevice init for
+them.
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+---
+Compile tested only.  To be applied on top of
+[PATCH] staging: comedi: addi_apci_1564: separate from addi_common.c
 
-> ---
->
-> Changes since v1:
->   - Eliminated temporary err variable and added debug output
->
->  drivers/mmc/core/core.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index acbc3f2..72926a9 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1533,8 +1533,13 @@ void mmc_power_up(struct mmc_host *host, u32 ocr)
->         host->ios.timing = MMC_TIMING_LEGACY;
->         mmc_set_ios(host);
->
-> -       /* Set signal voltage to 3.3V */
-> -       __mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330);
-> +       /* Try to set signal voltage to 3.3V but fall back to 1.8v or 1.2v */
-> +       if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330) == 0)
-> +               dev_dbg(mmc_dev(host), "Initial signal voltage of 3.3v\n");
-> +       else if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180) == 0)
-> +               dev_dbg(mmc_dev(host), "Initial signal voltage of 1.8v\n");
-> +       else if (__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_120) == 0)
-> +               dev_dbg(mmc_dev(host), "Initial signal voltage of 1.2v\n");
->
->         /*
->          * This delay should be sufficient to allow the power supply
-> --
-> 1.7.9.5
->
+ drivers/staging/comedi/drivers/addi_apci_1564.c | 31 +------------------------
+ 1 file changed, 1 insertion(+), 30 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+index 792916d..eee10cc 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1564.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+@@ -144,36 +144,7 @@ static int apci1564_auto_attach(struct comedi_device *dev,
+ 
+ 	/*  Allocate and Initialise AI Subdevice Structures */
+ 	s = &dev->subdevices[0];
+-	if ((devpriv->s_EeParameters.i_NbrAiChannel)
+-		|| (this_board->i_NbrAiChannelDiff)) {
+-		dev->read_subdev = s;
+-		s->type = COMEDI_SUBD_AI;
+-		s->subdev_flags =
+-			SDF_READABLE | SDF_COMMON | SDF_GROUND
+-			| SDF_DIFF;
+-		if (devpriv->s_EeParameters.i_NbrAiChannel) {
+-			s->n_chan =
+-				devpriv->s_EeParameters.i_NbrAiChannel;
+-			devpriv->b_SingelDiff = 0;
+-		} else {
+-			s->n_chan = this_board->i_NbrAiChannelDiff;
+-			devpriv->b_SingelDiff = 1;
+-		}
+-		s->maxdata = devpriv->s_EeParameters.i_AiMaxdata;
+-		s->len_chanlist = this_board->i_AiChannelList;
+-		s->range_table = this_board->pr_AiRangelist;
+-
+-		s->insn_config = this_board->ai_config;
+-		s->insn_read = this_board->ai_read;
+-		s->insn_write = this_board->ai_write;
+-		s->insn_bits = this_board->ai_bits;
+-		s->do_cmdtest = this_board->ai_cmdtest;
+-		s->do_cmd = this_board->ai_cmd;
+-		s->cancel = this_board->ai_cancel;
+-
+-	} else {
+-		s->type = COMEDI_SUBD_UNUSED;
+-	}
++	s->type = COMEDI_SUBD_UNUSED;
+ 
+ 	/*  Allocate and Initialise AO Subdevice Structures */
+ 	s = &dev->subdevices[1];
+-- 
+1.9.0
+
