@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaDYIog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:44:36 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:13543 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750820AbaDYIoe (ORCPT
+	id S1752097AbaDYIqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:46:30 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:45476 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaDYIq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:44:34 -0400
-X-IronPort-AV: E=Sophos;i="4.97,926,1389715200"; 
-   d="scan'208";a="29725443"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        David Howells <dhowells@redhat.com>,
-        Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-Subject: [Resend][PATCH] ns,proc: introduce pid_in_ns
-Date: Fri, 25 Apr 2014 16:43:25 +0800
-Message-ID: <1398415405-19872-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.0
+	Fri, 25 Apr 2014 04:46:27 -0400
+From: Xufeng Zhang <xufeng.zhang@windriver.com>
+To: <vyasevich@gmail.com>, <nhorman@tuxdriver.com>, <davem@davemloft.net>,
+        <ja@ssi.bg>
+CC: <linux-sctp@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH V2] sctp: reset flowi4_oif parameter on route lookup
+Date: Fri, 25 Apr 2014 16:55:41 +0800
+Message-ID: <1398416141-18916-1-git-send-email-xufeng.zhang@windriver.com>
+X-Mailer: git-send-email 1.7.0.2
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We lacked of convenient method of getting the pid inside containers.
+commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+in output route lookups.) introduces another regression which
+is very similar to the problem of commit e6b45241c (ipv4: reset
+flowi parameters on route connect) wants to fix:
+Before we call ip_route_output_key() in sctp_v4_get_dst() to
+get a dst that matches a bind address as the source address,
+we have already called this function previously and the flowi
+parameters have been initialized including flowi4_oif, so when
+we call this function again, the process in __ip_route_output_key()
+will be different because of the setting of flowi4_oif, and we'll
+get a networking device which corresponds to the inputted flowi4_oif
+as the output device, this is wrong because we'll never hit this
+place if the previously returned source address of dst match one
+of the bound addresses.
 
-If some issues occurred inside container guest, host user
-could not know which process is in trouble just by guest pid:
-the users of container guest only knew the pid inside containers.
-This will bring obstacle for trouble shooting.
+To reproduce this problem, a vlan setting is enough:
+  # ifconfig eth0 up
+  # route del default
+  # vconfig add eth0 2
+  # vconfig add eth0 3
+  # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+  # route add default gw 10.0.1.254 dev eth0.2
+  # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+  # ip rule add from 10.0.0.14 table 4
+  # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+  # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+You'll detect that all the flow are routed to eth0.2(10.0.1.254).
 
-This patch introduces pid_in_ns:
-If one process is in init_pid_ns, /proc/PID/pid_in_ns
-equals to /proc/PID;
-if one process is in pidns, /proc/PID/pid_in_ns
-will tell the pid inside containers;
-if pidns is nested, it depends on which pidns are you in.
-
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
 ---
- fs/proc/array.c    | 13 +++++++++++++
- fs/proc/base.c     |  1 +
- fs/proc/internal.h |  2 ++
- 3 files changed, 16 insertions(+)
+Changelog:
 
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index 64db2bc..3ff7050 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -562,6 +562,19 @@ int proc_tgid_stat(struct seq_file *m, struct pid_namespace *ns,
- 	return do_task_stat(m, ns, pid, task, 1);
- }
- 
-+int proc_pid_in_ns(struct seq_file *m, struct pid_namespace *ns,
-+			struct pid *pid, struct task_struct *task)
-+{
-+	pid_t pid_in_ns;
-+	unsigned int level;
+v1->v2:
+ Suggested by Julian Anastasov, reset flowi parameters by flowi4_update_output().
+
+ net/sctp/protocol.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index c09757f..44cbb54 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -491,8 +491,13 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+ 			continue;
+ 		if ((laddr->state == SCTP_ADDR_SRC) &&
+ 		    (AF_INET == laddr->a.sa.sa_family)) {
+-			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+ 			fl4->fl4_sport = laddr->a.v4.sin_port;
++			flowi4_update_output(fl4,
++					     asoc->base.sk->sk_bound_dev_if,
++					     RT_CONN_FLAGS(asoc->base.sk),
++					     daddr->v4.sin_addr.s_addr,
++					     laddr->a.v4.sin_addr.s_addr);
 +
-+	level = pid->level;
-+	pid_in_ns = task_pid_nr_ns(task, pid->numbers[level].ns);
-+	seq_put_decimal_ull(m, 0, pid_in_ns);
-+	seq_putc(m, '\n');
-+	return 0;
-+}
-+
- int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
- 			struct pid *pid, struct task_struct *task)
- {
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 2d696b0..42904b7 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2574,6 +2574,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
-+	ONE("pid_in_ns",  S_IRUGO, proc_pid_in_ns),
- 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 3ab6d14..573841a 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -155,6 +155,8 @@ extern int proc_pid_status(struct seq_file *, struct pid_namespace *,
- 			   struct pid *, struct task_struct *);
- extern int proc_pid_statm(struct seq_file *, struct pid_namespace *,
- 			  struct pid *, struct task_struct *);
-+extern int proc_pid_in_ns(struct seq_file *, struct pid_namespace *,
-+			  struct pid *, struct task_struct *);
- 
- /*
-  * base.c
+ 			rt = ip_route_output_key(sock_net(sk), fl4);
+ 			if (!IS_ERR(rt)) {
+ 				dst = &rt->dst;
 -- 
-1.9.0
+1.7.0.2
 
