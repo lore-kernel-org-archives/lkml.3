@@ -1,153 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaDYV1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:27:51 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:36815 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaDYV1t (ORCPT
+	id S1751677AbaDYVdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:33:22 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:42354 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaDYVdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:27:49 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>
-References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com>
-	<20140425182310.GA9128@redhat.com>
-	<87sip15iy5.fsf@x220.int.ebiederm.org>
-	<20140425192543.GA11908@redhat.com>
-	<878uqt42q7.fsf@x220.int.ebiederm.org>
-	<20140425200156.GA13727@redhat.com>
-	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
-	<874n1h16le.fsf@x220.int.ebiederm.org>
-	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-Date: Fri, 25 Apr 2014 14:27:14 -0700
-In-Reply-To: <CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-	(Dmitry Kasatkin's message of "Fri, 25 Apr 2014 23:52:20 +0300")
-Message-ID: <87iopxxfpp.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 25 Apr 2014 17:33:20 -0400
+Message-ID: <535AD49C.6040600@gmail.com>
+Date: Fri, 25 Apr 2014 23:33:16 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1952Ln6TuPm8Zq+fNoFG/A4Ez6KbrUooUA=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4098]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu
+CC: pankaj.dubey@samsung.com, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3] mfd: syscon: Support early initialization
+References: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com>
+In-Reply-To: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+Hi Michal,
 
-> On 25 April 2014 23:45, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
->>
->>> On 25 April 2014 23:01, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> On 04/25, Eric W. Biederman wrote:
->>>>>
->>>>> Oleg Nesterov <oleg@redhat.com> writes:
->>>>>
->>>>> > Well. I _think_ that __fput() and ima_file_free() in particular should not
->>>>> > depend on current and/or current->nsproxy. If nothing else, fput() can be
->>>>> > called by the unrelated task which looks into /proc/pid/.
->>>>> >
->>>>> > But again, task_work_add() has more and more users, and it seems that even
->>>>> > __fput() paths can do "everything", so perhaps it would be safer to allow
->>>>> > to use ->nsproxy in task_work_run.
->>>>>
->>>>> Like I said, give me a clear motivating case.
->>>>
->>>> I agree, we need a reason. Currently I do not see one.
->>>>
->>>>> Right now not allowing
->>>>> nsproxy is turning up bugs in __fput.  Which seems like a good thing.
->>>>
->>>> This is what I certainly agree with ;)
->>>>
->>>
->>> Hi,
->>>
->>> IMA uses kernel_read API which does not know anything about caller.
->>> And of course security frameworks are at guard as usual.
->>>
->>> Exactly after reading first Eric's respons, I thought why to scratch
->>> the head when task work queues are indeed designed for tasks...
->>
->> __fput has no guarantee of running in the task that close the file
->> descriptor.  If your code depends on that your code is broken.
->>
->>> And if you to dig for the history, IMA-appraisal was stuck due to
->>> lockdep reporting even though it was on non-everlaping cases.
->>> IIRC files vs. directories...
->>>
->>> After that IIRC Al Viro discussed about delayed fput and IIRC Oleg
->>> (sorry if I am wrong) introduced task work queues.
->>>
->>> So IMA-appraisal was able to be upstreamed... That was ~3.4 time frame, IIRC
->>>
->>> Name space also dated around ~3.4??
->>> Apparmor namespace change was also around that time.
->>>
->>> 3.10 introduces this name space order change and broke IMA-appraisal.
->>
->> IMA-appraisal is fundamentally broken because I can take a mandatory
->> file lock and prevent IMA-apprasial.
->>
+First of all, even though not touching DT bindings, this change is DT 
+related and so devicetree mailing list should be on Cc, as well as some 
+DT people, especially Grant. Adding them.
+
+Otherwise, please see my comments inline.
+
+On 08.04.2014 17:00, Michal Simek wrote:
+> Some platforms need to get system controller
+> ready as soon as possible.
+> The patch provides early_syscon_initialization
+> which create early mapping for all syscon compatible
+> devices in early_syscon_probe.
+> Regmap is get via syscon_early_regmap_lookup_by_phandle()
 >
-> What file lock are you talking about?
-> IMA-appraisal does not depends on file locks...
-
-It honors them.  Look at rw_verify_area, in vfs_read, in kernel_read.
-
-It sure looks like locks_mandatory_area can cause your kernel_read to
-fail.
-
->> Using kernel_read is what allows this.
->>
->>> Isn't it a clear motivating case???
->>
->> kernel_read is not appropriate for IMA use.  The rest of this is just
->> the messenger.
->>
->> IMA needs to use a cousin of kernel_read that operates at a lower level
->> than vfs_read.  A function that all of the permission checks and the
->> fsnotify work.
->>
->> I am sorry to be the bearer of bad news.  But kernel_read is totally
->> inappropriate for IMA.
->>
+> Regular device probes attach device to regmap
+> via regmap_attach_dev().
 >
-> So you break IMA-appraisal and declare that it cannot be used now?
+> For early syscon initialization is necessary to extend
+> struct syscon and provide remove function
+> which unmap all early init structures.
+>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>
+> Changes in v3:
+> - Keep backward compatibility for platform drivers and test it
+> - Use only one probe method which is early_syscon_probe
+>    suggested by Lee Jones. Do not force anybody to call early_syscon_init
+> - Add kernel-doc description
+>
+> Changes in v2:
+> - Fix bad logic in early_syscon_probe
+> - Fix compilation failure for x86_64 reported by zero day testing system
+> - Regmap change available here
+>    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/nodev
+>
+>   drivers/mfd/syscon.c       | 159 ++++++++++++++++++++++++++++++++++++++++-----
+>   include/linux/mfd/syscon.h |  11 ++++
+>   2 files changed, 153 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index 71841f9..8e2ff88 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -20,12 +20,15 @@
+>   #include <linux/of_platform.h>
+>   #include <linux/platform_device.h>
+>   #include <linux/regmap.h>
+> +#include <linux/slab.h>
+>   #include <linux/mfd/syscon.h>
+>
+>   static struct platform_driver syscon_driver;
+>
+>   struct syscon {
+> +	void __iomem *base;
+>   	struct regmap *regmap;
+> +	struct resource res;
+>   };
+>
+>   static int syscon_match_node(struct device *dev, void *data)
+> @@ -95,6 +98,30 @@ struct regmap *syscon_regmap_lookup_by_pdevname(const char *s)
+>   }
+>   EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
+>
+> +/**
+> + * syscon_early_regmap_lookup_by_phandle - Early phandle lookup function
+> + * @np:		device_node pointer
+> + * @property:	property name which handle system controller phandle
+> + * Return:	regmap pointer, an error pointer otherwise
+> + */
+> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_node *np,
+> +						     const char *property)
+> +{
+> +	struct device_node *syscon_np;
+> +	struct syscon *syscon;
+> +
+> +	syscon_np = of_parse_phandle(np, property, 0);
+> +	if (!syscon_np)
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	syscon = syscon_np->data;
+> +
+> +	of_node_put(syscon_np);
 
-I didn't break it.  I read the code, and I read the back trace to see
-where the bug was.
+As it was mentioned in other review comments, this is rather fishy.
 
-I see IMA-appraisal trying to read file data as if it were a user space
-application in such a way that it can get permission denied for a whole
-host of reasons.
+Instead, couldn't you create a local list of system controllers 
+available in the system and then use that to perform look-up? This could 
+also let you eliminate the need to have separate functions for early and 
+normal look-up as the list could be simply used for both cases. Of 
+course you would have to add of_node and list_head fields to struct 
+syscon, but I don't think that matters.
 
-My understanding of IMA-appraisal is that using a code path that can
-give use permission denined when performing appraisal is a way for
-clever people to attack and avoid IMA-appraisal without violating any
-security policy.
+As a side effect, the look-up would not need to iterate over all devices 
+in the system anymore, just over the list of registered system controllers.
 
-Am I wrong.  Is it ok for IMA-appraisal to get permission denied when it
-wants to appraise a file?
-
-Eric
+Best regards,
+Tomasz
