@@ -1,71 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaDYWjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:39:41 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:52213 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaDYWjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:39:10 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>
-References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com>
-	<20140425182310.GA9128@redhat.com>
-	<87sip15iy5.fsf@x220.int.ebiederm.org>
-	<20140425192543.GA11908@redhat.com>
-	<878uqt42q7.fsf@x220.int.ebiederm.org>
-	<20140425200156.GA13727@redhat.com>
-	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
-	<874n1h16le.fsf@x220.int.ebiederm.org>
-	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-	<87iopxxfpp.fsf@x220.int.ebiederm.org>
-	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
-	<CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
-Date: Fri, 25 Apr 2014 15:38:34 -0700
-In-Reply-To: <CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
-	(Dmitry Kasatkin's message of "Sat, 26 Apr 2014 00:56:32 +0300")
-Message-ID: <87lhutt4ph.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19BiM8l1KqMpBElRzCNrz//uVU5/zWthn4=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3131]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1752696AbaDYWkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:40:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37548 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304AbaDYWht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:37:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
+   d="scan'208";a="499974400"
+Subject: [PATCH 5/8] x86: mm: add tracepoints for TLB flushes
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, x86@kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 25 Apr 2014 15:37:49 -0700
+References: <20140425223742.0A27E42E@viggo.jf.intel.com>
+In-Reply-To: <20140425223742.0A27E42E@viggo.jf.intel.com>
+Message-Id: <20140425223749.9D08513F@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
 
-> Is it really a show stopper to switch order of 2 functions as quick fix?
-> It was like that before 3.10 and seemed ok...
+Changes from v3:
+ * remove trace_tlb.c and __print_symbolic() instead
+ * make sure to cover all cases in flush_tlb_func()
+ * remove _DONE "reason" since it was not precise enough
 
-When that is the question.  The answer is yes it is a show stopper.
+--
 
-A quick fix to bury a fundamental design flaw because the code
-previously seemed ok.  That seems fundamentally wrong.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Having IMA conflict with Apparmor in Kconfig would be a sensible quick
-fix.
+We don't have any good way to figure out what kinds of flushes
+are being attempted.  Right now, we can try to use the vm
+counters, but those only tell us what we actually did with the
+hardware (one-by-one vs full) and don't tell us what was actually
+_requested_.
 
-Eric
+This allows us to select out "interesting" TLB flushes that we
+might want to optimize (like the ranged ones) and ignore the ones
+that we have very little control over (the ones at context
+switch).
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+
+ b/arch/x86/include/asm/mmu_context.h |    6 +++++
+ b/arch/x86/mm/tlb.c                  |   14 ++++++++++-
+ b/include/linux/mm_types.h           |    8 ++++++
+ b/include/trace/events/tlb.h         |   41 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 67 insertions(+), 2 deletions(-)
+
+diff -puN arch/x86/include/asm/mmu_context.h~tlb-trace-flushes arch/x86/include/asm/mmu_context.h
+--- a/arch/x86/include/asm/mmu_context.h~tlb-trace-flushes	2014-04-25 15:33:13.352070158 -0700
++++ b/arch/x86/include/asm/mmu_context.h	2014-04-25 15:33:13.358070428 -0700
+@@ -3,6 +3,10 @@
+ 
+ #include <asm/desc.h>
+ #include <linux/atomic.h>
++#include <linux/mm_types.h>
++
++#include <trace/events/tlb.h>
++
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+ #include <asm/paravirt.h>
+@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_s
+ 
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 
+ 		/* Stop flush ipis for the previous mm */
+ 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_s
+ 			 * to make sure to use no freed page tables.
+ 			 */
+ 			load_cr3(next->pgd);
++			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 			load_LDT_nolock(&next->context);
+ 		}
+ 	}
+diff -puN arch/x86/mm/tlb.c~tlb-trace-flushes arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~tlb-trace-flushes	2014-04-25 15:33:13.353070203 -0700
++++ b/arch/x86/mm/tlb.c	2014-04-25 15:33:13.359070473 -0700
+@@ -14,6 +14,9 @@
+ #include <asm/uv/uv.h>
+ #include <linux/debugfs.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/tlb.h>
++
+ DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
+ 			= { &init_mm, 0, };
+ 
+@@ -49,6 +52,7 @@ void leave_mm(int cpu)
+ 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
+ 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
+ 		load_cr3(swapper_pg_dir);
++		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -107,15 +111,19 @@ static void flush_tlb_func(void *info)
+ 
+ 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-		if (f->flush_end == TLB_FLUSH_ALL)
++		if (f->flush_end == TLB_FLUSH_ALL) {
+ 			local_flush_tlb();
+-		else {
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
++		} else {
+ 			unsigned long addr;
++			unsigned long nr_pages =
++				f->flush_end - f->flush_start / PAGE_SIZE;
+ 			addr = f->flush_start;
+ 			while (addr < f->flush_end) {
+ 				__flush_tlb_single(addr);
+ 				addr += PAGE_SIZE;
+ 			}
++			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, nr_pages);
+ 		}
+ 	} else
+ 		leave_mm(smp_processor_id());
+@@ -153,6 +161,7 @@ void flush_tlb_current_task(void)
+ 
+ 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 	local_flush_tlb();
++	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
+ 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+ 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
+ 	preempt_enable();
+@@ -191,6 +200,7 @@ void flush_tlb_mm_range(struct mm_struct
+ 			__flush_tlb_single(addr);
+ 		}
+ 	}
++	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
+ out:
+ 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
+ 		start = 0UL;
+diff -puN include/linux/mm_types.h~tlb-trace-flushes include/linux/mm_types.h
+--- a/include/linux/mm_types.h~tlb-trace-flushes	2014-04-25 15:33:13.355070293 -0700
++++ b/include/linux/mm_types.h	2014-04-25 15:33:13.359070473 -0700
+@@ -510,4 +510,12 @@ static inline void clear_tlb_flush_pendi
+ }
+ #endif
+ 
++enum tlb_flush_reason {
++	TLB_FLUSH_ON_TASK_SWITCH,
++	TLB_REMOTE_SHOOTDOWN,
++	TLB_LOCAL_SHOOTDOWN,
++	TLB_LOCAL_MM_SHOOTDOWN,
++	NR_TLB_FLUSH_REASONS,
++};
++
+ #endif /* _LINUX_MM_TYPES_H */
+diff -puN /dev/null include/trace/events/tlb.h
+--- /dev/null	2014-04-10 11:28:14.066815724 -0700
++++ b/include/trace/events/tlb.h	2014-04-25 15:33:13.359070473 -0700
+@@ -0,0 +1,41 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM tlb
++
++#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_TLB_H
++
++#include <linux/mm_types.h>
++#include <linux/tracepoint.h>
++
++#define TLB_FLUSH_REASON	\
++	{ TLB_FLUSH_ON_TASK_SWITCH, 	"flush on task switch" },	\
++	{ TLB_REMOTE_SHOOTDOWN,		"remote shootdown" },		\
++	{ TLB_LOCAL_SHOOTDOWN, 		"local shootdown" },		\
++	{ TLB_LOCAL_MM_SHOOTDOWN,	"local mm shootdown" }
++
++TRACE_EVENT(tlb_flush,
++
++	TP_PROTO(int reason, unsigned long pages),
++	TP_ARGS(reason, pages),
++
++	TP_STRUCT__entry(
++		__field(	  int, reason)
++		__field(unsigned long,  pages)
++	),
++
++	TP_fast_assign(
++		__entry->reason = reason;
++		__entry->pages  = pages;
++	),
++
++	TP_printk("pages:%ld reason:%s (%d)",
++		__entry->pages,
++		__print_symbolic(__entry->reason, TLB_FLUSH_REASON),
++		__entry->reason)
++);
++
++#endif /* _TRACE_TLB_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
+_
