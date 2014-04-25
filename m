@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaDYEvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 00:51:08 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:44207 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaDYEvF (ORCPT
+	id S1751439AbaDYE6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 00:58:15 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:62622 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaDYE6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 00:51:05 -0400
+	Fri, 25 Apr 2014 00:58:12 -0400
+Message-ID: <5359EB5E.7010800@linaro.org>
+Date: Fri, 25 Apr 2014 10:28:06 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <201404250031.s3P0V2DY022219@toshiba.co.jp>
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
-	<201404240725.s3O7PrUv003720@toshiba.co.jp>
-	<CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>
-	<201404240832.s3O8WHd0011014@toshiba.co.jp>
-	<CAKohpokk4rGeP3QfVT5_HBO4pc=22yPBLV78D++y1Ab72y1OJQ@mail.gmail.com>
-	<201404240924.s3O9OYCC021688@toshiba.co.jp>
-	<CAKohponA4-cm2_FB=8R8aVEWNhtUfOUebcfzn7W+XR0zKHCtxw@mail.gmail.com>
-	<201404250031.s3P0V2DY022219@toshiba.co.jp>
-Date: Fri, 25 Apr 2014 10:21:05 +0530
-Message-ID: <CAKohpomQH01gCeUfqFFeHVNX7N7CSyo7zdj3LGBv9=U=cE46EA@mail.gmail.com>
-Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-i2c@vger.kernel.org, naveenkrishna.ch@gmail.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, sjg@chromium.org,
+        grundler@chromium.org, linux-kernel@vger.kernel.org, wsa@the-dreams.de,
+        cpgs@samsung.com
+Subject: Re: [PATCH] i2c: exynos5: Initialise Samsung High Speed I2C controller
+ early
+References: <1398350916-885-1-git-send-email-ch.naveen@samsung.com> <20140424162558.GB12304@sirena.org.uk>
+In-Reply-To: <20140424162558.GB12304@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 April 2014 06:01, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
->
->>> I can't keep it as a separate patch and so would be required to merge
->>> it into my original patch..
->>
->> And the reason being: "No patch is supposed to break things, otherwise
->> git bisect wouldn't work smoothly".. And so git bisect would complain
->> this issue after my patch and so I have to merge the fixes you gave into
->> the original patch as its not yet merged.
->> --
->> To unsubscribe from this list: send the line "unsubscribe cgroups" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> Ok, no problem then.
+On 04/24/2014 09:55 PM, Mark Brown wrote:
+> On Thu, Apr 24, 2014 at 08:18:36PM +0530, Naveen Krishna Chatradhi wrote:
+>> This patch moves initialization code to subsys_initcall() to ensure
+>> that the i2c bus is available early so the regulators can be quickly
+>> probed and available for other devices on their probe() call.
+> 
+>> Such solution has been proposed by Mark Brown to fix the problem of
+>> the regulators not beeing available on the peripheral device probe():
+>> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011971.html
+> 
+> What specifically is this needed for?  We *should* be able to use
+> deferred probe for most things, but I know that not all subsystems are
+> able to yet.
+> 
 
-Do you want me to add your Tested-by for my next version ?
+DRM-Exynos is one such sub-system right now that doesn't handle deferred
+probe well. That is one of the reasons for this patch.
+
+-- 
+Tushar Behera
