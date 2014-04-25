@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaDYLh5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 07:37:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866AbaDYLhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 07:37:52 -0400
-Message-ID: <535A48ED.9000504@redhat.com>
-Date: Fri, 25 Apr 2014 07:37:17 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Randy Dunlap <rdunlap@infradead.org>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com> <535992DD.3060808@infradead.org> <20140425024924.GR4496@linux.vnet.ibm.com>
-In-Reply-To: <20140425024924.GR4496@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753547AbaDYLie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:38:34 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:35027 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaDYLgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 07:36:38 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-f3-535a48c4c4a5
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: kgene.kim@samsung.com, robh+dt@kernel.org, t.figa@samsung.com,
+        chow.kim@samsung.com, yg1004.jang@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Guenter Roeck <linux@roeck-us.net>, Rob Landley <rob@landley.net>
+Subject: [PATCH v2 5/5] Documentation: update samsung pmu binding information
+Date: Fri, 25 Apr 2014 20:54:17 +0900
+Message-id: <1398426857-5097-6-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1398426857-5097-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1396425778-4379-1-git-send-email-pankaj.dubey@samsung.com>
+ <1398426857-5097-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t8zQ90jHlHBBq9eC1gsm3SXzWL+kXOs
+	Fr0LrrJZ7Nxyg81i0+NrrBaXd81hs5hxfh+TxZOFZ5gsFm39wm6x7uV0FovWvUfYLdbPeM1i
+	saNlNYsDr8emVZ1sHq9Wz2T12Lyk3mPn9wZ2j74tqxg9Pm+SC2CL4rJJSc3JLEst0rdL4Mr4
+	9eQRS0E3T8WJRScYGxg7uboYOTkkBEwk/l9fyQhhi0lcuLeeDcQWEljGKPFuvRtMzZ2nn1i6
+	GLmA4osYJea9eAbltDFJvD3RxA5SxSagK/Hk/VxmkISIQDujxL+rD9lAHGaByUwStxatZgGp
+	Ehbwldh6oBVsB4uAqkTnk/nMIDavgLvEhbvzWLsYOYD2KUjMmWQDEuYU8JA4P2MdO8S2VqCh
+	cz5D3XqNXeLDVgWIOQIS3yYfYoHolZXYdIAZokRS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLR
+	K07MLS7NS9dLzs/dxAiJlgk7GO8dsD7EmAw0biKzlGhyPjDa8kriDY3NjCxMTUyNjcwtzUgT
+	VhLnVXuUFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBcU697I6rnzn95165yerE5fFwXsyJ
+	iXk9d11m8ln/Wighu3aP/5EMff71Drnmlcfn8UzaK8KgtFeoXN43VzF81tTZM1qe8/58yLpC
+	uErl36M5C273rLl3KHd5Wudx25tyilZlB3+c9OXN/XZk4rQLCVFOFQ/3s2gvydN+mzc37tWO
+	z5Uhiwo/nlBiKc5INNRiLipOBADLjRT0rAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jAd0jHlHBBttn8Vgsm3SXzWL+kXOs
+	Fr0LrrJZ7Nxyg81i0+NrrBaXd81hs5hxfh+TxZOFZ5gsFm39wm6x7uV0FovWvUfYLdbPeM1i
+	saNlNYsDr8emVZ1sHq9Wz2T12Lyk3mPn9wZ2j74tqxg9Pm+SC2CLamC0yUhNTEktUkjNS85P
+	ycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAG6VEmhLDGnFCgUkFhcrKRvh2lC
+	aIibrgVMY4Sub0gQXI+RARpIWMeY8evJI5aCbp6KE4tOMDYwdnJ1MXJySAiYSNx5+okFwhaT
+	uHBvPVsXIxeHkMAiRol5L56xQDhtTBJvTzSxg1SxCehKPHk/lxkkISLQzijx7+pDsBZmgclM
+	ErcWrQabJSzgK7H1QCsbiM0ioCrR+WQ+M4jNK+AuceHuPNYuRg6gfQoScybZgIQ5BTwkzs9Y
+	xw6xrRVo6JzPjBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7HZ9I7GFc1WBxi
+	FOBgVOLhnSAbGSzEmlhWXJl7iFGCg1lJhLfdNSpYiDclsbIqtSg/vqg0J7X4EGMy0FUTmaVE
+	k/OBqSKvJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaBQgLpiSWp2ampBalFMFuYODilGhgTDD/F
+	GK968Pf+4nc/p+17Yrm9un9a4fJvO5bvmat98mC155EDh7rzn/4SOzynY4Xv/7CmvFMSq8tl
+	th+b7Gk6LzST7faShcIxP5b4LJS/5b80LeG4XWpc15+DUxMrRTUPyO6c7Zi/NoL13Pnngpl+
+	FqwvzZ+tNEg7kzUx9a9908WqtT0LJn12VmIpzkg01GIuKk4EAHcD9aMLAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 10:49 PM, Paul E. McKenney wrote:
-> On Thu, Apr 24, 2014 at 03:40:29PM -0700, Randy Dunlap wrote:
->> On 04/24/14 13:08, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2014-04-24-13-07 has been uploaded to
->>>
->>>    http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> mmotm-readme.txt says
->>>
->>> README for mm-of-the-moment:
->>>
->>> http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
->>> more than once a week.
->>>
->>> You will need quilt to apply these patches to the latest Linus release (3.x
->>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
->>> http://ozlabs.org/~akpm/mmotm/series
->>>
->>
->> uml on x86_64 defconfig:
->>
->> drivers/built-in.o: In function `__handle_sysrq':
->> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
->> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
-> 
-> Hmmm...  Looks like Rik's patch needs declarations in rcupdate.h.
-> Not sure how I missed that...  :-/
+This patch updates samsung pmu (power management unit) binding information.
 
-There are declarations.  I seem to have misplaced them under some
-#ifdef though...
+CC: Leela Krishna Amudala <l.krishna@samsung.com>
+CC: Guenter Roeck <linux@roeck-us.net>
+CC: Rob Landley <rob@landley.net>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+---
+ Documentation/devicetree/bindings/arm/samsung/pmu.txt |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-I'll send Andrew a -fix patch, that addresses both this issue and
-Jiri's concern.
-
+diff --git a/Documentation/devicetree/bindings/arm/samsung/pmu.txt b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
+index f1f1552..ac9b45c 100644
+--- a/Documentation/devicetree/bindings/arm/samsung/pmu.txt
++++ b/Documentation/devicetree/bindings/arm/samsung/pmu.txt
+@@ -2,14 +2,21 @@ SAMSUNG Exynos SoC series PMU Registers
+ 
+ Properties:
+  - compatible : should contain two values. First value must be one from following list:
++		   - "samsung,exynos4210-pmu" - for Exynos4210 SoC,
++		   - "samsung,exynos4212-pmu" - for Exynos4212 SoC,
++		   - "samsung,exynos4412-pmu" - for Exynos4412 SoC,
+ 		   - "samsung,exynos5250-pmu" - for Exynos5250 SoC,
+ 		   - "samsung,exynos5420-pmu" - for Exynos5420 SoC.
+ 		second value must be always "syscon".
+ 
+  - reg : offset and length of the register set.
+ 
++ - samsung,syscon-phandle : reference to syscon node. This property points to syscon node
++		holding the PMU base address.
++
+ Example :
+ pmu_system_controller: system-controller@10040000 {
+ 	compatible = "samsung,exynos5250-pmu", "syscon";
+ 	reg = <0x10040000 0x5000>;
++	samsung,syscon-phandle = <&pmu_system_controller>;
+ };
 -- 
-All rights reversed
+1.7.10.4
+
