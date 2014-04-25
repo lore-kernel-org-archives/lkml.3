@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaDYHif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 03:38:35 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:38534 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaDYHid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 03:38:33 -0400
+	id S1752211AbaDYHjQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 03:39:16 -0400
+Received: from fieldses.org ([174.143.236.118]:54658 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751395AbaDYHjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 03:39:14 -0400
+Date: Fri, 25 Apr 2014 03:39:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Devel FS Linux <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Layton Jeff <jlayton@redhat.com>
+Subject: Re: nfsd bug fixes for 3.15
+Message-ID: <20140425073912.GA22295@fieldses.org>
+References: <20140424062516.GA8891@fieldses.org>
+ <CAHQdGtRfybuqsxiS=Hd4Stkm1ex13f6SeEk5XbQcy35UZStHRA@mail.gmail.com>
+ <20140424153116.GA15459@fieldses.org>
+ <20140424163414.GA16429@fieldses.org>
+ <CAHQdGtQ_WMRrEWb5Lq8zS7A6eeuN5_UrEtB9baOfciCbuNSLjA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL_Jsq+DwCBLoNYsgHnoLQgSMnSBDM5XH_xoWS-RWdmx-JBeXg@mail.gmail.com>
-References: <1398266889-17489-1-git-send-email-thierry.reding@gmail.com>
- <1398266889-17489-2-git-send-email-thierry.reding@gmail.com>
- <CACRpkdadAUXgC-K6be6SFFn2ZTvCqkTK7VRJEzpFdUbybKc3YA@mail.gmail.com> <CAL_Jsq+DwCBLoNYsgHnoLQgSMnSBDM5XH_xoWS-RWdmx-JBeXg@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 25 Apr 2014 16:38:12 +0900
-Message-ID: <CAAVeFuJuZQAhM9uz_ENY4vwvHMvdwz62+-AmNwuzgZH_=x7dow@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gpio: of: Allow -gpio suffix for property names
-To: Rob Herring <robherring2@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHQdGtQ_WMRrEWb5Lq8zS7A6eeuN5_UrEtB9baOfciCbuNSLjA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:06 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Thu, Apr 24, 2014 at 7:47 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Wed, Apr 23, 2014 at 5:28 PM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->>
->>> From: Thierry Reding <treding@nvidia.com>
->>>
->>> Many bindings use the -gpio suffix in property names. Support this in
->>> addition to the -gpios suffix when requesting GPIOs using the new
->>> descriptor-based API.
->>>
->>> Signed-off-by: Thierry Reding <treding@nvidia.com>
->>
->> Are the DT bindings really full of such ambiguity between
->> singular and plural? Examples?
->>
->> What happens in affected drivers today? It just doesn't work?
->
-> They mostly seem to use of_get_named_gpio.
+On Thu, Apr 24, 2014 at 12:46:36PM -0400, Trond Myklebust wrote:
+> On Thu, Apr 24, 2014 at 12:34 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > On Thu, Apr 24, 2014 at 11:31:16AM -0400, J. Bruce Fields wrote:
+> >> On Thu, Apr 24, 2014 at 06:51:03AM -0400, Trond Myklebust wrote:
+> >> > Hi Bruce,
+> >> >
+> >> > On Thu, Apr 24, 2014 at 2:25 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> >> > > Please pull the following bug fixes for 3.15 from:
+> >> > >
+> >> > >   git://linux-nfs.org/~bfields/linux.git for-3.15
+> >> > >
+> >> > > Three small nfsd bugfixes (including one locks.c fix for a bug triggered
+> >> > > only from nfsd).
+> >> > >
+> >> > > Jeff's patches are for long-existing problems that became easier to
+> >> > > trigger since the addition of vfs delegation support.
+> >> > >
+> >> > > --b.
+> >> > >
+> >> > > ----------------------------------------------------------------
+> >> > > J. Bruce Fields (1):
+> >> > >       Revert "nfsd4: fix nfs4err_resource in 4.1 case"
+> >> > >
+> >> >
+> >> > Wait. Why?
+> >>
+> >> Have you changed your mind since our previous discussion, or just
+> >> forgotten it?  (Or did I screw up and revert the wrong commit?)  See
+> >>
+> >>       http://mid.gmane.org/<BAD6904F-A82A-4FBC-807F-16560B2A23E0@primarydata.com>
+> >>
+> >> > NFS4ERR_RESOURCE breaks the Linux client.
+> >>
+> >> This returns us to pre-3.15 behavior so shouldn't introduce any new
+> >> breakage.
+> >>
+> >> Fundamentally the problem is that we're returning an error in cases that
+> >> shouldn't succeed, and rather than replacing one incorrect error by
+> >
+> > s/shouldn't/should/, apologies!--b.
+> >
+> >> another it seemed better to wait for a proper fix.
+> >>
+> >> --b.
+> 
+> I really shouldn't try to read my email before 8am (or at least not
+> before my third espresso). I was confusing this with the
+> NFS4ERR_STALE_STATEID problem that was merged as part of the same
+> pull.
+> Reverting the NFS4ERR_RESOURCE patch is fine.
 
-In an idea world of_get_named_gpio() would be gpiolib-private so
-people cannot come with their own custom-named DT GPIO properties.
-Given its broad usage this is not possible, but maybe we can at least
-do it for of_get_named_gpiod().
-
->
->>
->> Does that mean these bindings are not actively used by any
->> drivers yet so we could augment the bindings instead, or are
->> they already deployed so we must implement this?
->>
->> Would like a word from the DT people here...
->
-> Interestingly, there is not a single occurrence of '-gpio ' in
-> powerpc, but a bunch in ARM. In hindsight, we should have perhaps
-> enforced using -gpios only, but that doesn't really matter now. We
-> have -gpio in use, so we need to support it. That doesn't necessarily
-> mean this function has to support it. For example, this function could
-> a legacy method and some other function should be used instead
-> (of_get_named_gpio perhaps).
-
-It seems like we have to support that use-case indeed (many instances
-in arch/arm). The incentive for handling this in that function vs.
-user code is that having support here would allow drivers to directly
-use gpiod_get() and having it automatically handle GPIO properties
-like active-low instead of requiring user code to handle it by itself
-every time.
-
-Without this many drivers for devices using "-gpio" properties could
-not switch to the new gpiod interface.
-
-So as far as I'm concerned this code makes GPIO user-code easier. This
-is not to say that we should allow that "-gpio" suffix for new
-bindings.
-
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+Great, thanks.--b.
