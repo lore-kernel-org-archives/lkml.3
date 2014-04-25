@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaDYVeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:34:18 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60211 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaDYVeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:34:16 -0400
-Date: Fri, 25 Apr 2014 22:34:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kumar Gaurav <kumargauravgupta3@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: Clarification needed on use of put_user inside a loop
-Message-ID: <20140425213414.GC18016@ZenIV.linux.org.uk>
-References: <535A88D5.3030008@gmail.com>
+	id S1751507AbaDYVkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:40:00 -0400
+Received: from www.sr71.net ([198.145.64.142]:37162 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797AbaDYVj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 17:39:59 -0400
+Message-ID: <535AD62D.20509@sr71.net>
+Date: Fri, 25 Apr 2014 14:39:57 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535A88D5.3030008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mel Gorman <mgorman@suse.de>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 2/6] x86: mm: rip out complicated, out-of-date, buggy
+ TLB flushing
+References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182421.DFAAD16A@viggo.jf.intel.com> <20140424084552.GQ23991@suse.de>
+In-Reply-To: <20140424084552.GQ23991@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 09:39:57PM +0530, Kumar Gaurav wrote:
+On 04/24/2014 01:45 AM, Mel Gorman wrote:
+>> > +/*
+>> > + * See Documentation/x86/tlb.txt for details.  We choose 33
+>> > + * because it is large enough to cover the vast majority (at
+>> > + * least 95%) of allocations, and is small enough that we are
+>> > + * confident it will not cause too much overhead.  Each single
+>> > + * flush is about 100 cycles, so this caps the maximum overhead
+>> > + * at _about_ 3,000 cycles.
+>> > + */
+>> > +/* in units of pages */
+>> > +unsigned long tlb_single_page_flush_ceiling = 1;
+>> > +
+> This comment is premature. The documentation file does not exist yet and
+> 33 means nothing yet. Out of curiousity though, how confident are you
+> that a TLB flush is generally 100 cycles across different generations
+> and manufacturers of CPUs? I'm not suggesting you change it or auto-tune
+> it, am just curious.
 
-> I have  found some codes in the driver which use put_user() in loop.
-> Can we avoid the overhead of checking the same memory area( where
-> put_user() writes) again n again using __put_user() in side loop and
-> checking permission using access_ok before entering the loop?
+First of all, I changed the units here at some point, and I screwed up
+the comments.  I meant 100 nanoseconds, *not* cycles.
 
->                         if (put_user(type, dst) ||
->                             put_user(chs_bytes, dst + 1))
->                                 return -EFAULT;
->                         dst += 2;
-			  ^^^^^^^^^
-Note that increment.  It's *not* "the same memory area" next time
-around.  Sure, you can check the whole range once before the loop
-and switch the stuff inside to __put_user()/__copy_to_user(), but
-it's not guaranteed to buy you any speedup.
+For the sake of completeness, here are the data on a Westmere CPU.  I'm
+not _quite_ sure why the <=5 pages cases are so slow per-page compared
+to when we're flushing larger numbers of pages.  (I also only printed
+out the flush sizes with >100 samples):
 
-BTW, you might be a bit confused about the work done by access_ok() - e.g.
-on an architectures with separate kernel and userland MMU contexts it might
-very well be a no-op (always return true).  It's *not* checking if user has
-permissions of some sort.
+The overall average was 151ns, and for 6 pages and up it was 107ns.
+
+     1  1560658    279861777 avg/page:   179
+     2   179981     85329139 avg/page:   237
+     3    99797    146972011 avg/page:   490
+     4   161470    133072233 avg/page:   206
+     5    44150     42142670 avg/page:   190
+     6    17364     12063833 avg/page:   115
+     7    12325      9899412 avg/page:   114
+     8     4202      3838077 avg/page:   114
+     9      811       990320 avg/page:   135
+    10     4448      4955283 avg/page:   111
+    11    69051     86723229 avg/page:   114
+    12      465       642204 avg/page:   115
+    13      157       226814 avg/page:   111
+    16      781      1741461 avg/page:   139
+    17     1506      2778201 avg/page:   108
+    18      110       211216 avg/page:   106
+    19    13322     27941893 avg/page:   110
+    21     1828      4092988 avg/page:   106
+    24     1566      4057605 avg/page:   107
+    25      246       646463 avg/page:   105
+    29      411      1275101 avg/page:   106
+    33     3191     11775818 avg/page:   111
+    52     3096     17297873 avg/page:   107
+    65     2244     15349445 avg/page:   105
+   129     2278     33246120 avg/page:   113
+   240    12181    305529055 avg/page:   104
+
