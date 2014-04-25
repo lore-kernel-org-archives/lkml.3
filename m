@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751669AbaDYApJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:45:09 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:44432 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbaDYApE (ORCPT
+	id S1751500AbaDYAoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:44:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:57252 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776AbaDYAme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:45:04 -0400
-Message-ID: <5359B00B.6080900@gmail.com>
-Date: Fri, 25 Apr 2014 08:44:59 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, len.brown@intel.com
-CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] kernel/power/hibernate.c: use unsigned variables instead
- of signed variables in swsusp_show_speed()
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Thu, 24 Apr 2014 20:42:34 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-21-5359af78c1b6
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
+        ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
+        k.kozlowski@samsung.com, kyungmin.park@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv4 3/9] extcon: max8997: Use devm_extcon_dev_allocate for
+ extcon_dev
+Date: Fri, 25 Apr 2014 09:42:18 +0900
+Message-id: <1398386544-16295-4-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
+References: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSolu5PjLY4OATJouD9+stpj58wmbx
+	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbA5fHplWdbB4vJ/5m8+jb
+	sorRY+qUv4wex29sZ/L4vEkugC2KyyYlNSezLLVI3y6BK2Pt1z2sBSc4K97962ZqYOzg6GLk
+	5JAQMJH4t2MrM4QtJnHh3nq2LkYuDiGBpYwSk+YuYYcpWvtoBxNEYjqjxLGL/8ESQgJNTBK7
+	L4aD2GwCWhL7X9xgA7FFBBQkNvc+YwVpYBZ4xihx4uoJsBXCAqESe34fZASxWQRUJV782Q0W
+	5xVwldj2+zPUNjmJD3segdmcAm4Sh070skAsc5V4dW4OE0TNLnaJ59fjIeYISHybfAiohgMo
+	Liux6QDUN5ISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmAknP73bMIO
+	xnsHrA8xJgONm8gsJZqcD4ykvJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphak
+	FsUXleakFh9iZOLglGpgjLYV2XbsxcmQ/VrrAr69skpwUMt9caWY53+swfvaov3K83K8rnHM
+	TJpm/25fnPSK2ftPpXt853FInH1jjtCdb9+KKz45Lea56BmwUz87+LFEReLehaw5Vusc/3xf
+	VRVU4/b8b3pa3pS17Ce0V1o8eTM9OWTiZ6kXTcaxL0uz5ixV6tvjr/SBW4mlOCPRUIu5qDgR
+	AKDmVjqaAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd2K9ZHBBs17zC0O3q+3mPrwCZvF
+	vyk32C2uf3nOatG/xcXi9QtDiwtPe9gszja9Ybe4vGsOm8XtxhVsDlwem1Z1snm8nPibzaNv
+	yypGj6lT/jJ6HL+xncnj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sL
+	cyWFvMTcVFslF58AXbfMHKDDlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGE
+	NYwZa7/uYS04wVnx7l83UwNjB0cXIyeHhICJxNpHO5ggbDGJC/fWs3UxcnEICUxnlDh28T87
+	SEJIoIlJYvfFcBCbTUBLYv+LG2wgtoiAgsTm3mesIA3MAs8YJU5cPcEMkhAWCJXY8/sgI4jN
+	IqAq8eLPbrA4r4CrxLbfn9khtslJfNjzCMzmFHCTOHSilwVimavEq3NzmCYw8i5gZFjFKJpa
+	kFxQnJSea6RXnJhbXJqXrpecn7uJERxpz6R3MK5qsDjEKMDBqMTDO0E2MliINbGsuDL3EKME
+	B7OSCK/yKqAQb0piZVVqUX58UWlOavEhxmSgqyYyS4km5wOTQF5JvKGxiZmRpZG5oYWRsTlp
+	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MK6P9XjheiOOk3HPjADWs9+le3/eF/GzLdfe
+	93xfTNGuzQsnq6ywmHVuf76Fla6X4A2Xyqt/4yqiT072tkr+xSM12S7E47nRwimrJ81gulTU
+	wBT6+L5u142kfS+yd+lNeJo7LT84ecKegN2M9aqLs5Y75Ri2efvZLH7GP7nj7dsLN1zaPnXv
+	C1ViKc5INNRiLipOBAAcXKVH+AIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_div() needs 'u64' type, or it reports warning. And negative number
-is meaningless for "speed", so change all signed to unsigned within
-swsusp_show_speed().
+This patch use devm_extcon_dev_allocate() to simplify the memory control
+of extcon device.
 
-The related warning (with allmodconfig for unicore32):
-
-    CC      kernel/power/hibernate.o
-  kernel/power/hibernate.c: In function ‘swsusp_show_speed’:
-  kernel/power/hibernate.c:237: warning: comparison of distinct pointer types lacks a cast
-
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- kernel/power/hibernate.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/extcon/extcon-max8997.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index f4f2073..afc11a0 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -228,19 +228,23 @@ static void platform_recover(int platform_mode)
- void swsusp_show_speed(struct timeval *start, struct timeval *stop,
- 			unsigned nr_pages, char *msg)
- {
--	s64 elapsed_centisecs64;
--	int centisecs;
--	int k;
--	int kps;
-+	u64 elapsed_centisecs64;
-+	unsigned int centisecs;
-+	unsigned int k;
-+	unsigned int kps;
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index 804a446..d9f7f1b 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -699,16 +699,15 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 	}
  
- 	elapsed_centisecs64 = timeval_to_ns(stop) - timeval_to_ns(start);
-+	/*
-+	 * If "(s64)elapsed_centisecs64 < 0", it will print long elapsed time,
-+	 * it is obvious enough for what went wrong.
-+	 */
- 	do_div(elapsed_centisecs64, NSEC_PER_SEC / 100);
- 	centisecs = elapsed_centisecs64;
- 	if (centisecs == 0)
- 		centisecs = 1;	/* avoid div-by-zero */
- 	k = nr_pages * (PAGE_SIZE / 1024);
- 	kps = (k * 100) / centisecs;
--	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
-+	printk(KERN_INFO "PM: %s %u kbytes in %u.%02u seconds (%u.%02u MB/s)\n",
- 			msg, k,
- 			centisecs / 100, centisecs % 100,
- 			kps / 1000, (kps % 1000) / 10);
+ 	/* External connector */
+-	info->edev = devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
+-				  GFP_KERNEL);
+-	if (!info->edev) {
++	info->edev = devm_extcon_dev_allocate(&pdev->dev, max8997_extcon_cable);
++	if (IS_ERR(info->edev)) {
+ 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
+ 		ret = -ENOMEM;
+ 		goto err_irq;
+ 	}
+ 	info->edev->name = DEV_NAME;
+ 	info->edev->dev.parent = &pdev->dev;
+-	info->edev->supported_cable = max8997_extcon_cable;
++
+ 	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
 -- 
-1.9.2.459.g68773ac
+1.8.0
+
