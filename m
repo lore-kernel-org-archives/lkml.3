@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052AbaDYJ5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:57:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41469 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaDYJ5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:57:33 -0400
-Date: Fri, 25 Apr 2014 11:57:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Yuyang Du <yuyang.du@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        arjan.van.de.ven@intel.com, Len Brown <len.brown@intel.com>,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com,
-        "Gross, Mark" <mark.gross@intel.com>,
-        Morten Rasmussen <morten.rasmussen@arm.com>
-Subject: Re: [RFC] A new CPU load metric for power-efficient scheduler: CPU
- ConCurrency
-Message-ID: <20140425095729.GG26782@laptop.programming.kicks-ass.net>
-References: <20140424193004.GA2467@intel.com>
- <CAKfTPtDUdmf3gpTJAqf49Hddpv2h4XQffz1OLpuhjuRpKOU7jg@mail.gmail.com>
+	id S1752242AbaDYJ5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:57:51 -0400
+Received: from fieldses.org ([174.143.236.118]:46023 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075AbaDYJ5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:57:42 -0400
+Date: Fri, 25 Apr 2014 05:57:39 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] please pull file locking changes for v3.15 (pile #2)
+Message-ID: <20140425095739.GB22295@fieldses.org>
+References: <20140424074557.57f91e16@tlielax.poochiereds.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKfTPtDUdmf3gpTJAqf49Hddpv2h4XQffz1OLpuhjuRpKOU7jg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140424074557.57f91e16@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 10:00:02AM +0200, Vincent Guittot wrote:
-> On 24 April 2014 21:30, Yuyang Du <yuyang.du@intel.com> wrote:
-> > Hi Ingo, PeterZ, and others,
-> >
-> > The current scheduler's load balancing is completely work-conserving. In some
-> > workload, generally low CPU utilization but immersed with CPU bursts of
-> > transient tasks, migrating task to engage all available CPUs for
-> > work-conserving can lead to significant overhead: cache locality loss,
-> > idle/active HW state transitional latency and power, shallower idle state,
-> > etc, which are both power and performance inefficient especially for today's
-> > low power processors in mobile.
-> >
-> > This RFC introduces a sense of idleness-conserving into work-conserving (by
-> > all means, we really don't want to be overwhelming in only one way). But to
-> > what extent the idleness-conserving should be, bearing in mind that we don't
-> > want to sacrifice performance? We first need a load/idleness indicator to that
-> > end.
-> >
-> > Thanks to CFS's "model an ideal, precise multi-tasking CPU", tasks can be seen
-> > as concurrently running (the tasks in the runqueue). So it is natural to use
-> > task concurrency as load indicator. Having said that, we do two things:
-> >
-> > 1)      Divide continuous time into periods of time, and average task concurrency
-> > in period, for tolerating the transient bursts:
-> > a = sum(concurrency * time) / period
-> > 2)      Exponentially decay past periods, and synthesize them all, for hysteresis
-> > to load drops or resilience to load rises (let f be decaying factor, and a_x
-> > the xth period average since period 0):
-> > s = a_n + f^1 * a_n-1 + f^2 * a_n-2 +, .....,+ f^(n-1) * a_1 + f^n * a_0
+On Thu, Apr 24, 2014 at 07:45:57AM -0400, Jeff Layton wrote:
 > 
-> In the original version of entity load tracking patchset, there was a
-> usage_avg_sum field that was counting the time the task was really
-> running on the CPU. By combining this (disappeared ) field with the
-> runnable_avg_sum, you should have similar concurrency value but with
-> the current load tracking mechanism (instead of creating new one).
+> The following changes since commit 55101e2d6ce1c780f6ee8fee5f37306971aac6cd:
+> 
+>   Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2014-04-14 16:21:28 -0700)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.samba.org/jlayton/linux.git tags/locks-v3.15-2
+> 
+> for you to fetch changes up to cff2fce58b2b0f59089e7edcdc38803d65057b9f:
+> 
+>   locks: rename FL_FILE_PVT and IS_FILE_PVT to use "*_OFDLCK" instead (2014-04-23 16:17:03 -0400)
+> 
+> ----------------------------------------------------------------
+> File locking related bugfixes for v3.15 (pile #2)
+> 
+> - fix for a long-standing bug in __break_lease that can cause soft lockups
+> - renaming of file-private locks to "open file description" locks, and the
+>   command macros to more visually distinct names.
+> 
+> The fix for __break_lease is also in the pile of patches for which Bruce
+> sent a pull request, but I assume that your merge procedure will handle
+> that correctly.
+> 
+> For the other patches, I don't like the fact that we need to rename this
+> stuff at this late stage, but it should be settled now (hopefully).
+> 
+> ----------------------------------------------------------------
+> Jeff Layton (3):
+>       locks: allow __break_lease to sleep even when break_time is 0
+>       locks: rename file-private locks to "open file description locks"
 
-I'm not entire sure understood what was proposed, but I suspect its very
-close to what I told you to do with the capacity muck. Use avg
-utilization instead of 1 active task per core.
+Nit: they're "descriptors", not "descriptions".
 
-And yes, the current load tracking should be pretty close.
+But since that only affects comments and changelogs (not even the macros
+names, which are using OFD), that's a very nitty nit....
 
-We just need to come up another way of doing SMT again, bloody
-inconvenient SMT.
+--b.
+
+>       locks: rename FL_FILE_PVT and IS_FILE_PVT to use "*_OFDLCK" instead
+> 
+>  arch/arm/kernel/sys_oabi-compat.c |  6 +++---
+>  fs/compat.c                       | 14 +++++++-------
+>  fs/fcntl.c                        | 12 ++++++------
+>  fs/locks.c                        | 55 +++++++++++++++++++++++++++----------------------------
+>  include/linux/fs.h                |  2 +-
+>  include/uapi/asm-generic/fcntl.h  | 20 ++++++++++----------
+>  security/selinux/hooks.c          |  6 +++---
+>  7 files changed, 57 insertions(+), 58 deletions(-)
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
