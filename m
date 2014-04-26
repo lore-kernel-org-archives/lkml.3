@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897AbaDZMIU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:08:20 -0400
-Received: from imap.devoid-pointer.net ([31.31.77.140]:49876 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569AbaDZMDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:41 -0400
+	id S1752725AbaDZMIT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:08:19 -0400
+Received: from prifuk.cz ([31.31.77.140]:49887 "EHLO smtp.devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577AbaDZMDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 08:03:45 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 14/24] hid: Port hid-pl to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:51 +0200
-Message-Id: <1398513696-12626-15-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 16/24] hid: Port hid-sony to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:53 +0200
+Message-Id: <1398513696-12626-17-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,100 +24,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-pl to ff-memless-next
+Port hid-sony to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig  |  2 +-
- drivers/hid/hid-pl.c | 38 ++++++++++++++++++++++++++------------
- 2 files changed, 27 insertions(+), 13 deletions(-)
+ drivers/hid/Kconfig    |  2 +-
+ drivers/hid/hid-sony.c | 24 ++++++++++++++++++------
+ 2 files changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index eb0c7f1..42904e4 100644
+index 9260d14..e97c382 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -509,7 +509,7 @@ config HID_PANTHERLORD
- config PANTHERLORD_FF
- 	bool "Pantherlord force feedback support"
- 	depends on HID_PANTHERLORD
+@@ -634,7 +634,7 @@ config HID_SONY
+ config SONY_FF
+ 	bool "Sony PS2/3/4 accessories force feedback support" 
+ 	depends on HID_SONY
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	  Say Y here if you have a PantherLord/GreenAsia based game controller
- 	  or adapter and want to enable force feedback support for it.
-diff --git a/drivers/hid/hid-pl.c b/drivers/hid/hid-pl.c
-index 2dcd7d9..9b539d5 100644
---- a/drivers/hid/hid-pl.c
-+++ b/drivers/hid/hid-pl.c
-@@ -44,9 +44,12 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/hid.h>
+ 	Say Y here if you have a Sony PS2/3/4 accessory and want to enable
+ 	force feedback support for it.
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 908de27..95bb2e1 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -34,6 +34,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/list.h>
+ #include <linux/input/mt.h>
 +#include <linux/input/ff-memless-next.h>
  
  #include "hid-ids.h"
  
+@@ -53,6 +54,7 @@
+ #define SONY_BATTERY_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
+ #define SONY_FF_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
+ 
 +#define FF_UPDATE_RATE 50
-+
- #ifdef CONFIG_PANTHERLORD_FF
+ #define MAX_LEDS 4
  
- struct plff_device {
-@@ -57,24 +60,35 @@ struct plff_device {
- };
+ static const u8 sixaxis_rdesc_fixup[] = {
+@@ -1308,16 +1310,25 @@ static void dualshock4_state_worker(struct work_struct *work)
  
- static int hid_plff_play(struct input_dev *dev, void *data,
--			 struct ff_effect *effect)
-+			 const struct mlnx_effect_command *command)
+ #ifdef CONFIG_SONY_FF
+ static int sony_play_effect(struct input_dev *dev, void *data,
+-			    struct ff_effect *effect)
++			    const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct plff_device *plff = data;
+ 	struct sony_sc *sc = hid_get_drvdata(hid);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int left, right;
  
--	left = effect->u.rumble.strong_magnitude;
--	right = effect->u.rumble.weak_magnitude;
--	debug("called with 0x%04x 0x%04x", left, right);
--
--	left = left * plff->maxval / 0xffff;
--	right = right * plff->maxval / 0xffff;
+-	if (effect->type != FF_RUMBLE)
+-		return 0;
+ 
+-	sc->left = effect->u.rumble.strong_magnitude / 256;
+-	sc->right = effect->u.rumble.weak_magnitude / 256;
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		left = rumble_force->strong;
-+		right = rumble_force->weak;
-+		debug("called with 0x%04x 0x%04x", left, right);
-+
-+		left = left * plff->maxval / 0xffff;
-+		right = right * plff->maxval / 0xffff;
-+
-+		*plff->strong = left;
-+		*plff->weak = right;
-+		debug("running with 0x%02x 0x%02x", left, right);
++		sc->left = rumble_force->strong / 256;
++		sc->right = rumble_force->weak / 256;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		*plff->strong = 0;
-+		*plff->weak = 0;
++		sc->left = 0;
++		sc->right = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
--	*plff->strong = left;
--	*plff->weak = right;
--	debug("running with 0x%02x 0x%02x", left, right);
- 	hid_hw_request(hid, plff->report, HID_REQ_SET_REPORT);
--
+ 	schedule_work(&sc->state_worker);
  	return 0;
+@@ -1330,7 +1341,7 @@ static int sony_init_ff(struct hid_device *hdev)
+ 	struct input_dev *input_dev = hidinput->input;
+ 
+ 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
+-	return input_ff_create_memless(input_dev, NULL, sony_play_effect);
++	return input_ff_create_mlnx(input_dev, NULL, sony_play_effect, FF_UPDATE_RATE);
  }
  
-@@ -160,7 +174,7 @@ static int plff_init(struct hid_device *hid)
- 
- 		set_bit(FF_RUMBLE, dev->ffbit);
- 
--		error = input_ff_create_memless(dev, plff, hid_plff_play);
-+		error = input_ff_create_mlnx(dev, plff, hid_plff_play, FF_UPDATE_RATE);
- 		if (error) {
- 			kfree(plff);
- 			return error;
+ #else
+@@ -1762,6 +1773,7 @@ static const struct hid_device_id sony_devices[] = {
+ 		.driver_data = DUALSHOCK4_CONTROLLER_USB },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS4_CONTROLLER),
+ 		.driver_data = DUALSHOCK4_CONTROLLER_BT },
++
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, sony_devices);
 -- 
 1.9.2
 
