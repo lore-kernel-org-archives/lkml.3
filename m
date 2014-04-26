@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaDZMDb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:03:31 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49852 "EHLO
+	id S1752329AbaDZMDP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:03:15 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49837 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346AbaDZMDU (ORCPT
+	with ESMTP id S1752258AbaDZMDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:20 -0400
+	Sat, 26 Apr 2014 08:03:10 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 09/24] hid: Port hid-dr to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:46 +0200
-Message-Id: <1398513696-12626-10-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 06/24] input: Port pm8xxx-vibrator to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:43 +0200
+Message-Id: <1398513696-12626-7-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,123 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-dr to ff-memless-next
+Port pm8xxx-vibrator to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig  |  2 +-
- drivers/hid/hid-dr.c | 59 ++++++++++++++++++++++++++++++++--------------------
- 2 files changed, 37 insertions(+), 24 deletions(-)
+ drivers/input/misc/Kconfig           |  2 +-
+ drivers/input/misc/pm8xxx-vibrator.c | 28 +++++++++++++++++++---------
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index a78b5d8..1d4180c 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -205,7 +205,7 @@ config HID_DRAGONRISE
- config DRAGONRISE_FF
- 	bool "DragonRise Inc. force feedback"
- 	depends on HID_DRAGONRISE
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index a89dc22..7b962e4 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -108,7 +108,7 @@ config INPUT_PCSPKR
+ config INPUT_PM8XXX_VIBRATOR
+ 	tristate "Qualcomm PM8XXX vibrator support"
+ 	depends on MFD_PM8XXX
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
- 	---help---
- 	Say Y here if you want to enable force feedback support for DragonRise Inc.
- 	game controllers.
-diff --git a/drivers/hid/hid-dr.c b/drivers/hid/hid-dr.c
-index ce06444..b95c676 100644
---- a/drivers/hid/hid-dr.c
-+++ b/drivers/hid/hid-dr.c
-@@ -31,8 +31,10 @@
+ 	help
+ 	  This option enables device driver support for the vibrator
+ 	  on Qualcomm PM8xxx chip. This driver supports ff-memless interface
+diff --git a/drivers/input/misc/pm8xxx-vibrator.c b/drivers/input/misc/pm8xxx-vibrator.c
+index 6a915ba..1796f4f 100644
+--- a/drivers/input/misc/pm8xxx-vibrator.c
++++ b/drivers/input/misc/pm8xxx-vibrator.c
+@@ -17,6 +17,7 @@
+ #include <linux/input.h>
  #include <linux/slab.h>
- #include <linux/hid.h>
- #include <linux/module.h>
+ #include <linux/regmap.h>
 +#include <linux/input/ff-memless-next.h>
  
- #include "hid-ids.h"
-+#define FF_UPDATE_RATE 50
+ #define VIB_DRV			0x4A
  
- #ifdef CONFIG_DRAGONRISE_FF
+@@ -29,7 +30,7 @@
+ #define VIB_MAX_LEVELS		(VIB_MAX_LEVEL_mV - VIB_MIN_LEVEL_mV)
  
-@@ -41,38 +43,49 @@ struct drff_device {
- };
- 
- static int drff_play(struct input_dev *dev, void *data,
--				 struct ff_effect *effect)
-+			const struct mlnx_effect_command *command)
+ #define MAX_FF_SPEED		0xff
+-
++#define FF_UPDATE_RATE		50
+ /**
+  * struct pm8xxx_vib - structure to hold vibrator data
+  * @vib_input_dev: input device supporting force feedback
+@@ -128,14 +129,23 @@ static void pm8xxx_vib_close(struct input_dev *dev)
+  * Currently this driver supports only rumble effects.
+  */
+ static int pm8xxx_vib_play_effect(struct input_dev *dev, void *data,
+-				  struct ff_effect *effect)
++				  const struct mlnx_command *command)
  {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct drff_device *drff = data;
+ 	struct pm8xxx_vib *vib = input_get_drvdata(dev);
+-
+-	vib->speed = effect->u.rumble.strong_magnitude >> 8;
+-	if (!vib->speed)
+-		vib->speed = effect->u.rumble.weak_magnitude >> 9;
+-
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int strong, weak;
- 
--	strong = effect->u.rumble.strong_magnitude;
--	weak = effect->u.rumble.weak_magnitude;
-+	strong = rumble_force->strong;
-+	weak = rumble_force->weak;
- 
- 	dbg_hid("called with 0x%04x 0x%04x", strong, weak);
- 
--	if (strong || weak) {
--		strong = strong * 0xff / 0xffff;
--		weak = weak * 0xff / 0xffff;
--
--		/* While reverse engineering this device, I found that when
--		   this value is set, it causes the strong rumble to function
--		   at a near maximum speed, so we'll bypass it. */
--		if (weak == 0x0a)
--			weak = 0x0b;
--
--		drff->report->field[0]->value[0] = 0x51;
--		drff->report->field[0]->value[1] = 0x00;
--		drff->report->field[0]->value[2] = weak;
--		drff->report->field[0]->value[4] = strong;
--		hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
--
--		drff->report->field[0]->value[0] = 0xfa;
--		drff->report->field[0]->value[1] = 0xfe;
--	} else {
++
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		if (strong || weak) {
-+			strong = strong * 0xff / 0xffff;
-+			weak = weak * 0xff / 0xffff;
-+
-+			/* While reverse engineering this device, I found that when
-+			this value is set, it causes the strong rumble to function
-+			at a near maximum speed, so we'll bypass it. */
-+			if (weak == 0x0a)
-+				weak = 0x0b;
-+
-+			drff->report->field[0]->value[0] = 0x51;
-+			drff->report->field[0]->value[1] = 0x00;
-+			drff->report->field[0]->value[2] = weak;
-+			drff->report->field[0]->value[4] = strong;
-+			hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
-+
-+			drff->report->field[0]->value[0] = 0xfa;
-+			drff->report->field[0]->value[1] = 0xfe;
-+		} else {
-+			drff->report->field[0]->value[0] = 0xf3;
-+			drff->report->field[0]->value[1] = 0x00;
-+		}
++		vib->speed = rumble_force->strong >> 8;
++		if (!vib->speed)
++			vib->speed = rumble_force->weak >> 9;
 +		break;
 +	case MLNX_STOP_RUMBLE:
- 		drff->report->field[0]->value[0] = 0xf3;
- 		drff->report->field[0]->value[1] = 0x00;
++		vib->speed = 0;
 +		break;
 +	default:
 +		return -EINVAL;
- 	}
++	}
+ 	schedule_work(&vib->work);
  
- 	drff->report->field[0]->value[2] = 0x00;
-@@ -116,7 +129,7 @@ static int drff_init(struct hid_device *hid)
+ 	return 0;
+@@ -181,8 +191,8 @@ static int pm8xxx_vib_probe(struct platform_device *pdev)
+ 	input_set_drvdata(input_dev, vib);
+ 	input_set_capability(vib->vib_input_dev, EV_FF, FF_RUMBLE);
  
- 	set_bit(FF_RUMBLE, dev->ffbit);
- 
--	error = input_ff_create_memless(dev, drff, drff_play);
-+	error = input_ff_create_mlnx(dev, drff, drff_play, FF_UPDATE_RATE);
+-	error = input_ff_create_memless(input_dev, NULL,
+-					pm8xxx_vib_play_effect);
++	error = input_ff_create_mlnx(input_dev, NULL,
++				     pm8xxx_vib_play_effect, FF_UPDATE_RATE);
  	if (error) {
- 		kfree(drff);
- 		return error;
+ 		dev_err(&pdev->dev,
+ 			"couldn't register vibrator as FF device\n");
 -- 
 1.9.2
 
