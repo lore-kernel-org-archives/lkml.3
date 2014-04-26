@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaDZQfk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 12:35:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35532 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaDZQfj (ORCPT
+	id S1752335AbaDZQgg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 12:36:36 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:40261 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaDZQge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 12:35:39 -0400
-Date: Sat, 26 Apr 2014 17:35:37 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Lionel Debroux <lionel_debroux@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drm: make variable named "refcount" atomic, like most
- refcounts in the kernel.
-Message-ID: <20140426163537.GF18016@ZenIV.linux.org.uk>
-References: <248367.21250.bm@smtp144.mail.ir2.yahoo.com>
+	Sat, 26 Apr 2014 12:36:34 -0400
+Message-ID: <535BE096.2060407@cogentembedded.com>
+Date: Sat, 26 Apr 2014 20:36:38 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <248367.21250.bm@smtp144.mail.ir2.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/10] ARM: dts: DRA7: Add DT node for DES IP
+References: <1398466968-29506-1-git-send-email-joelf@ti.com> <1398466968-29506-8-git-send-email-joelf@ti.com>
+In-Reply-To: <1398466968-29506-8-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 06:06:15PM +0200, Lionel Debroux wrote:
-> Based on PaX.
+Hello.
 
-Lovely - cargo-cult at its finest.  "Most refcounts are atomic, must be
-good medicine.  Shaman has spoken".
+On 26-04-2014 3:02, Joel Fernandes wrote:
 
-> -	int refcount;
-> +	atomic_t refcount;
+> DRA7xx SoCs have a DES3DES IP. Add DT data for the same.
 
-... therefore, all places that modify that sucker will have to be visible
-in the patch.  And those are
-  
-> -	++item->refcount;
-> +	atomic_inc(&item->refcount);
->  	ref->object = item->object;
->  	mutex_unlock(&item->mutex);
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> ---
+>   arch/arm/boot/dts/dra7.dtsi |   11 +++++++++++
+>   1 file changed, 11 insertions(+)
 
-and
+> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+> index 1c0f8e1..0533b89 100644
+> --- a/arch/arm/boot/dts/dra7.dtsi
+> +++ b/arch/arm/boot/dts/dra7.dtsi
+> @@ -789,6 +789,17 @@
+>   			dma-names = "tx0", "rx0";
+>   			status = "disabled";
+>   		};
+> +
+> +		des: des@480a5000 {
 
->  	mutex_lock(&item->mutex);
-> -	BUG_ON(item->refcount == 0);
-> +	BUG_ON(atomic_read(&item->refcount) == 0);
->  	BUG_ON(ref->object != item->object);
-> -	if (--item->refcount == 0) {
-> +	if (atomic_dec_and_test(&item->refcount)) {
->  		ref->release(ref);
->  		item->object = NULL;
+    Shouldn't the node name be "crypto@480a5000", according to the ePAPR standard?
 
-Mind explaining how could we manage to reach either without item->mutex
-being held, serializing the modifications?
+WBR, Sergei
 
-NAK, in case it's not obvious from the above...
