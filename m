@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaDZQGV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 12:06:21 -0400
-Received: from nm9-vm2.bullet.mail.ir2.yahoo.com ([212.82.96.145]:39954 "EHLO
-	nm9-vm2.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751706AbaDZQGU (ORCPT
+	id S1752205AbaDZQHG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 12:07:06 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:43821 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaDZQHD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 12:06:20 -0400
-X-Yahoo-Newman-Id: 248367.21250.bm@smtp144.mail.ir2.yahoo.com
-Message-ID: <248367.21250.bm@smtp144.mail.ir2.yahoo.com>
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 7UQVfE0VM1l.6Gwbwk30RTolIsPr89EVENkAwq8.1hJIYe8
- CybpI1VY8bx4Tf9Mv2u6eDVFYdpcYjcZVM5Fssyv6t9XcU97IvbtnY_eAgZz
- 9Q64oxXRTn04dM73UkFpAaTV0D39yptS8B1one59JbmkT4_.WIycpukPAOHN
- TdFul5cxD9ujsT3wXCKZNK3qSyOCnQOVAxBr3KjeKeswPmDNTSJiS_Eft12e
- 6RZy9p0KV9Px_mDzx708yVAIUDjv_AD8.XpY01cmaaL2qloDQDIIqbCA.s9e
- ECuVcMlRMFDbS85HBK_e1ZUgcWnd4TXHgKb0eMu7a186ZkfG40ljk8iOIjW8
- mMr2343pS9VBGGws.ewSpfQhvHBjYrLhRtdRZpstgSExzuPiINbmEKOzb2p.
- X.MA8cNFmSCjNfVfhpaJxAqs5ZGfWep9HyBWalSSbnDrmhbMR3ycuoT5AE6l
- W.Cy4Fsm_4Z9taABFTtZNjvItbXlLi1HCfmeSfb7YN531XgC2nFYB0IjVd3E
- GMvNVNWaif0VRn6FnPh9ZXM3uBwo6PiZeVdtlmG4-
-X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
-X-Rocket-Received: from asus2 (lionel_debroux@82.122.199.38 with plain [188.125.69.59])
-        by smtp144.mail.ir2.yahoo.com with SMTP; 26 Apr 2014 16:06:18 +0000 UTC
-Date: Sat, 26 Apr 2014 18:06:15 +0200
-From: Lionel Debroux <lionel_debroux@yahoo.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH] drm: make variable named "refcount" atomic, like most refcounts in the kernel.
+	Sat, 26 Apr 2014 12:07:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAM7CM0kCexA=JjGw4XqhRQ+xPEss60SPpqPgSXgxANcnVh7ZWA@mail.gmail.com>
+References: <1398331919-28321-1-git-send-email-leela.krishna@linaro.org>
+	<5358DF50.9010106@linaro.org>
+	<CAM7CM0kCexA=JjGw4XqhRQ+xPEss60SPpqPgSXgxANcnVh7ZWA@mail.gmail.com>
+Date: Sat, 26 Apr 2014 21:37:01 +0530
+Message-ID: <CAM4voa=OrMHtB+Rza=5x74w8SuCg0VG8ZA_XLPzmDPU5cfEjyg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Add generic cpu power control functions for exynos
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: Leela Krishna Amudala <leela.krishna@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "nicolas.pitre" <nicolas.pitre@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on PaX.
+Hi Leela,
 
----
+On Thu, Apr 24, 2014 at 3:56 PM, Leela Krishna Amudala
+<leela.krishna@linaro.org> wrote:
+> Hi Abhilash,
+>
+> If you are okay with this patchset you can rebase/merge it with your
+> mcpm patches.
 
->From 7c712cadd97d43d03ff3d7ca04fd85bd8c6eb34a Mon Sep 17 00:00:00 2001
-From: Lionel Debroux <lionel_debroux@yahoo.fr>
-Date: Sat, 26 Apr 2014 15:53:55 +0200
-Subject: drm: make variable named "refcount" atomic, like most refcounts in
- the kernel.
+I have added these patches as part of my mcpm v3 patchset.
 
-Extracted from the PaX patch.
-
-Signed-off-by: Lionel Debroux <lionel_debroux@yahoo.fr>
-Cc: PaX Team <pageexec@freemail.hu>
----
- drivers/gpu/drm/drm_global.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_global.c b/drivers/gpu/drm/drm_global.c
-index 3d2e91c..d31c4c9 100644
---- a/drivers/gpu/drm/drm_global.c
-+++ b/drivers/gpu/drm/drm_global.c
-@@ -36,7 +36,7 @@
- struct drm_global_item {
- 	struct mutex mutex;
- 	void *object;
--	int refcount;
-+	atomic_t refcount;
- };
- 
- static struct drm_global_item glob[DRM_GLOBAL_NUM];
-@@ -49,7 +49,7 @@ void drm_global_init(void)
- 		struct drm_global_item *item = &glob[i];
- 		mutex_init(&item->mutex);
- 		item->object = NULL;
--		item->refcount = 0;
-+		atomic_set(&item->refcount, 0);
- 	}
- }
- 
-@@ -59,7 +59,7 @@ void drm_global_release(void)
- 	for (i = 0; i < DRM_GLOBAL_NUM; ++i) {
- 		struct drm_global_item *item = &glob[i];
- 		BUG_ON(item->object != NULL);
--		BUG_ON(item->refcount != 0);
-+		BUG_ON(atomic_read(&item->refcount) != 0);
- 	}
- }
- 
-@@ -69,7 +69,7 @@ int drm_global_item_ref(struct drm_global_reference *ref)
- 	struct drm_global_item *item = &glob[ref->global_type];
- 
- 	mutex_lock(&item->mutex);
--	if (item->refcount == 0) {
-+	if (atomic_read(&item->refcount) == 0) {
- 		item->object = kzalloc(ref->size, GFP_KERNEL);
- 		if (unlikely(item->object == NULL)) {
- 			ret = -ENOMEM;
-@@ -82,7 +82,7 @@ int drm_global_item_ref(struct drm_global_reference *ref)
- 			goto out_err;
- 
- 	}
--	++item->refcount;
-+	atomic_inc(&item->refcount);
- 	ref->object = item->object;
- 	mutex_unlock(&item->mutex);
- 	return 0;
-@@ -98,9 +98,9 @@ void drm_global_item_unref(struct drm_global_reference *ref)
- 	struct drm_global_item *item = &glob[ref->global_type];
- 
- 	mutex_lock(&item->mutex);
--	BUG_ON(item->refcount == 0);
-+	BUG_ON(atomic_read(&item->refcount) == 0);
- 	BUG_ON(ref->object != item->object);
--	if (--item->refcount == 0) {
-+	if (atomic_dec_and_test(&item->refcount)) {
- 		ref->release(ref);
- 		item->object = NULL;
- 	}
--- 
-1.9.1.506.g7bf272c
-
+Thanks,
+Abhilash
+>
+> Best Wishes,
+> Leela Krishna.
+>
+> On Thu, Apr 24, 2014 at 3:24 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>>
+>> Hi Abhilash and Leela,
+>>
+>> FYI I think you are working on similar patches.
+>>
+>>
+>> On 04/24/2014 11:31 AM, Leela Krishna Amudala wrote:
+>>> This patchset adds the generic cpu power control functions for
+>>>
+>>> exynos based SoCs to power up/down and to know the status of the cpu.
+>>>
+>>> Note: This series has been rebased on 3.15-rc1 and tested on
+>>> Exynos based Origen(Cortex-A9) and Arndale-octa(Cortex A7,A15) boards.
+>>>
+>>> Leela Krishna Amudala (2):
+>>>    ARM: EXYNOS: Add generic cpu power control functions for all exynos
+>>>      based SoCs
+>>>    ARM: EXYNOS: use generic exynos cpu power control functions
+>>>
+>>>   arch/arm/mach-exynos/common.h   |    3 +++
+>>>   arch/arm/mach-exynos/platsmp.c  |    9 +++------
+>>>   arch/arm/mach-exynos/pm.c       |   36
+>>> ++++++++++++++++++++++++++++++++++++
+>>>   arch/arm/mach-exynos/regs-pmu.h |    6 ++++++
+>>>   4 files changed, 48 insertions(+), 6 deletions(-)
+>>>
+>>
+>>
+>> --
+>>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>>
+>> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+>> <http://twitter.com/#!/linaroorg> Twitter |
+>> <http://www.linaro.org/linaro-blog/> Blog
+>>
