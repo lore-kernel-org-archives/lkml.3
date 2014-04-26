@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaDZMDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:03:35 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49857 "EHLO
+	id S1752458AbaDZMDb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:03:31 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49852 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346AbaDZMDc (ORCPT
+	with ESMTP id S1752346AbaDZMDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:32 -0400
+	Sat, 26 Apr 2014 08:03:20 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 10/24] hid: Port hid-gaff to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:47 +0200
-Message-Id: <1398513696-12626-11-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 09/24] hid: Port hid-dr to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:46 +0200
+Message-Id: <1398513696-12626-10-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,90 +25,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-gaff to ff-memless-next
+Port hid-dr to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-gaff.c | 32 +++++++++++++++++++++++---------
- 2 files changed, 24 insertions(+), 10 deletions(-)
+ drivers/hid/Kconfig  |  2 +-
+ drivers/hid/hid-dr.c | 59 ++++++++++++++++++++++++++++++++--------------------
+ 2 files changed, 37 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 1d4180c..4c59a88 100644
+index a78b5d8..1d4180c 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -667,7 +667,7 @@ config HID_GREENASIA
- config GREENASIA_FF
- 	bool "GreenAsia (Product ID 0x12) force feedback support"
- 	depends on HID_GREENASIA
+@@ -205,7 +205,7 @@ config HID_DRAGONRISE
+ config DRAGONRISE_FF
+ 	bool "DragonRise Inc. force feedback"
+ 	depends on HID_DRAGONRISE
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Say Y here if you have a GreenAsia (Product ID 0x12) based game controller
- 	(like MANTA Warrior MM816 and SpeedLink Strike2 SL-6635) or adapter
-diff --git a/drivers/hid/hid-gaff.c b/drivers/hid/hid-gaff.c
-index 2d8cead..f2f70c1 100644
---- a/drivers/hid/hid-gaff.c
-+++ b/drivers/hid/hid-gaff.c
-@@ -31,8 +31,11 @@
+ 	Say Y here if you want to enable force feedback support for DragonRise Inc.
+ 	game controllers.
+diff --git a/drivers/hid/hid-dr.c b/drivers/hid/hid-dr.c
+index ce06444..b95c676 100644
+--- a/drivers/hid/hid-dr.c
++++ b/drivers/hid/hid-dr.c
+@@ -31,8 +31,10 @@
  #include <linux/slab.h>
  #include <linux/hid.h>
  #include <linux/module.h>
 +#include <linux/input/ff-memless-next.h>
+ 
  #include "hid-ids.h"
- 
 +#define FF_UPDATE_RATE 50
-+
- #ifdef CONFIG_GREENASIA_FF
  
- struct gaff_device {
-@@ -40,19 +43,30 @@ struct gaff_device {
+ #ifdef CONFIG_DRAGONRISE_FF
+ 
+@@ -41,38 +43,49 @@ struct drff_device {
  };
  
- static int hid_gaff_play(struct input_dev *dev, void *data,
--			 struct ff_effect *effect)
-+			 const struct mlnx_effect_command *command)
+ static int drff_play(struct input_dev *dev, void *data,
+-				 struct ff_effect *effect)
++			const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct gaff_device *gaff = data;
+ 	struct drff_device *drff = data;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int left, right;
+ 	int strong, weak;
  
--	left = effect->u.rumble.strong_magnitude;
--	right = effect->u.rumble.weak_magnitude;
+-	strong = effect->u.rumble.strong_magnitude;
+-	weak = effect->u.rumble.weak_magnitude;
++	strong = rumble_force->strong;
++	weak = rumble_force->weak;
+ 
+ 	dbg_hid("called with 0x%04x 0x%04x", strong, weak);
+ 
+-	if (strong || weak) {
+-		strong = strong * 0xff / 0xffff;
+-		weak = weak * 0xff / 0xffff;
 -
--	dbg_hid("called with 0x%04x 0x%04x", left, right);
+-		/* While reverse engineering this device, I found that when
+-		   this value is set, it causes the strong rumble to function
+-		   at a near maximum speed, so we'll bypass it. */
+-		if (weak == 0x0a)
+-			weak = 0x0b;
 -
--	left = left * 0xfe / 0xffff;
--	right = right * 0xfe / 0xffff;
+-		drff->report->field[0]->value[0] = 0x51;
+-		drff->report->field[0]->value[1] = 0x00;
+-		drff->report->field[0]->value[2] = weak;
+-		drff->report->field[0]->value[4] = strong;
+-		hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
+-
+-		drff->report->field[0]->value[0] = 0xfa;
+-		drff->report->field[0]->value[1] = 0xfe;
+-	} else {
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		left = rumble_force->strong;
-+		right = rumble_force->weak;
++		if (strong || weak) {
++			strong = strong * 0xff / 0xffff;
++			weak = weak * 0xff / 0xffff;
 +
-+		dbg_hid("called with 0x%04x 0x%04x", left, right);
++			/* While reverse engineering this device, I found that when
++			this value is set, it causes the strong rumble to function
++			at a near maximum speed, so we'll bypass it. */
++			if (weak == 0x0a)
++				weak = 0x0b;
 +
-+		left = left * 0xfe / 0xffff;
-+		right = right * 0xfe / 0xffff;
++			drff->report->field[0]->value[0] = 0x51;
++			drff->report->field[0]->value[1] = 0x00;
++			drff->report->field[0]->value[2] = weak;
++			drff->report->field[0]->value[4] = strong;
++			hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
++
++			drff->report->field[0]->value[0] = 0xfa;
++			drff->report->field[0]->value[1] = 0xfe;
++		} else {
++			drff->report->field[0]->value[0] = 0xf3;
++			drff->report->field[0]->value[1] = 0x00;
++		}
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		left = 0;
-+		right = 0;
+ 		drff->report->field[0]->value[0] = 0xf3;
+ 		drff->report->field[0]->value[1] = 0x00;
 +		break;
 +	default:
 +		return -EINVAL;
-+	}
+ 	}
  
- 	gaff->report->field[0]->value[0] = 0x51;
- 	gaff->report->field[0]->value[1] = 0x0;
-@@ -109,7 +123,7 @@ static int gaff_init(struct hid_device *hid)
+ 	drff->report->field[0]->value[2] = 0x00;
+@@ -116,7 +129,7 @@ static int drff_init(struct hid_device *hid)
  
  	set_bit(FF_RUMBLE, dev->ffbit);
  
--	error = input_ff_create_memless(dev, gaff, hid_gaff_play);
-+	error = input_ff_create_mlnx(dev, gaff, hid_gaff_play, FF_UPDATE_RATE);
+-	error = input_ff_create_memless(dev, drff, drff_play);
++	error = input_ff_create_mlnx(dev, drff, drff_play, FF_UPDATE_RATE);
  	if (error) {
- 		kfree(gaff);
+ 		kfree(drff);
  		return error;
 -- 
 1.9.2
