@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaDZABu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 20:01:50 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:38392 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaDZABt (ORCPT
+	id S1751457AbaDZACh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 20:02:37 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59006 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751048AbaDZACf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 20:01:49 -0400
+	Fri, 25 Apr 2014 20:02:35 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Date: Sat, 26 Apr 2014 02:18:58 +0200
+Message-ID: <15044031.LGKXdkz8J7@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140425132055.GC11096@twins.programming.kicks-ass.net>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <2713863.BLQTYQm2Oa@vostro.rjw.lan> <20140425132055.GC11096@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <535AD235.90604@kernel.dk>
-References: <cover.1395840483.git.agordeev@redhat.com>
-	<20140422071057.GA13195@dhcp-26-169.brq.redhat.com>
-	<535676A1.3070706@kernel.dk>
-	<5356916F.4000205@kernel.dk>
-	<CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com>
-	<535716A5.6050108@kernel.dk>
-	<CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com>
-	<535AD235.90604@kernel.dk>
-Date: Sat, 26 Apr 2014 08:01:48 +0800
-Message-ID: <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
- stealing tags
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Friday, April 25, 2014 03:20:55 PM Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 01:46:53PM +0200, Rafael J. Wysocki wrote:
+> 
+> _trim_ emails!!! one of these days I'm going to write a bot to flame
+> your head of if there's excessive quoting.
 
-On Sat, Apr 26, 2014 at 5:23 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 04/25/2014 03:10 AM, Ming Lei wrote:
->
-> Sorry, I did run it the other day. It has little to no effect here, but
-> that's mostly because there's so much other crap going on in there. The
-> most effective way to currently make it work better, is just to ensure
-> the caching pool is of a sane size.
+Words ...
 
-Yes, that is just what the patch is doing, :-)
+> > 
+> > Well, so now the question is whether or not we relly want to always
+> > go to the "power" (or "energy efficiency" if you will) mode if the system
+> > is on battery.  That arguably may not be a good thing even for energy
+> > efficiency depending on how exactly the modes are defined.
+> 
+> Nobody is talking about always. But in general it seems a good enough
+> approach. Hell, many of the AC/BAT switches in todays power management
+> crap things are not always right.
+> 
+> Do I want it to dim the LCD further when I unplug the laptop -- mostly
+> no, but still it does. And the most annoying one is that it reduces the
+> screen blank time to something near 5 seconds or so.
+> 
+> Why would this be any different?
 
->From percpu_ida view, it is easy to observe it can improve
-allocation performance. I have several patches to export
-these information by sysfs for monitoring percpu_ida
-performance.
+And why do we have to do things that we hate it when they are done by others?
 
->
-> I've got an alternative tagging scheme that I think would be useful for
-> the cases where the tag space to cpu ratio isn't big enough. So I think
-> we'll retain percpu_ida for the cases where it can cache enough, and
-> punt to an alternative scheme when not.
+> If you know what you want you can turn the knob.
+> 
+> > So in my opinion it's too early to add things like that at this point.
+> 
+> Meh.. 
 
-OK, care to comment on the patch or the idea of setting percpu cache
-size as (nr_tags / hctx->nr_ctx)?
+Seriously, I'm not even sure if we really need that stuff to be honest.
 
->
-> That doesn't mean we should not improve percpu_ida. There's quite a bit
-> of low hanging fruit in there.
-
-IMO percpu_max_size in percpu_ida is very important for the
-performance, and it might need to adjust dynamically according
-to the percpu allocation loading, but it is far more complicated
-to implement. And it might be the simplest way to fix the parameter
-before percpu_ida_init().
-
-
-Thanks,
 -- 
-Ming Lei
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
