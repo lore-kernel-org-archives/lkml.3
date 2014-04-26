@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbaDZMDU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:03:20 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49847 "EHLO
+	id S1752583AbaDZMDl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:03:41 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49872 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752323AbaDZMDP (ORCPT
+	with ESMTP id S1752542AbaDZMDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:15 -0400
+	Sat, 26 Apr 2014 08:03:39 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 08/24] hid: Port hid-emsff to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:45 +0200
-Message-Id: <1398513696-12626-9-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 13/24] hid: Port hid-lg3ff to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:50 +0200
+Message-Id: <1398513696-12626-14-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,96 +25,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-emsff to ff-memless-next
+Port hid-lg3ff to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
  drivers/hid/Kconfig     |  2 +-
- drivers/hid/hid-emsff.c | 38 ++++++++++++++++++++++++++------------
- 2 files changed, 27 insertions(+), 13 deletions(-)
+ drivers/hid/hid-lg3ff.c | 60 +++++++++++++++++++++++++++++++------------------
+ 2 files changed, 39 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index e076627..a78b5d8 100644
+index c4b0cbb..eb0c7f1 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -213,7 +213,7 @@ config DRAGONRISE_FF
- config HID_EMS_FF
- 	tristate "EMS Production Inc. force feedback support"
- 	depends on HID
+@@ -391,7 +391,7 @@ config LOGIRUMBLEPAD2_FF
+ config LOGIG940_FF
+ 	bool "Logitech Flight System G940 force feedback support"
+ 	depends on HID_LOGITECH
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
- 	---help---
- 	Say Y here if you want to enable force feedback support for devices by
- 	EMS Production Ltd.
-diff --git a/drivers/hid/hid-emsff.c b/drivers/hid/hid-emsff.c
-index d82d75b..c0cbe50 100644
---- a/drivers/hid/hid-emsff.c
-+++ b/drivers/hid/hid-emsff.c
-@@ -24,30 +24,44 @@
- #include <linux/hid.h>
+ 	help
+ 	  Say Y here if you want to enable force feedback support for Logitech
+ 	  Flight System G940 devices.
+diff --git a/drivers/hid/hid-lg3ff.c b/drivers/hid/hid-lg3ff.c
+index 8c2da18..c49b374 100644
+--- a/drivers/hid/hid-lg3ff.c
++++ b/drivers/hid/hid-lg3ff.c
+@@ -23,9 +23,12 @@
+ 
  #include <linux/input.h>
- #include <linux/module.h>
+ #include <linux/hid.h>
 +#include <linux/input/ff-memless-next.h>
  
- #include "hid-ids.h"
+ #include "hid-lg.h"
  
 +#define FF_UPDATE_RATE 50
 +
- struct emsff_device {
- 	struct hid_report *report;
+ /*
+  * G940 Theory of Operation (from experimentation)
+  *
+@@ -58,12 +61,11 @@ struct lg3ff_device {
  };
  
- static int emsff_play(struct input_dev *dev, void *data,
+ static int hid_lg3ff_play(struct input_dev *dev, void *data,
 -			 struct ff_effect *effect)
 +			 const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct emsff_device *emsff = data;
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int weak, strong;
+ 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+ 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
+-	int x, y;
  
--	weak = effect->u.rumble.weak_magnitude;
--	strong = effect->u.rumble.strong_magnitude;
+ /*
+  * Available values in the field should always be 63, but we only use up to
+@@ -72,30 +74,37 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
+ 	memset(report->field[0]->value, 0,
+ 	       sizeof(__s32) * report->field[0]->report_count);
+ 
+-	switch (effect->type) {
+-	case FF_CONSTANT:
+-/*
+- * Already clamped in ff_memless
+- * 0 is center (different then other logitech)
+- */
+-		x = effect->u.ramp.start_level;
+-		y = effect->u.ramp.end_level;
 -
--	dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
+-		/* send command byte */
+-		report->field[0]->value[0] = 0x51;
 -
--	weak = weak * 0xff / 0xffff;
--	strong = strong * 0xff / 0xffff;
--
--	emsff->report->field[0]->value[1] = weak;
--	emsff->report->field[0]->value[2] = strong;
+-/*
+- * Sign backwards from other Force3d pro
+- * which get recast here in two's complement 8 bits
+- */
+-		report->field[0]->value[1] = (unsigned char)(-x);
+-		report->field[0]->value[31] = (unsigned char)(-y);
++	/* send command byte */
++	report->field[0]->value[0] = 0x51;
+ 
+-		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
 +	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		weak = rumble_force->weak;
-+		strong = rumble_force->strong;
++	case MLNX_START_COMBINED: {
++		const struct mlnx_simple_force *simple_force = &command->u.simple_force;
++		/* Scale down from MLNX range */
++		const int x = simple_force->x * 0xff / 0xffff;
++		const int y = simple_force->y * 0xff / 0xffff;
 +
-+		dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
-+
-+		weak = weak * 0xff / 0xffff;
-+		strong = strong * 0xff / 0xffff;
-+
-+		emsff->report->field[0]->value[1] = weak;
-+		emsff->report->field[0]->value[2] = strong;
++		/*
++		 * Sign backwards from other Force3d pro
++		 * which get recast here in two's complement 8 bits
++		*/
++		report->field[0]->value[1] = (unsigned char)x;
++		report->field[0]->value[31] = (unsigned char)y;
 +		break;
-+	case MLNX_STOP_RUMBLE:
-+		weak = 0;
-+		strong = 0;
-+		break;
++		}
++	case MLNX_STOP_COMBINED:
++		report->field[0]->value[1] = 0;
++		report->field[0]->value[31] = 0;
+ 		break;
 +	default:
 +		return -EINVAL;
-+	}
+ 	}
++
++	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
++
+ 	return 0;
+ }
++
+ static void hid_lg3ff_set_autocenter(struct input_dev *dev, u16 magnitude)
+ {
+ 	struct hid_device *hid = input_get_drvdata(dev);
+@@ -123,6 +132,13 @@ static void hid_lg3ff_set_autocenter(struct input_dev *dev, u16 magnitude)
  
- 	dbg_hid("running with 0x%02x 0x%02x\n", strong, weak);
- 	hid_hw_request(hid, emsff->report, HID_REQ_SET_REPORT);
-@@ -88,7 +102,7 @@ static int emsff_init(struct hid_device *hid)
+ static const signed short ff3_joystick_ac[] = {
+ 	FF_CONSTANT,
++	FF_RAMP,
++	FF_PERIODIC,
++	FF_SQUARE,
++	FF_TRIANGLE,
++	FF_SINE,
++	FF_SAW_UP,
++	FF_SAW_DOWN,
+ 	FF_AUTOCENTER,
+ 	-1
+ };
+@@ -143,7 +159,7 @@ int lg3ff_init(struct hid_device *hid)
+ 	for (i = 0; ff_bits[i] >= 0; i++)
+ 		set_bit(ff_bits[i], dev->ffbit);
  
- 	set_bit(FF_RUMBLE, dev->ffbit);
- 
--	error = input_ff_create_memless(dev, emsff, emsff_play);
-+	error = input_ff_create_mlnx(dev, emsff, emsff_play, FF_UPDATE_RATE);
- 	if (error) {
- 		kfree(emsff);
+-	error = input_ff_create_memless(dev, NULL, hid_lg3ff_play);
++	error = input_ff_create_mlnx(dev, NULL, hid_lg3ff_play, FF_UPDATE_RATE);
+ 	if (error)
  		return error;
+ 
 -- 
 1.9.2
 
