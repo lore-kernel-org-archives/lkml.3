@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751311AbaDZG3h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 02:29:37 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:56113 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaDZG3f (ORCPT
+	id S1751291AbaDZHMV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 03:12:21 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:59327 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaDZHMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 02:29:35 -0400
+	Sat, 26 Apr 2014 03:12:20 -0400
+Date: Sat, 26 Apr 2014 09:12:14 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to
+ reduce cache misshits
+Message-ID: <20140426071214.GA2374@gmail.com>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140424090134.GC7768@gmail.com>
+ <5358F7A3.1000108@hitachi.com>
+ <20140425082056.GB24829@gmail.com>
+ <535A2E41.40005@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <1397859600-11507-4-git-send-email-robherring2@gmail.com>
-References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
-	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
-Date: Fri, 25 Apr 2014 23:29:35 -0700
-X-Google-Sender-Auth: EFBU65hpbzzf6KaiPsTVCQhbc2M
-Message-ID: <CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-From: Yinghai Lu <yinghai@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535A2E41.40005@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 3:19 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
->
-> With the generic earlycon infrastructure in place, convert the 8250
-> early console to use it.
->
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> ---
->  drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
->  drivers/tty/serial/8250/Kconfig      |   1 +
->  2 files changed, 16 insertions(+), 123 deletions(-)
->
-> diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
-> index c100d63..e83c9db 100644
-> --- a/drivers/tty/serial/8250/8250_early.c
-> +++ b/drivers/tty/serial/8250/8250_early.c
-> @@ -35,18 +35,8 @@
-...
-> -
-> -int __init setup_early_serial8250_console(char *cmdline)
 
-You removed global function, but still left declaration and calling...
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-arch/mips/mti-malta/malta-init.c:
-setup_early_serial8250_console(console_string);
-drivers/firmware/pcdp.c:        return setup_early_serial8250_console(options);
-include/linux/serial_8250.h:extern int
-setup_early_serial8250_console(char *cmdline);
+> (2014/04/25 17:20), Ingo Molnar wrote:
+> > 
+> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >>> So I don't think this should be a Kconfig entry, just enable it 
+> >>> unconditionally. That will further simplify the code.
+> >>
+> >> Hmm, it consumes some amount of memory (36KB/core) just for the 
+> >> case of several thousand of kprobes. On enterprise servers and 
+> >> desktop it's OK, no problem. But I think, some embedded systems 
+> >> with small resources will not want that. [...]
+> > 
+> > They'll just disable kprobes in general.
+> 
+> No, I'd like to provide kprobes (and dynamic events) to them 
+> (including me) for debugging and dynamic monitoring, instead of 
+> modifying code for adding events on their kernel. To solve some 
+> specific issues, specific events (not generic events) are required. 
+> Making local patches to add such events is an option, but it 
+> increases maintenance cost for rebasing. It is better to pay cost to 
+> maintain this kconfig on upstream as the maintainer for me instead 
+> of paying such ugly local cost. :(
+> 
+> Anyway, this option is not easy for beginners, I think it should be 
+> defined with "if EXPERT" option and make it enabled by default.
+> 
+> > Really, at this point complexity is our main concern.
+> 
+> Agreed about complexity issue. However, even if we remove the 
+> Kconfig, we can just save 6 lines of the code, and one #ifdef block. 
+> Can that really solve the complexity problem?
 
-Yinghai
+It's more about the mental picture about how kprobes works. The fewer 
+binary state flags, the better.
+
+Thanks,
+
+	Ingo
