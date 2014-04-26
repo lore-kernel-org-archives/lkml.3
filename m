@@ -1,115 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaDZShr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 14:37:47 -0400
-Received: from smtp2.Stanford.EDU ([171.67.219.82]:47692 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751776AbaDZSho (ORCPT
+	id S1751948AbaDZSwA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 14:52:00 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23763 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791AbaDZSv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 14:37:44 -0400
-X-Greylist: delayed 501 seconds by postgrey-1.27 at vger.kernel.org; Sat, 26 Apr 2014 14:37:44 EDT
-Message-ID: <535BFAF0.5090306@localhost>
-Date: Sat, 26 Apr 2014 11:29:04 -0700
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 26 Apr 2014 14:51:58 -0400
+Date: Sat, 26 Apr 2014 21:48:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: DaeSeok Youn <daeseok.youn@gmail.com>
+Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: dgap: implement error handling in
+ dgap_tty_register()
+Message-ID: <20140426184721.GL26890@mwanda>
+References: <20140425070459.GA9155@devel>
+ <20140425092607.GH26890@mwanda>
+ <875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
+ <535A5535.6000701@compro.net>
+ <1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
+ <535A7402.1060305@compro.net>
+ <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: nando@ccrma.Stanford.EDU, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-References: <20140411185739.GA6644@linutronix.de>
-In-Reply-To: <20140411185739.GA6644@linutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 11:57 AM, Sebastian Andrzej Siewior wrote:
-> Dear RT folks!
->
-> I'm pleased to announce the v3.14-rt1 patch setty).
->
-> Changes since v3.12.15-rt25
-> - I dropped the sparc64 patches I had in the queue. They did not apply
->    cleanly, the code in v3.14 changed in the MMU area. Here is where I
->    remembered that it was not working perfectly either.
+On Sat, Apr 26, 2014 at 11:39:38AM +0900, DaeSeok Youn wrote:
+> Hi,
+> 
+> please check below my comments.
+> 
+> 2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
+> > On 04/25/2014 08:59 AM, Dan Carpenter wrote:
+> >> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
+> >>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
+> >>>> Hi, Dan.
+> >>>>
+> >>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> >>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
+> >>>>> driver?
+> >>>>>
+> >>>
+> >>> I'll look into this. I am clueless on what that would actually mean.
+> >>>
+> >>
+> >> Just add your name with Lidza in the MAINTAINERS file so that people
+> >> will CC you on all the patches.
+> >>
+> >> DIGI EPCA PCI PRODUCTS
+> >> M:      Lidza Louina <lidza.louina@gmail.com>
+> >> L:      driverdev-devel@linuxdriverproject.org
+> >> S:      Maintained
+> >> F:      drivers/staging/dgap/
+> >>
+> >> You don't have to do it if you don't want to, but you seem to be working
+> >> on this driver and I'm going to refer questions to you either way.  :P
+> >>
+> >>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
+> >>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
+> >>>>>>               /* Register tty devices */
+> >>>>>>               rc = tty_register_driver(brd->SerialDriver);
+> >>>>>>               if (rc < 0)
+> >>>>>> -                     return rc;
+> >>>>>> +                     goto free_print_ttys;
+> >>>>>> +
+> >>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
+> >>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
+> >>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
+> >>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
+> >>>>>>               /* Register Transparent Print devices */
+> >>>>>>               rc = tty_register_driver(brd->PrintDriver);
+> >>>>>>               if (rc < 0)
+> >>>>>> -                     return rc;
+> >>>>>> +                     goto unregister_serial_drv;
+> >>>>>> +
+> >>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+> >>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
+> >>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
+> >>>>>>       }
+> >>>>>>
+> >>>>>>       return rc;
+> >>>>>> +
+> >>>>>> +unregister_serial_drv:
+> >>>>>> +     tty_unregister_driver(brd->SerialDriver);
+> >>>>>
+> >>>>> We only register the ->SerialDriver if someone else hasn't registered it
+> >>>>> first?  So this should be:
+> >>>>>
+> >>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
+> >>>>>                 tty_unregister_driver(brd->SerialDriver);
+> >>>>>
+> >>>>> I haven't followed looked at this.  Who else is registering the serial
+> >>>>> driver?  You have looked at this, what do you think?  Or Mark.
+> >>>>
+> >>>
+> >>> registering the brd->XxxxxDriver is only done when a board is detected
+> >>> and only during the firmware_load process. If we fail to
+> >>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
+> >>> like freeing after an alloc failure?
+> >>
+> >> The allocation is conditional so the free should be conditional.  If we
+> >> didn't allocate it, then we shouldn't free it.
+> >>
+> >> It wouldn't have even been a question except I'm not sure the allocation
+> >> is *really* conditional because brd->dgap_Major_Serial_Registered might
+> >> always be "false" like you guys seem to be saying.
+> >>
+> >>>
+> >>>> I think brd struct is from dgap_Board array as global static variable
+> >>>> when this function is
+> >>>> called. So brd->dgap_Major_Serial_Registered is always "false".
+> >>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
+> >>>> registered.
+> >>>>
+> >>>> I'm not sure..
+> >>>>
+> >>>
+> >>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
+> >>> probably should, but I do see we are calling dgap_tty_register, which
+> >>> can fail, without actually checking the return value. Also, yes,
+> >>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
+> >>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
+> >>> because the only places we can unregister is at module_cleanup or
+> >>> "after" it is already registered.
+> >>>
+> >>> What is the driver _supposed_ to do if we fail something on the second
+> >>> or later board? Is the driver supposed to cleanup and exit or are we
+> >>> supposed to stay loaded for the board/boards that are usable?
+> >>
+> >> Stay loaded.
+> >>
+> >
+> > Then these tests on brd->dgap_Major_Serial_Registered need to stay in
+> > there. If I have 3 boards and the second fails in some way, if I rmmod
+> > the driver they will protect from unregistering a never registered one.
+> > At least in the unregister code path. There is probably no need for them
+> > in the register code path. I'll work up a patch for this.
+> 
+> Should I update my patch?
+> 
+> I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
+> function, because if tty_register_driver() is failed just set "false"
+> to "dgap_Major_XXX_Registered".
 
-Saw this a moment ago (3.14.1 + rt1, Fedora 19 laptop - I think I have 
-seen something similar in 3.12.x-r):
+Mark sent a patch to remove the check.  Could you redo your patch based
+on his?
 
-Apr 26 11:16:11 localhost kernel: [   96.323248] ------------[ cut here 
-]------------
-Apr 26 11:16:11 localhost kernel: [   96.323262] WARNING: CPU: 0 PID: 
-2051 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
-Apr 26 11:16:11 localhost kernel: [   96.323264] list_del corruption. 
-prev->next should be ffff8802101196a0, but was 0000000000000001
-Apr 26 11:16:11 localhost kernel: [   96.323266] Modules linked in: fuse 
-ipt_MASQUERADE xt_CHECKSUM tun ip6t_rpfilter ip6t_REJECT xt_conntrack 
-ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables 
-ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6 nf_nat_ipv6 
-ip6table_mangle ip6table_security ip6table_raw rfcomm ip6table_filter 
-bnep ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 
-nf_nat nf_conntrack iptable_mangle iptable_security iptable_raw iTCO_wdt 
-iTCO_vendor_support coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul 
-crc32c_intel ghash_clmulni_intel uvcvideo videobuf2_vmalloc microcode 
-videobuf2_memops snd_hda_codec_hdmi videobuf2_core videodev media 
-serio_raw btusb bluetooth intel_ips i2c_i801 6lowpan_iphc 
-snd_hda_codec_conexant snd_hda_codec_generic arc4 iwldvm mac80211 
-iwlwifi lpc_ich sdhci_pci mfd_core sdhci cfg80211 mmc_core snd_hda_intel 
-snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e snd_timer 
-ptp mei_me pps_core mei shpchp thinkpad_acpi snd ppdev soundcore rfkill 
-parport_pc parport acpi_cpufreq uinput firewire_ohci nouveau 
-firewire_core crc_itu_t i2c_algo_bit drm_kms_helper ttm drm mxm_wmi 
-i2c_core wmi video
-Apr 26 11:16:11 localhost kernel: [   96.323331] CPU: 0 PID: 2051 Comm: 
-cinnamon Not tainted 3.14.1-200.rt1.1.fc19.ccrma.x86_64+rt #1
-Apr 26 11:16:11 localhost kernel: [   96.323332] Hardware name: LENOVO 
-4313CTO/4313CTO, BIOS 6MET64WW (1.27 ) 07/15/2010
-Apr 26 11:16:11 localhost kernel: [   96.323334]  0000000000000000 
-000000008a5c11dc ffff8800ae715a88 ffffffff81707fca
-Apr 26 11:16:11 localhost kernel: [   96.323336]  ffff8800ae715ad0 
-ffff8800ae715ac0 ffffffff8108d03d ffff8802101196a0
-Apr 26 11:16:11 localhost kernel: [   96.323337]  ffff880210119b50 
-ffff880210119b50 ffff880210119b40 ffff88021a615648
-Apr 26 11:16:11 localhost kernel: [   96.323338] Call Trace:
-Apr 26 11:16:11 localhost kernel: [   96.323345]  [<ffffffff81707fca>] 
-dump_stack+0x4d/0x82
-Apr 26 11:16:11 localhost kernel: [   96.323351]  [<ffffffff8108d03d>] 
-warn_slowpath_common+0x7d/0xc0
-Apr 26 11:16:11 localhost kernel: [   96.323352]  [<ffffffff8108d0dc>] 
-warn_slowpath_fmt+0x5c/0x80
-Apr 26 11:16:11 localhost kernel: [   96.323354]  [<ffffffff8137c551>] 
-__list_del_entry+0xa1/0xd0
-Apr 26 11:16:11 localhost kernel: [   96.323355]  [<ffffffff8137c58d>] 
-list_del+0xd/0x30
-Apr 26 11:16:11 localhost kernel: [   96.323393]  [<ffffffffa0135593>] 
-nouveau_fence_signal+0x53/0x80 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323414]  [<ffffffffa0135678>] 
-nouveau_fence_update+0x48/0xa0 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323435]  [<ffffffffa0135f85>] 
-nouveau_fence_sync+0x45/0x80 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323456]  [<ffffffffa013aea8>] 
-validate_list+0xd8/0x2e0 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323478]  [<ffffffffa013c3d3>] 
-nouveau_gem_ioctl_pushbuf+0xaa3/0x13e0 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323500]  [<ffffffffa002ad02>] 
-drm_ioctl+0x4f2/0x620 [drm]
-Apr 26 11:16:11 localhost kernel: [   96.323506]  [<ffffffff810c1af4>] ? 
-migrate_enable+0x94/0x1c0
-Apr 26 11:16:11 localhost kernel: [   96.323527]  [<ffffffffa0132cfe>] 
-nouveau_drm_ioctl+0x4e/0x90 [nouveau]
-Apr 26 11:16:11 localhost kernel: [   96.323530]  [<ffffffff81203480>] 
-do_vfs_ioctl+0x2e0/0x4c0
-Apr 26 11:16:11 localhost kernel: [   96.323533]  [<ffffffff812fd8d6>] ? 
-file_has_perm+0xa6/0xb0
-Apr 26 11:16:11 localhost kernel: [   96.323535]  [<ffffffff812036e1>] 
-SyS_ioctl+0x81/0xa0
-Apr 26 11:16:11 localhost kernel: [   96.323538]  [<ffffffff81716769>] 
-system_call_fastpath+0x16/0x1b
-Apr 26 11:16:11 localhost kernel: [   96.323569] ---[ end trace 
-0000000000000002 ]---
+regards,
+dan carpenter
 
--- Fernando
