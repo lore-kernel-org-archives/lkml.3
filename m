@@ -1,96 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaDZBoC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 21:44:02 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:55821 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaDZBn6 (ORCPT
+	id S1751250AbaDZBvk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 21:51:40 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:38614 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaDZBvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 21:43:58 -0400
-Message-ID: <535B0F5D.4020905@linaro.org>
-Date: Fri, 25 Apr 2014 20:43:57 -0500
-From: Alex Elder <elder@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 21:51:36 -0400
+Message-ID: <535B1120.1020700@gmail.com>
+Date: Sat, 26 Apr 2014 13:51:28 +1200
+From: Michael Schmitz <schmitzmic@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, mporter@linaro.org,
-        bcm@fixthebug.org, devicetree@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 0/5] clk: bcm21664: add common clock support
-References: <1398115587-32529-1-git-send-email-elder@linaro.org> <20140426000915.7224.11265@quantum>
-In-Reply-To: <20140426000915.7224.11265@quantum>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Finn Thain <fthain@telegraphics.com.au>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: [PATCH v2 07/12] scsi/NCR5380: adopt NCR5380_dprint() and NCR5380_dprint_phase()
+References: <20140319123516.542623278@telegraphics.com.au> <20140319123518.642821564@telegraphics.com.au>
+In-Reply-To: <20140319123518.642821564@telegraphics.com.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 07:09 PM, Mike Turquette wrote:
-> Quoting Alex Elder (2014-04-21 14:26:22)
->> This is series has two parts.  The first two patches are changes
->> to the existing Broadcom Kona family clock code to prepare for the
->> addition of support for another SoC, bcm21664.
->>
->> The remaining three define the binding and code for bcm21664, and
->> replace the use of "fake" clocks in the device tree with the real
->> ones.  This ends up being a fairly straightforward definition of
->> the clocks on this SoC; the rest of the clock code is shared with
->> other SoCs that use the Kona style clock system.
-> 
-> Hi Alex,
-> 
-> I'm happy to take only the clk patches or I can take the DT stuff as
-> well if it gets some Acks. Let me know how you want it handled.
+Acked-by: Michael Schmitz <schmitz@debian.org>
 
-If all you need is an ack from Matt or Christian I'm
-sure they'll provide it.  I don't care much but if
-you'll take it all I can just consider it done, so
-that would be my slight preference.  The DT stuff has
-been out there for way past the requisite few weeks...
-
-Thanks Mike.
-
-					-Alex
-
-
-> Regards,
-> Mike
-> 
->>
->> This series depends on the following patch, which has been taken
->> into the clk-fixes tree:
->>     clk: bcm281xx: don't use unnamed structs or unions
->>     https://lkml.org/lkml/2014/4/7/322
->>
->> In addition, it depends on the version 4 of the following series,
->> just (re)posted for review:
->>     clk: bcm281xx: updates
->>     https://lkml.org/lkml/2014/4/8/485
->>
->> The patches in this series--based on the current linus/master branch
->> plus the patches mentioned above--are available here:
->>     http://git.linaro.org/git/landing-teams/working/broadcom/kernel.git
->>     Branch review/bcm21664-clock-v2
->>
->> Alex Elder (5):
->>   clk: bcm281xx: move compatible string definitions
->>   ARM: dts: revise kona clock binding document
->>   ARM: dts: define clock binding for bcm21664
->>   clk: bcm21664: use common clock framework
->>   ARM: dts: use real clocks for bcm21664
->>
->>  .../devicetree/bindings/clock/bcm-kona-clock.txt   | 116 ++++++---
->>  arch/arm/boot/dts/bcm21664.dtsi                    | 190 +++++++++-----
->>  drivers/clk/bcm/Kconfig                            |   2 +-
->>  drivers/clk/bcm/Makefile                           |   1 +
->>  drivers/clk/bcm/clk-bcm21664.c                     | 290 +++++++++++++++++++++
->>  drivers/clk/bcm/clk-bcm281xx.c                     |  12 -
->>  include/dt-bindings/clock/bcm21664.h               |  62 +++++
->>  include/dt-bindings/clock/bcm281xx.h               |  12 +
->>  8 files changed, 565 insertions(+), 120 deletions(-)
->>  create mode 100644 drivers/clk/bcm/clk-bcm21664.c
->>  create mode 100644 include/dt-bindings/clock/bcm21664.h
->>
->> -- 
->> 1.9.1
+> All NCR5380 drivers already include the NCR5380.h header. Better to
+> adopt those macros rather than have three variations on them.
+>
+> Moreover, the macros in NCR5380.h are preferable anyway: the atari_NCR5380
+> and sun3_NCR5380 versions are inflexible. For example, they can't accomodate
+> NCR5380_dprint(NDEBUG_MAIN | NDEBUG_QUEUES, ...)
+>
+> Replace the NCR_PRINT* macros from atari_NCR5380.h and sun3_NCR5380.h with
+> the equivalent macros from NCR5380.h.
+>
+> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+>
+> ---
+>   drivers/scsi/atari_NCR5380.c |   22 +++++++++++-----------
+>   drivers/scsi/sun3_NCR5380.c  |   22 +++++++++++-----------
+>   2 files changed, 22 insertions(+), 22 deletions(-)
+>
+> Index: linux-m68k/drivers/scsi/atari_NCR5380.c
+> ===================================================================
+> --- linux-m68k.orig/drivers/scsi/atari_NCR5380.c	2014-03-19 23:23:02.000000000 +1100
+> +++ linux-m68k/drivers/scsi/atari_NCR5380.c	2014-03-19 23:34:43.000000000 +1100
+> @@ -739,8 +739,8 @@ static void NCR5380_print_status(struct
+>   	Scsi_Cmnd *ptr;
+>   	unsigned long flags;
+>   
+> -	NCR_PRINT(NDEBUG_ANY);
+> -	NCR_PRINT_PHASE(NDEBUG_ANY);
+> +	NCR5380_dprint(NDEBUG_ANY, instance);
+> +	NCR5380_dprint_phase(NDEBUG_ANY, instance);
+>   
+>   	hostdata = (struct NCR5380_hostdata *)instance->hostdata;
+>   
+> @@ -1268,7 +1268,7 @@ static irqreturn_t NCR5380_intr(int irq,
+>   	INT_PRINTK("scsi%d: BASR=%02x\n", HOSTNO, basr);
+>   	/* dispatch to appropriate routine if found and done=0 */
+>   	if (basr & BASR_IRQ) {
+> -		NCR_PRINT(NDEBUG_INTR);
+> +		NCR5380_dprint(NDEBUG_INTR, instance);
+>   		if ((NCR5380_read(STATUS_REG) & (SR_SEL|SR_IO)) == (SR_SEL|SR_IO)) {
+>   			done = 0;
+>   			ENABLE_IRQ();
+> @@ -1396,7 +1396,7 @@ static int NCR5380_select(struct Scsi_Ho
+>   	unsigned long flags;
+>   
+>   	hostdata->restart_select = 0;
+> -	NCR_PRINT(NDEBUG_ARBITRATION);
+> +	NCR5380_dprint(NDEBUG_ARBITRATION, instance);
+>   	ARB_PRINTK("scsi%d: starting arbitration, id = %d\n", HOSTNO,
+>   		   instance->this_id);
+>   
+> @@ -1617,7 +1617,7 @@ static int NCR5380_select(struct Scsi_Ho
+>   			printk(KERN_ERR "scsi%d: weirdness\n", HOSTNO);
+>   			if (hostdata->restart_select)
+>   				printk(KERN_NOTICE "\trestart select\n");
+> -			NCR_PRINT(NDEBUG_ANY);
+> +			NCR5380_dprint(NDEBUG_ANY, instance);
+>   			NCR5380_write(SELECT_ENABLE_REG, hostdata->id_mask);
+>   			return -1;
+>   		}
+> @@ -1742,7 +1742,7 @@ static int NCR5380_transfer_pio(struct S
+>   		/* Check for phase mismatch */
+>   		if ((tmp & PHASE_MASK) != p) {
+>   			PIO_PRINTK("scsi%d: phase mismatch\n", HOSTNO);
+> -			NCR_PRINT_PHASE(NDEBUG_PIO);
+> +			NCR5380_dprint_phase(NDEBUG_PIO, instance);
+>   			break;
+>   		}
+>   
+> @@ -1764,18 +1764,18 @@ static int NCR5380_transfer_pio(struct S
+>   		if (!(p & SR_IO)) {
+>   			if (!((p & SR_MSG) && c > 1)) {
+>   				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_DATA);
+> -				NCR_PRINT(NDEBUG_PIO);
+> +				NCR5380_dprint(NDEBUG_PIO, instance);
+>   				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   					      ICR_ASSERT_DATA | ICR_ASSERT_ACK);
+>   			} else {
+>   				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   					      ICR_ASSERT_DATA | ICR_ASSERT_ATN);
+> -				NCR_PRINT(NDEBUG_PIO);
+> +				NCR5380_dprint(NDEBUG_PIO, instance);
+>   				NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   					      ICR_ASSERT_DATA | ICR_ASSERT_ATN | ICR_ASSERT_ACK);
+>   			}
+>   		} else {
+> -			NCR_PRINT(NDEBUG_PIO);
+> +			NCR5380_dprint(NDEBUG_PIO, instance);
+>   			NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_ACK);
+>   		}
+>   
+> @@ -1997,7 +1997,7 @@ static void NCR5380_information_transfer
+>   			phase = (tmp & PHASE_MASK);
+>   			if (phase != old_phase) {
+>   				old_phase = phase;
+> -				NCR_PRINT_PHASE(NDEBUG_INFORMATION);
+> +				NCR5380_dprint_phase(NDEBUG_INFORMATION, instance);
+>   			}
+>   
+>   			if (sink && (phase != PHASE_MSGOUT)) {
+> @@ -2451,7 +2451,7 @@ static void NCR5380_information_transfer
+>   				break;
+>   			default:
+>   				printk("scsi%d: unknown phase\n", HOSTNO);
+> -				NCR_PRINT(NDEBUG_ANY);
+> +				NCR5380_dprint(NDEBUG_ANY, instance);
+>   			} /* switch(phase) */
+>   		} /* if (tmp * SR_REQ) */
+>   	} /* while (1) */
+> Index: linux-m68k/drivers/scsi/sun3_NCR5380.c
+> ===================================================================
+> --- linux-m68k.orig/drivers/scsi/sun3_NCR5380.c	2014-03-19 23:34:42.000000000 +1100
+> +++ linux-m68k/drivers/scsi/sun3_NCR5380.c	2014-03-19 23:34:43.000000000 +1100
+> @@ -681,8 +681,8 @@ static void NCR5380_print_status(struct
+>   	Scsi_Cmnd *ptr;
+>   	unsigned long flags;
+>   
+> -	NCR_PRINT(NDEBUG_ANY);
+> -	NCR_PRINT_PHASE(NDEBUG_ANY);
+> +	NCR5380_dprint(NDEBUG_ANY, instance);
+> +	NCR5380_dprint_phase(NDEBUG_ANY, instance);
+>   
+>   	hostdata = (struct NCR5380_hostdata *)instance->hostdata;
+>   
+> @@ -1192,7 +1192,7 @@ static irqreturn_t NCR5380_intr (int irq
+>       INT_PRINTK("scsi%d: BASR=%02x\n", HOSTNO, basr);
+>       /* dispatch to appropriate routine if found and done=0 */
+>       if (basr & BASR_IRQ) {
+> -	NCR_PRINT(NDEBUG_INTR);
+> +	NCR5380_dprint(NDEBUG_INTR, instance);
+>   	if ((NCR5380_read(STATUS_REG) & (SR_SEL|SR_IO)) == (SR_SEL|SR_IO)) {
+>   	    done = 0;
+>   //	    ENABLE_IRQ();
+> @@ -1334,7 +1334,7 @@ static int NCR5380_select(struct Scsi_Ho
+>       unsigned long flags;
+>   
+>       hostdata->restart_select = 0;
+> -    NCR_PRINT(NDEBUG_ARBITRATION);
+> +    NCR5380_dprint(NDEBUG_ARBITRATION, instance);
+>       ARB_PRINTK("scsi%d: starting arbitration, id = %d\n", HOSTNO,
+>   	       instance->this_id);
+>   
+> @@ -1555,7 +1555,7 @@ static int NCR5380_select(struct Scsi_Ho
+>   	    printk(KERN_ERR "scsi%d: weirdness\n", HOSTNO);
+>   	    if (hostdata->restart_select)
+>   		printk(KERN_NOTICE "\trestart select\n");
+> -	    NCR_PRINT(NDEBUG_ANY);
+> +	    NCR5380_dprint(NDEBUG_ANY, instance);
+>   	    NCR5380_write(SELECT_ENABLE_REG, hostdata->id_mask);
+>   	    return -1;
+>   	}
+> @@ -1681,7 +1681,7 @@ static int NCR5380_transfer_pio( struct
+>   	/* Check for phase mismatch */	
+>   	if ((tmp & PHASE_MASK) != p) {
+>   	    PIO_PRINTK("scsi%d: phase mismatch\n", HOSTNO);
+> -	    NCR_PRINT_PHASE(NDEBUG_PIO);
+> +	    NCR5380_dprint_phase(NDEBUG_PIO, instance);
+>   	    break;
+>   	}
+>   
+> @@ -1704,18 +1704,18 @@ static int NCR5380_transfer_pio( struct
+>   	    if (!((p & SR_MSG) && c > 1)) {
+>   		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   		    ICR_ASSERT_DATA);
+> -		NCR_PRINT(NDEBUG_PIO);
+> +		NCR5380_dprint(NDEBUG_PIO, instance);
+>   		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   			ICR_ASSERT_DATA | ICR_ASSERT_ACK);
+>   	    } else {
+>   		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   		    ICR_ASSERT_DATA | ICR_ASSERT_ATN);
+> -		NCR_PRINT(NDEBUG_PIO);
+> +		NCR5380_dprint(NDEBUG_PIO, instance);
+>   		NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE |
+>   		    ICR_ASSERT_DATA | ICR_ASSERT_ATN | ICR_ASSERT_ACK);
+>   	    }
+>   	} else {
+> -	    NCR_PRINT(NDEBUG_PIO);
+> +	    NCR5380_dprint(NDEBUG_PIO, instance);
+>   	    NCR5380_write(INITIATOR_COMMAND_REG, ICR_BASE | ICR_ASSERT_ACK);
+>   	}
+>   
+> @@ -1927,7 +1927,7 @@ static void NCR5380_information_transfer
+>   	    phase = (tmp & PHASE_MASK);
+>    	    if (phase != old_phase) {
+>   		old_phase = phase;
+> -		NCR_PRINT_PHASE(NDEBUG_INFORMATION);
+> +		NCR5380_dprint_phase(NDEBUG_INFORMATION, instance);
+>   	    }
+>   
+>   	    if(phase == PHASE_CMDOUT) {
+> @@ -2412,7 +2412,7 @@ static void NCR5380_information_transfer
+>   		break;
+>   	    default:
+>   		printk("scsi%d: unknown phase\n", HOSTNO);
+> -		NCR_PRINT(NDEBUG_ANY);
+> +		NCR5380_dprint(NDEBUG_ANY, instance);
+>   	    } /* switch(phase) */
+>   	} /* if (tmp * SR_REQ) */
+>       } /* while (1) */
+>
 
