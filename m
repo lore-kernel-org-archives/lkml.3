@@ -1,84 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaDZCYs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 22:24:48 -0400
-Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:18186
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750997AbaDZCYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 22:24:17 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: RE: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
-Thread-Topic: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
-Thread-Index: AQHPYK69zRY2bKGNPUekzRg75l4abpsjD68AgAAI94CAABMRYA==
-Date: Sat, 26 Apr 2014 02:24:14 +0000
-Message-ID: <ab8c51e4f124498486104a4a25514dea@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1398451514-25593-1-git-send-email-kys@microsoft.com>
-	 <20140425174322.589ed9f1@samsung-9>
- <1398474927.29914.100.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1398474927.29914.100.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:7d9e:a813:4d30:6320]
-x-forefront-prvs: 01930B2BA8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(24454002)(13464003)(377424004)(377454003)(199002)(189002)(86362001)(92566001)(77982001)(76482001)(86612001)(83322001)(19580395003)(19580405001)(20776003)(87936001)(80976001)(74316001)(99286001)(33646001)(81542001)(46102001)(101416001)(99396002)(83072002)(85852003)(81342001)(4396001)(54356999)(31966008)(74502001)(74662001)(77096999)(76576001)(2656002)(79102001)(80022001)(76176999)(50986999)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:BF9F4216.B182E72A.33D3939C.82E5ABF8.201FA;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751278AbaDZCjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 22:39:40 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:47031 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaDZCjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 22:39:39 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <535A7402.1060305@compro.net>
+References: <20140425070459.GA9155@devel>
+	<20140425092607.GH26890@mwanda>
+	<875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
+	<535A5535.6000701@compro.net>
+	<1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
+	<535A7402.1060305@compro.net>
+Date: Sat, 26 Apr 2014 11:39:38 +0900
+Message-ID: <CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Mark Hounschell <markh@compro.net>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3Q2PJRl011843
 
+Hi,
 
+please check below my comments.
 
-> -----Original Message-----
-> From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> Sent: Friday, April 25, 2014 6:15 PM
-> To: Stephen Hemminger
-> Cc: KY Srinivasan; davem@davemloft.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; stable@kernel.org
-> Subject: Re: [PATCH net-next 1/1] hyperv: Properly handle checksum offload
-> 
-> On Fri, 2014-04-25 at 17:43 -0700, Stephen Hemminger wrote:
-> > On Fri, 25 Apr 2014 11:45:14 -0700
-> > "K. Y. Srinivasan" <kys@microsoft.com> wrote:
-> >
-> > > @@ -474,6 +477,9 @@ static int netvsc_start_xmit(struct sk_buff *skb,
-> struct net_device *net)
-> > >  	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
-> > >  			ppi->ppi_offset);
-> > >
-> > > +	ip_hdr(skb)->check = 0;
-> > > +	csum_info->transmit.ip_header_checksum = 1;
-> > > +
-> > >  	if (net_trans_info & (INFO_IPV4 << 16))
-> > >  		csum_info->transmit.is_ipv4 = 1;
-> > >  	else
-> >
-> > Linux doesn't need or want IP checksum offload.
-> > It will not have any performance gain.
-> 
-> 
-> BTW, was this patch even tested with IPv6 packets ???
+2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
+> On 04/25/2014 08:59 AM, Dan Carpenter wrote:
+>> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
+>>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
+>>>> Hi, Dan.
+>>>>
+>>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
+>>>>> driver?
+>>>>>
+>>>
+>>> I'll look into this. I am clueless on what that would actually mean.
+>>>
+>>
+>> Just add your name with Lidza in the MAINTAINERS file so that people
+>> will CC you on all the patches.
+>>
+>> DIGI EPCA PCI PRODUCTS
+>> M:      Lidza Louina <lidza.louina@gmail.com>
+>> L:      driverdev-devel@linuxdriverproject.org
+>> S:      Maintained
+>> F:      drivers/staging/dgap/
+>>
+>> You don't have to do it if you don't want to, but you seem to be working
+>> on this driver and I'm going to refer questions to you either way.  :P
+>>
+>>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
+>>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
+>>>>>>               /* Register tty devices */
+>>>>>>               rc = tty_register_driver(brd->SerialDriver);
+>>>>>>               if (rc < 0)
+>>>>>> -                     return rc;
+>>>>>> +                     goto free_print_ttys;
+>>>>>> +
+>>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
+>>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
+>>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
+>>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
+>>>>>>               /* Register Transparent Print devices */
+>>>>>>               rc = tty_register_driver(brd->PrintDriver);
+>>>>>>               if (rc < 0)
+>>>>>> -                     return rc;
+>>>>>> +                     goto unregister_serial_drv;
+>>>>>> +
+>>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+>>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
+>>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
+>>>>>>       }
+>>>>>>
+>>>>>>       return rc;
+>>>>>> +
+>>>>>> +unregister_serial_drv:
+>>>>>> +     tty_unregister_driver(brd->SerialDriver);
+>>>>>
+>>>>> We only register the ->SerialDriver if someone else hasn't registered it
+>>>>> first?  So this should be:
+>>>>>
+>>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
+>>>>>                 tty_unregister_driver(brd->SerialDriver);
+>>>>>
+>>>>> I haven't followed looked at this.  Who else is registering the serial
+>>>>> driver?  You have looked at this, what do you think?  Or Mark.
+>>>>
+>>>
+>>> registering the brd->XxxxxDriver is only done when a board is detected
+>>> and only during the firmware_load process. If we fail to
+>>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
+>>> like freeing after an alloc failure?
+>>
+>> The allocation is conditional so the free should be conditional.  If we
+>> didn't allocate it, then we shouldn't free it.
+>>
+>> It wouldn't have even been a question except I'm not sure the allocation
+>> is *really* conditional because brd->dgap_Major_Serial_Registered might
+>> always be "false" like you guys seem to be saying.
+>>
+>>>
+>>>> I think brd struct is from dgap_Board array as global static variable
+>>>> when this function is
+>>>> called. So brd->dgap_Major_Serial_Registered is always "false".
+>>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
+>>>> registered.
+>>>>
+>>>> I'm not sure..
+>>>>
+>>>
+>>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
+>>> probably should, but I do see we are calling dgap_tty_register, which
+>>> can fail, without actually checking the return value. Also, yes,
+>>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
+>>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
+>>> because the only places we can unregister is at module_cleanup or
+>>> "after" it is already registered.
+>>>
+>>> What is the driver _supposed_ to do if we fail something on the second
+>>> or later board? Is the driver supposed to cleanup and exit or are we
+>>> supposed to stay loaded for the board/boards that are usable?
+>>
+>> Stay loaded.
+>>
+>
+> Then these tests on brd->dgap_Major_Serial_Registered need to stay in
+> there. If I have 3 boards and the second fails in some way, if I rmmod
+> the driver they will protect from unregistering a never registered one.
+> At least in the unregister code path. There is probably no need for them
+> in the register code path. I'll work up a patch for this.
 
-No; I only tested this on ipv4.
+Should I update my patch?
 
-K. Y
-> 
+I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
+function, because if tty_register_driver() is failed just set "false"
+to "dgap_Major_XXX_Registered".
+dgap_Major_XXX_Registered only is used in cleaup function, right?
+So code like below
+               rc = tty_register_driver(brd->PrintDriver);
+               if (rc < 0)
+                     goto unregister_serial_drv;
+               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+...
+unregister_serial_drv;
+               brd->dgap_Major_Serial_Registered = false;
+                tty_unregister_driver(brd->SerialDriver);
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
+
+Regards,
+Daeseok Youn.
+
+>
+> I need to look at the (dgap_NumBoards <  MAXBOARDS) thing too.
+>
+> Mark
+>
+>
