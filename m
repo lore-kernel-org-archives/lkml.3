@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaDZMFI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:05:08 -0400
-Received: from imap.devoid-pointer.net ([31.31.77.140]:49918 "EHLO
+	id S1752639AbaDZMDw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:03:52 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49890 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaDZMED (ORCPT
+	with ESMTP id S1752542AbaDZMDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:04:03 -0400
+	Sat, 26 Apr 2014 08:03:48 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 23/24] hid: Port hid-lg4ff to ff-memless-next
-Date: Sat, 26 Apr 2014 13:58:00 +0200
-Message-Id: <1398513696-12626-24-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 17/24] hid: Port hid-tmff to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:54 +0200
+Message-Id: <1398513696-12626-18-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,166 +25,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-lg4ff to ff-memless-next
+Port hid-tmff to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig     |  2 +-
- drivers/hid/hid-lg4ff.c | 93 ++++++++++++++++++++++++++++++-------------------
- 2 files changed, 59 insertions(+), 36 deletions(-)
+ drivers/hid/Kconfig    |  2 +-
+ drivers/hid/hid-tmff.c | 83 ++++++++++++++++++++++++++++++--------------------
+ 2 files changed, 51 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 5e70519..546ac4a 100644
+index e97c382..17ed5cf 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -399,7 +399,7 @@ config LOGIG940_FF
- config LOGIWHEELS_FF
- 	bool "Logitech wheels configuration and force feedback support"
- 	depends on HID_LOGITECH
+@@ -730,7 +730,7 @@ config HID_THRUSTMASTER
+ config THRUSTMASTER_FF
+ 	bool "ThrustMaster devices force feedback support"
+ 	depends on HID_THRUSTMASTER
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
- 	default LOGITECH_FF
- 	help
- 	  Say Y here if you want to enable force feedback and range setting
-diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-index 24883b4..d629093 100644
---- a/drivers/hid/hid-lg4ff.c
-+++ b/drivers/hid/hid-lg4ff.c
-@@ -25,6 +25,7 @@
- 
- 
+ 	---help---
+ 	  Say Y here if you have a THRUSTMASTER FireStore Dual Power 2 or 3,
+ 	  a THRUSTMASTER Dual Trigger 3-in-1 or a THRUSTMASTER Ferrari GT
+diff --git a/drivers/hid/hid-tmff.c b/drivers/hid/hid-tmff.c
+index b833760..3df000c 100644
+--- a/drivers/hid/hid-tmff.c
++++ b/drivers/hid/hid-tmff.c
+@@ -31,9 +31,12 @@
  #include <linux/input.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
 +#include <linux/input/ff-memless-next.h>
- #include <linux/usb.h>
- #include <linux/hid.h>
  
-@@ -45,6 +46,8 @@
- #define G27_REV_MIN 0x38
- #define G27_2_REV_MIN 0x39
+ #include "hid-ids.h"
  
-+#define FF_UPDATE_RATE 8
++#define FF_UPDATE_RATE 50
 +
- #define to_hid_device(pdev) container_of(pdev, struct hid_device, dev)
+ static const signed short ff_rumble[] = {
+ 	FF_RUMBLE,
+ 	-1
+@@ -41,6 +44,13 @@ static const signed short ff_rumble[] = {
  
- static void hid_lg4ff_set_range_dfp(struct hid_device *hid, u16 range);
-@@ -69,6 +72,13 @@ struct lg4ff_device_entry {
- 
- static const signed short lg4ff_wheel_effects[] = {
+ static const signed short ff_joystick[] = {
  	FF_CONSTANT,
 +	FF_RAMP,
 +	FF_PERIODIC,
++	FF_SINE,
 +	FF_SQUARE,
 +	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
 +	FF_SAW_DOWN,
- 	FF_AUTOCENTER,
++	FF_SAW_UP,
  	-1
  };
-@@ -184,47 +194,60 @@ int lg4ff_adjust_input_event(struct hid_device *hid, struct hid_field *field,
- 	}
+ 
+@@ -67,12 +77,12 @@ static inline int tmff_scale_u16(unsigned int in, int minimum, int maximum)
+ 	return ret;
  }
  
--static int hid_lg4ff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int hid_lg4ff_start_combined(struct hid_device *hid, struct hid_report *report,
-+				    const struct mlnx_simple_force *force)
-+{
-+	__s32 *value = report->field[0]->value;
-+	int scaled_x;
-+
-+	/* Scale down from MLNX range */
-+	scaled_x = 0x80 - (force->x * 0xff / 0xffff);
-+
-+	value[0] = 0x11;	/* Slot 1 */
-+	value[1] = 0x08;
-+	value[2] = scaled_x;
-+	value[3] = 0x80;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+	return 0;
-+}
-+
-+static int hid_lg4ff_stop_combined(struct hid_device *hid, struct hid_report *report)
-+{
-+	__s32 *value = report->field[0]->value;
-+
-+	value[0] = 0x13;	/* Slot 1 */
-+	value[1] = 0x00;
-+	value[2] = 0x00;
-+	value[3] = 0x00;
-+	value[4] = 0x00;
-+	value[5] = 0x00;
-+	value[6] = 0x00;
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+	return 0;
-+}
-+
-+static int hid_lg4ff_control(struct input_dev *dev, void *data, const struct mlnx_effect_command *command)
+-/* Changes values from -0x80 to 0x7f into values from minimum to maximum */
+-static inline int tmff_scale_s8(int in, int minimum, int maximum)
++/* Changes values from -0x7fff to 0x7fff into values from minimum to maximum */
++static inline int tmff_scale_s32(int in, int minimum, int maximum)
+ {
+ 	int ret;
+ 
+-	ret = (((in + 0x80) * (maximum - minimum)) / 0xff) + minimum;
++	ret = (((in + 0x7fff) * (maximum - minimum)) / 0xffff) + minimum;
+ 	if (ret < minimum)
+ 		return minimum;
+ 	if (ret > maximum)
+@@ -81,43 +91,50 @@ static inline int tmff_scale_s8(int in, int minimum, int maximum)
+ }
+ 
+ static int tmff_play(struct input_dev *dev, void *data,
+-		struct ff_effect *effect)
++		const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
--	__s32 *value = report->field[0]->value;
--	int x;
--
--#define CLAMP(x) do { if (x < 0) x = 0; else if (x > 0xff) x = 0xff; } while (0)
+ 	struct tmff_device *tmff = data;
+ 	struct hid_field *ff_field = tmff->ff_field;
+ 	int x, y;
+-	int left, right;	/* Rumbling */
 -
 -	switch (effect->type) {
 -	case FF_CONSTANT:
--		x = effect->u.ramp.start_level + 0x80;	/* 0x80 is no force */
--		CLAMP(x);
+-		x = tmff_scale_s8(effect->u.ramp.start_level,
+-					ff_field->logical_minimum,
+-					ff_field->logical_maximum);
+-		y = tmff_scale_s8(effect->u.ramp.end_level,
+-					ff_field->logical_minimum,
+-					ff_field->logical_maximum);
 -
--		if (x == 0x80) {
--			/* De-activate force in slot-1*/
--			value[0] = 0x13;
--			value[1] = 0x00;
--			value[2] = 0x00;
--			value[3] = 0x00;
--			value[4] = 0x00;
--			value[5] = 0x00;
--			value[6] = 0x00;
--
--			hid_hw_request(hid, report, HID_REQ_SET_REPORT);
--			return 0;
--		}
--
--		value[0] = 0x11;	/* Slot 1 */
--		value[1] = 0x08;
--		value[2] = x;
--		value[3] = 0x80;
--		value[4] = 0x00;
--		value[5] = 0x00;
--		value[6] = 0x00;
+-		dbg_hid("(x, y)=(%04x, %04x)\n", x, y);
+-		ff_field->value[0] = x;
+-		ff_field->value[1] = y;
+-		hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
+-		break;
  
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+-	case FF_RUMBLE:
+-		left = tmff_scale_u16(effect->u.rumble.weak_magnitude,
+-					ff_field->logical_minimum,
+-					ff_field->logical_maximum);
+-		right = tmff_scale_u16(effect->u.rumble.strong_magnitude,
+-					ff_field->logical_minimum,
+-					ff_field->logical_maximum);
+-
+-		dbg_hid("(left,right)=(%08x, %08x)\n", left, right);
+-		ff_field->value[0] = left;
+-		ff_field->value[1] = right;
+-		hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
 +	switch (command->cmd) {
-+	case MLNX_START_COMBINED:
-+		return hid_lg4ff_start_combined(hid, report, &command->u.simple_force);
++	case MLNX_START_COMBINED: {
++		const struct mlnx_simple_force *sf = &command->u.simple_force;
++		x = tmff_scale_s32(sf->x,
++				   ff_field->logical_minimum,
++				   ff_field->logical_maximum);
++		y = tmff_scale_s32(sf->y,
++				   ff_field->logical_minimum,
++				   ff_field->logical_maximum);
 +		break;
++		}
 +	case MLNX_STOP_COMBINED:
-+		return hid_lg4ff_stop_combined(hid, report);
++		x = 0;
++		y = 0;
++		break;
++	case MLNX_START_RUMBLE: {
++		const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
++		x = tmff_scale_u16(rumble_force->weak,
++				   ff_field->logical_minimum,
++				   ff_field->logical_maximum);
++		y = tmff_scale_u16(rumble_force->strong,
++				   ff_field->logical_minimum,
++				   ff_field->logical_maximum);
  		break;
++		}
++	case MLNX_STOP_RUMBLE:
++		x = 0;
++		y = 0;
++		break;
 +	default:
-+		dbg_hid("Unsupported effect command");
 +		return -EINVAL;
  	}
--	return 0;
++
++	ff_field->value[0] = x;
++	ff_field->value[1] = y;
++
++	hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
+ 	return 0;
  }
  
- /* Sends default autocentering command compatible with
-@@ -610,7 +633,7 @@ int lg4ff_init(struct hid_device *hid)
- 	for (j = 0; lg4ff_devices[i].ff_effects[j] >= 0; j++)
- 		set_bit(lg4ff_devices[i].ff_effects[j], dev->ffbit);
+@@ -192,7 +209,7 @@ static int tmff_init(struct hid_device *hid, const signed short *ff_bits)
+ 		goto fail;
+ 	}
  
--	error = input_ff_create_memless(dev, NULL, hid_lg4ff_play);
-+	error = input_ff_create_mlnx(dev, (void *)NULL, hid_lg4ff_control, FF_UPDATE_RATE);
- 
+-	error = input_ff_create_memless(input_dev, tmff, tmff_play);
++	error = input_ff_create_mlnx(input_dev, tmff, tmff_play, FF_UPDATE_RATE);
  	if (error)
- 		return error;
+ 		goto fail;
+ 
 -- 
 1.9.2
 
