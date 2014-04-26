@@ -1,123 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaDZMAk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:00:40 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49942 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaDZMAh (ORCPT
+	id S1752106AbaDZMCv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:02:51 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:49808 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaDZMCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:00:37 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-03-535b9fe31005
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: introduce help macro ADDRS_PER_PAGE()
-Date: Sat, 26 Apr 2014 19:59:52 +0800
-Message-id: <004901cf6147$21bed300$653c7900$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9g+YGmX51BZmevSoWzlfC3uhw6gg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd3H86ODDc5O1bG4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+Pb7gXMBU2iFVf+
-	/GNqYOwX7GLk5JAQMJE49/cIO4QtJnHh3nq2LkYuDiGB6YwS87afYARJCAn8YJTY2pMHYrMJ
-	qEgs7/jPBGKLCChKbHi/AayZWSBT4l7TDGYQW1jATeLQ3lVgNouAqsTBF22sXYwcHLwClhIb
-	FziChHkFBCV+TL7HAtGqJbF5WxMrhC0vsXnNW2aIexQkdpx9zQixSk9i+7TZUDXiEhuP3GKZ
-	wCgwC8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsP4mfQOxlUN
-	FocYBTgYlXh4d+REBQuxJpYVV+YeYpTgYFYS4Y2dHR0sxJuSWFmVWpQfX1Sak1p8iFGag0VJ
-	nPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTHyVMLH4IOXNFXunlM/ciC8cLn+tfd7X9XfyMv0
-	nxTD92D91Tf/i5QZpcx0Hk+7fkMoVolHXzG4rOre4ikBgpxeLYezFdU2aM1xXPn9xnn/wqXS
-	zJrh+s0vXOo3Rosbl/wK7em0leuptZ0rfNhOciKDQ9llpy9Tv9yU1HXX25D1++zEOUrfbZVY
-	ijMSDbWYi4oTATk+I9NfAgAA
+	Sat, 26 Apr 2014 08:02:49 -0400
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org,
+        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 00/24] input: Introduce ff-memless-next as an improved replacement for ff-memless
+Date: Sat, 26 Apr 2014 13:57:37 +0200
+Message-Id: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
+X-Mailer: git-send-email 1.9.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce help macro ADDRS_PER_PAGE() to get the number of address pointers in
-direct node or inode.
+ff-memless-next (MLNX) is a largely improved version of the current ff-memless
+(FFML) driver. MLNX supports all force feedback effects currently available in
+the Linux force feedback userspace API. All effects are handled in accordance
+with Microsoft's DirectInput/XInput. Most notable changes include support for
+conditional effects, proper handling of all periodic waveforms and improved
+emulation of rumble effects through periodic effects. MLNX also uses its own
+kernel API to pass processed effects to hardware-specific drivers instead of
+abusing "ff_effect" struct. The API is documented in the respective header
+file.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/data.c          |    6 ++----
- fs/f2fs/file.c          |    5 +----
- fs/f2fs/recovery.c      |    5 +----
- include/linux/f2fs_fs.h |    3 +++
- 4 files changed, 7 insertions(+), 12 deletions(-)
+MLNX has been expanded to be a direct replacement for FFML.
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 150c12a..6daef54 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -652,8 +652,7 @@ static int get_data_block(struct inode *inode, sector_t iblock,
- 		goto put_out;
- 	}
- 
--	end_offset = IS_INODE(dn.node_page) ?
--			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
-+	end_offset = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
- 	bh_result->b_size = (((size_t)1) << blkbits);
- 	dn.ofs_in_node++;
- 	pgofs++;
-@@ -675,8 +674,7 @@ get_next:
- 		if (dn.data_blkaddr == NEW_ADDR)
- 			goto put_out;
- 
--		end_offset = IS_INODE(dn.node_page) ?
--			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
-+		end_offset = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
- 	}
- 
- 	if (maxblocks > (bh_result->b_size >> blkbits)) {
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 60e7d54..bb365c9 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -288,10 +288,7 @@ int truncate_blocks(struct inode *inode, u64 from)
- 		return err;
- 	}
- 
--	if (IS_INODE(dn.node_page))
--		count = ADDRS_PER_INODE(F2FS_I(inode));
--	else
--		count = ADDRS_PER_BLOCK;
-+	count = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
- 
- 	count -= dn.ofs_in_node;
- 	f2fs_bug_on(count < 0);
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 9eb6487..be1e3e8 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -301,10 +301,7 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
- 		goto out;
- 
- 	start = start_bidx_of_node(ofs_of_node(page), fi);
--	if (IS_INODE(page))
--		end = start + ADDRS_PER_INODE(fi);
--	else
--		end = start + ADDRS_PER_BLOCK;
-+	end = start + ADDRS_PER_PAGE(page, fi);
- 
- 	f2fs_lock_op(sbi);
- 
-diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
-index df53e17..8c03f71 100644
---- a/include/linux/f2fs_fs.h
-+++ b/include/linux/f2fs_fs.h
-@@ -146,6 +146,9 @@ struct f2fs_extent {
- #define ADDRS_PER_BLOCK		1018	/* Address Pointers in a Direct Block */
- #define NIDS_PER_BLOCK		1018	/* Node IDs in an Indirect Block */
- 
-+#define ADDRS_PER_PAGE(page, fi)	\
-+	(IS_INODE(page) ? ADDRS_PER_INODE(fi) : ADDRS_PER_BLOCK)
-+
- #define	NODE_DIR1_BLOCK		(DEF_ADDRS_PER_INODE + 1)
- #define	NODE_DIR2_BLOCK		(DEF_ADDRS_PER_INODE + 2)
- #define	NODE_IND1_BLOCK		(DEF_ADDRS_PER_INODE + 3)
+Support for FF_PERIODIC and FF_RAMP has been added to all devices that
+support FF_CONSTANT as a part of the port to the new API.
+
+This patch series:
+1) Adds "ff-memless-next" module [1]
+2) Ports all hardware-specific drivers to MLNX's API [2-23]
+3) Removes FFML and replaces it with MLNX [24]
+
+Signed-off-by: Michal Malý <madcatxster@xxxxxxxxxxxxxxxxxx>
+
+v3:
+ - Rebase against latest linux-next. Fixes conflict in hid-sony.c and
+   max8997_haptic.c
+ - Updated documentation in ff-memless-next.h. The documentation now describes
+   parameters of the callback function and specifically mentions that
+   HW-specific drivers must not keep a reference to mlnx_effect_command struct
+   to which a pointer is passed in the callback function.
+ - Fix a minor brace inconsistency in hid-lgff
+ I believe that all concerns regarding v2 have been resolved as false alarms.
+
+v2:
+ - Add missing msecs to jiffies conversion in ff-memless-next
+ - lgff: Properly convert force on Y axis from MLNX to device range
+         Support periodic effects for "joystick_ac" device class
+ - lg3ff: Properly convert forces from MLNX to device range
+ - Very minor coding style issues fixed
+
+Michal Malý (24):
+  Add ff-memless-next module
+  Port arizona-haptics to ff-memless-next
+  Port twl4030-vibra to ff-memless-next
+  Port twl6040-vibra to ff-memless-next
+  Port max8997_haptic to ff-memless-next
+  Port pm8xxx-vibrator to ff-memless-next
+  Port hid-axff to ff-memless-next
+  Port hid-emsff to ff-memless-next
+  Port hid-dr to ff-memless-next
+  Port hid-gaff to ff-memless-next
+  Port hid-holtekff to ff-memless-next
+  Port hid-lgff to ff-memless-next
+  Port hid-lg3ff to ff-memless-next
+  Port hid-pl to ff-memless-next
+  Port hid-sjoy to ff-memless-next
+  Port hid-sony to ff-memless-next
+  Port hid-tmff to ff-memless-next
+  Port hid-wiimote-modules to ff-memless-next
+  Port hid-zpff to ff-memless-next
+  Port gamecon to ff-memless-next
+  Port xpad to ff-memless-next
+  - Port hid-lg2ff to ff-memless-next     - Clamp vibration magnitude to
+    range <0x02; 0xfd> to prevent irregular       shaking of the
+    vibration motors.
+  Port hid-lg4ff to ff-memless-next
+  Replace ff-memless with ff-memless-next
+
+ drivers/hid/Kconfig                   |   30 +-
+ drivers/hid/hid-axff.c                |   32 +-
+ drivers/hid/hid-dr.c                  |   59 +-
+ drivers/hid/hid-emsff.c               |   38 +-
+ drivers/hid/hid-gaff.c                |   32 +-
+ drivers/hid/hid-holtekff.c            |   47 +-
+ drivers/hid/hid-lg2ff.c               |   65 ++-
+ drivers/hid/hid-lg3ff.c               |   60 +-
+ drivers/hid/hid-lg4ff.c               |   93 +--
+ drivers/hid/hid-lgff.c                |   70 ++-
+ drivers/hid/hid-pl.c                  |   38 +-
+ drivers/hid/hid-sjoy.c                |   35 +-
+ drivers/hid/hid-sony.c                |   24 +-
+ drivers/hid/hid-tmff.c                |   83 +--
+ drivers/hid/hid-wiimote-modules.c     |   74 ++-
+ drivers/hid/hid-zpff.c                |   30 +-
+ drivers/input/Kconfig                 |    4 +-
+ drivers/input/Makefile                |    2 +-
+ drivers/input/ff-memless-next.c       | 1037 +++++++++++++++++++++++++++++++++
+ drivers/input/ff-memless.c            |  547 -----------------
+ drivers/input/joystick/Kconfig        |    4 +-
+ drivers/input/joystick/gamecon.c      |   57 +-
+ drivers/input/joystick/xpad.c         |  125 ++--
+ drivers/input/misc/Kconfig            |   10 +-
+ drivers/input/misc/arizona-haptics.c  |   39 +-
+ drivers/input/misc/max8997_haptic.c   |   25 +-
+ drivers/input/misc/pm8xxx-vibrator.c  |   28 +-
+ drivers/input/misc/twl4030-vibra.c    |   31 +-
+ drivers/input/misc/twl6040-vibra.c    |   27 +-
+ include/linux/input.h                 |    3 -
+ include/linux/input/ff-memless-next.h |  162 +++++
+ 31 files changed, 1952 insertions(+), 959 deletions(-)
+ create mode 100644 drivers/input/ff-memless-next.c
+ delete mode 100644 drivers/input/ff-memless.c
+ create mode 100644 include/linux/input/ff-memless-next.h
+
 -- 
-1.7.9.5
-
+1.9.2
 
