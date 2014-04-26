@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaDZPEa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 11:04:30 -0400
-Received: from prifuk.cz ([31.31.77.140]:50020 "EHLO smtp.devoid-pointer.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860AbaDZPDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 11:03:36 -0400
+	id S1752718AbaDZPEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 11:04:35 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:50030 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaDZPDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 11:03:41 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v4 16/24] hid: Port hid-sony to ff-memless-next
-Date: Sat, 26 Apr 2014 17:02:15 +0200
-Message-Id: <1398524543-15012-17-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v4 18/24] hid: Port hid-wiimote-modules to ff-memless-next
+Date: Sat, 26 Apr 2014 17:02:17 +0200
+Message-Id: <1398524543-15012-19-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -24,87 +25,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-sony to ff-memless-next
+Port hid-wiimote-modules to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-sony.c | 23 +++++++++++++++++------
- 2 files changed, 18 insertions(+), 7 deletions(-)
+ drivers/hid/Kconfig               |  2 +-
+ drivers/hid/hid-wiimote-modules.c | 74 ++++++++++++++++++++++++---------------
+ 2 files changed, 46 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 9260d14..e97c382 100644
+index 17ed5cf..23d9776 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -634,7 +634,7 @@ config HID_SONY
- config SONY_FF
- 	bool "Sony PS2/3/4 accessories force feedback support" 
- 	depends on HID_SONY
+@@ -749,7 +749,7 @@ config HID_WIIMOTE
+ 	depends on HID
+ 	depends on LEDS_CLASS
+ 	select POWER_SUPPLY
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Say Y here if you have a Sony PS2/3/4 accessory and want to enable
- 	force feedback support for it.
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 908de27..5a28833 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -34,6 +34,7 @@
+ 	Support for Nintendo Wii and Wii U Bluetooth peripherals. Supported
+ 	devices are the Wii Remote and its extension devices, but also devices
+diff --git a/drivers/hid/hid-wiimote-modules.c b/drivers/hid/hid-wiimote-modules.c
+index 6b61f01..95b20ea 100644
+--- a/drivers/hid/hid-wiimote-modules.c
++++ b/drivers/hid/hid-wiimote-modules.c
+@@ -37,8 +37,11 @@
+ #include <linux/hid.h>
+ #include <linux/input.h>
  #include <linux/spinlock.h>
- #include <linux/list.h>
- #include <linux/input/mt.h>
 +#include <linux/input/ff-memless-next.h>
- 
- #include "hid-ids.h"
- 
-@@ -53,6 +54,7 @@
- #define SONY_BATTERY_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
- #define SONY_FF_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
+ #include "hid-wiimote.h"
  
 +#define FF_UPDATE_RATE 50
- #define MAX_LEDS 4
++
+ /*
+  * Keys
+  * The initial Wii Remote provided a bunch of buttons that are reported as
+@@ -131,21 +134,27 @@ static void wiimod_rumble_worker(struct work_struct *work)
+ }
  
- static const u8 sixaxis_rdesc_fixup[] = {
-@@ -1308,16 +1310,25 @@ static void dualshock4_state_worker(struct work_struct *work)
- 
- #ifdef CONFIG_SONY_FF
- static int sony_play_effect(struct input_dev *dev, void *data,
--			    struct ff_effect *effect)
-+			    const struct mlnx_effect_command *command)
+ static int wiimod_rumble_play(struct input_dev *dev, void *data,
+-			      struct ff_effect *eff)
++			      const struct mlnx_effect_command *command)
  {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct sony_sc *sc = hid_get_drvdata(hid);
+ 	struct wiimote_data *wdata = input_get_drvdata(dev);
+-	__u8 value;
+-
+-	/*
+-	 * The wiimote supports only a single rumble motor so if any magnitude
+-	 * is set to non-zero then we start the rumble motor. If both are set to
+-	 * zero, we stop the rumble motor.
+-	 */
+-
+-	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
+-		value = 1;
+-	else
+-		value = 0;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
--	if (effect->type != FF_RUMBLE)
--		return 0;
- 
--	sc->left = effect->u.rumble.strong_magnitude / 256;
--	sc->right = effect->u.rumble.weak_magnitude / 256;
++	__u8 value = 0;
++
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		sc->left = rumble_force->strong / 256;
-+		sc->right = rumble_force->weak / 256;
++		/*
++		 * The wiimote supports only a single rumble motor so if any magnitude
++		 * is set to non-zero then we start the rumble motor. If both are set to
++		 * zero, we stop the rumble motor.
++		 */
++		if (rumble_force->strong || rumble_force->weak)
++			value = 1;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		sc->left = 0;
-+		sc->right = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	schedule_work(&sc->state_worker);
- 	return 0;
-@@ -1330,7 +1341,7 @@ static int sony_init_ff(struct hid_device *hdev)
- 	struct input_dev *input_dev = hidinput->input;
+ 	/* Locking state.lock here might deadlock with input_event() calls.
+ 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
+@@ -161,7 +170,7 @@ static int wiimod_rumble_probe(const struct wiimod_ops *ops,
+ 	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
  
- 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
--	return input_ff_create_memless(input_dev, NULL, sony_play_effect);
-+	return input_ff_create_mlnx(input_dev, NULL, sony_play_effect, FF_UPDATE_RATE);
+ 	set_bit(FF_RUMBLE, wdata->input->ffbit);
+-	if (input_ff_create_memless(wdata->input, NULL, wiimod_rumble_play))
++	if (input_ff_create_mlnx(wdata->input, NULL, wiimod_rumble_play, FF_UPDATE_RATE))
+ 		return -ENOMEM;
+ 
+ 	return 0;
+@@ -1771,21 +1780,28 @@ static void wiimod_pro_close(struct input_dev *dev)
  }
  
- #else
+ static int wiimod_pro_play(struct input_dev *dev, void *data,
+-			   struct ff_effect *eff)
++			   const struct mlnx_effect_command *command)
+ {
+ 	struct wiimote_data *wdata = input_get_drvdata(dev);
+-	__u8 value;
+-
+-	/*
+-	 * The wiimote supports only a single rumble motor so if any magnitude
+-	 * is set to non-zero then we start the rumble motor. If both are set to
+-	 * zero, we stop the rumble motor.
+-	 */
+-
+-	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
+-		value = 1;
+-	else
+-		value = 0;
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
++	__u8 value = 0;
++
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		/*
++		 * The wiimote supports only a single rumble motor so if any magnitude
++		 * is set to non-zero then we start the rumble motor. If both are set to
++		 * zero, we stop the rumble motor.
++		 */
++
++		if (rumble_force->strong || rumble_force->weak)
++			value = 1;
++		break;
++	case MLNX_STOP_RUMBLE:
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	/* Locking state.lock here might deadlock with input_event() calls.
+ 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
+@@ -1867,8 +1883,8 @@ static int wiimod_pro_probe(const struct wiimod_ops *ops,
+ 	set_bit(FF_RUMBLE, wdata->extension.input->ffbit);
+ 	input_set_drvdata(wdata->extension.input, wdata);
+ 
+-	if (input_ff_create_memless(wdata->extension.input, NULL,
+-				    wiimod_pro_play)) {
++	if (input_ff_create_mlnx(wdata->extension.input, NULL,
++				 wiimod_pro_play, FF_UPDATE_RATE)) {
+ 		ret = -ENOMEM;
+ 		goto err_free;
+ 	}
 -- 
 1.9.2
 
