@@ -1,111 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaDZRVR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 13:21:17 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:48846 "EHLO smtp.gentoo.org"
+	id S1752483AbaDZR3i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 13:29:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752562AbaDZRVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 13:21:13 -0400
-Message-ID: <535BEAF9.9050202@gentoo.org>
-Date: Sat, 26 Apr 2014 13:20:57 -0400
-From: Richard Yao <ryao@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf machine: Search for modules in %s/lib/modules/%s
-References: <1397148779-9169-1-git-send-email-ryao@gentoo.org> <871twztacr.fsf@sejong.aot.lge.com> <20140415115629.GF1700@krava.brq.redhat.com>
-In-Reply-To: <20140415115629.GF1700@krava.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="UUmhJWhWC1lJTOqkemtvfghCN9TDRkrTA"
+	id S1751397AbaDZR3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 13:29:36 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [RFC PATCH] uprobes: add comment with insn opcodes, mnemonics and why we dont support them
+Date: Sat, 26 Apr 2014 19:29:29 +0200
+Message-Id: <1398533370-8865-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---UUmhJWhWC1lJTOqkemtvfghCN9TDRkrTA
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+After adding these, it's clear we have some awkward choices there.
+some valid instructions are prohibited from uprobing while
+several invalid ones are allowed.
 
-Dear Jirka,
+Hopefully future edits to the good-opcode tables will fix wrong bits
+or explain why those bits are not wrong.
 
-I have sent an updated patch, but instead of using your white list idea,
-I went with a black list. That way things like the historical addon
-directory are included and anyone who decides to use a custom directory
-for their own in-development modules is free to do so.
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Jim Keniston <jkenisto@us.ibm.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/uprobes.c | 153 ++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 134 insertions(+), 19 deletions(-)
 
-Yours truly,
-Richard Yao
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 29b152d..7021dbe 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -66,6 +66,49 @@
+  * Good-instruction tables for 32-bit apps.  This is non-const and volatile
+  * to keep gcc from statically optimizing it out, as variable_test_bit makes
+  * some versions of gcc to think only *(unsigned long*) is used.
++ *
++ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
++ * won't report *prefixes* as OPCODE1(insn).
++ * 0f - 2-byte opcode prefix
++ * 26,2e,36,3e - es:/cs:/ss:/ds:
++ * 64 - fs: (marked as "good", why?)
++ * 65 - gs: (marked as "good", why?)
++ * 66 - operand-size prefix
++ * 67 - address-size prefix
++ * f0 - lock prefix
++ * f2 - repnz    (marked as "good", why?)
++ * f3 - rep/repz (marked as "good", why?)
++ *
++ * Opcodes we'll probably never support:
++ * 6c-6f - ins,outs. SEGVs if used in userspace
++ * e4-e7 - in,out imm. SEGVs if used in userspace
++ * ec-ef - in,out acc. SEGVs if used in userspace
++ * cc - int3. SIGTRAP if used in userspace
++ * ce - into. Not used in userspace - no kernel support to make it useful. SEGVs
++ *	(why we support bound (62) then? it's similar, and similarly unused...)
++ * f1 - int1. SIGTRAP if used in userspace
++ * f4 - hlt. SEGVs if used in userspace
++ * fa - cli. SEGVs if used in userspace
++ * fb - sti. SEGVs if used in userspace
++ *
++ * Opcodes which need some work to be supported:
++ * 07,17,1f - pop es/ss/ds
++ *	Normally not used in userspace, but would execute if used.
++ *	Can cause GP or stack exception if tries to load wrong segment descriptor.
++ *	We hesitate to run them under single step since kernel's handling
++ *	of userspace single-stepping (TF flag) is fragile.
++ *	We can easily refuse to support push es/cs/ss/ds (06/0e/16/1e)
++ *	on the same grounds that they are never used.
++ * cd - int N.
++ *	Used by userspace for "int 80" syscall entry. (Other "int N"
++ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
++ *	Not supported since kernel's handling of userspace single-stepping
++ *	(TF flag) is fragile.
++ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
++ *
++ * Opcodes which can be enabled right away:
++ * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
++ * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
+  */
+ static volatile u32 good_insns_32[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+@@ -90,7 +133,48 @@ static volatile u32 good_insns_32[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ };
+ 
+-/* Using this for both 64-bit and 32-bit apps */
++/* Using this for both 64-bit and 32-bit apps.
++ * Opcodes we don't support:
++ * 0f 00 - SLDT/STR/LLDT/LTR/VERR/VERW/-/- group. System insns
++ * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
++ *	Also encodes tons of other system insns if mod=11.
++ *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
++ * 0f 02 - lar (why? should be safe, it throws no exceptipons)
++ * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
++ * 0f 04 - undefined
++ * 0f 05 - syscall
++ * 0f 06 - clts (CPL0 insn)
++ * 0f 07 - sysret
++ * 0f 08 - invd (CPL0 insn)
++ * 0f 09 - wbinvd (CPL0 insn)
++ * 0f 0a - undefined
++ * 0f 0b - ud1
++ * 0f 0c - undefined
++ * 0f 0d - prefetchFOO (amd prefetch insns)
++ * 0f 18 - prefetchBAR (intel prefetch insns)
++ * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
++ * 0f 25 - undefined
++ * 0f 26 - mov to test regs
++ * 0f 27 - undefined
++ * 0f 30 - wrmsr (CPL0 insn)
++ * 0f 34 - sysenter
++ * 0f 35 - sysexit
++ * 0f 36 - undefined
++ * 0f 37 - getsec
++ * 0f 38-3f - 3-byte opcodes (why?? all look safe)
++ * 0f 78 - vmread
++ * 0f 79 - vmwrite
++ * 0f 7a - undefined
++ * 0f 7b - undefined
++ * 0f 7c - undefined
++ * 0f 7d - undefined
++ * 0f a6 - undefined
++ * 0f a7 - undefined
++ * 0f b8 - popcnt (why?? it's an ordinary ALU op)
++ * 0f d0 - undefined
++ * 0f f0 - lddqu (why?? it's an ordinary vector load op)
++ * 0f ff - undefined
++ */
+ static volatile u32 good_2byte_insns[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+@@ -115,7 +199,55 @@ static volatile u32 good_2byte_insns[256 / 32] = {
+ };
+ 
+ #ifdef CONFIG_X86_64
+-/* Good-instruction tables for 64-bit apps */
++/* Good-instruction tables for 64-bit apps.
++ *
++ * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
++ * won't report *prefixes* as OPCODE1(insn).
++ * 0f - 2-byte opcode prefix
++ * 26,2e,36,3e - es:/cs:/ss:/ds:
++ * 40-4f - rex prefixes
++ * 64 - fs: (marked as "good", why?)
++ * 65 - gs: (marked as "good", why?)
++ * 66 - operand-size prefix
++ * 67 - address-size prefix
++ * f0 - lock prefix
++ * f2 - repnz    (marked as "good", why?)
++ * f3 - rep/repz (marked as "good", why?)
++ *
++ * Genuinely invalid opcodes:
++ * 06,07 - formerly push/pop es
++ * 0e - formerly push cs
++ * 16,17 - formerly push/pop ss
++ * 1e,1f - formerly push/pop ds
++ * 27,2f,37,3f - formerly daa/das/aaa/aas
++ * 60,61 - formerly pusha/popa
++ * 62 - formerly bound. EVEX prefix for AVX512
++ * 82 - formerly redundant encoding of Group1
++ * 9a - formerly call seg:ofs (marked as "supported"???)
++ * c4,c5 - formerly les/lds. VEX prefixes for AVX
++ * ce - formerly into
++ * d4,d4 - formerly aam/aad
++ * d6 - formerly undocumented salc
++ * ea - formerly jmp seg:ofs (marked as "supported"???)
++ *
++ * Opcodes we'll probably never support:
++ * 6c-6f - ins,outs. SEGVs if used in userspace
++ * e4-e7 - in,out imm. SEGVs if used in userspace
++ * ec-ef - in,out acc. SEGVs if used in userspace
++ * cc - int3. SIGTRAP if used in userspace
++ * f1 - int1. SIGTRAP if used in userspace
++ * f4 - hlt. SEGVs if used in userspace
++ * fa - cli. SEGVs if used in userspace
++ * fb - sti. SEGVs if used in userspace
++ *
++ * Opcodes which need some work to be supported:
++ * cd - int N.
++ *	Used by userspace for "int 80" syscall entry. (Other "int N"
++ *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
++ *	Not supported since kernel's handling of userspace single-stepping
++ *	(TF flag) is fragile.
++ * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
++ */
+ static volatile u32 good_insns_64[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
+ 	/*      ----------------------------------------------         */
+@@ -142,23 +274,6 @@ static volatile u32 good_insns_64[256 / 32] = {
+ #undef W
+ 
+ /*
+- * opcodes we'll probably never support:
+- *
+- *  6c-6d, e4-e5, ec-ed - in
+- *  6e-6f, e6-e7, ee-ef - out
+- *  cc, cd - int3, int
+- *  cf - iret
+- *  d6 - illegal instruction
+- *  f1 - int1/icebp
+- *  f4 - hlt
+- *  fa, fb - cli, sti
+- *  0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
+- *
+- * invalid opcodes in 64-bit mode:
+- *
+- *  06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
+- *  63 - we support this opcode in x86_64 but not in i386.
+- *
+  * opcodes we may need to refine support for:
+  *
+  *  0f - 2-byte instructions: For many of these instructions, the validity
+-- 
+1.8.1.4
 
-On 04/15/2014 07:56 AM, Jiri Olsa wrote:
-> On Tue, Apr 15, 2014 at 02:44:52PM +0900, Namhyung Kim wrote:
->> Hi Richard,
->>
->> On Thu, 10 Apr 2014 12:52:59 -0400, Richard Yao wrote:
->>> Modules installed outside of the kernel's build system should go into=
-
->>> "%s/lib/modules/%s/extra", but at present, perf will only look at the=
-m
->>> when they are in "%s/lib/modules/%s/kernel". Lets encourage good
->>> citizenship by relaxing this requirement to "%s/lib/modules/%s". This=
-
->>> way open source modules that are out-of-tree have no incentive to sta=
-rt
->>> populating a directory reserved for in-kernle modules and I can stop =
-hex
->>> editing my system's perf binary when profiling OSS out-of-tree module=
-s.
->>
->> But it'll make the perf traverses all the source and build directories=
-
->> too, right?  I don't think it's a right thing to do.
->>
->> Maybe we can also change stat() in map_groups__set_modules_path_dir() =
-to
->> lstat() so that it cannot go to unwanted directories in that case.  Or=
-
->> else, just checking "kernel" and "extra" directories will work.
->=20
-> yay, forgot about source directory.. :-\  looks like lstat should
-> help, but hardcoding kernel and extra sounds better to me.
->=20
-> Richard, please send updated patch
->=20
-> thanks,
-> jirka
->=20
-
-
-
---UUmhJWhWC1lJTOqkemtvfghCN9TDRkrTA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTW+r+AAoJECDuEZm+6ExkQyMQAIeqc2HUoACNI+E9gUD3UC0r
-TNxASfYp2M8ShKg4e7x4IT5HKPen0YlxVPKhzo4e+j5ThfXwnl9HVxCAnYG+/gki
-eaa3MXI29MJ6/UxSDcTZn5Lu2xuRRE5VVyuoCkvoj0VViCbBOX1+bdVXHkqZX5Jp
-73zyNsTfs06TuPTSI7jMBL3sXhlfE7VeAs+2n+bPCCgzRRlTSsalnBS7+tv1QURd
-sw80Hb+CnYXFuI+eOLuCCCrJiACjzZVBmFjYZv1UWn0F7VuPxMDbN9f/Eyz8J2e+
-HEW+uBClmuBgxcM7ifAnUki9SGv95+78BgcjMvMcWsRDHIRkA0yML+E+PsEB9xBz
-STSjmNPPC78gbKUD5llW2QGZvIqOb6dpz+gvUiFNhHilR1fTNlNTExxAeh5nGTu6
-cBGcQhSqrG/RU++STAgudsf1xf/71tfJ6TD4sN4ZTG5C02zR7eZrw0RPs7YC6m1I
-lpYm1fYWNtN6DveRlMWBU6BV2Ff6gi61mWwckqveIW84+2YZgAxhysF4nRzfEHk6
-Fw+1cRRWcQbOjPY7x+sLevUGmrkwhuaAmw8lWEOXs0R3frFRu5RFopJLMhhh4pG3
-zVLLeAzL2sLXrPagKe9tW/slyJlO81utOqgUmbJGKebYhubTFFmr7dHz4v0aoBG5
-3WlWH8+3bnXz7TkCQ73F
-=RSMJ
------END PGP SIGNATURE-----
-
---UUmhJWhWC1lJTOqkemtvfghCN9TDRkrTA--
