@@ -1,133 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaDZJf4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 05:35:56 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51896 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaDZJfx (ORCPT
+	id S1752024AbaDZJkt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 05:40:49 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:60967 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaDZJkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 05:35:53 -0400
-X-Google-Original-From: Lad Prabhakar <prabhakar.csengg@gmail.com
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: Shawn Guo <shawn.guo@freescale.com>, Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] ARM: configs: drop CONFIG_COMMON_CLK_DEBUG
-Date: Sat, 26 Apr 2014 15:05:22 +0530
-Message-Id: <1398504922-9223-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 26 Apr 2014 05:40:46 -0400
+Message-ID: <535B7F19.4070004@gmail.com>
+Date: Sat, 26 Apr 2014 11:40:41 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        linus.walleij@linaro.org
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] pinctrl: berlin: add the BG2CD pinctrl driver
+References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com> <1398268276-9696-5-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1398268276-9696-5-git-send-email-antoine.tenart@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 04/23/2014 05:51 PM, Antoine Ténart wrote:
+> Add the pin-controller driver for the Berlin BG2CD SoC, with definition
+> of its groups and functions. This uses the core Berlin pinctrl driver.
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+[...]
+> diff --git a/drivers/pinctrl/berlin/berlin-bg2cd.c b/drivers/pinctrl/berlin/berlin-bg2cd.c
+> new file mode 100644
+> index 000000000000..a12da1828bc9
+> --- /dev/null
+> +++ b/drivers/pinctrl/berlin/berlin-bg2cd.c
+> @@ -0,0 +1,194 @@
+> +/*
+> + * Marvell Berlin BG2CD pinctrl driver.
+> + *
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/of_device.h>
+> +#include <linux/platform_device.h>
+> +
+> +#include "berlin.h"
+> +
+> +static const struct berlin_desc_group berlin2cd_soc_pinctrl_groups[] = {
+> +	/* G */
+> +	BERLIN_PINCTRL_GROUP("G0", 0x00, 0x1, 0x00,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "jtag"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "led"),
+> +		BERLIN_PINCTRL_FUNCTION(0x3, "pwm")),
+> +	BERLIN_PINCTRL_GROUP("G1", 0x00, 0x2, 0x01,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G2", 0x00, 0x2, 0x02,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "fe"),
+> +		BERLIN_PINCTRL_FUNCTION(0x3, "pll"),
+> +		BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G3", 0x00, 0x2, 0x04,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "tw2"),
 
-this patch removes COMMON_CLK_DEBUG config option
-from defconfig file as this config option is obsolete.
+s/tw/twsi/ and for all below.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- arch/arm/configs/imx_v4_v5_defconfig    |    1 -
- arch/arm/configs/imx_v6_v7_defconfig    |    1 -
- arch/arm/configs/integrator_defconfig   |    1 -
- arch/arm/configs/keystone_defconfig     |    1 -
- arch/arm/configs/mxs_defconfig          |    1 -
- arch/arm/configs/sunxi_defconfig        |    1 -
- arch/arm/configs/vt8500_v6_v7_defconfig |    1 -
- 7 files changed, 7 deletions(-)
+> +		BERLIN_PINCTRL_FUNCTION(0x3, "pll"),
+> +		BERLIN_PINCTRL_FUNCTION(0x4, "fe"),
+> +		BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G4", 0x00, 0x2, 0x06,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "tw3"),
+> +		BERLIN_PINCTRL_FUNCTION(0x3, "pll"),
+> +		BERLIN_PINCTRL_FUNCTION(0x4, "pwm"),
+> +		BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G5", 0x00, 0x3, 0x08,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "tw3"),
+> +		BERLIN_PINCTRL_FUNCTION(0x3, "arc"),
+> +		BERLIN_PINCTRL_FUNCTION(0x4, "pwm"),
+> +		BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G6", 0x00, 0x2, 0x0b,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "uart0"),	/* RX/TX */
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G7", 0x00, 0x3, 0x0d,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "eddc"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "tw1"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G8", 0x00, 0x3, 0x10,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "ss0"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G9", 0x00, 0x3, 0x13,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "spi1"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "tw0")),
+> +	BERLIN_PINCTRL_GROUP("G10", 0x00, 0x2, 0x16,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G11", 0x00, 0x2, 0x18,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G12", 0x00, 0x3, 0x1a,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "usb1"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G13", 0x04, 0x3, 0x00,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "nand"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "usb0_dbg"),
+> +		BERLIN_PINCTRL_FUNCTION(0x2, "usb1_dbg")),
+> +	BERLIN_PINCTRL_GROUP("G14", 0x04, 0x1, 0x03,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "nand"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G15", 0x04, 0x2, 0x04,
+> +		BERLIN_PINCTRL_FUNCTION(0x0, "jtag"),
+> +		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
+> +	BERLIN_PINCTRL_GROUP("G16", 0x04, 0x3, 0x06,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
 
-diff --git a/arch/arm/configs/imx_v4_v5_defconfig b/arch/arm/configs/imx_v4_v5_defconfig
-index f1aeb7d..09f63e5 100644
---- a/arch/arm/configs/imx_v4_v5_defconfig
-+++ b/arch/arm/configs/imx_v4_v5_defconfig
-@@ -177,7 +177,6 @@ CONFIG_RTC_DRV_MXC=y
- CONFIG_DMADEVICES=y
- CONFIG_IMX_SDMA=y
- CONFIG_IMX_DMA=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_EXT2_FS=y
- CONFIG_EXT3_FS=y
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 09e9743..64c44bd 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -245,7 +245,6 @@ CONFIG_DRM_IMX_TVE=y
- CONFIG_DRM_IMX_LDB=y
- CONFIG_DRM_IMX_IPUV3_CORE=y
- CONFIG_DRM_IMX_IPUV3=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_PWM=y
- CONFIG_PWM_IMX=y
-diff --git a/arch/arm/configs/integrator_defconfig b/arch/arm/configs/integrator_defconfig
-index 5bae195..c1f5adc 100644
---- a/arch/arm/configs/integrator_defconfig
-+++ b/arch/arm/configs/integrator_defconfig
-@@ -73,7 +73,6 @@ CONFIG_LEDS_TRIGGER_HEARTBEAT=y
- CONFIG_LEDS_TRIGGER_CPU=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PL030=y
--CONFIG_COMMON_CLK_DEBUG=y
- CONFIG_EXT2_FS=y
- CONFIG_VFAT_FS=y
- CONFIG_TMPFS=y
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index ec9a41d..f682648 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -146,7 +146,6 @@ CONFIG_USB_DWC3_VERBOSE=y
- CONFIG_KEYSTONE_USB_PHY=y
- CONFIG_DMADEVICES=y
- CONFIG_TI_EDMA=y
--CONFIG_COMMON_CLK_DEBUG=y
- CONFIG_MEMORY=y
- CONFIG_TI_AEMIF=y
- CONFIG_EXT4_FS=y
-diff --git a/arch/arm/configs/mxs_defconfig b/arch/arm/configs/mxs_defconfig
-index 6150108..8d1a6c1 100644
---- a/arch/arm/configs/mxs_defconfig
-+++ b/arch/arm/configs/mxs_defconfig
-@@ -138,7 +138,6 @@ CONFIG_DMADEVICES=y
- CONFIG_MXS_DMA=y
- CONFIG_STAGING=y
- CONFIG_MXS_LRADC=y
--CONFIG_COMMON_CLK_DEBUG=y
- CONFIG_IIO=y
- CONFIG_IIO_SYSFS_TRIGGER=y
- CONFIG_PWM=y
-diff --git a/arch/arm/configs/sunxi_defconfig b/arch/arm/configs/sunxi_defconfig
-index b5df4a5..28287ae 100644
---- a/arch/arm/configs/sunxi_defconfig
-+++ b/arch/arm/configs/sunxi_defconfig
-@@ -62,7 +62,6 @@ CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_HEARTBEAT=y
- CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_TMPFS=y
- CONFIG_NFS_FS=y
-diff --git a/arch/arm/configs/vt8500_v6_v7_defconfig b/arch/arm/configs/vt8500_v6_v7_defconfig
-index f052017..9e7a256 100644
---- a/arch/arm/configs/vt8500_v6_v7_defconfig
-+++ b/arch/arm/configs/vt8500_v6_v7_defconfig
-@@ -73,7 +73,6 @@ CONFIG_LEDS_TRIGGERS=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_VT8500=y
- CONFIG_DMADEVICES=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_PWM=y
- CONFIG_PWM_VT8500=y
--- 
-1.7.9.5
+Remember to s/UNKNOW/UNKNOWN/
+
+Sebastian
+
+> +	BERLIN_PINCTRL_GROUP("G17", 0x04, 0x3, 0x09,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G18", 0x04, 0x1, 0x0c,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G19", 0x04, 0x1, 0x0d,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G20", 0x04, 0x1, 0x0e,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G21", 0x04, 0x3, 0x0f,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G22", 0x04, 0x3, 0x12,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G23", 0x04, 0x3, 0x15,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G24", 0x04, 0x2, 0x18,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G25", 0x04, 0x2, 0x1a,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G26", 0x04, 0x1, 0x1c,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G27", 0x04, 0x1, 0x1d,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("G28", 0x04, 0x2, 0x1e,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +};
+> +
+> +static const struct berlin_desc_group berlin2cd_sysmgr_pinctrl_groups[] = {
+> +	/* GSM */
+> +	BERLIN_PINCTRL_GROUP("GSM0", 0x40, 0x2, 0x00,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM1", 0x40, 0x2, 0x02,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM2", 0x40, 0x2, 0x04,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM3", 0x40, 0x2, 0x06,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM4", 0x40, 0x2, 0x08,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM5", 0x40, 0x2, 0x0a,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM6", 0x40, 0x2, 0x0c,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM7", 0x40, 0x1, 0x0e,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM8", 0x40, 0x1, 0x0f,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM9", 0x40, 0x1, 0x10,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM10", 0x40, 0x1, 0x11,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +	BERLIN_PINCTRL_GROUP("GSM11", 0x40, 0x1, 0x12,
+> +		BERLIN_PINCTRL_FUNCTION_UNKNOW),
+> +};
+> +
+> +static const struct berlin_pinctrl_desc berlin2cd_soc_pinctrl_data = {
+> +	.groups = berlin2cd_soc_pinctrl_groups,
+> +	.ngroups = ARRAY_SIZE(berlin2cd_soc_pinctrl_groups),
+> +};
+> +
+> +static const struct berlin_pinctrl_desc berlin2cd_sysmgr_pinctrl_data = {
+> +	.groups = berlin2cd_sysmgr_pinctrl_groups,
+> +	.ngroups = ARRAY_SIZE(berlin2cd_sysmgr_pinctrl_groups),
+> +};
+> +
+> +static const struct of_device_id berlin2cd_pinctrl_match[] = {
+> +	{
+> +		.compatible = "marvell,berlin2cd-soc-pinctrl",
+> +		.data = &berlin2cd_soc_pinctrl_data
+> +	},
+> +	{
+> +		.compatible = "marvell,berlin2cd-sysmgr-pinctrl",
+> +		.data = &berlin2cd_sysmgr_pinctrl_data
+> +	},
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(of, berlin2cd_pinctrl_match);
+> +
+> +static int berlin2cd_pinctrl_probe(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id
+> +		*device = of_match_device(berlin2cd_pinctrl_match, &pdev->dev);
+> +
+> +	return berlin_pinctrl_probe(pdev, device->data);
+> +}
+> +
+> +static struct platform_driver berlin2cd_pinctrl_driver = {
+> +	.probe	= berlin2cd_pinctrl_probe,
+> +	.driver	= {
+> +		.name = "berlin-bg2cd-pinctrl",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = berlin2cd_pinctrl_match,
+> +	},
+> +};
+> +module_platform_driver(berlin2cd_pinctrl_driver);
+> +
+> +MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
+> +MODULE_DESCRIPTION("Marvell Berlin BG2CD pinctrl driver");
+> +MODULE_LICENSE("GPL");
+> 
 
