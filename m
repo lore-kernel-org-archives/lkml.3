@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaDZTyl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 15:54:41 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:29861 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaDZTyj (ORCPT
+	id S1751926AbaDZUJz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 16:09:55 -0400
+Received: from nm2-vm7.bullet.mail.ir2.yahoo.com ([212.82.96.87]:33702 "EHLO
+	nm2-vm7.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751208AbaDZUJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 15:54:39 -0400
-Date: Sat, 26 Apr 2014 22:52:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@shadowen.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Del Piano <ndel314@gmail.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        mail@berndporr.me.uk
-Subject: Re: [rfc PATCH] checkpatch: allow multiple const * types
-Message-ID: <20140426194208.GG4963@mwanda>
-References: <5359DF54.50607@gmail.com>
- <20140425075020.GF26890@mwanda>
- <1398482999.3071.8.camel@joe-AO725>
+	Sat, 26 Apr 2014 16:09:53 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s1024; d=yahoo.fr;
+	b=TPW6Zm/X1Tc1NHtrFSKBYl+60RJn0I007l3dsjDB24d/ax9All5+pKWDYEHc9VRwIEE8tL/IYsLz58l0N2oGKS9hmMhhsxsYJWELXpoDh7fA/onrOKyBHFxRglIK1cECOQYgJZzeKjg6VyUxc2xEE8thZ8thvCL9g6Y4NJUZQ0Y=;
+X-Yahoo-Newman-Id: 988338.71880.bm@smtp150.mail.ir2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 7xma1_8VM1mJbE73HvxlPQpdWKY40lMOJazdTXgyrNH2.my
+ Xbu3bQS3PyGit.jqlme17aJW3DAWk8MTw.f9C8rM10CjQ7Ej4AbF_vC_v727
+ nW.ysR43.4ygxwTOHzNFIzbMeYRsda7EPuNSZLV3ecgVNLbPYxsC3dLKsgtW
+ vnRRjYdou8ktIWOM944hJuzxoaw9nWpLN1pyQfnfmJ0GkEpWrl2CcHgzTSE7
+ 6jvebWCYxCgMbNiQPJdWqqrZmU62xkN9NSamFFReed7.m2J1FI5Ef9z0DT2W
+ RZO7Zep1eCIzwbCYlCsV4d9vDaQ.6NMHfo77EahsSWOCQoplT484kAEHJeVt
+ rfSVNH18uAwqHwZxhdu7ppmpjEdGDumC7OIqBrxwS9M.Q9qgAtc373TkEfni
+ 8NEQbUjzdBAUSIRH9UxWQDeKKbPq3DzjuUCppACQ69KkO8hopANPCI.6zGJx
+ 0gR6.8rQUuhd_47WdiwTpj3Wb2DAD4fJ7.Tp7RfdaFFXJ94tZ7QDZEkulCYh
+ KZ1zho03Y2VP39XnhOD8LLnkci81BQihBtGk-
+X-Yahoo-SMTP: zgdcvJ6swBBcTOk5fgveL37ak9AQxYCP7GdO
+X-Rocket-Received: from [192.168.0.4] (lionel_debroux@82.122.199.38 with plain [188.125.69.59])
+        by smtp150.mail.ir2.yahoo.com with SMTP; 26 Apr 2014 20:09:51 +0000 UTC
+Message-ID: <535C128D.3070604@yahoo.fr>
+Date: Sat, 26 Apr 2014 22:09:49 +0200
+From: Lionel Debroux <lionel_debroux@yahoo.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398482999.3071.8.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Mateusz Guzik <mguzik@redhat.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] drm: make variable named "refcount" atomic, like most
+ refcounts in the kernel.
+References: <248367.21250.bm@smtp144.mail.ir2.yahoo.com> <20140426170305.GA17562@mguzik.redhat.com>
+In-Reply-To: <20140426170305.GA17562@mguzik.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 08:29:59PM -0700, Joe Perches wrote:
-> On Fri, 2014-04-25 at 10:50 +0300, Dan Carpenter wrote:
-> > On Fri, Apr 25, 2014 at 01:06:44AM -0300, Nicolas Del Piano wrote:
-> > > diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
-> []
-> > > @@ -439,6 +439,7 @@ static void *comedi_recognize(struct comedi_driver *driv, const char *name)
-> > >  static void comedi_report_boards(struct comedi_driver *driv)
-> > >  {
-> > >  	unsigned int i;
-> > > +
-> > >  	const char *const *name_ptr;
-> > 
-> > The original code was correct.  This is a bug in checkpatch.pl.  The
-> > missing line check should count any lines starting with "const" or
-> > "static" as declarations.
+> On Sat, Apr 26, 2014 at 06:06:15PM +0200, Lionel Debroux wrote:
+> > Based on PaX.
+> >
+> > ---
+> >
+> > From 7c712cadd97d43d03ff3d7ca04fd85bd8c6eb34a Mon Sep 17 00:00:00
+> > 2001
+> > From: Lionel Debroux <lionel_debroux@yahoo.fr>
+> > Date: Sat, 26 Apr 2014 15:53:55 +0200
+> > Subject: drm: make variable named "refcount" atomic, like most
+> > refcounts in the kernel.
+> >
+> > Extracted from the PaX patch.
+> >
+> >
+> [snip]
+> >  	mutex_lock(&item->mutex);
+> > -	BUG_ON(item->refcount == 0);
+> > +	BUG_ON(atomic_read(&item->refcount) == 0);
+> >  	BUG_ON(ref->object != item->object);
+> > -	if (--item->refcount == 0) {
+> > +	if (atomic_dec_and_test(&item->refcount)) {
+> >  		ref->release(ref);
+> >  		item->object = NULL;
+> >  	}
 > 
-> Right, thanks for the report.
+> I believe this change is in grsecurity so that overflow detector can
+> be used,
+That's my understanding as well.
+> there is clearly no reason to use mere atomic ops.
+Yeah, sorry. At least, you're stating it in a nice way.
+
+> It may be that kernel devs would accept a patch implementing generic
+> refcount manipulation primitives without atomicity guarantees, which
+> could be used in cases like this.
 > 
-> I'm not around for a couple weeks.
-> I'll fix it properly later.
+> Then atomic and non-atomic versions could be used to detect
+> overflows and overputs at least in debug kernels.
+That's a more constructive suggestion indeed, on a useful feature :)
 
-No stress.  These are not a big deal.  These false positives are rare,
-there is no way we would have applied the patch and even if we did then
-the extra blank line is harmless.
+As a hobbyist, once in a while, I wade through PaX/grsec, I read /
+extract / submit hunks which are (or at least could be) relevant to
+mainline (occasionally failing at picking the right hunks, as shown here
+- my earlier patches were alright).
+Getting the change you're mentioning merged (should it be considered
+desirable in the first place) is probably above my time budget, sadly...
 
-regards,
-dan carpenter
 
+Regards,
+Lionel.
