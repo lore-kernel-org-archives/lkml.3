@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaDZGUD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 02:20:03 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:46342 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaDZGUA (ORCPT
+	id S1751311AbaDZG3h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 02:29:37 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:56113 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaDZG3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 02:20:00 -0400
+	Sat, 26 Apr 2014 02:29:35 -0400
 MIME-Version: 1.0
 In-Reply-To: <1397859600-11507-4-git-send-email-robherring2@gmail.com>
 References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
 	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
-Date: Fri, 25 Apr 2014 23:19:59 -0700
-X-Google-Sender-Auth: 5pA72wSVcxqNj-HghigxiaXfB1c
-Message-ID: <CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
+Date: Fri, 25 Apr 2014 23:29:35 -0700
+X-Google-Sender-Auth: EFBU65hpbzzf6KaiPsTVCQhbc2M
+Message-ID: <CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
 Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
 From: Yinghai Lu <yinghai@kernel.org>
 To: Rob Herring <robherring2@gmail.com>
@@ -25,8 +25,7 @@ Cc: "linux-arm-kernel@lists.infradead.org"
         Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
         Russell King <linux@arm.linux.org.uk>,
         Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+        Rob Herring <robh@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -45,14 +44,22 @@ On Fri, Apr 18, 2014 at 3:19 PM, Rob Herring <robherring2@gmail.com> wrote:
 >  drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
 >  drivers/tty/serial/8250/Kconfig      |   1 +
 >  2 files changed, 16 insertions(+), 123 deletions(-)
+>
+> diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
+> index c100d63..e83c9db 100644
+> --- a/drivers/tty/serial/8250/8250_early.c
+> +++ b/drivers/tty/serial/8250/8250_early.c
+> @@ -35,18 +35,8 @@
+...
+> -
+> -int __init setup_early_serial8250_console(char *cmdline)
 
-Hi Greg, Rob
+You removed global function, but still left declaration and calling...
 
-This one in tty-next breaks booting: "console=uart8250,io,0x3f8,115200".
-No early console and regular console anymore.
-
-It should produce "early con and regular con".
-
-Thanks
+arch/mips/mti-malta/malta-init.c:
+setup_early_serial8250_console(console_string);
+drivers/firmware/pcdp.c:        return setup_early_serial8250_console(options);
+include/linux/serial_8250.h:extern int
+setup_early_serial8250_console(char *cmdline);
 
 Yinghai
