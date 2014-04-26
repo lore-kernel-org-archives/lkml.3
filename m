@@ -1,298 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaDZLmA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 07:42:00 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45979 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbaDZLly (ORCPT
+	id S1752528AbaDZLmp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 07:42:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57122 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaDZLjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 07:41:54 -0400
-Message-ID: <535B9B7E.4090802@gmail.com>
-Date: Sat, 26 Apr 2014 13:41:50 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v8 3/3] ARM: dts: Add initial device tree support for
- EXYNOS5410
-References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com> <1397459860-21869-4-git-send-email-t.dakhran@samsung.com>
-In-Reply-To: <1397459860-21869-4-git-send-email-t.dakhran@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Apr 2014 07:39:42 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-5c-535b9afc9757
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-iio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
+        grundler@chromium.org, jic23@kernel.org,
+        Naveen Krishna Ch <ch.naveen@samsung.com>
+Subject: [PATCH 1/5 v2] iio: exynos_adc: use indio_dev->dev structure to handle
+ child nodes
+Date: Sat, 26 Apr 2014 17:07:52 +0530
+Message-id: <1398512276-4105-2-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
+References: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkTvfvrOhgg1d72SzuPj/MaPHykKbF
+	2WUH2SyaF69ns3h15AeTxYOmVUwWSybPZ7WYd+Qdi8XlXXPYLGac38dksWjbf2YHbo/ZDRdZ
+	PHbOusvusWlVJ5vH/rlr2D2WvDnE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZXa3f2Qo2
+	81ecWbyavYFxIm8XIyeHhICJRMPuVcwQtpjEhXvr2boYuTiEBJYySlw5cZcJpujDy9ksEInp
+	jBL/p75hhXD6mSSWn/gFVsUmYCZxcNFq9i5GDg4RAVmJmd16IDXMIDUNTy8ygsSFBWIlTh9m
+	BSlnEVCV6OxYCtbKK+Ai8XX6GWaQEgkBBYk5k2xAwpwCrhITF10FKxECKnk78TU7yEgJgVPs
+	El2/3rFBzBGQ+Db5EAtEr6zEpgNQz0hKHFxxg2UCo/ACRoZVjKKpBckFxUnpRYZ6xYm5xaV5
+	6XrJ+bmbGIHxcfrfs94djLcPWB9iTAYaN5FZSjQ5HxhfeSXxhsZmRhamJqbGRuaWZqQJK4nz
+	Jj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeKhHYd+66So/zl2b3Zs68YGpcq5trPjU
+	V4dfOnDYbZK+ebDgwcXCb0yKXkl8H7YciPy2bnPVF98fC6Wybv4tSBewOVOkkmQcfuqQh/GJ
+	ze2/5onZH/vsKS+tf8iYs/ef33umbH11ldm6Tjn/l3/Y++zw1j+bTucd6jnmEySvb/Y4J044
+	13z7ZiWW4oxEQy3mouJEAAmLndOlAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd0/s6KDDU7NsrK4+/wwo8XLQ5oW
+	Z5cdZLNoXryezeLVkR9MFg+aVjFZLJk8n9Vi3pF3LBaXd81hs5hxfh+TxaJt/5kduD1mN1xk
+	8dg56y67x6ZVnWwe++euYfdY8uYQq0ffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2Tmpdsq
+	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHamkUJaYUwoUCkgsLlbSt8M0ITTETdcC
+	pjFC1zckCK7HyAANJKxhzOhq/c5WsJm/4szi1ewNjBN5uxg5OSQETCQ+vJzNAmGLSVy4t56t
+	i5GLQ0hgOqPE/6lvWCGcfiaJ5Sd+MYFUsQmYSRxctJq9i5GDQ0RAVmJmtx5IDTNITcPTi4wg
+	cWGBWInTh1lBylkEVCU6O5aCtfIKuEh8nX6GGaREQkBBYs4kG5Awp4CrxMRFV8FKhIBK3k58
+	zT6BkXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjODoeya1g3Flg8UhRgEORiUe3h05
+	UcFCrIllxZW5hxglOJiVRHgXpUQHC/GmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MDHklcQb
+	GpuYmxqbWppYmJhZkiasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANjSk1E7vL31XffK/4o
+	DXkhVvqdN/Oics0SRocT2tfOWL/68Ub66OSeWVGMF+b5TdK5/J1r95yWR+4fcvc2Tt14s3Xf
+	rPKZZX7v9OyMu+X8+v3KREQfn+ks6apomfNhS/i7zctDhb9p17SIV81Ke/dnaTnDSseiHke2
+	CaYsa7aa5UbvWnvx449GJZbijERDLeai4kQAKl1uEgIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Naveen Krishna Ch <ch.naveen@samsung.com>
 
-Since I've started enforcing reference-based DT syntax due to multiple 
-advantages over the plain full-tree based one, you should do the same 
-for your dts/i files. You can take the series adding support for 
-Exynos5260 as an example:
+Using pdev->dev with device_for_each_child() would iterate over all
+of the children of the platform device and delete them.
+Thus, causing crashes during module unload.
 
-http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29360
+We should be using the indio_dev->dev structure for
+registering/unregistering child nodes.
 
-Best regards,
-Tomasz
+Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+Reported-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
+---
+This change was tested on top of 
+   https://lkml.org/lkml/2014/4/21/481 from Doug.
 
-On 14.04.2014 09:17, Tarek Dakhran wrote:
-> Add initial device tree nodes for EXYNOS5410 SoC and SMDK5410 board.
->
-> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
-> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->   arch/arm/boot/dts/Makefile                |    1 +
->   arch/arm/boot/dts/exynos5410-smdk5410.dts |   65 ++++++++++++++
->   arch/arm/boot/dts/exynos5410.dtsi         |  140 +++++++++++++++++++++++++++++
->   3 files changed, 206 insertions(+)
->   create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
->   create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
->
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 35c146f..191dd19 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -74,6 +74,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
->   	exynos5250-smdk5250.dtb \
->   	exynos5250-snow.dtb \
->   	exynos5420-arndale-octa.dtb \
-> +	exynos5410-smdk5410.dtb \
->   	exynos5420-smdk5420.dtb \
->   	exynos5440-sd5v1.dtb \
->   	exynos5440-ssdk5440.dtb
-> diff --git a/arch/arm/boot/dts/exynos5410-smdk5410.dts b/arch/arm/boot/dts/exynos5410-smdk5410.dts
-> new file mode 100644
-> index 0000000..d69e152
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/exynos5410-smdk5410.dts
-> @@ -0,0 +1,65 @@
-> +/*
-> + * SAMSUNG SMDK5410 board device tree source
-> + *
-> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-> + *		http://www.samsung.com
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +*/
-> +
-> +/dts-v1/;
-> +#include "exynos5410.dtsi"
-> +/ {
-> +	model = "Samsung SMDK5410 board based on EXYNOS5410";
-> +	compatible = "samsung,smdk5410", "samsung,exynos5410";
-> +
-> +	memory {
-> +		reg = <0x40000000 0x80000000>;
-> +	};
-> +
-> +	chosen {
-> +		bootargs = "console=ttySAC2,115200";
-> +	};
-> +
-> +	fixed-rate-clocks {
-> +		oscclk {
-> +			compatible = "samsung,exynos5410-oscclk";
-> +			clock-frequency = <24000000>;
-> +		};
-> +	};
-> +
-> +	mmc@12200000 {
-> +		status = "okay";
-> +		num-slots = <1>;
-> +		supports-highspeed;
-> +		broken-cd;
-> +		card-detect-delay = <200>;
-> +		samsung,dw-mshc-ciu-div = <3>;
-> +		samsung,dw-mshc-sdr-timing = <2 3>;
-> +		samsung,dw-mshc-ddr-timing = <1 2>;
-> +
-> +		slot@0 {
-> +			reg = <0>;
-> +			bus-width = <8>;
-> +		};
-> +	};
-> +
-> +	mmc@12220000 {
-> +		status = "okay";
-> +		num-slots = <1>;
-> +		supports-highspeed;
-> +		card-detect-delay = <200>;
-> +		samsung,dw-mshc-ciu-div = <3>;
-> +		samsung,dw-mshc-sdr-timing = <2 3>;
-> +		samsung,dw-mshc-ddr-timing = <1 2>;
-> +
-> +		slot@0 {
-> +			reg = <0>;
-> +			bus-width = <4>;
-> +			disable-wp;
-> +		};
-> +	};
-> +
-> +};
-> diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
-> new file mode 100644
-> index 0000000..e7cc930
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/exynos5410.dtsi
-> @@ -0,0 +1,140 @@
-> +/*
-> + * SAMSUNG EXYNOS5410 SoC device tree source
-> + *
-> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
-> + *		http://www.samsung.com
-> + *
-> + * SAMSUNG EXYNOS5410 SoC device nodes are listed in this file.
-> + * EXYNOS5410 based board files can include this file and provide
-> + * values for board specfic bindings.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <dt-bindings/clock/exynos5410.h>
-> +#include "exynos5.dtsi"
-> +/ {
-> +	compatible = "samsung,exynos5410", "samsung,exynos5";
-> +
-> +	cpus {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		CPU0: cpu@0 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a15";
-> +			reg = <0>;
-> +			clock-frequency = <1600000000>;
-> +		};
-> +
-> +		CPU1: cpu@1 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a15";
-> +			reg = <1>;
-> +			clock-frequency = <1600000000>;
-> +		};
-> +
-> +		CPU2: cpu@2 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a15";
-> +			reg = <2>;
-> +			clock-frequency = <1600000000>;
-> +		};
-> +
-> +		CPU3: cpu@3 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a15";
-> +			reg = <3>;
-> +			clock-frequency = <1600000000>;
-> +		};
-> +	};
-> +
-> +	clock: clock-controller@10010000 {
-> +		compatible = "samsung,exynos5410-clock";
-> +		reg = <0x10010000 0x30000>;
-> +		#clock-cells = <1>;
-> +	};
-> +
-> +	timer@101C0000 {
-> +		compatible = "samsung,exynos4210-mct";
-> +		reg = <0x101C0000 0xB00>;
-> +		interrupt-parent = <&interrupt_map>;
-> +		interrupts = <0>, <1>, <2>, <3>,
-> +			<4>, <5>, <6>, <7>,
-> +			<8>, <9>, <10>, <11>;
-> +		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MCT>;
-> +		clock-names = "fin_pll", "mct";
-> +
-> +		interrupt_map: interrupt-map {
-> +			#interrupt-cells = <1>;
-> +			#address-cells = <0>;
-> +			#size-cells = <0>;
-> +			interrupt-map = <0 &combiner 23 3>,
-> +					<1 &combiner 23 4>,
-> +					<2 &combiner 25 2>,
-> +					<3 &combiner 25 3>,
-> +					<4 &gic 0 120 0>,
-> +					<5 &gic 0 121 0>,
-> +					<6 &gic 0 122 0>,
-> +					<7 &gic 0 123 0>,
-> +					<8 &gic 0 128 0>,
-> +					<9 &gic 0 129 0>,
-> +					<10 &gic 0 130 0>,
-> +					<11 &gic 0 131 0>;
-> +		};
-> +	};
-> +
-> +	mmc_0: mmc@12200000 {
-> +		compatible = "samsung,exynos5250-dw-mshc";
-> +		interrupts = <0 75 0>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		reg = <0x12200000 0x1000>;
-> +		clocks = <&clock CLK_MMC0>, <&clock CLK_SCLK_MMC0>;
-> +		clock-names = "biu", "ciu";
-> +		fifo-depth = <0x80>;
-> +		status = "disabled";
-> +	};
-> +
-> +	mmc_1: mmc@12210000 {
-> +		compatible = "samsung,exynos5250-dw-mshc";
-> +		interrupts = <0 76 0>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		reg = <0x12210000 0x1000>;
-> +		clocks = <&clock CLK_MMC1>, <&clock CLK_SCLK_MMC1>;
-> +		clock-names = "biu", "ciu";
-> +		fifo-depth = <0x80>;
-> +		status = "disabled";
-> +	};
-> +
-> +	mmc_2: mmc@12220000 {
-> +		compatible = "samsung,exynos5250-dw-mshc";
-> +		interrupts = <0 77 0>;
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +		reg = <0x12220000 0x1000>;
-> +		clocks = <&clock CLK_MMC2>, <&clock CLK_SCLK_MMC2>;
-> +		clock-names = "biu", "ciu";
-> +		fifo-depth = <0x80>;
-> +		status = "disabled";
-> +	};
-> +
-> +	serial@12C00000 {
-> +		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
-> +		clock-names = "uart", "clk_uart_baud0";
-> +	};
-> +
-> +	serial@12C10000 {
-> +		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
-> +		clock-names = "uart", "clk_uart_baud0";
-> +	};
-> +
-> +	serial@12C20000 {
-> +		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
-> +		clock-names = "uart", "clk_uart_baud0";
-> +	};
-> +
-> +};
->
+ drivers/iio/adc/exynos_adc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+index d25b262..affa93f 100644
+--- a/drivers/iio/adc/exynos_adc.c
++++ b/drivers/iio/adc/exynos_adc.c
+@@ -344,7 +344,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+ 
+ 	exynos_adc_hw_init(info);
+ 
+-	ret = of_platform_populate(np, exynos_adc_match, NULL, &pdev->dev);
++	ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed adding child nodes\n");
+ 		goto err_of_populate;
+@@ -353,7 +353,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_of_populate:
+-	device_for_each_child(&pdev->dev, NULL,
++	device_for_each_child(&indio_dev->dev, NULL,
+ 				exynos_adc_remove_devices);
+ 	regulator_disable(info->vdd);
+ 	clk_disable_unprepare(info->clk);
+@@ -369,7 +369,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
+ 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+ 	struct exynos_adc *info = iio_priv(indio_dev);
+ 
+-	device_for_each_child(&pdev->dev, NULL,
++	device_for_each_child(&indio_dev->dev, NULL,
+ 				exynos_adc_remove_devices);
+ 	regulator_disable(info->vdd);
+ 	clk_disable_unprepare(info->clk);
+-- 
+1.7.9.5
+
