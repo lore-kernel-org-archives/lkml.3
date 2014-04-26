@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaDZB0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 21:26:36 -0400
-Received: from eusmtp02.atmel.com ([82.20.71.19]:23589 "EHLO
-	eusmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaDZB0e (ORCPT
+	id S1751377AbaDZBio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 21:38:44 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:55626 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaDZBil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 21:26:34 -0400
-X-Greylist: delayed 325 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 21:26:34 EDT
-Message-ID: <535B0A00.9080808@atmel.com>
-Date: Fri, 25 Apr 2014 18:21:04 -0700
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 25 Apr 2014 21:38:41 -0400
+Message-ID: <535B0E1F.8000405@codeaurora.org>
+Date: Fri, 25 Apr 2014 18:38:39 -0700
+From: David Collins <collinsd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.15 #1
-References: <1397857958-11283-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1397857958-11283-1-git-send-email-nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+CC: Josh Cartwright <joshc@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
+References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com> <20140423214626.GA3215@joshc.qualcomm.com> <20140423233621.GM17066@sonymobile.com>
+In-Reply-To: <20140423233621.GM17066@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.24.0.108]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/2014 14:52, Nicolas Ferre :
-> Arnd, Olof, Kevin,
+On 04/23/2014 04:36 PM, Courtney Cavin wrote:
+> On Wed, Apr 23, 2014 at 11:46:26PM +0200, Josh Cartwright wrote:
+>> On Tue, Apr 22, 2014 at 05:31:49PM -0700, Courtney Cavin wrote:
+[..]
+>>> +++ b/drivers/mfd/pm8x41.c
+>>> @@ -0,0 +1,63 @@
+>>> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License version 2 and
+>>> + * only version 2 as published by the Free Software Foundation.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/spmi.h>
+>>> +#include <linux/regmap.h>
+>>> +#include <linux/of_platform.h>
+>>> +
+>>> +static const struct regmap_config pm8x41_regmap_config = {
+>>> +	.reg_bits	= 16,
+>>> +	.val_bits	= 8,
+>>> +	.max_register	= 0xFFFF,
+>>> +};
+>>
+>> This reminds me.  David Collins (CC'd) noticed that there are usecases
+>> where peripheral drivers will need to be accessing registers from atomic
+>> context, so we should probably be setting .fast_io in the SPMI
+>> regmap_bus structures, but we can tackle that when we get there.
 > 
-> Two little fixes for AT91. The one that moves the dt-bindings include
-> directory is pretty interesting as, with Exynos, AT91 was the only one
-> to use this "clk" directory.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-> 
->   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
+> Hrm.  Please comment on this David.  I would like to see a solid
+> use-case before even considering that.
 
-Arnd,
+Several drivers in the downstream msm-3.10 tree [1] are currently making
+SPMI read and write calls from atomic context.  For the most part this
+corresponds to non-threaded interrupt handlers.  Some examples of that are
+qpnp-charger [2] and qpnp-adc-tm [3].
 
-It seems that this material has not been integrated in today's arm-soc
-pull-request to Linus.
+Another case in which atomic SPMI read and write calls are needed is when
+very tight timing constraints must be ensured between successive SPMI
+transactions.  An example of this can be found in the qpnp-bsi MIPI-BIF
+smart battery driver [4].  It disables interrupts when performing BIF
+burst reads because the data register must be read within 10's of
+microseconds after the status register indicates that data is ready.  If
+the data read is too slow, then next word in the burst read overrides the
+current one.
 
-Was it too late for this batch?
+- David
 
-Bye,
+[1]: git://codeaurora.org/quic/la/kernel/msm-3.10#msm-3.10
 
-> for you to fetch changes up to 35d35aae817706800a4913711d563a99e1dc380a:
-> 
->   dt-bindings: clock: Move at91.h to dt-bindigs/clock (2014-04-18 23:44:52 +0200)
-> 
-> ----------------------------------------------------------------
-> 3.15 fixes for AT91
-> - one little DT fix
-> - the use of proper directory for clock in include/dt-bindings
->   it allows to remove the now empty include/dt-bindings/clk
-> 
-> ----------------------------------------------------------------
-> Bo Shen (1):
->       ARM: at91: fix spi cs on sama5d3 Xplained board
-> 
-> Tushar Behera (1):
->       dt-bindings: clock: Move at91.h to dt-bindigs/clock
-> 
->  Documentation/devicetree/bindings/clock/at91-clock.txt | 2 +-
->  arch/arm/boot/dts/at91-sama5d3_xplained.dts            | 4 ++--
->  arch/arm/boot/dts/at91sam9261.dtsi                     | 2 +-
->  arch/arm/boot/dts/at91sam9rl.dtsi                      | 2 +-
->  arch/arm/boot/dts/sama5d3.dtsi                         | 2 +-
->  arch/arm/boot/dts/sama5d3_mci2.dtsi                    | 2 +-
->  arch/arm/boot/dts/sama5d3_tcb1.dtsi                    | 2 +-
->  arch/arm/boot/dts/sama5d3_uart.dtsi                    | 2 +-
->  include/dt-bindings/{clk => clock}/at91.h              | 0
->  9 files changed, 9 insertions(+), 9 deletions(-)
->  rename include/dt-bindings/{clk => clock}/at91.h (100%)
-> 
+[2]:
+https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/power/qpnp-charger.c?h=msm-3.10&id=77ea4f2d70056169a80519fc9c7dd7156469ef11#n4173
 
+[3]:
+https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/thermal/qpnp-adc-tm.c?h=msm-3.10&id=77ea4f2d70056169a80519fc9c7dd7156469ef11#n2076
 
+[4]:
+https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers/bif/qpnp-bsi.c?h=msm-3.10&id=77ea4f2d70056169a80519fc9c7dd7156469ef11#n943
 -- 
-Nicolas Ferre
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
