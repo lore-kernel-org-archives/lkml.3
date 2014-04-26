@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486AbaDZDCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 23:02:19 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:48127 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaDZDCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 23:02:17 -0400
-Date: Fri, 25 Apr 2014 23:02:12 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Alex Elder <elder@linaro.org>, bcm@fixthebug.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 0/5] clk: bcm21664: add common clock support
-Message-ID: <20140426030212.GI1127@beef>
-References: <1398115587-32529-1-git-send-email-elder@linaro.org>
- <20140426000915.7224.11265@quantum>
+	id S1751523AbaDZDFM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 23:05:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40891 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195AbaDZDFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 23:05:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,931,1389772800"; 
+   d="scan'208";a="527662239"
+Message-ID: <535B2250.2010509@linux.intel.com>
+Date: Sat, 26 Apr 2014 11:04:48 +0800
+From: "Jin, Yao" <yao.jin@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140426000915.7224.11265@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Adam Williamson <awilliam@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>	 <1398007690.2674.0.camel@adam.happyassassin.net>	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>	 <1398230210.2704.8.camel@adam.happyassassin.net>	 <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com>	 <5359120E.2030007@linux.intel.com>	 <1398375234.2708.122.camel@adam.happyassassin.net>	 <CACRpkdasjd2HGR199_aqhemAnJD5z6--=Rr=tSoJX_hJ6-ukFA@mail.gmail.com> <1398438814.2708.141.camel@adam.happyassassin.net>
+In-Reply-To: <1398438814.2708.141.camel@adam.happyassassin.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 05:09:15PM -0700, Mike Turquette wrote:
-> Quoting Alex Elder (2014-04-21 14:26:22)
-> > This is series has two parts.  The first two patches are changes
-> > to the existing Broadcom Kona family clock code to prepare for the
-> > addition of support for another SoC, bcm21664.
-> > 
-> > The remaining three define the binding and code for bcm21664, and
-> > replace the use of "fake" clocks in the device tree with the real
-> > ones.  This ends up being a fairly straightforward definition of
-> > the clocks on this SoC; the rest of the clock code is shared with
-> > other SoCs that use the Kona style clock system.
+
+
+On 2014/4/25 23:13, Adam Williamson wrote:
+> On Fri, 2014-04-25 at 11:32 +0200, Linus Walleij wrote:
+>> On Thu, Apr 24, 2014 at 11:33 PM, Adam Williamson <awilliam@redhat.com> wrote:
+>>
+>>> Well, I just ran another test too. I built a kernel (3.15rc2) with both
+>>> v3 of Doug's SDIO device enumeration patch -
+>>> http://dougvj.net/baytrail_gpio_quirk_v3.patch - and the new patch for
+>>> the IRQ allocation issue by Thomas Gleixner,
+>>> https://patchwork.kernel.org/patch/4051581/ . That kernel gives me a
+>>> working touchscreen. Note that
+>>> http://dougvj.net/baytrail_gpio_quirk_v3.patch includes both the blocks
+>>> you mention (i.e. it adds INT33FC in both places).
+>>>
+>>> So, it really seems like for me at least, it's the combination of Doug's
+>>> patch and your approach to fixing the IRQ allocation issue that breaks
+>>> the touchscreen. Thomas' approach, even combined with Doug's patch,
+>>> seems to work fine.
+>>
+>> Please make sure to provide a Tested-by: tag to Thomas so he
+>> knows this is merge material.
 > 
-> Hi Alex,
+> Well, I'd rather someone test on the box that's actually affected by the
+> IRQ allocation conflict lockups so we can confirm it actually fixes
+> them :)
 > 
-> I'm happy to take only the clk patches or I can take the DT stuff as
-> well if it gets some Acks. Let me know how you want it handled.
 
-Hi Mike,
-
-Since there's a strict ordering requirement in this series (due to
-shared use of a DT include by the driver and dts) I'd like it if you
-could take the entire series through your tree to keep these together.
-I've acked the dts patch.
-
-Thanks,
-Matt
-
-> > This series depends on the following patch, which has been taken
-> > into the clk-fixes tree:
-> >     clk: bcm281xx: don't use unnamed structs or unions
-> >     https://lkml.org/lkml/2014/4/7/322
-> > 
-> > In addition, it depends on the version 4 of the following series,
-> > just (re)posted for review:
-> >     clk: bcm281xx: updates
-> >     https://lkml.org/lkml/2014/4/8/485
-> > 
-> > The patches in this series--based on the current linus/master branch
-> > plus the patches mentioned above--are available here:
-> >     http://git.linaro.org/git/landing-teams/working/broadcom/kernel.git
-> >     Branch review/bcm21664-clock-v2
-> > 
-> > Alex Elder (5):
-> >   clk: bcm281xx: move compatible string definitions
-> >   ARM: dts: revise kona clock binding document
-> >   ARM: dts: define clock binding for bcm21664
-> >   clk: bcm21664: use common clock framework
-> >   ARM: dts: use real clocks for bcm21664
-> > 
-> >  .../devicetree/bindings/clock/bcm-kona-clock.txt   | 116 ++++++---
-> >  arch/arm/boot/dts/bcm21664.dtsi                    | 190 +++++++++-----
-> >  drivers/clk/bcm/Kconfig                            |   2 +-
-> >  drivers/clk/bcm/Makefile                           |   1 +
-> >  drivers/clk/bcm/clk-bcm21664.c                     | 290 +++++++++++++++++++++
-> >  drivers/clk/bcm/clk-bcm281xx.c                     |  12 -
-> >  include/dt-bindings/clock/bcm21664.h               |  62 +++++
-> >  include/dt-bindings/clock/bcm281xx.h               |  12 +
-> >  8 files changed, 565 insertions(+), 120 deletions(-)
-> >  create mode 100644 drivers/clk/bcm/clk-bcm21664.c
-> >  create mode 100644 include/dt-bindings/clock/bcm21664.h
-> > 
-> > -- 
-> > 1.9.1
+I have tried the Thomas Gleixner's patch on 3.14.0 with i915 loading,
+the irq conflict disappears.
