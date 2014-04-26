@@ -1,137 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaDZOEo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 10:04:44 -0400
-Received: from mout.gmx.net ([212.227.15.15]:63218 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291AbaDZOEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 10:04:42 -0400
-Date: Sat, 26 Apr 2014 16:04:29 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: devel@driverdev.osuosl.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        gregkh@linuxfoundation.org, chase.southwood@yahoo.com,
-        unixed@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: comedi: remove duplicate pointer assignments in
- attach functions
-Message-ID: <20140426160429.4883f678@spike>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/hRNlLFw4Bw0kDlSW77xo7nY"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:ZosP8MLCruHCnTroqU6eUuuLyDQS1QdxC8zRJpe8K+JL2YQnoPE
- 3RvyAKqM+pwJPfxhQXHS21IXtfV/nxQ57+kcZMgsqr4r98tok+8eFdMCnZkos2cWQrTauCs
- +IA+VKK+2fp+oYDL1p2Zmu1Ht93wVTqQZYEAK14ggRhXVk+3c41tetWN10iN/BYmuR27Co+
- PNMjzNdW8H5qdIjNSD+Fw==
+	id S1751366AbaDZOgG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 10:36:06 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42982 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaDZOgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 10:36:04 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org,
+        linux-wireless@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, quozl@laptop.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/V2] staging: rtl8192e: Fix typo in rtl8192e
+Date: Sat, 26 Apr 2014 23:35:50 +0900
+Message-Id: <1398522950-31439-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc1
+In-Reply-To: <20140424214908.GE12124@us.netrek.org>
+References: <20140424214908.GE12124@us.netrek.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/hRNlLFw4Bw0kDlSW77xo7nY
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Fix spelling typo in comments within rtl8192e.
 
-Some board pointer are assigned twice via comedi_board() in the comedi low
-level driver attach functions. Remove the duplicate assignment from the
-variable definition where the pointer is not used anyway until assigned lat=
-er
-in the function when dev->board_ptr, that comedi_board() relies on, is setup
-correctly.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Reviewed-by: James Cameron <quozl@laptop.org>
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
-Compile tested and applies against v3.15-rc2 as well as branch staging-next
-of tree git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
----
- drivers/staging/comedi/drivers/das1800.c     | 2 +-
- drivers/staging/comedi/drivers/das800.c      | 2 +-
- drivers/staging/comedi/drivers/dt2801.c      | 2 +-
- drivers/staging/comedi/drivers/ni_at_a2150.c | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/rtl8192e/rtl8192e/r8192E_cmdpkt.c | 2 +-
+ drivers/staging/rtl8192e/rtl8192e/r8192E_phy.c    | 2 +-
+ drivers/staging/rtl8192e/rtl8192e/rtl_wx.c        | 2 +-
+ drivers/staging/rtl8192e/rtl819x_TSProc.c         | 2 +-
+ drivers/staging/rtl8192e/rtllib_rx.c              | 2 +-
+ drivers/staging/rtl8192e/rtllib_softmac.c         | 2 +-
+ 6 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/com=
-edi/drivers/das1800.c
-index d581029..0335a70 100644
---- a/drivers/staging/comedi/drivers/das1800.c
-+++ b/drivers/staging/comedi/drivers/das1800.c
-@@ -1479,7 +1479,7 @@ static int das1800_probe(struct comedi_device *dev)
- static int das1800_attach(struct comedi_device *dev,
- 			  struct comedi_devconfig *it)
- {
--	const struct das1800_board *thisboard =3D comedi_board(dev);
-+	const struct das1800_board *thisboard;
- 	struct das1800_private *devpriv;
- 	struct comedi_subdevice *s;
- 	unsigned int irq =3D it->options[1];
-diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/come=
-di/drivers/das800.c
-index b23a12c..e2dc43d 100644
---- a/drivers/staging/comedi/drivers/das800.c
-+++ b/drivers/staging/comedi/drivers/das800.c
-@@ -683,7 +683,7 @@ static int das800_probe(struct comedi_device *dev)
-=20
- static int das800_attach(struct comedi_device *dev, struct comedi_devconfi=
-g *it)
- {
--	const struct das800_board *thisboard =3D comedi_board(dev);
-+	const struct das800_board *thisboard;
- 	struct das800_private *devpriv;
- 	struct comedi_subdevice *s;
- 	unsigned int irq =3D it->options[1];
-diff --git a/drivers/staging/comedi/drivers/dt2801.c b/drivers/staging/come=
-di/drivers/dt2801.c
-index d4d4e4b..4263014 100644
---- a/drivers/staging/comedi/drivers/dt2801.c
-+++ b/drivers/staging/comedi/drivers/dt2801.c
-@@ -545,7 +545,7 @@ static int dt2801_dio_insn_config(struct comedi_device =
-*dev,
- */
- static int dt2801_attach(struct comedi_device *dev, struct comedi_devconfi=
-g *it)
- {
--	const struct dt2801_board *board =3D comedi_board(dev);
-+	const struct dt2801_board *board;
- 	struct dt2801_private *devpriv;
- 	struct comedi_subdevice *s;
- 	int board_code, type;
-diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging=
-/comedi/drivers/ni_at_a2150.c
-index afbf251..fefd97e 100644
---- a/drivers/staging/comedi/drivers/ni_at_a2150.c
-+++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
-@@ -695,7 +695,7 @@ static int a2150_probe(struct comedi_device *dev)
-=20
- static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig=
- *it)
- {
--	const struct a2150_board *thisboard =3D comedi_board(dev);
-+	const struct a2150_board *thisboard;
- 	struct a2150_private *devpriv;
- 	struct comedi_subdevice *s;
- 	unsigned int irq =3D it->options[1];
---=20
-1.9.1
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_cmdpkt.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_cmdpkt.c
+index 5f10e40..79d86b9 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_cmdpkt.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_cmdpkt.c
+@@ -373,7 +373,7 @@ u32 cmpk_message_handle_rx(struct net_device *dev,
+ 		default:
+ 
+ 			RT_TRACE(COMP_CMDPKT, "---->cmpk_message_handle_rx():"
+-				 "unknow CMD Element\n");
++				 "unknown CMD Element\n");
+ 			return 1;
+ 		}
+ 
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_phy.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_phy.c
+index 5d6d304..b4bfafe 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_phy.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_phy.c
+@@ -1555,7 +1555,7 @@ static bool SetRFPowerState8190(struct net_device *dev,
+ 
+ 		default:
+ 			bResult = false;
+-			RT_TRACE(COMP_ERR, "SetRFPowerState8190(): unknow state"
++			RT_TRACE(COMP_ERR, "SetRFPowerState8190(): unknown state"
+ 				 " to set: 0x%X!!!\n", eRFPowerState);
+ 			break;
+ 		}
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+index 498995d..091dfe7 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+@@ -1213,7 +1213,7 @@ static iw_handler r8192_wx_handlers[] = {
+ };
+ 
+ /*
+- * the following rule need to be follwing,
++ * the followed rules need to be following,
+  * Odd : get (world access),
+  * even : set (root access)
+  * */
+diff --git a/drivers/staging/rtl8192e/rtl819x_TSProc.c b/drivers/staging/rtl8192e/rtl819x_TSProc.c
+index 29608e5..52b2977 100644
+--- a/drivers/staging/rtl8192e/rtl819x_TSProc.c
++++ b/drivers/staging/rtl8192e/rtl819x_TSProc.c
+@@ -79,7 +79,7 @@ static void RxPktPendingTimeout(unsigned long data)
+ 
+ 		if (index > REORDER_WIN_SIZE) {
+ 			RTLLIB_DEBUG(RTLLIB_DL_ERR, "RxReorderIndicatePacket():"
+-				     " Rx Reorer struct buffer full!!\n");
++				     " Rx Reorder struct buffer full!!\n");
+ 			spin_unlock_irqrestore(&(ieee->reorder_spinlock),
+ 					       flags);
+ 			return;
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 6c8a8e1..7413816 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -712,7 +712,7 @@ static void RxReorderIndicatePacket(struct rtllib_device *ieee,
+ 
+ 		if (index > REORDER_WIN_SIZE) {
+ 			RTLLIB_DEBUG(RTLLIB_DL_ERR, "RxReorderIndicatePacket():"
+-				     " Rx Reorer struct buffer full!!\n");
++				     " Rx Reorder struct buffer full!!\n");
+ 			spin_unlock_irqrestore(&(ieee->reorder_spinlock),
+ 					       flags);
+ 			return;
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+index 4bf72bc..d65cba4 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+@@ -543,7 +543,7 @@ void rtllib_softmac_scan_syncro(struct rtllib_device *ieee, u8 is_mesh)
+ 				goto out; /* scan completed */
+ 		} while (!ieee->active_channel_map[ch]);
+ 
+-		/* this fuction can be called in two situations
++		/* this function can be called in two situations
+ 		 * 1- We have switched to ad-hoc mode and we are
+ 		 *    performing a complete syncro scan before conclude
+ 		 *    there are no interesting cell and to create a
+-- 
+2.0.0.rc1
 
---Sig_/hRNlLFw4Bw0kDlSW77xo7nY
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTW7ztAAoJEKssnEpaPQKEKlMQAJ9ZgVPKg8eVyZs+tz9Su3K1
-D/2Z4QU/vbU0GZEce6eb9etfmVi5Q5W2vz9D7nh0AbErxUXgHM26sYAnsC4g+7d4
-6J1brhcDlj6WsJ5q4u07s0uDbV9S2UQHDA8gWT5zt+xSmKoiF2QnWqjS2GwrKELa
-7j/rREt0/TpUvWNckQpS43BouL21zvqTvSOPnKPI77RQh7rbM8WOUjBVTY4Qgt+u
-lz3CDjW7yk4qnTsRkCoMjjp4HLS12FwVm2B0AgKrokRgwOsP9XtvWql8K8wy4p3K
-ESo6goZIiUOPoC8Cub6nBvlHFaDzoRG3ZGPc0wc+6n/Jfve7aQVPn4CUBLLpjCBq
-iKdDxLcnvH3SRxnZjn+qif9EpQXfx6bXZoFUi6+SjgYrqHCD1NIj1WlCa5mSaPt9
-fUB4OKe6jzdtEs3srS2YTGefLsLNgFKPjvuK9yNGnAWFWwSvBbukwRXgaxtj2cA3
-ZwGQ5PdNDoZIJAnWM/3DUl60pXCKL6lh7sI9Yx+78DGngiut/iBDZhhFt1PtteU9
-p9x+TelEyhaAdDz7z1ut8msrpJvz12dSr7+ICtPoP1WmsxIAFFmRZZHIRbGHBp8T
-G0we7uTf3HbQjJdmTydqxVALR5DIrRHe1FNtW8ceoRkc1oQh+y/Xts4kKi3rK+hP
-Jd3jZNvvOWsIrkcMEQvO
-=3fzR
------END PGP SIGNATURE-----
-
---Sig_/hRNlLFw4Bw0kDlSW77xo7nY--
