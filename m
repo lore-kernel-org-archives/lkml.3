@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaDZMNR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:13:17 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49823 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165AbaDZMDD (ORCPT
+	id S1751539AbaDZMvu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:51:50 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:55691 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaDZMvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:03 -0400
-From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org,
-        =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 03/24] input: Port twl4030-vibra to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:40 +0200
-Message-Id: <1398513696-12626-4-git-send-email-madcatxster@devoid-pointer.net>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
-References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
+	Sat, 26 Apr 2014 08:51:47 -0400
+Message-ID: <535BAC3A.1010202@kernel.org>
+Date: Sat, 26 Apr 2014 13:53:14 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Doug Anderson <dianders@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+CC: linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
+        Grant Grundler <grundler@chromium.org>
+Subject: Re: [PATCH 1/5] iio: exynos_adc: use indio_dev->dev structure to
+ handle child nodes
+References: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>	<1398420888-5506-2-git-send-email-ch.naveen@samsung.com> <CAD=FV=V28_iDiNWeX6bXLzMW5kWygJz-YAExJkETJKgTDicHQg@mail.gmail.com>
+In-Reply-To: <CAD=FV=V28_iDiNWeX6bXLzMW5kWygJz-YAExJkETJKgTDicHQg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port twl4030-vibra to ff-memless-next
+On 25/04/14 16:46, Doug Anderson wrote:
+> Naveen,
+>
+> Thanks for sending this.  Given that Jonathan Cameron was involved in
+> the previous discussion, it probably would have been wise to include
+> him on the CC list.
+In my case, don't worry too much as I have linux-iio coming into exactly
+the same place in my inbox. Doug is correct that it is generally a good
+idea unless someone has asked you not to.
+>
+> On Fri, Apr 25, 2014 at 3:14 AM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>>
+>> Using pdev->dev with device_for_each_child() would iterate over all
+>> of the children of the platform device and delete them.
+>> Thus, causing crashes during module unload.
+>>
+>> We should be using the indio_dev->dev structure for
+>> registering/unregistering child nodes.
+>>
+>> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+>> ---
+>> This change was tested on top of
+>>     https://lkml.org/lkml/2014/4/21/481 from Doug.
+>>
+>>   drivers/iio/adc/exynos_adc.c |    6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> Reported-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Doug Anderson <dianders@chromium.org>
+Applied to the fixes-togreg branch of iio.git
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/input/misc/Kconfig         |  2 +-
- drivers/input/misc/twl4030-vibra.c | 31 +++++++++++++++++++++++++------
- 2 files changed, 26 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index f669cc7..817156f 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -407,7 +407,7 @@ config INPUT_TWL4030_VIBRA
- 	tristate "Support for TWL4030 Vibrator"
- 	depends on TWL4030_CORE
- 	select MFD_TWL4030_AUDIO
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	help
- 	  This option enables support for TWL4030 Vibrator Driver.
- 
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 960ef2a..5274ad2 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -32,9 +32,11 @@
- #include <linux/mfd/twl4030-audio.h>
- #include <linux/input.h>
- #include <linux/slab.h>
-+#include <linux/input/ff-memless-next.h>
- 
- /* MODULE ID2 */
- #define LEDEN		0x00
-+#define FF_UPDATE_RATE	50
- 
- /* ForceFeedback */
- #define EFFECT_DIR_180_DEG	0x8000 /* range is 0 - 0xFFFF */
-@@ -134,14 +136,31 @@ static void vibra_play_work(struct work_struct *work)
- /*** Input/ForceFeedback ***/
- 
- static int vibra_play(struct input_dev *input, void *data,
--		      struct ff_effect *effect)
-+		      const struct mlnx_effect_command *command)
- {
- 	struct vibra_info *info = input_get_drvdata(input);
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		if (command->u.rumble_force.strong) {
-+			info->speed = rumble_force->strong >> 8;
-+			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ?
-+					  0 : 1;
-+		} else {
-+			info->speed = rumble_force->weak >> 9;
-+			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ?
-+					  0 : 1;
-+		}
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		info->speed = 0;
-+		info->direction = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
--	info->speed = effect->u.rumble.strong_magnitude >> 8;
--	if (!info->speed)
--		info->speed = effect->u.rumble.weak_magnitude >> 9;
--	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
- 	schedule_work(&info->play_work);
- 	return 0;
- }
-@@ -227,7 +246,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 	info->input_dev->close = twl4030_vibra_close;
- 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
- 
--	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
-+	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
- 	if (ret < 0) {
- 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
- 		return ret;
--- 
-1.9.2
+Thanks,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
