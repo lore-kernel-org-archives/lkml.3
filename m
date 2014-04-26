@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaDZHMV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 03:12:21 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:59327 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715AbaDZHMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 03:12:20 -0400
-Date: Sat, 26 Apr 2014 09:12:14 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to
- reduce cache misshits
-Message-ID: <20140426071214.GA2374@gmail.com>
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <20140424090134.GC7768@gmail.com>
- <5358F7A3.1000108@hitachi.com>
- <20140425082056.GB24829@gmail.com>
- <535A2E41.40005@hitachi.com>
+	id S1751436AbaDZH1H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 03:27:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812AbaDZH1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 03:27:05 -0400
+Date: Sat, 26 Apr 2014 15:28:21 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
+Message-ID: <20140426072821.GA2286@darkstar.redhat.com>
+References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
+ <20140425115345.GC26088@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <535A2E41.40005@hitachi.com>
+In-Reply-To: <20140425115345.GC26088@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/25/14 at 12:53pm, Matt Fleming wrote:
+> On Thu, 24 Apr, at 05:36:58PM, Dave Young wrote:
+> > earlyprint=efi,keep results a kernel hang after "Freeing unused kernel memory"
+>  
+> Are you sure it hangs and it's not just that nothing is output to the
+> console after that point?
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+There's other kernel messages without appending ,keep.
 
-> (2014/04/25 17:20), Ingo Molnar wrote:
-> > 
-> > * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> > 
-> >>> So I don't think this should be a Kconfig entry, just enable it 
-> >>> unconditionally. That will further simplify the code.
-> >>
-> >> Hmm, it consumes some amount of memory (36KB/core) just for the 
-> >> case of several thousand of kprobes. On enterprise servers and 
-> >> desktop it's OK, no problem. But I think, some embedded systems 
-> >> with small resources will not want that. [...]
-> > 
-> > They'll just disable kprobes in general.
+Also console=ttyS0 does not work with earlyprintk=efi,keep, removing ,keep it works well.
+
 > 
-> No, I'd like to provide kprobes (and dynamic events) to them 
-> (including me) for debugging and dynamic monitoring, instead of 
-> modifying code for adding events on their kernel. To solve some 
-> specific issues, specific events (not generic events) are required. 
-> Making local patches to add such events is an option, but it 
-> increases maintenance cost for rebasing. It is better to pay cost to 
-> maintain this kconfig on upstream as the maintainer for me instead 
-> of paying such ugly local cost. :(
+> > Actually efi earlyprintk is using __init functions such as early_ioremap etc.
+> > Thus efi earlyconsole can not be kept.
+>  
+> Urgh, good point, that's a bug. However I'm sure I've had this working
+> in the past and have in fact used it to debug stuff.
 > 
-> Anyway, this option is not easy for beginners, I think it should be 
-> defined with "if EXPERT" option and make it enabled by default.
-> 
-> > Really, at this point complexity is our main concern.
-> 
-> Agreed about complexity issue. However, even if we remove the 
-> Kconfig, we can just save 6 lines of the code, and one #ifdef block. 
-> Can that really solve the complexity problem?
+> Could you try and fix this up so it works with 'keep'?
 
-It's more about the mental picture about how kprobes works. The fewer 
-binary state flags, the better.
+Will do. I want use ioremap when it is available but it's hard to decide
+where to add the code.
 
-Thanks,
+I'm thinking to do below:
+1. ioremap the whole framebuffer like: efi_fb = ioremap(lfb_base, lfb_size) in the
+   function efi_enter_virtual_mode because ioremap should be usable then.
 
-	Ingo
+2. add two functions for earlyprintk use (scrollup, write, etc.) 
+__init_refok void * get_vaddr(unsigned long start, unsigned long len)
+{
+	unsigned long base;
+
+	base = boot_params.screen_info.lfb_base;
+	if (efi_fb)
+		return (efi_fb + start - base);
+	else
+		return early_ioremap(start, len);
+}
+
+__init_refok void put_vaddr(void *addr, unsigned long len)
+{
+	if (!efi_fb)
+		early_iounmap(addr, len);
+}
+
+But it does not sound good to add the ioremap in enter virtual mode funtion.   
+
+Please help if you have any other better idea.
+
+Thanks
+Dave
