@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323AbaDZRDM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 13:03:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21698 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751204AbaDZRDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 13:03:10 -0400
-Date: Sat, 26 Apr 2014 19:03:06 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Lionel Debroux <lionel_debroux@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] drm: make variable named "refcount" atomic, like most
- refcounts in the kernel.
-Message-ID: <20140426170305.GA17562@mguzik.redhat.com>
-References: <248367.21250.bm@smtp144.mail.ir2.yahoo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <248367.21250.bm@smtp144.mail.ir2.yahoo.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752434AbaDZRHE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 13:07:04 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51691 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397AbaDZRHC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 13:07:02 -0400
+From: Laurent Navet <laurent.navet@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: tiwai@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] staging: line6: fix possible overrun
+Date: Sat, 26 Apr 2014 19:09:22 +0200
+Message-Id: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 06:06:15PM +0200, Lionel Debroux wrote:
-> Based on PaX.
-> 
-> ---
-> 
-> From 7c712cadd97d43d03ff3d7ca04fd85bd8c6eb34a Mon Sep 17 00:00:00 2001
-> From: Lionel Debroux <lionel_debroux@yahoo.fr>
-> Date: Sat, 26 Apr 2014 15:53:55 +0200
-> Subject: drm: make variable named "refcount" atomic, like most refcounts in
->  the kernel.
-> 
-> Extracted from the PaX patch.
-> 
-> 
-[snip]
->  	mutex_lock(&item->mutex);
-> -	BUG_ON(item->refcount == 0);
-> +	BUG_ON(atomic_read(&item->refcount) == 0);
->  	BUG_ON(ref->object != item->object);
-> -	if (--item->refcount == 0) {
-> +	if (atomic_dec_and_test(&item->refcount)) {
->  		ref->release(ref);
->  		item->object = NULL;
->  	}
+The strcpy operation may write past the end of the fixed-size destination
+buffer if the source buffer is too large.
 
-I believe this change is in grsecurity so that overflow detector can be
-used, there is clearly no reason to use mere atomic ops.
+Found by coverity scan : CID 144979
 
-It may be that kernel devs would accept a patch implementing generic
-refcount manipulation primitives without atomicity guarantees, which
-could be used in cases like this.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+build tested only
 
-Then atomic and non-atomic versions could be used to detect overflows and
-overputs at least in debug kernels.
+ drivers/staging/line6/audio.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/line6/audio.c b/drivers/staging/line6/audio.c
+index 171d80c..65f5cd4 100644
+--- a/drivers/staging/line6/audio.c
++++ b/drivers/staging/line6/audio.c
+@@ -32,9 +32,10 @@ int line6_init_audio(struct usb_line6 *line6)
+ 
+ 	line6->card = card;
+ 
+-	strcpy(card->id, line6->properties->id);
++	strncpy(card->id, line6->properties->id, (sizeof(card->id)-1));
+ 	strcpy(card->driver, DRIVER_NAME);
+-	strcpy(card->shortname, line6->properties->name);
++	strncpy(card->shortname, line6->properties->name,
++			(sizeof(card->shortname)-1));
+ 	/* longname is 80 chars - see asound.h */
+ 	sprintf(card->longname, "Line6 %s at USB %s", line6->properties->name,
+ 		dev_name(line6->ifcdev));
 -- 
-Mateusz Guzik
+1.9.1
+
