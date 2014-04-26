@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaDZMDw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:03:52 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49890 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542AbaDZMDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:48 -0400
+	id S1752825AbaDZMGf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:06:35 -0400
+Received: from prifuk.cz ([31.31.77.140]:49904 "EHLO smtp.devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752542AbaDZMDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 08:03:55 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 17/24] hid: Port hid-tmff to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:54 +0200
-Message-Id: <1398513696-12626-18-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 20/24] input: Port gamecon to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:57 +0200
+Message-Id: <1398513696-12626-21-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,163 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-tmff to ff-memless-next
+Port gamecon to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-tmff.c | 83 ++++++++++++++++++++++++++++++--------------------
- 2 files changed, 51 insertions(+), 34 deletions(-)
+ drivers/input/joystick/Kconfig   |  2 +-
+ drivers/input/joystick/gamecon.c | 57 ++++++++++++++++++++++------------------
+ 2 files changed, 33 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index e97c382..17ed5cf 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -730,7 +730,7 @@ config HID_THRUSTMASTER
- config THRUSTMASTER_FF
- 	bool "ThrustMaster devices force feedback support"
- 	depends on HID_THRUSTMASTER
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 56eb471..2dd3ba1 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -221,7 +221,7 @@ config JOYSTICK_DB9
+ config JOYSTICK_GAMECON
+ 	tristate "Multisystem, NES, SNES, N64, PSX joysticks and gamepads"
+ 	depends on PARPORT
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	  Say Y here if you have a THRUSTMASTER FireStore Dual Power 2 or 3,
- 	  a THRUSTMASTER Dual Trigger 3-in-1 or a THRUSTMASTER Ferrari GT
-diff --git a/drivers/hid/hid-tmff.c b/drivers/hid/hid-tmff.c
-index b833760..3df000c 100644
---- a/drivers/hid/hid-tmff.c
-+++ b/drivers/hid/hid-tmff.c
-@@ -31,9 +31,12 @@
+ 	  Say Y here if you have a Nintendo Entertainment System gamepad,
+ 	  Super Nintendo Entertainment System gamepad, Nintendo 64 gamepad,
+diff --git a/drivers/input/joystick/gamecon.c b/drivers/input/joystick/gamecon.c
+index e68e497..209d0fb 100644
+--- a/drivers/input/joystick/gamecon.c
++++ b/drivers/input/joystick/gamecon.c
+@@ -40,6 +40,7 @@
  #include <linux/input.h>
+ #include <linux/mutex.h>
  #include <linux/slab.h>
- #include <linux/module.h>
 +#include <linux/input/ff-memless-next.h>
  
- #include "hid-ids.h"
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("NES, SNES, N64, MultiSystem, PSX gamepad driver");
+@@ -47,6 +48,7 @@ MODULE_LICENSE("GPL");
  
+ #define GC_MAX_PORTS		3
+ #define GC_MAX_DEVICES		5
 +#define FF_UPDATE_RATE 50
-+
- static const signed short ff_rumble[] = {
- 	FF_RUMBLE,
- 	-1
-@@ -41,6 +44,13 @@ static const signed short ff_rumble[] = {
  
- static const signed short ff_joystick[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SINE,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SAW_DOWN,
-+	FF_SAW_UP,
- 	-1
- };
- 
-@@ -67,12 +77,12 @@ static inline int tmff_scale_u16(unsigned int in, int minimum, int maximum)
- 	return ret;
+ struct gc_config {
+ 	int args[GC_MAX_DEVICES + 1];
+@@ -263,43 +265,48 @@ static void gc_n64_process_packet(struct gc *gc)
  }
  
--/* Changes values from -0x80 to 0x7f into values from minimum to maximum */
--static inline int tmff_scale_s8(int in, int minimum, int maximum)
-+/* Changes values from -0x7fff to 0x7fff into values from minimum to maximum */
-+static inline int tmff_scale_s32(int in, int minimum, int maximum)
+ static int gc_n64_play_effect(struct input_dev *dev, void *data,
+-			      struct ff_effect *effect)
++			      const struct mlnx_effect_command *command)
  {
- 	int ret;
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int i;
+ 	unsigned long flags;
+ 	struct gc *gc = input_get_drvdata(dev);
+ 	struct gc_subdev *sdev = data;
+ 	unsigned char target = 1 << sdev->idx; /* select desired pin */
++	unsigned int cmd;
  
--	ret = (((in + 0x80) * (maximum - minimum)) / 0xff) + minimum;
-+	ret = (((in + 0x7fff) * (maximum - minimum)) / 0xffff) + minimum;
- 	if (ret < minimum)
- 		return minimum;
- 	if (ret > maximum)
-@@ -81,43 +91,50 @@ static inline int tmff_scale_s8(int in, int minimum, int maximum)
- }
- 
- static int tmff_play(struct input_dev *dev, void *data,
--		struct ff_effect *effect)
-+		const struct mlnx_effect_command *command)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct tmff_device *tmff = data;
- 	struct hid_field *ff_field = tmff->ff_field;
- 	int x, y;
--	int left, right;	/* Rumbling */
--
--	switch (effect->type) {
--	case FF_CONSTANT:
--		x = tmff_scale_s8(effect->u.ramp.start_level,
--					ff_field->logical_minimum,
--					ff_field->logical_maximum);
--		y = tmff_scale_s8(effect->u.ramp.end_level,
--					ff_field->logical_minimum,
--					ff_field->logical_maximum);
--
--		dbg_hid("(x, y)=(%04x, %04x)\n", x, y);
--		ff_field->value[0] = x;
--		ff_field->value[1] = y;
--		hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
--		break;
- 
--	case FF_RUMBLE:
--		left = tmff_scale_u16(effect->u.rumble.weak_magnitude,
--					ff_field->logical_minimum,
--					ff_field->logical_maximum);
--		right = tmff_scale_u16(effect->u.rumble.strong_magnitude,
--					ff_field->logical_minimum,
--					ff_field->logical_maximum);
--
--		dbg_hid("(left,right)=(%08x, %08x)\n", left, right);
--		ff_field->value[0] = left;
--		ff_field->value[1] = right;
--		hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
+-	if (effect->type == FF_RUMBLE) {
+-		struct ff_rumble_effect *rumble = &effect->u.rumble;
+-		unsigned int cmd =
+-			rumble->strong_magnitude || rumble->weak_magnitude ?
+-			GC_N64_CMD_01 : GC_N64_CMD_00;
 +	switch (command->cmd) {
-+	case MLNX_START_COMBINED: {
-+		const struct mlnx_simple_force *sf = &command->u.simple_force;
-+		x = tmff_scale_s32(sf->x,
-+				   ff_field->logical_minimum,
-+				   ff_field->logical_maximum);
-+		y = tmff_scale_s32(sf->y,
-+				   ff_field->logical_minimum,
-+				   ff_field->logical_maximum);
++	case MLNX_START_RUMBLE:
++		cmd = (rumble_force->strong || rumble_force->weak) ? GC_N64_CMD_01 : GC_N64_CMD_00;
 +		break;
-+		}
-+	case MLNX_STOP_COMBINED:
-+		x = 0;
-+		y = 0;
-+		break;
-+	case MLNX_START_RUMBLE: {
-+		const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+		x = tmff_scale_u16(rumble_force->weak,
-+				   ff_field->logical_minimum,
-+				   ff_field->logical_maximum);
-+		y = tmff_scale_u16(rumble_force->strong,
-+				   ff_field->logical_minimum,
-+				   ff_field->logical_maximum);
- 		break;
-+		}
 +	case MLNX_STOP_RUMBLE:
-+		x = 0;
-+		y = 0;
++		cmd = GC_N64_CMD_00;
 +		break;
 +	default:
 +		return -EINVAL;
- 	}
-+
-+	ff_field->value[0] = x;
-+	ff_field->value[1] = y;
-+
-+	hid_hw_request(hid, tmff->report, HID_REQ_SET_REPORT);
++	}
+ 
+-		local_irq_save(flags);
++	local_irq_save(flags);
+ 
+-		/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_80, target);
++	gc_n64_send_command(gc, GC_N64_CMD_01, target);
++	for (i = 0; i < 32; i++)
+ 		gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_01, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_stop_bit(gc, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-		udelay(GC_N64_DELAY);
+-
+-		/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_c0, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_1b, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, cmd, target);
+-		gc_n64_send_stop_bit(gc, target);
++	udelay(GC_N64_DELAY);
+ 
+-		local_irq_restore(flags);
++	/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_c0, target);
++	gc_n64_send_command(gc, GC_N64_CMD_1b, target);
++	for (i = 0; i < 32; i++)
++		gc_n64_send_command(gc, cmd, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-	}
++	local_irq_restore(flags);
+ 
  	return 0;
  }
+@@ -317,7 +324,7 @@ static int __init gc_n64_init_ff(struct input_dev *dev, int i)
  
-@@ -192,7 +209,7 @@ static int tmff_init(struct hid_device *hid, const signed short *ff_bits)
- 		goto fail;
- 	}
+ 	input_set_capability(dev, EV_FF, FF_RUMBLE);
  
--	error = input_ff_create_memless(input_dev, tmff, tmff_play);
-+	error = input_ff_create_mlnx(input_dev, tmff, tmff_play, FF_UPDATE_RATE);
- 	if (error)
- 		goto fail;
- 
+-	err = input_ff_create_memless(dev, sdev, gc_n64_play_effect);
++	err = input_ff_create_mlnx(dev, sdev, gc_n64_play_effect, FF_UPDATE_RATE);
+ 	if (err) {
+ 		kfree(sdev);
+ 		return err;
 -- 
 1.9.2
 
