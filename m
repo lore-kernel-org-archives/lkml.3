@@ -1,110 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaDZLmp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 07:42:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57122 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770AbaDZLjm (ORCPT
+	id S1751835AbaDZMAk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:00:40 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:49942 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaDZMAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 07:39:42 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-5c-535b9afc9757
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
-        grundler@chromium.org, jic23@kernel.org,
-        Naveen Krishna Ch <ch.naveen@samsung.com>
-Subject: [PATCH 1/5 v2] iio: exynos_adc: use indio_dev->dev structure to handle
- child nodes
-Date: Sat, 26 Apr 2014 17:07:52 +0530
-Message-id: <1398512276-4105-2-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
-References: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkTvfvrOhgg1d72SzuPj/MaPHykKbF
-	2WUH2SyaF69ns3h15AeTxYOmVUwWSybPZ7WYd+Qdi8XlXXPYLGac38dksWjbf2YHbo/ZDRdZ
-	PHbOusvusWlVJ5vH/rlr2D2WvDnE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZXa3f2Qo2
-	81ecWbyavYFxIm8XIyeHhICJRMPuVcwQtpjEhXvr2boYuTiEBJYySlw5cZcJpujDy9ksEInp
-	jBL/p75hhXD6mSSWn/gFVsUmYCZxcNFq9i5GDg4RAVmJmd16IDXMIDUNTy8ygsSFBWIlTh9m
-	BSlnEVCV6OxYCtbKK+Ai8XX6GWaQEgkBBYk5k2xAwpwCrhITF10FKxECKnk78TU7yEgJgVPs
-	El2/3rFBzBGQ+Db5EAtEr6zEpgNQz0hKHFxxg2UCo/ACRoZVjKKpBckFxUnpRYZ6xYm5xaV5
-	6XrJ+bmbGIHxcfrfs94djLcPWB9iTAYaN5FZSjQ5HxhfeSXxhsZmRhamJqbGRuaWZqQJK4nz
-	Jj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAeKhHYd+66So/zl2b3Zs68YGpcq5trPjU
-	V4dfOnDYbZK+ebDgwcXCb0yKXkl8H7YciPy2bnPVF98fC6Wybv4tSBewOVOkkmQcfuqQh/GJ
-	ze2/5onZH/vsKS+tf8iYs/ef33umbH11ldm6Tjn/l3/Y++zw1j+bTucd6jnmEySvb/Y4J044
-	13z7ZiWW4oxEQy3mouJEAAmLndOlAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd0/s6KDDU7NsrK4+/wwo8XLQ5oW
-	Z5cdZLNoXryezeLVkR9MFg+aVjFZLJk8n9Vi3pF3LBaXd81hs5hxfh+TxaJt/5kduD1mN1xk
-	8dg56y67x6ZVnWwe++euYfdY8uYQq0ffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2Tmpdsq
-	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHamkUJaYUwoUCkgsLlbSt8M0ITTETdcC
-	pjFC1zckCK7HyAANJKxhzOhq/c5WsJm/4szi1ewNjBN5uxg5OSQETCQ+vJzNAmGLSVy4t56t
-	i5GLQ0hgOqPE/6lvWCGcfiaJ5Sd+MYFUsQmYSRxctJq9i5GDQ0RAVmJmtx5IDTNITcPTi4wg
-	cWGBWInTh1lBylkEVCU6O5aCtfIKuEh8nX6GGaREQkBBYs4kG5Awp4CrxMRFV8FKhIBK3k58
-	zT6BkXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjODoeya1g3Flg8UhRgEORiUe3h05
-	UcFCrIllxZW5hxglOJiVRHgXpUQHC/GmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MDHklcQb
-	GpuYmxqbWppYmJhZkiasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANjSk1E7vL31XffK/4o
-	DXkhVvqdN/Oics0SRocT2tfOWL/68Ub66OSeWVGMF+b5TdK5/J1r95yWR+4fcvc2Tt14s3Xf
-	rPKZZX7v9OyMu+X8+v3KREQfn+ks6apomfNhS/i7zctDhb9p17SIV81Ke/dnaTnDSseiHke2
-	CaYsa7aa5UbvWnvx449GJZbijERDLeai4kQAKl1uEgIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sat, 26 Apr 2014 08:00:37 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-03-535b9fe31005
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH] f2fs: introduce help macro ADDRS_PER_PAGE()
+Date: Sat, 26 Apr 2014 19:59:52 +0800
+Message-id: <004901cf6147$21bed300$653c7900$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9g+YGmX51BZmevSoWzlfC3uhw6gg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd3H86ODDc5O1bG4vusvk8WlRe4W
+	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK+Pb7gXMBU2iFVf+
+	/GNqYOwX7GLk5JAQMJE49/cIO4QtJnHh3nq2LkYuDiGB6YwS87afYARJCAn8YJTY2pMHYrMJ
+	qEgs7/jPBGKLCChKbHi/AayZWSBT4l7TDGYQW1jATeLQ3lVgNouAqsTBF22sXYwcHLwClhIb
+	FziChHkFBCV+TL7HAtGqJbF5WxMrhC0vsXnNW2aIexQkdpx9zQixSk9i+7TZUDXiEhuP3GKZ
+	wCgwC8moWUhGzUIyahaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgsP4mfQOxlUN
+	FocYBTgYlXh4d+REBQuxJpYVV+YeYpTgYFYS4Y2dHR0sxJuSWFmVWpQfX1Sak1p8iFGag0VJ
+	nPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTHyVMLH4IOXNFXunlM/ciC8cLn+tfd7X9XfyMv0
+	nxTD92D91Tf/i5QZpcx0Hk+7fkMoVolHXzG4rOre4ikBgpxeLYezFdU2aM1xXPn9xnn/wqXS
+	zJrh+s0vXOo3Rosbl/wK7em0leuptZ0rfNhOciKDQ9llpy9Tv9yU1HXX25D1++zEOUrfbZVY
+	ijMSDbWYi4oTATk+I9NfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naveen Krishna Ch <ch.naveen@samsung.com>
+Introduce help macro ADDRS_PER_PAGE() to get the number of address pointers in
+direct node or inode.
 
-Using pdev->dev with device_for_each_child() would iterate over all
-of the children of the platform device and delete them.
-Thus, causing crashes during module unload.
-
-We should be using the indio_dev->dev structure for
-registering/unregistering child nodes.
-
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
-Reported-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
 ---
-This change was tested on top of 
-   https://lkml.org/lkml/2014/4/21/481 from Doug.
+ fs/f2fs/data.c          |    6 ++----
+ fs/f2fs/file.c          |    5 +----
+ fs/f2fs/recovery.c      |    5 +----
+ include/linux/f2fs_fs.h |    3 +++
+ 4 files changed, 7 insertions(+), 12 deletions(-)
 
- drivers/iio/adc/exynos_adc.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index d25b262..affa93f 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -344,7 +344,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 150c12a..6daef54 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -652,8 +652,7 @@ static int get_data_block(struct inode *inode, sector_t iblock,
+ 		goto put_out;
+ 	}
  
- 	exynos_adc_hw_init(info);
+-	end_offset = IS_INODE(dn.node_page) ?
+-			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
++	end_offset = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
+ 	bh_result->b_size = (((size_t)1) << blkbits);
+ 	dn.ofs_in_node++;
+ 	pgofs++;
+@@ -675,8 +674,7 @@ get_next:
+ 		if (dn.data_blkaddr == NEW_ADDR)
+ 			goto put_out;
  
--	ret = of_platform_populate(np, exynos_adc_match, NULL, &pdev->dev);
-+	ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "failed adding child nodes\n");
- 		goto err_of_populate;
-@@ -353,7 +353,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	return 0;
+-		end_offset = IS_INODE(dn.node_page) ?
+-			ADDRS_PER_INODE(F2FS_I(inode)) : ADDRS_PER_BLOCK;
++		end_offset = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
+ 	}
  
- err_of_populate:
--	device_for_each_child(&pdev->dev, NULL,
-+	device_for_each_child(&indio_dev->dev, NULL,
- 				exynos_adc_remove_devices);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
-@@ -369,7 +369,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
- 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
- 	struct exynos_adc *info = iio_priv(indio_dev);
+ 	if (maxblocks > (bh_result->b_size >> blkbits)) {
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 60e7d54..bb365c9 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -288,10 +288,7 @@ int truncate_blocks(struct inode *inode, u64 from)
+ 		return err;
+ 	}
  
--	device_for_each_child(&pdev->dev, NULL,
-+	device_for_each_child(&indio_dev->dev, NULL,
- 				exynos_adc_remove_devices);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
+-	if (IS_INODE(dn.node_page))
+-		count = ADDRS_PER_INODE(F2FS_I(inode));
+-	else
+-		count = ADDRS_PER_BLOCK;
++	count = ADDRS_PER_PAGE(dn.node_page, F2FS_I(inode));
+ 
+ 	count -= dn.ofs_in_node;
+ 	f2fs_bug_on(count < 0);
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 9eb6487..be1e3e8 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -301,10 +301,7 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+ 		goto out;
+ 
+ 	start = start_bidx_of_node(ofs_of_node(page), fi);
+-	if (IS_INODE(page))
+-		end = start + ADDRS_PER_INODE(fi);
+-	else
+-		end = start + ADDRS_PER_BLOCK;
++	end = start + ADDRS_PER_PAGE(page, fi);
+ 
+ 	f2fs_lock_op(sbi);
+ 
+diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+index df53e17..8c03f71 100644
+--- a/include/linux/f2fs_fs.h
++++ b/include/linux/f2fs_fs.h
+@@ -146,6 +146,9 @@ struct f2fs_extent {
+ #define ADDRS_PER_BLOCK		1018	/* Address Pointers in a Direct Block */
+ #define NIDS_PER_BLOCK		1018	/* Node IDs in an Indirect Block */
+ 
++#define ADDRS_PER_PAGE(page, fi)	\
++	(IS_INODE(page) ? ADDRS_PER_INODE(fi) : ADDRS_PER_BLOCK)
++
+ #define	NODE_DIR1_BLOCK		(DEF_ADDRS_PER_INODE + 1)
+ #define	NODE_DIR2_BLOCK		(DEF_ADDRS_PER_INODE + 2)
+ #define	NODE_IND1_BLOCK		(DEF_ADDRS_PER_INODE + 3)
 -- 
 1.7.9.5
+
 
