@@ -1,111 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751361AbaDZGBh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 02:01:37 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:46390 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989AbaDZGBf (ORCPT
+	id S1751243AbaDZGKG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 02:10:06 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:46441 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbaDZGKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 02:01:35 -0400
-Date: Sat, 26 Apr 2014 08:01:30 +0200
+	Sat, 26 Apr 2014 02:10:04 -0400
+Date: Sat, 26 Apr 2014 08:09:59 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-pci@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Bodo Eggert <7eggert@gmx.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] x86/gart: Tidy messages and add bridge device info
-Message-ID: <20140426060130.GA1698@gmail.com>
-References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
+To: Oren Twaig <oren@scalemp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Shai Fultheim <shai@scalemp.com>
+Subject: Re: [PATCH v2] X86: Hook apic vector allocation domain only when
+ interrupt routing are set to ignore
+Message-ID: <20140426060959.GA1944@gmail.com>
+References: <1398376326-3055-1-git-send-email-oren@scalemp.com>
+ <20140425080137.GC19588@gmail.com>
+ <535A421F.4010108@scalemp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <535A421F.4010108@scalemp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Bjorn Helgaas <bhelgaas@google.com> wrote:
+* Oren Twaig <oren@scalemp.com> wrote:
 
-> Print the AGP bridge info the same way as the rest of the kernel, e.g.,
-> "0000:00:04.0" instead of "00:04:00".
+> On 4/25/2014 11:01 AM, Ingo Molnar wrote:
+> >
+> > * Oren Twaig <oren@scalemp.com> wrote:
+> >
+> >> vSMP Foundation provides locality based interrupt routing which needed
+> >> vector_allocation_domain to allow all online cpus can handle all
+> possible
+> >> vectors.
+> >>
+> >> Enforcing Interrupt Routing Comply (IRC) mode requires us to
+> unplug this hook as
+> >> otherwise the IOAPIC, MSI and MSIX destination selectors to
+> always select the
+> >> lowest online cpu as the destination. I.e affinity of HW
+> interrupts cannot be
+> >> controled by kernel and/or userspace code.
+> >>
+> >> The purpose of the patch is to fix the code to set override
+> vector allocation
+> >> domain only when IRC is set to ignore to allow the kernel and
+> userspace to
+> >> effectively control the destination of the HW interrupts.
+> >>
+> >> Signed-off-by: Oren Twaig <oren@scalemp.com>
+> >> Acked-by: Shai Fultheim <shai@scalemp.com>
+> >
+> > So what was the behavior before the change - certain IRQs did not get
+> > routed, they just ended up on CPU0 or on some other undesirable CPU?
+> > Or was IRQ distribution random? It's not clear from the changelog.
 > 
-> Also print the AGP aperture address range the same way we print resources,
-> and label it explicitly as a bus address range.
+> It all depends on the IRC flag. When set to "ignore" by the linux 
+> kernel, vSMP Foundation knew that it can deliver the IRQ to the CPU 
+> which would result in less virtualization overhead. For example, we 
+> could deliver the HW interrupt to the CPU which got it or any other 
+> CPU in the system. We couldn't have done it without the kernel 
+> making sure that each vector can be passed to all CPUs. This is why 
+> we override the verctor allocation domain to signal all CPUs.
 > 
-> No functional change.
-> 
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
->  1 file changed, 12 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-> index 9fa8aa051f54..4dd76d3df056 100644
-> --- a/arch/x86/kernel/aperture_64.c
-> +++ b/arch/x86/kernel/aperture_64.c
-> @@ -126,10 +126,12 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
->  	u64 aper;
->  	u32 old_order;
->  
-> -	printk(KERN_INFO "AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP bridge\n", bus, slot,
-> +	       func);
+> But, when the IRC is set to "comply" we, before this patch, still 
+> efected the allocation domains alltough it wasn't needed. It wasn't 
+> needed because when in "comply" mode, we always pass the HW 
+> interrupt to the CPU the kernel requested (by setting the IOAPIC 
+> entry, MSI/X entry or IR entry)
 
-Please leave it on a single line - checkpatch warning nonwithstanding. 
-pr_info() is also useful.
+I still don't see a clear explanation of what the _user_ saw and sees 
+before and after the change. What is the effect of the patch: correct 
+IRQ routing (i.e. before the change IRQs would end up on the wrong 
+CPU), lower overhead IRQ routing (i.e. before the change IRQ routing 
+overhead was more expensive), or something else?
 
->  	apsizereg = read_pci_config_16(bus, slot, func, cap + 0x14);
->  	if (apsizereg == 0xffffffff) {
-> -		printk(KERN_ERR "APSIZE in AGP bridge unreadable\n");
-> +		printk(KERN_ERR "pci 0000:%02x:%02x.%d: APSIZE unreadable\n",
-> +		       bus, slot, func);
-
-Here too you can also use pr_err() to shorten the line.
-
->  		return 0;
->  	}
->  
-> @@ -153,16 +155,18 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
->  	 * On some sick chips, APSIZE is 0. It means it wants 4G
->  	 * so let double check that order, and lets trust AMD NB settings:
->  	 */
-> -	printk(KERN_INFO "Aperture from AGP @ %Lx old size %u MB\n",
-> -			aper, 32 << old_order);
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] old size %u MB\n",
-> +	       bus, slot, func, aper, aper + (32 << old_order) - 1,
-> +	       32 << old_order);
->  	if (aper + (32ULL<<(20 + *order)) > 0x100000000ULL) {
-> -		printk(KERN_INFO "Aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
-> -				32 << *order, apsizereg);
-> +		printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
-> +		       bus, slot, func, 32 << *order, apsizereg);
->  		*order = old_order;
->  	}
->  
-> -	printk(KERN_INFO "Aperture from AGP @ %Lx size %u MB (APSIZE %x)\n",
-> -			aper, 32 << *order, apsizereg);
-> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] size %u MB (APSIZE %x)\n",
-> +	       bus, slot, func, aper, aper + (32 << *order) - 1, 32 << *order,
-> +	       apsizereg);
->  
->  	if (!aperture_valid(aper, (32*1024*1024) << *order, 32<<20))
->  		return 0;
-
-Also, you could add:
-
-#define PREFIX "PCI/gart: "
-
-or something like that, to define a standard prefix for these 
-messages.
-
-Btw., this file could be moved to arch/x86/pci/?
-
-Otherwise:
-
-  Acked-by: Ingo Molnar <mingo@kernel.org>
+You don't spell this out clearly and it's a crucial piece of 
+information that comes before every other explanation.
 
 Thanks,
 
