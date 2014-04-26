@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaDZLRN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 07:17:13 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:3585 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751569AbaDZLRL (ORCPT
+	id S1751696AbaDZLfp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 07:35:45 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:33087 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751255AbaDZLfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 07:17:11 -0400
-Date: Sat, 26 Apr 2014 07:17:02 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH] rtmutex: Do not prio boost when timeout is used
-Message-ID: <20140426071702.2a866fc5@gandalf.local.home>
-In-Reply-To: <20140426110437.GK26782@laptop.programming.kicks-ass.net>
-References: <20140425162848.0e1deed8@gandalf.local.home>
-	<20140426110437.GK26782@laptop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Sat, 26 Apr 2014 07:35:41 -0400
+Message-ID: <535B9A09.9060902@semaphore.gr>
+Date: Sat, 26 Apr 2014 14:35:37 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v5 2/8] cpufreq: Use cpufreq_for_each_* macros for frequency
+ table iteration
+References: <535AC26A.1000006@semaphore.gr> <CA+V-a8sg9sBi5mf9KoFWrCJjw6WN+tGrb=bgJwfV3VDZ2DGYig@mail.gmail.com>
+In-Reply-To: <CA+V-a8sg9sBi5mf9KoFWrCJjw6WN+tGrb=bgJwfV3VDZ2DGYig@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Apr 2014 13:04:37 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi Prabhakar,
 
-> On Fri, Apr 25, 2014 at 04:28:48PM -0400, Steven Rostedt wrote:
-> > I've been discussing an issue on IRC with deadlock checking and found
-> > something wrong with it. Mainly, if any of the locks have a timeout,
-> > then even if the chain loops, there is no real deadlock. If one of the
-> > locks in the chain times out, then things will move forward again.
+On 26/04/2014 12:57 μμ, Prabhakar Lad wrote:
+> Hi Stratos,
 > 
+> Thanks for the patch,
 > 
-> POSIX (opengroup):
+> On Sat, Apr 26, 2014 at 1:45 AM, Stratos Karafotis
+> <stratosk@semaphore.gr> wrote:
+>> The cpufreq core now supports the cpufreq_for_each_entry and
+>> cpufreq_for_each_valid_entry macros helpers for iteration over the
+>> cpufreq_frequency_table, so use them.
+>>
+>> It should have no functional changes.
+>>
+>> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 > 
->  http://pubs.opengroup.org/onlinepubs/009695399/functions/pthread_mutex_timedlock.html
+> For patches 1 & 2:  Acked-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> Explicitly states that pthread_mutex_timedlock() should participate in
-> the PI chain, it also states that its perfectly valid for this function
-> to return -EDEADLK.
+> and for patch 3: Acked-and-tested-by: Lad, Prabhakar
+> <prabhakar.csengg@gmail.com>
 > 
-> Therefore, there's nothing wrong. If this behaviour breaks userspace,
-> its already broken for not actually expecting the right thing.
+> Thanks,
+> --Prabhakar lad
+> 
 
-Fair enough. Thanks for the link.
+Thank you very much!
 
--- Steve
+
+Stratos Karafotis
+
+
