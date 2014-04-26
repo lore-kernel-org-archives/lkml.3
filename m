@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaDZLjs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 07:39:48 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22860 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaDZLjo (ORCPT
+	id S1752400AbaDZLlA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 07:41:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20345 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaDZLjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 07:39:44 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-47-535b9afe8951
+	Sat, 26 Apr 2014 07:39:45 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-3d-535b9b00fc48
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-iio@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         dianders@chromium.org, gregkh@linuxfoundation.org,
         naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
-        grundler@chromium.org, jic23@kernel.org,
-        Naveen Krishna Ch <ch.naveen@samsung.com>
-Subject: [PATCH 2/5 v2] iio: exynos_adc: rearrange clk and regulator
- enable/disable calls
-Date: Sat, 26 Apr 2014 17:07:53 +0530
-Message-id: <1398512276-4105-3-git-send-email-ch.naveen@samsung.com>
+        grundler@chromium.org, jic23@kernel.org
+Subject: [PATCH 3/5 v2] iio: exynos_adc: reduce timeout and use
+ wait_for_completion_timeout
+Date: Sat, 26 Apr 2014 17:07:54 +0530
+Message-id: <1398512276-4105-4-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
 References: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkWvf/rOhgg+kzmC3uPj/MaPHykKbF
-	2WUH2SyaF69ns3h15AeTxYOmVUwWSybPZ7WYd+Qdi8XlXXPYLGac38dksWjbf2YHbo/ZDRdZ
-	PHbOusvusWlVJ5vH/rlr2D2WvDnE6tG3ZRWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZN3Z9Zilo
-	UayY/OIWWwPjDOkuRk4OCQETiXsrFzBD2GISF+6tZ+ti5OIQEljKKNH+czsrTNHkq+ehEtMZ
-	JT63XGYESQgJ9DNJ3HsYB2KzCZhJHFy0mr2LkYNDREBWYma3Hkg9M0hJw9OLYPXCAtESNzev
-	BRvKIqAqcXD9MXYQm1fAReLFpdlsIL0SAgoScybZgIQ5BVwlJi66ygSxykXi7cTX7CAzJQTO
-	sUu8f7eFCWKOgMS3yYdYIHplJTYdgHpGUuLgihssExiFFzAyrGIUTS1ILihOSi8y0StOzC0u
-	zUvXS87P3cQIjI/T/55N2MF474D1IcZkoHETmaVEk/OB8ZVXEm9obGZkYWpiamxkbmlGmrCS
-	OK/ao6QgIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwFeYUbJ39Y+LzgT9DJdbdvB2fbfZu7
-	lflKpuCegvdOiW956ype9S7+zBfstHxbUsy1xittkSuuZu6rXTpxJROLWdfbb4cmpiW1FR+5
-	d2uSeOm/qEjbfS9NnP75zjzHvWNCn0BnW/7m2GWNUSze+r+brh0/vDunV5W7+tDkuAU++84s
-	P9d3aZW9EktxRqKhFnNRcSIALh5mGKUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd1/s6KDDX70mljcfX6Y0eLlIU2L
-	s8sOslk0L17PZvHqyA8miwdNq5gslkyez2ox78g7FovLu+awWcw4v4/JYtG2/8wO3B6zGy6y
-	eOycdZfdY9OqTjaP/XPXsHsseXOI1aNvyypGj8+b5ALYoxoYbTJSE1NSixRS85LzUzLz0m2V
-	vIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAjlRSKEvMKQUKBSQWFyvp22GaEBripmsB
-	0xih6xsSBNdjZIAGEtYwZtzY9ZmloEWxYvKLW2wNjDOkuxg5OSQETCQmXz3PBmGLSVy4tx7I
-	5uIQEpjOKPG55TIjSEJIoJ9J4t7DOBCbTcBM4uCi1exdjBwcIgKyEjO79UDqmUFKGp5eBKsX
-	FoiWuLl5LSuIzSKgKnFw/TF2EJtXwEXixaXZbCC9EgIKEnMm2YCEOQVcJSYuusoEscpF4u3E
-	1+wTGHkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAiOvmfSOxhXNVgcYhTgYFTi4d2R
-	ExUsxJpYVlyZe4hRgoNZSYR3UUp0sBBvSmJlVWpRfnxRaU5q8SHGZKCjJjJLiSbnAxNDXkm8
-	obGJuamxqaWJhYmZJWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwbqj9LB12c+/hg93r
-	N+/puq29RD/t+uyu2z638u/c+nflwZaXJXeu/PxX131o3YpX9yb/Sz7BUqf56PNejtaEm27f
-	VH7/PJAfK1v2bMb3iEN8p5aWOq3lsOZy9qs4/7b8P9feeXXC+/L4TGOvmRleeNnst7NF5r79
-	08kynecci5XvHNgksKiog1WJpTgj0VCLuag4EQAvWVWsAgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42JZI2JSq8swOzrY4O49bYuXhzQtzi47yGbR
+	vHg9m8WrIz+YLB40rWKyWDJ5PqvFvCPvWCwu75rDZjHj/D4mi0Xb/jM7cHnMbrjI4rFz1l12
+	j02rOtk89s9dw+6x5M0hVo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKONn7l6ngJl/FqZ3/
+	mBsY23i6GDk5JARMJH5vaGWEsMUkLtxbz9bFyMUhJLCUUWLTzc8sMEUdy+8yQySmM0oc6b7O
+	DuH0M0lcOLiOHaSKTcBM4uCi1UA2B4eIgKzEzG49kBpmgUeMEjMe9oKtEBaIlVi1bx4TiM0i
+	oCqxY/EasA28Ai4SW+93M4L0SggoSMyZZAMS5hRwlZi46CpYuRBQyduJr8H2SggcY5f48OoR
+	I8QcAYlvkw+xQPTKSmw6wAxxtKTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKpXnJhbXJqXrpec
+	n7uJERgXp/89m7iD8f4B60OMyUDjJjJLiSbnA+MqryTe0NjMyMLUxNTYyNzSjDRhJXHe9EdJ
+	QUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY/XrzHGtWnRZsnfDzfO7Zz5q6/yqb8x57rLre
+	xBeXGf8ywPF9cD+/ysV7cyMDJSM+3+i6yDRP2y44YnmP4JId2zbpzWhaZWsntE628Zm7tt7M
+	OcrHriXq1fyd6Je0L37lrIfzC6qdwpMWOcfs3nX7zRsu1g/NP74rLQw/2LHV8pVxDd/KL1Pz
+	lFiKMxINtZiLihMB0CvweaECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQV2G2dHBBp/OK1u8PKRpcXbZQTaL
+	5sXr2SxeHfnBZPGgaRWTxZLJ81kt5h15x2JxedccNosZ5/cxWSza9p/ZgctjdsNFFo+ds+6y
+	e2xa1cnmsX/uGnaPJW8OsXr0bVnF6PF5k1wAe1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8
+	qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0H1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1D
+	guB6jAzQQMIaxoyTvX+ZCm7yVZza+Y+5gbGNp4uRk0NCwESiY/ldZghbTOLCvfVsXYxcHEIC
+	0xkljnRfZ4dw+pkkLhxcxw5SxSZgJnFw0Wogm4NDREBWYma3HkgNs8AjRokZD3sZQWqEBWIl
+	Vu2bxwRiswioSuxYvIYFxOYVcJHYer+bEaRXQkBBYs4kG5Awp4CrxMRFV8HKhYBK3k58zT6B
+	kXcBI8MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCoeya1g3Flg8UhRgEORiUe3h05UcFC
+	rIllxZW5hxglOJiVRHgXpUQHC/GmJFZWpRblxxeV5qQWH2JMBjpqIrOUaHI+MCHklcQbGpuY
+	mxqbWppYmJhZkiasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANjZs5DmUlz8itPbkvwOVmS
+	bfouao9Z/opMq7xJh3/PEU11e3U2j2ETx1611nMeMtkPvn4KvO8m8djKUaqF98pCxT9yvq9T
+	covjLZlZq28f+ShtIVtY80/HQHrTz+zeKU81nl1eNcUjpkpXwu43v/m7CkntxmmLTiYsbp2x
+	8cH7g1qxt8JMhT8rsRRnJBpqMRcVJwIA0KZb7f4CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,159 +53,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naveen Krishna Ch <ch.naveen@samsung.com>
+ADC module on Exynos5 SoCs runs at 600KSPS. At this conversion rate,
+waiting for 1000 msecs is wasteful (incase of h/w failure).
 
-This patch maintains the following order in
-probe(), remove(), resume() and suspend() calls
+Hence, reduce the time out to 100msecs and use
+wait_for_completion_timeout() instead of
+wait_for_completion_interruptible_timeout()
 
-regulator enable, clk prepare enable
-...
-clk disable unprepare, regulator disable
-
-While at it,
-1. enable the regulator before the iio_device_register()
-2. handle the return values for enable/disable calls
-
-Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 ---
-Changes since v1:
-corrected the register/unregister and enabling/disbaling sequences
+This change is a part of the patch reviewd at https://lkml.org/lkml/2013/11/5/92
 
- drivers/iio/adc/exynos_adc.c |   63 +++++++++++++++++++++++-------------------
- 1 file changed, 34 insertions(+), 29 deletions(-)
+ drivers/iio/adc/exynos_adc.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index affa93f..0df8916 100644
+index a2b8b1a..4d2467a 100644
 --- a/drivers/iio/adc/exynos_adc.c
 +++ b/drivers/iio/adc/exynos_adc.c
-@@ -290,32 +290,30 @@ static int exynos_adc_probe(struct platform_device *pdev)
+@@ -82,7 +82,7 @@ enum adc_version {
+ #define ADC_CON_EN_START	(1u << 0)
+ #define ADC_DATX_MASK		0xFFF
  
- 	init_completion(&info->completion);
+-#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(1000))
++#define EXYNOS_ADC_TIMEOUT	(msecs_to_jiffies(100))
  
--	ret = request_irq(info->irq, exynos_adc_isr,
--					0, dev_name(&pdev->dev), info);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
--							info->irq);
--		return ret;
--	}
--
--	writel(1, info->enable_reg);
--
- 	info->clk = devm_clk_get(&pdev->dev, "adc");
- 	if (IS_ERR(info->clk)) {
- 		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
- 							PTR_ERR(info->clk));
--		ret = PTR_ERR(info->clk);
--		goto err_irq;
-+		return PTR_ERR(info->clk);
+ struct exynos_adc {
+ 	void __iomem		*regs;
+@@ -121,6 +121,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+ 	struct exynos_adc *info = iio_priv(indio_dev);
+ 	unsigned long timeout;
+ 	u32 con1, con2;
++	int ret;
+ 
+ 	if (mask != IIO_CHAN_INFO_RAW)
+ 		return -EINVAL;
+@@ -145,16 +146,19 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+ 				ADC_V1_CON(info->regs));
  	}
  
- 	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
- 	if (IS_ERR(info->vdd)) {
- 		dev_err(&pdev->dev, "failed getting regulator, err = %ld\n",
- 							PTR_ERR(info->vdd));
--		ret = PTR_ERR(info->vdd);
--		goto err_irq;
-+		return PTR_ERR(info->vdd);
- 	}
- 
-+	ret = regulator_enable(info->vdd);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret)
-+		goto err_disable_reg;
-+
-+	writel(1, info->enable_reg);
-+
- 	info->version = exynos_adc_get_version(pdev);
- 
- 	platform_set_drvdata(pdev, indio_dev);
-@@ -332,16 +330,18 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 	else
- 		indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
- 
-+	ret = request_irq(info->irq, exynos_adc_isr,
-+					0, dev_name(&pdev->dev), info);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
-+							info->irq);
-+		goto err_disable_clk;
+-	timeout = wait_for_completion_interruptible_timeout
++	timeout = wait_for_completion_timeout
+ 			(&info->completion, EXYNOS_ADC_TIMEOUT);
+-	*val = info->value;
++	if (timeout == 0) {
++		ret = -ETIMEDOUT;
++	} else {
++		*val = info->value;
++		*val2 = 0;
++		ret = IIO_VAL_INT;
 +	}
-+
- 	ret = iio_device_register(indio_dev);
- 	if (ret)
- 		goto err_irq;
  
--	ret = regulator_enable(info->vdd);
--	if (ret)
--		goto err_iio_dev;
--
--	clk_prepare_enable(info->clk);
--
- 	exynos_adc_hw_init(info);
+ 	mutex_unlock(&indio_dev->mlock);
  
- 	ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
-@@ -355,12 +355,14 @@ static int exynos_adc_probe(struct platform_device *pdev)
- err_of_populate:
- 	device_for_each_child(&indio_dev->dev, NULL,
- 				exynos_adc_remove_devices);
--	regulator_disable(info->vdd);
--	clk_disable_unprepare(info->clk);
--err_iio_dev:
- 	iio_device_unregister(indio_dev);
- err_irq:
- 	free_irq(info->irq, info);
-+err_disable_clk:
-+	writel(0, info->enable_reg);
-+	clk_disable_unprepare(info->clk);
-+err_disable_reg:
-+	regulator_disable(info->vdd);
- 	return ret;
+-	if (timeout == 0)
+-		return -ETIMEDOUT;
+-
+-	return IIO_VAL_INT;
++	return ret;
  }
  
-@@ -371,11 +373,12 @@ static int exynos_adc_remove(struct platform_device *pdev)
- 
- 	device_for_each_child(&indio_dev->dev, NULL,
- 				exynos_adc_remove_devices);
--	regulator_disable(info->vdd);
--	clk_disable_unprepare(info->clk);
--	writel(0, info->enable_reg);
- 	iio_device_unregister(indio_dev);
- 	free_irq(info->irq, info);
-+	writel(0, info->enable_reg);
-+	clk_disable_unprepare(info->clk);
-+	regulator_disable(info->vdd);
-+
- 
- 	return 0;
- }
-@@ -397,8 +400,8 @@ static int exynos_adc_suspend(struct device *dev)
- 		writel(con, ADC_V1_CON(info->regs));
- 	}
- 
--	clk_disable_unprepare(info->clk);
- 	writel(0, info->enable_reg);
-+	clk_disable_unprepare(info->clk);
- 	regulator_disable(info->vdd);
- 
- 	return 0;
-@@ -414,9 +417,11 @@ static int exynos_adc_resume(struct device *dev)
- 	if (ret)
- 		return ret;
- 
--	writel(1, info->enable_reg);
--	clk_prepare_enable(info->clk);
-+	ret = clk_prepare_enable(info->clk);
-+	if (ret)
-+		return ret;
- 
-+	writel(1, info->enable_reg);
- 	exynos_adc_hw_init(info);
- 
- 	return 0;
+ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
 -- 
 1.7.9.5
 
