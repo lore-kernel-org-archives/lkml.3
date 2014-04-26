@@ -1,342 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaDZBxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 21:53:23 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:57904 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaDZBxR (ORCPT
+	id S1751249AbaDZB7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 21:59:47 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:48255 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaDZB7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 21:53:17 -0400
-Message-ID: <535B1186.60303@gmail.com>
-Date: Sat, 26 Apr 2014 13:53:10 +1200
-From: Michael Schmitz <schmitzmic@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 25 Apr 2014 21:59:43 -0400
+Message-ID: <535B130C.1000007@gmail.com>
+Date: Sat, 26 Apr 2014 03:59:40 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-m68k@vger.kernel.org
-Subject: Re: [PATCH v2 10/12] scsi/NCR5380: remove unused macro definitions
-References: <20140319123516.542623278@telegraphics.com.au> <20140319123519.542428071@telegraphics.com.au>
-In-Reply-To: <20140319123519.542428071@telegraphics.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+CC: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime
+ PM with the PM core
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>	<1398334403-26181-4-git-send-email-geert+renesas@glider.be> <CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
+In-Reply-To: <CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: MIchael Schmitz <schmitz@debian.org>
 
-> Remove the unused (and divergent) debugging macro definitions from
-> the sun3_NCR5380 and atari_NCR5380 drivers. These drivers have been
-> converted to use the common macros in NCR5380.h.
->
-> Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
->
-> ---
->   drivers/scsi/atari_scsi.h |   93 -----------------------
->   drivers/scsi/sun3_scsi.h  |  181 ----------------------------------------------
->   2 files changed, 274 deletions(-)
->
-> Index: linux-m68k/drivers/scsi/atari_scsi.h
-> ===================================================================
-> --- linux-m68k.orig/drivers/scsi/atari_scsi.h	2014-03-19 23:23:02.000000000 +1100
-> +++ linux-m68k/drivers/scsi/atari_scsi.h	2014-03-19 23:34:45.000000000 +1100
-> @@ -80,99 +80,6 @@
->   #define SCSI_RESET_HOST_RESET 0x200
->   #define SCSI_RESET_ACTION   0xff
->   
-> -/* Debugging printk definitions:
-> - *
-> - *  ARB  -> arbitration
-> - *  ASEN -> auto-sense
-> - *  DMA  -> DMA
-> - *  HSH  -> PIO handshake
-> - *  INF  -> information transfer
-> - *  INI  -> initialization
-> - *  INT  -> interrupt
-> - *  LNK  -> linked commands
-> - *  MAIN -> NCR5380_main() control flow
-> - *  NDAT -> no data-out phase
-> - *  NWR  -> no write commands
-> - *  PIO  -> PIO transfers
-> - *  PDMA -> pseudo DMA (unused on Atari)
-> - *  QU   -> queues
-> - *  RSL  -> reselections
-> - *  SEL  -> selections
-> - *  USL  -> usleep cpde (unused on Atari)
-> - *  LBS  -> last byte sent (unused on Atari)
-> - *  RSS  -> restarting of selections
-> - *  EXT  -> extended messages
-> - *  ABRT -> aborting and resetting
-> - *  TAG  -> queue tag handling
-> - *  MER  -> merging of consec. buffers
-> - *
-> - */
-> -
-> -#define dprint(flg, format...)			\
-> -({						\
-> -	if (NDEBUG & (flg))			\
-> -		printk(KERN_DEBUG format);	\
-> -})
-> -
-> -#define ARB_PRINTK(format, args...) \
-> -	dprint(NDEBUG_ARBITRATION, format , ## args)
-> -#define ASEN_PRINTK(format, args...) \
-> -	dprint(NDEBUG_AUTOSENSE, format , ## args)
-> -#define DMA_PRINTK(format, args...) \
-> -	dprint(NDEBUG_DMA, format , ## args)
-> -#define HSH_PRINTK(format, args...) \
-> -	dprint(NDEBUG_HANDSHAKE, format , ## args)
-> -#define INF_PRINTK(format, args...) \
-> -	dprint(NDEBUG_INFORMATION, format , ## args)
-> -#define INI_PRINTK(format, args...) \
-> -	dprint(NDEBUG_INIT, format , ## args)
-> -#define INT_PRINTK(format, args...) \
-> -	dprint(NDEBUG_INTR, format , ## args)
-> -#define LNK_PRINTK(format, args...) \
-> -	dprint(NDEBUG_LINKED, format , ## args)
-> -#define MAIN_PRINTK(format, args...) \
-> -	dprint(NDEBUG_MAIN, format , ## args)
-> -#define NDAT_PRINTK(format, args...) \
-> -	dprint(NDEBUG_NO_DATAOUT, format , ## args)
-> -#define NWR_PRINTK(format, args...) \
-> -	dprint(NDEBUG_NO_WRITE, format , ## args)
-> -#define PIO_PRINTK(format, args...) \
-> -	dprint(NDEBUG_PIO, format , ## args)
-> -#define PDMA_PRINTK(format, args...) \
-> -	dprint(NDEBUG_PSEUDO_DMA, format , ## args)
-> -#define QU_PRINTK(format, args...) \
-> -	dprint(NDEBUG_QUEUES, format , ## args)
-> -#define RSL_PRINTK(format, args...) \
-> -	dprint(NDEBUG_RESELECTION, format , ## args)
-> -#define SEL_PRINTK(format, args...) \
-> -	dprint(NDEBUG_SELECTION, format , ## args)
-> -#define USL_PRINTK(format, args...) \
-> -	dprint(NDEBUG_USLEEP, format , ## args)
-> -#define LBS_PRINTK(format, args...) \
-> -	dprint(NDEBUG_LAST_BYTE_SENT, format , ## args)
-> -#define RSS_PRINTK(format, args...) \
-> -	dprint(NDEBUG_RESTART_SELECT, format , ## args)
-> -#define EXT_PRINTK(format, args...) \
-> -	dprint(NDEBUG_EXTENDED, format , ## args)
-> -#define ABRT_PRINTK(format, args...) \
-> -	dprint(NDEBUG_ABORT, format , ## args)
-> -#define TAG_PRINTK(format, args...) \
-> -	dprint(NDEBUG_TAGS, format , ## args)
-> -#define MER_PRINTK(format, args...) \
-> -	dprint(NDEBUG_MERGING, format , ## args)
-> -
-> -/* conditional macros for NCR5380_print_{,phase,status} */
-> -
-> -#define NCR_PRINT(mask)	\
-> -	((NDEBUG & (mask)) ? NCR5380_print(instance) : (void)0)
-> -
-> -#define NCR_PRINT_PHASE(mask) \
-> -	((NDEBUG & (mask)) ? NCR5380_print_phase(instance) : (void)0)
-> -
-> -#define NCR_PRINT_STATUS(mask) \
-> -	((NDEBUG & (mask)) ? NCR5380_print_status(instance) : (void)0)
-> -
-> -
->   #endif /* ndef ASM */
->   #endif /* ATARI_SCSI_H */
->   
-> Index: linux-m68k/drivers/scsi/sun3_scsi.h
-> ===================================================================
-> --- linux-m68k.orig/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:41.000000000 +1100
-> +++ linux-m68k/drivers/scsi/sun3_scsi.h	2014-03-19 23:34:45.000000000 +1100
-> @@ -182,188 +182,7 @@ struct sun3_udc_regs {
->   
->   #define VME_DATA24 0x3d00
->   
-> -// debugging printk's, taken from atari_scsi.h
-> -/* Debugging printk definitions:
-> - *
-> - *  ARB  -> arbitration
-> - *  ASEN -> auto-sense
-> - *  DMA  -> DMA
-> - *  HSH  -> PIO handshake
-> - *  INF  -> information transfer
-> - *  INI  -> initialization
-> - *  INT  -> interrupt
-> - *  LNK  -> linked commands
-> - *  MAIN -> NCR5380_main() control flow
-> - *  NDAT -> no data-out phase
-> - *  NWR  -> no write commands
-> - *  PIO  -> PIO transfers
-> - *  PDMA -> pseudo DMA (unused on Atari)
-> - *  QU   -> queues
-> - *  RSL  -> reselections
-> - *  SEL  -> selections
-> - *  USL  -> usleep cpde (unused on Atari)
-> - *  LBS  -> last byte sent (unused on Atari)
-> - *  RSS  -> restarting of selections
-> - *  EXT  -> extended messages
-> - *  ABRT -> aborting and resetting
-> - *  TAG  -> queue tag handling
-> - *  MER  -> merging of consec. buffers
-> - *
-> - */
-> -
->   #include "NCR5380.h"
->   
-> -#if NDEBUG & NDEBUG_ARBITRATION
-> -#define ARB_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define ARB_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_AUTOSENSE
-> -#define ASEN_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define ASEN_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_DMA
-> -#define DMA_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define DMA_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_HANDSHAKE
-> -#define HSH_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define HSH_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_INFORMATION
-> -#define INF_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define INF_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_INIT
-> -#define INI_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define INI_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_INTR
-> -#define INT_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define INT_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_LINKED
-> -#define LNK_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define LNK_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_MAIN
-> -#define MAIN_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define MAIN_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_NO_DATAOUT
-> -#define NDAT_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define NDAT_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_NO_WRITE
-> -#define NWR_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define NWR_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_PIO
-> -#define PIO_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define PIO_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_PSEUDO_DMA
-> -#define PDMA_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define PDMA_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_QUEUES
-> -#define QU_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define QU_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_RESELECTION
-> -#define RSL_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define RSL_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_SELECTION
-> -#define SEL_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define SEL_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_USLEEP
-> -#define USL_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define USL_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_LAST_BYTE_SENT
-> -#define LBS_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define LBS_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_RESTART_SELECT
-> -#define RSS_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define RSS_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_EXTENDED
-> -#define EXT_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define EXT_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_ABORT
-> -#define ABRT_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define ABRT_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_TAGS
-> -#define TAG_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define TAG_PRINTK(format, args...)
-> -#endif
-> -#if NDEBUG & NDEBUG_MERGING
-> -#define MER_PRINTK(format, args...) \
-> -	printk(KERN_DEBUG format , ## args)
-> -#else
-> -#define MER_PRINTK(format, args...)
-> -#endif
-> -
-> -/* conditional macros for NCR5380_print_{,phase,status} */
-> -
-> -#define NCR_PRINT(mask)	\
-> -	((NDEBUG & (mask)) ? NCR5380_print(instance) : (void)0)
-> -
-> -#define NCR_PRINT_PHASE(mask) \
-> -	((NDEBUG & (mask)) ? NCR5380_print_phase(instance) : (void)0)
-> -
-> -#define NCR_PRINT_STATUS(mask) \
-> -	((NDEBUG & (mask)) ? NCR5380_print_status(instance) : (void)0)
-> -
-> -
-> -
->   #endif /* SUN3_NCR5380_H */
->   
->
 
+On 24.04.2014 15:11, Ulf Hansson wrote:
+> On 24 April 2014 12:13, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+>> When adding a device from DT, check if its clocks are suitable for Runtime
+>> PM, and register them with the PM core.
+>> If Runtime PM is disabled, just enable the clock.
+>>
+>> This allows the PM core to automatically manage gate clocks of devices for
+>> Runtime PM.
+>
+> Normally I don't think it's a good idea to "automatically" manage
+> clocks from PM core or any other place but from the driver (and
+> possibly the subsystem).
+>
+> The reason is simply that we hide things that normally is supposed to
+> be handled by the driver. Typically a cross SOC driver should work
+> fine both with and without a pm_domain. It should also not rely on
+> CONFIG_PM_RUNTIME.
+>
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> ---
+>>   drivers/of/Makefile    |    1 +
+>>   drivers/of/of_clk.c    |  103 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>   drivers/of/platform.c  |    3 ++
+>>   include/linux/of_clk.h |   18 +++++++++
+>>   4 files changed, 125 insertions(+)
+>>   create mode 100644 drivers/of/of_clk.c
+>>   create mode 100644 include/linux/of_clk.h
+>>
+>> diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+>> index ed9660adad77..49bcd413906f 100644
+>> --- a/drivers/of/Makefile
+>> +++ b/drivers/of/Makefile
+>> @@ -10,3 +10,4 @@ obj-$(CONFIG_OF_PCI)  += of_pci.o
+>>   obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+>>   obj-$(CONFIG_OF_MTD)   += of_mtd.o
+>>   obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
+>> +obj-$(CONFIG_COMMON_CLK) += of_clk.o
+>> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
+>> new file mode 100644
+>> index 000000000000..35f5e9f3dd42
+>> --- /dev/null
+>> +++ b/drivers/of/of_clk.c
+>> @@ -0,0 +1,103 @@
+>> +/*
+>> + *  Copyright (C) 2014 Glider bvba
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/err.h>
+>> +#include <linux/of.h>
+>> +#include <linux/of_clk.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/pm_clock.h>
+>> +#include <linux/pm_runtime.h>
+>> +
+>> +
+>> +#ifdef CONFIG_PM_RUNTIME
+>> +
+>> +static int of_clk_pm_runtime_suspend(struct device *dev)
+>> +{
+>> +       int ret;
+>> +
+>> +       ret = pm_generic_runtime_suspend(dev);
+>> +       if (ret)
+>> +               return ret;
+>> +
+>> +       ret = pm_clk_suspend(dev);
+>> +       if (ret) {
+>> +               pm_generic_runtime_resume(dev);
+>> +               return ret;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +static int of_clk_pm_runtime_resume(struct device *dev)
+>> +{
+>> +       pm_clk_resume(dev);
+>> +       return pm_generic_runtime_resume(dev);
+>> +}
+>> +
+>> +static struct dev_pm_domain of_clk_pm_domain = {
+>> +       .ops = {
+>> +               .runtime_suspend = of_clk_pm_runtime_suspend,
+>> +               .runtime_resume = of_clk_pm_runtime_resume,
+>> +               USE_PLATFORM_PM_SLEEP_OPS
+>> +       },
+>> +};
+>> +
+>> +static int of_clk_register(struct device *dev, struct clk *clk)
+>> +{
+>> +       int error;
+>> +
+>> +       if (!dev->pm_domain) {
+>> +               error = pm_clk_create(dev);
+>> +               if (error)
+>> +                       return error;
+>> +
+>> +               dev->pm_domain = &of_clk_pm_domain;
+>
+> I am concerned about how this will work in conjunction with the
+> generic power domain.
+>
+> A device can't reside in more than one pm_domain; thus I think it
+> would be better to always use the generic power domain and not have a
+> specific one for clocks. Typically the genpd should invoke
+> pm_clk_resume|suspend from it's runtime PM callbacks.
+
+I'm not sure about this. A typical use case would be to gate clocks ASAP 
+and then wait until device is idle long enough to consider turning off 
+the power domain worthwhile. Also sometimes we may want to gate the 
+clocks, but prevent power domain from being powered off to retain 
+hardware state (e.g. because there is no way to read it and restore later).
+
+I believe, though, that for devices that are not inside a controllable 
+power domain, this might be a good solution.
+
+Best regards,
+Tomasz
