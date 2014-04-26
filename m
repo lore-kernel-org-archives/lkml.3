@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaDZI6u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 04:58:50 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:43771 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaDZI6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 04:58:47 -0400
+	id S1751569AbaDZJKs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 05:10:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56030 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812AbaDZJKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 05:10:42 -0400
+Date: Sat, 26 Apr 2014 11:10:31 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Myron Stowe <myron.stowe@gmail.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com, daniel@numascale.com,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
+        x86 <x86@kernel.org>, sp@numascale.com,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
+ capabilities
+Message-ID: <20140426091031.GA10166@pd.tnic>
+References: <20140419025308.2408.51252.stgit@amt.stowe>
+ <20140419025323.2408.88764.stgit@amt.stowe>
+ <20140419135219.GC8109@pd.tnic>
+ <20140420075936.GA19672@pd.tnic>
+ <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <87lhutt4ph.fsf@x220.int.ebiederm.org>
-References: <535A5C78.1070901@samsung.com>
-	<535A75C1.3050901@samsung.com>
-	<20140425182310.GA9128@redhat.com>
-	<87sip15iy5.fsf@x220.int.ebiederm.org>
-	<20140425192543.GA11908@redhat.com>
-	<878uqt42q7.fsf@x220.int.ebiederm.org>
-	<20140425200156.GA13727@redhat.com>
-	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
-	<874n1h16le.fsf@x220.int.ebiederm.org>
-	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-	<87iopxxfpp.fsf@x220.int.ebiederm.org>
-	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
-	<CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
-	<87lhutt4ph.fsf@x220.int.ebiederm.org>
-Date: Sat, 26 Apr 2014 11:58:45 +0300
-Message-ID: <CACE9dm_SreLw8976qu52tmnJ5dq_xruR5f1sp9VfJBieEk-=nw@mail.gmail.com>
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2014 01:38, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
->
->> Is it really a show stopper to switch order of 2 functions as quick fix?
->> It was like that before 3.10 and seemed ok...
->
-> When that is the question.  The answer is yes it is a show stopper.
->
-> A quick fix to bury a fundamental design flaw because the code
-> previously seemed ok.  That seems fundamentally wrong.
->
-> Having IMA conflict with Apparmor in Kconfig would be a sensible quick
-> fix.
->
-> Eric
++ Robert.
 
-Conflict with Apparmor means with Ubuntu.
+On Fri, Apr 25, 2014 at 04:24:31PM -0600, Myron Stowe wrote:
+> On Sun, Apr 20, 2014 at 1:59 AM, Borislav Petkov <bp@suse.de> wrote:
+> > Drop Andreas' old email address from CC as it keeps bouncing.
+> >
+> > On Sat, Apr 19, 2014 at 03:52:20PM +0200, Borislav Petkov wrote:
+> >> > -static void __init pci_enable_pci_io_ecs(void)
+> >> > +static void __init pci_enable_pci_io_ecs(u8 bus, u8 slot)
+> >> >  {
+> >> >  #ifdef CONFIG_AMD_NB
+> >> >     unsigned int i, n;
+> >> > +   u8 limit;
+> >> >
+> >> >     for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
+> >> > -           u8 bus = amd_nb_bus_dev_ranges[i].bus;
+> >> > -           u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
+> >> > -           u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
+> >> > +           /* Try matching for the bus range */
+> >> > +           if ((bus != amd_nb_bus_dev_ranges[i].bus) ||
+> >> > +               (slot != amd_nb_bus_dev_ranges[i].dev_base))
+> >> > +                   continue;
+> >> > +
+> >> > +           limit = amd_nb_bus_dev_ranges[i].dev_limit;
+> >> >
+> >> > +           /* Setup all northbridges within the range */
+> >> >             for (; slot < limit; ++slot) {
+> >> >                     u32 val = read_pci_config(bus, slot, 3, 0);
+> >> > -
+> >> > -                   if (!early_is_amd_nb(val))
+> >> > +                   if (!val)
+> >> >                             continue;
+> >> >
+> >> >                     val = read_pci_config(bus, slot, 3, 0x8c);
+> >> > @@ -375,13 +457,14 @@ static void __init pci_enable_pci_io_ecs(void)
+> >> >                             val |= ENABLE_CF8_EXT_CFG >> 32;
+> >>
+> >> What a fun shifting!
+> >>
+> >> Maybe you should do
+> >>
+> >> #define ENABLE_CF8_EXT_CFG    BIT(46 - 32)
+> >>
+> >> to show exactly what you mean and how the bit is defined in MSR NB_CFG1
+> >> and also show how the high 32-bits are mapped into F3x8c, while at it.
+> >>
+> >> And then you can drop the shifting at the call site.
+> >
+> > Ok, I see another fun with this ECS enabling:
+> >
+> > There's a enable_pci_io_ecs() which enables ECS through the NB_CFG MSR
+> > which is called as part of the notifier *and* there's a PCI write to
+> > that same bit in pci_enable_pci_io_ecs() which iterates over all NBs.
+> >
+> > So, AFAICT, we do it twice and the second time is not needed. Which
+> > means, you probably can drop pci_enable_pci_io_ecs() completely and use
+> > solely the notifier?
+> 
+> It does look as if there is some duplication with respect to setting
+> MSR_AMD64_NB_CFG's (which is aliased at D18F3x8c [1])
+> ENABLE_CF8_EXT_CFG enable bit but there are at least a couple of
+> differences.
+> 
+> enable_pci_io_ecs() only sets the bit on one NB whereas
+> pci_enable_pci_io_ecs iterates over all the NBs (as you mentioned
+> above).  The other difference has something to do with Xen; see the
+> origin of pci_enable_pci_io_ecs - commit 24d9b70b8.
 
-But answering to your early question..
-IMA does not want permission denied when measuring and re-measuring files.
-may_open() is doing that job before.
+Of course it is xen - what else?! We do have to carry special code in
+baremetal just for it because it is special and we all can't seem to get
+enough of its crap.
 
-We need quickly introduce kernel_read without LSM checks...
+Oh well, I guess we should at least comment this and refer to 24d9b70b8
+so that the explanation is right there, in the code.
+
+Thanks.
 
 -- 
-Thanks,
-Dmitry
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
