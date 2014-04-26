@@ -1,143 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaDZLk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 07:40:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:22868 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaDZLjr (ORCPT
+	id S1752502AbaDZLmA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 07:42:00 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:45979 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454AbaDZLly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 07:39:47 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-1b-535b9b02f6e5
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-iio@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
-        grundler@chromium.org, jic23@kernel.org
-Subject: [PATCH 4/5 v2] iio: exynos_adc: do a soft reset in case of timeout
-Date: Sat, 26 Apr 2014 17:07:55 +0530
-Message-id: <1398512276-4105-5-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
-References: <1398512276-4105-1-git-send-email-ch.naveen@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSo8s0OzrYYMkkCYuXhzQtzi47yGbR
-	vHg9m8WrIz+YLB40rWKyWDJ5PqvFvCPvWCwu75rDZjHj/D4mi0Xb/jM7cHnMbrjI4rFz1l12
-	j02rOtk89s9dw+6x5M0hVo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKaFo6lbHgkGjF78st
-	7A2MNwS7GDk5JARMJG6sO8UMYYtJXLi3nq2LkYtDSGApo0TTpFPsMEXtz6cxQiSmM0rM7X8N
-	VdXPJDHpRBMbSBWbgJnEwUWrgTo4OEQEZCVmduuB1DALPGKUmPGwlxGkRljAW6K/r5MJxGYR
-	UJW4evgXWJxXwEWi5eE2FpBeCQEFiTmTbEDCnAKuEhMXXQUrFwIqeTvxNdRBh9gl7j9yhRgj
-	IPFt8iGoVlmJTQegnpGUOLjiBssERuEFjAyrGEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQKj
-	4vS/Z307GG8esD7EmAw0biKzlGhyPjCq8kriDY3NjCxMTUyNjcwtzUgTVhLnXfQwKUhIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QD47J7bB1Ju3psfHq/xJ2LW6+5cTqviIW12qvn5w65HxZV
-	4dBVPmHHsNxLn3/RvY1TnY7XOPNMMxBgF6lQ55r+Z1Gq8kreadPes3xfL/RKclGdhJG9jHLE
-	jYPeVZyhQibrWLktJt0uXhH3Z0KXxNprOgZ/frxl/udqUC+xsOILU+x5HV9llRcCSizFGYmG
-	WsxFxYkANroVnqACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQV2m2dHBBqc+8Fm8PKRpcXbZQTaL
-	5sXr2SxeHfnBZPGgaRWTxZLJ81kt5h15x2JxedccNosZ5/cxWSza9p/ZgctjdsNFFo+ds+6y
-	e2xa1cnmsX/uGnaPJW8OsXr0bVnF6PF5k1wAe1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8
-	qZmBoa6hpYW5kkJeYm6qrZKLT4CuW2YO0H1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1D
-	guB6jAzQQMIaxoympVMZCw6JVvy+3MLewHhDsIuRk0NCwESi/fk0RghbTOLCvfVsXYxcHEIC
-	0xkl5va/hnL6mSQmnWhiA6liEzCTOLhoNXsXIweHiICsxMxuPZAaZoFHjBIzHvaCTRIW8Jbo
-	7+tkArFZBFQlrh7+BRbnFXCRaHm4jQWkV0JAQWLOJBuQMKeAq8TERVfByoWASt5OfM0+gZF3
-	ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgqHsmtYNxZYPFIUYBDkYlHt4dOVHBQqyJ
-	ZcWVuYcYJTiYlUR4F6VEBwvxpiRWVqUW5ccXleakFh9iTAY6aiKzlGhyPjAh5JXEGxqbmJsa
-	m1qaWJiYWZImrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDo2iG1Y1na2emn52fVrU4VNO9
-	noWr0quydsmZf7vv/JDouxkp4NVluOiY49XTq/5J95pY9nC/tnwqJKSY+Vt56e6vLLNnKf+N
-	3HUtfQLzxJyJBkGl509pRfr06r579l3pLq/+MvfwKscrqfE6m0/8YNXdwPWWU175iGXjk2Df
-	V2X2qVIB8TqtSizFGYmGWsxFxYkARak70v4CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sat, 26 Apr 2014 07:41:54 -0400
+Message-ID: <535B9B7E.4090802@gmail.com>
+Date: Sat, 26 Apr 2014 13:41:50 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v8 3/3] ARM: dts: Add initial device tree support for
+ EXYNOS5410
+References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com> <1397459860-21869-4-git-send-email-t.dakhran@samsung.com>
+In-Reply-To: <1397459860-21869-4-git-send-email-t.dakhran@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do a soft reset software if a timeout happens.
-This is applicable only for ADC_V2.
+Hi,
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
----
-This change is a part of the patch reviewed at https://lkml.org/lkml/2013/11/5/92
+Since I've started enforcing reference-based DT syntax due to multiple 
+advantages over the plain full-tree based one, you should do the same 
+for your dts/i files. You can take the series adding support for 
+Exynos5260 as an example:
 
- drivers/iio/adc/exynos_adc.c |   50 ++++++++++++++++++++++--------------------
- 1 file changed, 26 insertions(+), 24 deletions(-)
+http://thread.gmane.org/gmane.linux.kernel.samsung-soc/29360
 
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index 4d2467a..805c9f6 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -112,6 +112,30 @@ static inline unsigned int exynos_adc_get_version(struct platform_device *pdev)
- 	return (unsigned int)match->data;
- }
- 
-+static void exynos_adc_hw_init(struct exynos_adc *info)
-+{
-+	u32 con1, con2;
-+
-+	if (info->version == ADC_V2) {
-+		con1 = ADC_V2_CON1_SOFT_RESET;
-+		writel(con1, ADC_V2_CON1(info->regs));
-+
-+		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
-+			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
-+		writel(con2, ADC_V2_CON2(info->regs));
-+
-+		/* Enable interrupts */
-+		writel(1, ADC_V2_INT_EN(info->regs));
-+	} else {
-+		/* set default prescaler values and Enable prescaler */
-+		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-+
-+		/* Enable 12-bit ADC resolution */
-+		con1 |= ADC_V1_CON_RES;
-+		writel(con1, ADC_V1_CON(info->regs));
-+	}
-+}
-+
- static int exynos_read_raw(struct iio_dev *indio_dev,
- 				struct iio_chan_spec const *chan,
- 				int *val,
-@@ -149,6 +173,8 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
- 	timeout = wait_for_completion_timeout
- 			(&info->completion, EXYNOS_ADC_TIMEOUT);
- 	if (timeout == 0) {
-+		dev_warn(&indio_dev->dev, "Conversion timed out! Resetting\n");
-+		exynos_adc_hw_init(info);
- 		ret = -ETIMEDOUT;
- 	} else {
- 		*val = info->value;
-@@ -230,30 +256,6 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
- 	return 0;
- }
- 
--static void exynos_adc_hw_init(struct exynos_adc *info)
--{
--	u32 con1, con2;
--
--	if (info->version == ADC_V2) {
--		con1 = ADC_V2_CON1_SOFT_RESET;
--		writel(con1, ADC_V2_CON1(info->regs));
--
--		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
--			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
--		writel(con2, ADC_V2_CON2(info->regs));
--
--		/* Enable interrupts */
--		writel(1, ADC_V2_INT_EN(info->regs));
--	} else {
--		/* set default prescaler values and Enable prescaler */
--		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
--
--		/* Enable 12-bit ADC resolution */
--		con1 |= ADC_V1_CON_RES;
--		writel(con1, ADC_V1_CON(info->regs));
--	}
--}
--
- static int exynos_adc_probe(struct platform_device *pdev)
- {
- 	struct exynos_adc *info = NULL;
--- 
-1.7.9.5
+Best regards,
+Tomasz
 
+On 14.04.2014 09:17, Tarek Dakhran wrote:
+> Add initial device tree nodes for EXYNOS5410 SoC and SMDK5410 board.
+>
+> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>   arch/arm/boot/dts/Makefile                |    1 +
+>   arch/arm/boot/dts/exynos5410-smdk5410.dts |   65 ++++++++++++++
+>   arch/arm/boot/dts/exynos5410.dtsi         |  140 +++++++++++++++++++++++++++++
+>   3 files changed, 206 insertions(+)
+>   create mode 100644 arch/arm/boot/dts/exynos5410-smdk5410.dts
+>   create mode 100644 arch/arm/boot/dts/exynos5410.dtsi
+>
+> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+> index 35c146f..191dd19 100644
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@ -74,6 +74,7 @@ dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
+>   	exynos5250-smdk5250.dtb \
+>   	exynos5250-snow.dtb \
+>   	exynos5420-arndale-octa.dtb \
+> +	exynos5410-smdk5410.dtb \
+>   	exynos5420-smdk5420.dtb \
+>   	exynos5440-sd5v1.dtb \
+>   	exynos5440-ssdk5440.dtb
+> diff --git a/arch/arm/boot/dts/exynos5410-smdk5410.dts b/arch/arm/boot/dts/exynos5410-smdk5410.dts
+> new file mode 100644
+> index 0000000..d69e152
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/exynos5410-smdk5410.dts
+> @@ -0,0 +1,65 @@
+> +/*
+> + * SAMSUNG SMDK5410 board device tree source
+> + *
+> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+> + *		http://www.samsung.com
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> +*/
+> +
+> +/dts-v1/;
+> +#include "exynos5410.dtsi"
+> +/ {
+> +	model = "Samsung SMDK5410 board based on EXYNOS5410";
+> +	compatible = "samsung,smdk5410", "samsung,exynos5410";
+> +
+> +	memory {
+> +		reg = <0x40000000 0x80000000>;
+> +	};
+> +
+> +	chosen {
+> +		bootargs = "console=ttySAC2,115200";
+> +	};
+> +
+> +	fixed-rate-clocks {
+> +		oscclk {
+> +			compatible = "samsung,exynos5410-oscclk";
+> +			clock-frequency = <24000000>;
+> +		};
+> +	};
+> +
+> +	mmc@12200000 {
+> +		status = "okay";
+> +		num-slots = <1>;
+> +		supports-highspeed;
+> +		broken-cd;
+> +		card-detect-delay = <200>;
+> +		samsung,dw-mshc-ciu-div = <3>;
+> +		samsung,dw-mshc-sdr-timing = <2 3>;
+> +		samsung,dw-mshc-ddr-timing = <1 2>;
+> +
+> +		slot@0 {
+> +			reg = <0>;
+> +			bus-width = <8>;
+> +		};
+> +	};
+> +
+> +	mmc@12220000 {
+> +		status = "okay";
+> +		num-slots = <1>;
+> +		supports-highspeed;
+> +		card-detect-delay = <200>;
+> +		samsung,dw-mshc-ciu-div = <3>;
+> +		samsung,dw-mshc-sdr-timing = <2 3>;
+> +		samsung,dw-mshc-ddr-timing = <1 2>;
+> +
+> +		slot@0 {
+> +			reg = <0>;
+> +			bus-width = <4>;
+> +			disable-wp;
+> +		};
+> +	};
+> +
+> +};
+> diff --git a/arch/arm/boot/dts/exynos5410.dtsi b/arch/arm/boot/dts/exynos5410.dtsi
+> new file mode 100644
+> index 0000000..e7cc930
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/exynos5410.dtsi
+> @@ -0,0 +1,140 @@
+> +/*
+> + * SAMSUNG EXYNOS5410 SoC device tree source
+> + *
+> + * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+> + *		http://www.samsung.com
+> + *
+> + * SAMSUNG EXYNOS5410 SoC device nodes are listed in this file.
+> + * EXYNOS5410 based board files can include this file and provide
+> + * values for board specfic bindings.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <dt-bindings/clock/exynos5410.h>
+> +#include "exynos5.dtsi"
+> +/ {
+> +	compatible = "samsung,exynos5410", "samsung,exynos5";
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		CPU0: cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a15";
+> +			reg = <0>;
+> +			clock-frequency = <1600000000>;
+> +		};
+> +
+> +		CPU1: cpu@1 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a15";
+> +			reg = <1>;
+> +			clock-frequency = <1600000000>;
+> +		};
+> +
+> +		CPU2: cpu@2 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a15";
+> +			reg = <2>;
+> +			clock-frequency = <1600000000>;
+> +		};
+> +
+> +		CPU3: cpu@3 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a15";
+> +			reg = <3>;
+> +			clock-frequency = <1600000000>;
+> +		};
+> +	};
+> +
+> +	clock: clock-controller@10010000 {
+> +		compatible = "samsung,exynos5410-clock";
+> +		reg = <0x10010000 0x30000>;
+> +		#clock-cells = <1>;
+> +	};
+> +
+> +	timer@101C0000 {
+> +		compatible = "samsung,exynos4210-mct";
+> +		reg = <0x101C0000 0xB00>;
+> +		interrupt-parent = <&interrupt_map>;
+> +		interrupts = <0>, <1>, <2>, <3>,
+> +			<4>, <5>, <6>, <7>,
+> +			<8>, <9>, <10>, <11>;
+> +		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MCT>;
+> +		clock-names = "fin_pll", "mct";
+> +
+> +		interrupt_map: interrupt-map {
+> +			#interrupt-cells = <1>;
+> +			#address-cells = <0>;
+> +			#size-cells = <0>;
+> +			interrupt-map = <0 &combiner 23 3>,
+> +					<1 &combiner 23 4>,
+> +					<2 &combiner 25 2>,
+> +					<3 &combiner 25 3>,
+> +					<4 &gic 0 120 0>,
+> +					<5 &gic 0 121 0>,
+> +					<6 &gic 0 122 0>,
+> +					<7 &gic 0 123 0>,
+> +					<8 &gic 0 128 0>,
+> +					<9 &gic 0 129 0>,
+> +					<10 &gic 0 130 0>,
+> +					<11 &gic 0 131 0>;
+> +		};
+> +	};
+> +
+> +	mmc_0: mmc@12200000 {
+> +		compatible = "samsung,exynos5250-dw-mshc";
+> +		interrupts = <0 75 0>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		reg = <0x12200000 0x1000>;
+> +		clocks = <&clock CLK_MMC0>, <&clock CLK_SCLK_MMC0>;
+> +		clock-names = "biu", "ciu";
+> +		fifo-depth = <0x80>;
+> +		status = "disabled";
+> +	};
+> +
+> +	mmc_1: mmc@12210000 {
+> +		compatible = "samsung,exynos5250-dw-mshc";
+> +		interrupts = <0 76 0>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		reg = <0x12210000 0x1000>;
+> +		clocks = <&clock CLK_MMC1>, <&clock CLK_SCLK_MMC1>;
+> +		clock-names = "biu", "ciu";
+> +		fifo-depth = <0x80>;
+> +		status = "disabled";
+> +	};
+> +
+> +	mmc_2: mmc@12220000 {
+> +		compatible = "samsung,exynos5250-dw-mshc";
+> +		interrupts = <0 77 0>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		reg = <0x12220000 0x1000>;
+> +		clocks = <&clock CLK_MMC2>, <&clock CLK_SCLK_MMC2>;
+> +		clock-names = "biu", "ciu";
+> +		fifo-depth = <0x80>;
+> +		status = "disabled";
+> +	};
+> +
+> +	serial@12C00000 {
+> +		clocks = <&clock CLK_UART0>, <&clock CLK_SCLK_UART0>;
+> +		clock-names = "uart", "clk_uart_baud0";
+> +	};
+> +
+> +	serial@12C10000 {
+> +		clocks = <&clock CLK_UART1>, <&clock CLK_SCLK_UART1>;
+> +		clock-names = "uart", "clk_uart_baud0";
+> +	};
+> +
+> +	serial@12C20000 {
+> +		clocks = <&clock CLK_UART2>, <&clock CLK_SCLK_UART2>;
+> +		clock-names = "uart", "clk_uart_baud0";
+> +	};
+> +
+> +};
+>
