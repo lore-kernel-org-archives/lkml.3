@@ -1,120 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569AbaDZJKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 05:10:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56030 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaDZJKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 05:10:42 -0400
-Date: Sat, 26 Apr 2014 11:10:31 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        kim.naru@amd.com, daniel@numascale.com,
-        Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
-        x86 <x86@kernel.org>, sp@numascale.com,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
- capabilities
-Message-ID: <20140426091031.GA10166@pd.tnic>
-References: <20140419025308.2408.51252.stgit@amt.stowe>
- <20140419025323.2408.88764.stgit@amt.stowe>
- <20140419135219.GC8109@pd.tnic>
- <20140420075936.GA19672@pd.tnic>
- <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751742AbaDZJSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 05:18:11 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:51917 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566AbaDZJSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 05:18:05 -0400
+Message-ID: <535B79C6.7010502@gmail.com>
+Date: Sat, 26 Apr 2014 11:17:58 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        linus.walleij@linaro.org
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/7] pinctrl: berlin: add the core pinctrl driver for
+ Marvell Berlin SoCs
+References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com> <1398268276-9696-2-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1398268276-9696-2-git-send-email-antoine.tenart@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Robert.
-
-On Fri, Apr 25, 2014 at 04:24:31PM -0600, Myron Stowe wrote:
-> On Sun, Apr 20, 2014 at 1:59 AM, Borislav Petkov <bp@suse.de> wrote:
-> > Drop Andreas' old email address from CC as it keeps bouncing.
-> >
-> > On Sat, Apr 19, 2014 at 03:52:20PM +0200, Borislav Petkov wrote:
-> >> > -static void __init pci_enable_pci_io_ecs(void)
-> >> > +static void __init pci_enable_pci_io_ecs(u8 bus, u8 slot)
-> >> >  {
-> >> >  #ifdef CONFIG_AMD_NB
-> >> >     unsigned int i, n;
-> >> > +   u8 limit;
-> >> >
-> >> >     for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
-> >> > -           u8 bus = amd_nb_bus_dev_ranges[i].bus;
-> >> > -           u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
-> >> > -           u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
-> >> > +           /* Try matching for the bus range */
-> >> > +           if ((bus != amd_nb_bus_dev_ranges[i].bus) ||
-> >> > +               (slot != amd_nb_bus_dev_ranges[i].dev_base))
-> >> > +                   continue;
-> >> > +
-> >> > +           limit = amd_nb_bus_dev_ranges[i].dev_limit;
-> >> >
-> >> > +           /* Setup all northbridges within the range */
-> >> >             for (; slot < limit; ++slot) {
-> >> >                     u32 val = read_pci_config(bus, slot, 3, 0);
-> >> > -
-> >> > -                   if (!early_is_amd_nb(val))
-> >> > +                   if (!val)
-> >> >                             continue;
-> >> >
-> >> >                     val = read_pci_config(bus, slot, 3, 0x8c);
-> >> > @@ -375,13 +457,14 @@ static void __init pci_enable_pci_io_ecs(void)
-> >> >                             val |= ENABLE_CF8_EXT_CFG >> 32;
-> >>
-> >> What a fun shifting!
-> >>
-> >> Maybe you should do
-> >>
-> >> #define ENABLE_CF8_EXT_CFG    BIT(46 - 32)
-> >>
-> >> to show exactly what you mean and how the bit is defined in MSR NB_CFG1
-> >> and also show how the high 32-bits are mapped into F3x8c, while at it.
-> >>
-> >> And then you can drop the shifting at the call site.
-> >
-> > Ok, I see another fun with this ECS enabling:
-> >
-> > There's a enable_pci_io_ecs() which enables ECS through the NB_CFG MSR
-> > which is called as part of the notifier *and* there's a PCI write to
-> > that same bit in pci_enable_pci_io_ecs() which iterates over all NBs.
-> >
-> > So, AFAICT, we do it twice and the second time is not needed. Which
-> > means, you probably can drop pci_enable_pci_io_ecs() completely and use
-> > solely the notifier?
+On 04/23/2014 05:51 PM, Antoine Ténart wrote:
+> The Marvell Berlin boards have a group based pinmuxing mechanism. This
+> adds the core driver support. We actually do not need any information
+> about the pins here and only have the definition of the groups.
 > 
-> It does look as if there is some duplication with respect to setting
-> MSR_AMD64_NB_CFG's (which is aliased at D18F3x8c [1])
-> ENABLE_CF8_EXT_CFG enable bit but there are at least a couple of
-> differences.
+> Let's take the example of the uart0 pinmuxing on the BG2Q. Balls BK4 and
+> BH6 are muxed to respectively UART0 RX and TX if the group GSM12 is set
+> to mode 0:
 > 
-> enable_pci_io_ecs() only sets the bit on one NB whereas
-> pci_enable_pci_io_ecs iterates over all the NBs (as you mentioned
-> above).  The other difference has something to do with Xen; see the
-> origin of pci_enable_pci_io_ecs - commit 24d9b70b8.
+> Group	Modes	Offset Base	Offset	LSB	Bit Width
+> GSM12	3	sm_base		0x40	0x10	0x2
+> 
+> Ball	Group	Mode 0		Mode 1		Mode 2
+> BK4	GSM12	UART0_RX	IrDA0_RX	GPIO9
+> BH6	GSM12	UART0_TX	IrDA0_TX	GPIO10
+> 
+> So in order to configure BK4 -> UART0_TX and BH6 -> UART0_RX, we need
+> to set (sm_base + 0x40 + 0x10) &= ff3fffff.
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 
-Of course it is xen - what else?! We do have to carry special code in
-baremetal just for it because it is special and we all can't seem to get
-enough of its crap.
+Antoine,
 
-Oh well, I guess we should at least comment this and refer to 24d9b70b8
-so that the explanation is right there, in the code.
+I only have some cosmetic nits on the pinctrl driver and one fixup for
+the dts.
 
-Thanks.
+If you resend, feel free to add my
 
--- 
-Regards/Gruss,
-    Boris.
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> ---
+[...]
+> diff --git a/drivers/pinctrl/berlin/berlin.c b/drivers/pinctrl/berlin/berlin.c
+> new file mode 100644
+> index 000000000000..2f89585cde20
+> --- /dev/null
+> +++ b/drivers/pinctrl/berlin/berlin.c
+> @@ -0,0 +1,347 @@
+> +/*
+> + * Marvell Berlin SoC pinctrl core driver
+> + *
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_device.h>
+> +#include <linux/pinctrl/pinctrl.h>
+> +#include <linux/pinctrl/pinmux.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +
+> +#include "../core.h"
+> +#include "../pinctrl-utils.h"
+> +#include "berlin.h"
+> +
+> +static int berlin_pinctrl_get_group_count(struct pinctrl_dev *pctrl_dev)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +
+> +	return pctrl->desc->ngroups;
+> +}
+> +
+> +static const char *berlin_pinctrl_get_group_name(struct pinctrl_dev *pctrl_dev,
+> +						 unsigned group)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +
+> +	return pctrl->desc->groups[group].name;
+> +}
+> +
+> +static int berlin_pinctrl_dt_node_to_map(struct pinctrl_dev *pctrl_dev,
+> +					 struct device_node *node,
+> +					 struct pinctrl_map **map,
+> +					 unsigned *num_maps)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +	struct property *prop;
+> +	const char *function_name, *group_name;
+> +	unsigned reserved_maps = 0;
+> +	int ret, ngroups;
+> +
+> +	*map = NULL;
+> +	*num_maps = 0;
+> +
+> +	ret = of_property_read_string(node, "marvell,function", &function_name);
+> +	if (ret) {
+> +		dev_err(pctrl->dev,
+> +			"missing 'marvell,function' property in node %s\n",
+> +			node->name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	ngroups = of_property_count_strings(node, "marvell,groups");
+> +	if (ngroups < 0) {
+> +		dev_err(pctrl->dev,
+> +			"missing 'marvell,groups' property in node %s\n",
+> +			node->name);
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = pinctrl_utils_reserve_map(pctrl_dev, map, &reserved_maps,
+> +					num_maps, ngroups);
+> +	if (ret) {
+> +		dev_err(pctrl->dev, "can't reserve map: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	of_property_for_each_string(node, "marvell,groups", prop, group_name) {
+> +		ret = pinctrl_utils_add_map_mux(pctrl_dev, map, &reserved_maps,
+> +						num_maps, group_name,
+> +						function_name);
+> +		if (ret) {
+> +			dev_err(pctrl->dev, "can't add map: %d\n", ret);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void berlin_pinctrl_dt_free_map(struct pinctrl_dev *pctrl_dev,
+> +				       struct pinctrl_map *map,
+> +				       unsigned nmaps)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < nmaps; i++) {
+> +		if (map[i].type == PIN_MAP_TYPE_MUX_GROUP) {
+> +			kfree(map[i].data.mux.group);
+> +
+> +			/* a function can be applied to multiple groups */
+> +			if (i == 0)
+> +				kfree(map[i].data.mux.function);
+> +		}
+> +	}
+> +
+> +	kfree(map);
+> +}
+> +
+> +static const struct pinctrl_ops berlin_pinctrl_ops = {
+> +	.get_groups_count	= &berlin_pinctrl_get_group_count,
+> +	.get_group_name		= &berlin_pinctrl_get_group_name,
+> +	.dt_node_to_map		= &berlin_pinctrl_dt_node_to_map,
+> +	.dt_free_map		= &berlin_pinctrl_dt_free_map,
+> +};
+> +
+> +static int berlin_pinmux_get_functions_count(struct pinctrl_dev *pctrl_dev)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +
+> +	return pctrl->nfunctions;
+> +}
+> +
+> +static const char *berlin_pinmux_get_function_name(struct pinctrl_dev *pctrl_dev,
+> +						   unsigned function)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +
+> +	return pctrl->functions[function].name;
+> +}
+> +
+> +static int berlin_pinmux_get_function_groups(struct pinctrl_dev *pctrl_dev,
+> +					     unsigned function,
+> +					     const char * const **groups,
+> +					     unsigned * const num_groups)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +
+> +	*groups = pctrl->functions[function].groups;
+> +	*num_groups = pctrl->functions[function].ngroups;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct berlin_desc_function *
+> +berlin_pinctrl_find_function_by_name(struct berlin_pinctrl *pctrl,
+> +				     const struct berlin_desc_group *group,
+> +				     const char *fname)
+> +{
+> +	struct berlin_desc_function *function = group->functions;
+> +
+> +	while (function->name) {
+> +		if (!strcmp(function->name, fname))
+> +			return function;
+> +
+> +		function++;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +static int berlin_pinmux_enable(struct pinctrl_dev *pctrl_dev,
+> +				unsigned function,
+> +				unsigned group)
+> +{
+> +	struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +	const struct berlin_desc_group *group_desc = pctrl->desc->groups + group;
+> +	struct berlin_pinctrl_function *func = pctrl->functions + function;
+> +	struct berlin_desc_function *function_desc =
+> +		berlin_pinctrl_find_function_by_name(pctrl, group_desc,
+> +						     func->name);
+> +	unsigned long flags;
+> +	u32 regval;
+> +
+> +	if (!function_desc)
+> +		return -EINVAL;
+> +
+> +	spin_lock_irqsave(&pctrl->lock, flags);
+> +
+> +	regval = readl(pctrl->base + group_desc->offset);
+> +	regval &= GENMASK(group_desc->lsb + group_desc->bit_width - 1,
+> +			  group_desc->lsb);
+> +	regval |= function_desc->muxval << group_desc->lsb;
+> +	writel_relaxed(regval, pctrl->base + group_desc->offset);
+> +
+> +	spin_unlock_irqrestore(&pctrl->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct pinmux_ops berlin_pinmux_ops = {
+> +	.get_functions_count	= &berlin_pinmux_get_functions_count,
+> +	.get_function_name	= &berlin_pinmux_get_function_name,
+> +	.get_function_groups	= &berlin_pinmux_get_function_groups,
+> +	.enable			= &berlin_pinmux_enable,
+> +};
+> +
+> +static int berlin_pinctrl_add_function(struct berlin_pinctrl *pctrl,
+> +				       const char *name)
+> +{
+> +	struct berlin_pinctrl_function *function = pctrl->functions;
+> +
+> +	while (function->name) {
+> +		if (!strcmp(function->name, name)) {
+> +			function->ngroups++;
+> +			return -EEXIST;
+> +		}
+> +		function++;
+> +	}
+> +
+> +	function->name = name;
+> +	function->ngroups = 1;
+> +
+> +	pctrl->nfunctions++;
+> +
+> +	return 0;
+> +}
+> +
+> +static int berlin_pinctrl_build_state(struct platform_device *pdev)
+> +{
+> +	struct berlin_pinctrl *pctrl = platform_get_drvdata(pdev);
+> +	struct berlin_desc_group const *desc_group;
+> +	struct berlin_desc_function const *desc_function;
+> +	int i, max_functions = 0;
+> +
+> +	pctrl->nfunctions = 0;
+> +
+> +	for (i = 0; i < pctrl->desc->ngroups; i++) {
+> +		desc_group = pctrl->desc->groups + i;
+> +		/* compute the maxiumum number of functions a group can have */
+> +		max_functions += (1 << ((desc_group->bit_width) + 1));
+
+nit: get rid of the outer (), they are not required.
+
+> +	}
+> +
+> +	/* we will reallocate later */
+> +	pctrl->functions = devm_kzalloc(&pdev->dev,
+> +					max_functions * sizeof(struct berlin_pinctrl_function *),
+
+sizeof(*pctrl->functions)?
+
+> +					GFP_KERNEL);
+> +	if (!pctrl->functions)
+> +		return -ENOMEM;
+> +
+> +	/* register all functions */
+> +	for (i = 0; i < pctrl->desc->ngroups; i++) {
+> +		desc_group = pctrl->desc->groups + i;
+> +		desc_function = desc_group->functions;
+> +
+> +		while (desc_function->name) {
+> +			berlin_pinctrl_add_function(pctrl, desc_function->name);
+> +			desc_function++;
+> +		}
+> +	}
+> +
+> +	pctrl->functions = krealloc(pctrl->functions,
+> +				    pctrl->nfunctions * sizeof(struct berlin_pinctrl_function *),
+
+ditto.
+
+> +				    GFP_KERNEL);
+> +
+> +	/* map functions to theirs groups */
+> +	for (i = 0; i < pctrl->desc->ngroups; i++) {
+> +		desc_group = pctrl->desc->groups + i;
+> +		desc_function = desc_group->functions;
+> +
+> +		while (desc_function->name) {
+> +			struct berlin_pinctrl_function
+> +				*function = pctrl->functions;
+> +			const char **groups;
+> +			bool found = false;
+> +
+> +			while (function->name) {
+> +				if (!strcmp(desc_function->name, function->name)) {
+> +					found = true;
+> +					break;
+> +				}
+> +				function++;
+> +			}
+> +
+> +			if (!found)
+> +				return -EINVAL;
+> +
+> +			if (!function->groups) {
+> +				function->groups =
+> +					devm_kzalloc(&pdev->dev,
+> +						     function->ngroups * sizeof(char *),
+> +						     GFP_KERNEL);
+> +
+> +				if (!function->groups)
+> +					return -ENOMEM;
+> +			}
+> +
+> +			groups = function->groups;
+> +			while (*groups)
+> +				groups++;
+> +
+> +			*groups = desc_group->name;
+> +
+> +			desc_function++;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct pinctrl_desc berlin_pctrl_desc = {
+> +	.name		= "berlin-pinctrl",
+> +	.pctlops	= &berlin_pinctrl_ops,
+> +	.pmxops		= &berlin_pinmux_ops,
+> +	.owner		= THIS_MODULE,
+> +};
+> +
+> +int berlin_pinctrl_probe(struct platform_device *pdev,
+> +			 const struct berlin_pinctrl_desc *desc)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct berlin_pinctrl *pctrl;
+> +	struct resource *r;
+> +	int ret;
+> +
+> +	pctrl = devm_kzalloc(dev, sizeof(struct berlin_pinctrl), GFP_KERNEL);
+
+sizeof(*pctrl)
+
+> +	if (!pctrl)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, pctrl);
+> +
+> +	spin_lock_init(&pctrl->lock);
+> +
+> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+
+Get rid of the empty line above.
+
+> +	pctrl->base = devm_ioremap_resource(dev, r);
+> +	if (IS_ERR(pctrl->base))
+> +		return PTR_ERR(pctrl->base);
+> +
+> +	pctrl->dev = &pdev->dev;
+> +	pctrl->desc = desc;
+> +
+> +	ret = berlin_pinctrl_build_state(pdev);
+> +	if (ret) {
+> +		dev_err(dev, "cannot build driver state: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	pctrl->pctrl_dev = pinctrl_register(&berlin_pctrl_desc, dev, pctrl);
+> +	if (!pctrl->pctrl_dev) {
+> +		dev_err(dev, "failed to register pinctrl driver\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> diff --git a/drivers/pinctrl/berlin/berlin.h b/drivers/pinctrl/berlin/berlin.h
+> new file mode 100644
+> index 000000000000..4118f5532038
+> --- /dev/null
+> +++ b/drivers/pinctrl/berlin/berlin.h
+> @@ -0,0 +1,71 @@
+> +/*
+> + * Marvell Berlin SoC pinctrl driver.
+> + *
+> + * Copyright (C) 2014 Marvell Technology Group Ltd.
+> + *
+> + * Antoine Ténart <antoine.tenart@free-electrons.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2. This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#ifndef __PINCTRL_BERLIN_H
+> +#define __PINCTRL_BERLIN_H
+> +
+> +struct berlin_desc_function {
+> +	const char	*name;
+> +	u8		muxval;
+> +};
+> +
+> +struct berlin_desc_group {
+> +	const char			*name;
+> +	u8				offset;
+> +	u8				bit_width;
+> +	u8				lsb;
+> +	struct berlin_desc_function	*functions;
+> +};
+> +
+> +struct berlin_pinctrl_desc {
+> +	const struct berlin_desc_group	*groups;
+> +	unsigned			ngroups;
+> +};
+> +
+> +struct berlin_pinctrl_function {
+> +	const char	*name;
+> +	const char	**groups;
+> +	unsigned	ngroups;
+> +};
+> +
+> +struct berlin_pinctrl {
+> +	spinlock_t				lock;
+> +	void __iomem				*base;
+> +	struct device				*dev;
+> +	const struct berlin_pinctrl_desc	*desc;
+> +	struct berlin_pinctrl_function		*functions;
+> +	unsigned				nfunctions;
+> +	struct pinctrl_dev			*pctrl_dev;
+> +};
+> +
+> +#define BERLIN_PINCTRL_GROUP(_name, _offset, _width, _lsb, ...)		\
+> +	{								\
+> +		.name = _name,						\
+> +		.offset = _offset,					\
+> +		.bit_width = _width,					\
+> +		.lsb = _lsb,						\
+> +		.functions = (struct berlin_desc_function[]){		\
+> +			__VA_ARGS__, { } },				\
+> +	}
+> +
+> +#define BERLIN_PINCTRL_FUNCTION(_muxval, _name)		\
+> +	{						\
+> +		.name = _name,				\
+> +		.muxval = _muxval,			\
+> +	}
+> +
+> +#define BERLIN_PINCTRL_FUNCTION_UNKNOW	{}
+
+s/UNKNOW/UNKNOWN/ and in the following 3 patches, too.
+
+Sebastian
+
+> +
+> +int berlin_pinctrl_probe(struct platform_device *pdev,
+> +			 const struct berlin_pinctrl_desc *desc);
+> +
+> +#endif /* __PINCTRL_BERLIN_H */
+> 
+
