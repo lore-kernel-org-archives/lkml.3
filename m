@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaDZQyw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 12:54:52 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:33719 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223AbaDZQyt (ORCPT
+	id S1752525AbaDZQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 12:59:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46182 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaDZQ7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 12:54:49 -0400
+	Sat, 26 Apr 2014 12:59:46 -0400
+Date: Sat, 26 Apr 2014 17:59:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20140426165931.GV12304@sirena.org.uk>
+References: <20140425203053.GA20707@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <20140426135616.GE18016@ZenIV.linux.org.uk>
-References: <878uqt42q7.fsf@x220.int.ebiederm.org>
-	<20140425200156.GA13727@redhat.com>
-	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
-	<874n1h16le.fsf@x220.int.ebiederm.org>
-	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-	<87iopxxfpp.fsf@x220.int.ebiederm.org>
-	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
-	<CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
-	<87lhutt4ph.fsf@x220.int.ebiederm.org>
-	<CACE9dm_SreLw8976qu52tmnJ5dq_xruR5f1sp9VfJBieEk-=nw@mail.gmail.com>
-	<20140426135616.GE18016@ZenIV.linux.org.uk>
-Date: Sat, 26 Apr 2014 19:54:47 +0300
-Message-ID: <CACE9dm-Ruvt-kDk3B3YJ9SJ3PvRKa+NJ-e1zpnxcTPk7aDBmug@mail.gmail.com>
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sqs1MTd/Xs/Gz+oG"
+Content-Disposition: inline
+In-Reply-To: <20140425203053.GA20707@opensource.wolfsonmicro.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: arizona-micsupp: Fix build errors with
+ CONFIG_OF not defined
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2014 16:56, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, Apr 26, 2014 at 11:58:45AM +0300, Dmitry Kasatkin wrote:
->
->> Conflict with Apparmor means with Ubuntu.
->>
->> But answering to your early question..
->> IMA does not want permission denied when measuring and re-measuring files.
->> may_open() is doing that job before.
->>
->> We need quickly introduce kernel_read without LSM checks...
->
-> *snarl*
->
-> What we need quickly is to introduce you to a textbook or two.  As the
-> matter of fact, in this case even wikipedia might suffice...
->
 
-Hopefully we have you who were introduced to a textbook or two about relevant
-subject and able kindly help us with the solution instead of telling
-me this crap...
+--sqs1MTd/Xs/Gz+oG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Apr 25, 2014 at 09:30:53PM +0100, Charles Keepax wrote:
+> On Fri, Apr 25, 2014 at 05:11:38PM +0100, Mark Brown wrote:
+> > On Fri, Apr 25, 2014 at 04:55:40PM +0100, Charles Keepax wrote:
 
-> Please, figure out what "mandatory locking" is about, what kind of
-> exclusion does it provide and how much is it (un)related to LSM.
->
+> > > Some of the OF handling functions do not have empty alternatives defined
+> > > if CONFIG_OF is not defined. This patch ifdefs out the offending code.
 
-I admit, I missed this issue, but see above, we have you :)
+> > Which functions and why is it not better to provide the stubs?
 
+> Specifically of_get_child_by_name, of_parse_handle and
+> of_node_put, I guess stub would probably be better. I will do
+> a patch for that instead.
 
-> It has nothing to do with permission being denied; the normal behaviour is
-> to *block* until the lock has been removed.  Or failure with -EAGAIN if
-> the file had been opened with O_NDELAY.
->
-> The effects apply only to read/write and their ilk; they have nothing
-> to do with e.g. O_RDWR open().  And having a file already opened r/w
-> by somebody does not prevent another process from opening it and acquiring
-> an exclusive lock on some range.
+There's already a stub for of_get_child_by_name() in current code.
+of_parse_handle() might not be ideal, I'd need to check the usage, but
+I'd definitely expect to see a stub for of_node_put(), it's quite common
+to need it even for fairly basic parsing.
 
+--sqs1MTd/Xs/Gz+oG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-Thanks,
-Dmitry
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTW+XwAAoJELSic+t+oim9PGEP/RpT3TkD0rG9cW5QmSaopHTL
+b3hKqjKcy8FLl0KLs+uhKldYZKvIKIJYwEt1R229MLmG0LxWXdx7+iNIaVB6bDkz
+VpgxVK0hlPhNBFMMPPbAWXERFxU1pNxWyxMkrcqdEnDjcqoBEUevwjiPWYvJezQo
+pjqm+qEHPAoAlKe3vyMj4ZBkmF07GjAtfhBpRkRmfe1GGKxA7Y38V3ueyvrQebEu
+qzBugRy5jtdRndJ+eVhXBbB/ewH+RiHqvMqu4p1+2WPSJsrsD0o2eaQWkM4x4miK
+xo6OQg+pubXE5W2QTyuZKZl5w0MYzPTZ1vR1WvZN4kqIdc4owKsEx68J/4AQGnPM
+dLuA6gDfLHemZkG7F9XlbCt9/d99+yceo2QvOLLzAzbZF36LP4vHjbEac1runOW0
+BJMF+jVc8DOyuVo2xT+izShnItjJ95UMGzY9oBUFEK+8GwicbVftmD7+7QtAwG0e
+dUq1tbq5aegmrLiPJaldlxv25VUbOGk/s6+Aqt4ICBdoiYD1L82ZJu5QCk+a6Rr+
+IpKzuvALCydJqC8YG4fMFUUhPRRDhXOeWw9mQ9kNAbck3kB0SQWiATp2T+GRb2th
+dixZu7PJKEhzuwlGp/9BMIVmzcIOdA67sMRxl+3hLNtigzM2d5uin54Ye4M4QYOC
++D0Itu1Pk0nEBawIjU61
+=EHbl
+-----END PGP SIGNATURE-----
+
+--sqs1MTd/Xs/Gz+oG--
