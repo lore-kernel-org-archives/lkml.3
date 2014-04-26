@@ -1,68 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752246AbaDZTeh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 15:34:37 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:50958 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564AbaDZTeb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 15:34:31 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 1/3] mmc: mvsdio: silence card detect notice
-Date: Sat, 26 Apr 2014 21:34:13 +0200
-Message-Id: <1398540855-27367-2-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1398540855-27367-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1398540855-27367-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752421AbaDZTgW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 15:36:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46499 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752303AbaDZTgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 15:36:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,934,1389772800"; 
+   d="scan'208";a="424373480"
+Message-ID: <535C0AB0.7030509@linux.intel.com>
+Date: Sat, 26 Apr 2014 12:36:16 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: Re: [Patch v6 3/6] IIO: core: Modify scan element type
+References: <1397586073-31507-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397586073-31507-4-git-send-email-srinivas.pandruvada@linux.intel.com> <535AA353.8010107@kernel.org>
+In-Reply-To: <535AA353.8010107@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mvsdio reports method of card detection with dev_notice, while for
-removable cards it may be sane, for non-removable cards it is not.
-Also, as the user cannot do anything about it, silence the message
-by reducing it from dev_notice to dev_dbg.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Acked-by: Jason Cooper <jason@lakedaemon.net>
----
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-mmc@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/mmc/host/mvsdio.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 04/25/2014 11:02 AM, Jonathan Cameron wrote:
+> On 15/04/14 19:21, Srinivas Pandruvada wrote:
+>> The current scan element type uses the following format:
+>>    [be|le]:[s|u]bits/storagebits[>>shift].
+>> To specify multiple elements in this type, added a repeat value.
+>> So new format is:
+>>    [be|le]:[s|u]bits/storagebits{X[repeat]}[>>shift].
+>> Here X is specifying how may times, real/storage bits are repeating.
+>>
+>> When X is value is 0 or 1, then repeat value is not used in the format,
+>> and it will be same as existing format.
+>>
+>> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+> Hi Srinivas,
+>
+> I'm afraid I've been rather useless in my reviewing of earlier 
+> versions of this.
+> What I originally meant to suggest was that we'd have descriptions 
+> along the lines
+> of
+> u12/16{X4}>>2 (or u12/16X4>>2 without the brackets) rather than 
+> u12/16{4repeat}>>2
+I don't mind using u12/16X4>>2, will submit series again.
 
-diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-index 45aa2206741d..41aca7f28c23 100644
---- a/drivers/mmc/host/mvsdio.c
-+++ b/drivers/mmc/host/mvsdio.c
-@@ -801,10 +801,10 @@ static int mvsd_probe(struct platform_device *pdev)
- 		goto out;
- 
- 	if (!(mmc->caps & MMC_CAP_NEEDS_POLL))
--		dev_notice(&pdev->dev, "using GPIO for card detection\n");
-+		dev_dbg(&pdev->dev, "using GPIO for card detection\n");
- 	else
--		dev_notice(&pdev->dev,
--			   "lacking card detect (fall back to polling)\n");
-+		dev_dbg(&pdev->dev, "lacking card detect (fall back to polling)\n");
-+
- 	return 0;
- 
- out:
--- 
-1.9.1
+Thanks,
+Srinivas
+>
+> Now obviously you've gone a long way with this approach so I guess 
+> perhaps people
+> actually like the word repeat in there?
+>
+> Sorry again that I didn't pick up on this in any of the last 4 
+> versions you have posted.
+> Sometimes the eye sees what it expects to rather than what is there!
+>
+> I don't particularly mind the version using the word 'repeat' if 
+> others like, it simply
+> isn't what I thought we had here!
+>
+> (the rest of this series are fine now btw)
+>
+> J
+>> ---
+>>   drivers/iio/industrialio-buffer.c | 41 
+>> +++++++++++++++++++++++++++++++++------
+>>   include/linux/iio/iio.h           |  7 +++++++
+>>   2 files changed, 42 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/iio/industrialio-buffer.c 
+>> b/drivers/iio/industrialio-buffer.c
+>> index e108f2a..aa90c68 100644
+>> --- a/drivers/iio/industrialio-buffer.c
+>> +++ b/drivers/iio/industrialio-buffer.c
+>> @@ -150,7 +150,16 @@ static ssize_t iio_show_fixed_type(struct device 
+>> *dev,
+>>           type = IIO_BE;
+>>   #endif
+>>       }
+>> -    return sprintf(buf, "%s:%c%d/%d>>%u\n",
+>> +    if (this_attr->c->scan_type.repeat > 1)
+>> +        return sprintf(buf, "%s:%c%d/%d{%d[repeat]}>>%u\n",
+>> +               iio_endian_prefix[type],
+>> +               this_attr->c->scan_type.sign,
+>> +               this_attr->c->scan_type.realbits,
+>> +               this_attr->c->scan_type.storagebits,
+>> +               this_attr->c->scan_type.repeat,
+>> +               this_attr->c->scan_type.shift);
+>> +        else
+>> +            return sprintf(buf, "%s:%c%d/%d>>%u\n",
+>>                  iio_endian_prefix[type],
+>>                  this_attr->c->scan_type.sign,
+>>                  this_attr->c->scan_type.realbits,
+>> @@ -474,14 +483,22 @@ static int iio_compute_scan_bytes(struct 
+>> iio_dev *indio_dev,
+>>       for_each_set_bit(i, mask,
+>>                indio_dev->masklength) {
+>>           ch = iio_find_channel_from_si(indio_dev, i);
+>> -        length = ch->scan_type.storagebits / 8;
+>> +        if (ch->scan_type.repeat > 1)
+>> +            length = ch->scan_type.storagebits / 8 *
+>> +                ch->scan_type.repeat;
+>> +        else
+>> +            length = ch->scan_type.storagebits / 8;
+>>           bytes = ALIGN(bytes, length);
+>>           bytes += length;
+>>       }
+>>       if (timestamp) {
+>>           ch = iio_find_channel_from_si(indio_dev,
+>>                             indio_dev->scan_index_timestamp);
+>> -        length = ch->scan_type.storagebits / 8;
+>> +        if (ch->scan_type.repeat > 1)
+>> +            length = ch->scan_type.storagebits / 8 *
+>> +                ch->scan_type.repeat;
+>> +        else
+>> +            length = ch->scan_type.storagebits / 8;
+>>           bytes = ALIGN(bytes, length);
+>>           bytes += length;
+>>       }
+>> @@ -957,7 +974,11 @@ static int iio_buffer_update_demux(struct 
+>> iio_dev *indio_dev,
+>>                              indio_dev->masklength,
+>>                              in_ind + 1);
+>>               ch = iio_find_channel_from_si(indio_dev, in_ind);
+>> -            length = ch->scan_type.storagebits/8;
+>> +            if (ch->scan_type.repeat > 1)
+>> +                length = ch->scan_type.storagebits / 8 *
+>> +                    ch->scan_type.repeat;
+>> +            else
+>> +                length = ch->scan_type.storagebits / 8;
+>>               /* Make sure we are aligned */
+>>               in_loc += length;
+>>               if (in_loc % length)
+>> @@ -969,7 +990,11 @@ static int iio_buffer_update_demux(struct 
+>> iio_dev *indio_dev,
+>>               goto error_clear_mux_table;
+>>           }
+>>           ch = iio_find_channel_from_si(indio_dev, in_ind);
+>> -        length = ch->scan_type.storagebits/8;
+>> +        if (ch->scan_type.repeat > 1)
+>> +            length = ch->scan_type.storagebits / 8 *
+>> +                ch->scan_type.repeat;
+>> +        else
+>> +            length = ch->scan_type.storagebits / 8;
+>>           if (out_loc % length)
+>>               out_loc += length - out_loc % length;
+>>           if (in_loc % length)
+>> @@ -990,7 +1015,11 @@ static int iio_buffer_update_demux(struct 
+>> iio_dev *indio_dev,
+>>           }
+>>           ch = iio_find_channel_from_si(indio_dev,
+>>               indio_dev->scan_index_timestamp);
+>> -        length = ch->scan_type.storagebits/8;
+>> +        if (ch->scan_type.repeat > 1)
+>> +            length = ch->scan_type.storagebits / 8 *
+>> +                ch->scan_type.repeat;
+>> +        else
+>> +            length = ch->scan_type.storagebits / 8;
+>>           if (out_loc % length)
+>>               out_loc += length - out_loc % length;
+>>           if (in_loc % length)
+>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>> index 5629c92..ccde917 100644
+>> --- a/include/linux/iio/iio.h
+>> +++ b/include/linux/iio/iio.h
+>> @@ -177,6 +177,12 @@ struct iio_event_spec {
+>>    *            shift:        Shift right by this before masking out
+>>    *                    realbits.
+>>    *            endianness:    little or big endian
+>> + *            repeat:        Number of times real/storage bits
+>> + *                    repeats. When the repeat element is
+>> + *                    more than 1, then the type element in
+>> + *                    sysfs will show a repeat value.
+>> + *                    Otherwise, the number of repetitions is
+>> + *                    omitted.
+>>    * @info_mask_separate: What information is to be exported that is 
+>> specific to
+>>    *            this channel.
+>>    * @info_mask_shared_by_type: What information is to be exported 
+>> that is shared
+>> @@ -219,6 +225,7 @@ struct iio_chan_spec {
+>>           u8    realbits;
+>>           u8    storagebits;
+>>           u8    shift;
+>> +        u8    repeat;
+>>           enum iio_endian endianness;
+>>       } scan_type;
+>>       long            info_mask_separate;
+>>
+>
+>
 
