@@ -1,176 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751965AbaDZIws (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 04:52:48 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54442 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291AbaDZIwp (ORCPT
+	id S1751971AbaDZIzl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 04:55:41 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:43258 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751236AbaDZIzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 04:52:45 -0400
-Message-ID: <535AA353.8010107@kernel.org>
-Date: Fri, 25 Apr 2014 19:02:59 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [Patch v6 3/6] IIO: core: Modify scan element type
-References: <1397586073-31507-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397586073-31507-4-git-send-email-srinivas.pandruvada@linux.intel.com>
-In-Reply-To: <1397586073-31507-4-git-send-email-srinivas.pandruvada@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sat, 26 Apr 2014 04:55:39 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtIQAC50W1NXQCJ0/2dsb2JhbABZgwarfwEBAwQBmXECAoEOF3SCUxMcIxiBAiQTiEUBywmFWoNdhSKEQAEDjnuKDwGSXIMzOw
+Date: Sat, 26 Apr 2014 10:57:38 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: "Dave.Kleikamp" <shaggy@kernel.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH V2] fs/jfs/super.c: remove 0 assignment on static + code
+ clean-up
+Message-Id: <20140426105738.f0ef9becf81954a5b4153f6b@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/04/14 19:21, Srinivas Pandruvada wrote:
-> The current scan element type uses the following format:
->    [be|le]:[s|u]bits/storagebits[>>shift].
-> To specify multiple elements in this type, added a repeat value.
-> So new format is:
->    [be|le]:[s|u]bits/storagebits{X[repeat]}[>>shift].
-> Here X is specifying how may times, real/storage bits are repeating.
->
-> When X is value is 0 or 1, then repeat value is not used in the format,
-> and it will be same as existing format.
->
-> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Hi Srinivas,
+-Static values are automatically initialized to NULL
+-Coalesce format fragments
+-Remove unnecessary {}
+-Small typo fixes
+-Fix lines > 80 characters
 
-I'm afraid I've been rather useless in my reviewing of earlier versions of this.
-What I originally meant to suggest was that we'd have descriptions along the lines
-of
-u12/16{X4}>>2 (or u12/16X4>>2 without the brackets) rather than u12/16{4repeat}>>2
+Cc: Dave Kleikamp <shaggy@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/jfs/super.c | 45 +++++++++++++++++++--------------------------
+ 1 file changed, 19 insertions(+), 26 deletions(-)
 
-Now obviously you've gone a long way with this approach so I guess perhaps people
-actually like the word repeat in there?
-
-Sorry again that I didn't pick up on this in any of the last 4 versions you have posted.
-Sometimes the eye sees what it expects to rather than what is there!
-
-I don't particularly mind the version using the word 'repeat' if others like, it simply
-isn't what I thought we had here!
-
-(the rest of this series are fine now btw)
-
-J
-> ---
->   drivers/iio/industrialio-buffer.c | 41 +++++++++++++++++++++++++++++++++------
->   include/linux/iio/iio.h           |  7 +++++++
->   2 files changed, 42 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-> index e108f2a..aa90c68 100644
-> --- a/drivers/iio/industrialio-buffer.c
-> +++ b/drivers/iio/industrialio-buffer.c
-> @@ -150,7 +150,16 @@ static ssize_t iio_show_fixed_type(struct device *dev,
->   		type = IIO_BE;
->   #endif
->   	}
-> -	return sprintf(buf, "%s:%c%d/%d>>%u\n",
-> +	if (this_attr->c->scan_type.repeat > 1)
-> +		return sprintf(buf, "%s:%c%d/%d{%d[repeat]}>>%u\n",
-> +		       iio_endian_prefix[type],
-> +		       this_attr->c->scan_type.sign,
-> +		       this_attr->c->scan_type.realbits,
-> +		       this_attr->c->scan_type.storagebits,
-> +		       this_attr->c->scan_type.repeat,
-> +		       this_attr->c->scan_type.shift);
-> +		else
-> +			return sprintf(buf, "%s:%c%d/%d>>%u\n",
->   		       iio_endian_prefix[type],
->   		       this_attr->c->scan_type.sign,
->   		       this_attr->c->scan_type.realbits,
-> @@ -474,14 +483,22 @@ static int iio_compute_scan_bytes(struct iio_dev *indio_dev,
->   	for_each_set_bit(i, mask,
->   			 indio_dev->masklength) {
->   		ch = iio_find_channel_from_si(indio_dev, i);
-> -		length = ch->scan_type.storagebits / 8;
-> +		if (ch->scan_type.repeat > 1)
-> +			length = ch->scan_type.storagebits / 8 *
-> +				ch->scan_type.repeat;
-> +		else
-> +			length = ch->scan_type.storagebits / 8;
->   		bytes = ALIGN(bytes, length);
->   		bytes += length;
->   	}
->   	if (timestamp) {
->   		ch = iio_find_channel_from_si(indio_dev,
->   					      indio_dev->scan_index_timestamp);
-> -		length = ch->scan_type.storagebits / 8;
-> +		if (ch->scan_type.repeat > 1)
-> +			length = ch->scan_type.storagebits / 8 *
-> +				ch->scan_type.repeat;
-> +		else
-> +			length = ch->scan_type.storagebits / 8;
->   		bytes = ALIGN(bytes, length);
->   		bytes += length;
->   	}
-> @@ -957,7 +974,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
->   					       indio_dev->masklength,
->   					       in_ind + 1);
->   			ch = iio_find_channel_from_si(indio_dev, in_ind);
-> -			length = ch->scan_type.storagebits/8;
-> +			if (ch->scan_type.repeat > 1)
-> +				length = ch->scan_type.storagebits / 8 *
-> +					ch->scan_type.repeat;
-> +			else
-> +				length = ch->scan_type.storagebits / 8;
->   			/* Make sure we are aligned */
->   			in_loc += length;
->   			if (in_loc % length)
-> @@ -969,7 +990,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
->   			goto error_clear_mux_table;
->   		}
->   		ch = iio_find_channel_from_si(indio_dev, in_ind);
-> -		length = ch->scan_type.storagebits/8;
-> +		if (ch->scan_type.repeat > 1)
-> +			length = ch->scan_type.storagebits / 8 *
-> +				ch->scan_type.repeat;
-> +		else
-> +			length = ch->scan_type.storagebits / 8;
->   		if (out_loc % length)
->   			out_loc += length - out_loc % length;
->   		if (in_loc % length)
-> @@ -990,7 +1015,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
->   		}
->   		ch = iio_find_channel_from_si(indio_dev,
->   			indio_dev->scan_index_timestamp);
-> -		length = ch->scan_type.storagebits/8;
-> +		if (ch->scan_type.repeat > 1)
-> +			length = ch->scan_type.storagebits / 8 *
-> +				ch->scan_type.repeat;
-> +		else
-> +			length = ch->scan_type.storagebits / 8;
->   		if (out_loc % length)
->   			out_loc += length - out_loc % length;
->   		if (in_loc % length)
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> index 5629c92..ccde917 100644
-> --- a/include/linux/iio/iio.h
-> +++ b/include/linux/iio/iio.h
-> @@ -177,6 +177,12 @@ struct iio_event_spec {
->    *			shift:		Shift right by this before masking out
->    *					realbits.
->    *			endianness:	little or big endian
-> + *			repeat:		Number of times real/storage bits
-> + *					repeats. When the repeat element is
-> + *					more than 1, then the type element in
-> + *					sysfs will show a repeat value.
-> + *					Otherwise, the number of repetitions is
-> + *					omitted.
->    * @info_mask_separate: What information is to be exported that is specific to
->    *			this channel.
->    * @info_mask_shared_by_type: What information is to be exported that is shared
-> @@ -219,6 +225,7 @@ struct iio_chan_spec {
->   		u8	realbits;
->   		u8	storagebits;
->   		u8	shift;
-> +		u8	repeat;
->   		enum iio_endian endianness;
->   	} scan_type;
->   	long			info_mask_separate;
->
-
+diff --git a/fs/jfs/super.c b/fs/jfs/super.c
+index 97f7fda..d1096fe 100644
+--- a/fs/jfs/super.c
++++ b/fs/jfs/super.c
+@@ -50,14 +50,14 @@ MODULE_DESCRIPTION("The Journaled Filesystem (JFS)");
+ MODULE_AUTHOR("Steve Best/Dave Kleikamp/Barry Arndt, IBM");
+ MODULE_LICENSE("GPL");
+ 
+-static struct kmem_cache * jfs_inode_cachep;
++static struct kmem_cache *jfs_inode_cachep;
+ 
+ static const struct super_operations jfs_super_operations;
+ static const struct export_operations jfs_export_operations;
+ static struct file_system_type jfs_fs_type;
+ 
+ #define MAX_COMMIT_THREADS 64
+-static int commit_threads = 0;
++static int commit_threads;
+ module_param(commit_threads, int, 0);
+ MODULE_PARM_DESC(commit_threads, "Number of commit threads");
+ 
+@@ -84,8 +84,7 @@ static void jfs_handle_error(struct super_block *sb)
+ 		panic("JFS (device %s): panic forced after error\n",
+ 			sb->s_id);
+ 	else if (sbi->flag & JFS_ERR_REMOUNT_RO) {
+-		jfs_err("ERROR: (device %s): remounting filesystem "
+-			"as read-only\n",
++		jfs_err("ERROR: (device %s): remounting filesystem as read-only\n",
+ 			sb->s_id);
+ 		sb->s_flags |= MS_RDONLY;
+ 	}
+@@ -363,12 +362,10 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
+ 			 * -> user has more control over the online trimming
+ 			 */
+ 			sbi->minblks_trim = 64;
+-			if (blk_queue_discard(q)) {
++			if (blk_queue_discard(q))
+ 				*flag |= JFS_DISCARD;
+-			} else {
+-				pr_err("JFS: discard option " \
+-					"not supported on device\n");
+-			}
++			else
++				pr_err("JFS: discard option not supported on device\n");
+ 			break;
+ 		}
+ 
+@@ -385,15 +382,14 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
+ 				sbi->minblks_trim = simple_strtoull(
+ 					minblks_trim, &minblks_trim, 0);
+ 			} else {
+-				pr_err("JFS: discard option " \
+-					"not supported on device\n");
++				pr_err("JFS: discard option not supported on device\n");
+ 			}
+ 			break;
+ 		}
+ 
+ 		default:
+-			printk("jfs: Unrecognized mount option \"%s\" "
+-					" or missing value\n", p);
++			printk("jfs: Unrecognized mount option \"%s\" or missing value\n",
++			       p);
+ 			goto cleanup;
+ 		}
+ 	}
+@@ -419,14 +415,12 @@ static int jfs_remount(struct super_block *sb, int *flags, char *data)
+ 	int ret;
+ 
+ 	sync_filesystem(sb);
+-	if (!parse_options(data, sb, &newLVSize, &flag)) {
++	if (!parse_options(data, sb, &newLVSize, &flag))
+ 		return -EINVAL;
+-	}
+ 
+ 	if (newLVSize) {
+ 		if (sb->s_flags & MS_RDONLY) {
+-			pr_err("JFS: resize requires volume" \
+-				" to be mounted read-write\n");
++			pr_err("JFS: resize requires volume to be mounted read-write\n");
+ 			return -EROFS;
+ 		}
+ 		rc = jfs_extendfs(sb, newLVSize, 0);
+@@ -452,9 +446,8 @@ static int jfs_remount(struct super_block *sb, int *flags, char *data)
+ 	}
+ 	if ((!(sb->s_flags & MS_RDONLY)) && (*flags & MS_RDONLY)) {
+ 		rc = dquot_suspend(sb, -1);
+-		if (rc < 0) {
++		if (rc < 0)
+ 			return rc;
+-		}
+ 		rc = jfs_umount_rw(sb);
+ 		JFS_SBI(sb)->flag = flag;
+ 		return rc;
+@@ -487,7 +480,7 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!new_valid_dev(sb->s_bdev->bd_dev))
+ 		return -EOVERFLOW;
+ 
+-	sbi = kzalloc(sizeof (struct jfs_sb_info), GFP_KERNEL);
++	sbi = kzalloc(sizeof(struct jfs_sb_info), GFP_KERNEL);
+ 	if (!sbi)
+ 		return -ENOMEM;
+ 
+@@ -548,9 +541,8 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	rc = jfs_mount(sb);
+ 	if (rc) {
+-		if (!silent) {
++		if (!silent)
+ 			jfs_err("jfs_mount failed w/return code = %d", rc);
+-		}
+ 		goto out_mount_failed;
+ 	}
+ 	if (sb->s_flags & MS_RDONLY)
+@@ -587,7 +579,8 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * Page cache is indexed by long.
+ 	 * I would use MAX_LFS_FILESIZE, but it's only half as big
+ 	 */
+-	sb->s_maxbytes = min(((u64) PAGE_CACHE_SIZE << 32) - 1, (u64)sb->s_maxbytes);
++	sb->s_maxbytes = min(((u64) PAGE_CACHE_SIZE << 32) - 1,
++			     (u64)sb->s_maxbytes);
+ #endif
+ 	sb->s_time_gran = 1;
+ 	return 0;
+@@ -597,9 +590,8 @@ out_no_root:
+ 
+ out_no_rw:
+ 	rc = jfs_umount(sb);
+-	if (rc) {
++	if (rc)
+ 		jfs_err("jfs_umount failed with return code %d", rc);
+-	}
+ out_mount_failed:
+ 	filemap_write_and_wait(sbi->direct_inode->i_mapping);
+ 	truncate_inode_pages(sbi->direct_inode->i_mapping, 0);
+@@ -924,7 +916,8 @@ static int __init init_jfs_fs(void)
+ 		commit_threads = MAX_COMMIT_THREADS;
+ 
+ 	for (i = 0; i < commit_threads; i++) {
+-		jfsCommitThread[i] = kthread_run(jfs_lazycommit, NULL, "jfsCommit");
++		jfsCommitThread[i] = kthread_run(jfs_lazycommit, NULL,
++						 "jfsCommit");
+ 		if (IS_ERR(jfsCommitThread[i])) {
+ 			rc = PTR_ERR(jfsCommitThread[i]);
+ 			jfs_err("init_jfs_fs: fork failed w/rc = %d", rc);
+-- 
+1.8.4.5
