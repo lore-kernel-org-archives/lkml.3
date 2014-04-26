@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaDZQgg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 12:36:36 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:40261 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaDZQge (ORCPT
+	id S1752449AbaDZQhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 12:37:16 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:59040 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaDZQhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 12:36:34 -0400
-Message-ID: <535BE096.2060407@cogentembedded.com>
-Date: Sat, 26 Apr 2014 20:36:38 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 26 Apr 2014 12:37:14 -0400
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] ARM: dts: DRA7: Add DT node for DES IP
-References: <1398466968-29506-1-git-send-email-joelf@ti.com> <1398466968-29506-8-git-send-email-joelf@ti.com>
-In-Reply-To: <1398466968-29506-8-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Brian Healy <healybrian@gmail.com>
+Date: Sat, 26 Apr 2014 17:36:53 +0100
+Message-ID: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
+Subject: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
+ rtl28xxu driver
+To: torvalds@osdl.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+[PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for rtl28xxu driver
 
-On 26-04-2014 3:02, Joel Fernandes wrote:
+Signed-off-by: Brian Healy <healybrian<at>gmail.com>
 
-> DRA7xx SoCs have a DES3DES IP. Add DT data for the same.
 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->   arch/arm/boot/dts/dra7.dtsi |   11 +++++++++++
->   1 file changed, 11 insertions(+)
+--- drivers/media/usb/dvb-usb-v2/rtl28xxu.c.orig    2014-04-26
+17:02:36.068691000 +0100
++++ drivers/media/usb/dvb-usb-v2/rtl28xxu.c    2014-04-26
+17:03:11.944691000 +0100
+@@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28x
+         &rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+     { DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
+         &rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
++        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
++                &rtl2832u_props, "Peak DVB-T USB", NULL) },
 
-> diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
-> index 1c0f8e1..0533b89 100644
-> --- a/arch/arm/boot/dts/dra7.dtsi
-> +++ b/arch/arm/boot/dts/dra7.dtsi
-> @@ -789,6 +789,17 @@
->   			dma-names = "tx0", "rx0";
->   			status = "disabled";
->   		};
-> +
-> +		des: des@480a5000 {
-
-    Shouldn't the node name be "crypto@480a5000", according to the ePAPR standard?
-
-WBR, Sergei
-
+     /* RTL2832P devices: */
+     { DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
