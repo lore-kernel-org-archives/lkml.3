@@ -1,238 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaDZN6Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 09:58:25 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:32867 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaDZN6W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 09:58:22 -0400
-Message-ID: <1398520699.28726.22.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Sat, 26 Apr 2014 15:58:19 +0200
-In-Reply-To: <1398501491.12941.5.camel@marge.simpson.net>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
-	 <1398411635.11930.45.camel@marge.simpson.net>
-	 <1398501491.12941.5.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751795AbaDZOEo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 10:04:44 -0400
+Received: from mout.gmx.net ([212.227.15.15]:63218 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291AbaDZOEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 10:04:42 -0400
+Date: Sat, 26 Apr 2014 16:04:29 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, chase.southwood@yahoo.com,
+        unixed@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: remove duplicate pointer assignments in
+ attach functions
+Message-ID: <20140426160429.4883f678@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/hRNlLFw4Bw0kDlSW77xo7nY"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:ZosP8MLCruHCnTroqU6eUuuLyDQS1QdxC8zRJpe8K+JL2YQnoPE
+ 3RvyAKqM+pwJPfxhQXHS21IXtfV/nxQ57+kcZMgsqr4r98tok+8eFdMCnZkos2cWQrTauCs
+ +IA+VKK+2fp+oYDL1p2Zmu1Ht93wVTqQZYEAK14ggRhXVk+3c41tetWN10iN/BYmuR27Co+
+ PNMjzNdW8H5qdIjNSD+Fw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-04-26 at 10:38 +0200, Mike Galbraith wrote: 
-> On Fri, 2014-04-25 at 09:40 +0200, Mike Galbraith wrote:
-> 
-> > Hotplug can still deadlock in rt trees too, and will if you beat it
-> > hard.
-> 
-> Box actually deadlocks like so.
+--Sig_/hRNlLFw4Bw0kDlSW77xo7nY
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-...
+Some board pointer are assigned twice via comedi_board() in the comedi low
+level driver attach functions. Remove the duplicate assignment from the
+variable definition where the pointer is not used anyway until assigned lat=
+er
+in the function when dev->board_ptr, that comedi_board() relies on, is setup
+correctly.
 
-3.12-rt looks a bit busted migrate_disable/enable() wise.
-
-/me eyeballs 3.10-rt (looks better), confirms 3.10-rt hotplug works,
-swipes working code, confirms 3.12-rt now works.  Yup, that was it.
-
-When I fix lg_global_lock() (I think it and Medusa are both busted) I
-bet a nickle 3.14-rt will work.
-
-Hm, actually, rt_write_trylock() in swiped 3.10-rt code below (and some
-others) look busted to me.  migrate_disable() _after_ grabbing a lock is
-too late, no?
-
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- include/linux/rwlock_rt.h |   32 ++++++++++++++++++++++++++++----
- kernel/rt.c               |   21 +++++++++++----------
- 2 files changed, 39 insertions(+), 14 deletions(-)
+Compile tested and applies against v3.15-rc2 as well as branch staging-next
+of tree git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/comedi/drivers/das1800.c     | 2 +-
+ drivers/staging/comedi/drivers/das800.c      | 2 +-
+ drivers/staging/comedi/drivers/dt2801.c      | 2 +-
+ drivers/staging/comedi/drivers/ni_at_a2150.c | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/include/linux/rwlock_rt.h
-+++ b/include/linux/rwlock_rt.h
-@@ -33,50 +33,72 @@ extern void __rt_rwlock_init(rwlock_t *r
- #define read_lock_irqsave(lock, flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
-+		migrate_disable();			\
- 		flags = rt_read_lock_irqsave(lock);	\
- 	} while (0)
- 
- #define write_lock_irqsave(lock, flags)			\
- 	do {						\
- 		typecheck(unsigned long, flags);	\
-+		migrate_disable();			\
- 		flags = rt_write_lock_irqsave(lock);	\
- 	} while (0)
- 
--#define read_lock(lock)		rt_read_lock(lock)
-+#define read_lock(lock)					\
-+	do {						\
-+		migrate_disable();			\
-+		rt_read_lock(lock);			\
-+	} while (0)
- 
- #define read_lock_bh(lock)				\
- 	do {						\
- 		local_bh_disable();			\
-+		migrate_disable();			\
- 		rt_read_lock(lock);			\
- 	} while (0)
- 
- #define read_lock_irq(lock)	read_lock(lock)
- 
--#define write_lock(lock)	rt_write_lock(lock)
-+#define write_lock(lock)				\
-+	do {						\
-+		migrate_disable();			\
-+		rt_write_lock(lock);			\
-+	} while (0)
- 
- #define write_lock_bh(lock)				\
- 	do {						\
- 		local_bh_disable();			\
-+		migrate_disable();			\
- 		rt_write_lock(lock);			\
- 	} while (0)
- 
- #define write_lock_irq(lock)	write_lock(lock)
- 
--#define read_unlock(lock)	rt_read_unlock(lock)
-+#define read_unlock(lock)				\
-+	do {						\
-+		rt_read_unlock(lock);			\
-+		migrate_enable();			\
-+	} while (0)
- 
- #define read_unlock_bh(lock)				\
- 	do {						\
- 		rt_read_unlock(lock);			\
-+		migrate_enable();			\
- 		local_bh_enable();			\
- 	} while (0)
- 
- #define read_unlock_irq(lock)	read_unlock(lock)
- 
--#define write_unlock(lock)	rt_write_unlock(lock)
-+#define write_unlock(lock)				\
-+	do {						\
-+		rt_write_unlock(lock);			\
-+		migrate_enable();			\
-+	} while (0)
- 
- #define write_unlock_bh(lock)				\
- 	do {						\
- 		rt_write_unlock(lock);			\
-+		migrate_enable();			\
- 		local_bh_enable();			\
- 	} while (0)
- 
-@@ -87,6 +109,7 @@ extern void __rt_rwlock_init(rwlock_t *r
- 		typecheck(unsigned long, flags);	\
- 		(void) flags;				\
- 		rt_read_unlock(lock);			\
-+		migrate_enable();			\
- 	} while (0)
- 
- #define write_unlock_irqrestore(lock, flags) \
-@@ -94,6 +117,7 @@ extern void __rt_rwlock_init(rwlock_t *r
- 		typecheck(unsigned long, flags);	\
- 		(void) flags;				\
- 		rt_write_unlock(lock);			\
-+		migrate_enable();			\
- 	} while (0)
- 
- #endif
---- a/kernel/rt.c
-+++ b/kernel/rt.c
-@@ -182,10 +182,11 @@ int __lockfunc rt_write_trylock(rwlock_t
+diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/com=
+edi/drivers/das1800.c
+index d581029..0335a70 100644
+--- a/drivers/staging/comedi/drivers/das1800.c
++++ b/drivers/staging/comedi/drivers/das1800.c
+@@ -1479,7 +1479,7 @@ static int das1800_probe(struct comedi_device *dev)
+ static int das1800_attach(struct comedi_device *dev,
+ 			  struct comedi_devconfig *it)
  {
- 	int ret = rt_mutex_trylock(&rwlock->lock);
- 
--	if (ret) {
-+	migrate_disable();
-+	if (ret)
- 		rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
--		migrate_disable();
--	}
-+	else
-+		migrate_enable();
- 
- 	return ret;
- }
-@@ -196,7 +197,10 @@ int __lockfunc rt_write_trylock_irqsave(
- 	int ret;
- 
- 	*flags = 0;
-+	migrate_disable();
- 	ret = rt_write_trylock(rwlock);
-+	if (!ret)
-+		migrate_enable();
- 	return ret;
- }
- EXPORT_SYMBOL(rt_write_trylock_irqsave);
-@@ -211,18 +215,19 @@ int __lockfunc rt_read_trylock(rwlock_t
- 	 * but not when read_depth == 0 which means that the lock is
- 	 * write locked.
- 	 */
-+	migrate_disable();
- 	if (rt_mutex_owner(lock) != current) {
- 		ret = rt_mutex_trylock(lock);
--		if (ret) {
-+		if (ret)
- 			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
--			migrate_disable();
--		}
- 	} else if (!rwlock->read_depth) {
- 		ret = 0;
- 	}
- 
- 	if (ret)
- 		rwlock->read_depth++;
-+	else
-+		migrate_enable();
- 
- 	return ret;
- }
-@@ -231,7 +236,6 @@ EXPORT_SYMBOL(rt_read_trylock);
- void __lockfunc rt_write_lock(rwlock_t *rwlock)
+-	const struct das1800_board *thisboard =3D comedi_board(dev);
++	const struct das1800_board *thisboard;
+ 	struct das1800_private *devpriv;
+ 	struct comedi_subdevice *s;
+ 	unsigned int irq =3D it->options[1];
+diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/come=
+di/drivers/das800.c
+index b23a12c..e2dc43d 100644
+--- a/drivers/staging/comedi/drivers/das800.c
++++ b/drivers/staging/comedi/drivers/das800.c
+@@ -683,7 +683,7 @@ static int das800_probe(struct comedi_device *dev)
+=20
+ static int das800_attach(struct comedi_device *dev, struct comedi_devconfi=
+g *it)
  {
- 	rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
--	migrate_disable();
- 	__rt_spin_lock(&rwlock->lock);
- }
- EXPORT_SYMBOL(rt_write_lock);
-@@ -246,7 +250,6 @@ void __lockfunc rt_read_lock(rwlock_t *r
- 	if (rt_mutex_owner(lock) != current) {
- 		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
- 		__rt_spin_lock(lock);
--		migrate_disable();
- 	}
- 	rwlock->read_depth++;
- }
-@@ -258,7 +261,6 @@ void __lockfunc rt_write_unlock(rwlock_t
- 	/* NOTE: we always pass in '1' for nested, for simplicity */
- 	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
- 	__rt_spin_unlock(&rwlock->lock);
--	migrate_enable();
- }
- EXPORT_SYMBOL(rt_write_unlock);
- 
-@@ -268,7 +270,6 @@ void __lockfunc rt_read_unlock(rwlock_t
- 	if (--rwlock->read_depth == 0) {
- 		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
- 		__rt_spin_unlock(&rwlock->lock);
--		migrate_enable();
- 	}
- }
- EXPORT_SYMBOL(rt_read_unlock);
+-	const struct das800_board *thisboard =3D comedi_board(dev);
++	const struct das800_board *thisboard;
+ 	struct das800_private *devpriv;
+ 	struct comedi_subdevice *s;
+ 	unsigned int irq =3D it->options[1];
+diff --git a/drivers/staging/comedi/drivers/dt2801.c b/drivers/staging/come=
+di/drivers/dt2801.c
+index d4d4e4b..4263014 100644
+--- a/drivers/staging/comedi/drivers/dt2801.c
++++ b/drivers/staging/comedi/drivers/dt2801.c
+@@ -545,7 +545,7 @@ static int dt2801_dio_insn_config(struct comedi_device =
+*dev,
+ */
+ static int dt2801_attach(struct comedi_device *dev, struct comedi_devconfi=
+g *it)
+ {
+-	const struct dt2801_board *board =3D comedi_board(dev);
++	const struct dt2801_board *board;
+ 	struct dt2801_private *devpriv;
+ 	struct comedi_subdevice *s;
+ 	int board_code, type;
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging=
+/comedi/drivers/ni_at_a2150.c
+index afbf251..fefd97e 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -695,7 +695,7 @@ static int a2150_probe(struct comedi_device *dev)
+=20
+ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig=
+ *it)
+ {
+-	const struct a2150_board *thisboard =3D comedi_board(dev);
++	const struct a2150_board *thisboard;
+ 	struct a2150_private *devpriv;
+ 	struct comedi_subdevice *s;
+ 	unsigned int irq =3D it->options[1];
+--=20
+1.9.1
 
+--Sig_/hRNlLFw4Bw0kDlSW77xo7nY
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTW7ztAAoJEKssnEpaPQKEKlMQAJ9ZgVPKg8eVyZs+tz9Su3K1
+D/2Z4QU/vbU0GZEce6eb9etfmVi5Q5W2vz9D7nh0AbErxUXgHM26sYAnsC4g+7d4
+6J1brhcDlj6WsJ5q4u07s0uDbV9S2UQHDA8gWT5zt+xSmKoiF2QnWqjS2GwrKELa
+7j/rREt0/TpUvWNckQpS43BouL21zvqTvSOPnKPI77RQh7rbM8WOUjBVTY4Qgt+u
+lz3CDjW7yk4qnTsRkCoMjjp4HLS12FwVm2B0AgKrokRgwOsP9XtvWql8K8wy4p3K
+ESo6goZIiUOPoC8Cub6nBvlHFaDzoRG3ZGPc0wc+6n/Jfve7aQVPn4CUBLLpjCBq
+iKdDxLcnvH3SRxnZjn+qif9EpQXfx6bXZoFUi6+SjgYrqHCD1NIj1WlCa5mSaPt9
+fUB4OKe6jzdtEs3srS2YTGefLsLNgFKPjvuK9yNGnAWFWwSvBbukwRXgaxtj2cA3
+ZwGQ5PdNDoZIJAnWM/3DUl60pXCKL6lh7sI9Yx+78DGngiut/iBDZhhFt1PtteU9
+p9x+TelEyhaAdDz7z1ut8msrpJvz12dSr7+ICtPoP1WmsxIAFFmRZZHIRbGHBp8T
+G0we7uTf3HbQjJdmTydqxVALR5DIrRHe1FNtW8ceoRkc1oQh+y/Xts4kKi3rK+hP
+Jd3jZNvvOWsIrkcMEQvO
+=3fzR
+-----END PGP SIGNATURE-----
+
+--Sig_/hRNlLFw4Bw0kDlSW77xo7nY--
