@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243AbaDZGKG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 02:10:06 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:46441 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaDZGKE (ORCPT
+	id S1751320AbaDZGRv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 02:17:51 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:35255 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718AbaDZGRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 02:10:04 -0400
-Date: Sat, 26 Apr 2014 08:09:59 +0200
+	Sat, 26 Apr 2014 02:17:49 -0400
+Date: Sat, 26 Apr 2014 08:17:44 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Oren Twaig <oren@scalemp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v2] X86: Hook apic vector allocation domain only when
- interrupt routing are set to ignore
-Message-ID: <20140426060959.GA1944@gmail.com>
-References: <1398376326-3055-1-git-send-email-oren@scalemp.com>
- <20140425080137.GC19588@gmail.com>
- <535A421F.4010108@scalemp.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Message-ID: <20140426061744.GB1944@gmail.com>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+ <2713863.BLQTYQm2Oa@vostro.rjw.lan>
+ <20140425132055.GC11096@twins.programming.kicks-ass.net>
+ <15044031.LGKXdkz8J7@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <535A421F.4010108@scalemp.com>
+In-Reply-To: <15044031.LGKXdkz8J7@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Oren Twaig <oren@scalemp.com> wrote:
+* Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 
-> On 4/25/2014 11:01 AM, Ingo Molnar wrote:
-> >
-> > * Oren Twaig <oren@scalemp.com> wrote:
-> >
-> >> vSMP Foundation provides locality based interrupt routing which needed
-> >> vector_allocation_domain to allow all online cpus can handle all
-> possible
-> >> vectors.
-> >>
-> >> Enforcing Interrupt Routing Comply (IRC) mode requires us to
-> unplug this hook as
-> >> otherwise the IOAPIC, MSI and MSIX destination selectors to
-> always select the
-> >> lowest online cpu as the destination. I.e affinity of HW
-> interrupts cannot be
-> >> controled by kernel and/or userspace code.
-> >>
-> >> The purpose of the patch is to fix the code to set override
-> vector allocation
-> >> domain only when IRC is set to ignore to allow the kernel and
-> userspace to
-> >> effectively control the destination of the HW interrupts.
-> >>
-> >> Signed-off-by: Oren Twaig <oren@scalemp.com>
-> >> Acked-by: Shai Fultheim <shai@scalemp.com>
-> >
-> > So what was the behavior before the change - certain IRQs did not get
-> > routed, they just ended up on CPU0 or on some other undesirable CPU?
-> > Or was IRQ distribution random? It's not clear from the changelog.
+> > > Well, so now the question is whether or not we relly want to 
+> > > always go to the "power" (or "energy efficiency" if you will) 
+> > > mode if the system is on battery.  That arguably may not be a 
+> > > good thing even for energy efficiency depending on how exactly 
+> > > the modes are defined.
+> > 
+> > Nobody is talking about always. But in general it seems a good 
+> > enough approach. Hell, many of the AC/BAT switches in todays power 
+> > management crap things are not always right.
+> > 
+> > Do I want it to dim the LCD further when I unplug the laptop -- 
+> > mostly no, but still it does. And the most annoying one is that it 
+> > reduces the screen blank time to something near 5 seconds or so.
+> > 
+> > Why would this be any different?
 > 
-> It all depends on the IRC flag. When set to "ignore" by the linux 
-> kernel, vSMP Foundation knew that it can deliver the IRQ to the CPU 
-> which would result in less virtualization overhead. For example, we 
-> could deliver the HW interrupt to the CPU which got it or any other 
-> CPU in the system. We couldn't have done it without the kernel 
-> making sure that each vector can be passed to all CPUs. This is why 
-> we override the verctor allocation domain to signal all CPUs.
-> 
-> But, when the IRC is set to "comply" we, before this patch, still 
-> efected the allocation domains alltough it wasn't needed. It wasn't 
-> needed because when in "comply" mode, we always pass the HW 
-> interrupt to the CPU the kernel requested (by setting the IOAPIC 
-> entry, MSI/X entry or IR entry)
+> And why do we have to do things that we hate it when they are done 
+> by others?
 
-I still don't see a clear explanation of what the _user_ saw and sees 
-before and after the change. What is the effect of the patch: correct 
-IRQ routing (i.e. before the change IRQs would end up on the wrong 
-CPU), lower overhead IRQ routing (i.e. before the change IRQ routing 
-overhead was more expensive), or something else?
+He replied to your question of 'do we want to act on power events'.
 
-You don't spell this out clearly and it's a crucial piece of 
-information that comes before every other explanation.
+The answer is: yes, from the scheduler point of view we want to act on 
+power events by default, and if a user does not want that default 
+behavior, it's not an unprecedented request and GUIs offer various 
+ways to tweak screen dimming and other power saving details.
+
+So "trying to save power" is the default everywhere, and the scheduler 
+wants to do the same. The main reason we couldn't do this before was 
+that the scheduler's 'power saving mode' was dysfunctional. That is 
+being fixed.
+
+So lets try this, it's high time.
 
 Thanks,
 
