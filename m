@@ -1,371 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaDZIhi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 04:37:38 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52689 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbaDZIhc (ORCPT
+	id S1751716AbaDZIkQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 04:40:16 -0400
+Received: from [119.145.14.65] ([119.145.14.65]:2423 "EHLO
+	szxga02-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaDZIkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 04:37:32 -0400
+	Sat, 26 Apr 2014 04:40:11 -0400
+Message-ID: <535B707F.7020802@huawei.com>
+Date: Sat, 26 Apr 2014 16:38:23 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1397922764-1512-3-git-send-email-ddstreet@ieee.org>
-References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
-	<1397922764-1512-3-git-send-email-ddstreet@ieee.org>
-Date: Sat, 26 Apr 2014 16:37:31 +0800
-Message-ID: <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] mm: zpool: implement zsmalloc shrinking
-From: Weijie Yang <weijie.yang.kh@gmail.com>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul Mackerras" <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Robert Richter <rric@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <oprofile-list@lists.sf.net>, Xinwei Hu <huxinwei@huawei.com>
+Subject: [PATCH] arm64: add OProfile support
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 11:52 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> Add zs_shrink() and helper functions to zsmalloc.  Update zsmalloc
-> zs_create_pool() creation function to include ops param that provides
-> an evict() function for use during shrinking.  Update helper function
-> fix_fullness_group() to always reinsert changed zspages even if the
-> fullness group did not change, so they are updated in the fullness
-> group lru.  Also update zram to use the new zsmalloc pool creation
-> function but pass NULL as the ops param, since zram does not use
-> pool shrinking.
->
+Add OProfile support for arm64,  using the perf backend, and failing back
+to generic timer based sampling if PMU interrupt is not supported.
 
-I only review the code without test, however, I think this patch is
-not acceptable.
+I have test this patch on Cortex-A53 and Cortex-A57 motherboard, the OProfile
+could work well by PMU irq or arch timer irq.
 
-The biggest problem is it will call zswap_writeback_entry() under lock,
-zswap_writeback_entry() may sleep, so it is a bug. see below
+Signed-off-by: Xinwei Hu <huxinwei@huawei.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+---
+ arch/arm64/Kconfig                  |   1 +
+ arch/arm64/Makefile                 |   2 +
+ arch/arm64/include/asm/stacktrace.h |   1 +
+ arch/arm64/kernel/perf_event.c      |  13 ++++-
+ arch/arm64/oprofile/Makefile        |  13 +++++
+ arch/arm64/oprofile/common.c        | 106 ++++++++++++++++++++++++++++++++++++
+ 6 files changed, 135 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/oprofile/Makefile
+ create mode 100644 arch/arm64/oprofile/common.c
 
-The 3/4 patch has a lot of #ifdef, I don't think it's a good kind of
-abstract way.
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index e6e4d37..f711445 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -40,6 +40,7 @@ config ARM64
+ 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_PATA_PLATFORM
++	select HAVE_OPROFILE if (HAVE_PERF_EVENTS)
+ 	select HAVE_PERF_EVENTS
+ 	select HAVE_PERF_REGS
+ 	select HAVE_PERF_USER_STACK_DUMP
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+index 2fceb71..6bb3d66 100644
+--- a/arch/arm64/Makefile
++++ b/arch/arm64/Makefile
+@@ -48,6 +48,8 @@ core-$(CONFIG_XEN) += arch/arm64/xen/
+ libs-y		:= arch/arm64/lib/ $(libs-y)
+ libs-y		+= $(LIBGCC)
+ 
++drivers-$(CONFIG_OPROFILE)      += arch/arm64/oprofile/
++
+ # Default target when executing plain make
+ KBUILD_IMAGE	:= Image.gz
+ KBUILD_DTBS	:= dtbs
+diff --git a/arch/arm64/include/asm/stacktrace.h b/arch/arm64/include/asm/stacktrace.h
+index 7318f6d..fec7e84 100644
+--- a/arch/arm64/include/asm/stacktrace.h
++++ b/arch/arm64/include/asm/stacktrace.h
+@@ -19,6 +19,7 @@
+ struct stackframe {
+ 	unsigned long fp;
+ 	unsigned long sp;
++	unsigned long lr;
+ 	unsigned long pc;
+ };
+ 
+diff --git a/arch/arm64/kernel/perf_event.c b/arch/arm64/kernel/perf_event.c
+index baf5afb..a8fd1c1 100644
+--- a/arch/arm64/kernel/perf_event.c
++++ b/arch/arm64/kernel/perf_event.c
+@@ -51,6 +51,15 @@ static DEFINE_PER_CPU(struct pmu_hw_events, cpu_hw_events);
+ /* Set at runtime when we know what CPU type we are. */
+ static struct arm_pmu *cpu_pmu;
+ 
++const char *perf_pmu_name(void)
++{
++	if (!cpu_pmu)
++		return NULL;
++
++	return cpu_pmu->name;
++}
++EXPORT_SYMBOL_GPL(perf_pmu_name);
++
+ int
+ armpmu_get_max_events(void)
+ {
+@@ -640,7 +649,7 @@ enum armv8_pmuv3_perf_types {
+ 	ARMV8_PMUV3_PERFCTR_L1_DCACHE_REFILL			= 0x03,
+ 	ARMV8_PMUV3_PERFCTR_L1_DCACHE_ACCESS			= 0x04,
+ 	ARMV8_PMUV3_PERFCTR_PC_BRANCH_MIS_PRED			= 0x10,
+-	ARMV8_PMUV3_PERFCTR_CLOCK_CYCLES			= 0x11,
++	ARMV8_PMUV3_PERFCTR_CPU_CYCLES				= 0x11,
+ 	ARMV8_PMUV3_PERFCTR_PC_BRANCH_PRED			= 0x12,
+ 
+ 	/* At least one of the following is required. */
+@@ -672,6 +681,8 @@ enum armv8_pmuv3_perf_types {
+ 	ARMV8_PMUV3_PERFCTR_BUS_ACCESS				= 0x19,
+ 	ARMV8_PMUV3_PERFCTR_MEM_ERROR				= 0x1A,
+ 	ARMV8_PMUV3_PERFCTR_BUS_CYCLES				= 0x1D,
++
++	ARMV8_PMUV3_PERFCTR_CLOCK_CYCLES			= 0XFF,
+ };
+ 
+ /* PMUv3 HW events mapping. */
+diff --git a/arch/arm64/oprofile/Makefile b/arch/arm64/oprofile/Makefile
+new file mode 100644
+index 0000000..b2215c6
+--- /dev/null
++++ b/arch/arm64/oprofile/Makefile
+@@ -0,0 +1,13 @@
++obj-$(CONFIG_OPROFILE) += oprofile.o
++
++DRIVER_OBJS = $(addprefix ../../../drivers/oprofile/, \
++		oprof.o cpu_buffer.o buffer_sync.o \
++		event_buffer.o oprofile_files.o \
++		oprofilefs.o oprofile_stats.o \
++		timer_int.o )
++
++ifeq ($(CONFIG_HW_PERF_EVENTS),y)
++DRIVER_OBJS += $(addprefix ../../../drivers/oprofile/, oprofile_perf.o)
++endif
++
++oprofile-y				:= $(DRIVER_OBJS) common.o
+diff --git a/arch/arm64/oprofile/common.c b/arch/arm64/oprofile/common.c
+new file mode 100644
+index 0000000..7d1c19c
+--- /dev/null
++++ b/arch/arm64/oprofile/common.c
+@@ -0,0 +1,106 @@
++/**
++ * @file common.c
++ *
++ * @remark Copyright 2004 Oprofile Authors
++ * @remark Copyright 2010 ARM Ltd.
++ * @remark Read the file COPYING
++ *
++ * @author Zwane Mwaikambo
++ * @author Will Deacon [move to perf]
++ */
++
++#include <linux/cpumask.h>
++#include <linux/init.h>
++#include <linux/mutex.h>
++#include <linux/oprofile.h>
++#include <linux/perf_event.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <asm/stacktrace.h>
++#include <linux/uaccess.h>
++
++#include <asm/perf_event.h>
++#include <asm/ptrace.h>
++
++#ifdef CONFIG_HW_PERF_EVENTS
++
++char *op_name_from_perf_id(void)
++{
++	return perf_pmu_name();
++}
++#endif
++
++static int report_trace(struct stackframe *frame, void *d)
++{
++	unsigned int *depth = d;
++
++	if (*depth) {
++		oprofile_add_trace(frame->pc);
++		(*depth)--;
++	}
++
++	return *depth == 0;
++}
++
++/*
++ * The registers we're interested in are at the end of the variable
++ * length saved register structure. The fp points at the end of this
++ * structure so the address of this struct is:
++ * (struct frame_tail *)(xxx->fp)-1
++ */
++struct frame_tail {
++	struct frame_tail *fp;
++	unsigned long sp;
++	unsigned long lr;
++} __attribute__((packed));
++
++static struct frame_tail *user_backtrace(struct frame_tail *tail)
++{
++	struct frame_tail buftail[2];
++
++	/* Also check accessibility of one struct frame_tail beyond */
++	if (!access_ok(VERIFY_READ, tail, sizeof(buftail)))
++		return NULL;
++	if (__copy_from_user_inatomic(buftail, tail, sizeof(buftail)))
++		return NULL;
++
++	oprofile_add_trace(buftail[0].lr);
++
++	/* frame pointers should strictly progress back up the stack
++	 * (towards higher addresses) */
++	if (tail + 1 >= buftail[0].fp)
++		return NULL;
++
++	return buftail[0].fp-1;
++}
++
++static void arm_backtrace(struct pt_regs * const regs, unsigned int depth)
++{
++	struct frame_tail *tail = ((struct frame_tail *) regs->regs[29]) - 1;
++
++	if (!user_mode(regs)) {
++		struct stackframe frame;
++		frame.fp = regs->regs[29];
++		frame.sp = regs->sp;
++		frame.lr = regs->regs[30];
++		frame.pc = regs->pc;
++		walk_stackframe(&frame, report_trace, &depth);
++		return;
++	}
++
++	while (depth-- && tail && !((unsigned long) tail & 3))
++		tail = user_backtrace(tail);
++}
++
++int __init oprofile_arch_init(struct oprofile_operations *ops)
++{
++	/* provide backtrace support also in timer mode: */
++	ops->backtrace		= arm_backtrace;
++
++	return oprofile_perf_init(ops);
++}
++
++void oprofile_arch_exit(void)
++{
++	oprofile_perf_exit();
++}
+-- 
+1.8.0
 
-What about just disable zswap reclaim when using zsmalloc?
-There is a long way to optimize writeback reclaim(both zswap and zram) ,
-Maybe a small and simple step forward is better.
 
-Regards,
-
-> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->
-> ---
->
-> To find all the used objects inside a zspage, I had to do a full scan
-> of the zspage->freelist for each object, since there's no list of used
-> objects, and no way to keep a list of used objects without allocating
-> more memory for each zspage (that I could see).  Of course, by taking
-> a byte (or really only a bit) out of each object's memory area to use
-> as a flag, we could just check that instead of scanning ->freelist
-> for each zspage object, but that would (slightly) reduce the available
-> size of each zspage object.
->
->
->  drivers/block/zram/zram_drv.c |   2 +-
->  include/linux/zsmalloc.h      |   7 +-
->  mm/zsmalloc.c                 | 168 ++++++++++++++++++++++++++++++++++++++----
->  3 files changed, 160 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 9849b52..dacf343 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -249,7 +249,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
->                 goto free_meta;
->         }
->
-> -       meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
-> +       meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, NULL);
->         if (!meta->mem_pool) {
->                 pr_err("Error creating memory pool\n");
->                 goto free_table;
-> diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
-> index e44d634..a75ab6e 100644
-> --- a/include/linux/zsmalloc.h
-> +++ b/include/linux/zsmalloc.h
-> @@ -36,11 +36,16 @@ enum zs_mapmode {
->
->  struct zs_pool;
->
-> -struct zs_pool *zs_create_pool(gfp_t flags);
-> +struct zs_ops {
-> +       int (*evict)(struct zs_pool *pool, unsigned long handle);
-> +};
-> +
-> +struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops);
->  void zs_destroy_pool(struct zs_pool *pool);
->
->  unsigned long zs_malloc(struct zs_pool *pool, size_t size);
->  void zs_free(struct zs_pool *pool, unsigned long obj);
-> +int zs_shrink(struct zs_pool *pool, size_t size);
->
->  void *zs_map_object(struct zs_pool *pool, unsigned long handle,
->                         enum zs_mapmode mm);
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 36b4591..b99bec0 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -219,6 +219,8 @@ struct zs_pool {
->         struct size_class size_class[ZS_SIZE_CLASSES];
->
->         gfp_t flags;    /* allocation flags used when growing pool */
-> +
-> +       struct zs_ops *ops;
->  };
->
->  /*
-> @@ -389,16 +391,14 @@ static enum fullness_group fix_fullness_group(struct zs_pool *pool,
->         BUG_ON(!is_first_page(page));
->
->         get_zspage_mapping(page, &class_idx, &currfg);
-> -       newfg = get_fullness_group(page);
-> -       if (newfg == currfg)
-> -               goto out;
-> -
->         class = &pool->size_class[class_idx];
-> +       newfg = get_fullness_group(page);
-> +       /* Need to do this even if currfg == newfg, to update lru */
->         remove_zspage(page, class, currfg);
->         insert_zspage(page, class, newfg);
-> -       set_zspage_mapping(page, class_idx, newfg);
-> +       if (currfg != newfg)
-> +               set_zspage_mapping(page, class_idx, newfg);
->
-> -out:
->         return newfg;
->  }
->
-> @@ -438,6 +438,36 @@ static int get_pages_per_zspage(int class_size)
->  }
->
->  /*
-> + * To determine which class to use when shrinking, we find the
-> + * first zspage class that is greater than the requested shrink
-> + * size, and has at least one zspage.  This returns the class
-> + * with the class lock held, or NULL.
-> + */
-> +static struct size_class *get_class_to_shrink(struct zs_pool *pool,
-> +                       size_t size)
-> +{
-> +       struct size_class *class;
-> +       int i;
-> +       bool in_use, large_enough;
-> +
-> +       for (i = 0; i <= ZS_SIZE_CLASSES; i++) {
-> +               class = &pool->size_class[i];
-> +
-> +               spin_lock(&class->lock);
-> +
-> +               in_use = class->pages_allocated > 0;
-> +               large_enough = class->pages_per_zspage * PAGE_SIZE >= size;
-> +
-> +               if (in_use && large_enough)
-> +                       return class;
-> +
-> +               spin_unlock(&class->lock);
-> +       }
-> +
-> +       return NULL;
-> +}
-> +
-> +/*
->   * A single 'zspage' is composed of many system pages which are
->   * linked together using fields in struct page. This function finds
->   * the first/head page, given any component page of a zspage.
-> @@ -508,6 +538,48 @@ static unsigned long obj_idx_to_offset(struct page *page,
->         return off + obj_idx * class_size;
->  }
->
-> +static bool obj_handle_is_free(struct page *first_page,
-> +                       struct size_class *class, unsigned long handle)
-> +{
-> +       unsigned long obj, idx, offset;
-> +       struct page *page;
-> +       struct link_free *link;
-> +
-> +       BUG_ON(!is_first_page(first_page));
-> +
-> +       obj = (unsigned long)first_page->freelist;
-> +
-> +       while (obj) {
-> +               if (obj == handle)
-> +                       return true;
-> +
-> +               obj_handle_to_location(obj, &page, &idx);
-> +               offset = obj_idx_to_offset(page, idx, class->size);
-> +
-> +               link = (struct link_free *)kmap_atomic(page) +
-> +                                       offset / sizeof(*link);
-> +               obj = (unsigned long)link->next;
-> +               kunmap_atomic(link);
-> +       }
-> +
-> +       return false;
-> +}
-> +
-> +static void obj_free(unsigned long obj, struct page *page, unsigned long offset)
-> +{
-> +       struct page *first_page = get_first_page(page);
-> +       struct link_free *link;
-> +
-> +       /* Insert this object in containing zspage's freelist */
-> +       link = (struct link_free *)((unsigned char *)kmap_atomic(page)
-> +                                                       + offset);
-> +       link->next = first_page->freelist;
-> +       kunmap_atomic(link);
-> +       first_page->freelist = (void *)obj;
-> +
-> +       first_page->inuse--;
-> +}
-> +
->  static void reset_page(struct page *page)
->  {
->         clear_bit(PG_private, &page->flags);
-> @@ -651,6 +723,39 @@ cleanup:
->         return first_page;
->  }
->
-> +static int reclaim_zspage(struct zs_pool *pool, struct size_class *class,
-> +                       struct page *first_page)
-> +{
-> +       struct page *page = first_page;
-> +       unsigned long offset = 0, handle, idx, objs;
-> +       int ret = 0;
-> +
-> +       BUG_ON(!is_first_page(page));
-> +       BUG_ON(!pool->ops);
-> +       BUG_ON(!pool->ops->evict);
-> +
-> +       while (page) {
-> +               objs = DIV_ROUND_UP(PAGE_SIZE - offset, class->size);
-> +
-> +               for (idx = 0; idx < objs; idx++) {
-> +                       handle = (unsigned long)obj_location_to_handle(page,
-> +                                                                       idx);
-> +                       if (!obj_handle_is_free(first_page, class, handle))
-> +                               ret = pool->ops->evict(pool, handle);
-
-call zswap_writeback_entry() under class->lock.
-
-> +                       if (ret)
-> +                               return ret;
-> +                       else
-> +                               obj_free(handle, page, offset);
-> +               }
-> +
-> +               page = get_next_page(page);
-> +               if (page)
-> +                       offset = page->index;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
->  static struct page *find_get_zspage(struct size_class *class)
->  {
->         int i;
-> @@ -856,7 +961,7 @@ fail:
->   * On success, a pointer to the newly created pool is returned,
->   * otherwise NULL.
->   */
-> -struct zs_pool *zs_create_pool(gfp_t flags)
-> +struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops)
->  {
->         int i, ovhd_size;
->         struct zs_pool *pool;
-> @@ -883,6 +988,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->         }
->
->         pool->flags = flags;
-> +       pool->ops = ops;
->
->         return pool;
->  }
-> @@ -968,7 +1074,6 @@ EXPORT_SYMBOL_GPL(zs_malloc);
->
->  void zs_free(struct zs_pool *pool, unsigned long obj)
->  {
-> -       struct link_free *link;
->         struct page *first_page, *f_page;
->         unsigned long f_objidx, f_offset;
->
-> @@ -988,14 +1093,8 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->
->         spin_lock(&class->lock);
->
-> -       /* Insert this object in containing zspage's freelist */
-> -       link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
-> -                                                       + f_offset);
-> -       link->next = first_page->freelist;
-> -       kunmap_atomic(link);
-> -       first_page->freelist = (void *)obj;
-> +       obj_free(obj, f_page, f_offset);
->
-> -       first_page->inuse--;
->         fullness = fix_fullness_group(pool, first_page);
->
->         if (fullness == ZS_EMPTY)
-> @@ -1008,6 +1107,45 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->  }
->  EXPORT_SYMBOL_GPL(zs_free);
->
-> +int zs_shrink(struct zs_pool *pool, size_t size)
-> +{
-> +       struct size_class *class;
-> +       struct page *first_page;
-> +       enum fullness_group fullness;
-> +       int ret;
-> +
-> +       if (!pool->ops || !pool->ops->evict)
-> +               return -EINVAL;
-> +
-> +       /* the class is returned locked */
-> +       class = get_class_to_shrink(pool, size);
-> +       if (!class)
-> +               return -ENOENT;
-> +
-> +       first_page = find_get_zspage(class);
-> +       if (!first_page) {
-> +               spin_unlock(&class->lock);
-> +               return -ENOENT;
-> +       }
-> +
-> +       ret = reclaim_zspage(pool, class, first_page);
-> +
-> +       if (ret) {
-> +               fullness = fix_fullness_group(pool, first_page);
-> +
-> +               if (fullness == ZS_EMPTY)
-> +                       class->pages_allocated -= class->pages_per_zspage;
-> +       }
-> +
-> +       spin_unlock(&class->lock);
-> +
-> +       if (!ret || fullness == ZS_EMPTY)
-> +               free_zspage(first_page);
-> +
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(zs_shrink);
-> +
->  /**
->   * zs_map_object - get address of allocated object from handle.
->   * @pool: pool from which the object was allocated
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
