@@ -1,97 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaDZAmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 20:42:19 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:44261 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214AbaDZAmR (ORCPT
+	id S1752000AbaDZAnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 20:43:31 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:46621 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320AbaDZAna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 20:42:17 -0400
-Message-ID: <535B00E5.4060903@gmail.com>
-Date: Sat, 26 Apr 2014 02:42:13 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 20:43:30 -0400
+Date: Fri, 25 Apr 2014 17:43:22 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, stable@kernel.org
+Subject: Re: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
+Message-ID: <20140425174322.589ed9f1@samsung-9>
+In-Reply-To: <1398451514-25593-1-git-send-email-kys@microsoft.com>
+References: <1398451514-25593-1-git-send-email-kys@microsoft.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com,
-        t.figa@samsung.com
-CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
-        arnd@arndb.de, olof@lixom.net, marc.zyngier@arm.com,
-        thomas.abraham@linaro.org, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com, hyunhee.kim@samsung.com,
-        yj44.cho@samsung.com, chanho61.park@samsung.com,
-        sajjan.linux@gmail.com, tushar.behera@linaro.org,
-        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv4 2/7] ARM: EXYNOS: Support secondary CPU boot of Exynos4212
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com> <1398388572-30239-3-git-send-email-cw00.choi@samsung.com>
-In-Reply-To: <1398388572-30239-3-git-send-email-cw00.choi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 25 Apr 2014 11:45:14 -0700
+"K. Y. Srinivasan" <kys@microsoft.com> wrote:
 
-On 25.04.2014 03:16, Chanwoo Choi wrote:
-> From: Kyungmin Park <kyungmin.park@samsung.com>
->
-> This patch fix the offset of CPU boot address and change parameter of smc call
-> of SMC_CMD_CPU1BOOT command for Exynos4212.
->
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->   arch/arm/mach-exynos/firmware.c | 15 ++++++++++++++-
->   1 file changed, 14 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-> index 932129e..aa01c42 100644
-> --- a/arch/arm/mach-exynos/firmware.c
-> +++ b/arch/arm/mach-exynos/firmware.c
-> @@ -18,6 +18,8 @@
->
->   #include <mach/map.h>
->
-> +#include <plat/cpu.h>
+> @@ -474,6 +477,9 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+>  	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
+>  			ppi->ppi_offset);
+>  
+> +	ip_hdr(skb)->check = 0;
+> +	csum_info->transmit.ip_header_checksum = 1;
 > +
->   #include "smc.h"
->
->   static int exynos_do_idle(void)
-> @@ -28,13 +30,24 @@ static int exynos_do_idle(void)
->
->   static int exynos_cpu_boot(int cpu)
->   {
-> +	/*
-> +	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
-> +	 * But, Exynos4212 has only one secondary CPU so second parameter
-> +	 * isn't used for informing secure firmware about CPU id.
-> +	 */
-> +	if (soc_is_exynos4212())
-> +		cpu = 0;
-> +
->   	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
->   	return 0;
->   }
->
->   static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
->   {
-> -	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c + 4*cpu;
-> +	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
-> +
-> +	if (!soc_is_exynos4212())
-> +		boot_reg += 4*cpu;
->
->   	__raw_writel(boot_addr, boot_reg);
->   	return 0;
->
+>  	if (net_trans_info & (INFO_IPV4 << 16))
+>  		csum_info->transmit.is_ipv4 = 1;
+>  	else
 
-This patch should be applied independently of Exynos3250 support. 
-Kukjin, what do you think?
-
-Anyway,
-
-Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-
-Best regards,
-Tomasz
+Linux doesn't need or want IP checksum offload.
+It will not have any performance gain.
