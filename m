@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaDZPt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 11:49:58 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52872 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751177AbaDZPt5 (ORCPT
+	id S1752072AbaDZPxd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 11:53:33 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:55977 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980AbaDZPxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 11:49:57 -0400
-From: Russell King <rmk+kernel@arm.linux.org.uk>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH] clkdev: only fall through to clk_get_sys() if DT indicates no
- entry
-Message-Id: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk>
-Date: Sat, 26 Apr 2014 16:49:52 +0100
+	Sat, 26 Apr 2014 11:53:32 -0400
+Date: Sat, 26 Apr 2014 18:53:15 +0300
+From: Sami Laine <laine.j.sami@gmail.com>
+To: daeseok.youn@gmail.com
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH next-20140424] staging/cxt1e1: sparse warning corrections
+Message-ID: <20140426155315.GA4745@acer>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two failures which DT can return when looking up a phandle:
--ENOENT - when DT finds that the desired property/index is not present
--EINVAL - when DT finds that the desired property/index is present, but
- there is a problem parsing it.
+From: Sami Laine <laine.j.sami@gmail.com>
 
-We should only fall through to clk_get_sys() (the table driven clock
-lookup) when DT indicates that there was no entry in the OF tables
-for the clock.  Doing otherwise causes the clk API to always indicate
-that there is no entry for this clock, which is not correct behaviour.
+Corrected sparse static declaration warnings.
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
----
-Grant, Rob,
-
-Please let me know ASAP if this gives you any cause for concern.  This
-looks to me like a long standing bug which really needs fixing.  Part
-of the motivation here is similar to Jean-Francois' patch to clkdev
-which allows a DT specified clock which isn't get present to have
-clk_get() and friends return -EPROBE_DEFER - again, something that I
-think really should happen.  Jean-Francois hasn't been able to get
-much traction for his patch, so let's start with fixing this bug first.
-
- drivers/clk/clkdev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-index 48f67218247c..4e65d0e10b05 100644
---- a/drivers/clk/clkdev.c
-+++ b/drivers/clk/clkdev.c
-@@ -165,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+Signed-off-by: Sami Laine <laine.j.sami@gmail.com>
+---    
+diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+index cc2151e..2899258 100644
+--- a/drivers/staging/cxt1e1/hwprobe.c
++++ b/drivers/staging/cxt1e1/hwprobe.c
+@@ -40,10 +40,10 @@ struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long,
+ 				      unsigned long, int, int);
  
- 	if (dev) {
- 		clk = of_clk_get_by_name(dev->of_node, con_id);
--		if (!IS_ERR(clk))
-+		if (!IS_ERR(clk) || PTR_ERR(clk) != -ENOENT)
- 			return clk;
+ 
+-struct s_hdw_info hdw_info[MAX_BOARDS];
++static struct s_hdw_info hdw_info[MAX_BOARDS];
+ 
+ 
+-void __init
++static void __init
+ show_two(hdw_info_t *hi, int brdno)
+ {
+ 	ci_t       *ci;
+@@ -88,7 +88,7 @@ show_two(hdw_info_t *hi, int brdno)
+ }
+ 
+ 
+-void __init
++static void __init
+ hdw_sn_get(hdw_info_t *hi, int brdno)
+ {
+ 	/* obtain hardware EEPROM information */
+@@ -145,7 +145,7 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
+ }
+ 
+ 
+-	void __init
++static void __init
+ prep_hdw_info(void)
+ {
+ 	hdw_info_t *hi;
+@@ -164,7 +164,7 @@ prep_hdw_info(void)
  	}
+ }
  
--- 
-1.8.3.1
-
+-void
++static void
+ cleanup_ioremap(void)
+ {
+ 	hdw_info_t *hi;
+@@ -187,7 +187,7 @@ cleanup_ioremap(void)
+ }
+ 
+ 
+-void
++static void
+ cleanup_devs(void)
+ {
+ 	hdw_info_t *hi;
+@@ -287,7 +287,7 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+ 	return 1;
+ }
+ 
+-status_t __init
++static status_t __init
+ c4hw_attach_all(void)
+ {
+ 	hdw_info_t *hi;
