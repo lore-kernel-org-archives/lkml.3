@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaDZMIT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 08:08:19 -0400
-Received: from prifuk.cz ([31.31.77.140]:49887 "EHLO smtp.devoid-pointer.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577AbaDZMDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 08:03:45 -0400
+	id S1752554AbaDZMDj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 08:03:39 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49862 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaDZMDc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 08:03:32 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v3 16/24] hid: Port hid-sony to ff-memless-next
-Date: Sat, 26 Apr 2014 13:57:53 +0200
-Message-Id: <1398513696-12626-17-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v3 11/24] hid: Port hid-holtekff to ff-memless-next
+Date: Sat, 26 Apr 2014 13:57:48 +0200
+Message-Id: <1398513696-12626-12-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398513696-12626-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -24,95 +25,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-sony to ff-memless-next
+Port hid-holtekff to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-sony.c | 24 ++++++++++++++++++------
- 2 files changed, 19 insertions(+), 7 deletions(-)
+ drivers/hid/Kconfig        |  2 +-
+ drivers/hid/hid-holtekff.c | 47 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 9260d14..e97c382 100644
+index 4c59a88..1749a4a 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -634,7 +634,7 @@ config HID_SONY
- config SONY_FF
- 	bool "Sony PS2/3/4 accessories force feedback support" 
- 	depends on HID_SONY
+@@ -256,7 +256,7 @@ config HID_HOLTEK
+ config HOLTEK_FF
+ 	bool "Holtek On Line Grip force feedback support"
+ 	depends on HID_HOLTEK
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Say Y here if you have a Sony PS2/3/4 accessory and want to enable
- 	force feedback support for it.
-diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
-index 908de27..95bb2e1 100644
---- a/drivers/hid/hid-sony.c
-+++ b/drivers/hid/hid-sony.c
-@@ -34,6 +34,7 @@
- #include <linux/spinlock.h>
- #include <linux/list.h>
- #include <linux/input/mt.h>
+ 	  Say Y here if you have a Holtek On Line Grip based game controller
+ 	  and want to have force feedback support for it.
+diff --git a/drivers/hid/hid-holtekff.c b/drivers/hid/hid-holtekff.c
+index 9325545..9c6064d 100644
+--- a/drivers/hid/hid-holtekff.c
++++ b/drivers/hid/hid-holtekff.c
+@@ -27,9 +27,12 @@
+ #include <linux/input.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
  
  #include "hid-ids.h"
  
-@@ -53,6 +54,7 @@
- #define SONY_BATTERY_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
- #define SONY_FF_SUPPORT (SIXAXIS_CONTROLLER | DUALSHOCK4_CONTROLLER)
- 
 +#define FF_UPDATE_RATE 50
- #define MAX_LEDS 4
++
+ #ifdef CONFIG_HOLTEK_FF
  
- static const u8 sixaxis_rdesc_fixup[] = {
-@@ -1308,16 +1310,25 @@ static void dualshock4_state_worker(struct work_struct *work)
+ MODULE_LICENSE("GPL");
+@@ -104,34 +107,44 @@ static void holtekff_send(struct holtekff_device *holtekff,
+ }
  
- #ifdef CONFIG_SONY_FF
- static int sony_play_effect(struct input_dev *dev, void *data,
--			    struct ff_effect *effect)
-+			    const struct mlnx_effect_command *command)
+ static int holtekff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct sony_sc *sc = hid_get_drvdata(hid);
+ 	struct holtekff_device *holtekff = data;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int left, right;
+ 	/* effect type 1, length 65535 msec */
+ 	u8 buf[HOLTEKFF_MSG_LENGTH] =
+ 		{ 0x01, 0x01, 0xff, 0xff, 0x10, 0xe0, 0x00 };
  
--	if (effect->type != FF_RUMBLE)
--		return 0;
- 
--	sc->left = effect->u.rumble.strong_magnitude / 256;
--	sc->right = effect->u.rumble.weak_magnitude / 256;
+-	left = effect->u.rumble.strong_magnitude;
+-	right = effect->u.rumble.weak_magnitude;
+-	dbg_hid("called with 0x%04x 0x%04x\n", left, right);
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		sc->left = rumble_force->strong / 256;
-+		sc->right = rumble_force->weak / 256;
-+		break;
++		left = rumble_force->strong;
++		right = rumble_force->weak;
++		dbg_hid("called with 0x%04x 0x%04x\n", left, right);
+ 
+-	if (!left && !right) {
+-		holtekff_send(holtekff, hid, stop_all6);
+-		return 0;
+-	}
++		if (!left && !right) {
++			holtekff_send(holtekff, hid, stop_all6);
++			return 0;
++		}
+ 
+-	if (left)
+-		buf[1] |= 0x80;
+-	if (right)
+-		buf[1] |= 0x40;
++		if (left)
++			buf[1] |= 0x80;
++		if (right)
++			buf[1] |= 0x40;
+ 
+-	/* The device takes a single magnitude, so we just sum them up. */
+-	buf[6] = min(0xf, (left >> 12) + (right >> 12));
++		/* The device takes a single magnitude, so we just sum them up. */
++		buf[6] = min(0xf, (left >> 12) + (right >> 12));
+ 
+-	holtekff_send(holtekff, hid, buf);
+-	holtekff_send(holtekff, hid, start_effect_1);
++		holtekff_send(holtekff, hid, buf);
++		holtekff_send(holtekff, hid, start_effect_1);
++		return 0;
 +	case MLNX_STOP_RUMBLE:
-+		sc->left = 0;
-+		sc->right = 0;
-+		break;
++		holtekff_send(holtekff, hid, stop_all6);
++		return 0;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	schedule_work(&sc->state_worker);
  	return 0;
-@@ -1330,7 +1341,7 @@ static int sony_init_ff(struct hid_device *hdev)
- 	struct input_dev *input_dev = hidinput->input;
- 
- 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
--	return input_ff_create_memless(input_dev, NULL, sony_play_effect);
-+	return input_ff_create_mlnx(input_dev, NULL, sony_play_effect, FF_UPDATE_RATE);
  }
+@@ -171,7 +184,7 @@ static int holtekff_init(struct hid_device *hid)
+ 	holtekff_send(holtekff, hid, stop_all4);
+ 	holtekff_send(holtekff, hid, stop_all6);
  
- #else
-@@ -1762,6 +1773,7 @@ static const struct hid_device_id sony_devices[] = {
- 		.driver_data = DUALSHOCK4_CONTROLLER_USB },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS4_CONTROLLER),
- 		.driver_data = DUALSHOCK4_CONTROLLER_BT },
-+
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, sony_devices);
+-	error = input_ff_create_memless(dev, holtekff, holtekff_play);
++	error = input_ff_create_mlnx(dev, holtekff, holtekff_play, FF_UPDATE_RATE);
+ 	if (error) {
+ 		kfree(holtekff);
+ 		return error;
 -- 
 1.9.2
 
