@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaDZGRv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 02:17:51 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:35255 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718AbaDZGRt (ORCPT
+	id S1751481AbaDZGUD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 02:20:03 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:46342 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaDZGUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 02:17:49 -0400
-Date: Sat, 26 Apr 2014 08:17:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
-Message-ID: <20140426061744.GB1944@gmail.com>
-References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
- <2713863.BLQTYQm2Oa@vostro.rjw.lan>
- <20140425132055.GC11096@twins.programming.kicks-ass.net>
- <15044031.LGKXdkz8J7@vostro.rjw.lan>
+	Sat, 26 Apr 2014 02:20:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <15044031.LGKXdkz8J7@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397859600-11507-4-git-send-email-robherring2@gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+Date: Fri, 25 Apr 2014 23:19:59 -0700
+X-Google-Sender-Auth: 5pA72wSVcxqNj-HghigxiaXfB1c
+Message-ID: <CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Yinghai Lu <yinghai@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 18, 2014 at 3:19 PM, Rob Herring <robherring2@gmail.com> wrote:
+> From: Rob Herring <robh@kernel.org>
+>
+> With the generic earlycon infrastructure in place, convert the 8250
+> early console to use it.
+>
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
+>  drivers/tty/serial/8250/Kconfig      |   1 +
+>  2 files changed, 16 insertions(+), 123 deletions(-)
 
-* Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+Hi Greg, Rob
 
-> > > Well, so now the question is whether or not we relly want to 
-> > > always go to the "power" (or "energy efficiency" if you will) 
-> > > mode if the system is on battery.  That arguably may not be a 
-> > > good thing even for energy efficiency depending on how exactly 
-> > > the modes are defined.
-> > 
-> > Nobody is talking about always. But in general it seems a good 
-> > enough approach. Hell, many of the AC/BAT switches in todays power 
-> > management crap things are not always right.
-> > 
-> > Do I want it to dim the LCD further when I unplug the laptop -- 
-> > mostly no, but still it does. And the most annoying one is that it 
-> > reduces the screen blank time to something near 5 seconds or so.
-> > 
-> > Why would this be any different?
-> 
-> And why do we have to do things that we hate it when they are done 
-> by others?
+This one in tty-next breaks booting: "console=uart8250,io,0x3f8,115200".
+No early console and regular console anymore.
 
-He replied to your question of 'do we want to act on power events'.
+It should produce "early con and regular con".
 
-The answer is: yes, from the scheduler point of view we want to act on 
-power events by default, and if a user does not want that default 
-behavior, it's not an unprecedented request and GUIs offer various 
-ways to tweak screen dimming and other power saving details.
+Thanks
 
-So "trying to save power" is the default everywhere, and the scheduler 
-wants to do the same. The main reason we couldn't do this before was 
-that the scheduler's 'power saving mode' was dysfunctional. That is 
-being fixed.
-
-So lets try this, it's high time.
-
-Thanks,
-
-	Ingo
+Yinghai
