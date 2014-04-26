@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243AbaDZF6J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 01:58:09 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55673 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaDZF6H (ORCPT
+	id S1751361AbaDZGBh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 02:01:37 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46390 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989AbaDZGBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 01:58:07 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH -mm] intel-iommu: add missing include of dma-contiguous.h
-Date: Sat, 26 Apr 2014 14:57:49 +0900
-Message-Id: <1398491869-28264-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 26 Apr 2014 02:01:35 -0400
+Date: Sat, 26 Apr 2014 08:01:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Bodo Eggert <7eggert@gmx.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] x86/gart: Tidy messages and add bridge device info
+Message-ID: <20140426060130.GA1698@gmail.com>
+References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes build error on ia64, that is introduced by the patch
-intel-iommu-integrate-dma-cma.patch in -mm tree, and this change should
-be folded into it.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
----
- drivers/iommu/intel-iommu.c | 1 +
- 1 file changed, 1 insertion(+)
+* Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 8659352..6b1c33a 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -39,6 +39,7 @@
- #include <linux/dmi.h>
- #include <linux/pci-ats.h>
- #include <linux/memblock.h>
-+#include <linux/dma-contiguous.h>
- #include <asm/irq_remapping.h>
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
--- 
-1.8.3.2
+> Print the AGP bridge info the same way as the rest of the kernel, e.g.,
+> "0000:00:04.0" instead of "00:04:00".
+> 
+> Also print the AGP aperture address range the same way we print resources,
+> and label it explicitly as a bus address range.
+> 
+> No functional change.
+> 
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
+>  1 file changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
+> index 9fa8aa051f54..4dd76d3df056 100644
+> --- a/arch/x86/kernel/aperture_64.c
+> +++ b/arch/x86/kernel/aperture_64.c
+> @@ -126,10 +126,12 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
+>  	u64 aper;
+>  	u32 old_order;
+>  
+> -	printk(KERN_INFO "AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP bridge\n", bus, slot,
+> +	       func);
 
+Please leave it on a single line - checkpatch warning nonwithstanding. 
+pr_info() is also useful.
+
+>  	apsizereg = read_pci_config_16(bus, slot, func, cap + 0x14);
+>  	if (apsizereg == 0xffffffff) {
+> -		printk(KERN_ERR "APSIZE in AGP bridge unreadable\n");
+> +		printk(KERN_ERR "pci 0000:%02x:%02x.%d: APSIZE unreadable\n",
+> +		       bus, slot, func);
+
+Here too you can also use pr_err() to shorten the line.
+
+>  		return 0;
+>  	}
+>  
+> @@ -153,16 +155,18 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
+>  	 * On some sick chips, APSIZE is 0. It means it wants 4G
+>  	 * so let double check that order, and lets trust AMD NB settings:
+>  	 */
+> -	printk(KERN_INFO "Aperture from AGP @ %Lx old size %u MB\n",
+> -			aper, 32 << old_order);
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] old size %u MB\n",
+> +	       bus, slot, func, aper, aper + (32 << old_order) - 1,
+> +	       32 << old_order);
+>  	if (aper + (32ULL<<(20 + *order)) > 0x100000000ULL) {
+> -		printk(KERN_INFO "Aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
+> -				32 << *order, apsizereg);
+> +		printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
+> +		       bus, slot, func, 32 << *order, apsizereg);
+>  		*order = old_order;
+>  	}
+>  
+> -	printk(KERN_INFO "Aperture from AGP @ %Lx size %u MB (APSIZE %x)\n",
+> -			aper, 32 << *order, apsizereg);
+> +	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] size %u MB (APSIZE %x)\n",
+> +	       bus, slot, func, aper, aper + (32 << *order) - 1, 32 << *order,
+> +	       apsizereg);
+>  
+>  	if (!aperture_valid(aper, (32*1024*1024) << *order, 32<<20))
+>  		return 0;
+
+Also, you could add:
+
+#define PREFIX "PCI/gart: "
+
+or something like that, to define a standard prefix for these 
+messages.
+
+Btw., this file could be moved to arch/x86/pci/?
+
+Otherwise:
+
+  Acked-by: Ingo Molnar <mingo@kernel.org>
+
+Thanks,
+
+	Ingo
