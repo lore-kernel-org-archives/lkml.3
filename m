@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaDZCkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 22:40:43 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:24500
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750997AbaDZCkl convert rfc822-to-8bit (ORCPT
+	id S1751321AbaDZCvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 22:51:04 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:24938 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193AbaDZCvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 22:40:41 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-CC: "olaf@aepfle.de" <olaf@aepfle.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: RE: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
-Thread-Topic: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
-Thread-Index: AQHPYK69zRY2bKGNPUekzRg75l4abpsjD68AgAAI94CAABMRYIAABCSQ
-Date: Sat, 26 Apr 2014 02:40:20 +0000
-Message-ID: <47a133e9d77a48919a60816b146ac745@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1398451514-25593-1-git-send-email-kys@microsoft.com>
- <20140425174322.589ed9f1@samsung-9>
- <1398474927.29914.100.camel@edumazet-glaptop2.roam.corp.google.com>
- <ab8c51e4f124498486104a4a25514dea@BY2PR03MB299.namprd03.prod.outlook.com>
-In-Reply-To: <ab8c51e4f124498486104a4a25514dea@BY2PR03MB299.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:7d9e:a813:4d30:6320]
-x-forefront-prvs: 01930B2BA8
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(13464003)(377454003)(199002)(189002)(51704005)(377424004)(79102001)(74502001)(15975445006)(1511001)(86362001)(74662001)(46102001)(83072002)(15202345003)(20776003)(85852003)(33646001)(80022001)(50986999)(77096999)(76176999)(54356999)(77982001)(81542001)(87936001)(81342001)(19580395003)(2656002)(76482001)(83322001)(74316001)(80976001)(99396002)(76576001)(92566001)(4396001)(19580405001)(31966008)(86612001)(99286001)(101416001)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:BC9FC216.B182E72A.31D3B3DC.80E5ABE0.20258;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 Apr 2014 22:51:00 -0400
+Message-ID: <535B1EB4.3050408@huawei.com>
+Date: Sat, 26 Apr 2014 10:49:24 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+To: David Laight <David.Laight@ACULAB.COM>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
+References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com> <063D6719AE5E284EB5DD2968C1650D6D0F6FEEB0@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6FEEB0@AcuExch.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014/4/25 17:42, David Laight wrote:
+> From: Yijing Wang
+>> This patchset rename the current pci_is_bridge() to pci_has_subordinate(),
+>> and introduce a new pci_is_bridge() which determine pci bridge by check
+>> dev->hdr_type. The new one is more accurate. PCIe Spec define the pci
+>> device is a bridge by the dev->hdr_type = 0x01 || 0x02.
+> 
+> That is a dangerous rename and is likely to cause difficult to
+
+Hi David,
+   I renamed pci_is_bridge() to pci_has_subordinate() because
+
+static inline bool pci_is_bridge(struct pci_dev *pci_dev)
+{
+	return !!(pci_dev->subordinate);
+}
+
+which always check dev->subordinate.
+
+> identify bugs in any code you've missed.
+
+What are you referring to ?
 
 
-> -----Original Message-----
-> From: driverdev-devel-bounces@linuxdriverproject.org [mailto:driverdev-
-> devel-bounces@linuxdriverproject.org] On Behalf Of KY Srinivasan
-> Sent: Friday, April 25, 2014 7:24 PM
-> To: Eric Dumazet; Stephen Hemminger
-> Cc: olaf@aepfle.de; netdev@vger.kernel.org; jasowang@redhat.com; linux-
-> kernel@vger.kernel.org; stable@kernel.org; apw@canonical.com;
-> devel@linuxdriverproject.org; davem@davemloft.net
-> Subject: RE: [PATCH net-next 1/1] hyperv: Properly handle checksum offload
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> > Sent: Friday, April 25, 2014 6:15 PM
-> > To: Stephen Hemminger
-> > Cc: KY Srinivasan; davem@davemloft.net; netdev@vger.kernel.org; linux-
-> > kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> > apw@canonical.com; jasowang@redhat.com; stable@kernel.org
-> > Subject: Re: [PATCH net-next 1/1] hyperv: Properly handle checksum
-> > offload
-> >
-> > On Fri, 2014-04-25 at 17:43 -0700, Stephen Hemminger wrote:
-> > > On Fri, 25 Apr 2014 11:45:14 -0700
-> > > "K. Y. Srinivasan" <kys@microsoft.com> wrote:
-> > >
-> > > > @@ -474,6 +477,9 @@ static int netvsc_start_xmit(struct sk_buff
-> > > > *skb,
-> > struct net_device *net)
-> > > >  	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
-> > > >  			ppi->ppi_offset);
-> > > >
-> > > > +	ip_hdr(skb)->check = 0;
-> > > > +	csum_info->transmit.ip_header_checksum = 1;
-> > > > +
-> > > >  	if (net_trans_info & (INFO_IPV4 << 16))
-> > > >  		csum_info->transmit.is_ipv4 = 1;
-> > > >  	else
-> > >
-> > > Linux doesn't need or want IP checksum offload.
-> > > It will not have any performance gain.
-> >
-> >
-> > BTW, was this patch even tested with IPv6 packets ???
-> 
-> No; I only tested this on ipv4.
-Oops; this would not work on ipv6. I am going to resend this patch.
+Thanks!
+Yijing.
 
-K. Y
+
+
+
+
+
 > 
-> K. Y
-> >
+> 	David
 > 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+> �{.n�+�������+%��lzwm��b�맲��r��zX���w��{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+�����ݢj"��!�iO��z��v�^�m����nƊ��Y&�
+> 
+
+
+-- 
+Thanks!
+Yijing
+
