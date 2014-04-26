@@ -1,160 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaDZQod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 12:44:33 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:41781 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaDZQoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 12:44:30 -0400
-From: navin patidar <navin.patidar@gmail.com>
-To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH] staging: rtl8188eu: Use USB subsystem functions to check endpoint type
-Date: Sat, 26 Apr 2014 22:13:55 +0530
-Message-Id: <1398530635-3813-1-git-send-email-navin.patidar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752294AbaDZQqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 12:46:09 -0400
+Received: from fieldses.org ([174.143.236.118]:47619 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517AbaDZQqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Apr 2014 12:46:07 -0400
+Date: Sat, 26 Apr 2014 12:46:05 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] please pull file locking changes for v3.15 (pile #2)
+Message-ID: <20140426164605.GB11272@fieldses.org>
+References: <20140424074557.57f91e16@tlielax.poochiereds.net>
+ <20140425095739.GB22295@fieldses.org>
+ <20140425063918.0ecbac20@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425063918.0ecbac20@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use inline functions provided by USB subsystem to check endpoint type,
-instead of macros implemented by driver to do the same.
+On Fri, Apr 25, 2014 at 06:39:18AM -0400, Jeff Layton wrote:
+> On Fri, 25 Apr 2014 05:57:39 -0400
+> "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> 
+> > On Thu, Apr 24, 2014 at 07:45:57AM -0400, Jeff Layton wrote:
+> > > 
+> > > The following changes since commit 55101e2d6ce1c780f6ee8fee5f37306971aac6cd:
+> > > 
+> > >   Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2014-04-14 16:21:28 -0700)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > > 
+> > >   git://git.samba.org/jlayton/linux.git tags/locks-v3.15-2
+> > > 
+> > > for you to fetch changes up to cff2fce58b2b0f59089e7edcdc38803d65057b9f:
+> > > 
+> > >   locks: rename FL_FILE_PVT and IS_FILE_PVT to use "*_OFDLCK" instead (2014-04-23 16:17:03 -0400)
+> > > 
+> > > ----------------------------------------------------------------
+> > > File locking related bugfixes for v3.15 (pile #2)
+> > > 
+> > > - fix for a long-standing bug in __break_lease that can cause soft lockups
+> > > - renaming of file-private locks to "open file description" locks, and the
+> > >   command macros to more visually distinct names.
+> > > 
+> > > The fix for __break_lease is also in the pile of patches for which Bruce
+> > > sent a pull request, but I assume that your merge procedure will handle
+> > > that correctly.
+> > > 
+> > > For the other patches, I don't like the fact that we need to rename this
+> > > stuff at this late stage, but it should be settled now (hopefully).
+> > > 
+> > > ----------------------------------------------------------------
+> > > Jeff Layton (3):
+> > >       locks: allow __break_lease to sleep even when break_time is 0
+> > >       locks: rename file-private locks to "open file description locks"
+> > 
+> > Nit: they're "descriptors", not "descriptions".
+> > 
+> > But since that only affects comments and changelogs (not even the macros
+> > names, which are using OFD), that's a very nitty nit....
+> > 
+> > --b.
+> > 
+> 
+> No, they are _descriptions_. The descriptor is the number you get back
+> from doing something like an open(). The description is the thing that
+> the descriptor points to. This is the terminology that POSIX uses, and
+> is what was recommended by the glibc and manpages maintainers.
 
-Unnecessary debugging messages are also removed.
+Whoops, I'm pretty sure I'd seen that explained before and just forgot.
+Thanks to you and Christoph for setting me straight!
 
-Signed-off-by: navin patidar <navin.patidar@gmail.com>
----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c |   92 ++++-----------------------
- 1 file changed, 14 insertions(+), 78 deletions(-)
+> The glibc doc patches lay this out in detail. I'm not terribly thrilled
+> with the name either, fwiw, but it is better than file-private.
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 49a4ce4..2960602 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -80,46 +80,6 @@ static struct rtw_usb_drv rtl8188e_usb_drv = {
- 
- static struct rtw_usb_drv *usb_drv = &rtl8188e_usb_drv;
- 
--static inline int RT_usb_endpoint_dir_in(const struct usb_endpoint_descriptor *epd)
--{
--	return (epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_DIR_IN;
--}
--
--static inline int RT_usb_endpoint_dir_out(const struct usb_endpoint_descriptor *epd)
--{
--	return (epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_DIR_OUT;
--}
--
--static inline int RT_usb_endpoint_xfer_int(const struct usb_endpoint_descriptor *epd)
--{
--	return (epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT;
--}
--
--static inline int RT_usb_endpoint_xfer_bulk(const struct usb_endpoint_descriptor *epd)
--{
--	return (epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK;
--}
--
--static inline int RT_usb_endpoint_is_bulk_in(const struct usb_endpoint_descriptor *epd)
--{
--	return RT_usb_endpoint_xfer_bulk(epd) && RT_usb_endpoint_dir_in(epd);
--}
--
--static inline int RT_usb_endpoint_is_bulk_out(const struct usb_endpoint_descriptor *epd)
--{
--	return RT_usb_endpoint_xfer_bulk(epd) && RT_usb_endpoint_dir_out(epd);
--}
--
--static inline int usb_endpoint_is_int(const struct usb_endpoint_descriptor *epd)
--{
--	return RT_usb_endpoint_xfer_int(epd) && RT_usb_endpoint_dir_in(epd);
--}
--
--static inline int RT_usb_endpoint_num(const struct usb_endpoint_descriptor *epd)
--{
--	return epd->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
--}
--
- static u8 rtw_init_intf_priv(struct dvobj_priv *dvobj)
- {
- 	u8 rst = _SUCCESS;
-@@ -183,60 +143,36 @@ static struct dvobj_priv *usb_dvobj_init(struct usb_interface *usb_intf)
- 	pdvobjpriv->nr_endpoint = piface_desc->bNumEndpoints;
- 
- 	for (i = 0; i < pdvobjpriv->nr_endpoint; i++) {
-+
-+		int ep_num;
- 		phost_endp = phost_iface->endpoint + i;
-+
- 		if (phost_endp) {
- 			pendp_desc = &phost_endp->desc;
-+			ep_num = usb_endpoint_num(pendp_desc);
- 
--			DBG_88E("\nusb_endpoint_descriptor(%d):\n", i);
--			DBG_88E("bLength=%x\n", pendp_desc->bLength);
--			DBG_88E("bDescriptorType=%x\n",
--				pendp_desc->bDescriptorType);
--			DBG_88E("bEndpointAddress=%x\n",
--				pendp_desc->bEndpointAddress);
--			DBG_88E("wMaxPacketSize=%d\n",
--				le16_to_cpu(pendp_desc->wMaxPacketSize));
--			DBG_88E("bInterval=%x\n", pendp_desc->bInterval);
--
--			if (RT_usb_endpoint_is_bulk_in(pendp_desc)) {
--				DBG_88E("RT_usb_endpoint_is_bulk_in = %x\n",
--					RT_usb_endpoint_num(pendp_desc));
--				pdvobjpriv->RtInPipe[pdvobjpriv->RtNumInPipes] = RT_usb_endpoint_num(pendp_desc);
-+			if (usb_endpoint_is_bulk_in(pendp_desc)) {
-+				pdvobjpriv->RtInPipe[pdvobjpriv->RtNumInPipes] = ep_num;
- 				pdvobjpriv->RtNumInPipes++;
--			} else if (usb_endpoint_is_int(pendp_desc)) {
--				DBG_88E("usb_endpoint_is_int = %x, Interval = %x\n",
--					RT_usb_endpoint_num(pendp_desc),
--					pendp_desc->bInterval);
--				pdvobjpriv->RtInPipe[pdvobjpriv->RtNumInPipes] = RT_usb_endpoint_num(pendp_desc);
-+			} else if (usb_endpoint_is_int_in(pendp_desc)) {
-+				pdvobjpriv->RtInPipe[pdvobjpriv->RtNumInPipes] = ep_num;
- 				pdvobjpriv->RtNumInPipes++;
--			} else if (RT_usb_endpoint_is_bulk_out(pendp_desc)) {
--				DBG_88E("RT_usb_endpoint_is_bulk_out = %x\n",
--					RT_usb_endpoint_num(pendp_desc));
--				pdvobjpriv->RtOutPipe[pdvobjpriv->RtNumOutPipes] = RT_usb_endpoint_num(pendp_desc);
-+			} else if (usb_endpoint_is_bulk_out(pendp_desc)) {
-+				pdvobjpriv->RtOutPipe[pdvobjpriv->RtNumOutPipes] = ep_num;
- 				pdvobjpriv->RtNumOutPipes++;
- 			}
--			pdvobjpriv->ep_num[i] = RT_usb_endpoint_num(pendp_desc);
-+			pdvobjpriv->ep_num[i] = ep_num;
- 		}
- 	}
- 
--	DBG_88E("nr_endpoint=%d, in_num=%d, out_num=%d\n\n",
--		pdvobjpriv->nr_endpoint, pdvobjpriv->RtNumInPipes,
--		pdvobjpriv->RtNumOutPipes);
--
--	if (pusbd->speed == USB_SPEED_HIGH) {
-+	if (pusbd->speed == USB_SPEED_HIGH)
- 		pdvobjpriv->ishighspeed = true;
--		DBG_88E("USB_SPEED_HIGH\n");
--	} else {
-+	else
- 		pdvobjpriv->ishighspeed = false;
--		DBG_88E("NON USB_SPEED_HIGH\n");
--	}
- 
--	if (rtw_init_intf_priv(pdvobjpriv) == _FAIL) {
--		RT_TRACE(_module_os_intfs_c_, _drv_err_,
--			 ("\n Can't INIT rtw_init_intf_priv\n"));
-+	if (rtw_init_intf_priv(pdvobjpriv) == _FAIL)
- 		goto free_dvobj;
--	}
- 
--	/* 3 misc */
- 	sema_init(&(pdvobjpriv->usb_suspend_sema), 0);
- 	rtw_reset_continual_urb_error(pdvobjpriv);
- 
--- 
-1.7.9.5
+Sure.
 
+--b.
+
+> 
+> > >       locks: rename FL_FILE_PVT and IS_FILE_PVT to use "*_OFDLCK" instead
+> > > 
+> > >  arch/arm/kernel/sys_oabi-compat.c |  6 +++---
+> > >  fs/compat.c                       | 14 +++++++-------
+> > >  fs/fcntl.c                        | 12 ++++++------
+> > >  fs/locks.c                        | 55 +++++++++++++++++++++++++++----------------------------
+> > >  include/linux/fs.h                |  2 +-
+> > >  include/uapi/asm-generic/fcntl.h  | 20 ++++++++++----------
+> > >  security/selinux/hooks.c          |  6 +++---
+> > >  7 files changed, 57 insertions(+), 58 deletions(-)
+> > > 
+> > > -- 
+> > > Jeff Layton <jlayton@redhat.com>
+> 
+> 
+> -- 
+> Jeff Layton <jlayton@redhat.com>
