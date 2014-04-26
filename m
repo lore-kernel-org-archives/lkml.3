@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751334AbaDZCHj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 22:07:39 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53646 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaDZCHh convert rfc822-to-8bit (ORCPT
+	id S1751250AbaDZCXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 22:23:43 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:44140
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750997AbaDZCXl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 22:07:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <535AE52B.4010104@gmail.com>
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
- <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <535AE52B.4010104@gmail.com>
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-Date: Sat, 26 Apr 2014 11:07:14 +0900
-X-Google-Sender-Auth: rgkCtokj-AxwTlIPHvw463ywzP4
-Message-ID: <CAGcde9HNa0V+8it-=3xpJisDgWsb1YbC8-Twm5BGFtNJ+uEyDA@mail.gmail.com>
-Subject: Re: [PATCH v2 00/10] ARM: Exynos: PMU cleanup and refactoring for
- using DT
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, Tomasz Figa <t.figa@samsung.com>,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Apr 2014 22:23:41 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: RE: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
+Thread-Topic: [PATCH net-next 1/1]  hyperv: Properly handle checksum offload
+Thread-Index: AQHPYK69zRY2bKGNPUekzRg75l4abpsjD68AgAAbp+A=
+Date: Sat, 26 Apr 2014 02:23:37 +0000
+Message-ID: <a0635751695144d2a9fee5c9feb8cf5a@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1398451514-25593-1-git-send-email-kys@microsoft.com>
+ <20140425174322.589ed9f1@samsung-9>
+In-Reply-To: <20140425174322.589ed9f1@samsung-9>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2601:8:9b00:402:7d9e:a813:4d30:6320]
+x-forefront-prvs: 01930B2BA8
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(13464003)(24454002)(377454003)(51704005)(80022001)(74662001)(83072002)(50986999)(76176999)(76576001)(76482001)(74502001)(77096999)(31966008)(20776003)(2656002)(101416001)(83322001)(79102001)(87936001)(74316001)(86362001)(99286001)(81542001)(19580395003)(46102001)(80976001)(33646001)(99396002)(77982001)(92566001)(81342001)(4396001)(54356999)(86612001)(85852003)(19580405001)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:8B9F4116.B1C387AA.33D393DC.90E5ABF8.201CD;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
 
 
-On Sat, Apr 26, 2014 at 7:43 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
->
-> Hi Pankaj,
->
-> Just a small note - please refrain from sending next versions of series in reply to previous version. With threading applied, it gets hard to notice that a new version was posted, because the first message of the thread is always v1. Also it makes threads unnecessarily long.
->
+> -----Original Message-----
+> From: Stephen Hemminger [mailto:stephen@networkplumber.org]
+> Sent: Friday, April 25, 2014 5:43 PM
+> To: KY Srinivasan
+> Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; stable@kernel.org
+> Subject: Re: [PATCH net-next 1/1] hyperv: Properly handle checksum offload
+> 
+> On Fri, 25 Apr 2014 11:45:14 -0700
+> "K. Y. Srinivasan" <kys@microsoft.com> wrote:
+> 
+> > @@ -474,6 +477,9 @@ static int netvsc_start_xmit(struct sk_buff *skb,
+> struct net_device *net)
+> >  	csum_info = (struct ndis_tcp_ip_checksum_info *)((void *)ppi +
+> >  			ppi->ppi_offset);
+> >
+> > +	ip_hdr(skb)->check = 0;
+> > +	csum_info->transmit.ip_header_checksum = 1;
+> > +
+> >  	if (net_trans_info & (INFO_IPV4 << 16))
+> >  		csum_info->transmit.is_ipv4 = 1;
+> >  	else
+> 
+> Linux doesn't need or want IP checksum offload.
+> It will not have any performance gain.
 
-OK. I will take care in future.
+Thanks Stephen; I will  re-spin the patch and re-submit.
 
-
->
-> Best regards,
-> Tomasz
->
->
-> On 25.04.2014 14:32, Pankaj Dubey wrote:
->>
->> This patch series, does some minor cleanup and modifies Exynos PMU related
->> code for mapping and initialization of Exynos Power Management Unit (PMU)
->> base address from device tree. This is also preparation for moving PMU
->> related code out of machine folder and moving into a "drivers/mfd", so that
->> ARM64 based SoC can utilize common piece of code. These patches require change
->> in Exynos4210, Exynos4212 and Exynos4412 dtsi files, which has been posted
->> as separate patch series [2]
->>
->> These patches are created on top of Kukjin Kim's for-next (v3.15-rc1 tag)
->> branch.
->>
->> These patches depends on following two patch series:
->> 1) mfd: syscon: Support early initialization
->>     https://lkml.org/lkml/2014/4/8/239
->> 2) Add PMU node for Exynos SoCs
->>     http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg29329.html
->>
->> We have tested these patches on SMDK5250 and Arndale (Exynos5250) boards for
->> System boot and PMU initialization and S2R.
->>
->> For testing on Arndale (Exynos5250) board:
->> Tested-by: Pankaj Dubey <pankaj.dubey@samsung.com>
->>
->> Changes Since v1:
->>   - Rebased on latest for-next of Kukjin Kim's tree.
->>   - Added patch: "Make exynos machine_ops as static".
->>         For making more cleanup in "mach-exynos/common.h"
->>         as suggested by Tomasz Figa.
->>   - Addressed comments of Tomasz Figa for cleaning "mach-exynos/common.h".
->>   - Updated patch: Remove file path from comment section
->>         As suggested by Michel Simek, instead of updating file path
->>         lets remove them from each file under "mach-exynos".
->>         Even though Kukjin pointed out that there is similar patch pending from
->>         Sachin/Tushar but since I could not find I have included this here. If
->>         I have missed something please point to any existing such patch.
->>   - Updated patch: Add support for mapping PMU base address via DT
->>         - Removed __initdata from declaration of "exynos_pmu_base", as it caused
->>         kernel crash as pointed out by Vikas Sajjan.
->>         - Added support for Syscon initialization and getting PMU regmap handle
->>         as suggested by Sylwester. Since current implementation of early
->>         intialization [1] has limitation that "early_syscon_init" requires
->>         DT to be unflattened and system should be able to allocate memory,
->>         we can't use regmap handles for platsmp.c file as "smp_secondary_init"
->>         will be called before DT unflattening. So I have kept both method for
->>         accessing PMU base address. platsmp.c will use ioremmaped address where
->>         as rest other files can use regmap handle.
->>   - Added patch: Remove "linux/bug.h" from pmu.c.
->>   - Updated patch: Refactored code for PMU register mapping via DT
->>         - Modified to use regmap_read/write when using regmap handle.
->>   - Added patch: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->>   - Added patch: Add device tree based initialization support for PMU.
->>         - Convert existing PMU implementation to be a device tree based
->>          before moving it to "drivers/mfd" folder. As suggested by Bartlomiej.
->>         - Dropped making a platform_driver for PMU, as currently PMU binding
->>         has two compatibility strings as "samsung, exynosxxx-pmu", "syscon",
->>         once we enable MFD_SYSCON config option, current "syscon" driver probe
->>         gets called and PMU probe never gets called. So modified PMU
->>         initialization code to scan DT and match against supported compatiblity
->>         string in driver code, and once we get matching node use that for
->>         accessing PMU regmap handle using "syscon_early_regmap_lookup_by_phandle".
->>         If there is any better solution please suggest.
->>
->> Pankaj Dubey (6):
->>    ARM: EXYNOS: Make exynos machine_ops as static
->>    ARM: EXYNOS: Cleanup "mach-exynos/common.h" file
->>    ARM: EXYNOS: Remove file path from comment section
->>    ARM: EXYNOS: Refactored code for using PMU address via DT
->>    ARM: EXYNOS: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
->>    ARM: EXYNOS: Add device tree based initialization support for PMU.
->>
->> Young-Gun Jang (4):
->>    ARM: EXYNOS: Move SYSREG definition into sys-reg specific file.
->>    ARM: EXYNOS: Remove regs-pmu.h header dependency from pm_domain
->>    ARM: EXYNOS: Add support for mapping PMU base address via DT
->>    ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
->>
->>   arch/arm/mach-exynos/Kconfig               |    2 +
->>   arch/arm/mach-exynos/common.h              |   13 +-
->>   arch/arm/mach-exynos/cpuidle.c             |   37 +-
->>   arch/arm/mach-exynos/exynos.c              |  104 +++++-
->>   arch/arm/mach-exynos/headsmp.S             |    2 -
->>   arch/arm/mach-exynos/hotplug.c             |    7 +-
->>   arch/arm/mach-exynos/include/mach/map.h    |    3 -
->>   arch/arm/mach-exynos/include/mach/memory.h |    3 +-
->>   arch/arm/mach-exynos/platsmp.c             |   17 +-
->>   arch/arm/mach-exynos/pm.c                  |   61 ++--
->>   arch/arm/mach-exynos/pm_domains.c          |    2 +-
->>   arch/arm/mach-exynos/pmu.c                 |  191 ++++++++---
->>   arch/arm/mach-exynos/regs-pmu.h            |  512 ++++++++++++++--------------
->>   arch/arm/mach-exynos/regs-sys.h            |   22 ++
->>   14 files changed, 585 insertions(+), 391 deletions(-)
->>   create mode 100644 arch/arm/mach-exynos/regs-sys.h
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+K. Y
