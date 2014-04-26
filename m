@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaDZPEf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 11:04:35 -0400
-Received: from devoid-pointer.net ([31.31.77.140]:50030 "EHLO
+	id S1752815AbaDZPEl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 11:04:41 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:50045 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaDZPDl (ORCPT
+	with ESMTP id S1751222AbaDZPDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 11:03:41 -0400
+	Sat, 26 Apr 2014 11:03:49 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v4 18/24] hid: Port hid-wiimote-modules to ff-memless-next
-Date: Sat, 26 Apr 2014 17:02:17 +0200
-Message-Id: <1398524543-15012-19-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v4 21/24] input: Port xpad to ff-memless-next
+Date: Sat, 26 Apr 2014 17:02:20 +0200
+Message-Id: <1398524543-15012-22-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,146 +25,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-wiimote-modules to ff-memless-next
+Port xpad to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig               |  2 +-
- drivers/hid/hid-wiimote-modules.c | 74 ++++++++++++++++++++++++---------------
- 2 files changed, 46 insertions(+), 30 deletions(-)
+ drivers/input/joystick/Kconfig |   2 +-
+ drivers/input/joystick/xpad.c  | 125 +++++++++++++++++++++++------------------
+ 2 files changed, 71 insertions(+), 56 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 17ed5cf..23d9776 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -749,7 +749,7 @@ config HID_WIIMOTE
- 	depends on HID
- 	depends on LEDS_CLASS
- 	select POWER_SUPPLY
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 2dd3ba1..9f26e48 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -294,7 +294,7 @@ config JOYSTICK_XPAD
+ config JOYSTICK_XPAD_FF
+ 	bool "X-Box gamepad rumble support"
+ 	depends on JOYSTICK_XPAD && INPUT
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Support for Nintendo Wii and Wii U Bluetooth peripherals. Supported
- 	devices are the Wii Remote and its extension devices, but also devices
-diff --git a/drivers/hid/hid-wiimote-modules.c b/drivers/hid/hid-wiimote-modules.c
-index 6b61f01..95b20ea 100644
---- a/drivers/hid/hid-wiimote-modules.c
-+++ b/drivers/hid/hid-wiimote-modules.c
-@@ -37,8 +37,11 @@
- #include <linux/hid.h>
- #include <linux/input.h>
- #include <linux/spinlock.h>
+ 	  Say Y here if you want to take advantage of xbox 360 rumble features.
+ 
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 603fe0d..5d9c8a2 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -78,6 +78,7 @@
+ #include <linux/stat.h>
+ #include <linux/module.h>
+ #include <linux/usb/input.h>
 +#include <linux/input/ff-memless-next.h>
- #include "hid-wiimote.h"
+ 
+ #define DRIVER_AUTHOR "Marko Friedemann <mfr@bmx-chemnitz.de>"
+ #define DRIVER_DESC "X-Box pad driver"
+@@ -97,6 +98,8 @@
+ #define XTYPE_XBOX360W    2
+ #define XTYPE_UNKNOWN     3
  
 +#define FF_UPDATE_RATE 50
 +
- /*
-  * Keys
-  * The initial Wii Remote provided a bunch of buttons that are reported as
-@@ -131,21 +134,27 @@ static void wiimod_rumble_worker(struct work_struct *work)
- }
+ static bool dpad_to_buttons;
+ module_param(dpad_to_buttons, bool, S_IRUGO);
+ MODULE_PARM_DESC(dpad_to_buttons, "Map D-PAD to buttons rather than axes for unknown pads");
+@@ -628,63 +631,75 @@ static void xpad_stop_output(struct usb_xpad *xpad) {}
+ #endif
  
- static int wiimod_rumble_play(struct input_dev *dev, void *data,
--			      struct ff_effect *eff)
-+			      const struct mlnx_effect_command *command)
+ #ifdef CONFIG_JOYSTICK_XPAD_FF
+-static int xpad_play_effect(struct input_dev *dev, void *data, struct ff_effect *effect)
++static int xpad_play_effect(struct input_dev *dev, void *data,
++			    const struct mlnx_effect_command *command)
  {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
--	__u8 value;
--
--	/*
--	 * The wiimote supports only a single rumble motor so if any magnitude
--	 * is set to non-zero then we start the rumble motor. If both are set to
--	 * zero, we stop the rumble motor.
--	 */
--
--	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
--		value = 1;
--	else
--		value = 0;
+ 	struct usb_xpad *xpad = input_get_drvdata(dev);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+	__u8 value = 0;
-+
++	__u16 strong, weak;
+ 
+-	if (effect->type == FF_RUMBLE) {
+-		__u16 strong = effect->u.rumble.strong_magnitude;
+-		__u16 weak = effect->u.rumble.weak_magnitude;
+-
+-		switch (xpad->xtype) {
+-
+-		case XTYPE_XBOX:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x06;
+-			xpad->odata[2] = 0x00;
+-			xpad->odata[3] = strong / 256;	/* left actuator */
+-			xpad->odata[4] = 0x00;
+-			xpad->odata[5] = weak / 256;	/* right actuator */
+-			xpad->irq_out->transfer_buffer_length = 6;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		case XTYPE_XBOX360:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x08;
+-			xpad->odata[2] = 0x00;
+-			xpad->odata[3] = strong / 256;  /* left actuator? */
+-			xpad->odata[4] = weak / 256;	/* right actuator? */
+-			xpad->odata[5] = 0x00;
+-			xpad->odata[6] = 0x00;
+-			xpad->odata[7] = 0x00;
+-			xpad->irq_out->transfer_buffer_length = 8;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		case XTYPE_XBOX360W:
+-			xpad->odata[0] = 0x00;
+-			xpad->odata[1] = 0x01;
+-			xpad->odata[2] = 0x0F;
+-			xpad->odata[3] = 0xC0;
+-			xpad->odata[4] = 0x00;
+-			xpad->odata[5] = strong / 256;
+-			xpad->odata[6] = weak / 256;
+-			xpad->odata[7] = 0x00;
+-			xpad->odata[8] = 0x00;
+-			xpad->odata[9] = 0x00;
+-			xpad->odata[10] = 0x00;
+-			xpad->odata[11] = 0x00;
+-			xpad->irq_out->transfer_buffer_length = 12;
+-
+-			return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
+-
+-		default:
+-			dev_dbg(&xpad->dev->dev,
+-				"%s - rumble command sent to unsupported xpad type: %d\n",
+-				__func__, xpad->xtype);
+-			return -1;
+-		}
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		/*
-+		 * The wiimote supports only a single rumble motor so if any magnitude
-+		 * is set to non-zero then we start the rumble motor. If both are set to
-+		 * zero, we stop the rumble motor.
-+		 */
-+		if (rumble_force->strong || rumble_force->weak)
-+			value = 1;
++		strong = rumble_force->strong;
++		weak = rumble_force->weak;
 +		break;
 +	case MLNX_STOP_RUMBLE:
++		strong = 0;
++		weak = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
- 
- 	/* Locking state.lock here might deadlock with input_event() calls.
- 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-@@ -161,7 +170,7 @@ static int wiimod_rumble_probe(const struct wiimod_ops *ops,
- 	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
- 
- 	set_bit(FF_RUMBLE, wdata->input->ffbit);
--	if (input_ff_create_memless(wdata->input, NULL, wiimod_rumble_play))
-+	if (input_ff_create_mlnx(wdata->input, NULL, wiimod_rumble_play, FF_UPDATE_RATE))
- 		return -ENOMEM;
++
++
++	switch (xpad->xtype) {
++
++	case XTYPE_XBOX:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x06;
++		xpad->odata[2] = 0x00;
++		xpad->odata[3] = strong / 256;	/* left actuator */
++		xpad->odata[4] = 0x00;
++		xpad->odata[5] = weak / 256;	/* right actuator */
++		xpad->irq_out->transfer_buffer_length = 6;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	case XTYPE_XBOX360:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x08;
++		xpad->odata[2] = 0x00;
++		xpad->odata[3] = strong / 256;  /* left actuator? */
++		xpad->odata[4] = weak / 256;	/* right actuator? */
++		xpad->odata[5] = 0x00;
++		xpad->odata[6] = 0x00;
++		xpad->odata[7] = 0x00;
++		xpad->irq_out->transfer_buffer_length = 8;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	case XTYPE_XBOX360W:
++		xpad->odata[0] = 0x00;
++		xpad->odata[1] = 0x01;
++		xpad->odata[2] = 0x0F;
++		xpad->odata[3] = 0xC0;
++		xpad->odata[4] = 0x00;
++		xpad->odata[5] = strong / 256;
++		xpad->odata[6] = weak / 256;
++		xpad->odata[7] = 0x00;
++		xpad->odata[8] = 0x00;
++		xpad->odata[9] = 0x00;
++		xpad->odata[10] = 0x00;
++		xpad->odata[11] = 0x00;
++		xpad->irq_out->transfer_buffer_length = 12;
++
++		return usb_submit_urb(xpad->irq_out, GFP_ATOMIC);
++
++	default:
++		dev_dbg(&xpad->dev->dev,
++			"%s - rumble command sent to unsupported xpad type: %d\n",
++			__func__, xpad->xtype);
++		return -1;
+ 	}
  
  	return 0;
-@@ -1771,21 +1780,28 @@ static void wiimod_pro_close(struct input_dev *dev)
+@@ -697,7 +712,7 @@ static int xpad_init_ff(struct usb_xpad *xpad)
+ 
+ 	input_set_capability(xpad->dev, EV_FF, FF_RUMBLE);
+ 
+-	return input_ff_create_memless(xpad->dev, NULL, xpad_play_effect);
++	return input_ff_create_mlnx(xpad->dev, NULL, xpad_play_effect, FF_UPDATE_RATE);
  }
  
- static int wiimod_pro_play(struct input_dev *dev, void *data,
--			   struct ff_effect *eff)
-+			   const struct mlnx_effect_command *command)
- {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
--	__u8 value;
--
--	/*
--	 * The wiimote supports only a single rumble motor so if any magnitude
--	 * is set to non-zero then we start the rumble motor. If both are set to
--	 * zero, we stop the rumble motor.
--	 */
--
--	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
--		value = 1;
--	else
--		value = 0;
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+	__u8 value = 0;
-+
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		/*
-+		 * The wiimote supports only a single rumble motor so if any magnitude
-+		 * is set to non-zero then we start the rumble motor. If both are set to
-+		 * zero, we stop the rumble motor.
-+		 */
-+
-+		if (rumble_force->strong || rumble_force->weak)
-+			value = 1;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	/* Locking state.lock here might deadlock with input_event() calls.
- 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-@@ -1867,8 +1883,8 @@ static int wiimod_pro_probe(const struct wiimod_ops *ops,
- 	set_bit(FF_RUMBLE, wdata->extension.input->ffbit);
- 	input_set_drvdata(wdata->extension.input, wdata);
- 
--	if (input_ff_create_memless(wdata->extension.input, NULL,
--				    wiimod_pro_play)) {
-+	if (input_ff_create_mlnx(wdata->extension.input, NULL,
-+				 wiimod_pro_play, FF_UPDATE_RATE)) {
- 		ret = -ENOMEM;
- 		goto err_free;
- 	}
+ #else
 -- 
 1.9.2
 
