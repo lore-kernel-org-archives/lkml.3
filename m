@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306AbaDZAJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 20:09:20 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46391 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048AbaDZAJS convert rfc822-to-8bit (ORCPT
+	id S1751381AbaDZALU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 20:11:20 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:39869 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802AbaDZALT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 20:09:18 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org,
-        devicetree@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1398115587-32529-1-git-send-email-elder@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1398115587-32529-1-git-send-email-elder@linaro.org>
-Message-ID: <20140426000915.7224.11265@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2 RESEND 0/5] clk: bcm21664: add common clock support
-Date: Fri, 25 Apr 2014 17:09:15 -0700
+	Fri, 25 Apr 2014 20:11:19 -0400
+From: jon@ringle.org
+To: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, shc_work@mail.ru,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH] serial: sc16is7xx: dynamically allocate tx/rx buffer
+Date: Fri, 25 Apr 2014 20:11:07 -0400
+Message-Id: <1398471067-3142-1-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alex Elder (2014-04-21 14:26:22)
-> This is series has two parts.  The first two patches are changes
-> to the existing Broadcom Kona family clock code to prepare for the
-> addition of support for another SoC, bcm21664.
-> 
-> The remaining three define the binding and code for bcm21664, and
-> replace the use of "fake" clocks in the device tree with the real
-> ones.  This ends up being a fairly straightforward definition of
-> the clocks on this SoC; the rest of the clock code is shared with
-> other SoCs that use the Kona style clock system.
+From: Jon Ringle <jringle@gridpoint.com>
 
-Hi Alex,
+This fixes the warnings:
 
-I'm happy to take only the clk patches or I can take the DT stuff as
-well if it gets some Acks. Let me know how you want it handled.
+   drivers/tty/serial/sc16is7xx.c: In function 'sc16is7xx_handle_rx':
+>> drivers/tty/serial/sc16is7xx.c:548:1: warning: 'sc16is7xx_handle_rx' uses dynamic stack allocation [enabled by default]
+   drivers/tty/serial/sc16is7xx.c: In function 'sc16is7xx_handle_tx':
+>> drivers/tty/serial/sc16is7xx.c:589:1: warning: 'sc16is7xx_handle_tx' uses dynamic stack allocation [enabled by default]
 
-Regards,
-Mike
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+---
+ drivers/tty/serial/sc16is7xx.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-> 
-> This series depends on the following patch, which has been taken
-> into the clk-fixes tree:
->     clk: bcm281xx: don't use unnamed structs or unions
->     https://lkml.org/lkml/2014/4/7/322
-> 
-> In addition, it depends on the version 4 of the following series,
-> just (re)posted for review:
->     clk: bcm281xx: updates
->     https://lkml.org/lkml/2014/4/8/485
-> 
-> The patches in this series--based on the current linus/master branch
-> plus the patches mentioned above--are available here:
->     http://git.linaro.org/git/landing-teams/working/broadcom/kernel.git
->     Branch review/bcm21664-clock-v2
-> 
-> Alex Elder (5):
->   clk: bcm281xx: move compatible string definitions
->   ARM: dts: revise kona clock binding document
->   ARM: dts: define clock binding for bcm21664
->   clk: bcm21664: use common clock framework
->   ARM: dts: use real clocks for bcm21664
-> 
->  .../devicetree/bindings/clock/bcm-kona-clock.txt   | 116 ++++++---
->  arch/arm/boot/dts/bcm21664.dtsi                    | 190 +++++++++-----
->  drivers/clk/bcm/Kconfig                            |   2 +-
->  drivers/clk/bcm/Makefile                           |   1 +
->  drivers/clk/bcm/clk-bcm21664.c                     | 290 +++++++++++++++++++++
->  drivers/clk/bcm/clk-bcm281xx.c                     |  12 -
->  include/dt-bindings/clock/bcm21664.h               |  62 +++++
->  include/dt-bindings/clock/bcm281xx.h               |  12 +
->  8 files changed, 565 insertions(+), 120 deletions(-)
->  create mode 100644 drivers/clk/bcm/clk-bcm21664.c
->  create mode 100644 include/dt-bindings/clock/bcm21664.h
-> 
-> -- 
-> 1.9.1
+diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
+index 7206a64..880cedd 100644
+--- a/drivers/tty/serial/sc16is7xx.c
++++ b/drivers/tty/serial/sc16is7xx.c
+@@ -317,6 +317,7 @@ struct sc16is7xx_port {
+ #ifdef CONFIG_GPIOLIB
+ 	struct gpio_chip		gpio;
+ #endif
++	unsigned char			buf[SC16IS7XX_FIFO_SIZE];
+ 	struct sc16is7xx_one		p[0];
+ };
+ 
+@@ -471,16 +472,15 @@ static void sc16is7xx_handle_rx(struct uart_port *port, unsigned int rxlen,
+ {
+ 	struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
+ 	unsigned int lsr = 0, ch, flag, bytes_read, i;
+-	u8 buf[port->fifosize];
+ 	bool read_lsr = (iir == SC16IS7XX_IIR_RLSE_SRC) ? true : false;
+ 
+-	if (unlikely(rxlen >= port->fifosize)) {
++	if (unlikely(rxlen >= sizeof(s->buf))) {
+ 		dev_warn_ratelimited(port->dev,
+ 				     "Port %i: Possible RX FIFO overrun: %d\n",
+ 				     port->line, rxlen);
+ 		port->icount.buf_overrun++;
+ 		/* Ensure sanity of RX level */
+-		rxlen = port->fifosize;
++		rxlen = sizeof(s->buf);
+ 	}
+ 
+ 	while (rxlen) {
+@@ -493,12 +493,12 @@ static void sc16is7xx_handle_rx(struct uart_port *port, unsigned int rxlen,
+ 			lsr = 0;
+ 
+ 		if (read_lsr) {
+-			buf[0] = sc16is7xx_port_read(port, SC16IS7XX_RHR_REG);
++			s->buf[0] = sc16is7xx_port_read(port, SC16IS7XX_RHR_REG);
+ 			bytes_read = 1;
+ 		} else {
+ 			regcache_cache_bypass(s->regmap, true);
+ 			regmap_raw_read(s->regmap, SC16IS7XX_RHR_REG,
+-					buf, rxlen);
++					s->buf, rxlen);
+ 			regcache_cache_bypass(s->regmap, false);
+ 			bytes_read = rxlen;
+ 		}
+@@ -532,7 +532,7 @@ static void sc16is7xx_handle_rx(struct uart_port *port, unsigned int rxlen,
+ 		}
+ 
+ 		for (i = 0; i < bytes_read; ++i) {
+-			ch = buf[i];
++			ch = s->buf[i];
+ 			if (uart_handle_sysrq_char(port, ch))
+ 				continue;
+ 
+@@ -553,7 +553,6 @@ static void sc16is7xx_handle_tx(struct uart_port *port)
+ 	struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
+ 	struct circ_buf *xmit = &port->state->xmit;
+ 	unsigned int txlen, to_send, i;
+-	u8 buf[port->fifosize];
+ 
+ 	if (unlikely(port->x_char)) {
+ 		sc16is7xx_port_write(port, SC16IS7XX_THR_REG, port->x_char);
+@@ -577,11 +576,11 @@ static void sc16is7xx_handle_tx(struct uart_port *port)
+ 
+ 		/* Convert to linear buffer */
+ 		for (i = 0; i < to_send; ++i) {
+-			buf[i] = xmit->buf[xmit->tail];
++			s->buf[i] = xmit->buf[xmit->tail];
+ 			xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+ 		}
+ 		regcache_cache_bypass(s->regmap, true);
+-		regmap_raw_write(s->regmap, SC16IS7XX_THR_REG, buf, to_send);
++		regmap_raw_write(s->regmap, SC16IS7XX_THR_REG, s->buf, to_send);
+ 		regcache_cache_bypass(s->regmap, false);
+ 	}
+ 
+-- 
+1.8.5.4
+
