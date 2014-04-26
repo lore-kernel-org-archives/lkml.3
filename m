@@ -1,88 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326AbaDZCDJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 22:03:09 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:55705 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaDZCDH (ORCPT
+	id S1751334AbaDZCHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 22:07:39 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:53646 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaDZCHh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 22:03:07 -0400
-Message-ID: <535B13D7.4050202@kernel.dk>
-Date: Fri, 25 Apr 2014 20:03:03 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 22:07:37 -0400
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
- stealing tags
-References: <cover.1395840483.git.agordeev@redhat.com>	<20140422071057.GA13195@dhcp-26-169.brq.redhat.com>	<535676A1.3070706@kernel.dk>	<5356916F.4000205@kernel.dk>	<CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com>	<535716A5.6050108@kernel.dk>	<CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com>	<535AD235.90604@kernel.dk> <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
-In-Reply-To: <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <535AE52B.4010104@gmail.com>
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
+ <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <535AE52B.4010104@gmail.com>
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+Date: Sat, 26 Apr 2014 11:07:14 +0900
+X-Google-Sender-Auth: rgkCtokj-AxwTlIPHvw463ywzP4
+Message-ID: <CAGcde9HNa0V+8it-=3xpJisDgWsb1YbC8-Twm5BGFtNJ+uEyDA@mail.gmail.com>
+Subject: Re: [PATCH v2 00/10] ARM: Exynos: PMU cleanup and refactoring for
+ using DT
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, Tomasz Figa <t.figa@samsung.com>,
+        chow.kim@samsung.com, yg1004.jang@samsung.com,
+        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
+        b.zolnierkie@samsung.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-25 18:01, Ming Lei wrote:
-> Hi Jens,
+Hi Tomasz,
+
+
+On Sat, Apr 26, 2014 at 7:43 AM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
 >
-> On Sat, Apr 26, 2014 at 5:23 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 04/25/2014 03:10 AM, Ming Lei wrote:
+> Hi Pankaj,
+>
+> Just a small note - please refrain from sending next versions of series in reply to previous version. With threading applied, it gets hard to notice that a new version was posted, because the first message of the thread is always v1. Also it makes threads unnecessarily long.
+>
+
+OK. I will take care in future.
+
+
+>
+> Best regards,
+> Tomasz
+>
+>
+> On 25.04.2014 14:32, Pankaj Dubey wrote:
 >>
->> Sorry, I did run it the other day. It has little to no effect here, but
->> that's mostly because there's so much other crap going on in there. The
->> most effective way to currently make it work better, is just to ensure
->> the caching pool is of a sane size.
->
-> Yes, that is just what the patch is doing, :-)
-
-But it's not enough. For instance, my test case, it's 255 tags and 64 
-CPUs. We end up in cross-cpu spinlock nightmare mode.
-
-> From percpu_ida view, it is easy to observe it can improve
-> allocation performance. I have several patches to export
-> these information by sysfs for monitoring percpu_ida
-> performance.
-
-Sounds good!
-
->> I've got an alternative tagging scheme that I think would be useful for
->> the cases where the tag space to cpu ratio isn't big enough. So I think
->> we'll retain percpu_ida for the cases where it can cache enough, and
->> punt to an alternative scheme when not.
->
-> OK, care to comment on the patch or the idea of setting percpu cache
-> size as (nr_tags / hctx->nr_ctx)?
-
-I think it's a good idea. The problem is that for percpu_ida to be 
-effective, you need a bigger cache than the 3 I'd get above. If that 
-isn't the case, it performs poorly. I'm just not convinced the design 
-can ever work in the realm of realistic queue depths.
-
-
->> That doesn't mean we should not improve percpu_ida. There's quite a bit
->> of low hanging fruit in there.
->
-> IMO percpu_max_size in percpu_ida is very important for the
-> performance, and it might need to adjust dynamically according
-> to the percpu allocation loading, but it is far more complicated
-> to implement. And it might be the simplest way to fix the parameter
-> before percpu_ida_init().
-
-That's what I did, essentially. Ensuring that the percpu_max_size is at 
-least 8 makes it a whole lot better here. But still slower than a 
-regular simple bitmap, which makes me sad. A fairly straight forward 
-cmpxchg based scheme I tested here is around 20% faster than the bitmap 
-approach on a basic desktop machine, and around 35% faster on a 
-4-socket. Outside of NVMe, I can't think of cases where that approach 
-would not be faster than percpu_ida. That means all of SCSI, basically, 
-and the basic block drivers.
-
--- 
-Jens Axboe
-
+>> This patch series, does some minor cleanup and modifies Exynos PMU related
+>> code for mapping and initialization of Exynos Power Management Unit (PMU)
+>> base address from device tree. This is also preparation for moving PMU
+>> related code out of machine folder and moving into a "drivers/mfd", so that
+>> ARM64 based SoC can utilize common piece of code. These patches require change
+>> in Exynos4210, Exynos4212 and Exynos4412 dtsi files, which has been posted
+>> as separate patch series [2]
+>>
+>> These patches are created on top of Kukjin Kim's for-next (v3.15-rc1 tag)
+>> branch.
+>>
+>> These patches depends on following two patch series:
+>> 1) mfd: syscon: Support early initialization
+>>     https://lkml.org/lkml/2014/4/8/239
+>> 2) Add PMU node for Exynos SoCs
+>>     http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg29329.html
+>>
+>> We have tested these patches on SMDK5250 and Arndale (Exynos5250) boards for
+>> System boot and PMU initialization and S2R.
+>>
+>> For testing on Arndale (Exynos5250) board:
+>> Tested-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>>
+>> Changes Since v1:
+>>   - Rebased on latest for-next of Kukjin Kim's tree.
+>>   - Added patch: "Make exynos machine_ops as static".
+>>         For making more cleanup in "mach-exynos/common.h"
+>>         as suggested by Tomasz Figa.
+>>   - Addressed comments of Tomasz Figa for cleaning "mach-exynos/common.h".
+>>   - Updated patch: Remove file path from comment section
+>>         As suggested by Michel Simek, instead of updating file path
+>>         lets remove them from each file under "mach-exynos".
+>>         Even though Kukjin pointed out that there is similar patch pending from
+>>         Sachin/Tushar but since I could not find I have included this here. If
+>>         I have missed something please point to any existing such patch.
+>>   - Updated patch: Add support for mapping PMU base address via DT
+>>         - Removed __initdata from declaration of "exynos_pmu_base", as it caused
+>>         kernel crash as pointed out by Vikas Sajjan.
+>>         - Added support for Syscon initialization and getting PMU regmap handle
+>>         as suggested by Sylwester. Since current implementation of early
+>>         intialization [1] has limitation that "early_syscon_init" requires
+>>         DT to be unflattened and system should be able to allocate memory,
+>>         we can't use regmap handles for platsmp.c file as "smp_secondary_init"
+>>         will be called before DT unflattening. So I have kept both method for
+>>         accessing PMU base address. platsmp.c will use ioremmaped address where
+>>         as rest other files can use regmap handle.
+>>   - Added patch: Remove "linux/bug.h" from pmu.c.
+>>   - Updated patch: Refactored code for PMU register mapping via DT
+>>         - Modified to use regmap_read/write when using regmap handle.
+>>   - Added patch: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
+>>   - Added patch: Add device tree based initialization support for PMU.
+>>         - Convert existing PMU implementation to be a device tree based
+>>          before moving it to "drivers/mfd" folder. As suggested by Bartlomiej.
+>>         - Dropped making a platform_driver for PMU, as currently PMU binding
+>>         has two compatibility strings as "samsung, exynosxxx-pmu", "syscon",
+>>         once we enable MFD_SYSCON config option, current "syscon" driver probe
+>>         gets called and PMU probe never gets called. So modified PMU
+>>         initialization code to scan DT and match against supported compatiblity
+>>         string in driver code, and once we get matching node use that for
+>>         accessing PMU regmap handle using "syscon_early_regmap_lookup_by_phandle".
+>>         If there is any better solution please suggest.
+>>
+>> Pankaj Dubey (6):
+>>    ARM: EXYNOS: Make exynos machine_ops as static
+>>    ARM: EXYNOS: Cleanup "mach-exynos/common.h" file
+>>    ARM: EXYNOS: Remove file path from comment section
+>>    ARM: EXYNOS: Refactored code for using PMU address via DT
+>>    ARM: EXYNOS: Move "mach/map.h" inclusion from regs-pmu.h to platsmp.c
+>>    ARM: EXYNOS: Add device tree based initialization support for PMU.
+>>
+>> Young-Gun Jang (4):
+>>    ARM: EXYNOS: Move SYSREG definition into sys-reg specific file.
+>>    ARM: EXYNOS: Remove regs-pmu.h header dependency from pm_domain
+>>    ARM: EXYNOS: Add support for mapping PMU base address via DT
+>>    ARM: EXYNOS: Remove "linux/bug.h" from pmu.c
+>>
+>>   arch/arm/mach-exynos/Kconfig               |    2 +
+>>   arch/arm/mach-exynos/common.h              |   13 +-
+>>   arch/arm/mach-exynos/cpuidle.c             |   37 +-
+>>   arch/arm/mach-exynos/exynos.c              |  104 +++++-
+>>   arch/arm/mach-exynos/headsmp.S             |    2 -
+>>   arch/arm/mach-exynos/hotplug.c             |    7 +-
+>>   arch/arm/mach-exynos/include/mach/map.h    |    3 -
+>>   arch/arm/mach-exynos/include/mach/memory.h |    3 +-
+>>   arch/arm/mach-exynos/platsmp.c             |   17 +-
+>>   arch/arm/mach-exynos/pm.c                  |   61 ++--
+>>   arch/arm/mach-exynos/pm_domains.c          |    2 +-
+>>   arch/arm/mach-exynos/pmu.c                 |  191 ++++++++---
+>>   arch/arm/mach-exynos/regs-pmu.h            |  512 ++++++++++++++--------------
+>>   arch/arm/mach-exynos/regs-sys.h            |   22 ++
+>>   14 files changed, 585 insertions(+), 391 deletions(-)
+>>   create mode 100644 arch/arm/mach-exynos/regs-sys.h
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
