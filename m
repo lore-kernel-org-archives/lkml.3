@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211AbaDZPEK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 11:04:10 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49961 "EHLO
+	id S1752117AbaDZPEF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 11:04:05 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49965 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765AbaDZPDF (ORCPT
+	with ESMTP id S1751791AbaDZPDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 11:03:05 -0400
+	Sat, 26 Apr 2014 11:03:07 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v4 03/24] input: Port twl4030-vibra to ff-memless-next
-Date: Sat, 26 Apr 2014 17:02:02 +0200
-Message-Id: <1398524543-15012-4-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v4 04/24] input: Port twl6040-vibra to ff-memless-next
+Date: Sat, 26 Apr 2014 17:02:03 +0200
+Message-Id: <1398524543-15012-5-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,45 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port twl4030-vibra to ff-memless-next
+Port twl6040-vibra to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
  drivers/input/misc/Kconfig         |  2 +-
- drivers/input/misc/twl4030-vibra.c | 31 +++++++++++++++++++++++++------
- 2 files changed, 26 insertions(+), 7 deletions(-)
+ drivers/input/misc/twl6040-vibra.c | 27 ++++++++++++++++++++++-----
+ 2 files changed, 23 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index f669cc7..817156f 100644
+index 817156f..b9cbb91 100644
 --- a/drivers/input/misc/Kconfig
 +++ b/drivers/input/misc/Kconfig
-@@ -407,7 +407,7 @@ config INPUT_TWL4030_VIBRA
- 	tristate "Support for TWL4030 Vibrator"
- 	depends on TWL4030_CORE
- 	select MFD_TWL4030_AUDIO
+@@ -417,7 +417,7 @@ config INPUT_TWL4030_VIBRA
+ config INPUT_TWL6040_VIBRA
+ 	tristate "Support for TWL6040 Vibrator"
+ 	depends on TWL6040_CORE
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	help
- 	  This option enables support for TWL4030 Vibrator Driver.
+ 	  This option enables support for TWL6040 Vibrator Driver.
  
-diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
-index 960ef2a..5274ad2 100644
---- a/drivers/input/misc/twl4030-vibra.c
-+++ b/drivers/input/misc/twl4030-vibra.c
-@@ -32,9 +32,11 @@
- #include <linux/mfd/twl4030-audio.h>
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index 77dc23b..7440a74 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -30,12 +30,14 @@
+ #include <linux/of.h>
+ #include <linux/workqueue.h>
  #include <linux/input.h>
- #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
+ #include <linux/mfd/twl6040.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
  
- /* MODULE ID2 */
- #define LEDEN		0x00
-+#define FF_UPDATE_RATE	50
+ #define EFFECT_DIR_180_DEG	0x8000
++#define FF_UPDATE_RATE		50
  
- /* ForceFeedback */
- #define EFFECT_DIR_180_DEG	0x8000 /* range is 0 - 0xFFFF */
-@@ -134,14 +136,31 @@ static void vibra_play_work(struct work_struct *work)
- /*** Input/ForceFeedback ***/
+ /* Recommended modulation index 85% */
+ #define TWL6040_VIBRA_MOD	85
+@@ -197,9 +199,10 @@ static void vibra_play_work(struct work_struct *work)
+ }
  
  static int vibra_play(struct input_dev *input, void *data,
 -		      struct ff_effect *effect)
@@ -71,43 +74,45 @@ index 960ef2a..5274ad2 100644
  {
  	struct vibra_info *info = input_get_drvdata(input);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+
+ 	int ret;
+ 
+ 	/* Do not allow effect, while the routing is set to use audio */
+@@ -209,9 +212,23 @@ static int vibra_play(struct input_dev *input, void *data,
+ 		return -EBUSY;
+ 	}
+ 
+-	info->weak_speed = effect->u.rumble.weak_magnitude;
+-	info->strong_speed = effect->u.rumble.strong_magnitude;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		if (command->u.rumble_force.strong) {
-+			info->speed = rumble_force->strong >> 8;
-+			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ?
-+					  0 : 1;
-+		} else {
-+			info->speed = rumble_force->weak >> 9;
-+			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ?
-+					  0 : 1;
-+		}
++		info->weak_speed = rumble_force->weak;
++		info->strong_speed = rumble_force->strong;
++		if (info->strong_speed >= info->weak_speed)
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		else
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ? 1 : -1;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		info->speed = 0;
-+		info->direction = 0;
++		info->weak_speed = 0;
++		info->strong_speed = 0;
++		info->direction = 1;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
--	info->speed = effect->u.rumble.strong_magnitude >> 8;
--	if (!info->speed)
--		info->speed = effect->u.rumble.weak_magnitude >> 9;
--	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
- 	schedule_work(&info->play_work);
- 	return 0;
- }
-@@ -227,7 +246,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
- 	info->input_dev->close = twl4030_vibra_close;
+ 	ret = queue_work(info->workqueue, &info->play_work);
+ 	if (!ret) {
+@@ -367,7 +384,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl6040_vibra_close;
  	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
  
 -	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
 +	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
  	if (ret < 0) {
- 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
- 		return ret;
+ 		dev_err(info->dev, "couldn't register vibrator to FF\n");
+ 		goto err_ialloc;
 -- 
 1.9.2
 
