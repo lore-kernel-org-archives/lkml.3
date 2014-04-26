@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261AbaDZPEM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 11:04:12 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49968 "EHLO
+	id S1752211AbaDZPEK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 11:04:10 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49961 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794AbaDZPDJ (ORCPT
+	with ESMTP id S1751765AbaDZPDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 11:03:09 -0400
+	Sat, 26 Apr 2014 11:03:05 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org,
         =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-Subject: [PATCH v4 05/24] input: Port max8997_haptic to ff-memless-next
-Date: Sat, 26 Apr 2014 17:02:04 +0200
-Message-Id: <1398524543-15012-6-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v4 03/24] input: Port twl4030-vibra to ff-memless-next
+Date: Sat, 26 Apr 2014 17:02:02 +0200
+Message-Id: <1398524543-15012-4-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398524543-15012-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -25,87 +25,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port max8997_haptic to ff-memless-next
+Port twl4030-vibra to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/input/misc/Kconfig          |  2 +-
- drivers/input/misc/max8997_haptic.c | 25 +++++++++++++++++++------
- 2 files changed, 20 insertions(+), 7 deletions(-)
+ drivers/input/misc/Kconfig         |  2 +-
+ drivers/input/misc/twl4030-vibra.c | 31 +++++++++++++++++++++++++------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index b9cbb91..a89dc22 100644
+index f669cc7..817156f 100644
 --- a/drivers/input/misc/Kconfig
 +++ b/drivers/input/misc/Kconfig
-@@ -157,7 +157,7 @@ config INPUT_MAX8925_ONKEY
- config INPUT_MAX8997_HAPTIC
- 	tristate "MAXIM MAX8997 haptic controller support"
- 	depends on PWM && MFD_MAX8997
+@@ -407,7 +407,7 @@ config INPUT_TWL4030_VIBRA
+ 	tristate "Support for TWL4030 Vibrator"
+ 	depends on TWL4030_CORE
+ 	select MFD_TWL4030_AUDIO
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	help
- 	  This option enables device driver support for the haptic controller
- 	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
-diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
-index 1fea548..029ac8b 100644
---- a/drivers/input/misc/max8997_haptic.c
-+++ b/drivers/input/misc/max8997_haptic.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/max8997-private.h>
- #include <linux/mfd/max8997.h>
- #include <linux/regulator/consumer.h>
+ 	  This option enables support for TWL4030 Vibrator Driver.
+ 
+diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+index 960ef2a..5274ad2 100644
+--- a/drivers/input/misc/twl4030-vibra.c
++++ b/drivers/input/misc/twl4030-vibra.c
+@@ -32,9 +32,11 @@
+ #include <linux/mfd/twl4030-audio.h>
+ #include <linux/input.h>
+ #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
  
- /* Haptic configuration 2 register */
- #define MAX8997_MOTOR_TYPE_SHIFT	7
-@@ -43,6 +44,8 @@
- #define MAX8997_SIG_DUTY_SHIFT		2
- #define MAX8997_PWM_DUTY_SHIFT		0
+ /* MODULE ID2 */
+ #define LEDEN		0x00
++#define FF_UPDATE_RATE	50
  
-+#define FF_UPDATE_RATE 50
-+
- struct max8997_haptic {
- 	struct device *dev;
- 	struct i2c_client *client;
-@@ -219,13 +222,23 @@ static void max8997_haptic_play_effect_work(struct work_struct *work)
- }
+ /* ForceFeedback */
+ #define EFFECT_DIR_180_DEG	0x8000 /* range is 0 - 0xFFFF */
+@@ -134,14 +136,31 @@ static void vibra_play_work(struct work_struct *work)
+ /*** Input/ForceFeedback ***/
  
- static int max8997_haptic_play_effect(struct input_dev *dev, void *data,
--				  struct ff_effect *effect)
-+				  const struct mlnx_effect_command *command)
+ static int vibra_play(struct input_dev *input, void *data,
+-		      struct ff_effect *effect)
++		      const struct mlnx_effect_command *command)
  {
- 	struct max8997_haptic *chip = input_get_drvdata(dev);
+ 	struct vibra_info *info = input_get_drvdata(input);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
--	chip->level = effect->u.rumble.strong_magnitude;
--	if (!chip->level)
--		chip->level = effect->u.rumble.weak_magnitude;
++
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		chip->level = rumble_force->strong;
-+		if (!chip->level)
-+			chip->level = rumble_force->weak;
++		if (command->u.rumble_force.strong) {
++			info->speed = rumble_force->strong >> 8;
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
++		} else {
++			info->speed = rumble_force->weak >> 9;
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
++		}
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		chip->level = 0;
++		info->speed = 0;
++		info->direction = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	schedule_work(&chip->work);
+-	info->speed = effect->u.rumble.strong_magnitude >> 8;
+-	if (!info->speed)
+-		info->speed = effect->u.rumble.weak_magnitude >> 9;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
+ 	schedule_work(&info->play_work);
+ 	return 0;
+ }
+@@ -227,7 +246,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl4030_vibra_close;
+ 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
  
-@@ -319,8 +332,8 @@ static int max8997_haptic_probe(struct platform_device *pdev)
- 	input_set_drvdata(input_dev, chip);
- 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
- 
--	error = input_ff_create_memless(input_dev, NULL,
--				max8997_haptic_play_effect);
-+	error = input_ff_create_mlnx(input_dev, NULL,
-+				max8997_haptic_play_effect, FF_UPDATE_RATE);
- 	if (error) {
- 		dev_err(&pdev->dev,
- 			"unable to create FF device, error: %d\n",
+-	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
++	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
+ 	if (ret < 0) {
+ 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
+ 		return ret;
 -- 
 1.9.2
 
