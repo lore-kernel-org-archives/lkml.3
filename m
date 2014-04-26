@@ -1,187 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971AbaDZIzl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 04:55:41 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:43258 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751236AbaDZIzj (ORCPT
+	id S1751983AbaDZI6u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 04:58:50 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:43771 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaDZI6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 04:55:39 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtIQAC50W1NXQCJ0/2dsb2JhbABZgwarfwEBAwQBmXECAoEOF3SCUxMcIxiBAiQTiEUBywmFWoNdhSKEQAEDjnuKDwGSXIMzOw
-Date: Sat, 26 Apr 2014 10:57:38 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: "Dave.Kleikamp" <shaggy@kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH V2] fs/jfs/super.c: remove 0 assignment on static + code
- clean-up
-Message-Id: <20140426105738.f0ef9becf81954a5b4153f6b@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 26 Apr 2014 04:58:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <87lhutt4ph.fsf@x220.int.ebiederm.org>
+References: <535A5C78.1070901@samsung.com>
+	<535A75C1.3050901@samsung.com>
+	<20140425182310.GA9128@redhat.com>
+	<87sip15iy5.fsf@x220.int.ebiederm.org>
+	<20140425192543.GA11908@redhat.com>
+	<878uqt42q7.fsf@x220.int.ebiederm.org>
+	<20140425200156.GA13727@redhat.com>
+	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
+	<874n1h16le.fsf@x220.int.ebiederm.org>
+	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
+	<87iopxxfpp.fsf@x220.int.ebiederm.org>
+	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
+	<CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
+	<87lhutt4ph.fsf@x220.int.ebiederm.org>
+Date: Sat, 26 Apr 2014 11:58:45 +0300
+Message-ID: <CACE9dm_SreLw8976qu52tmnJ5dq_xruR5f1sp9VfJBieEk-=nw@mail.gmail.com>
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Static values are automatically initialized to NULL
--Coalesce format fragments
--Remove unnecessary {}
--Small typo fixes
--Fix lines > 80 characters
+On 26 April 2014 01:38, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+>
+>> Is it really a show stopper to switch order of 2 functions as quick fix?
+>> It was like that before 3.10 and seemed ok...
+>
+> When that is the question.  The answer is yes it is a show stopper.
+>
+> A quick fix to bury a fundamental design flaw because the code
+> previously seemed ok.  That seems fundamentally wrong.
+>
+> Having IMA conflict with Apparmor in Kconfig would be a sensible quick
+> fix.
+>
+> Eric
 
-Cc: Dave Kleikamp <shaggy@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/jfs/super.c | 45 +++++++++++++++++++--------------------------
- 1 file changed, 19 insertions(+), 26 deletions(-)
+Conflict with Apparmor means with Ubuntu.
 
-diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-index 97f7fda..d1096fe 100644
---- a/fs/jfs/super.c
-+++ b/fs/jfs/super.c
-@@ -50,14 +50,14 @@ MODULE_DESCRIPTION("The Journaled Filesystem (JFS)");
- MODULE_AUTHOR("Steve Best/Dave Kleikamp/Barry Arndt, IBM");
- MODULE_LICENSE("GPL");
- 
--static struct kmem_cache * jfs_inode_cachep;
-+static struct kmem_cache *jfs_inode_cachep;
- 
- static const struct super_operations jfs_super_operations;
- static const struct export_operations jfs_export_operations;
- static struct file_system_type jfs_fs_type;
- 
- #define MAX_COMMIT_THREADS 64
--static int commit_threads = 0;
-+static int commit_threads;
- module_param(commit_threads, int, 0);
- MODULE_PARM_DESC(commit_threads, "Number of commit threads");
- 
-@@ -84,8 +84,7 @@ static void jfs_handle_error(struct super_block *sb)
- 		panic("JFS (device %s): panic forced after error\n",
- 			sb->s_id);
- 	else if (sbi->flag & JFS_ERR_REMOUNT_RO) {
--		jfs_err("ERROR: (device %s): remounting filesystem "
--			"as read-only\n",
-+		jfs_err("ERROR: (device %s): remounting filesystem as read-only\n",
- 			sb->s_id);
- 		sb->s_flags |= MS_RDONLY;
- 	}
-@@ -363,12 +362,10 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
- 			 * -> user has more control over the online trimming
- 			 */
- 			sbi->minblks_trim = 64;
--			if (blk_queue_discard(q)) {
-+			if (blk_queue_discard(q))
- 				*flag |= JFS_DISCARD;
--			} else {
--				pr_err("JFS: discard option " \
--					"not supported on device\n");
--			}
-+			else
-+				pr_err("JFS: discard option not supported on device\n");
- 			break;
- 		}
- 
-@@ -385,15 +382,14 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
- 				sbi->minblks_trim = simple_strtoull(
- 					minblks_trim, &minblks_trim, 0);
- 			} else {
--				pr_err("JFS: discard option " \
--					"not supported on device\n");
-+				pr_err("JFS: discard option not supported on device\n");
- 			}
- 			break;
- 		}
- 
- 		default:
--			printk("jfs: Unrecognized mount option \"%s\" "
--					" or missing value\n", p);
-+			printk("jfs: Unrecognized mount option \"%s\" or missing value\n",
-+			       p);
- 			goto cleanup;
- 		}
- 	}
-@@ -419,14 +415,12 @@ static int jfs_remount(struct super_block *sb, int *flags, char *data)
- 	int ret;
- 
- 	sync_filesystem(sb);
--	if (!parse_options(data, sb, &newLVSize, &flag)) {
-+	if (!parse_options(data, sb, &newLVSize, &flag))
- 		return -EINVAL;
--	}
- 
- 	if (newLVSize) {
- 		if (sb->s_flags & MS_RDONLY) {
--			pr_err("JFS: resize requires volume" \
--				" to be mounted read-write\n");
-+			pr_err("JFS: resize requires volume to be mounted read-write\n");
- 			return -EROFS;
- 		}
- 		rc = jfs_extendfs(sb, newLVSize, 0);
-@@ -452,9 +446,8 @@ static int jfs_remount(struct super_block *sb, int *flags, char *data)
- 	}
- 	if ((!(sb->s_flags & MS_RDONLY)) && (*flags & MS_RDONLY)) {
- 		rc = dquot_suspend(sb, -1);
--		if (rc < 0) {
-+		if (rc < 0)
- 			return rc;
--		}
- 		rc = jfs_umount_rw(sb);
- 		JFS_SBI(sb)->flag = flag;
- 		return rc;
-@@ -487,7 +480,7 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!new_valid_dev(sb->s_bdev->bd_dev))
- 		return -EOVERFLOW;
- 
--	sbi = kzalloc(sizeof (struct jfs_sb_info), GFP_KERNEL);
-+	sbi = kzalloc(sizeof(struct jfs_sb_info), GFP_KERNEL);
- 	if (!sbi)
- 		return -ENOMEM;
- 
-@@ -548,9 +541,8 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	rc = jfs_mount(sb);
- 	if (rc) {
--		if (!silent) {
-+		if (!silent)
- 			jfs_err("jfs_mount failed w/return code = %d", rc);
--		}
- 		goto out_mount_failed;
- 	}
- 	if (sb->s_flags & MS_RDONLY)
-@@ -587,7 +579,8 @@ static int jfs_fill_super(struct super_block *sb, void *data, int silent)
- 	 * Page cache is indexed by long.
- 	 * I would use MAX_LFS_FILESIZE, but it's only half as big
- 	 */
--	sb->s_maxbytes = min(((u64) PAGE_CACHE_SIZE << 32) - 1, (u64)sb->s_maxbytes);
-+	sb->s_maxbytes = min(((u64) PAGE_CACHE_SIZE << 32) - 1,
-+			     (u64)sb->s_maxbytes);
- #endif
- 	sb->s_time_gran = 1;
- 	return 0;
-@@ -597,9 +590,8 @@ out_no_root:
- 
- out_no_rw:
- 	rc = jfs_umount(sb);
--	if (rc) {
-+	if (rc)
- 		jfs_err("jfs_umount failed with return code %d", rc);
--	}
- out_mount_failed:
- 	filemap_write_and_wait(sbi->direct_inode->i_mapping);
- 	truncate_inode_pages(sbi->direct_inode->i_mapping, 0);
-@@ -924,7 +916,8 @@ static int __init init_jfs_fs(void)
- 		commit_threads = MAX_COMMIT_THREADS;
- 
- 	for (i = 0; i < commit_threads; i++) {
--		jfsCommitThread[i] = kthread_run(jfs_lazycommit, NULL, "jfsCommit");
-+		jfsCommitThread[i] = kthread_run(jfs_lazycommit, NULL,
-+						 "jfsCommit");
- 		if (IS_ERR(jfsCommitThread[i])) {
- 			rc = PTR_ERR(jfsCommitThread[i]);
- 			jfs_err("init_jfs_fs: fork failed w/rc = %d", rc);
+But answering to your early question..
+IMA does not want permission denied when measuring and re-measuring files.
+may_open() is doing that job before.
+
+We need quickly introduce kernel_read without LSM checks...
+
 -- 
-1.8.4.5
+Thanks,
+Dmitry
