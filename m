@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172AbaD0Rjx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 13:39:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31640 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaD0Rjw (ORCPT
+	id S1751450AbaD0RsA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 13:48:00 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:41812 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaD0Rr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 13:39:52 -0400
-Date: Sun, 27 Apr 2014 20:39:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: tiwai@suse.de, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        Laurent Navet <laurent.navet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: line6: fix possible overrun
-Message-ID: <20140427173932.GP26890@mwanda>
-References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
- <20140426204704.GB17562@mguzik.redhat.com>
- <20140426213137.GM26890@mwanda>
- <20140426215945.GC17562@mguzik.redhat.com>
+	Sun, 27 Apr 2014 13:47:58 -0400
+Date: Sun, 27 Apr 2014 19:47:53 +0200
+From: Levente Kurusa <levex@linux.com>
+To: Dominique van den Broeck <domdevlin@free.fr>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging/rtl8192e: userspace ptr deref + incorrect
+ declarations
+Message-ID: <20140427174753.GA25594@linux.com>
+References: <1398618676-31095-1-git-send-email-domdevlin@free.fr>
+ <1398618676-31095-2-git-send-email-domdevlin@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
 Content-Disposition: inline
-In-Reply-To: <20140426215945.GC17562@mguzik.redhat.com>
+In-Reply-To: <1398618676-31095-2-git-send-email-domdevlin@free.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 11:59:46PM +0200, Mateusz Guzik wrote:
-> > And sadly enough some of those ->id strings are more than 15 characters
-> > and a NUL which will fit in card->id.  So this overflow is real.  The
-> > card->shortname is a 32 char array so none of those overflow.
-> > 
-> > If we want to sovle the truncation issue then we need to think of
-> > shorter names for BassPODxtLive, BassPODxtPro, PODStudioUX1, and
-> > PODStudioUX2.
-> > 
-> 
-> In that case I suggest compile time assertions that ids and names fit
 
-That sounds like some magic code which I would love to see.  :)
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->  and a WARN_ON + -EINVAL in line6_init_audio to catch future
->  offenders.
+Hi,
 
-Returning -EINVAL is a bad idea because it would break the driver
-completely and make it unusable.
+On Sun, Apr 27, 2014 at 07:11:16PM +0200, Dominique van den Broeck wrote:
+> . userspace pointer dereference ;
+> . missing inclusions of needed header files ;
+> . unrequired static function declaration (confusing another *.c file).
+>=20
+> Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
+> ---
+> I submit this patch as a result for Task #16 of the Eudyptula Challenge.
+>=20
+> diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging=
+/rtl8192e/rtl8192e/rtl_wx.c
+> index 498995d..d87cdfa 100644
+> --- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+> +++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+> @@ -17,8 +17,10 @@
+>   * wlanfae <wlanfae@realtek.com>
+>  ************************************************************************=
+******/
+> =20
+> +#include <linux/uaccess.h>
+>  #include <linux/string.h>
+>  #include "rtl_core.h"
+> +#include "rtl_wx.h"
+> =20
+>  #define RATE_COUNT 12
+>  static u32 rtl8192_rates[] =3D {
+> @@ -1130,11 +1132,18 @@ static int r8192_wx_set_PromiscuousMode(struct ne=
+t_device *dev,
+>  	struct r8192_priv *priv =3D rtllib_priv(dev);
+>  	struct rtllib_device *ieee =3D priv->rtllib;
+> =20
+> -	u32 *info_buf =3D (u32 *)(wrqu->data.pointer);
+> +	u32 info_buf[3];
+> =20
+> -	u32 oid =3D info_buf[0];
+> -	u32 bPromiscuousOn =3D info_buf[1];
+> -	u32 bFilterSourceStationFrame =3D info_buf[2];
+> +	u32 oid;
+> +	u32 bPromiscuousOn;
+> +	u32 bFilterSourceStationFrame;
+> +
+> +	if (copy_from_user(info_buf, wrqu->data.pointer, sizeof(info_buf)))
+> +		return -EFAULT;
+> +
+> +	oid =3D info_buf[0];
+> +	bPromiscuousOn =3D info_buf[1];
+> +	bFilterSourceStationFrame =3D info_buf[2];
 
-> 
-> As a side note I'm not sure if pod_try_init from drivers/staging/line6/pod.c
-> cleans up properly after failed line6_init_audio.
+I guess it would be better to have defines for those instead of
+hard-coding the offsets. Also the size of the info_buf array
+might change depending on the size of wrqu->data.pointer, right?
+Maybe create a new define for that as well?
 
-Yeah.  It doesn't seem to clean up at all.
+Let's just be safe and create new defines to prevent headaches in
+the future, if not for futher expansion then for the sake of
+legibility.
 
-regards,
-dan carpenter
+Thanks,
+Levente Kurusa
 
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJTXULJAAoJELBqK2lO9dZBB10H/1pMYuUkLMURv0mDMuTrA8cG
+o0h05QMtxKcfA8bJz3bqLfBmNBztEZ4acckK2bN733zN6Aa+fFq//UvhsOFn76iv
+28oOYZ50JZkxiyI8ukrr7Ulo6IpB6wyL+Pr2Iccpv7eZLg98JzMlc/ja9RSLUREF
+Zk7fMWdF16QCqetqLPQ8NUpaG8DvKVkFOGXgGjXPWoh5T6yfwDiaL+i2QcddWyfT
+W9XMfcl1UYTfg7j9OtAmksXI9dkwyzzPktCYViC5D/7fA4cjIEHgIYUFMmvbVvDF
+xv5YoqBaaQaEuL2/24dFuNR9rzfwbtTWsuLrFGpDajerfwEiFDDX5AA+VrrFQ7Q=
+=kcv+
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
