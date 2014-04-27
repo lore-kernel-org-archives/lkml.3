@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaD0TNe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 15:13:34 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:53818 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751326AbaD0TNc (ORCPT
+	id S1752439AbaD0T26 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 15:28:58 -0400
+Received: from smtp22.services.sfr.fr ([93.17.128.10]:63894 "EHLO
+	smtp22.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaD0T24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 15:13:32 -0400
-Date: Sun, 27 Apr 2014 20:12:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH] clkdev: only fall through to clk_get_sys() if DT
-	indicates no entry
-Message-ID: <20140427191238.GE26756@n2100.arm.linux.org.uk>
-References: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk> <535D55C6.9090609@gmail.com>
+	Sun, 27 Apr 2014 15:28:56 -0400
+X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Apr 2014 15:28:55 EDT
+Authentication-Results: sfrmc.priv.atos.fr; dkim=none (no signature);
+	dkim-adsp=none (no policy) header.from=mpeg.blue@free.fr
+X-SFR-UUID: 20140427191735245.3C02770000D6@msfrf2221.sfr.fr
+Message-ID: <535D57CF.50402@free.fr>
+Date: Sun, 27 Apr 2014 21:17:35 +0200
+From: Mason <mpeg.blue@free.fr>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101
+	Firefox/28.0 SeaMonkey/2.25
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535D55C6.9090609@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: linux-kernel@vger.kernel.org
+CC: linux-embedded@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Using ftrace to identify source of excessive latency of USB write
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 09:08:54PM +0200, Sylwester Nawrocki wrote:
-> On 04/26/2014 05:49 PM, Russell King wrote:
->> There are two failures which DT can return when looking up a phandle:
->> -ENOENT - when DT finds that the desired property/index is not present
->> -EINVAL - when DT finds that the desired property/index is present, but
->>   there is a problem parsing it.
->>
->> We should only fall through to clk_get_sys() (the table driven clock
->> lookup) when DT indicates that there was no entry in the OF tables
->> for the clock.  Doing otherwise causes the clk API to always indicate
->> that there is no entry for this clock, which is not correct behaviour.
->>
->> Cc: <stable@vger.kernel.org>
->> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
->> ---
->> Grant, Rob,
->>
->> Please let me know ASAP if this gives you any cause for concern.  This
->> looks to me like a long standing bug which really needs fixing.  Part
->> of the motivation here is similar to Jean-Francois' patch to clkdev
->> which allows a DT specified clock which isn't get present to have
->> clk_get() and friends return -EPROBE_DEFER - again, something that I
->> think really should happen.  Jean-Francois hasn't been able to get
->> much traction for his patch, so let's start with fixing this bug first.
->
-> How about upstream commit a34cd4666f3da84228a82f70c94b8d9b692034ea,
-> I thought it already solves the issue you're trying to address in
-> this patch ?
+Hello everyone,
 
-FFS.  You know, I thought _I_ was the clkdev maintainer, not Mike.
+I'm using Linux on a embedded system similar in spec to a desktop PC
+from 15 years ago (256 MB RAM, 800-MHz CPU, USB). The system's primary
+use is recording high-definition digital television programs.
 
-That commit is wrong for the reasons I've stated above.  Why should we
-fall through to clk_get_sys() if the DT stuff returns -EINVAL?
+Typically, the storage sub-system consists of a recent hard-disk drive
+connected over USB (Hi-Speed, effective throughput ~20-30 MB/s), using
+a single ext4 partition (journal disabled), mounted noexec+noatime
+(trying to minimize metadata interference).
 
-Okay, I'll re-spin against that patch and fix this crap.
+Typical bit-rate for this HD content ~1-3 MB/s
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Data is accumulated in two 800-kB buffers; when one buffer is full,
+it is written to file (using write(2)), which was opened O_SYNC.
+(Note to self: try O_DSYNC instead of O_SYNC)
+
+If I plot the latency of the write(2) operation, 99% of them complete
+in under 80 ms. However, in rare cases, there is a huge latency spike
+(up to 800 ms). If several of these rare outliers occur in a row,
+the recording is messed up.
+
+I am trying to figure out the source of these latency spikes.
+
+It could be the OS, the USB controller, the HDD controller... I was
+hoping I could use ftrace to determine whether the problem came from
+the OS itself. Is that the best tool for the job?
+
+Any recommendations on how to proceed?
+
+Regards.
+
+[I would be grateful if you could CC me in your replies. Thanks!]
