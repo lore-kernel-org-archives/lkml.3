@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaD0VRO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 17:17:14 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52876 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751307AbaD0VRM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 17:17:12 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] ACPICA: OSL: Add direct inclusion of extra header.
-Date: Sun, 27 Apr 2014 23:33:38 +0200
-Message-ID: <3997362.yjEHqV8nv6@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <43884d194fd55ca9124078d3374ec4cf4a8026ef.1398232408.git.lv.zheng@intel.com>
-References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com> <43884d194fd55ca9124078d3374ec4cf4a8026ef.1398232408.git.lv.zheng@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753315AbaD0VRp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 17:17:45 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:49644 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752668AbaD0VRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 17:17:43 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 3/5] staging/lustre/lnet: fix potential null pointer dereference
+Date: Sun, 27 Apr 2014 17:17:24 -0400
+Message-Id: <1398633446-16719-4-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
+References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 23, 2014 02:53:52 PM Lv Zheng wrote:
-> This is a linuxized result of an ACPICA commit to upgrade the extra
-> header mechanism.
-> 
-> This patch enhances the extra header solution to allow Linux to use
-> ACPI_USE_NATIVE_INTERFACE_HEADER and the file name can be automatically
-> replaced during ACPICA release process. Using this way, the rest of the
-> ACPICA users needn't know the name of the extra header file. Lv Zheng.
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> ---
->  include/acpi/acpi.h |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/acpi/acpi.h b/include/acpi/acpi.h
-> index ca0cb60..682398b 100644
-> --- a/include/acpi/acpi.h
-> +++ b/include/acpi/acpi.h
-> @@ -62,8 +62,8 @@
->  #include <acpi/acrestyp.h>		/* Resource Descriptor structs */
->  #include <acpi/acpiosxf.h>		/* OSL interfaces (ACPICA-to-OS) */
->  #include <acpi/acpixf.h>		/* ACPI core subsystem external interfaces */
-> -#ifdef ACPI_NATIVE_INTERFACE_HEADER
-> -#include ACPI_NATIVE_INTERFACE_HEADER
-> +#ifdef ACPI_USE_NATIVE_INTERFACE_HEADER
-> +#include <acpi/acpi_opt.h>
->  #endif
->  
->  #endif				/* __ACPI_H__ */
+From: Dmitry Eremin <dmitry.eremin@intel.com>
 
-Well, I still think there's a better way.
+Pointer 'tsc' returned from call to function 'sfw_find_test_case'
+at line 571 may be NULL and will be dereferenced at line 572.
+found by Klocwork Insight tool
 
-Introduce <acpi/platform/acenvex.h> into ACPICA and put this into it:
+Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
+Reviewed-on: http://review.whamcloud.com/9386
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4629
+Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: Isaac Huang <he.huang@intel.com>
+Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+---
+ drivers/staging/lustre/lnet/selftest/framework.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-#if defined(_LINUX) || defined(__linux__)
-#include <acpi/platform/aclinuxex.h>
-
-#endif
-
-and then move stuff you want in acpi/acpi_opt.h into acpi/platform/aclinuxex.h.
-
-Then, you'll have in acpi.h:
-
-#include <acpi/acrestyp.h>		/* Resource Descriptor structs */
-#include <acpi/acpiosxf.h>		/* OSL interfaces (ACPICA-to-OS) */
-#include <acpi/acpixf.h>		/* ACPI core subsystem external interfaces */
-#include <acpi/platform/acenvex.h>	/* Extra environment-specific items */
-
-
-That should work I suppose, shouldn't it?
-
-
+diff --git a/drivers/staging/lustre/lnet/selftest/framework.c b/drivers/staging/lustre/lnet/selftest/framework.c
+index 050723a..c141f93 100644
+--- a/drivers/staging/lustre/lnet/selftest/framework.c
++++ b/drivers/staging/lustre/lnet/selftest/framework.c
+@@ -547,10 +547,16 @@ sfw_test_rpc_fini (srpc_client_rpc_t *rpc)
+ static inline int
+ sfw_test_buffers(sfw_test_instance_t *tsi)
+ {
+-	struct sfw_test_case	*tsc = sfw_find_test_case(tsi->tsi_service);
+-	struct srpc_service	*svc = tsc->tsc_srv_service;
++	struct sfw_test_case	*tsc;
++	struct srpc_service	*svc;
+ 	int			nbuf;
+ 
++	LASSERT(tsi != NULL);
++	tsc = sfw_find_test_case(tsi->tsi_service);
++	LASSERT(tsc != NULL);
++	svc = tsc->tsc_srv_service;
++	LASSERT(svc != NULL);
++
+ 	nbuf = min(svc->sv_wi_total, tsi->tsi_loop) / svc->sv_ncpts;
+ 	return max(SFW_TEST_WI_MIN, nbuf + SFW_TEST_WI_EXTRA);
+ }
+@@ -595,8 +601,10 @@ sfw_load_test(struct sfw_test_instance *tsi)
+ void
+ sfw_unload_test(struct sfw_test_instance *tsi)
+ {
+-	struct sfw_test_case *tsc = sfw_find_test_case(tsi->tsi_service);
++	struct sfw_test_case *tsc;
+ 
++	LASSERT(tsi != NULL);
++	tsc = sfw_find_test_case(tsi->tsi_service);
+ 	LASSERT(tsc != NULL);
+ 
+ 	if (tsi->tsi_is_client)
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.0
+
