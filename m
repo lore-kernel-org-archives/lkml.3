@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652AbaD0Hk6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:40:58 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31149 "EHLO
+	id S1753624AbaD0Hky (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:54 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31141 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242AbaD0HjZ (ORCPT
+	with ESMTP id S1753239AbaD0HjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:25 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-50-535cb42b844f
+	Sun, 27 Apr 2014 03:39:22 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-69-535cb4296005
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -17,40 +17,40 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         joro@8bytes.org, prathyush.k@samsung.com, rahul.sharma@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
-        joshi@samsung.com
-Subject: [PATCH v12 13/31] iommu/exynos: gating clocks of master H/W
-Date: Sun, 27 Apr 2014 13:07:45 +0530
-Message-id: <1398584283-22846-14-git-send-email-shaik.ameer@samsung.com>
+        joshi@samsung.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
+Subject: [PATCH v12 12/31] iommu/exynos: support for device tree
+Date: Sun, 27 Apr 2014 13:07:44 +0530
+Message-id: <1398584283-22846-13-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkVldnS0ywweE5TBZ37p5jtZh/BEi8
-	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
-	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV0bP7gts
-	BScUK2avbGZvYDwt3cXIySEhYCJxas8qNghbTOLCvfVgtpDAUkaJnqO2MDXTt4LUcAHFFzFK
-	rDp2nwnCmcAksX79GUaQKjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWSmLPqHViVsICLxJTp
-	M5lAbBYBVYkJ528D2RwcvAIeEvdOc4CYEgIKEnMm2YBUcAJFn9zZwwJxkbvE21NfwOZLCMzk
-	kDi4/RMbxBgBiW+TD7FA9MpKbDrADHG1pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtc
-	mpeul5yfu4kRGI2n/z2buIPx/gHrQ4zJQOMmMkuJJucDozmvJN7Q2MzIwtTE1NjI3NKMNGEl
-	cd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhjtK2cmqGWtOy7ivPj8nqMlHnsf+R92
-	KtZ8/DiESbnQa0Pa00z91LsGomKfnjE9+l1qpJ8Sa6Ex2fCBAtvHy/GbrWXqP+sU/1mxNC1s
-	292aiH1CrskanoG7pbwKdEqtW72lHj+VNdlgMTeL91Sw/N4jjzvS8pzdbu34Pm2Fv0915v/1
-	M6XkVZRYijMSDbWYi4oTATfoptbcAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3tLTHBBjs7TSzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFt83/WF3aJ3wVU2i02Pr7FaXN41h81ixvl9TBYXVmxkt/jXe5DRYsqi
-	w6wWh9+0s1qc/NPLaNFyvZfJYv2M1ywWq3b9YbSYeWsNi4Owx5OD85g8ZjdcZPH4d7ifyWPn
-	rLvsHneu7WHz2Lyk3mPyjeWMHn1bVjF6fN4k53Hl6BmmAK6oBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKDXlBTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGENYwZPbsvsBWcUKyYvbKZvYHxtHQXIyeHhICJxPStq9ggbDGJC/fW
-	A9lcHEICixglVh27zwThTGCSWL/+DCNIFZuAocT2e1dYQRIiAqsZJfounmEHcZgF7jJJzFn1
-	DqxKWMBFYsr0mUwgNouAqsSE87eBbA4OXgEPiXunOUBMCQEFiTmTbEAqOIGiT+7sYQGxhQTc
-	Jd6e+sI6gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgaH8mvYNxVYPFIUYBDkYl
-	Ht4f0jHBQqyJZcWVuYcYJTiYlUR4OacDhXhTEiurUovy44tKc1KLDzEmA900kVlKNDkfmIjy
-	SuINjU3MTY1NLU0sTMwsSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGRs8FnQZvXM7sa
-	oTfzKkVWzmyPtve1vHg4X2HSpTnNPy+stKveMDlUVPQRp8O8W6EZfeeXLPga93OudmTn1ar9
-	Ss3Zd5N5d33/I7ZixbTdTEwvljiI8dzf4nFo9UbJKzMXLmi7I1E7L3f6WsWiorfzbUUT9Pue
-	b8hmmKQw+ep6/zuLTjl/f/bguxJLcUaioRZzUXEiAPdbj2g6AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkRldzS0ywweJufos7d8+xWsw/AiRe
+	HfnBZLFgv7VF5+wN7Bbfd31ht+hdcJXNYtPja6wWl3fNYbOYcX4fk8WFFRvZLf71HmS0mLLo
+	MKvF4TftrBYn//QyWhx5uJvdouV6L5PF+hmvWSxW7frDaDHz1hoWBxGPJwfnMXnMbrjI4vHv
+	cD+Tx85Zd9k97lzbw+axeUm9x+Qbyxk9+rasYvT4vEnO48rRM0wBXFFcNimpOZllqUX6dglc
+	GVe+X2It2CNRcXjPIfYGxjaRLkZODgkBE4kvR68xQdhiEhfurWcDsYUEljJKrDjDAVNzbn4v
+	axcjF1B8EaPElyNXmCGcCUwSTee7WUCq2AQMJbbfuwJWJSKwmlGi7+IZdhCHWaCHWeLa/jtg
+	O4QFHCTeLFzCCmKzCKhK7Dn2C6ybV8BDonHeFqAaDqB9ChJzJtmAhDmBwk/u7GGBOMld4u2p
+	L2ALJAQWckgceH6KHWKOgMS3yYdYIHplJTYdYIY4W1Li4IobLBMYhRcwMqxiFE0tSC4oTkov
+	MtIrTswtLs1L10vOz93ECIzM0/+e9e1gvHnA+hBjMtC4icxSosn5wMjOK4k3NDYzsjA1MTU2
+	Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mc/5Ftwfekol3TL3O/GWH
+	mafe0sri6mvS3g91HvToX93EqqHRVMISlqkUaWubt2rP5UM76h4f+pq3bkMWo83qSYzc639G
+	vPCR9d8+R1jZ/UNG+3v/25ZNl3sYfd6G855u+pG27cAWwSRetTz53HlVhbusf4SkXffreqB3
+	NatmakmGv6Z8goUSS3FGoqEWc1FxIgB4HkLV4gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jAV3NLTHBBt/3sljcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
+	h1ktDr9pZ7U4+aeX0eLIw93sFi3Xe5ks1s94zWKxatcfRouZt9awOIh4PDk4j8ljdsNFFo9/
+	h/uZPHbOusvucefaHjaPzUvqPSbfWM7o0bdlFaPH501yHleOnmEK4IpqYLTJSE1MSS1SSM1L
+	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAfpPSaEsMacUKBSQWFyspG+H
+	aUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx5fsl1oI9EhWH9xxib2BsE+li5OSQEDCRODe/lxXC
+	FpO4cG89WxcjF4eQwCJGiS9HrjBDOBOYJJrOd7OAVLEJGEpsv3eFFSQhIrCaUaLv4hl2EIdZ
+	oIdZ4tr+O0wgVcICDhJvFi4Bm8sioCqx59gvsG5eAQ+JxnlbgGo4gPYpSMyZZAMS5gQKP7mz
+	B6xESMBd4u2pL6wTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO/GdSOxhXNlgc
+	YhTgYFTi4V0gGRMsxJpYVlyZe4hRgoNZSYSXczpQiDclsbIqtSg/vqg0J7X4EGMy0FETmaVE
+	k/OBSSmvJN7Q2MTc1NjU0sTCxMySNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhi5vT83
+	Vf8QTi4M/Pgy2na58JFLnwp3ML68fe9gVefldf/WMP1o2Tv/4+vidIYwqz719Jqm/Huvlgr/
+	2iRmPlHsXGJaPN/B1m333dYW1myesD8l7GO2zSr1zgjOUL+JixyOX3m16qbFo/Qc5aIyp+dc
+	m14+2ZzusUvITequ1dzCyZw13iF614uVWIozEg21mIuKEwFfIb9nQAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,140 +60,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch gates clocks of master H/W as well as clocks of System MMU
-if master clocks are specified.
+This commit adds device tree support for System MMU.
+It also enables iommu support for ARCH_EXYNOS.
 
-Some Exynos SoCs (i.e. GScalers in Exynos5250) have dependencies in
-the gating clocks of master H/W and its System MMU. If a H/W is the
-case, accessing control registers of System MMU is prohibited unless
-both of the gating clocks of System MMU and its master H/W.
-
-CC: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
+ arch/arm/Kconfig             |    2 ++
+ drivers/iommu/Kconfig        |    8 +++-----
+ drivers/iommu/exynos-iommu.c |   19 +++++++++++++++----
+ 3 files changed, 20 insertions(+), 9 deletions(-)
 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index ab438cb..19689e4 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -834,6 +834,8 @@ config ARCH_EXYNOS
+ 	select ARCH_HAS_HOLES_MEMORYMODEL
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARCH_SPARSEMEM_ENABLE
++	select ARM_AMBA
++	select ARM_DMA_USE_IOMMU
+ 	select ARM_GIC
+ 	select COMMON_CLK
+ 	select CPU_V7
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index df56e4c..5feadb8 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -178,16 +178,14 @@ config TEGRA_IOMMU_SMMU
+ 
+ config EXYNOS_IOMMU
+ 	bool "Exynos IOMMU Support"
+-	depends on ARCH_EXYNOS && EXYNOS_DEV_SYSMMU
++	depends on ARCH_EXYNOS
+ 	select IOMMU_API
+ 	help
+-	  Support for the IOMMU(System MMU) of Samsung Exynos application
+-	  processor family. This enables H/W multimedia accellerators to see
++	  Support for the IOMMU (System MMU) of Samsung Exynos application
++	  processor family. This enables H/W multimedia accelerators to see
+ 	  non-linear physical memory chunks as a linear memory in their
+ 	  address spaces
+ 
+-	  If unsure, say N here.
+-
+ config EXYNOS_IOMMU_DEBUG
+ 	bool "Debugging log for Exynos IOMMU"
+ 	depends on EXYNOS_IOMMU
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index cbb9b67..ba477c4 100755
+index 0f1d3f0..cbb9b67 100755
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -172,6 +172,7 @@ struct sysmmu_drvdata {
- 	struct device *dev;	/* Owner of system MMU */
- 	void __iomem *sfrbase;
- 	struct clk *clk;
-+	struct clk *clk_master;
- 	int activations;
- 	rwlock_t lock;
- 	struct iommu_domain *domain;
-@@ -300,6 +301,8 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+@@ -25,6 +25,7 @@
+ #include <linux/list.h>
+ #include <linux/memblock.h>
+ #include <linux/export.h>
++#include <linux/of.h>
  
- 	WARN_ON(!is_sysmmu_active(data));
+ #include <asm/cacheflush.h>
+ #include <asm/pgtable.h>
+@@ -494,7 +495,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 	read_unlock_irqrestore(&data->lock, flags);
+ }
  
-+	if (!IS_ERR(data->clk_master))
-+		clk_enable(data->clk_master);
- 	itype = (enum exynos_sysmmu_inttype)
- 		__ffs(__raw_readl(data->sfrbase + REG_INT_STATUS));
- 	if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
-@@ -326,6 +329,9 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 	if (itype != SYSMMU_FAULT_UNKNOWN)
- 		sysmmu_unblock(data->sfrbase);
+-static int exynos_sysmmu_probe(struct platform_device *pdev)
++static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ {
+ 	int irq, ret;
+ 	struct device *dev = &pdev->dev;
+@@ -548,11 +549,21 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ 	return 0;
+ }
  
-+	if (!IS_ERR(data->clk_master))
-+		clk_disable(data->clk_master);
+-static struct platform_driver exynos_sysmmu_driver = {
+-	.probe		= exynos_sysmmu_probe,
+-	.driver		= {
++static const struct of_device_id sysmmu_of_match[] __initconst = {
++	{ .compatible	= "samsung,sysmmu-v1", },
++	{ .compatible	= "samsung,sysmmu-v2", },
++	{ .compatible	= "samsung,sysmmu-v3.1", },
++	{ .compatible	= "samsung,sysmmu-v3.2", },
++	{ .compatible	= "samsung,sysmmu-v3.3", },
++	{ },
++};
 +
- 	read_unlock(&data->lock);
- 
- 	return IRQ_HANDLED;
-@@ -341,9 +347,14 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
- 	if (!set_sysmmu_inactive(data))
- 		goto finish;
- 
-+	if (!IS_ERR(data->clk_master))
-+		clk_enable(data->clk_master);
-+
- 	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
- 
- 	clk_disable(data->clk);
-+	if (!IS_ERR(data->clk_master))
-+		clk_disable(data->clk_master);
- 
- 	disabled = true;
- 	data->pgtable = 0;
-@@ -386,14 +397,19 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 		goto finish;
++static struct platform_driver exynos_sysmmu_driver __refdata = {
++	.probe	= exynos_sysmmu_probe,
++	.driver	= {
+ 		.owner		= THIS_MODULE,
+ 		.name		= "exynos-sysmmu",
++		.of_match_table	= sysmmu_of_match,
  	}
+ };
  
--	clk_enable(data->clk);
--
- 	data->pgtable = pgtable;
- 
-+	if (!IS_ERR(data->clk_master))
-+		clk_enable(data->clk_master);
-+	clk_enable(data->clk);
-+
- 	__sysmmu_set_ptbase(data->sfrbase, pgtable);
- 
- 	__raw_writel(CTRL_ENABLE, data->sfrbase + REG_MMU_CTRL);
- 
-+	if (!IS_ERR(data->clk_master))
-+		clk_disable(data->clk_master);
-+
- 	data->domain = domain;
- 
- 	dev_dbg(data->sysmmu, "Enabled\n");
-@@ -450,6 +466,10 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 	if (is_sysmmu_active(data)) {
- 		unsigned int maj;
- 		unsigned int num_inv = 1;
-+
-+		if (!IS_ERR(data->clk_master))
-+			clk_enable(data->clk_master);
-+
- 		maj = __raw_readl(data->sfrbase + REG_MMU_VERSION);
- 		/*
- 		 * L2TLB invalidation required
-@@ -469,6 +489,8 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 							num_inv);
- 			sysmmu_unblock(data->sfrbase);
- 		}
-+		if (!IS_ERR(data->clk_master))
-+			clk_disable(data->clk_master);
- 	} else {
- 		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
- 	}
-@@ -484,10 +506,14 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 	read_lock_irqsave(&data->lock, flags);
- 
- 	if (is_sysmmu_active(data)) {
-+		if (!IS_ERR(data->clk_master))
-+			clk_enable(data->clk_master);
- 		if (sysmmu_block(data->sfrbase)) {
- 			__sysmmu_tlb_invalidate(data->sfrbase);
- 			sysmmu_unblock(data->sfrbase);
- 		}
-+		if (!IS_ERR(data->clk_master))
-+			clk_disable(data->clk_master);
- 	} else {
- 		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
- 	}
-@@ -536,6 +562,16 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- 		}
- 	}
- 
-+	data->clk_master = devm_clk_get(dev, "master");
-+	if (!IS_ERR(data->clk_master)) {
-+		ret = clk_prepare(data->clk_master);
-+		if (ret) {
-+			clk_unprepare(data->clk);
-+			dev_err(dev, "Failed to prepare master's clk\n");
-+			return ret;
-+		}
-+	}
-+
- 	data->sysmmu = dev;
- 	rwlock_init(&data->lock);
- 	INIT_LIST_HEAD(&data->node);
 -- 
 1.7.9.5
 
