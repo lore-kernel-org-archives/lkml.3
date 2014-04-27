@@ -1,146 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302AbaD0WJr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 18:09:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53794 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751874AbaD0WJp (ORCPT
+	id S1754196AbaD0WMa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 18:12:30 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:37293 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752286AbaD0WM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 18:09:45 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-Subject: Re: [PATCH V5 12/12] ACPI: introduce .handle_children flag for acpi scan handler
-Date: Mon, 28 Apr 2014 00:26:12 +0200
-Message-ID: <3580601.ADWiqFXU1h@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1396886819-2637-13-git-send-email-rui.zhang@intel.com>
-References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com> <1396886819-2637-13-git-send-email-rui.zhang@intel.com>
+	Sun, 27 Apr 2014 18:12:28 -0400
+Message-ID: <535D80C8.9090906@semaphore.gr>
+Date: Mon, 28 Apr 2014 01:12:24 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: intel_pstate: Change the calculation of next pstate
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 08, 2014 12:06:59 AM Zhang Rui wrote:
-> For some devices with scan handler attached, their children devices
-> are enumerated by the scan handler, indirectly.
+Currently the driver calculates the next pstate proportional to
+core_busy factor and reverse proportional to current pstate.
 
-This isn't the case really.  They are enumerated by bus controller drivers
-for the buses they are on.
+Change the above method and calculate the next pstate independently
+of current pstate.
 
-> In this case, we do not want to enumerate the children devices in
-> acpi scan code explicitly.
-> 
-> Thus a new flag .handle_children is introduced in this patch.
-> 
-> For scan handlers with this flag set, we will do default enumeration neither
-> for the attached devices nor for the children of the attached devices.
+Tested on Intel i7-3770 CPU @ 3.40GHz.
+Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
+increase ~1.5% in performance. Below the test results using turbostat
+(5 iterations):
 
-I'm not sure if that is the right approach.  I would prefer that to be
-handled in a more fine-graind manner, like a flag per device ID or something
-similar?
+Without patch:
 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> ---
->  drivers/acpi/acpi_lpss.c |    2 ++
->  drivers/acpi/scan.c      |   28 ++++++++++++++++++++++++++--
->  include/acpi/acpi_bus.h  |    4 +++-
->  3 files changed, 31 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 965428f..da0a3d4 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -521,6 +521,7 @@ static struct acpi_scan_handler lpss_handler = {
->  	.attach = acpi_lpss_create_device,
->  	.bind = acpi_lpss_bind,
->  	.unbind = acpi_lpss_unbind,
-> +	.handle_children = true,
->  };
->  
->  #endif /* CONFIG_X86_INTEL_LPSS */
-> @@ -534,6 +535,7 @@ static int acpi_lpss_dummy_attach(struct acpi_device *adev,
->  static struct acpi_scan_handler lpss_dummy_handler = {
->  	.ids = acpi_lpss_device_ids,
->  	.attach = acpi_lpss_dummy_attach,
-> +	.handle_children = true,
->  };
->  
->  void __init acpi_lpss_init(void)
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 44c4668..4ea867e 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -2073,6 +2073,31 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
->  	return AE_OK;
->  }
->  
-> +static void acpi_do_default_enumeration(struct acpi_device *device)
-> +{
-> +	/*
-> +	 * Do not do enumeration for device object that
-> +	 * its parent doesn't want to
-> +	 */
-> +	if (device->parent && device->parent->flags.no_child_enumeration) {
-> +		device->flags.no_child_enumeration = 1;
-> +		return;
-> +	}
-> +
-> +	/* Do not do enumeration for device object with scan handler attached */
-> +	if (device->handler) {
-> +		if (device->handler->handle_children)
-> +			device->flags.no_child_enumeration = 1;
-> +		return;
-> +	}
-> +
-> +	/* Do not do enumeration for device object w/o platform_id */
-> +	if (!device->pnp.type.platform_id)
-> +		return;
-> +
-> +	acpi_create_platform_device(device, NULL);
-> +}
-> +
->  static int acpi_scan_attach_handler(struct acpi_device *device)
->  {
->  	struct acpi_hardware_id *hwid;
-> @@ -2095,8 +2120,7 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
->  		}
->  	}
->  
-> -	if (device->pnp.type.platform_id && !device->handler)
-> -		acpi_create_platform_device(device, NULL);
-> +	acpi_do_default_enumeration(device);
->  
->  	return ret;
->  }
-> diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-> index ec92ad3..4724fe5 100644
-> --- a/include/acpi/acpi_bus.h
-> +++ b/include/acpi/acpi_bus.h
-> @@ -137,6 +137,7 @@ struct acpi_scan_handler {
->  	void (*bind)(struct device *phys_dev);
->  	void (*unbind)(struct device *phys_dev);
->  	struct acpi_hotplug_profile hotplug;
-> +	bool handle_children;
->  };
->  
->  /*
-> @@ -207,7 +208,8 @@ struct acpi_device_flags {
->  	u32 no_hotplug:1;
->  	u32 hotplug_notify:1;
->  	u32 is_dock_station:1;
-> -	u32 reserved:22;
-> +	u32 no_child_enumeration:1;
-> +	u32 reserved:21;
->  };
->  
->  /* File System */
-> 
+Ph. avg Time	Total time	PkgWatt		Total Energy
+	79.63	266.416		57.74		15382.85984
+	79.63	265.609		57.87		15370.79283
+	79.57	266.994		57.54		15362.83476
+	79.53	265.304		57.83		15342.53032
+	79.71	265.977		57.76		15362.83152
+avg	79.61	266.06		57.74		15364.36985
 
+With patch:
+
+Ph. avg Time	Total time	PkgWatt		Total Energy
+	78.23	258.826		59.14		15306.96964
+	78.41	259.110		59.15		15326.35650
+	78.40	258.530		59.26		15320.48780
+	78.46	258.673		59.20		15313.44160
+	78.19	259.075		59.16		15326.87700
+avg	78.34	258.842		59.18		15318.82650
+
+The total test time reduced by ~2.6%, while the total energy
+consumption during a test iteration reduced by ~0.35%
+
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/intel_pstate.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 0999673..8e309db 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -608,28 +608,27 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
+ 	mod_timer_pinned(&cpu->timer, jiffies + delay);
+ }
+ 
+-static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
++static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
+ {
+-	int32_t core_busy, max_pstate, current_pstate;
++	int32_t core_busy, max_pstate;
+ 
+ 	core_busy = cpu->sample.core_pct_busy;
+ 	max_pstate = int_tofp(cpu->pstate.max_pstate);
+-	current_pstate = int_tofp(cpu->pstate.current_pstate);
+-	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
++	core_busy = mul_fp(core_busy, max_pstate);
+ 	return FP_ROUNDUP(core_busy);
+ }
+ 
+ static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
+ {
+-	int32_t busy_scaled;
++	int32_t busy;
+ 	struct _pid *pid;
+ 	signed int ctl = 0;
+ 	int steps;
+ 
+ 	pid = &cpu->pid;
+-	busy_scaled = intel_pstate_get_scaled_busy(cpu);
++	busy = intel_pstate_get_busy(cpu);
+ 
+-	ctl = pid_calc(pid, busy_scaled);
++	ctl = pid_calc(pid, busy);
+ 
+ 	steps = abs(ctl);
+ 
+@@ -651,7 +650,7 @@ static void intel_pstate_timer_func(unsigned long __data)
+ 	intel_pstate_adjust_busy_pstate(cpu);
+ 
+ 	trace_pstate_sample(fp_toint(sample->core_pct_busy),
+-			fp_toint(intel_pstate_get_scaled_busy(cpu)),
++			fp_toint(intel_pstate_get_busy(cpu)),
+ 			cpu->pstate.current_pstate,
+ 			sample->mperf,
+ 			sample->aperf,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.0
