@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaD0Sem (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 14:34:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58509 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751AbaD0Sek (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 14:34:40 -0400
-Date: Sun, 27 Apr 2014 20:34:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Axel Lin <axel.lin@ingics.com>
-cc: Tony Prisk <linux@prisktech.co.nz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irqchip: vt8500: Switch to a simple write clear for
- Interrupt Status Register
-In-Reply-To: <1398611627.24297.1.camel@phoenix>
-Message-ID: <alpine.DEB.2.02.1404272031210.6261@ionos.tec.linutronix.de>
-References: <1398611627.24297.1.camel@phoenix>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753278AbaD0Smu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 14:42:50 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:48976 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751671AbaD0Smt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 14:42:49 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Oleg Drokin <green@linuxhacker.ru>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH] staging/lustre/llite: Fix a compile warning.
+Date: Sun, 27 Apr 2014 14:42:29 -0400
+Message-Id: <1398624149-8209-1-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.8.5.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Apr 2014, Axel Lin wrote:
+Quiet the warning below in Lustre code.
+Actually the warning is invalid since we either always assign
+the symname in ll_readlink_internal or return an error there and
+then the following rc check would assign symlink variable explicitly.
 
-> According to the datasheet, the attribute of Interrupt Status Register is RW0S,
-> which means:
-> 	Software can read the register.
-> 	Software can also "write 1 to clear". "write 0" has no effect.
-> Thus switch the read/modify/write to a simple write clear.
-> 
-> A read/modify/write does not make sense for an irq status register like this,
-> since otherwise a read/modify/write can race with a device raising an interrupt
-> and then clear the pending bit unintentionally.
+In file included from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_compat25.h:41:0,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lvfs.h:48,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lvfs.h:45,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_support.h:41,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_class.h:40,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_lite.h:49,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lustre_lite.h:45,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:42:
+/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c: In function ‘ll_follow_link’:
+/home/green/bk/linux/include/linux/namei.h:88:29: warning: ‘symname’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  nd->saved_names[nd->depth] = path;
+                             ^
+/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:123:8: note: ‘symname’ was declared here
+  char *symname;
+        ^
 
-That's right, but what you are not seeing is that this is the mask
-callback which is supposed to mask the interrupt at the interrupt
-controller level.
+Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+---
+ drivers/staging/lustre/lustre/llite/symlink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I have a hard time to see (even without reading the data sheet) how
-clearing a potentially pending interrupt in the status register will
-mask the interrupt line.
+diff --git a/drivers/staging/lustre/lustre/llite/symlink.c b/drivers/staging/lustre/lustre/llite/symlink.c
+index 80d48b5..129d302 100644
+--- a/drivers/staging/lustre/lustre/llite/symlink.c
++++ b/drivers/staging/lustre/lustre/llite/symlink.c
+@@ -120,7 +120,7 @@ static void *ll_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	struct inode *inode = dentry->d_inode;
+ 	struct ptlrpc_request *request = NULL;
+ 	int rc;
+-	char *symname;
++	char *symname = NULL;
+ 
+ 	CDEBUG(D_VFSTRACE, "VFS Op\n");
+ 	/* Limit the recursive symlink depth to 5 instead of default
+-- 
+1.8.5.3
 
-Thanks,
-
-	tglx
