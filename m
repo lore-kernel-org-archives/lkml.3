@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaD0Hkb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:40:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31128 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaD0HjL (ORCPT
+	id S1753431AbaD0Hk1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41708 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223AbaD0HjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:11 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-2e-535cb41d4795
+	Sun, 27 Apr 2014 03:39:05 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-15-535cb41866da
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,40 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 08/31] iommu/exynos: handle one instance of sysmmu with a
- device descriptor
-Date: Sun, 27 Apr 2014 13:07:40 +0530
-Message-id: <1398584283-22846-9-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 06/31] iommu/exynos: allocate lv2 page table from own slab
+Date: Sun, 27 Apr 2014 13:07:38 +0530
+Message-id: <1398584283-22846-7-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkSlduS0ywwbO1LBZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkTldiS0ywwac1EhZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8b3t1eY
-	C+4GV0z+dYGxgXGBUxcjJ4eEgInEvytXmSFsMYkL99azdTFycQgJLGWUmNL2jR2maNWKqSwQ
-	iUWMErOWdjCCJIQEJjBJXLhlBGKzCRhKbL93hRWkSERgNaNE38Uz7CAOs8BdJok5q96BdQgL
-	JEo0flzGCmKzCKhKXJl9FmgsBwevgLvE4yUJIKaEgILEnEk2IBWcAh4ST+7sYYHY5S7x9tQX
-	sPkSAnM5JA5O/8gOMUZA4tvkQywQvbISmw5AfSMpcXDFDZYJjMILGBlWMYqmFiQXFCelFxnr
-	FSfmFpfmpesl5+duYgRG4+l/z/p3MN49YH2IMRlo3ERmKdHkfGA055XEGxqbGVmYmpgaG5lb
-	mpEmrCTOe/9hUpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxviXE2UO6Jje4eBQqopUdpx9
-	JUX8886LNx5MKl8nf3nl5/wrtT2WbEwRFplyBr7ZH87bNHRNSmf+ku0X2pSYn5r+Y7L1utwZ
-	a5ZMmfrMeFrh2jRvKc0zs/0+/3eY9EbsqfBrTou/3tNEubuz+GvETp7tuBnkMSkwOy/gZvff
-	2iaGqMf/pHNqlViKMxINtZiLihMB/vrR6twCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAV3ZLTHBBvMPG1vcuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bkOT0s
+	BbPEKk7OO8jawLhaqIuRk0NCwETi3I9jbBC2mMSFe+uBbC4OIYGljBLzX59lgymauew0C0Ri
+	EaNE0/XNjBDOBCaJxTs6mUGq2AQMJbbfu8IKkhARWM0o0XfxDDuIwyxwl0lizqp3jCBVwgJ+
+	EluOfGQBsVkEVCUuX3kE1s0r4C5x4vAsoAYOoH0KEnMm2YCEOQU8JJ7c2QNWLgRU8vbUF7AF
+	EgIzOSTeHvjJDjFHQOLb5EMsEL2yEpsOMEOcLSlxcMUNlgmMwgsYGVYxiqYWJBcUJ6UXGesV
+	J+YWl+al6yXn525iBEbk6X/P+ncw3j1gfYgxGWjcRGYp0eR8YETnlcQbGpsZWZiamBobmVua
+	kSasJM57/2FSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbG7Cm6huXLZ169MrWK58S84Agz
+	/sSsM91qfD6Hv+S/bss4cp3bas7fO6vf3F7i/KLp7dKnhZt1X6mvFDZfyau8dKfuuzdKj96v
+	jV+6gvtTcLV64/2Ma6e317zZblHQrFyxzS7o3oKLk7d6ZNp7VL1umzz9sfB9txeC7uqKf57s
+	3Pf56edSXp1IEyWW4oxEQy3mouJEAAVdenzeAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAV2JLTHBBt9u8lrcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzvr+9wlxwN7hi8q8LjA2MC5y6GDk5JARMJFatmMoCYYtJXLi3
-	nq2LkYtDSGARo8SspR2MIAkhgQlMEhduGYHYbAKGEtvvXWEFKRIRWM0o0XfxDDuIwyxwl0li
-	zqp3YB3CAokSjR+XsYLYLAKqEldmnwVawcHBK+Au8XhJAogpIaAgMWeSDUgFp4CHxJM7e1gg
-	drlLvD31hXUCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMGx/kx6B+OqBotDjAIc
-	jEo8vD+kY4KFWBPLiitzDzFKcDArifByTgcK8aYkVlalFuXHF5XmpBYfYkwGumkis5Rocj4w
-	DeWVxBsam5ibGptamliYmFmSJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA+Pijtvl7Cd/
-	hk9U8P2kGtNZ4brosn9QvUVtwpnb9S9uW5nwq/rftFxwQcNV+nb0KT+rLZo95f/Yr5pEX358
-	3Pnp4k+edcZpiwUMKh+myx43/HK6NedSgtVdW6N7h+Om9h39/YWJ5fMmzv8nFjw5r3/Q4t7n
-	3KetM/crXFlatmbaxkvfw26U/76oxFKckWioxVxUnAgAAfsUPTkDAAA=
+	tYBpjND1DQmC6zEyQAMJaxgzJs/pYSmYJVZxct5B1gbG1UJdjJwcEgImEjOXnWaBsMUkLtxb
+	z9bFyMUhJLCIUaLp+mZGCGcCk8TiHZ3MIFVsAoYS2+9dYQVJiAisZpTou3iGHcRhFrjLJDFn
+	1TtGkCphAT+JLUc+gs1lEVCVuHzlEVg3r4C7xInDs4AaOID2KUjMmWQDEuYU8JB4cmcPWLkQ
+	UMnbU19YJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHO/PpHYwrmywOMQowMGo
+	xMO7QDImWIg1say4MvcQowQHs5IIL+d0oBBvSmJlVWpRfnxRaU5q8SHGZKCjJjJLiSbnA1NR
+	Xkm8obGJuamxqaWJhYmZJWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwLuO7oi+oxJ4x
+	qddm9hrXFam/HlQ3yU08Wn1WvP7CtTsJ+tdc1GLWfWCp7Qr6kXvL+/SehJDdnAJpkQWfb8oc
+	5TrhxK8bxhmQZ76kTHjfl5boH2IlOraR/aufnzK882xeTNKu9Dnbfq6auV6v8dmEx9FT+qfo
+	fTkpHVT8zMt2u5EFu/Ix1jcZSizFGYmGWsxFxYkA63lxNjsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,365 +60,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-System MMU driver is changed to control only a single instance of
-System MMU at a time. Since a single instance of System MMU has only
-a single clock descriptor for its clock gating, single address range
-for control registers, there is no need to obtain two or more clock
-descriptors and ioremaped region.
+Since kmalloc() does not guarantee that the allignment of 1KiB when it
+allocates 1KiB, it is required to allocate lv2 page table from own
+slab that guarantees alignment of 1KiB
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |  223 ++++++++++++++----------------------------
- 1 file changed, 71 insertions(+), 152 deletions(-)
+ drivers/iommu/exynos-iommu.c |   34 ++++++++++++++++++++++++++++------
+ 1 file changed, 28 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index d466076..a15216f 100644
+index 7556177..c7f831c 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -170,9 +170,8 @@ struct sysmmu_drvdata {
- 	struct device *sysmmu;	/* System MMU's device descriptor */
- 	struct device *dev;	/* Owner of system MMU */
- 	char *dbgname;
--	int nsfrs;
--	void __iomem **sfrbases;
--	struct clk *clk[2];
-+	void __iomem *sfrbase;
-+	struct clk *clk;
- 	int activations;
- 	rwlock_t lock;
- 	struct iommu_domain *domain;
-@@ -293,56 +292,39 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- {
- 	/* SYSMMU is in blocked when interrupt occurred. */
- 	struct sysmmu_drvdata *data = dev_id;
--	struct resource *irqres;
--	struct platform_device *pdev;
- 	enum exynos_sysmmu_inttype itype;
- 	unsigned long addr = -1;
--
--	int i, ret = -ENOSYS;
-+	int ret = -ENOSYS;
+@@ -99,6 +99,8 @@
+ #define REG_PB1_SADDR		0x054
+ #define REG_PB1_EADDR		0x058
  
- 	read_lock(&data->lock);
- 
- 	WARN_ON(!is_sysmmu_active(data));
- 
--	pdev = to_platform_device(data->sysmmu);
--	for (i = 0; i < (pdev->num_resources / 2); i++) {
--		irqres = platform_get_resource(pdev, IORESOURCE_IRQ, i);
--		if (irqres && ((int)irqres->start == irq))
--			break;
--	}
--
--	if (i == pdev->num_resources) {
-+	itype = (enum exynos_sysmmu_inttype)
-+		__ffs(__raw_readl(data->sfrbase + REG_INT_STATUS));
-+	if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
- 		itype = SYSMMU_FAULT_UNKNOWN;
--	} else {
--		itype = (enum exynos_sysmmu_inttype)
--			__ffs(__raw_readl(data->sfrbases[i] + REG_INT_STATUS));
--		if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
--			itype = SYSMMU_FAULT_UNKNOWN;
--		else
--			addr = __raw_readl(
--				data->sfrbases[i] + fault_reg_offset[itype]);
--	}
-+	else
-+		addr = __raw_readl(data->sfrbase + fault_reg_offset[itype]);
- 
- 	if (data->domain)
--		ret = report_iommu_fault(data->domain, data->dev,
--				addr, itype);
-+		ret = report_iommu_fault(data->domain, data->dev, addr, itype);
- 
- 	if ((ret == -ENOSYS) && data->fault_handler) {
- 		unsigned long base = data->pgtable;
- 		if (itype != SYSMMU_FAULT_UNKNOWN)
--			base = __raw_readl(
--					data->sfrbases[i] + REG_PT_BASE_ADDR);
-+			base = __raw_readl(data->sfrbase + REG_PT_BASE_ADDR);
- 		ret = data->fault_handler(itype, base, addr);
- 	}
- 
- 	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
--		__raw_writel(1 << itype, data->sfrbases[i] + REG_INT_CLEAR);
-+		__raw_writel(1 << itype, data->sfrbase + REG_INT_CLEAR);
- 	else
- 		dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
- 				data->dbgname, sysmmu_fault_name[itype]);
- 
- 	if (itype != SYSMMU_FAULT_UNKNOWN)
--		sysmmu_unblock(data->sfrbases[i]);
-+		sysmmu_unblock(data->sfrbase);
- 
- 	read_unlock(&data->lock);
- 
-@@ -353,20 +335,16 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
- {
- 	unsigned long flags;
- 	bool disabled = false;
--	int i;
- 
- 	write_lock_irqsave(&data->lock, flags);
- 
- 	if (!set_sysmmu_inactive(data))
- 		goto finish;
- 
--	for (i = 0; i < data->nsfrs; i++)
--		__raw_writel(CTRL_DISABLE, data->sfrbases[i] + REG_MMU_CTRL);
-+	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
- 
--	if (data->clk[1])
--		clk_disable(data->clk[1]);
--	if (data->clk[0])
--		clk_disable(data->clk[0]);
-+	if (!IS_ERR(data->clk))
-+		clk_disable(data->clk);
- 
- 	disabled = true;
- 	data->pgtable = 0;
-@@ -392,7 +370,7 @@ finish:
- static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 			unsigned long pgtable, struct iommu_domain *domain)
- {
--	int i, ret = 0;
-+	int ret = 0;
- 	unsigned long flags;
- 
- 	write_lock_irqsave(&data->lock, flags);
-@@ -409,17 +387,14 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
- 		goto finish;
- 	}
- 
--	if (data->clk[0])
--		clk_enable(data->clk[0]);
--	if (data->clk[1])
--		clk_enable(data->clk[1]);
-+	if (!IS_ERR(data->clk))
-+		clk_enable(data->clk);
- 
- 	data->pgtable = pgtable;
- 
--	for (i = 0; i < data->nsfrs; i++) {
--		__sysmmu_set_ptbase(data->sfrbases[i], pgtable);
--		__raw_writel(CTRL_ENABLE, data->sfrbases[i] + REG_MMU_CTRL);
--	}
-+	__sysmmu_set_ptbase(data->sfrbase, pgtable);
++static struct kmem_cache *lv2table_kmem_cache;
 +
-+	__raw_writel(CTRL_ENABLE, data->sfrbase + REG_MMU_CTRL);
- 
- 	data->domain = domain;
- 
-@@ -476,28 +451,26 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 	read_lock_irqsave(&data->lock, flags);
- 
- 	if (is_sysmmu_active(data)) {
--		int i;
--		for (i = 0; i < data->nsfrs; i++) {
--			unsigned int maj;
--			unsigned int num_inv = 1;
--			maj = __raw_readl(data->sfrbases[i] + REG_MMU_VERSION);
--			/*
--			 * L2TLB invalidation required
--			 * 4KB page: 1 invalidation
--			 * 64KB page: 16 invalidation
--			 * 1MB page: 64 invalidation
--			 * because it is set-associative TLB
--			 * with 8-way and 64 sets.
--			 * 1MB page can be cached in one of all sets.
--			 * 64KB page can be one of 16 consecutive sets.
--			 */
--			if ((maj >> 28) == 2) /* major version number */
--				num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
--			if (sysmmu_block(data->sfrbases[i])) {
--				__sysmmu_tlb_invalidate_entry(
--					data->sfrbases[i], iova, num_inv);
--				sysmmu_unblock(data->sfrbases[i]);
--			}
-+		unsigned int maj;
-+		unsigned int num_inv = 1;
-+		maj = __raw_readl(data->sfrbase + REG_MMU_VERSION);
-+		/*
-+		 * L2TLB invalidation required
-+		 * 4KB page: 1 invalidation
-+		 * 64KB page: 16 invalidation
-+		 * 1MB page: 64 invalidation
-+		 * because it is set-associative TLB
-+		 * with 8-way and 64 sets.
-+		 * 1MB page can be cached in one of all sets.
-+		 * 64KB page can be one of 16 consecutive sets.
-+		 */
-+		if ((maj >> 28) == 2) /* major version number */
-+			num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
-+
-+		if (sysmmu_block(data->sfrbase)) {
-+			__sysmmu_tlb_invalidate_entry(data->sfrbase, iova,
-+							num_inv);
-+			sysmmu_unblock(data->sfrbase);
- 		}
- 	} else {
- 		dev_dbg(data->sysmmu,
-@@ -516,12 +489,9 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 	read_lock_irqsave(&data->lock, flags);
- 
- 	if (is_sysmmu_active(data)) {
--		int i;
--		for (i = 0; i < data->nsfrs; i++) {
--			if (sysmmu_block(data->sfrbases[i])) {
--				__sysmmu_tlb_invalidate(data->sfrbases[i]);
--				sysmmu_unblock(data->sfrbases[i]);
--			}
-+		if (sysmmu_block(data->sfrbase)) {
-+			__sysmmu_tlb_invalidate(data->sfrbase);
-+			sysmmu_unblock(data->sfrbase);
- 		}
- 	} else {
- 		dev_dbg(data->sysmmu,
-@@ -534,11 +504,10 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 
- static int exynos_sysmmu_probe(struct platform_device *pdev)
+ static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
  {
--	int i, ret;
--	struct device *dev;
-+	int ret;
-+	struct device *dev = &pdev->dev;
- 	struct sysmmu_drvdata *data;
+ 	return pgtable + lv1ent_offset(iova);
+@@ -725,7 +727,8 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
+ 
+ 	for (i = 0; i < NUM_LV1ENTRIES; i++)
+ 		if (lv1ent_page(priv->pgtable + i))
+-			kfree(__va(lv2table_base(priv->pgtable + i)));
++			kmem_cache_free(lv2table_kmem_cache,
++					__va(lv2table_base(priv->pgtable + i)));
+ 
+ 	free_pages((unsigned long)priv->pgtable, 2);
+ 	free_pages((unsigned long)priv->lv2entcnt, 1);
+@@ -824,7 +827,7 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+ 	if (lv1ent_fault(sent)) {
+ 		unsigned long *pent;
+ 
+-		pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
++		pent = kmem_cache_zalloc(lv2table_kmem_cache, GFP_ATOMIC);
+ 		BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
+ 		if (!pent)
+ 			return ERR_PTR(-ENOMEM);
+@@ -854,8 +857,7 @@ static int lv1set_section(unsigned long *sent, unsigned long iova,
+ 			return -EADDRINUSE;
+ 		}
+ 
+-		kfree(page_entry(sent, 0));
 -
--	dev = &pdev->dev;
-+	struct resource *res;
- 
- 	data = kzalloc(sizeof(*data), GFP_KERNEL);
- 	if (!data) {
-@@ -547,82 +516,37 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
- 		goto err_alloc;
++		kmem_cache_free(lv2table_kmem_cache, page_entry(sent, 0));
+ 		*pgcnt = 0;
  	}
  
--	ret = dev_set_drvdata(dev, data);
--	if (ret) {
--		dev_dbg(dev, "Unabled to initialize driver data\n");
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_dbg(dev, "Unable to find IOMEM region\n");
-+		ret = -ENOENT;
- 		goto err_init;
- 	}
+@@ -1060,11 +1062,31 @@ static int __init exynos_iommu_init(void)
+ {
+ 	int ret;
  
--	data->nsfrs = pdev->num_resources / 2;
--	data->sfrbases = kmalloc(sizeof(*data->sfrbases) * data->nsfrs,
--								GFP_KERNEL);
--	if (data->sfrbases == NULL) {
--		dev_dbg(dev, "Not enough memory\n");
--		ret = -ENOMEM;
--		goto err_init;
-+	data->sfrbase = ioremap(res->start, resource_size(res));
-+	if (!data->sfrbase) {
-+		dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n", res->start);
-+		ret = -ENOENT;
-+		goto err_res;
- 	}
- 
--	for (i = 0; i < data->nsfrs; i++) {
--		struct resource *res;
--		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
--		if (!res) {
--			dev_dbg(dev, "Unable to find IOMEM region\n");
--			ret = -ENOENT;
--			goto err_res;
--		}
--
--		data->sfrbases[i] = ioremap(res->start, resource_size(res));
--		if (!data->sfrbases[i]) {
--			dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n",
--							res->start);
--			ret = -ENOENT;
--			goto err_res;
--		}
-+	ret = platform_get_irq(pdev, 0);
-+	if (ret <= 0) {
-+		dev_dbg(dev, "Unable to find IRQ resource\n");
-+		goto err_irq;
- 	}
- 
--	for (i = 0; i < data->nsfrs; i++) {
--		ret = platform_get_irq(pdev, i);
--		if (ret <= 0) {
--			dev_dbg(dev, "Unable to find IRQ resource\n");
--			goto err_irq;
--		}
--
--		ret = request_irq(ret, exynos_sysmmu_irq, 0,
--					dev_name(dev), data);
--		if (ret) {
--			dev_dbg(dev, "Unabled to register interrupt handler\n");
--			goto err_irq;
--		}
-+	ret = request_irq(ret, exynos_sysmmu_irq, 0,
-+				dev_name(dev), data);
++	lv2table_kmem_cache = kmem_cache_create("exynos-iommu-lv2table",
++				LV2TABLE_SIZE, LV2TABLE_SIZE, 0, NULL);
++	if (!lv2table_kmem_cache) {
++		pr_err("%s: Failed to create kmem cache\n", __func__);
++		return -ENOMEM;
++	}
++
+ 	ret = platform_driver_register(&exynos_sysmmu_driver);
 +	if (ret) {
-+		dev_dbg(dev, "Unabled to register interrupt handler\n");
-+		goto err_irq;
- 	}
++		pr_err("%s: Failed to register driver\n", __func__);
++		goto err_reg_driver;
++	}
  
- 	if (dev_get_platdata(dev)) {
--		char *deli, *beg;
--		struct sysmmu_platform_data *platdata = dev_get_platdata(dev);
--
--		beg = platdata->clockname;
--
--		for (deli = beg; (*deli != '\0') && (*deli != ','); deli++)
--			/* NOTHING */;
--
--		if (*deli == '\0')
--			deli = NULL;
--		else
--			*deli = '\0';
--
--		data->clk[0] = clk_get(dev, beg);
--		if (IS_ERR(data->clk[0])) {
--			data->clk[0] = NULL;
-+		data->clk = clk_get(dev, "sysmmu");
-+		if (IS_ERR(data->clk))
- 			dev_dbg(dev, "No clock descriptor registered\n");
--		}
--
--		if (data->clk[0] && deli) {
--			*deli = ',';
--			data->clk[1] = clk_get(dev, deli + 1);
--			if (IS_ERR(data->clk[1]))
--				data->clk[1] = NULL;
--		}
--
--		data->dbgname = platdata->dbgname;
- 	}
+-	if (ret == 0)
+-		bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
++	if (ret) {
++		pr_err("%s: Failed to register exynos-iommu driver.\n",
++								__func__);
++		goto err_set_iommu;
++	}
  
- 	data->sysmmu = dev;
-@@ -631,21 +555,16 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
- 
- 	__set_fault_handler(data, &default_fault_handler);
- 
-+	platform_set_drvdata(pdev, data);
-+
- 	pm_runtime_enable(dev);
- 
- 	dev_dbg(dev, "(%s) Initialized\n", data->dbgname);
- 	return 0;
- err_irq:
--	while (i-- > 0) {
--		int irq;
--
--		irq = platform_get_irq(pdev, i);
--		free_irq(irq, data);
--	}
-+	free_irq(platform_get_irq(pdev, 0), data);
- err_res:
--	while (data->nsfrs-- > 0)
--		iounmap(data->sfrbases[data->nsfrs]);
--	kfree(data->sfrbases);
-+	iounmap(data->sfrbase);
- err_init:
- 	kfree(data);
- err_alloc:
++	return 0;
++err_set_iommu:
++	platform_driver_unregister(&exynos_sysmmu_driver);
++err_reg_driver:
++	kmem_cache_destroy(lv2table_kmem_cache);
+ 	return ret;
+ }
+ subsys_initcall(exynos_iommu_init);
 -- 
 1.7.9.5
 
