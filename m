@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaD0X2m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 19:28:42 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:50244 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661AbaD0X2k convert rfc822-to-8bit (ORCPT
+	id S1752004AbaD0Xab (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 19:30:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35253 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaD0Xa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 19:28:40 -0400
-Subject: Re: [PATCH 5/5] staging/lustre/lnet: fix potential null pointer dereference
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140427223925.GC1563@kroah.com>
-Date: Sun, 27 Apr 2014 19:28:27 -0400
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Dmitry Eremin <dmitry.eremin@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <207D440C-EF42-45AC-A845-130985E215EA@linuxhacker.ru>
-References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru> <1398633446-16719-6-git-send-email-green@linuxhacker.ru> <20140427223925.GC1563@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+	Sun, 27 Apr 2014 19:30:29 -0400
+Date: Sun, 27 Apr 2014 19:30:27 -0400 (EDT)
+Message-Id: <20140427.193027.1833767089712636627.davem@davemloft.net>
+To: agordeev@redhat.com
+Cc: linux-kernel@vger.kernel.org, mitch.a.williams@intel.com,
+        jesse.brandeburg@intel.com, linux.nics@intel.com,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-pci@vger.kernel.org, jeffrey.t.kirsher@intel.com
+Subject: Re: [PATCH net-next 1/2] i40evf: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <110dd7806f49f62272bd960ae8101c9da81a3f01.1398412015.git.agordeev@redhat.com>
+References: <cover.1398412015.git.agordeev@redhat.com>
+	<110dd7806f49f62272bd960ae8101c9da81a3f01.1398412015.git.agordeev@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 27 Apr 2014 16:30:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+From: Alexander Gordeev <agordeev@redhat.com>
+Date: Fri, 25 Apr 2014 10:06:24 +0200
 
-On Apr 27, 2014, at 6:39 PM, Greg Kroah-Hartman wrote:
->> 
->> -	lnet_ni_notify_locked(ni, lp);
->> +	if (ni != NULL)
->> +		lnet_ni_notify_locked(ni, lp);
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 > 
-> Why can't lnet_ni_notify_locked() accept NULL as an input?
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 
-It makes no sense, because then there is nowhere to send the notification.
-That said, it appears a race is possible where one caller updated let_peer structure to ask for a notification
-and then we fell through here with a NULL ni and called into lnet_ni_notify_locked
-where we'd try to dereference this NULL ni.
-But this is the only called that accepts separate ni and lp, where as the only other caller gets them from the same struct
-where they are updated more in sync.
+Jeff, I assume you will take this in via your tree.
 
-I guess it makes sense to update lnet_ni_notify_locked as a future-proofing excercise.
-
-Thanks, I'll update this patch.
-
-Bye,
-    Oleg
+Thanks.
