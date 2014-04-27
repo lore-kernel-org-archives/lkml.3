@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583AbaD0Hku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:40:50 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57787 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238AbaD0HjT (ORCPT
+	id S1753558AbaD0Hks (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:41738 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235AbaD0HjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:19 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-77-535cb426b5b0
+	Sun, 27 Apr 2014 03:39:16 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-2f-535cb4234e5d
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,40 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 11/31] documentation: iommu: add binding document of Exynos
- System MMU
-Date: Sun, 27 Apr 2014 13:07:43 +0530
-Message-id: <1398584283-22846-12-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 10/31] iommu/exynos: use managed device helper functions
+Date: Sun, 27 Apr 2014 13:07:42 +0530
+Message-id: <1398584283-22846-11-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkSldtS0ywwefVohZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkWld5S0ywwcqZqhZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8a8C6fY
-	C9qVKvqnHmRvYNwj3cXIySEhYCLx5GAnO4QtJnHh3nq2LkYuDiGBpYwS57tPMMEUXbv5HSqx
-	iFFi8d+7TBDOBCaJswuXgFWxCRhKbL93hRUkISKwmlGi7+IZdhCHWeAuk8ScVe8YQaqEBWIk
-	vn44ywJiswioSrxctQHI5uDgFfCQ6FzhC2JKCChIzJlkA1LBCRR9cmcPWLWQgLvE21NfwOZL
-	CMzkkJiwo4EZYoyAxLfJh1ggemUlNh1ghrhaUuLgihssExiFFzAyrGIUTS1ILihOSi8y1CtO
-	zC0uzUvXS87P3cQIjMfT/5717mC8fcD6EGMy0LiJzFKiyfnAeM4riTc0NjOyMDUxNTYytzQj
-	TVhJnDfpYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsYb7hsciq4G71eebvru7yOloHDb
-	73NnV+lzrN003el0z/fkMxdMjnq+YuXba9Fqu+rYszcnrt+fcljfsylQUFCQb/vzJV1NToet
-	H6fmurKaPAtjE1n1TIt9mcw+lfm8Vkr8amZPTgmt/tYomlOyUeXX5Fa2TF6zBR7i6t/S7UJS
-	D8p8k1GJUFFiKc5INNRiLipOBAA/unsX3QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV21LTHBBlvPcFncuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8aib2dZ
+	Co5JVUx69o2pgXGXaBcjJ4eEgInEtp4dbBC2mMSFe+uBbC4OIYGljBIf/z5khyn6+vQzC0Ri
+	EaPEhiV7wRJCAhOYJOb1B4LYbAKGEtvvXWEFKRIRWM0o0XfxDDuIwyxwl0lizqp3jCBVwgI+
+	EgfWXQezWQRUJS6d6mAFsXkFPCTWd0wGsjmA1ilIzJlkAxLmBAo/ubOHBWKZu8TbU1/AFkgI
+	zOWQWH3xKhPEHAGJb5MPsUD0ykpsOsAMcbWkxMEVN1gmMAovYGRYxSiaWpBcUJyUXmSqV5yY
+	W1yal66XnJ+7iREYj6f/PZu4g/H+AetDjMlA4yYyS4km5wPjOa8k3tDYzMjC1MTU2Mjc0ow0
+	YSVx3vRHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGKUeVO5g8Vr63j3k2qMoL7GfmcHt
+	eQqPmi3LfHV69kud/vQvxTV7VZ/9FnZxu7XT9Bav9BEocn37Yer66u/i658bi2v/d68t+jXJ
+	9l5UdVjKa3/Gma+XnHx9aY/yzb6InzxHRd5fFZt63n/uk6LMWQkNH9x+K3XLmD9zrdnUE1d8
+	8NesIJkvW5RYijMSDbWYi4oTASGNDlPdAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3lLTHBBnuvSFjcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgz5l04xV7QrlTRP/UgewPjHukuRk4OCQETiWs3v7NB2GISF+6t
-	B7K5OIQEFjFKLP57lwnCmcAkcXbhEiaQKjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWSmLPq
-	HSNIlbBAjMTXD2dZQGwWAVWJl6s2ANkcHLwCHhKdK3xBTAkBBYk5k2xAKjiBok/u7AGrFhJw
-	l3h76gvrBEbeBYwMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/2Z1A7GlQ0WhxgFOBiV
-	eHgXSMYEC7EmlhVX5h5ilOBgVhLh5ZwOFOJNSaysSi3Kjy8qzUktPsSYDHTTRGYp0eR8YCLK
-	K4k3NDYxNzU2tTSxMDGzJE1YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbGXBvrHbusqlm+
-	HlKazCKbF/ph5+QbrEcn62vsXvpg8/TgnvMPryffDS87+EN6js6r3lkRJwxdr3154zN10n7Z
-	T/JPWZmbrsxb8sHNwpfd4fT/jrUTV6UZ2d3d5b2jOmO185WvPop73LOLDzqU+Wsf3H2o7pvf
-	5V3xviyLYg4JnJ3Yt/Jl1cnKQCWW4oxEQy3mouJEAJVzyD06AwAA
+	tYBpjND1DQmC6zEyQAMJaxgzFn07y1JwTKpi0rNvTA2Mu0S7GDk5JARMJL4+/cwCYYtJXLi3
+	nq2LkYtDSGARo8SGJXvZQRJCAhOYJOb1B4LYbAKGEtvvXWEFKRIRWM0o0XfxDDuIwyxwl0li
+	zqp3jCBVwgI+EgfWXQezWQRUJS6d6mAFsXkFPCTWd0wGsjmA1ilIzJlkAxLmBAo/ubOHBWKZ
+	u8TbU19YJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHO3PpHYwrmywOMQowMGo
+	xMO7QDImWIg1say4MvcQowQHs5IIL+d0oBBvSmJlVWpRfnxRaU5q8SHGZKCjJjJLiSbnAxNR
+	Xkm8obGJuamxqaWJhYmZJWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwhhyY/GlW9oFq
+	Pt3oQ+UWr+dsnhqcfXi+Vamivsfu0w/fyaZ/TmPJOcHe+H1Wyc64hTPYxbL/Lu/f/TH03KSV
+	q5cpPbjuudlO7+ve3J8zdDsU/+xa+zRZ8UuM9K8fx7s+XRKIyz3tV7LZ76FP3aEZ0xq7Dv2w
+	9bmzI//O6lZDtejmU15/yzO5vyqxFGckGmoxFxUnAgAIUe9SOgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,100 +60,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch adds a description of the device tree binding for the
-Samsung Exynos System MMU.
+This patch uses managed device helper functions in the probe().
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- .../devicetree/bindings/iommu/samsung,sysmmu.txt   |   79 ++++++++++++++++++++
- 1 file changed, 79 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
+ drivers/iommu/exynos-iommu.c |   68 ++++++++++++++++--------------------------
+ 1 file changed, 25 insertions(+), 43 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt b/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
-new file mode 100644
-index 0000000..16e13a2
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
-@@ -0,0 +1,79 @@
-+Samsung Exynos IOMMU H/W, System MMU (System Memory Management Unit)
-+
-+Samsung's Exynos architecture contains System MMUs that enables scattered
-+physical memory chunks visible as a contiguous region to DMA-capable peripheral
-+devices like MFC, FIMC, FIMD, GScaler, FIMC-IS and so forth.
-+
-+System MMU is an IOMMU and supports identical translation table format to
-+ARMv7 translation tables with minimum set of page properties including access
-+permissions, shareability and security protection. In addition, System MMU has
-+another capabilities like L2 TLB or block-fetch buffers to minimize translation
-+latency.
-+
-+System MMUs are in many to one relation with peripheral devices, i.e. single
-+peripheral device might have multiple System MMUs (usually one for each bus
-+master), but one System MMU can handle transactions from only one peripheral
-+device. The relation between a System MMU and the peripheral device needs to be
-+defined in device node of the peripheral device.
-+
-+MFC in all Exynos SoCs and FIMD, M2M Scalers and G2D in Exynos5420 has 2 System
-+MMUs.
-+* MFC has one System MMU on its left and right bus.
-+* FIMD in Exynos5420 has one System MMU for window 0 and 4, the other system MMU
-+  for window 1, 2 and 3.
-+* M2M Scalers and G2D in Exynos5420 has one System MMU on the read channel and
-+  the other System MMU on the write channel.
-+The drivers must consider how to handle those System MMUs. One of the idea is
-+to implement child devices or sub-devices which are the client devices of the
-+System MMU.
-+
-+Required properties:
-+- compatible: Should be one of:
-+		"samsung,sysmmu-v1"
-+		"samsung,sysmmu-v2"
-+		"samsung,sysmmu-v3.1"
-+		"samsung,sysmmu-v3.2"
-+		"samsung,sysmmu-v3.3"
-+
-+- reg: A tuple of base address and size of System MMU registers.
-+- interrupt-parent: The phandle of the interrupt controller of System MMU
-+- interrupts: An interrupt specifier for interrupt signal of System MMU,
-+	      according to the format defined by a particular interrupt
-+	      controller.
-+- clock-names: Should be "sysmmu" if the System MMU is needed to gate its clock.
-+	       Optional "master" if the clock to the System MMU is gated by
-+	       another gate clock other than "sysmmu".
-+	       Exynos4 SoCs, there needs no "master" clock.
-+	       Exynos5 SoCs, some System MMUs must have "master" clocks.
-+- clocks: Required if the System MMU is needed to gate its clock.
-+- samsung,power-domain: Required if the System MMU is needed to gate its power.
-+	  Please refer to the following document:
-+	  Documentation/devicetree/bindings/arm/exynos/power_domain.txt
-+- mmu-masters: A phandle to device nodes representing the master for which
-+               the System MMU can provide a translation. Any additional values
-+	       after the phandle will be ignored because a System MMU never
-+	       have two or more masters. "#stream-id-cells" specified in the
-+	       master's node will be also ignored.
-+	       If more than one phandle is specified, only the first phandle
-+	       will be treated.
-+
-+Examples:
-+	gsc_0: gsc@13e00000 {
-+		compatible = "samsung,exynos5-gsc";
-+		reg = <0x13e00000 0x1000>;
-+		interrupts = <0 85 0>;
-+		samsung,power-domain = <&pd_gsc>;
-+		clocks = <&clock CLK_GSCL0>;
-+		clock-names = "gscl";
-+	};
-+
-+	sysmmu_gsc0: sysmmu@13E80000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x13E80000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_GSCL0>, <&clock CLK_GSCL0>;
-+		samsung,power-domain = <&pd_gsc>;
-+		mmu-masters = <&gsc_0>;
-+	};
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 1af2d23..0f1d3f0 100755
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -342,8 +342,7 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+ 
+ 	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
+ 
+-	if (!IS_ERR(data->clk))
+-		clk_disable(data->clk);
++	clk_disable(data->clk);
+ 
+ 	disabled = true;
+ 	data->pgtable = 0;
+@@ -386,8 +385,7 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 		goto finish;
+ 	}
+ 
+-	if (!IS_ERR(data->clk))
+-		clk_enable(data->clk);
++	clk_enable(data->clk);
+ 
+ 	data->pgtable = pgtable;
+ 
+@@ -498,49 +496,43 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 
+ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ {
+-	int ret;
++	int irq, ret;
+ 	struct device *dev = &pdev->dev;
+ 	struct sysmmu_drvdata *data;
+ 	struct resource *res;
+ 
+-	data = kzalloc(sizeof(*data), GFP_KERNEL);
+-	if (!data) {
+-		dev_dbg(dev, "Not enough memory\n");
+-		ret = -ENOMEM;
+-		goto err_alloc;
+-	}
++	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_dbg(dev, "Unable to find IOMEM region\n");
+-		ret = -ENOENT;
+-		goto err_init;
+-	}
++	data->sfrbase = devm_ioremap_resource(dev, res);
++	if (IS_ERR(data->sfrbase))
++		return PTR_ERR(data->sfrbase);
+ 
+-	data->sfrbase = ioremap(res->start, resource_size(res));
+-	if (!data->sfrbase) {
+-		dev_dbg(dev, "Unable to map IOMEM @ PA:%#x\n", res->start);
+-		ret = -ENOENT;
+-		goto err_res;
+-	}
+-
+-	ret = platform_get_irq(pdev, 0);
+-	if (ret <= 0) {
++	irq = platform_get_irq(pdev, 0);
++	if (irq <= 0) {
+ 		dev_dbg(dev, "Unable to find IRQ resource\n");
+-		goto err_irq;
++		return irq;
+ 	}
+ 
+-	ret = request_irq(ret, exynos_sysmmu_irq, 0,
++	ret = devm_request_irq(dev, irq, exynos_sysmmu_irq, 0,
+ 				dev_name(dev), data);
+ 	if (ret) {
+-		dev_dbg(dev, "Unabled to register interrupt handler\n");
+-		goto err_irq;
++		dev_err(dev, "Unabled to register handler of irq %d\n", irq);
++		return ret;
+ 	}
+ 
+-	if (dev_get_platdata(dev)) {
+-		data->clk = clk_get(dev, "sysmmu");
+-		if (IS_ERR(data->clk))
+-			dev_dbg(dev, "No clock descriptor registered\n");
++	data->clk = devm_clk_get(dev, "sysmmu");
++	if (IS_ERR(data->clk)) {
++		dev_err(dev, "Failed to get clock!\n");
++		return PTR_ERR(data->clk);
++	} else  {
++		ret = clk_prepare(data->clk);
++		if (ret) {
++			dev_err(dev, "Failed to prepare clk\n");
++			return ret;
++		}
+ 	}
+ 
+ 	data->sysmmu = dev;
+@@ -553,17 +545,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_enable(dev);
+ 
+-	dev_dbg(dev, "Initialized\n");
+ 	return 0;
+-err_irq:
+-	free_irq(platform_get_irq(pdev, 0), data);
+-err_res:
+-	iounmap(data->sfrbase);
+-err_init:
+-	kfree(data);
+-err_alloc:
+-	dev_err(dev, "Failed to initialize\n");
+-	return ret;
+ }
+ 
+ static struct platform_driver exynos_sysmmu_driver = {
 -- 
 1.7.9.5
 
