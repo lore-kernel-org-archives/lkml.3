@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535AbaD0RIm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 13:08:42 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:48132 "EHLO fiona.linuxhacker.ru"
+	id S1754586AbaD0RIy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 13:08:54 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:48159 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497AbaD0RIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 13:08:37 -0400
+	id S1754497AbaD0RIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 13:08:50 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: wang di <di.wang@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 40/47] staging/lustre/mdc: use cl_max_mds_md to pack getattr RPC
-Date: Sun, 27 Apr 2014 13:07:04 -0400
-Message-Id: <1398618431-29757-41-git-send-email-green@linuxhacker.ru>
+Cc: Bobi Jam <bobijam.xu@intel.com>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 47/47] staging/lustre/llite: prevent buffer overflow in fiemap
+Date: Sun, 27 Apr 2014 13:07:11 -0400
+Message-Id: <1398618431-29757-48-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
 References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
@@ -20,60 +20,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wang di <di.wang@intel.com>
+From: Bobi Jam <bobijam.xu@intel.com>
 
-In some cases, cl_default_mds_easize might be zero, especially for
-MDC connected to non-MDT0, then mdc might pack getattr RPC with
-zero eadatasize.
+lov_fiemap() does not take consider its @vallen parameter, which is
+the max buffer size the caller can hold for the fiemap extents.
 
-If client is trying to access remote striped directory with
-zero eadatasize, MDT will not return layout information of the
-striped direcotry, which will be mis-regarded as non-striped
-directory.
+This patch fixes this and limits the max mapped fiemap extent count
+to fit in the preallocted buffer.
 
-So we should use cl_max_mds_easize if cl_default_mds_easize is zero.
+This patch also fixes a memory out of bound write issue when the
+fiemap call is only for detecting the number of existing extent.
 
-Signed-off-by: wang di <di.wang@intel.com>
-Reviewed-on: http://review.whamcloud.com/9862
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4847
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+Signed-off-by: Bobi Jam <bobijam.xu@intel.com>
+Reviewed-on: http://review.whamcloud.com/9834
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4619
+Reviewed-by: Fan Yong <fan.yong@intel.com>
+Reviewed-by: Patrick Farrell <paf@cray.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lustre/mdc/mdc_locks.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/staging/lustre/lustre/llite/file.c  | 15 +++++++++------
+ drivers/staging/lustre/lustre/lov/lov_obd.c |  3 ++-
+ 2 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_locks.c b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-index 41a18f5..1a8cd98 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_locks.c
-@@ -462,6 +462,7 @@ static struct ptlrpc_request *mdc_intent_getattr_pack(struct obd_export *exp,
- 					       OBD_MD_FLRMTPERM : OBD_MD_FLACL);
- 	struct ldlm_intent    *lit;
- 	int		    rc;
-+	int		    easize;
+diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
+index 79accc5..562e337 100644
+--- a/drivers/staging/lustre/lustre/llite/file.c
++++ b/drivers/staging/lustre/lustre/llite/file.c
+@@ -1721,12 +1721,12 @@ out:
+  * Make the FIEMAP get_info call and returns the result.
+  */
+ static int ll_do_fiemap(struct inode *inode, struct ll_user_fiemap *fiemap,
+-			int num_bytes)
++			size_t num_bytes)
+ {
+ 	struct obd_export *exp = ll_i2dtexp(inode);
+ 	struct lov_stripe_md *lsm = NULL;
+ 	struct ll_fiemap_info_key fm_key = { .name = KEY_FIEMAP, };
+-	int vallen = num_bytes;
++	__u32 vallen = num_bytes;
+ 	int rc;
  
- 	req = ptlrpc_request_alloc(class_exp2cliimp(exp),
- 				   &RQF_LDLM_INTENT_GETATTR);
-@@ -482,12 +483,15 @@ static struct ptlrpc_request *mdc_intent_getattr_pack(struct obd_export *exp,
- 	lit = req_capsule_client_get(&req->rq_pill, &RMF_LDLM_INTENT);
- 	lit->opc = (__u64)it->it_op;
+ 	/* Checks for fiemap flags */
+@@ -3080,15 +3080,18 @@ static int ll_fiemap(struct inode *inode, struct fiemap_extent_info *fieinfo,
+ 	fiemap->fm_extent_count = fieinfo->fi_extents_max;
+ 	fiemap->fm_start = start;
+ 	fiemap->fm_length = len;
+-	memcpy(&fiemap->fm_extents[0], fieinfo->fi_extents_start,
+-	       sizeof(struct ll_fiemap_extent));
++	if (extent_count > 0)
++		memcpy(&fiemap->fm_extents[0], fieinfo->fi_extents_start,
++		       sizeof(struct ll_fiemap_extent));
  
-+	if (obddev->u.cli.cl_default_mds_easize > 0)
-+		easize = obddev->u.cli.cl_default_mds_easize;
-+	else
-+		easize = obddev->u.cli.cl_max_mds_easize;
-+
- 	/* pack the intended request */
--	mdc_getattr_pack(req, valid, it->it_flags, op_data,
--			 obddev->u.cli.cl_default_mds_easize);
-+	mdc_getattr_pack(req, valid, it->it_flags, op_data, easize);
+ 	rc = ll_do_fiemap(inode, fiemap, num_bytes);
  
--	req_capsule_set_size(&req->rq_pill, &RMF_MDT_MD, RCL_SERVER,
--			     obddev->u.cli.cl_default_mds_easize);
-+	req_capsule_set_size(&req->rq_pill, &RMF_MDT_MD, RCL_SERVER, easize);
- 	if (client_is_remote(exp))
- 		req_capsule_set_size(&req->rq_pill, &RMF_ACL, RCL_SERVER,
- 				     sizeof(struct mdt_remote_perm));
+ 	fieinfo->fi_flags = fiemap->fm_flags;
+ 	fieinfo->fi_extents_mapped = fiemap->fm_mapped_extents;
+-	memcpy(fieinfo->fi_extents_start, &fiemap->fm_extents[0],
+-	       fiemap->fm_mapped_extents * sizeof(struct ll_fiemap_extent));
++	if (extent_count > 0)
++		memcpy(fieinfo->fi_extents_start, &fiemap->fm_extents[0],
++		       fiemap->fm_mapped_extents *
++		       sizeof(struct ll_fiemap_extent));
+ 
+ 	OBD_FREE_LARGE(fiemap, num_bytes);
+ 	return rc;
+diff --git a/drivers/staging/lustre/lustre/lov/lov_obd.c b/drivers/staging/lustre/lustre/lov/lov_obd.c
+index dbd971a..12e778c 100644
+--- a/drivers/staging/lustre/lustre/lov/lov_obd.c
++++ b/drivers/staging/lustre/lustre/lov/lov_obd.c
+@@ -2248,11 +2248,12 @@ static int lov_fiemap(struct lov_obd *lov, __u32 keylen, void *key,
+ 	if (fm_end_offset == -EINVAL)
+ 		GOTO(out, rc = -EINVAL);
+ 
++	if (fiemap_count_to_size(fiemap->fm_extent_count) > *vallen)
++		fiemap->fm_extent_count = fiemap_size_to_count(*vallen);
+ 	if (fiemap->fm_extent_count == 0) {
+ 		get_num_extents = 1;
+ 		count_local = 0;
+ 	}
+-
+ 	/* Check each stripe */
+ 	for (cur_stripe = start_stripe, i = 0; i < stripe_count;
+ 	     i++, cur_stripe = (cur_stripe + 1) % lsm->lsm_stripe_count) {
 -- 
 1.8.5.3
 
