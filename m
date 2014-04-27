@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758AbaD0HlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:41:13 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31178 "EHLO
+	id S1753728AbaD0HlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:41:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31169 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaD0Hjg (ORCPT
+	with ESMTP id S1753247AbaD0Hjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:36 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-cc-535cb4374b08
+	Sun, 27 Apr 2014 03:39:33 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-65-535cb4344bc2
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,40 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 17/31] iommu/exynos: add support for power management
- subsystems.
-Date: Sun, 27 Apr 2014 13:07:49 +0530
-Message-id: <1398584283-22846-18-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 16/31] iommu/exynos: turn on useful configuration options
+Date: Sun, 27 Apr 2014 13:07:48 +0530
+Message-id: <1398584283-22846-17-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkVtd8S0ywweLl3BZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkStdkS0ywweVnohZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bi6xOY
-	CvYHV8xvXsrWwDjNpYuRk0NCwETi+bl9bBC2mMSFe+vBbCGBpYwSt57odzFygNVM+FzWxcgF
-	FF7EKPH3Qw8jhDOBSeJn1xuwBjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWSmLPqHSNIlbBA
-	uERz4zVGkLEsAqoSt06Gg4R5BTwktv58wg6xTUFiziQbkDAnUPjJnT0sEAe5S7w99QVsvoTA
-	TA6Jzs89YCNZBAQkvk0+xALRKyux6QAzxDOSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGhXnFi
-	bnFpXrpecn7uJkZgLJ7+96x3B+PtA9aHGJOBxk1klhJNzgfGcl5JvKGxmZGFqYmpsZG5pRlp
-	wkrivEkPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MHaJrXy3yL/lmaf7E8GlpldWy8zM
-	zHpUsviF/GEOybXLOxtPKQm6bJvb+u/SzPDtrn8/+f3ZbOriKLZkUq2yz7aH5wMdJ97Ozz4q
-	WtFXzXqqRNrtDsOkiA3Pu5dffMPOcO5YCOOOc6zHpJPvTDsm/H7tR1FNX/2N0es6D2T7ik1/
-	XnB+gWSUbqsSS3FGoqEWc1FxIgDvdN/S2wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAV2zLTHBBp/3WVvcuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8b7m7eZ
+	Cu7IVlyfv4e9gfG5eBcjJ4eEgInE5QOzmSBsMYkL99azgdhCAksZJbpXpsPUPLjWyd7FyAUU
+	X8QocXfSTSYIZwKTxMSZLxhBqtgEDCW237vCCpIQEVjNKNF38QxYC7PAXSaJOavegVUJC/hK
+	TP24lKWLkYODRUBVYtFOAZAwr4CHxKmPjewgYQkBBYk5k2xAwpxA4Sd39rBAXOQu8fbUF7D5
+	EgJzOSRO9W5lBkmwCAhIfJt8iAWiV1Zi0wFmiKslJQ6uuMEygVF4ASPDKkbR1ILkguKk9CIT
+	veLE3OLSvHS95PzcTYzAaDz979mEHYz3DlgfYkwGGjeRWUo0OR8YzXkl8YbGZkYWpiamxkbm
+	lmakCSuJ86o9SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJjQsVl/fc8+K9GoWMHD26Yw
+	fci3fXP/SOnP4Nv1E17enLXe8NzWFTf3Vn13mPzxx3aBT1d4XDpWloUrWKxYsIvnSda8D7kv
+	K1sSprZ/kzn0rmLR7b9shfNzN7400NxfIJG+m3PdtMxt95Lznh5dc16U69WPq7mL7/6/EbA6
+	QUSvzqLV11hsfm2tEktxRqKhFnNRcSIAAARoAtwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV2TLTHBBh+ncVvcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzFl+fwFSwP7hifvNStgbGaS5djBwcEgImEhM+l3UxcgKZYhIX
-	7q1n62Lk4hASWMQo8fdDDyOEM4FJ4mfXGzaQKjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWS
-	mLPqHSNIlbBAuERz4zVGkBUsAqoSt06Gg4R5BTwktv58wg6xWUFiziQbkDAnUPjJnT0sILaQ
-	gLvE21NfWCcw8i5gZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzrz6R2MK5ssDjEKMDB
-	qMTDu0AyJliINbGsuDL3EKMEB7OSCC/ndKAQb0piZVVqUX58UWlOavEhxmSgmyYyS4km5wPT
-	UF5JvKGxibmpsamliYWJmSVpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MF5wOHq1OJx9
-	LYNj9iObJSLNq4KN5zn/Utkk9DTCQ0kvnvvRhJkCMewdL15wzb9kNzHDZbODf/38yUwaOp5Z
-	exp5I133zptUMUeBny1BUFp7tfK+qs2Bm2vaZli8YJnSefWI8oaiOR43/iZuKXi5Y1GF6Lzs
-	rW0P/8d0bm6W8Gb2uHHtYaybmBJLcUaioRZzUXEiAPQp21A5AwAA
+	tYBpjND1DQmC6zEyQAMJaxgz3t+8zVRwR7bi+vw97A2Mz8W7GDk5JARMJB5c62SHsMUkLtxb
+	z9bFyMUhJLCIUeLupJtMEM4EJomJM18wglSxCRhKbL93hRUkISKwmlGi7+IZdhCHWeAuk8Sc
+	Ve/AqoQFfCWmflzK0sXIwcEioCqxaKcASJhXwEPi1MdGdpCwhICCxJxJNiBhTqDwkzt7WEBs
+	IQF3ibenvrBOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM42p9J72Bc1WBxiFGA
+	g1GJh/eHdEywEGtiWXFl7iFGCQ5mJRFezulAId6UxMqq1KL8+KLSnNTiQ4zJQDdNZJYSTc4H
+	JqK8knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBMTb58Zlee
+	XPGF2Q8PxHqmvNpoo6z9PXOV87JbL2/JKCsceXUnZeW6fL8fvjUlit1prCbRAe9kmzRYl11/
+	NId1xYwnPAqO345HrTOeptrA8nSHWeuMUP0lGYueMnzOyGD77R5xoynWci6jw5mdrFdS4p46
+	l/w79Ws+95sJPxOc2AtF17IrGkQqsRRnJBpqMRcVJwIA7yXHOjoDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,364 +60,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This adds support for Suspend to RAM and Runtime Power Management.
+This turns on FLPD_CACHE, ACGEN and SYSSEL.
 
-Since System MMU is located in the same local power domain of its
-master H/W, System MMU must be initialized before it is working if
-its power domain was ever turned off. TLB invalidation according to
-unmapping on page tables must also be performed while power domain is
-turned on.
+FLPD_CACHE is a cache of 1st level page table entries that contains
+the address of a 2nd level page table to reduce latency of page table
+walking.
 
-This patch ensures that resume and runtime_resume(restore_state)
-functions in this driver is called before the calls to resume and
-runtime_resume callback functions in the drivers of master H/Ws.
-Likewise, suspend and runtime_suspend(save_state) functions in this
-driver is called after the calls to suspend and runtime_suspend in the
-drivers of master H/Ws.
+ACGEN is architectural clock gating that gates clocks by System MMU
+itself if it is not active. Note that ACGEN is different from clock
+gating by the CPU. ACGEN just gates clocks to the internal logic of
+System MMU while clock gating by the CPU gates clocks to the System
+MMU.
 
-In order to get benefit of this support, the master H/W and its System
-MMU must resides in the same power domain in terms of Linux kernel. If
-a master H/W does not use generic I/O power domain, its driver must
-call iommu_attach_device() after its local power domain is turned on,
-iommu_detach_device before turned off.
+SYSSEL selects System MMU version in some Exynos SoCs. Some Exynos
+SoCs have an option to select System MMU versions exclusively because
+the SoCs adopts new System MMU version experimentally.
+
+This also always selects LRU as TLB replacement policy. Selecting TLB
+replacement policy is deprecated from System MMU 3.2. TLB in System
+MMU 3.3 has single TLB replacement policy, LRU. The bit of MMU_CFG
+selecting TLB replacement policy is remained as reserved.
+
+QoS value of page table walking is set to 15 (highst value). System
+MMU 3.3 can inherit QoS value of page table walking from its master
+H/W's transaction. This new feature is enabled by default and QoS
+value written to MMU_CFG is ignored.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |  216 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 198 insertions(+), 18 deletions(-)
+ drivers/iommu/exynos-iommu.c |   52 +++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 810bcaf..fefedec3 100755
+index 45c792c..810bcaf 100755
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -27,6 +27,7 @@
- #include <linux/export.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/pm_domain.h>
- #include <linux/notifier.h>
+@@ -81,6 +81,13 @@
+ #define CTRL_BLOCK	0x7
+ #define CTRL_DISABLE	0x0
  
- #include <asm/cacheflush.h>
-@@ -192,6 +193,7 @@ struct sysmmu_drvdata {
- 	int activations;
- 	rwlock_t lock;
- 	struct iommu_domain *domain;
-+	bool powered_on;
- 	unsigned long pgtable;
- };
++#define CFG_LRU		0x1
++#define CFG_QOS(n)	((n & 0xF) << 7)
++#define CFG_MASK	0x0150FFFF /* Selecting bit 0-15, 20, 22 and 24 */
++#define CFG_ACGEN	(1 << 24) /* System MMU 3.3 only */
++#define CFG_SYSSEL	(1 << 22) /* System MMU 3.2 only */
++#define CFG_FLPDCACHE	(1 << 20) /* System MMU 3.2+ only */
++
+ #define REG_MMU_CTRL		0x000
+ #define REG_MMU_CFG		0x004
+ #define REG_MMU_STATUS		0x008
+@@ -97,6 +104,12 @@
  
-@@ -381,7 +383,8 @@ static bool __sysmmu_disable(struct sysmmu_drvdata *data)
- 		data->pgtable = 0;
- 		data->domain = NULL;
+ #define REG_MMU_VERSION		0x034
  
--		__sysmmu_disable_nocount(data);
-+		if (data->powered_on)
-+			__sysmmu_disable_nocount(data);
- 
- 		dev_dbg(data->sysmmu, "Disabled\n");
- 	} else  {
-@@ -444,7 +447,8 @@ static int __sysmmu_enable(struct sysmmu_drvdata *data,
- 		data->pgtable = pgtable;
- 		data->domain = domain;
- 
--		__sysmmu_enable_nocount(data);
-+		if (data->powered_on)
-+			__sysmmu_enable_nocount(data);
- 
- 		dev_dbg(data->sysmmu, "Enabled\n");
- 	} else {
-@@ -529,14 +533,12 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 	data = dev_get_drvdata(owner->sysmmu);
- 
- 	read_lock_irqsave(&data->lock, flags);
--	if (is_sysmmu_active(data)) {
--		unsigned int maj;
-+	if (is_sysmmu_active(data) && data->powered_on) {
- 		unsigned int num_inv = 1;
- 
- 		if (!IS_ERR(data->clk_master))
- 			clk_enable(data->clk_master);
- 
--		maj = __raw_readl(data->sfrbase + REG_MMU_VERSION);
- 		/*
- 		 * L2TLB invalidation required
- 		 * 4KB page: 1 invalidation
-@@ -547,7 +549,7 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
- 		 * 1MB page can be cached in one of all sets.
- 		 * 64KB page can be one of 16 consecutive sets.
- 		 */
--		if ((maj >> 28) == 2) /* major version number */
-+		if (__sysmmu_version(data, NULL) == 2) /* major version number */
- 			num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
- 
- 		if (sysmmu_block(data->sfrbase)) {
-@@ -573,7 +575,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 	data = dev_get_drvdata(owner->sysmmu);
- 
- 	read_lock_irqsave(&data->lock, flags);
--	if (is_sysmmu_active(data)) {
-+	if (is_sysmmu_active(data) && data->powered_on) {
- 		if (!IS_ERR(data->clk_master))
- 			clk_enable(data->clk_master);
- 		if (sysmmu_block(data->sfrbase)) {
-@@ -672,6 +674,7 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, data);
- 
- 	pm_runtime_enable(dev);
-+	data->powered_on = !pm_runtime_enabled(dev);
- 
- 	ret = exynos_iommu_prepare();
- 	if (ret)
-@@ -680,6 +683,34 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- 	return 0;
++#define MMU_MAJ_VER(val)	((val) >> 7)
++#define MMU_MIN_VER(val)	((val) & 0x7F)
++#define MMU_RAW_VER(reg)	(((reg) >> 21) & ((1 << 11) - 1)) /* 11 bits */
++
++#define MAKE_MMU_VER(maj, min)	((((maj) & 0xF) << 7) | ((min) & 0x7F))
++
+ #define REG_PB0_SADDR		0x04C
+ #define REG_PB0_EADDR		0x050
+ #define REG_PB1_SADDR		0x054
+@@ -206,6 +219,29 @@ static void sysmmu_unblock(void __iomem *sfrbase)
+ 	__raw_writel(CTRL_ENABLE, sfrbase + REG_MMU_CTRL);
  }
  
-+#ifdef CONFIG_PM_SLEEP
-+static int sysmmu_suspend(struct device *dev)
++static unsigned int __raw_sysmmu_version(struct sysmmu_drvdata *data)
 +{
-+	struct sysmmu_drvdata *data = dev_get_drvdata(dev);
-+	unsigned long flags;
-+	read_lock_irqsave(&data->lock, flags);
-+	if (is_sysmmu_active(data) &&
-+		(!pm_runtime_enabled(dev) || data->powered_on))
-+		__sysmmu_disable_nocount(data);
-+	read_unlock_irqrestore(&data->lock, flags);
-+	return 0;
++	return MMU_RAW_VER(__raw_readl(data->sfrbase + REG_MMU_VERSION));
 +}
 +
-+static int sysmmu_resume(struct device *dev)
++static unsigned int __sysmmu_version(struct sysmmu_drvdata *data,
++				     unsigned int *minor)
 +{
-+	struct sysmmu_drvdata *data = dev_get_drvdata(dev);
-+	unsigned long flags;
-+	read_lock_irqsave(&data->lock, flags);
-+	if (is_sysmmu_active(data) &&
-+		(!pm_runtime_enabled(dev) || data->powered_on))
-+		__sysmmu_enable_nocount(data);
-+	read_unlock_irqrestore(&data->lock, flags);
-+	return 0;
-+}
-+#endif
++	unsigned int ver = 0;
 +
-+static SIMPLE_DEV_PM_OPS(sysmmu_pm_ops, sysmmu_suspend, sysmmu_resume);
-+
- static const struct of_device_id sysmmu_of_match[] __initconst = {
- 	{ .compatible	= "samsung,sysmmu-v1", },
- 	{ .compatible	= "samsung,sysmmu-v2", },
-@@ -694,6 +725,7 @@ static struct platform_driver exynos_sysmmu_driver __refdata = {
- 	.driver	= {
- 		.owner		= THIS_MODULE,
- 		.name		= "exynos-sysmmu",
-+		.pm		= &sysmmu_pm_ops,
- 		.of_match_table	= sysmmu_of_match,
- 	}
- };
-@@ -1110,24 +1142,150 @@ err_reg_driver:
- }
- subsys_initcall(exynos_iommu_init);
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int sysmmu_pm_genpd_suspend(struct device *dev)
-+{
-+	struct exynos_iommu_owner *owner = dev->archdata.iommu;
-+	int ret;
-+
-+	ret = pm_generic_suspend(dev);
-+	if (ret)
-+		return ret;
-+
-+	return pm_generic_suspend(owner->sysmmu);
-+}
-+
-+static int sysmmu_pm_genpd_resume(struct device *dev)
-+{
-+	struct exynos_iommu_owner *owner = dev->archdata.iommu;
-+	int ret;
-+
-+	ret = pm_generic_resume(owner->sysmmu);
-+	if (ret)
-+		return ret;
-+
-+	return pm_generic_resume(dev);
-+}
-+#endif
-+
-+#ifdef CONFIG_PM_RUNTIME
-+static void sysmmu_restore_state(struct device *sysmmu)
-+{
-+	struct sysmmu_drvdata *data = dev_get_drvdata(sysmmu);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	data->powered_on = true;
-+	if (is_sysmmu_active(data))
-+		__sysmmu_enable_nocount(data);
-+	spin_unlock_irqrestore(&data->lock, flags);
-+}
-+
-+static void sysmmu_save_state(struct device *sysmmu)
-+{
-+	struct sysmmu_drvdata *data = dev_get_drvdata(sysmmu);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+	if (is_sysmmu_active(data))
-+		__sysmmu_disable_nocount(data);
-+	data->powered_on = false;
-+	spin_unlock_irqrestore(&data->lock, flags);
-+}
-+
-+static int sysmmu_pm_genpd_save_state(struct device *dev)
-+{
-+	struct exynos_iommu_client *client = dev->archdata.iommu;
-+	int (*cb)(struct device *__dev);
-+	int ret = 0;
-+
-+	if (dev->type && dev->type->pm)
-+		cb = dev->type->pm->runtime_suspend;
-+	else if (dev->class && dev->class->pm)
-+		cb = dev->class->pm->runtime_suspend;
-+	else if (dev->bus && dev->bus->pm)
-+		cb = dev->bus->pm->runtime_suspend;
-+	else
-+		cb = NULL;
-+
-+	if (!cb && dev->driver && dev->driver->pm)
-+		cb = dev->driver->pm->runtime_suspend;
-+
-+	if (cb)
-+		ret = cb(dev);
-+
-+	if (ret == 0)
-+		sysmmu_save_state(client->sysmmu);
-+
-+	return ret;
-+}
-+
-+static int sysmmu_pm_genpd_restore_state(struct device *dev)
-+{
-+	struct exynos_iommu_client *client = dev->archdata.iommu;
-+	int (*cb)(struct device *__dev);
-+	int ret = 0;
-+
-+	if (dev->type && dev->type->pm)
-+		cb = dev->type->pm->runtime_resume;
-+	else if (dev->class && dev->class->pm)
-+		cb = dev->class->pm->runtime_resume;
-+	else if (dev->bus && dev->bus->pm)
-+		cb = dev->bus->pm->runtime_resume;
-+	else
-+		cb = NULL;
-+
-+	if (!cb && dev->driver && dev->driver->pm)
-+		cb = dev->driver->pm->runtime_resume;
-+
-+	sysmmu_restore_state(client->sysmmu);
-+
-+	if (cb)
-+		ret = cb(dev);
-+
-+	if (ret)
-+		sysmmu_save_state(client->sysmmu);
-+
-+	return ret;
-+}
-+#endif
-+
-+struct gpd_dev_ops sysmmu_devpm_ops = {
-+#ifdef CONFIG_PM_RUNTIME
-+	.save_state = &sysmmu_pm_genpd_save_state,
-+	.restore_state = &sysmmu_pm_genpd_restore_state,
-+#endif
-+#ifdef CONFIG_PM_SLEEP
-+	.suspend = &sysmmu_pm_genpd_suspend,
-+	.resume = &sysmmu_pm_genpd_resume,
-+#endif
-+};
-+
- static int sysmmu_hook_driver_register(struct notifier_block *nb,
- 					unsigned long val,
- 					void *p)
- {
- 	struct device *dev = p;
- 
-+	/*
-+	 * No System MMU assigned even though in the initial state.
-+	 * See exynos_sysmmu_probe().
-+	 */
-+	if (dev->archdata.iommu == NULL)
-+		return 0;
-+
- 	switch (val) {
- 	case BUS_NOTIFY_BIND_DRIVER:
- 	{
- 		struct exynos_iommu_owner *owner;
-+		int ret;
- 
--		/* No System MMU assigned. See exynos_sysmmu_probe(). */
--		if (dev->archdata.iommu == NULL)
--			break;
-+		BUG_ON(!dev_get_drvdata(dev->archdata.iommu));
- 
- 		owner = devm_kzalloc(dev, sizeof(*owner), GFP_KERNEL);
- 		if (!owner) {
- 			dev_err(dev, "No Memory for exynos_iommu_owner\n");
-+			dev->archdata.iommu = NULL;
- 			return -ENOMEM;
- 		}
- 
-@@ -1135,22 +1293,44 @@ static int sysmmu_hook_driver_register(struct notifier_block *nb,
- 		INIT_LIST_HEAD(&owner->client);
- 		owner->sysmmu = dev->archdata.iommu;
- 
-+		ret = pm_genpd_add_callbacks(dev, &sysmmu_devpm_ops, NULL);
-+		if (ret && (ret != -ENOSYS)) {
-+			dev_err(dev,
-+				"Failed to register 'dev_pm_ops' for iommu\n");
-+			devm_kfree(dev, owner);
-+			dev->archdata.iommu = NULL;
-+			return ret;
-+		}
-+
- 		dev->archdata.iommu = owner;
- 		break;
- 	}
--	case BUS_NOTIFY_UNBOUND_DRIVER:
-+	case BUS_NOTIFY_BOUND_DRIVER:
- 	{
- 		struct exynos_iommu_owner *owner = dev->archdata.iommu;
--		if (owner) {
--			struct device *sysmmu = owner->sysmmu;
--			/* if still attached to an iommu_domain. */
--			if (WARN_ON(!list_empty(&owner->client)))
--				iommu_detach_device(owner->domain, owner->dev);
--			devm_kfree(dev, owner);
--			dev->archdata.iommu = sysmmu;
-+		if (!pm_runtime_enabled(dev)) {
-+			struct sysmmu_drvdata *data =
-+					dev_get_drvdata(owner->sysmmu);
-+			if (pm_runtime_enabled(data->sysmmu)) {
-+				data->powered_on = true;
-+				if (is_sysmmu_active(data))
-+					__sysmmu_enable_nocount(data);
-+				pm_runtime_disable(data->sysmmu);
-+			}
- 		}
- 		break;
- 	}
-+	case BUS_NOTIFY_UNBOUND_DRIVER:
-+	{
-+		struct exynos_iommu_owner *owner = dev->archdata.iommu;
-+		struct device *sysmmu = owner->sysmmu;
-+		if (WARN_ON(!list_empty(&owner->client)))
-+			iommu_detach_device(owner->domain, dev);
-+		__pm_genpd_remove_callbacks(dev, false);
-+		devm_kfree(dev, owner);
-+		dev->archdata.iommu = sysmmu;
-+		break;
++	ver = __raw_sysmmu_version(data);
++	if (ver > MAKE_MMU_VER(3, 3)) {
++		dev_err(data->sysmmu, "%s: version(%d.%d) is higher than 3.3\n",
++			__func__, MMU_MAJ_VER(ver), MMU_MIN_VER(ver));
++		BUG();
 +	}
- 	} /* switch (val) */
++
++	if (minor)
++		*minor = MMU_MIN_VER(ver);
++
++	return MMU_MAJ_VER(ver);
++}
++
+ static bool sysmmu_block(void __iomem *sfrbase)
+ {
+ 	int i = 120;
+@@ -360,7 +396,21 @@ static bool __sysmmu_disable(struct sysmmu_drvdata *data)
  
- 	return 0;
+ static void __sysmmu_init_config(struct sysmmu_drvdata *data)
+ {
+-	unsigned long cfg = 0;
++	unsigned long cfg = CFG_LRU | CFG_QOS(15);
++	int maj, min = 0;
++
++	maj = __sysmmu_version(data, &min);
++	if (maj == 3) {
++		if (min >= 2) {
++			cfg |= CFG_FLPDCACHE;
++			if (min == 3) {
++				cfg |= CFG_ACGEN;
++				cfg &= ~CFG_LRU;
++			} else {
++				cfg |= CFG_SYSSEL;
++			}
++		}
++	}
+ 
+ 	__raw_writel(cfg, data->sfrbase + REG_MMU_CFG);
+ }
 -- 
 1.7.9.5
 
