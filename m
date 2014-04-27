@@ -1,75 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838AbaD0ENy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 00:13:54 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35419 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaD0ENw (ORCPT
+	id S1753001AbaD0EPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 00:15:06 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:63296 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889AbaD0EPE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 00:13:52 -0400
+	Sun, 27 Apr 2014 00:15:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
-References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
- <1397922764-1512-3-git-send-email-ddstreet@ieee.org> <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Sun, 27 Apr 2014 00:13:30 -0400
-X-Google-Sender-Auth: K3hWrsPd78lo_E4227SJzVDFUvo
-Message-ID: <CALZtONB4j=yd=cGBnkHy0+H0nyUCwG3PGb4K6XYCyRHA=mqt-g@mail.gmail.com>
-Subject: Re: [PATCH 2/4] mm: zpool: implement zsmalloc shrinking
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140423090355.5a0a98cd@gandalf.local.home>
+References: <1398257541-18201-1-git-send-email-linyongting@gmail.com>
+	<20140423090355.5a0a98cd@gandalf.local.home>
+Date: Sun, 27 Apr 2014 12:15:03 +0800
+Message-ID: <CANWV4VnODgQ7xKk2X6vq=OVVANbsTBS1AxX-3UOdwoYbrxWjPA@mail.gmail.com>
+Subject: Re: [PATCH] ftrace/arm: add save_stack_trace_regs() implementation
+From: ivan lin <linyongting@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: k.khlebnikov@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Linyongting <linyongting@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 4:37 AM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> On Sat, Apr 19, 2014 at 11:52 PM, Dan Streetman <ddstreet@ieee.org> wrote:
->> Add zs_shrink() and helper functions to zsmalloc.  Update zsmalloc
->> zs_create_pool() creation function to include ops param that provides
->> an evict() function for use during shrinking.  Update helper function
->> fix_fullness_group() to always reinsert changed zspages even if the
->> fullness group did not change, so they are updated in the fullness
->> group lru.  Also update zram to use the new zsmalloc pool creation
->> function but pass NULL as the ops param, since zram does not use
->> pool shrinking.
+2014-04-23 21:03 GMT+08:00 Steven Rostedt <rostedt@goodmis.org>:
+> On Wed, 23 Apr 2014 20:52:21 +0800
+> Lin Yongting <linyongting@gmail.com> wrote:
+>
+>> When configure kprobe events of ftrace with "stacktrace" option enabled
+>> in arm, there is no stacktrace was recorded after the kprobe event was
+>> triggered. The root cause is no save_stack_trace_regs() function implemented.
 >>
+>> Implement the save_stack_trace_regs() function in arm, then ftrace will
+>> call this architecture-related function to record the stacktrace into
+>> ring buffer.
+>>
+>> After this fix, stacktrace can be recorded, for example:
+>>
+>> # mount -t debugfs nodev /sys/kernel/debug
+>> # echo "p:netrx net_rx_action" >> /sys/kernel/debug/tracing/kprobe_events
+>> # echo 1 > /sys/kernel/debug/tracing/events/kprobes/netrx/enable
+>> # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
+>> # echo 1 > /sys/kernel/debug/tracing/tracing_on
+>> # ping 127.0.0.1 -c 1
+>> # echo 0 > /sys/kernel/debug/tracing/tracing_on
+>>
+>> # cat /sys/kernel/debug/tracing/trace
+>> # tracer: nop
+>> #
+>> # entries-in-buffer/entries-written: 12/12   #P:1
+>> #
+>> #                              _-----=> irqs-off
+>> #                             / _----=> need-resched
+>> #                            | / _---=> hardirq/softirq
+>> #                            || / _--=> preempt-depth
+>> #                            ||| /     delay
+>> #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+>> #              | |       |   ||||       |         |
+>>             <------ missing some entries ---------------->
+>>             ping-1200  [000] dNs1   667.603250: netrx: (net_rx_action+0x0/0x1f8)
+>>             ping-1200  [000] dNs1   667.604738: <stack trace>
+>>  => net_rx_action
+>>  => do_softirq
+>>  => local_bh_enable
+>>  => ip_finish_output
+>>  => ip_output
+>>  => ip_local_out
+>>  => ip_send_skb
+>>  => ip_push_pending_frames
+>>  => raw_sendmsg
+>>  => inet_sendmsg
+>>  => sock_sendmsg
+>>  => SyS_sendto
+>>  => ret_fast_syscall
+>>
+>> Signed-off-by: Lin Yongting <linyongting@gmail.com>
+>> ---
 >
-> I only review the code without test, however, I think this patch is
-> not acceptable.
+> As this affects ftrace for ARM...
 >
-> The biggest problem is it will call zswap_writeback_entry() under lock,
-> zswap_writeback_entry() may sleep, so it is a bug. see below
-
-thanks for catching that!
-
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
 >
-> The 3/4 patch has a lot of #ifdef, I don't think it's a good kind of
-> abstract way.
-
-it has the #ifdef's because there's no point in compiling in code to
-use zbud/zsmalloc if zbud/zsmalloc isn't compiled...what alternative
-to #ifdef's would you suggest?  Or are there just specific #ifdefs you
-suggest to remove?
-
+> -- Steve
 >
-> What about just disable zswap reclaim when using zsmalloc?
-> There is a long way to optimize writeback reclaim(both zswap and zram) ,
-> Maybe a small and simple step forward is better.
 
-I think it's possible to just remove the zspage from the class while
-under lock, then unlock and reclaim it.  As long as there's a
-guarantee that zswap (or any zpool/zsmalloc reclaim user) doesn't
-map/access the handle after evict() completes successfully, that
-should work.  There does need to be some synchronization between
-zs_free() and each handle's eviction though, similar to zbud's
-under_reclaim flag.  I'll work on a v2 patch.
+Hi Russell
+
+  How about my Patch?  any advice is appreciate。
+
+  Best Regards!
+
+  -- Yongting.
+
+
+>>  arch/arm/kernel/stacktrace.c |   19 +++++++++++++++++++
+>>  1 file changed, 19 insertions(+)
+>>
+>> diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
+>> index af4e8c8..c558db6 100644
+>> --- a/arch/arm/kernel/stacktrace.c
+>> +++ b/arch/arm/kernel/stacktrace.c
+>> @@ -123,6 +123,25 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+>>               trace->entries[trace->nr_entries++] = ULONG_MAX;
+>>  }
+>>
+>> +void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
+>> +{
+>> +     struct stack_trace_data data;
+>> +     struct stackframe frame;
+>> +
+>> +     data.trace = trace;
+>> +     data.skip = trace->skip;
+>> +     data.no_sched_functions = 0;
+>> +
+>> +     frame.fp = regs->ARM_fp;
+>> +     frame.sp = regs->ARM_sp;
+>> +     frame.lr = regs->ARM_lr;
+>> +     frame.pc = regs->ARM_pc;
+>> +
+>> +     walk_stackframe(&frame, save_trace, &data);
+>> +     if (trace->nr_entries < trace->max_entries)
+>> +             trace->entries[trace->nr_entries++] = ULONG_MAX;
+>> +}
+>> +
+>>  void save_stack_trace(struct stack_trace *trace)
+>>  {
+>>       save_stack_trace_tsk(current, trace);
+>
