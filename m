@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaD0HkX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:40:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31120 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224AbaD0HjI (ORCPT
+	id S1753371AbaD0HkR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:17 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57763 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220AbaD0HjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:08 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-03-535cb41be86d
+	Sun, 27 Apr 2014 03:39:03 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-04-535cb415b5b5
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,39 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 07/31] iommu/exynos: always enable runtime PM
-Date: Sun, 27 Apr 2014 13:07:39 +0530
-Message-id: <1398584283-22846-8-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 05/31] iommu/exynos: remove prefetch buffer setting
+Date: Sun, 27 Apr 2014 13:07:37 +0530
+Message-id: <1398584283-22846-6-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkVld6S0ywwcnLvBZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkRld0S0ywweHF2hZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8byjl3s
-	BR/YKxauu8vSwHiKrYuRk0NCwETi4+NbULaYxIV768FsIYGljBKnHofB1MzfP5mxi5ELKL6I
-	UaLtSBszhDOBSeLCgomMIFVsAoYS2+9dYQVJiAisZpTou3iGHcRhFrjLJDFn1TuwKmEBR4mv
-	834C2RwcLAKqEievi4GEeQXcJfp7bjGDhCUEFCTmTLIBCXMKeEg8ubOHBeIid4m3p76AzZcQ
-	mMkh8fbXBiaQBIuAgMS3yYdYIHplJTYdYIa4WlLi4IobLBMYhRcwMqxiFE0tSC4oTkovMtUr
-	TswtLs1L10vOz93ECIzG0/+eTdzBeP+A9SHGZKBxE5mlRJPzgdGcVxJvaGxmZGFqYmpsZG5p
-	Rpqwkjhv+qOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MLT+el/CyfGS0S5m75nbH/iXs
-	J7e4i0hOeBuubGF38kruh7uVfcm63lIajZ4rhZ0FY5U+nOhyfd539Mv+15NUVIo8QgKvBP3Y
-	EBW+5oqf0JWr9icv3P4rdK0xTm1ON4d+rViUS5VHRsL7xP6Fjy5sUU1tf/7ek3eS9NOmpn1/
-	JHf4XudTFTFTYinOSDTUYi4qTgQA8TfzmtwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3pLTHBBjtuM1ncuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8buL5fZ
+	Cp7wVdw78oOlgbGPp4uRk0NCwERi+sZdLBC2mMSFe+vZuhi5OIQEljJKrNzWxQpTNOPUIXaI
+	xCJGiSmvpjJBOBOYJP42LmACqWITMJTYfu8KK0hCRGA1o0TfxTNgLcwCd5kk5qx6xwhSJSzg
+	LtE14R9QBwcHi4CqxJKHYM28QOGXjdfZQMISAgoScybZgIQ5BTwkntzZA3aeEFDJ21NfoC6a
+	ySGx93QUiM0iICDxbfIhFohWWYlNB5ghSiQlDq64wTKBUXgBI8MqRtHUguSC4qT0ImO94sTc
+	4tK8dL3k/NxNjMBoPP3vWf8OxrsHrA8xJgONm8gsJZqcD4zmvJJ4Q2MzIwtTE1NjI3NLM9KE
+	lcR57z9MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAyKKxYMGnIy8m7Cn75bo6Qm/1xtfT
+	nswI7bp9Lrx/nzgv859rP75phiwrvdq/alFxpt2k0y1XukoCop/p/fmTfMC13uDEMRuBLH/X
+	/1YRzVpuMlHfWz+3bt0SN2H6jPfp6kVzX8sGrAvylVm1QOj8lktd79NOV32xEwnV/Hj+3Gef
+	9MXbr99ff0yJpTgj0VCLuag4EQAdC4yv3AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3RLTHBBr9OKFjcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzlnfsYi/4wF6xcN1dlgbGU2xdjJwcEgImEvP3T2aEsMUkLtxb
-	DxTn4hASWMQo0XakjRnCmcAkcWHBRLAqNgFDie33rrCCJEQEVjNK9F08ww7iMAvcZZKYs+od
-	WJWwgKPE13k/gWwODhYBVYmT18VAwrwC7hL9PbeYQcISAgoScybZgIQ5BTwkntzZwwJiCwGV
-	vD31hXUCI+8CRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHR/kx6B+OqBotDjAIcjEo8
-	vD+kY4KFWBPLiitzDzFKcDArifByTgcK8aYkVlalFuXHF5XmpBYfYkwGumkis5Rocj4wEeWV
-	xBsam5ibGptamliYmFmSJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2Pj2nvdLtyHrqmK
-	CfzuuuFiVH//u8Of/eXXVum4SvPdv7/7wxVV4SpeO+U3j9b77GBrUfm68Eb7iUWhU79t9nyw
-	gmcFi/800TNPVjSs2jZntkTppg/SMVLan9v5jkrLOub/XrvJNC21bfc1PpXnUYsV9DniDJes
-	9BFuEtrIt+jPxA1Wv8W+CGxUYinOSDTUYi4qTgQAYpBmPjoDAAA=
+	tYBpjND1DQmC6zEyQAMJaxgzdn+5zFbwhK/i3pEfLA2MfTxdjJwcEgImEjNOHWKHsMUkLtxb
+	z9bFyMUhJLCIUWLKq6lMEM4EJom/jQuYQKrYBAwltt+7wgqSEBFYzSjRd/EMO4jDLHCXSWLO
+	qneMIFXCAu4SXRP+AXVwcLAIqEoseQjWzAsUftl4nQ0kLCGgIDFnkg1ImFPAQ+LJnT0sILYQ
+	UMnbU19YJzDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHO3PpHcwrmqwOMQowMGo
+	xMP7QzomWIg1say4MvcQowQHs5IIL+d0oBBvSmJlVWpRfnxRaU5q8SHGZKCbJjJLiSbnAxNR
+	Xkm8obGJuamxqaWJhYmZJWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwrpq6betKy/3n
+	nwqL60v2ah/taunW8GV9dFR3v7hHqdzqA0zLZb5lLvk0exHnZb4vrJlPigVkuV8XagQqrwz2
+	KnZUmdEZousXaRi85K7YK4s16Q6Onh/bLt6IY+J4rTWrSUnsNm9BQ4fbxibr/zOETLUX6WtL
+	2Bbu7P5+L+yu/gcOsSwPjv1KLMUZiYZazEXFiQBDsSq1OgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,31 +60,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-Checking if the probing device has a parent device was just to discover
-if the probing device is involved in a power domain when the power
-domain controlled by Samsung's custom implementation.
-Since generic IO power domain is applied, it is required to remove
-the condition to see if the probing device has a parent device.
+Prefetch buffer is a cache of System MMU 3.x and caches a block of
+page table entries to make effect of larger page with small pages.
+However, how to control prefetch buffers and the specifications of
+prefetch buffers different from minor versions of System MMU v3.
+Prefetch buffers must be controled with care because there are some
+restrictions in H/W design.
+
+The interface and implementation to initiate prefetch buffers will
+be prepared later.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/iommu/exynos-iommu.c |   16 ----------------
+ 1 file changed, 16 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index c7f831c..d466076 100644
+index 7ce44a8..7556177 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -631,8 +631,7 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+@@ -243,13 +243,6 @@ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
+ 	__sysmmu_tlb_invalidate(sfrbase);
+ }
  
- 	__set_fault_handler(data, &default_fault_handler);
+-static void __sysmmu_set_prefbuf(void __iomem *sfrbase, unsigned long base,
+-						unsigned long size, int idx)
+-{
+-	__raw_writel(base, sfrbase + REG_PB0_SADDR + idx * 8);
+-	__raw_writel(size - 1 + base,  sfrbase + REG_PB0_EADDR + idx * 8);
+-}
+-
+ static void __set_fault_handler(struct sysmmu_drvdata *data,
+ 					sysmmu_fault_handler_t handler)
+ {
+@@ -423,15 +416,6 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
  
--	if (dev->parent)
--		pm_runtime_enable(dev);
-+	pm_runtime_enable(dev);
+ 	for (i = 0; i < data->nsfrs; i++) {
+ 		__sysmmu_set_ptbase(data->sfrbases[i], pgtable);
+-
+-		if ((readl(data->sfrbases[i] + REG_MMU_VERSION) >> 28) == 3) {
+-			/* System MMU version is 3.x */
+-			__raw_writel((1 << 12) | (2 << 28),
+-					data->sfrbases[i] + REG_MMU_CFG);
+-			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 0);
+-			__sysmmu_set_prefbuf(data->sfrbases[i], 0, -1, 1);
+-		}
+-
+ 		__raw_writel(CTRL_ENABLE, data->sfrbases[i] + REG_MMU_CTRL);
+ 	}
  
- 	dev_dbg(dev, "(%s) Initialized\n", data->dbgname);
- 	return 0;
 -- 
 1.7.9.5
 
