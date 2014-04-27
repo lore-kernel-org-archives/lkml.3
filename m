@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaD0UB3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 16:01:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43875 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353AbaD0UA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 16:00:56 -0400
-Date: Sun, 27 Apr 2014 22:00:43 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: tiwai@suse.de, gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        Laurent Navet <laurent.navet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: line6: fix possible overrun
-Message-ID: <20140427200042.GA23846@mguzik.redhat.com>
-References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
- <20140426204704.GB17562@mguzik.redhat.com>
- <20140426213137.GM26890@mwanda>
- <20140426215945.GC17562@mguzik.redhat.com>
- <20140427173932.GP26890@mwanda>
+	id S1752579AbaD0UIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 16:08:23 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:49068 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048AbaD0UIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 16:08:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140427173932.GP26890@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140427120820.GC22116@gmail.com>
+References: <1398535818-14217-1-git-send-email-ryao@gentoo.org>
+	<20140427120820.GC22116@gmail.com>
+Date: Sun, 27 Apr 2014 13:08:20 -0700
+X-Google-Sender-Auth: NyL85WwT-4SeDtNloB0w28rL0t8
+Message-ID: <CA+55aFw39HcWMYsPXb=PMK6--bHCSWwrjucGK+4VswEZrWLbGA@mail.gmail.com>
+Subject: Re: [PATCH] x86/dumpstack: Walk frames when built with frame pointers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Yao <ryao@gentoo.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel@gentoo.org, Brian Behlendorf <behlendorf1@llnl.gov>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 08:39:32PM +0300, Dan Carpenter wrote:
-> On Sat, Apr 26, 2014 at 11:59:46PM +0200, Mateusz Guzik wrote:
-> > > And sadly enough some of those ->id strings are more than 15 characters
-> > > and a NUL which will fit in card->id.  So this overflow is real.  The
-> > > card->shortname is a 32 char array so none of those overflow.
-> > > 
-> > > If we want to sovle the truncation issue then we need to think of
-> > > shorter names for BassPODxtLive, BassPODxtPro, PODStudioUX1, and
-> > > PODStudioUX2.
-> > > 
-> > 
-> > In that case I suggest compile time assertions that ids and names fit
-> 
-> That sounds like some magic code which I would love to see.  :)
-> 
+On Sun, Apr 27, 2014 at 5:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> So it's useful information for hairy bugs and it would be sad to
+> remove them.
 
-Just asserting something on compile time is not a problem.
+I tend to agree. I've often found the left-overs to be good clues
+about what just got called. Although equally often it's another kind
+of clue entirely: that the stack frame of some of the functions
+involved in the real call frame is much too big, leaving room for that
+stale information to lay around.
 
-The kernel has BUILD_BUG_ON macro. I didn't check why, but it doesn't
-use _Static_assert. Instead it produces some code which makes it
-unusable in this context.
+> Having said that, your complaint that '?' entries can make reading of
+> back traces more difficult is valid as well - so maybe we can do
+> something about that.
 
-Aforementoined _Static_assert is available at least in gcc and clang and
-you can call it outside of any function, e.g.:
-_Static_assert(sizeof(meh) < 42, "oh no");
+Quite frankly, I'd much rather just remove the annoying hex numbers
+that are imnsho *much* more distracting. Possibly even the "/0xsize"
+part (although that is at least somewhat useful to judge where in the
+function it is).
 
-Unfortnately I failed to come up with a macro which would allow me to use
-it in the initializer. :/
+And while it would be horrible for readability, it might also be a
+good idea to replace the newlines with something like " -> " instead,
+because we are quite often vertically challenged. But that could
+really make things pretty unreadable.
 
-One could change line6_properties's definition so that it contains
-arrays instead of pointers, that would introduce automagic checking and
-I don't think memory waste (if any) would be problematic.
+So to take your example, it might be something like this
 
-> >  and a WARN_ON + -EINVAL in line6_init_audio to catch future
-> >  offenders.
-> 
-> Returning -EINVAL is a bad idea because it would break the driver
-> completely and make it unusable.
-> 
+arch_trigger_all_cpu_backtrace+0x3c -> do_raw_spin_lock+0xb7
+ -> _raw_spin_lock_irqsave+0x35 -> ? prepare_to_wait+0x18
+ -> prepare_to_wait+0x18 -> ? generic_make_request+0x80
+ -> ? unmap_underlying_metadata+0x2e -> __wait_on_bit+0x20
+ -> ? submit_bio+0xd2 -> out_of_line_wait_on_bit+0x54
+ -> ? unmap_underlying_metadata+0x2e -> ? autoremove_wake_function+0x31
+ -> __wait_on_buffer+0x1b -> __ext3_get_inode_loc+0x1ef -> ext3_iget+0x45
+ -> ext3_lookup+0x97 -> lookup_real+0x20 -> __lookup_hash+0x2a
+ -> lookup_slow+0x36 -> path_lookupat+0xf9 -> filename_lookup+0x1f
+ -> user_path_at_empty+0x3f -> user_path_at+0xd -> vfs_fstatat+0x40
+ -> ? lg_local_unlock+0x31 -> vfs_stat+0x13 -> sys_stat64+0x11
+ -> ? __fput+0x187 -> ? restore_all+0xf -> ? trace_hardirqs_on_thunk+0xc
+ -> syscall_call+0x7
 
-Well I would vote for returning the error anyway. Something is wrong,
-better fix it as it is instead of risking additional bugs resulting
-from truncation.
+which is admittedly complete line noise, but is just 13 lines rather
+than 31. That can sometimes be a really big deal.
 
+Also, we might want to cap the number of lines regardless. It is true
+that sometimes the really deep call chains can be interesting, but
+equally often they make other important stuff scroll off the screen
+(oopses that don't get caught in /sys/log/messages because they kill
+the machine are the worst to debug, and we still end up having people
+send pictures taken with digital cameras of them), so it's a "win
+some, lose some" kind of thing.
 
-> > 
-> > As a side note I'm not sure if pod_try_init from drivers/staging/line6/pod.c
-> > cleans up properly after failed line6_init_audio.
-> 
-> Yeah.  It doesn't seem to clean up at all.
-> 
+Of course, the questionable stale entries on the stack can (and do)
+make the whole "scroll off the screen" thing worse. So I dunno.
 
--- 
-Mateusz Guzik
+              Linus
