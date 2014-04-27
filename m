@@ -1,266 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbaD0UWu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 16:22:50 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:53874 "EHLO gloria.sntech.de"
+	id S1753079AbaD0Ugv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 16:36:51 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:49457 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaD0UWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 16:22:48 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Max Schwarz <max.schwarz@online.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH] i2c: add driver for Rockchip RK3xxx SoC I2C adapter
-Date: Sun, 27 Apr 2014 22:23:13 +0200
-Message-ID: <2533407.kJCGHuX10p@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1840959.yqLj3D6H4q@typ>
-References: <1840959.yqLj3D6H4q@typ>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751335AbaD0Ugu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 16:36:50 -0400
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH] x86/dumpstack: Walk frames when built with frame pointers
+From: Richard Yao <ryao@gentoo.org>
+In-Reply-To: <CA+55aFw39HcWMYsPXb=PMK6--bHCSWwrjucGK+4VswEZrWLbGA@mail.gmail.com>
+Date: Sun, 27 Apr 2014 16:36:39 -0400
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, Jiri Slaby <jslaby@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel@gentoo.org, Brian Behlendorf <behlendorf1@llnl.gov>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?windows-1252?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8791C231-A0EB-4D95-970D-DD7E5E00FEAE@gentoo.org>
+References: <1398535818-14217-1-git-send-email-ryao@gentoo.org> <20140427120820.GC22116@gmail.com> <CA+55aFw39HcWMYsPXb=PMK6--bHCSWwrjucGK+4VswEZrWLbGA@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Max,
+On Apr 27, 2014, at 4:08 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-first of all, thanks for working on this :-)
-
-I saw some general things inlined below, but I guess Wolfram is the better 
-person to check the i2c-specifics.
-
-Am Sonntag, 27. April 2014, 21:38:49 schrieb Max Schwarz:
-> Driver for the native I2C adapter found in Rockchip RK3xxx SoCs.
-
-[...]
-
-> diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-> b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt new file mode 100644
-> index 0000000..6778985
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-> @@ -0,0 +1,33 @@
-> +* Rockchip RK3xxx I2C controller
-> +
-> +This driver interfaces with the native I2C controller present in Rockchip
-> +RK3xxx SoCs.
-> +
-> +Required properties :
-> +
-> + - reg : Offset and length of the register set for the device
-> + - compatible : should be "rockchip,rk3x-i2c"
-> + - interrupts : interrupt number
-> + - clocks : parent clock
-> + - grf : the phandle of the syscon node for the general register file (GRF)
-> + - bus-idx : index of the bus in the GRF
-
-both the grf as well as the bus-idx are rockchip specific, so they should be 
-prefixed (rockchip,grf, etc) and from my personal taste I would hope we could 
-invest in an "n" and "e", to make it a full bus-index ;-)
-
-
-> +
-> +Optional properties :
-> +
-> + - frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
-
-the convention seems to be "clock-frequency" for the desired bus speed 
-(checked i2c-sirf, i2c-exynos, i2c-at91and i2c-qup).
-
-
-> +
-> +Example:
-> +
-> +i2c0: i2c@2002d000 {
-> +	compatible = "rockchip,rk3x-i2c";
-> +	reg = <0x2002d000 0x1000>;
-> +	interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
-> +
-> +	grf = <&grf>;
-> +	bus-idx = <0>;
-> +
-> +	clock-names = "i2c";
-> +	clocks = <&cru PCLK_I2C0>;
-> +};
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index c94db1c..f973632 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -663,6 +663,16 @@ config I2C_PXA_SLAVE
->  	  is necessary for systems where the PXA may be a target on the
->  	  I2C bus.
+> On Sun, Apr 27, 2014 at 5:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> 
+>> So it's useful information for hairy bugs and it would be sad to
+>> remove them.
 > 
-> +config I2C_RK3X
-> +	tristate "Rockchip RK3xxx I2C adapter"
-> +	depends on OF
-> +	help
-> +	  Say Y here to include support for the I2C adapter in Rockchip RK3xxx
-> +	  SoCs.
-> +
-> +	  This driver can also be built as a module. If so, the module will
-> +	  be called i2c-rk3x.
-> +
->  config I2C_QUP
->  	tristate "Qualcomm QUP based I2C controller"
->  	depends on ARCH_QCOM
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 18d18ff..39b6851 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -65,6 +65,7 @@ obj-$(CONFIG_I2C_PNX)		+= i2c-pnx.o
->  obj-$(CONFIG_I2C_PUV3)		+= i2c-puv3.o
->  obj-$(CONFIG_I2C_PXA)		+= i2c-pxa.o
->  obj-$(CONFIG_I2C_PXA_PCI)	+= i2c-pxa-pci.o
-> +obj-$(CONFIG_I2C_RK3X)		+= i2c-rk3x.o
->  obj-$(CONFIG_I2C_QUP)		+= i2c-qup.o
->  obj-$(CONFIG_I2C_RIIC)		+= i2c-riic.o
->  obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> new file mode 100644
-> index 0000000..00491b0
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -0,0 +1,728 @@
-> +/*
-> + * Driver for I2C unit in Rockchip RK3188 SoC
+> I tend to agree. I've often found the left-overs to be good clues
+> about what just got called. Although equally often it's another kind
+> of clue entirely: that the stack frame of some of the functions
+> involved in the real call frame is much too big, leaving room for that
+> stale information to lay around.
 
-RK3188 -> RK3xxx?
+Getting information about the frames being too big is a useful side effect. I don’t think the omission of historical frames from the stack traces needs to eliminate that. In particular, we could print the stack depth, frame size and number of possible pointers to kernel code spotted in the frame alongside the stack frames that we obtain from unwinding the stack.
 
-> + *
-> + * Max Schwarz <max.schwarz@online.de>
-> + * based on the patches by Rockchip Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/time.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/clk.h>
-> +#include <linux/wait.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
-> +
-> +
-> +/* Register Map */
-> +#define REG_CON        0x00 /* control register */
-> +#define REG_CLKDIV     0x04 /* clock divisor register */
-> +#define REG_MRXADDR    0x08 /* slave address for REGISTER_TX */
-> +#define REG_MRXRADDR   0x0c /* slave register address for REGISTER_TX */
-> +#define REG_MTXCNT     0x10 /* number of bytes to be transmitted */
-> +#define REG_MRXCNT     0x14 /* number of bytes to be received */
-> +#define REG_IEN        0x18 /* interrupt enable */
-> +#define REG_IPD        0x1c /* interrupt pending */
-> +#define REG_FCNT       0x20 /* finished count */
-> +
-> +/* Data buffer offsets */
-> +#define TXBUFFER_BASE 0x100
-> +#define RXBUFFER_BASE 0x200
-> +
-> +/* REG_CON bits */
-> +#define REG_CON_EN        (1 << 0)
-> +enum {
-> +	REG_CON_MOD_TX = 0,      /* transmit data */
-> +	REG_CON_MOD_REGISTER_TX, /* select register and restart */
-> +	REG_CON_MOD_RX,          /* receive data */
-> +	REG_CON_MOD_REGISTER_RX, /* broken: transmits read addr AND writes
-> +				  * register addr */
-> +};
-> +#define REG_CON_MOD(mod)  ((mod) << 1)
-> +#define REG_CON_MOD_MASK  (3 << 1)
-> +#define REG_CON_START     (1 << 3)
-> +#define REG_CON_STOP      (1 << 4)
-> +#define REG_CON_LASTACK   (1 << 5) /* 1: do not send ACK after last receive
-> */ +#define REG_CON_ACTACK    (1 << 6) /* 1: stop if NACK is received */ +
-> +/* REG_MRXADDR bits */
-> +#define REG_MRXADDR_LOW   (1 << 24) /* bits [7:0] of MRX[R]ADDR are valid
-> */ +#define REG_MRXADDR_MID   (1 << 25) /* bits [15:8] of MRX[R]ADDR are
-> valid */ +#define REG_MRXADDR_HIGH  (1 << 26) /* bits [23:16] of MRX[R]ADDR
-> are valid */ +
-> +/* REG_IEN/REG_IPD bits */
-> +#define REG_INT_BTF       (1 << 0) /* a byte was transmitted */
-> +#define REG_INT_BRF       (1 << 1) /* a byte was received */
-> +#define REG_INT_MBTF      (1 << 2) /* master data transmit finished */
-> +#define REG_INT_MBRF      (1 << 3) /* master data receive finished */
-> +#define REG_INT_START     (1 << 4) /* START condition generated */
-> +#define REG_INT_STOP      (1 << 5) /* STOP condition generated */
-> +#define REG_INT_NAKRCV    (1 << 6) /* NACK received */
-> +#define REG_INT_ALL       0x7f
-> +
-> +/* Registers in the GRF (General Register File) */
-> +#define GRF_SOC_CON1      4
-> +
-> +/* Constants */
-> +#define WAIT_TIMEOUT      200 /* ms */
-> +
-> +enum rk3x_i2c_state {
-> +	STATE_IDLE,
-> +	STATE_START,
-> +	STATE_READ,
-> +	STATE_WRITE,
-> +	STATE_STOP
-> +};
-> +
-> +struct rk3x_i2c {
-> +	struct i2c_adapter adap;
-> +	struct device *dev;
-> +
-> +	/* Hardware resources */
-> +	void __iomem *regs;
-> +	struct regmap *grf;
-> +	unsigned int bus_idx;
-> +	struct clk *clk;
-> +	int irq;
-> +
-> +	/* Settings */
-> +	unsigned int scl_frequency;
-> +
-> +	/* Synchronization & notification */
-> +	spinlock_t lock;
-> +	wait_queue_head_t wait;
-> +	bool busy;
-> +
-> +	/* Current message */
-> +	struct i2c_msg *msg;
-> +	u8 addr;
-> +	unsigned int mode;
-> +
-> +	/* I2C state machine */
-> +	enum rk3x_i2c_state state;
-> +	unsigned int processed; /* sent/received bytes */
-> +	int error;
-> +};
-> +
-> +static inline void i2c_writel(struct rk3x_i2c *i2c, u32 value,
-> +			      unsigned int offset)
-> +{
-> +	writel(value, i2c->regs + offset);
-> +}
-> +
-> +static inline u32 i2c_readl(struct rk3x_i2c *i2c, unsigned int offset)
-> +{
-> +	return readl(i2c->regs + offset);
-> +}
+>> Having said that, your complaint that '?' entries can make reading of
+>> back traces more difficult is valid as well - so maybe we can do
+>> something about that.
+> 
+> Quite frankly, I'd much rather just remove the annoying hex numbers
+> that are imnsho *much* more distracting. Possibly even the "/0xsize"
+> part (although that is at least somewhat useful to judge where in the
+> function it is).
+> 
+> And while it would be horrible for readability, it might also be a
+> good idea to replace the newlines with something like " -> " instead,
+> because we are quite often vertically challenged. But that could
+> really make things pretty unreadable.
+> 
+> So to take your example, it might be something like this
+> 
+> arch_trigger_all_cpu_backtrace+0x3c -> do_raw_spin_lock+0xb7
+> -> _raw_spin_lock_irqsave+0x35 -> ? prepare_to_wait+0x18
+> -> prepare_to_wait+0x18 -> ? generic_make_request+0x80
+> -> ? unmap_underlying_metadata+0x2e -> __wait_on_bit+0x20
+> -> ? submit_bio+0xd2 -> out_of_line_wait_on_bit+0x54
+> -> ? unmap_underlying_metadata+0x2e -> ? autoremove_wake_function+0x31
+> -> __wait_on_buffer+0x1b -> __ext3_get_inode_loc+0x1ef -> ext3_iget+0x45
+> -> ext3_lookup+0x97 -> lookup_real+0x20 -> __lookup_hash+0x2a
+> -> lookup_slow+0x36 -> path_lookupat+0xf9 -> filename_lookup+0x1f
+> -> user_path_at_empty+0x3f -> user_path_at+0xd -> vfs_fstatat+0x40
+> -> ? lg_local_unlock+0x31 -> vfs_stat+0x13 -> sys_stat64+0x11
+> -> ? __fput+0x187 -> ? restore_all+0xf -> ? trace_hardirqs_on_thunk+0xc
+> -> syscall_call+0x7
+> 
+> which is admittedly complete line noise, but is just 13 lines rather
+> than 31. That can sometimes be a really big deal.
+> 
+> Also, we might want to cap the number of lines regardless. It is true
+> that sometimes the really deep call chains can be interesting, but
+> equally often they make other important stuff scroll off the screen
+> (oopses that don't get caught in /sys/log/messages because they kill
+> the machine are the worst to debug, and we still end up having people
+> send pictures taken with digital cameras of them), so it's a "win
+> some, lose some" kind of thing.
+> 
+> Of course, the questionable stale entries on the stack can (and do)
+> make the whole "scroll off the screen" thing worse. So I dunno.
+> 
+>              Linus
 
-I'm not sure what the policy here is, but is this indirection really necessary 
-when it's only doing a normal readl/writel?
+I suppose one option would be to write a patch to make this configurable via sysctl, throw it into staging so only kernel developers have access to it (I hope) and then try out each of these variations on our own machines to see which one we like best. The patch I submitted to the list is one that I am using myself and I have come to really like having only stack frames described by frame pointers printed. I think others who try more condensed stacks will come to like them too.
 
-
-Heiko
+If you are interested in doing that experiment, I could put a patch together to do it.
