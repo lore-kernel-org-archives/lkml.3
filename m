@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799AbaD0KGN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 06:06:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49849 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181AbaD0KGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 06:06:12 -0400
-Date: Sun, 27 Apr 2014 12:05:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Richard Yao <ryao@gentoo.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf machine: Search for modules in %s/lib/modules/%s
-Message-ID: <20140427100556.GB1111@krava.brq.redhat.com>
-References: <1398532675-13684-1-git-send-email-ryao@gentoo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398532675-13684-1-git-send-email-ryao@gentoo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753450AbaD0KKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 06:10:21 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:35887 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753219AbaD0KKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 06:10:19 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqcWAJrWXFNbslH1/2dsb2JhbABZgwaDOqhHAwEBAQEBBAGZcgICgQgXdIJTExwjGIECJBOIRQHKNYVaiH+EQAEDjnyKDwGSXoMzOw
+Date: Sun, 27 Apr 2014 12:12:19 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, anton <anton@tuxera.com>
+Subject: [PATCH 1/1] fs/ntfs/mft.c: fix 2 sparse warnings
+Message-Id: <20140427121219.02069e58cd40f1b78e8b5971@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 01:17:55PM -0400, Richard Yao wrote:
-> Modules installed outside of the kernel's build system should go into
-> "%s/lib/modules/%s/extra", but at present, perf will only look at them
-> when they are in "%s/lib/modules/%s/kernel". Lets encourage good
-> citizenship by relaxing this requirement to "%s/lib/modules/%s". This
-> way open source modules that are out-of-tree have no incentive to start
-> populating a directory reserved for in-kernel modules and I can stop
-> hex-editing my system's perf binary when profiling OSS out-of-tree
-> modules.
-> 
-> Feedback from Namhyung Kim correctly revealed that the hex-edits that I
-> had been doing meant that perf was also traversing the build and source
-> symlinks in %s/lib/modules/%s. That is undesireable, so we explicitly
-> exclude them from traversal with a minor tweak to the traversal routine.
+fs/ntfs/mft.c:471:33: warning: Variable length array is used.
+fs/ntfs/mft.c:676:33: warning: Variable length array is used.
 
-looks good to me, Namhyung?
+This is untested.
 
-thanks,
-jirka
+Cc: Anton Altaparmakov <anton@tuxera.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ntfs/mft.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-> 
-> Signed-off-by: Richard Yao <ryao@gentoo.org>
-> ---
->  tools/perf/util/machine.c | 16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index a53cd0b..27c2a5e 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -717,7 +717,7 @@ static char *get_kernel_version(const char *root_dir)
->  }
->  
->  static int map_groups__set_modules_path_dir(struct map_groups *mg,
-> -				const char *dir_name)
-> +				const char *dir_name, int depth)
->  {
->  	struct dirent *dent;
->  	DIR *dir = opendir(dir_name);
-> @@ -742,7 +742,15 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
->  			    !strcmp(dent->d_name, ".."))
->  				continue;
->  
-> -			ret = map_groups__set_modules_path_dir(mg, path);
-> +			/* Do not follow top-level source and build symlinks */
-> +			if (depth == 0) {
-> +				if (!strcmp(dent->d_name, "source") ||
-> +				    !strcmp(dent->d_name, "build"))
-> +					continue;
-> +			}
-> +
-> +			ret = map_groups__set_modules_path_dir(mg, path,
-> +							       depth + 1);
->  			if (ret < 0)
->  				goto out;
->  		} else {
-> @@ -786,11 +794,11 @@ static int machine__set_modules_path(struct machine *machine)
->  	if (!version)
->  		return -1;
->  
-> -	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s/kernel",
-> +	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s",
->  		 machine->root_dir, version);
->  	free(version);
->  
-> -	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
-> +	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path, 0);
->  }
->  
->  static int machine__create_module(void *arg, const char *name, u64 start)
-> -- 
-> 1.8.3.2
-> 
+diff --git a/fs/ntfs/mft.c b/fs/ntfs/mft.c
+index 3014a36..eddb739 100644
+--- a/fs/ntfs/mft.c
++++ b/fs/ntfs/mft.c
+@@ -468,7 +468,7 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
+ 	struct page *page;
+ 	unsigned int blocksize = vol->sb->s_blocksize;
+ 	int max_bhs = vol->mft_record_size / blocksize;
+-	struct buffer_head *bhs[max_bhs];
++	struct buffer_head **bhs;
+ 	struct buffer_head *bh, *head;
+ 	u8 *kmirr;
+ 	runlist_element *rl;
+@@ -478,11 +478,14 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
+ 
+ 	ntfs_debug("Entering for inode 0x%lx.", mft_no);
+ 	BUG_ON(!max_bhs);
+-	if (unlikely(!vol->mftmirr_ino)) {
++	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
++	if (unlikely(!bhs || !vol->mftmirr_ino)) {
+ 		/* This could happen during umount... */
+ 		err = ntfs_sync_mft_mirror_umount(vol, mft_no, m);
+-		if (likely(!err))
++		if (likely(!err)) {
++			kfree(bhs);
+ 			return err;
++		}
+ 		goto err_out;
+ 	}
+ 	/* Get the page containing the mirror copy of the mft record @m. */
+@@ -632,6 +635,7 @@ err_out:
+ 				"after umounting to correct this.", -err);
+ 		NVolSetErrors(vol);
+ 	}
++	kfree(bhs);
+ 	return err;
+ }
+ 
+@@ -673,7 +677,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+ 	unsigned int blocksize = vol->sb->s_blocksize;
+ 	unsigned char blocksize_bits = vol->sb->s_blocksize_bits;
+ 	int max_bhs = vol->mft_record_size / blocksize;
+-	struct buffer_head *bhs[max_bhs];
++	struct buffer_head **bhs;
+ 	struct buffer_head *bh, *head;
+ 	runlist_element *rl;
+ 	unsigned int block_start, block_end, m_start, m_end;
+@@ -689,7 +693,8 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+ 	 * There is no danger of races since the caller is holding the locks
+ 	 * for the mft record @m and the page it is in.
+ 	 */
+-	if (!NInoTestClearDirty(ni))
++	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
++	if (!bhs || !NInoTestClearDirty(ni))
+ 		goto done;
+ 	bh = head = page_buffers(page);
+ 	BUG_ON(!bh);
+@@ -820,6 +825,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+ 		goto err_out;
+ 	}
+ done:
++	kfree(bhs);
+ 	ntfs_debug("Done.");
+ 	return 0;
+ cleanup_out:
+@@ -840,6 +846,7 @@ err_out:
+ 		err = 0;
+ 	} else
+ 		NVolSetErrors(vol);
++	kfree(bhs);
+ 	return err;
+ }
+ 
+-- 
+1.8.4.5
+
