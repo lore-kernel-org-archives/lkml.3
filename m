@@ -1,64 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851AbaD0FOi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 01:14:38 -0400
-Received: from sauhun.de ([89.238.76.85]:47964 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752664AbaD0FOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 01:14:37 -0400
-Date: Sun, 27 Apr 2014 07:14:28 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Javier Martinez Canillas <javier@dowhile0.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        Nicolas Palix <nicolas.palix@imag.fr>, linux-kernel@vger.kernel.org,
-        cocci@systeme.lip6.fr
-Subject: Re: [Cocci] [PATCH 1/1] scripts/coccinelle: use BIT() macro if
- possible
-Message-ID: <20140427051428.GA2671@katana>
-References: <1398558586-28931-1-git-send-email-javier@dowhile0.org>
+	id S1752974AbaD0G1A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 02:27:00 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:36005 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753AbaD0G05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 02:26:57 -0400
+Date: Sat, 26 Apr 2014 23:26:50 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+Message-ID: <20140427062650.GW4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
+ <535992DD.3060808@infradead.org>
+ <20140425100459.7824f676@annuminas.surriel.com>
+ <535AC91A.1070504@infradead.org>
+ <535ACB0E.4070600@infradead.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398558586-28931-1-git-send-email-javier@dowhile0.org>
+In-Reply-To: <535ACB0E.4070600@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042706-3532-0000-0000-000001560896
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 25, 2014 at 01:52:30PM -0700, Randy Dunlap wrote:
+> On 04/25/14 13:44, Randy Dunlap wrote:
+> > On 04/25/14 07:04, Rik van Riel wrote:
+> >> On Thu, 24 Apr 2014 15:40:29 -0700
+> >> Randy Dunlap <rdunlap@infradead.org> wrote:
+> >>
+> >>
+> >>> uml on x86_64 defconfig:
+> >>>
+> >>> drivers/built-in.o: In function `__handle_sysrq':
+> >>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
+> >>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
+> >>
+> >> Randy, does the patch below fix it?
+> 
+> CONFIG_TINY_RCU=y
+> 
+> tiny.c does not provide these functions...  Paul...
+> 
+> > Hm, no, it does not.  I'll look into it.
+> > 
+> >> Mike, this patch should also address your concerns.
+> >>
+> >> Andrew, this can be a -fix patch for the sysctl-rcu patch,
+> >> assuming it fixes things :)
+> >>
+> >> Signed-off-by: Rik van Riel <riel@redhat.com
+> >> ---
+> >>  drivers/tty/sysrq.c | 1 +
+> >>  kernel/rcu/update.c | 3 ++-
+> >>  2 files changed, 3 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> >> index dd53af9..0867433 100644
+> >> --- a/drivers/tty/sysrq.c
+> >> +++ b/drivers/tty/sysrq.c
+> >> @@ -46,6 +46,7 @@
+> >>  #include <linux/jiffies.h>
+> >>  #include <linux/syscalls.h>
+> >>  #include <linux/of.h>
+> >> +#include <linux/rcupdate.h>
+> >>  
+> >>  #include <asm/ptrace.h>
+> >>  #include <asm/irq_regs.h>
+> >> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> >> index 2ac3289..d22309c 100644
+> >> --- a/kernel/rcu/update.c
+> >> +++ b/kernel/rcu/update.c
+> >> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
+> >>  
+> >>  void rcu_sysrq_start(void)
+> >>  {
+> >> -	rcu_cpu_stall_suppress = 2;
+> >> +	if (!rcu_cpu_stall_suppress)
+> >> +		rcu_cpu_stall_suppress = 2;
+> >>  }
+> >>  
+> >>  void rcu_sysrq_end(void)
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+You would think that I would have learned by now that RCU requires a bit
+more care...  Anyway, patch containing only the APIs that -should- work
+is below.  Currently testing it on the usual set of configs.
 
-On Sun, Apr 27, 2014 at 02:29:46AM +0200, Javier Martinez Canillas wrote:
-> Using the BIT() macro instead of manually shifting bits
-> makes the code less error prone and also more readable.
+							Thanx, Paul
 
-Does it? It is a taste thing, yet I don't think it makes the code that
-much more readable that it is worth changing the whole tree.
+------------------------------------------------------------------------
 
+rcu: Provide API to suppress stall warnings while sysrc runs
 
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Some sysrq handlers can run for a long time, because they dump a lot
+of data onto a serial console. Having RCU stall warnings pop up in
+the middle of them only makes the problem worse.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
+This commit provides rcu_sysrq_start() and rcu_sysrq_end() APIs to
+temporarily suppress RCU CPU stall warnings while a sysrq request is
+handled.
 
-iQIcBAEBAgAGBQJTXJI0AAoJEBQN5MwUoCm2TRIQAIne/oylYUk8FpDUJmR2tx7j
-yk+k85m5nFkJxJd7K7CP205T3y/3oGwqlAwBWUQHtKMOToHbGkP+h3L/FEG0ubc5
-A8jRGWJnD4MAhuS2y05K0ckdU9fwdlMYcgBg6IwdX2g0Qt+VqdZfpYaz/dgMAvo+
-jph1HuioZ7sfZIqZ1SwzMnkZUXsrlwl4saeao0Bk4PKLmGscleuYyNNUsiEqyE3o
-QRRjz0L6nsg3UGiH92A6PXsVrT8LfodVdoVQFFzM62W5964DKVOvSQKUNIZB45HI
-wlHrtYB9ZYkHXlSww8O4yc2cMRqcZBhik09XJ1AVp5Gcq31Hjr6z1LCMn3k6F98a
-odV/ACpy8Kx2GElJmwdlN61FeWb3Cx0BK65P8dqJC6nKAfWfYWIqlCHLTF5jZCYF
-SKbbCsmQMwxiiDDd5/rfmB+EzdI3Bx3AooNtOxn1wmzEZN/PtTgWGdMUyoyTEBgv
-zAd2uCn0RPgTEzXLadc+HItjAxpQkSY+5g2DoERAxHCZzSdFrekgLFb6IPYgsV7/
-HY/VEVydg7rhHFFtMJ5RxXlKUQ5X5NMnf3pC2hYpMCBIO9UzH8u6jS96kLvQlkbH
-9ECDD6W7LeJ0WMmMap0a2+le7dgMGJn3j7eyue3aZVH7CmboBDy6w2Tfo0u4zTwV
-L/fX18a3KdK54Z0aiP2S
-=1jfN
------END PGP SIGNATURE-----
+Signed-off-by: Rik van Riel <riel@redhat.com>
+[ paulmck: Fix TINY_RCU build error. ]
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
---ReaqsoxgOBHFXBhH--
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index a6f2664a1b77..3f53c96b3b77 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -248,6 +248,18 @@ void rcu_idle_exit(void);
+ void rcu_irq_enter(void);
+ void rcu_irq_exit(void);
+ 
++#ifdef CONFIG_RCU_STALL_COMMON
++void rcu_sysrq_start(void);
++void rcu_sysrq_end(void);
++#else /* #ifdef CONFIG_RCU_STALL_COMMON */
++void rcu_sysrq_start(void)
++{
++}
++void rcu_sysrq_end(void)
++{
++}
++#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
++
+ #ifdef CONFIG_RCU_USER_QS
+ void rcu_user_enter(void);
+ void rcu_user_exit(void);
+diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+index ed7a0d72562c..a2aeb4df0f60 100644
+--- a/kernel/rcu/update.c
++++ b/kernel/rcu/update.c
+@@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
+ 	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
+ }
+ 
++void rcu_sysrq_start(void)
++{
++	if (!rcu_cpu_stall_suppress)
++		rcu_cpu_stall_suppress = 2;
++}
++
++void rcu_sysrq_end(void)
++{
++	if (rcu_cpu_stall_suppress == 2)
++		rcu_cpu_stall_suppress = 0;
++}
++
+ static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+ {
+ 	rcu_cpu_stall_suppress = 1;
+
