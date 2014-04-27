@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaD0Hr4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:47:56 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:41765 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbaD0HkQ (ORCPT
+	id S1753341AbaD0HkO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:14 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:8573 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaD0Hi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:40:16 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-3b-535cb45e3414
+	Sun, 27 Apr 2014 03:38:59 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-df-535cb4120235
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -17,40 +17,40 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         joro@8bytes.org, prathyush.k@samsung.com, rahul.sharma@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
-        joshi@samsung.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: [PATCH v12 31/31] ARM: dts: add System MMU nodes of exynos5420
-Date: Sun, 27 Apr 2014 13:08:03 +0530
-Message-id: <1398584283-22846-32-git-send-email-shaik.ameer@samsung.com>
+        joshi@samsung.com
+Subject: [PATCH v12 04/31] iommu/exynos: fix L2TLB invalidation
+Date: Sun, 27 Apr 2014 13:07:36 +0530
+Message-id: <1398584283-22846-5-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkWjduS0ywwZ2FFhZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkVldoS0ywwZoLBhZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
-	YVaLw2/aWS1O/ulltDjycDe7Rcv1XiaL9TNes1is2vWH0WLmrTUsDiIeTw7OY/KY3XCRxePf
-	4X4mj52z7rJ73Lm2h81j85J6j8k3ljN69G1ZxejxeZOcx5WjZ5gCuKK4bFJSczLLUov07RK4
-	Ms5dvshYsMC6YvWqd4wNjH/1uxg5OSQETCSObjvJCmGLSVy4t56ti5GLQ0hgKaPEpre/mWCK
-	ls79ww6RWMQocbtxFZQzgUliwvmtYO1sAoYS2+9dYQVJiAisZpTou3gGrIpZoIdZ4tr+O2Cz
-	hAXcJfofTmMDsVkEVCXmnN4BZvMKeEis/9sF1MABtE9BYs4kG5AwJ1D4yZ09LCC2EFDr21Nf
-	wBZICCzkkDjwbAU7xBwBiW+TD7FA9MpKbDrADHG2pMTBFTdYJjAKL2BkWMUomlqQXFCclF5k
-	qlecmFtcmpeul5yfu4kRGJun/z2buIPx/gHrQ4zJQOMmMkuJJucDYzuvJN7Q2MzIwtTE1NjI
-	3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhhTnVx69qqkWoT8WLvM8NPx
-	y3eZN1uFv/h+PVPnU/vyE+XMTc6zP9dOOPj573Ohuzm129NjF3KeLJibuejyxg9PY2YHrn9X
-	tNNj+QTnCIsf05Y7mnGfXSA65fyqFTxr0tMC/R35vlm8ro66n/RcbJHyhPaAKZbrAxIdcjzC
-	83ae2mF6Zso3x9uCSizFGYmGWsxFxYkAm9x2suMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jAd24LTHBBt3PdCzu3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFt83/WF3aJ3wVU2i02Pr7FaXN41h81ixvl9TBYXVmxkt/jXe5DRYsqi
-	w6wWh9+0s1qc/NPLaHHk4W52i5brvUwW62e8ZrFYtesPo8XMW2tYHEQ8nhycx+Qxu+Eii8e/
-	w/1MHjtn3WX3uHNtD5vH5iX1HpNvLGf06NuyitHj8yY5jytHzzAFcEU1MNpkpCampBYppOYl
-	56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAP2npFCWmFMKFApILC5W0rfD
-	NCE0xE3XAqYxQtc3JAiux8gADSSsYcw4d/kiY8EC64rVq94xNjD+1e9i5OSQEDCRWDr3DzuE
-	LSZx4d56ti5GLg4hgUWMErcbV7FDOBOYJCac38oKUsUmYCix/d4VVpCEiMBqRom+i2fAqpgF
-	epglru2/wwRSJSzgLtH/cBobiM0ioCox5/QOMJtXwENi/d8uoAYOoH0KEnMm2YCEOYHCT+7s
-	YQGxhYBa3576wjqBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODIfya9g3FVg8Uh
-	RgEORiUe3h/SMcFCrIllxZW5hxglOJiVRHg5pwOFeFMSK6tSi/Lji0pzUosPMSYDHTWRWUo0
-	OR+YlPJK4g2NTcxNjU0tTSxMzCxJE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgdF7t/PW
-	6A8347bxvfC/Jp3iYrLw6sZzrXNS570751VmvUuvsD1jy49V/wTurNg+vcr9nVzisSmnRdR/
-	Vdb+OBt9as7rEJvfaoc/rXq0Pp7zVF8k8908QbeTV8QtlIy99l8tW7E7qujYLp/L5tLiTwQD
-	UvvMdv67/13Y/tMbnVmPZ71UDDqgeKpUiaU4I9FQi7moOBEAJuB7JkADAAA=
+	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV0bLqdus
+	BcskK15veMfcwDhfpIuRk0NCwETi889eJghbTOLCvfVsXYxcHEICSxklvpydyARTdKxzCSNE
+	YhGjxKMTM6CcCUwSV1d1g1WxCRhKbL93hRUkISKwmlGi7+IZdhCHWeAuk8ScVe8YQaqEBewl
+	nl34wg5iswioSkya9RCsm1fAXWL60+NANRxA+xQk5kyyAQlzCnhIPLmzhwXEFgIqeXvqC9gC
+	CYGZHBI/Pl1khJgjIPFt8iEWiF5ZiU0HmCHOlpQ4uOIGywRG4QWMDKsYRVMLkguKk9KLTPWK
+	E3OLS/PS9ZLzczcxAiPy9L9nE3cw3j9gfYgxGWjcRGYp0eR8YETnlcQbGpsZWZiamBobmVua
+	kSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjxUpWx1lSfN02U/LOHLwcfzXH
+	+H0Cg8HkHr7an3eT56f7PNPkXHX53HWJ6lmfFeWaJHOdbnxkebq4fbqceD1rxpnTDGLuH77o
+	mC68tOR3zHHLVV2LGJ+49c17uX7+50wnvitrptc3XO3+tVgpKuZ6Zde866z3PNjjQr2uf731
+	6AHPpuCL4QbvlViKMxINtZiLihMBuLwDY94CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAV2hLTHBBvvnqljcuXuO1WL+ESDx
+	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
+	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
+	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJaxgzWk7dZi1YJlnxesM75gbG+SJdjJwcEgImEsc6lzBC2GISF+6t
+	Z+ti5OIQEljEKPHoxAxGCGcCk8TVVd1MIFVsAoYS2+9dYQVJiAisZpTou3iGHcRhFrjLJDFn
+	1TuwWcIC9hLPLnxhB7FZBFQlJs16CNbNK+AuMf3pcaAaDqB9ChJzJtmAhDkFPCSe3NnDAmIL
+	AZW8PfWFdQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwfH+THoH46oGi0OMAhyM
+	Sjy8P6RjgoVYE8uKK3MPMUpwMCuJ8HJOBwrxpiRWVqUW5ccXleakFh9iTAY6aiKzlGhyPjAV
+	5ZXEGxqbmJsam1qaWJiYWZImrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDoxLnBObZb3ex
+	M6l4te7RO7ptebdT7tL2sycOxegcYHsWbM/QWess+MjM2aPGTb6gzoF///KZDKtlymcHSZUu
+	Xs1bKX1C87dKD29ji+rS1yv1fRS5fJXTb/LoBj4+z2XY+Fq5+tPqithnefosWmd5X7DJ7njc
+	sKxs5dFEjoCZM93bpkbOqNyixFKckWioxVxUnAgANP/ssDsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,254 +60,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch adds System MMU nodes of exynos5420 except
-System MMUs in Image Subsystem.
+L2TLB is 8-way set-associative TLB with 512 entries. The number of
+sets is 64.
+A single 4KB(small page) translation information is cached
+only to a set whose index is the same with the lower 6 bits of the page
+frame number.
+A single 64KB(large page) translation information can be
+cached to any 16 sets whose top two bits of their indices are the same
+with the bit [5:4] of the page frame number.
+A single 1MB(section) or larger translation information can be cached to
+any set in the TLB.
+
+It is required to invalidate entire sets that may cache the target
+translation information to guarantee that the L2TLB has no stale data.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- arch/arm/boot/dts/exynos5420.dtsi |  209 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 206 insertions(+), 3 deletions(-)
+ drivers/iommu/exynos-iommu.c |   31 ++++++++++++++++++++++++++-----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index c3a9a66..1fc0c9f 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -125,7 +125,7 @@
- 		clock-names = "pll_ref", "pll_in", "sclk_audio", "sclk_pcm_in";
- 	};
+diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+index 84fc3b4..7ce44a8 100644
+--- a/drivers/iommu/exynos-iommu.c
++++ b/drivers/iommu/exynos-iommu.c
+@@ -224,9 +224,14 @@ static void __sysmmu_tlb_invalidate(void __iomem *sfrbase)
+ }
  
--	codec@11000000 {
-+	mfc: codec@11000000 {
- 		compatible = "samsung,mfc-v7";
- 		reg = <0x11000000 0x10000>;
- 		interrupts = <0 96 0>;
-@@ -472,7 +472,7 @@
- 		phy-names = "dp";
- 	};
+ static void __sysmmu_tlb_invalidate_entry(void __iomem *sfrbase,
+-						unsigned long iova)
++				unsigned long iova, unsigned int num_inv)
+ {
+-	__raw_writel((iova & SPAGE_MASK) | 1, sfrbase + REG_MMU_FLUSH_ENTRY);
++	unsigned int i;
++	for (i = 0; i < num_inv; i++) {
++		__raw_writel((iova & SPAGE_MASK) | 1,
++				sfrbase + REG_MMU_FLUSH_ENTRY);
++		iova += SPAGE_SIZE;
++	}
+ }
  
--	fimd@14400000 {
-+	fimd: fimd@14400000 {
- 		samsung,power-domain = <&disp_pd>;
- 		clocks = <&clock CLK_SCLK_FIMD1>, <&clock CLK_FIMD1>;
- 		clock-names = "sclk_fimd", "fimd";
-@@ -644,7 +644,7 @@
- 		status = "disabled";
- 	};
+ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
+@@ -476,7 +481,8 @@ static bool exynos_sysmmu_disable(struct device *dev)
+ 	return disabled;
+ }
  
--	mixer@14450000 {
-+	mixer: mixer@14450000 {
- 		compatible = "samsung,exynos5420-mixer";
- 		reg = <0x14450000 0x10000>;
- 		interrupts = <0 94 0>;
-@@ -732,4 +732,207 @@
- 		clock-names = "secss";
- 		samsung,power-domain = <&g2d_pd>;
- 	};
-+
-+	sysmmu_g2dr: sysmmu@10A60000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x10A60000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <24 5>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_G2D>, <&clock CLK_G2D>;
-+	};
-+
-+	sysmmu_g2dw: sysmmu@10A70000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x10A70000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <22 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_G2D>, <&clock CLK_G2D>;
-+	};
-+
-+	sysmmu_scaler0r: sysmmu@12880000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x12880000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <22 4>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL0>, <&clock CLK_MSCL0>;
-+	};
-+
-+	sysmmu_scaler1r: sysmmu@12890000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x12890000 0x1000>;
-+		interrupts = <0 186 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL1>, <&clock CLK_MSCL1>;
-+	};
-+
-+	sysmmu_scaler2r: sysmmu@128A0000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x128A0000 0x1000>;
-+		interrupts = <0 188 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL2>, <&clock CLK_MSCL2>;
-+	};
-+
-+	sysmmu_scaler0w: sysmmu@128C0000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x128C0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <27 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL0>, <&clock CLK_MSCL0>;
-+	};
-+
-+	sysmmu_scaler1w: sysmmu@128D0000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x128D0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <22 6>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL1>, <&clock CLK_MSCL1>;
-+	};
-+
-+	sysmmu_scaler2w: sysmmu@128E0000 {
-+		compatible = "samsung,sysmmu-v3.2";
-+		reg = <0x128E0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <19 6>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MSCL2>, <&clock CLK_MSCL2>;
-+	};
-+
-+	sysmmu_mfc_l: sysmmu@11200000 {
-+		compatible = "samsung,sysmmu-v2";
-+		reg = <0x11200000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <8 5>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MFCL>, <&clock CLK_MFC>;
-+		mmu-masters = <&mfc>;
-+		samsung,power-domain = <&mfc_pd>;
-+	};
-+
-+	sysmmu_mfc_r: sysmmu@11210000 {
-+		compatible = "samsung,sysmmu-v2";
-+		reg = <0x11210000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <6 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MFCR>, <&clock CLK_MFC>;
-+		mmu-masters = <&mfc>;
-+		samsung,power-domain = <&mfc_pd>;
-+	};
-+
-+	sysmmu_rotator: sysmmu@11D40000 {
-+		compatible = "samsung,sysmmu-v3.1";
-+		reg = <0x11D40000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <4 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_ROTATOR>, <&clock CLK_ROTATOR>;
-+	};
-+
-+	sysmmu_fimc_lite0: sysmmu@13C40000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x13C40000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <3 4>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_FIMCL0>, <&clock CLK_FIMC_LITE0>;
-+		samsung,power-domain = <&gsc_pd>;
-+	};
-+
-+	sysmmu_fimc_lite1: sysmmu@13C50000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x13C50000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <24 1>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_FIMCL1>, <&clock CLK_FIMC_LITE1>;
-+		samsung,power-domain = <&gsc_pd>;
-+	};
-+
-+	sysmmu_fimc_lite3: sysmmu@13D50000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x13D50000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 4>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_FIMCL3>, <&clock CLK_FIMC_LITE3>;
-+		samsung,power-domain = <&gsc_pd>;
-+	};
-+
-+	sysmmu_gsc0: sysmmu@13E80000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x13E80000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_GSCL0>, <&clock CLK_GSCL0>;
-+		samsung,power-domain = <&gsc_pd>;
-+		mmu-masters = <&gsc_0>;
-+	};
-+
-+	sysmmu_gsc1: sysmmu@13E90000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x13E90000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <2 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_GSCL1>, <&clock CLK_GSCL1>;
-+		samsung,power-domain = <&gsc_pd>;
-+		mmu-masters = <&gsc_1>;
-+	};
-+
-+	sysmmu_fimd0w04: sysmmu@14640000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x14640000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <3 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_FIMD1M0>, <&clock CLK_FIMD1>;
-+		samsung,power-domain = <&disp_pd>;
-+		mmu-masters = <&fimd>;
-+	};
-+
-+	sysmmu_fimd0w123: sysmmu@14680000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x14680000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <3 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_FIMD1M1>, <&clock CLK_FIMD1>;
-+		samsung,power-domain = <&disp_pd>;
-+		mmu-masters = <&fimd>;
-+	};
-+
-+	sysmmu_tv: sysmmu@14650000 {
-+		compatible = "samsung,sysmmu-v3.3";
-+		reg = <0x14650000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <7 4>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_MIXER>, <&clock CLK_MIXER>;
-+		samsung,power-domain = <&disp_pd>;
-+		mmu-masters = <&mixer>;
-+	};
-+
-+	sysmmu_jpeg: sysmmu@11F10000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x11F10000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <4 2>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_JPEG>, <&clock CLK_JPEG>;
-+	};
-+
-+	sysmmu_jpeg2: sysmmu@11F20000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x11F20000 0x1000>;
-+		interrupts = <0 169 0>;
-+		clock-names = "sysmmu", "master";
-+		clocks = <&clock CLK_SMMU_JPEG>, <&clock CLK_JPEG2>;
-+	};
- };
+-static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
++static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
++					size_t size)
+ {
+ 	unsigned long flags;
+ 	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+@@ -486,9 +492,24 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova)
+ 	if (is_sysmmu_active(data)) {
+ 		int i;
+ 		for (i = 0; i < data->nsfrs; i++) {
++			unsigned int maj;
++			unsigned int num_inv = 1;
++			maj = __raw_readl(data->sfrbases[i] + REG_MMU_VERSION);
++			/*
++			 * L2TLB invalidation required
++			 * 4KB page: 1 invalidation
++			 * 64KB page: 16 invalidation
++			 * 1MB page: 64 invalidation
++			 * because it is set-associative TLB
++			 * with 8-way and 64 sets.
++			 * 1MB page can be cached in one of all sets.
++			 * 64KB page can be one of 16 consecutive sets.
++			 */
++			if ((maj >> 28) == 2) /* major version number */
++				num_inv = min_t(unsigned int, size / PAGE_SIZE, 64);
+ 			if (sysmmu_block(data->sfrbases[i])) {
+ 				__sysmmu_tlb_invalidate_entry(
+-						data->sfrbases[i], iova);
++					data->sfrbases[i], iova, num_inv);
+ 				sysmmu_unblock(data->sfrbases[i]);
+ 			}
+ 		}
+@@ -998,7 +1019,7 @@ done:
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	list_for_each_entry(data, &priv->clients, node)
+-		sysmmu_tlb_invalidate_entry(data->dev, iova);
++		sysmmu_tlb_invalidate_entry(data->dev, iova, size);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	return size;
 -- 
 1.7.9.5
 
