@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaD0WUT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 18:20:19 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:49969 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992AbaD0WUS convert rfc822-to-8bit (ORCPT
+	id S1754474AbaD0WU3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 18:20:29 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:27817 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754375AbaD0WUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 18:20:18 -0400
-Subject: Re: [PATCH 1/5] staging/lustre/lnet: fix potential null pointer dereference
-Mime-Version: 1.0 (Apple Message framework v1283)
+	Sun, 27 Apr 2014 18:20:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiRcAIiBXVN5LEcvPGdsb2JhbABZgwZPgmuoUAECAQEFhwGNFYVggQoXAwEBAQE4NYIlAQEEATocIwULCAMYCSUPBSUDBwMXE4g5Bw7JDxcWhUSIHREBUAeDJIEVBJkLgTuLPxOJFSuBLgcXBg
+Date: Mon, 28 Apr 2014 08:20:20 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20140427222019.GF15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140427230548.347fbb21@alan.etchedpixels.co.uk>
-Date: Sun, 27 Apr 2014 18:19:59 -0400
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Dmitry Eremin <dmitry.eremin@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0B38703A-0903-469F-B2A3-D71E7E1D19E9@linuxhacker.ru>
-References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru> <1398633446-16719-2-git-send-email-green@linuxhacker.ru> <20140427230548.347fbb21@alan.etchedpixels.co.uk>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-X-Mailer: Apple Mail (2.1283)
+Content-Disposition: inline
+In-Reply-To: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 27, 2014, at 6:05 PM, One Thousand Gnomes wrote:
-
->> Reviewed-by: John L. Hammond <john.hammond@intel.com>
->> Reviewed-by: Isaac Huang <he.huang@intel.com>
->> Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
->> ---
->> drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c | 4 ++--
->> 1 file changed, 2 insertions(+), 2 deletions(-)
->> 
->> diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
->> index 21d36ee..516f623 100644
->> --- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
->> +++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
->> @@ -829,14 +829,14 @@ ksocknal_select_ips(ksock_peer_t *peer, __u32 *peerips, int n_peerips)
->> 				best_npeers = iface->ksni_npeers;
->> 			}
->> 
->> +			LASSERT(best_iface != NULL);
->> +
+On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
+> Hi
 > 
-> And this solves the problem how ???
+> As per LSF/MM summit discussion I am reposting the richacl patchset for
+> upstream inclusion. The patchset includes minimal changes required to implement
+> a new acl model similar to NFSv4 ACL. The acl model selection is based on
+> file system feature flag. 
+> 
+> The following set of patches implements VFS and ext4 changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
+> 
+> A user-space utility for displaying and changing richacls is available at [1]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> 
+> [1] git://github.com/kvaneesh/richacl-tools.git master
+> 
+> To test richacl on ext4, create the file sytem with richacl feature flag
+> (mkfs.ext4 -O richacl or  tune2fs -O richacl). With richacl feature enabled
+> using mount option "acl" will switch to using richacl instead of posixacl.
 
-This does not really solve anything.
-Just moves the check to where it's actually going to do anything instead of the check being guarded by the NULL pointer access earlier on.
-Could have been removed instead of course to just get an oops at all times.
+No mount options, please. The ACL configuration needs to be
+determined solely by the superblock feature bit - we cannot support
+filesystems with mixed ACL types, and that's what this mount option
+does.
+
+> More details regarding richacl can be found at
+> http://acl.bestbits.at/richacl/
+> 
+> Previous posting of the patchset can be found at:
+> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
+> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
+> 
+> The complete patchset can also be found at:
+> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
+
+Where are the tests? We need comprehensive coverage in xfstests so
+we can validate that it works the way it is supposed to and that we
+don't break it in future, and that all filesystems behave the same
+way....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
