@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaD0SXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 14:23:24 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:57178 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaD0SXW (ORCPT
+	id S1753590AbaD0S2L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 14:28:11 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:48905 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751327AbaD0S2J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 14:23:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, prathyush.k@samsung.com, grundler@chromium.org,
-        joro@8bytes.org, supash.ramaswamy@linaro.org, tomasz.figa@gmail.com,
-        joshi@samsung.com, sachin.kamat@linaro.org, s.nawrocki@samsung.com,
-        Varun.Sethi@freescale.com, a.motakis@virtualopensystems.com,
-        pullip.cho@samsung.com, t.figa@samsung.com, rahul.sharma@samsung.com
-Subject: Re: [PATCH v12 11/31] documentation: iommu: add binding document of Exynos System MMU
-Date: Sun, 27 Apr 2014 20:23:06 +0200
-Message-ID: <4447051.OnJtcFSqFV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398584283-22846-12-git-send-email-shaik.ameer@samsung.com>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <1398584283-22846-12-git-send-email-shaik.ameer@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:EeCaOzy/He0jUxd3FawbK3sQk7JfoiSbNPEoIvQqmLd
- Yn6ZGMLW6PuIjveDV+LsaaBj0xC5hZko3U77LKg2vJedbKaDEP
- AAGtUw+mV2gr0nCiZSZgsolCZoLCuEULv6ryk+RT+oSNxgG+Np
- bEp1JdQTzSpBZRdb3V/hlwi2DPVFujSKn8L9v1GPIoO9q+nV8D
- Cir9/EPHYYpKe7h3R5x13qyNLObmZPEpGGpUp/lxpOIvM5eUN8
- UU2iZeIAjtEz4IzyisMSzXgwZO4fYSY9g3zuEGJi9DZaWFNlC5
- 1gMydKgbuhmmXlPKY2N+yD+JBJKyLrN6qi17RoWVFYfwsbzmTI
- 4Jg8w8zDFvk2F7c8gDrQ=
+	Sun, 27 Apr 2014 14:28:09 -0400
+Subject: Re: [PATCH 00/47] Lustre fixes and cleanups
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=utf-8
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140427173331.GA11038@kroah.com>
+Date: Sun, 27 Apr 2014 14:28:00 -0400
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <272959FB-A014-4E8B-A04E-2BDF63FE8BB1@linuxhacker.ru>
+References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru> <20140427173331.GA11038@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 April 2014 13:07:43 Shaik Ameer Basha wrote:
-> +- mmu-masters: A phandle to device nodes representing the master for which
-> +               the System MMU can provide a translation. Any additional values
-> +              after the phandle will be ignored because a System MMU never
-> +              have two or more masters. "#stream-id-cells" specified in the
-> +              master's node will be also ignored.
-> +              If more than one phandle is specified, only the first phandle
-> +              will be treated.
+Hello!
 
-This seems completely backwards: Why would you list the masters for an IOMMU
-in the IOMMU node?
+On Apr 27, 2014, at 1:33 PM, Greg Kroah-Hartman wrote:
+> I've applied these, except for the 3 gss patches.
 
-The master should have a standard property pointing to the IOMMU instead.
+Thanks.
 
-We don't have a generic binding for IOMMUs yet it seems, but the time is
-overdue to make one.
+gss stuff was kind of totally separate, tso I thought it was not so bad idea  to include them,
+but they are definitely not required.
 
-Consider this NAKed until there is a generic binding for IOMMUs that all
-relevant developers have agreed to.
+> Also, there is now a build warning in the tree thanks to these, please
+> send a follow-on patch to fix it before you get an email from the 0-day
+> bot about it.
 
-	Arnd
+This one? I was under impression it was there before the pile of the patches as lustre/llite/symlink.c was last touched back in March and none of my patches touch it.
+I'll have a patch for it shortly.
+
+In file included from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_compat25.h:41:0,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lvfs.h:48,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lvfs.h:45,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_support.h:41,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_class.h:40,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_lite.h:49,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lustre_lite.h:45,
+                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:42:
+/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c: In function Б─≤ll_follow_linkБ─≥:
+/home/green/bk/linux/include/linux/namei.h:88:29: warning: Б─≤symnameБ─≥ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  nd->saved_names[nd->depth] = path;
+                             ^
+/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:123:8: note: Б─≤symnameБ─≥ was declared here
+  char *symname;
+        ^
+
+Bye,
+    Oleg
