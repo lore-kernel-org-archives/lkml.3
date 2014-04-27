@@ -1,94 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaD0MZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 08:25:28 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:39679 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaD0MZ0 convert rfc822-to-8bit (ORCPT
+	id S1752992AbaD0MjS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 08:39:18 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:65479 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751259AbaD0MjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 08:25:26 -0400
-Date: Sun, 27 Apr 2014 14:25:23 +0200
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: On a 3.14.1 system dirty count goes negative
-Message-ID: <20140427142523.402d6b0f@neptune.home>
-In-Reply-To: <20140427130651.07839e7f@neptune.home>
-References: <20140427130651.07839e7f@neptune.home>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.23; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 27 Apr 2014 08:39:14 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "'Daniel Lezcano'" <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 1/2] cpuidle: Combine cpuidle_enabled() with cpuidle_select()
+Date: Sun, 27 Apr 2014 14:54:08 +0200
+Message-ID: <6198143.QbTeRSVYv3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2471963.urOyfY8mOG@vostro.rjw.lan>
+References: <2471963.urOyfY8mOG@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous time I've seen it was on 3.13.6, 3 weeks ago,
-I'm now on 3.14.1.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Setting /proc/sys/vm/dirty_bytes to very high number (around
-18446744073709550284) but still smaller than (uint64)-1 gets
-things running shortly/partially though.
+Since both cpuidle_enabled() and cpuidle_select() are only called by
+cpuidle_idle_call(), it is not really useful to keep them separate
+and combining them will help to avoid complicating cpuidle_idle_call()
+even further if governors are changed to return error codes sometimes.
 
-System is single-CPU, CONFIG_SMP=n, which might be important detail.
+This code modification shouldn't lead to any functional changes.
 
-On Sun, 27 April 2014 Bruno Prémont wrote:
-> On a 3.14 system (KVM virtual machine 512MB RAM, x86_64) I'm seeing
-> /proc/meminfo/Dirty getting extreemly large (u64 going "nevative").
-> 
-> Note, this is not the first time I'm seeing it.
-> 
-> The system is not doing too much but has a rather small amount of
-> memory.
-> 
-> MemTotal:         508512 kB
-> MemFree:           23076 kB
-> MemAvailable:     282092 kB
-> Buffers:               0 kB
-> Cached:           194548 kB
-> SwapCached:         1500 kB
-> Active:           168060 kB
-> Inactive:         203080 kB
-> Active(anon):      82300 kB
-> Inactive(anon):    95992 kB
-> Active(file):      85760 kB
-> Inactive(file):   107088 kB
-> Unevictable:           0 kB
-> Mlocked:               0 kB
-> SwapTotal:        524284 kB
-> SwapFree:         515820 kB
-> Dirty:          18446744073709550284 kB
-> Writeback:             4 kB
-> AnonPages:        175600 kB
-> Mapped:            28784 kB
-> Shmem:              1700 kB
-> Slab:              92244 kB
-> SReclaimable:      76812 kB
-> SUnreclaim:        15432 kB
-> KernelStack:        1128 kB
-> PageTables:         5588 kB
-> NFS_Unstable:          0 kB
-> Bounce:                0 kB
-> WritebackTmp:          0 kB
-> CommitLimit:      778540 kB
-> Committed_AS:    1036592 kB
-> VmallocTotal:   34359738367 kB
-> VmallocUsed:        4440 kB
-> VmallocChunk:   34359711231 kB
-> AnonHugePages:         0 kB
-> DirectMap4k:       10228 kB
-> DirectMap2M:      514048 kB
-> 
-> Some tasks end up being stuck in balance_dirty_pages_ratelimited()
-> because of this.
-> 
-> I have no idea what triggers Dirty to go mad but it happens.
-> It might be facilitated by some heavier IO (rsync of some data)
-> while rrdcached (rrdtool) is touching RRDs or writing its data log.
-> rrdcached is the one getting stuck in balance_dirty_pages_ratelimited().
-> 
-> Is there a way to get the system rolling again (making
-> dirty pages temporarily unlimited) or a way to determine why/when
-> Dirty goes negative and possibly get a hint on the trigger?
-> 
-> Thanks,
-> Bruno
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/cpuidle/cpuidle.c |   26 ++++++--------------------
+ include/linux/cpuidle.h   |    5 -----
+ kernel/sched/idle.c       |   20 +++++++-------------
+ 3 files changed, 13 insertions(+), 38 deletions(-)
+
+Index: linux-pm/kernel/sched/idle.c
+===================================================================
+--- linux-pm.orig/kernel/sched/idle.c
++++ linux-pm/kernel/sched/idle.c
+@@ -100,19 +100,13 @@ static void cpuidle_idle_call(void)
+ 	rcu_idle_enter();
+ 
+ 	/*
+-	 * Check if the cpuidle framework is ready, otherwise fallback
+-	 * to the default arch specific idle method
++	 * Ask the cpuidle framework to choose a convenient idle state.
++	 * Fall back to the default arch specific idle method on errors.
+ 	 */
+-	ret = cpuidle_enabled(drv, dev);
+-
+-	if (!ret) {
+-		/*
+-		 * Ask the governor to choose an idle state it thinks
+-		 * it is convenient to go to. There is *always* a
+-		 * convenient idle state
+-		 */
+-		next_state = cpuidle_select(drv, dev);
++	next_state = cpuidle_select(drv, dev);
+ 
++	ret = next_state;
++	if (ret >= 0) {
+ 		/*
+ 		 * The idle task must be scheduled, it is pointless to
+ 		 * go to idle, just update no idle residency and get
+@@ -139,7 +133,7 @@ static void cpuidle_idle_call(void)
+ 					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+ 					&dev->cpu);
+ 
+-			if (!ret) {
++			if (ret >= 0) {
+ 				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+ 
+ 				/*
+@@ -174,7 +168,7 @@ static void cpuidle_idle_call(void)
+ 	 * We can't use the cpuidle framework, let's use the default
+ 	 * idle routine
+ 	 */
+-	if (ret)
++	if (ret < 0)
+ 		arch_cpu_idle();
+ 
+ 	__current_set_polling();
+Index: linux-pm/drivers/cpuidle/cpuidle.c
+===================================================================
+--- linux-pm.orig/drivers/cpuidle/cpuidle.c
++++ linux-pm/drivers/cpuidle/cpuidle.c
+@@ -65,26 +65,6 @@ int cpuidle_play_dead(void)
+ }
+ 
+ /**
+- * cpuidle_enabled - check if the cpuidle framework is ready
+- * @dev: cpuidle device for this cpu
+- * @drv: cpuidle driver for this cpu
+- *
+- * Return 0 on success, otherwise:
+- * -NODEV : the cpuidle framework is not available
+- * -EBUSY : the cpuidle framework is not initialized
+- */
+-int cpuidle_enabled(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+-{
+-	if (off || !initialized)
+-		return -ENODEV;
+-
+-	if (!drv || !dev || !dev->enabled)
+-		return -EBUSY;
+-
+-	return 0;
+-}
+-
+-/**
+  * cpuidle_enter_state - enter the state and update stats
+  * @dev: cpuidle device for this cpu
+  * @drv: cpuidle driver for this cpu
+@@ -138,6 +118,12 @@ int cpuidle_enter_state(struct cpuidle_d
+  */
+ int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ {
++	if (off || !initialized)
++		return -ENODEV;
++
++	if (!drv || !dev || !dev->enabled)
++		return -EBUSY;
++
+ 	return cpuidle_curr_governor->select(drv, dev);
+ }
+ 
+Index: linux-pm/include/linux/cpuidle.h
+===================================================================
+--- linux-pm.orig/include/linux/cpuidle.h
++++ linux-pm/include/linux/cpuidle.h
+@@ -120,8 +120,6 @@ struct cpuidle_driver {
+ #ifdef CONFIG_CPU_IDLE
+ extern void disable_cpuidle(void);
+ 
+-extern int cpuidle_enabled(struct cpuidle_driver *drv,
+-			  struct cpuidle_device *dev);
+ extern int cpuidle_select(struct cpuidle_driver *drv,
+ 			  struct cpuidle_device *dev);
+ extern int cpuidle_enter(struct cpuidle_driver *drv,
+@@ -149,9 +147,6 @@ extern int cpuidle_play_dead(void);
+ extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev);
+ #else
+ static inline void disable_cpuidle(void) { }
+-static inline int cpuidle_enabled(struct cpuidle_driver *drv,
+-				  struct cpuidle_device *dev)
+-{return -ENODEV; }
+ static inline int cpuidle_select(struct cpuidle_driver *drv,
+ 				 struct cpuidle_device *dev)
+ {return -ENODEV; }
+
