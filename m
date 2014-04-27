@@ -1,163 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaD0G1A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 02:27:00 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36005 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753AbaD0G05 (ORCPT
+	id S1753125AbaD0GbN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 02:31:13 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:65277 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752753AbaD0GbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 02:26:57 -0400
-Date: Sat, 26 Apr 2014 23:26:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140427062650.GW4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
- <535992DD.3060808@infradead.org>
- <20140425100459.7824f676@annuminas.surriel.com>
- <535AC91A.1070504@infradead.org>
- <535ACB0E.4070600@infradead.org>
+	Sun, 27 Apr 2014 02:31:11 -0400
+X-IronPort-AV: E=Sophos;i="4.97,936,1389715200"; 
+   d="scan'208";a="29780054"
+Message-ID: <535CA1E1.5060707@cn.fujitsu.com>
+Date: Sun, 27 Apr 2014 14:21:21 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535ACB0E.4070600@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042706-3532-0000-0000-000001560896
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] f2fs: introduce struct flush_cmd_control to wrap the
+ flush_merge fields
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 01:52:30PM -0700, Randy Dunlap wrote:
-> On 04/25/14 13:44, Randy Dunlap wrote:
-> > On 04/25/14 07:04, Rik van Riel wrote:
-> >> On Thu, 24 Apr 2014 15:40:29 -0700
-> >> Randy Dunlap <rdunlap@infradead.org> wrote:
-> >>
-> >>
-> >>> uml on x86_64 defconfig:
-> >>>
-> >>> drivers/built-in.o: In function `__handle_sysrq':
-> >>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
-> >>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
-> >>
-> >> Randy, does the patch below fix it?
-> 
-> CONFIG_TINY_RCU=y
-> 
-> tiny.c does not provide these functions...  Paul...
-> 
-> > Hm, no, it does not.  I'll look into it.
-> > 
-> >> Mike, this patch should also address your concerns.
-> >>
-> >> Andrew, this can be a -fix patch for the sysctl-rcu patch,
-> >> assuming it fixes things :)
-> >>
-> >> Signed-off-by: Rik van Riel <riel@redhat.com
-> >> ---
-> >>  drivers/tty/sysrq.c | 1 +
-> >>  kernel/rcu/update.c | 3 ++-
-> >>  2 files changed, 3 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> >> index dd53af9..0867433 100644
-> >> --- a/drivers/tty/sysrq.c
-> >> +++ b/drivers/tty/sysrq.c
-> >> @@ -46,6 +46,7 @@
-> >>  #include <linux/jiffies.h>
-> >>  #include <linux/syscalls.h>
-> >>  #include <linux/of.h>
-> >> +#include <linux/rcupdate.h>
-> >>  
-> >>  #include <asm/ptrace.h>
-> >>  #include <asm/irq_regs.h>
-> >> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> >> index 2ac3289..d22309c 100644
-> >> --- a/kernel/rcu/update.c
-> >> +++ b/kernel/rcu/update.c
-> >> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
-> >>  
-> >>  void rcu_sysrq_start(void)
-> >>  {
-> >> -	rcu_cpu_stall_suppress = 2;
-> >> +	if (!rcu_cpu_stall_suppress)
-> >> +		rcu_cpu_stall_suppress = 2;
-> >>  }
-> >>  
-> >>  void rcu_sysrq_end(void)
+Split the flush_merge fields from sm_i, and use the new struct flush_cmd_control
+to wrap it, so that we can igonre these fileds if flush_merge is disable, and
+it alse can the structs more neat.
 
-You would think that I would have learned by now that RCU requires a bit
-more care...  Anyway, patch containing only the APIs that -should- work
-is below.  Currently testing it on the usual set of configs.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/f2fs.h    |   17 ++++++++----
+ fs/f2fs/segment.c |   69 ++++++++++++++++++++++++++++++++--------------------
+ fs/f2fs/super.c   |   42 +++++++++++++++++--------------
+ 3 files changed, 76 insertions(+), 52 deletions(-)
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Provide API to suppress stall warnings while sysrc runs
-
-Some sysrq handlers can run for a long time, because they dump a lot
-of data onto a serial console. Having RCU stall warnings pop up in
-the middle of them only makes the problem worse.
-
-This commit provides rcu_sysrq_start() and rcu_sysrq_end() APIs to
-temporarily suppress RCU CPU stall warnings while a sysrq request is
-handled.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-[ paulmck: Fix TINY_RCU build error. ]
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index a6f2664a1b77..3f53c96b3b77 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -248,6 +248,18 @@ void rcu_idle_exit(void);
- void rcu_irq_enter(void);
- void rcu_irq_exit(void);
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 97da71d..fa0ec81 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -325,6 +325,15 @@ struct flush_cmd {
+ 	int ret;
+ };
  
-+#ifdef CONFIG_RCU_STALL_COMMON
-+void rcu_sysrq_start(void);
-+void rcu_sysrq_end(void);
-+#else /* #ifdef CONFIG_RCU_STALL_COMMON */
-+void rcu_sysrq_start(void)
-+{
-+}
-+void rcu_sysrq_end(void)
-+{
-+}
-+#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
++struct flush_cmd_control {
++	struct task_struct *f2fs_issue_flush;	/* flush thread */
++	wait_queue_head_t flush_wait_queue;	/* waiting queue for wake-up */
++	struct flush_cmd *issue_list;		/* list for command issue */
++	struct flush_cmd *dispatch_list;	/* list for command dispatch */
++	spinlock_t issue_lock;			/* for issue list lock */
++	struct flush_cmd *issue_tail;		/* list tail of issue list */
++};
 +
- #ifdef CONFIG_RCU_USER_QS
- void rcu_user_enter(void);
- void rcu_user_exit(void);
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index ed7a0d72562c..a2aeb4df0f60 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
- 	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
+ struct f2fs_sm_info {
+ 	struct sit_info *sit_info;		/* whole segment information */
+ 	struct free_segmap_info *free_info;	/* free segment information */
+@@ -355,12 +364,8 @@ struct f2fs_sm_info {
+ 	unsigned int min_ipu_util;	/* in-place-update threshold */
+ 
+ 	/* for flush command control */
+-	struct task_struct *f2fs_issue_flush;	/* flush thread */
+-	wait_queue_head_t flush_wait_queue;	/* waiting queue for wake-up */
+-	struct flush_cmd *issue_list;		/* list for command issue */
+-	struct flush_cmd *dispatch_list;	/* list for command dispatch */
+-	spinlock_t issue_lock;			/* for issue list lock */
+-	struct flush_cmd *issue_tail;		/* list tail of issue list */
++	struct flush_cmd_control *cmd_control_info;
++
+ };
+ 
+ /*
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index f6816e1..86979d7d 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -200,20 +200,20 @@ void f2fs_balance_fs_bg(struct f2fs_sb_info *sbi)
+ int issue_flush_thread(void *data)
+ {
+ 	struct f2fs_sb_info *sbi = data;
+-	struct f2fs_sm_info *sm_i = SM_I(sbi);
+-	wait_queue_head_t *q = &sm_i->flush_wait_queue;
++	struct flush_cmd_control *fcc = SM_I(sbi)->cmd_control_info;
++	wait_queue_head_t *q = &fcc->flush_wait_queue;
+ repeat:
+ 	if (kthread_should_stop())
+ 		return 0;
+ 
+-	spin_lock(&sm_i->issue_lock);
+-	if (sm_i->issue_list) {
+-		sm_i->dispatch_list = sm_i->issue_list;
+-		sm_i->issue_list = sm_i->issue_tail = NULL;
++	spin_lock(&fcc->issue_lock);
++	if (fcc->issue_list) {
++		fcc->dispatch_list = fcc->issue_list;
++		fcc->issue_list = fcc->issue_tail = NULL;
+ 	}
+-	spin_unlock(&sm_i->issue_lock);
++	spin_unlock(&fcc->issue_lock);
+ 
+-	if (sm_i->dispatch_list) {
++	if (fcc->dispatch_list) {
+ 		struct bio *bio = bio_alloc(GFP_NOIO, 0);
+ 		struct flush_cmd *cmd, *next;
+ 		int ret;
+@@ -221,22 +221,23 @@ repeat:
+ 		bio->bi_bdev = sbi->sb->s_bdev;
+ 		ret = submit_bio_wait(WRITE_FLUSH, bio);
+ 
+-		for (cmd = sm_i->dispatch_list; cmd; cmd = next) {
++		for (cmd = fcc->dispatch_list; cmd; cmd = next) {
+ 			cmd->ret = ret;
+ 			next = cmd->next;
+ 			complete(&cmd->wait);
+ 		}
+ 		bio_put(bio);
+-		sm_i->dispatch_list = NULL;
++		fcc->dispatch_list = NULL;
+ 	}
+ 
+-	wait_event_interruptible(*q, kthread_should_stop() || sm_i->issue_list);
++	wait_event_interruptible(*q,
++			kthread_should_stop() || fcc->issue_list);
+ 	goto repeat;
  }
  
-+void rcu_sysrq_start(void)
-+{
-+	if (!rcu_cpu_stall_suppress)
-+		rcu_cpu_stall_suppress = 2;
-+}
-+
-+void rcu_sysrq_end(void)
-+{
-+	if (rcu_cpu_stall_suppress == 2)
-+		rcu_cpu_stall_suppress = 0;
-+}
-+
- static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+ int f2fs_issue_flush(struct f2fs_sb_info *sbi)
  {
- 	rcu_cpu_stall_suppress = 1;
+-	struct f2fs_sm_info *sm_i = SM_I(sbi);
++	struct flush_cmd_control *fcc = SM_I(sbi)->cmd_control_info;
+ 	struct flush_cmd *cmd;
+ 	int ret;
+ 
+@@ -246,16 +247,16 @@ int f2fs_issue_flush(struct f2fs_sb_info *sbi)
+ 	cmd = f2fs_kmem_cache_alloc(flush_cmd_slab, GFP_ATOMIC | __GFP_ZERO);
+ 	init_completion(&cmd->wait);
+ 
+-	spin_lock(&sm_i->issue_lock);
+-	if (sm_i->issue_list)
+-		sm_i->issue_tail->next = cmd;
++	spin_lock(&fcc->issue_lock);
++	if (fcc->issue_list)
++		fcc->issue_tail->next = cmd;
+ 	else
+-		sm_i->issue_list = cmd;
+-	sm_i->issue_tail = cmd;
+-	spin_unlock(&sm_i->issue_lock);
++		fcc->issue_list = cmd;
++	fcc->issue_tail = cmd;
++	spin_unlock(&fcc->issue_lock);
+ 
+-	if (!sm_i->dispatch_list)
+-		wake_up(&sm_i->flush_wait_queue);
++	if (!fcc->dispatch_list)
++		wake_up(&fcc->flush_wait_queue);
+ 
+ 	wait_for_completion(&cmd->wait);
+ 	ret = cmd->ret;
+@@ -1873,12 +1874,22 @@ int build_segment_manager(struct f2fs_sb_info *sbi)
+ 	sm_info->max_discards = 0;
+ 
+ 	if (test_opt(sbi, FLUSH_MERGE) && !f2fs_readonly(sbi->sb)) {
+-		spin_lock_init(&sm_info->issue_lock);
+-		init_waitqueue_head(&sm_info->flush_wait_queue);
+-		sm_info->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
++		struct flush_cmd_control *fcc =
++			kzalloc(sizeof(struct flush_cmd_control), GFP_KERNEL);
++
++		if (!fcc)
++			return -ENOMEM;
++		spin_lock_init(&fcc->issue_lock);
++		init_waitqueue_head(&fcc->flush_wait_queue);
++
++		fcc->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
+ 				"f2fs_flush-%u:%u", MAJOR(dev), MINOR(dev));
+-		if (IS_ERR(sm_info->f2fs_issue_flush))
+-			return PTR_ERR(sm_info->f2fs_issue_flush);
++		if (IS_ERR(fcc->f2fs_issue_flush)) {
++			err = PTR_ERR(fcc->f2fs_issue_flush);
++			kfree(fcc);
++			return err;
++		}
++		sm_info->cmd_control_info = fcc;
+ 	}
+ 
+ 	err = build_sit_info(sbi);
+@@ -1987,10 +1998,14 @@ static void destroy_sit_info(struct f2fs_sb_info *sbi)
+ void destroy_segment_manager(struct f2fs_sb_info *sbi)
+ {
+ 	struct f2fs_sm_info *sm_info = SM_I(sbi);
++	struct flush_cmd_control *fcc;
++
+ 	if (!sm_info)
+ 		return;
+-	if (sm_info->f2fs_issue_flush)
+-		kthread_stop(sm_info->f2fs_issue_flush);
++	fcc = sm_info->cmd_control_info;
++	if (fcc && fcc->f2fs_issue_flush)
++		kthread_stop(fcc->f2fs_issue_flush);
++	kfree(fcc);
+ 	destroy_dirty_segmap(sbi);
+ 	destroy_curseg(sbi);
+ 	destroy_free_segmap(sbi);
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index bea642a..98832ef 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -641,29 +641,33 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
+ 	 * or if flush_merge is not passed in mount option.
+ 	 */
+ 	if ((*flags & MS_RDONLY) || !test_opt(sbi, FLUSH_MERGE)) {
+-		struct f2fs_sm_info *sm_info = sbi->sm_info;
++		struct flush_cmd_control *fcc =
++					sbi->sm_info->cmd_control_info;
+ 
+-		if (sm_info->f2fs_issue_flush)
+-			kthread_stop(sm_info->f2fs_issue_flush);
+-		sm_info->issue_list = sm_info->dispatch_list = NULL;
+-		sm_info->f2fs_issue_flush = NULL;
+-	} else if (test_opt(sbi, FLUSH_MERGE)) {
+-		struct f2fs_sm_info *sm_info = sbi->sm_info;
++		if (fcc && fcc->f2fs_issue_flush)
++			kthread_stop(fcc->f2fs_issue_flush);
++		kfree(fcc);
++		sbi->sm_info->cmd_control_info = NULL;
++	} else if (test_opt(sbi, FLUSH_MERGE) &&
++					!sbi->sm_info->cmd_control_info) {
++		dev_t dev = sbi->sb->s_bdev->bd_dev;
++		struct flush_cmd_control *fcc =
++			kzalloc(sizeof(struct flush_cmd_control), GFP_KERNEL);
+ 
+-		if (!sm_info->f2fs_issue_flush) {
+-			dev_t dev = sbi->sb->s_bdev->bd_dev;
+-
+-			spin_lock_init(&sm_info->issue_lock);
+-			init_waitqueue_head(&sm_info->flush_wait_queue);
+-			sm_info->f2fs_issue_flush =
+-				kthread_run(issue_flush_thread, sbi,
++		if (!fcc) {
++			err = -ENOMEM;
++			goto restore_gc;
++		}
++		spin_lock_init(&fcc->issue_lock);
++		init_waitqueue_head(&fcc->flush_wait_queue);
++		fcc->f2fs_issue_flush = kthread_run(issue_flush_thread, sbi,
+ 				"f2fs_flush-%u:%u", MAJOR(dev), MINOR(dev));
+-			if (IS_ERR(sm_info->f2fs_issue_flush)) {
+-				err = PTR_ERR(sm_info->f2fs_issue_flush);
+-				sm_info->f2fs_issue_flush = NULL;
+-				goto restore_gc;
+-			}
++		if (IS_ERR(fcc->f2fs_issue_flush)) {
++			err = PTR_ERR(fcc->f2fs_issue_flush);
++			kfree(fcc);
++			goto restore_gc;
+ 		}
++		sbi->sm_info->cmd_control_info = fcc;
+ 	}
+ skip:
+ 	/* Update the POSIXACL Flag */
+-- 
+1.7.7
 
