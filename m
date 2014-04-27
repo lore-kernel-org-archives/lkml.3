@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbaD0VhK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 17:37:10 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:36748 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501AbaD0VhH (ORCPT
+	id S1753081AbaD0VpB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 17:45:01 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63705 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751493AbaD0Vo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 17:37:07 -0400
+	Sun, 27 Apr 2014 17:44:59 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Subject: Re: [PATCH V5 02/12] PNPACPI: use whilte list for pnpacpi device enumeration
+Date: Mon, 28 Apr 2014 00:01:26 +0200
+Message-ID: <34978551.c1lKBcQLqc@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396886819-2637-3-git-send-email-rui.zhang@intel.com>
+References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com> <1396886819-2637-3-git-send-email-rui.zhang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk>
-References: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk>
-Date: Sun, 27 Apr 2014 16:37:06 -0500
-Message-ID: <CAL_JsqLLUQn9ESBwyJ4T3TL3CzZm7H6hTdYKbO8tdLpPDxrKYg@mail.gmail.com>
-Subject: Re: [PATCH] clkdev: only fall through to clk_get_sys() if DT
- indicates no entry
-From: Rob Herring <robherring2@gmail.com>
-To: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 10:49 AM, Russell King
-<rmk+kernel@arm.linux.org.uk> wrote:
-> There are two failures which DT can return when looking up a phandle:
-> -ENOENT - when DT finds that the desired property/index is not present
-> -EINVAL - when DT finds that the desired property/index is present, but
->  there is a problem parsing it.
->
-> We should only fall through to clk_get_sys() (the table driven clock
-> lookup) when DT indicates that there was no entry in the OF tables
-> for the clock.  Doing otherwise causes the clk API to always indicate
-> that there is no entry for this clock, which is not correct behaviour.
->
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> ---
-> Grant, Rob,
->
-> Please let me know ASAP if this gives you any cause for concern.  This
-> looks to me like a long standing bug which really needs fixing.  Part
-> of the motivation here is similar to Jean-Francois' patch to clkdev
-> which allows a DT specified clock which isn't get present to have
-> clk_get() and friends return -EPROBE_DEFER - again, something that I
-> think really should happen.  Jean-Francois hasn't been able to get
-> much traction for his patch, so let's start with fixing this bug first.
+On Tuesday, April 08, 2014 12:06:49 AM Zhang Rui wrote:
 
-I have no issues. A platform would have to be pretty broken to be
-relying on the current behavior.
+[...]
 
-Rob
+> +
+> +static int acpi_pnp_scan_handler_attach(struct acpi_device *adev,
+> +					const struct acpi_device_id *id)
+> +{
+> +	return 1;
+> +}
+> +
+> +static int acpi_pnp_scan_handler_match(char *devid, char *handlerid)
+> +{
+> +	int i;
+> +
+> +	if (memcmp(devid, handlerid, 3))
+> +		return 0;
+> +
+> +	for (i = 3; i < 7; i++) {
+> +		/* Not a HEX value */
+> +		if (!((devid[i] >= '0' && devid[i] <= '9') ||
+> +		      (devid[i] > 'A' && devid[i] <= 'F')))
+> +			return 0;
+> +
+> +		if ((handlerid[i] != 'X') &&
 
->
->  drivers/clk/clkdev.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
-> index 48f67218247c..4e65d0e10b05 100644
-> --- a/drivers/clk/clkdev.c
-> +++ b/drivers/clk/clkdev.c
-> @@ -165,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
->
->         if (dev) {
->                 clk = of_clk_get_by_name(dev->of_node, con_id);
-> -               if (!IS_ERR(clk))
-> +               if (!IS_ERR(clk) || PTR_ERR(clk) != -ENOENT)
->                         return clk;
->         }
->
-> --
-> 1.8.3.1
->
+Hmm.  What exactly is the above check for?
+
+> +		    toupper(devid[i]) != toupper(handlerid[i]))
+> +			return 0;
+> +	}
+> +	return 1;
+> +}
+> +
+> +static struct acpi_scan_handler acpi_pnp_handler = {
+> +	.ids = acpi_pnp_device_ids,
+> +	.match = acpi_pnp_scan_handler_match,
+> +	.attach = acpi_pnp_scan_handler_attach,
+> +};
+> +
+> +bool acpi_is_pnp_device(struct acpi_device *device)
+> +{
+> +	return device->handler == &acpi_pnp_handler;
+> +}
+> +EXPORT_SYMBOL_GPL(acpi_is_pnp_device);
+> +
+> +void __init acpi_pnp_init(void)
+> +{
+> +	acpi_scan_add_handler(&acpi_pnp_handler);
+> +}
+> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
