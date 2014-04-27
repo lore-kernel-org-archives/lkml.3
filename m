@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbaD0Huh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:50:37 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57818 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879AbaD0HkC (ORCPT
+	id S1754001AbaD0Hud (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:50:33 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31247 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280AbaD0HkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:40:02 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-2a-535cb44d5721
+	Sun, 27 Apr 2014 03:40:04 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-22-535cb452e77c
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,39 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 25/31] iommu/exynos: enhanced error messages
-Date: Sun, 27 Apr 2014 13:07:57 +0530
-Message-id: <1398584283-22846-26-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 27/31] ARM: dts: add System MMU nodes of exynos4 series
+Date: Sun, 27 Apr 2014 13:07:59 +0530
+Message-id: <1398584283-22846-28-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkRtd3S0ywwfY5chZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkVjd4S0ywwbqlHBZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bhNZsY
-	CyaKV+y9dpO9gXGTUBcjJ4eEgInEhVnz2CFsMYkL99azdTFycQgJLGWUaD+wmAmmaNKuO4wQ
-	iUWMEg9f7mWCcCYwSXy9/AasnU3AUGL7vSusIAkRgdWMEn0Xz7CDOMwCd5kk5qx6xwhSJSzg
-	IPH88Aagdg4OFgFViT3XPUHCvAIeEhvn/GUDCUsIKEjMmWQDEuYECj+5s4cFxBYScJd4e+oL
-	2HwJgbkcEgdnHGcFSbAICEh8m3yIBaJXVmLTAWaIqyUlDq64wTKBUXgBI8MqRtHUguSC4qT0
-	IkO94sTc4tK8dL3k/NxNjMB4PP3vWe8OxtsHrA8xJgONm8gsJZqcD4znvJJ4Q2MzIwtTE1Nj
-	I3NLM9KElcR5kx4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpg5D2W41vN/qBs/79OUYny
-	OStu3/i4pXj3Y8Guj0t4u2rerFmbfPzbWUbNo/u22XcEfqmJ6t296dsCqaILZX++N3FqzX5Z
-	7njz69ypNz9a3Wkqtmac+PjqyjKBLUp/uqSZVef8mPFjZ2oGo0m6rdn9rOI4MXv7HW2fb7yV
-	zEv89iOs38C8pXmxjBJLcUaioRZzUXEiALYoi2fdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3fLTHBBlMnCFvcuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bs3W/Y
+	Ch5KV8z79oe9gXGLWBcjJ4eEgInEyQlNTBC2mMSFe+vZuhi5OIQEljJKdM87wwRT1L9tDSNE
+	YhGjxJW+K8wQzgQmid+/zrGCVLEJGEpsv3eFFSQhIrCaUaLv4hl2EIdZ4C6TxJxV7xhBqoQF
+	vCU+TD/JDmKzCKhK3Hp0BCzOK+Ah8bfrLlA3B9A+BYk5k2xAwpxA4Sd39rCA2EIC7hJvT30B
+	WyAhMJND4n/7fDaIOQIS3yYfYoHolZXYdIAZ4mxJiYMrbrBMYBRewMiwilE0tSC5oDgpvchI
+	rzgxt7g0L10vOT93EyMwIk//e9a3g/HmAetDjMlA4yYyS4km5wMjOq8k3tDYzMjC1MTU2Mjc
+	0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MC65vyfAVaud1TtLe3dRO1fu
+	feuzFr0W27eur/ko+V5sXWqf/6UlnhaVb5k1WW+7y56Mu/yUw6rusNyOJMvfl128Lrj4cD4r
+	1F+2kS18l7yu1drY1FcXt2/UXdPO0X1ji+V/DoEjnD2/z6g18yw1LzN0myrAI1MlYvEmeJ84
+	X1uU162A3E1PlViKMxINtZiLihMBGnJJwd4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd2gLTHBBsfOWFrcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzDq/ZxFgwUbxi77Wb7A2Mm4S6GDk5JARMJCbtusMIYYtJXLi3
-	nq2LkYtDSGARo8TDl3uZIJwJTBJfL79hB6liEzCU2H7vCitIQkRgNaNE38Uz7CAOs8BdJok5
-	q96BzRIWcJB4fngDUDsHB4uAqsSe654gYV4BD4mNc/6ygYQlBBQk5kyyAQlzAoWf3NnDAmIL
-	CbhLvD31hXUCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHR/kxqB+PKBotDjAIc
-	jEo8vAskY4KFWBPLiitzDzFKcDArifByTgcK8aYkVlalFuXHF5XmpBYfYkwGumkis5Rocj4w
-	EeWVxBsam5ibGptamliYmFmSJqwkznug1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6Mu+4KT/y4F
-	+7bftn3tK+2z0ePWjR79ujMFu5t3fTnw2oT3mG/F1+z1e3bdzPog/W9x+XEeuyMlh+9HpAmv
-	utEQv9RIaH/i4WjFimnzmrZsmcBzc3qf9fOHj4+9rYpoTbHMCze3jWl16n5z9S3H327usFc/
-	6pvDPlW6uZ1x/bN60rMPV+cw/HBVYinOSDTUYi4qTgQAYJZebToDAAA=
+	tYBpjND1DQmC6zEyQAMJaxgzZu9+w1bwULpi3rc/7A2MW8S6GDk5JARMJPq3rWGEsMUkLtxb
+	z9bFyMUhJLCIUeJK3xVmCGcCk8TvX+dYQarYBAwltt+7wgqSEBFYzSjRd/EMO4jDLHCXSWLO
+	qndgs4QFvCU+TD/JDmKzCKhK3Hp0BCzOK+Ah8bfrLlA3B9A+BYk5k2xAwpxA4Sd39rCA2EIC
+	7hJvT31hncDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcLw/k97BuKrB4hCjAAej
+	Eg/vD+mYYCHWxLLiytxDjBIczEoivJzTgUK8KYmVValF+fFFpTmpxYcYk4GOmsgsJZqcD0xF
+	eSXxhsYm5qbGppYmFiZmlqQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAaLj63fYpkXIP
+	5WpVdGacV67fsOERd8wrpUbj/o3rVnbNfxr608L+3wcuxf7guQGvzB7das4xPXau8VBh7PIj
+	s789CJ4ifCUjbtnu5znyxxh6DA9rXlKVfGKfr3Ure4lk/WuDSmGel6bPjJYrvvJUn1r9//5b
+	S5UP95gD5I7+WbhO1+XPjz7lF0osxRmJhlrMRcWJAFITCHI7AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,91 +60,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-Some redundant error message is removed and some error messages
-are changed to error level from debug level.
+This patch adds System MMU nodes that are common to exynos4 series.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ arch/arm/boot/dts/exynos4.dtsi |  107 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 107 insertions(+)
 
-diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 35b055e..4009eb2 100755
---- a/drivers/iommu/exynos-iommu.c
-+++ b/drivers/iommu/exynos-iommu.c
-@@ -1018,7 +1018,7 @@ static void exynos_iommu_detach_device(struct iommu_domain *domain,
- 		dev_dbg(dev, "%s: Detached IOMMU with pgtable %pa\n",
- 					__func__, &pagetable);
- 	else
--		dev_dbg(dev, "%s: No IOMMU is attached\n", __func__);
-+		dev_err(dev, "%s: No IOMMU is attached\n", __func__);
- }
- 
- static sysmmu_pte_t *alloc_lv2entry(struct exynos_iommu_domain *priv,
-@@ -1117,10 +1117,8 @@ static int lv2set_page(sysmmu_pte_t *pent, phys_addr_t paddr, size_t size,
- 								short *pgcnt)
- {
- 	if (size == SPAGE_SIZE) {
--		if (!lv2ent_fault(pent)) {
--			WARN(1, "Trying mapping on 4KiB where mapping exists");
-+		if (WARN_ON(!lv2ent_fault(pent)))
- 			return -EADDRINUSE;
--		}
- 
- 		*pent = mk_lv2ent_spage(paddr);
- 		pgtable_flush(pent, pent + 1);
-@@ -1128,9 +1126,7 @@ static int lv2set_page(sysmmu_pte_t *pent, phys_addr_t paddr, size_t size,
- 	} else { /* size == LPAGE_SIZE */
- 		int i;
- 		for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
--			if (!lv2ent_fault(pent)) {
--				WARN(1,
--				"Trying mapping on 64KiB where mapping exists");
-+			if (WARN_ON(!lv2ent_fault(pent))) {
- 				if (i > 0)
- 					memset(pent - i, 0, sizeof(*pent) * i);
- 				return -EADDRINUSE;
-@@ -1203,8 +1199,8 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long l_iova,
- 	}
- 
- 	if (ret)
--		pr_debug("%s: Failed to map iova %#x/%#zx bytes\n",
--							__func__, iova, size);
-+		pr_err("%s: Failed(%d) to map %#zx bytes @ %#x\n",
-+			__func__, ret, size, iova);
- 
- 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
- 
-@@ -1241,7 +1237,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	ent = section_entry(priv->pgtable, iova);
- 
- 	if (lv1ent_section(ent)) {
--		if (size < SECT_SIZE) {
-+		if (WARN_ON(size < SECT_SIZE)) {
- 			err_pgsize = SECT_SIZE;
- 			goto err;
- 		}
-@@ -1276,7 +1272,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	}
- 
- 	/* lv1ent_large(ent) == true here */
--	if (size < LPAGE_SIZE) {
-+	if (WARN_ON(size < LPAGE_SIZE)) {
- 		err_pgsize = LPAGE_SIZE;
- 		goto err;
- 	}
-@@ -1295,9 +1291,8 @@ done:
- err:
- 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
- 
--	WARN(1,
--	"%s: Failed due to size(%#zx) @ %#x is smaller than page size %#zx\n",
--	__func__, size, iova, err_pgsize);
-+	pr_err("%s: Failed: size(%#zx) @ %#x is smaller than page size %#zx\n",
-+		__func__, size, iova, err_pgsize);
- 
- 	return 0;
- }
+diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
+index 2f8bcd0..229efee 100644
+--- a/arch/arm/boot/dts/exynos4.dtsi
++++ b/arch/arm/boot/dts/exynos4.dtsi
+@@ -536,4 +536,111 @@
+ 		samsung,power-domain = <&pd_lcd0>;
+ 		status = "disabled";
+ 	};
++
++	sysmmu_mfc_l: sysmmu@13620000 {
++		compatible = "samsung,sysmmu-v2";
++		reg = <0x13620000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <5 5>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_MFCL>;
++		samsung,power-domain = <&pd_mfc>;
++		mmu-masters = <&mfc>;
++	};
++
++	sysmmu_mfc_r: sysmmu@13630000 {
++		compatible = "samsung,sysmmu-v2";
++		reg = <0x13630000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <5 6>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_MFCR>;
++		samsung,power-domain = <&pd_mfc>;
++		mmu-masters = <&mfc>;
++	};
++
++	sysmmu_tv: sysmmu@12E20000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x12E20000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <5 4>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_TV>;
++		samsung,power-domain = <&pd_tv>;
++	};
++
++	sysmmu_fimc0: sysmmu@11A20000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11A20000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <4 2>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_FIMC0>;
++		samsung,power-domain = <&pd_cam>;
++		mmu-masters = <&fimc_0>;
++	};
++
++	sysmmu_fimc1: sysmmu@11A30000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11A30000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <4 3>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_FIMC1>;
++		samsung,power-domain = <&pd_cam>;
++		mmu-masters = <&fimc_1>;
++	};
++
++	sysmmu_fimc2: sysmmu@11A40000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11A40000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <4 4>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_FIMC2>;
++		samsung,power-domain = <&pd_cam>;
++		mmu-masters = <&fimc_2>;
++	};
++
++	sysmmu_fimc3: sysmmu@11A50000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11A50000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <4 5>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_FIMC3>;
++		samsung,power-domain = <&pd_cam>;
++		mmu-masters = <&fimc_3>;
++	};
++
++	sysmmu_jpeg: sysmmu@11A60000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11A60000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <4 6>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_JPEG>;
++		samsung,power-domain = <&pd_cam>;
++	};
++
++	sysmmu_rotator: sysmmu@12A30000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x12A30000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <5 0>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_ROTATOR>;
++		samsung,power-domain = <&pd_lcd0>;
++	};
++
++	sysmmu_fimd0: sysmmu@11E20000 {
++		compatible = "samsung,sysmmu-v1";
++		reg = <0x11E20000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <5 2>;
++		clock-names = "sysmmu";
++		clocks = <&clock CLK_SMMU_FIMD0>;
++		samsung,power-domain = <&pd_lcd0>;
++		mmu-masters = <&fimd>;
++	};
+ };
 -- 
 1.7.9.5
 
