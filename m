@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbaD0Hky (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:40:54 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31141 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaD0HjW (ORCPT
+	id S1753583AbaD0Hku (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:50 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:57787 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238AbaD0HjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:22 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-69-535cb4296005
+	Sun, 27 Apr 2014 03:39:19 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-77-535cb426b5b0
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -17,40 +17,41 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         joro@8bytes.org, prathyush.k@samsung.com, rahul.sharma@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
-        joshi@samsung.com, Shaik Ameer Basha <shaik.ameer@samsung.com>
-Subject: [PATCH v12 12/31] iommu/exynos: support for device tree
-Date: Sun, 27 Apr 2014 13:07:44 +0530
-Message-id: <1398584283-22846-13-git-send-email-shaik.ameer@samsung.com>
+        joshi@samsung.com
+Subject: [PATCH v12 11/31] documentation: iommu: add binding document of Exynos
+ System MMU
+Date: Sun, 27 Apr 2014 13:07:43 +0530
+Message-id: <1398584283-22846-12-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkRldzS0ywweJufos7d8+xWsw/AiRe
-	HfnBZLFgv7VF5+wN7Bbfd31ht+hdcJXNYtPja6wWl3fNYbOYcX4fk8WFFRvZLf71HmS0mLLo
-	MKvF4TftrBYn//QyWhx5uJvdouV6L5PF+hmvWSxW7frDaDHz1hoWBxGPJwfnMXnMbrjI4vHv
-	cD+Tx85Zd9k97lzbw+axeUm9x+Qbyxk9+rasYvT4vEnO48rRM0wBXFFcNimpOZllqUX6dglc
-	GVe+X2It2CNRcXjPIfYGxjaRLkZODgkBE4kvR68xQdhiEhfurWcDsYUEljJKrDjDAVNzbn4v
-	axcjF1B8EaPElyNXmCGcCUwSTee7WUCq2AQMJbbfuwJWJSKwmlGi7+IZdhCHWaCHWeLa/jtg
-	O4QFHCTeLFzCCmKzCKhK7Dn2C6ybV8BDonHeFqAaDqB9ChJzJtmAhDmBwk/u7GGBOMld4u2p
-	L2ALJAQWckgceH6KHWKOgMS3yYdYIHplJTYdYIY4W1Li4IobLBMYhRcwMqxiFE0tSC4oTkov
-	MtIrTswtLs1L10vOz93ECIzM0/+e9e1gvHnA+hBjMtC4icxSosn5wMjOK4k3NDYzsjA1MTU2
-	Mrc0I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mc/5Ftwfekol3TL3O/GWH
-	mafe0sri6mvS3g91HvToX93EqqHRVMISlqkUaWubt2rP5UM76h4f+pq3bkMWo83qSYzc639G
-	vPCR9d8+R1jZ/UNG+3v/25ZNl3sYfd6G855u+pG27cAWwSRetTz53HlVhbusf4SkXffreqB3
-	NatmakmGv6Z8goUSS3FGoqEWc1FxIgB4HkLV4gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jAV3NLTHBBt/3sljcuXuO1WL+ESDx
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkSldtS0ywwefVohZ37p5jtZh/BEi8
+	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
+	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8a8C6fY
+	C9qVKvqnHmRvYNwj3cXIySEhYCLx5GAnO4QtJnHh3nq2LkYuDiGBpYwS57tPMMEUXbv5HSqx
+	iFFi8d+7TBDOBCaJswuXgFWxCRhKbL93hRUkISKwmlGi7+IZdhCHWeAuk8ScVe8YQaqEBWIk
+	vn44ywJiswioSrxctQHI5uDgFfCQ6FzhC2JKCChIzJlkA1LBCRR9cmcPWLWQgLvE21NfwOZL
+	CMzkkJiwo4EZYoyAxLfJh1ggemUlNh1ghrhaUuLgihssExiFFzAyrGIUTS1ILihOSi8y1CtO
+	zC0uzUvXS87P3cQIjMfT/5717mC8fcD6EGMy0LiJzFKiyfnAeM4riTc0NjOyMDUxNTYytzQj
+	TVhJnDfpYVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsYb7hsciq4G71eebvru7yOloHDb
+	73NnV+lzrN003el0z/fkMxdMjnq+YuXba9Fqu+rYszcnrt+fcljfsylQUFCQb/vzJV1NToet
+	H6fmurKaPAtjE1n1TIt9mcw+lfm8Vkr8amZPTgmt/tYomlOyUeXX5Fa2TF6zBR7i6t/S7UJS
+	D8p8k1GJUFFiKc5INNRiLipOBAA/unsX3QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV21LTHBBlvPcFncuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktDr9pZ7U4+aeX0eLIw93sFi3Xe5ks1s94zWKxatcfRouZt9awOIh4PDk4j8ljdsNFFo9/
-	h/uZPHbOusvucefaHjaPzUvqPSbfWM7o0bdlFaPH501yHleOnmEK4IpqYLTJSE1MSS1SSM1L
-	zk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAfpPSaEsMacUKBSQWFyspG+H
-	aUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hx5fsl1oI9EhWH9xxib2BsE+li5OSQEDCRODe/lxXC
-	FpO4cG89WxcjF4eQwCJGiS9HrjBDOBOYJJrOd7OAVLEJGEpsv3eFFSQhIrCaUaLv4hl2EIdZ
-	oIdZ4tr+O0wgVcICDhJvFi4Bm8sioCqx59gvsG5eAQ+JxnlbgGo4gPYpSMyZZAMS5gQKP7mz
-	B6xESMBd4u2pL6wTGHkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO/GdSOxhXNlgc
-	YhTgYFTi4V0gGRMsxJpYVlyZe4hRgoNZSYSXczpQiDclsbIqtSg/vqg0J7X4EGMy0FETmaVE
-	k/OBSSmvJN7Q2MTc1NjU0sTCxMySNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhi5vT83
-	Vf8QTi4M/Pgy2na58JFLnwp3ML68fe9gVefldf/WMP1o2Tv/4+vidIYwqz719Jqm/Huvlgr/
-	2iRmPlHsXGJaPN/B1m333dYW1myesD8l7GO2zSr1zgjOUL+JixyOX3m16qbFo/Qc5aIyp+dc
-	m14+2ZzusUvITequ1dzCyZw13iF614uVWIozEg21mIuKEwFfIb9nQAMAAA==
+	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
+	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
+	tYBpjND1DQmC6zEyQAMJaxgz5l04xV7QrlTRP/UgewPjHukuRk4OCQETiWs3v7NB2GISF+6t
+	B7K5OIQEFjFKLP57lwnCmcAkcXbhEiaQKjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWSmLPq
+	HSNIlbBAjMTXD2dZQGwWAVWJl6s2ANkcHLwCHhKdK3xBTAkBBYk5k2xAKjiBok/u7AGrFhJw
+	l3h76gvrBEbeBYwMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCo/2Z1A7GlQ0WhxgFOBiV
+	eHgXSMYEC7EmlhVX5h5ilOBgVhLh5ZwOFOJNSaysSi3Kjy8qzUktPsSYDHTTRGYp0eR8YCLK
+	K4k3NDYxNzU2tTSxMDGzJE1YSZz3QKt1oJBAemJJanZqakFqEcwWJg5OqQbGXBvrHbusqlm+
+	HlKazCKbF/ph5+QbrEcn62vsXvpg8/TgnvMPryffDS87+EN6js6r3lkRJwxdr3154zN10n7Z
+	T/JPWZmbrsxb8sHNwpfd4fT/jrUTV6UZ2d3d5b2jOmO185WvPop73LOLDzqU+Wsf3H2o7pvf
+	5V3xviyLYg4JnJ3Yt/Jl1cnKQCWW4oxEQy3mouJEAJVzyD06AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,100 +61,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This commit adds device tree support for System MMU.
-It also enables iommu support for ARCH_EXYNOS.
+This patch adds a description of the device tree binding for the
+Samsung Exynos System MMU.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
-Signed-off-by: Shaik Ameer Basha <shaik.ameer@samsung.com>
 ---
- arch/arm/Kconfig             |    2 ++
- drivers/iommu/Kconfig        |    8 +++-----
- drivers/iommu/exynos-iommu.c |   19 +++++++++++++++----
- 3 files changed, 20 insertions(+), 9 deletions(-)
+ .../devicetree/bindings/iommu/samsung,sysmmu.txt   |   79 ++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ab438cb..19689e4 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -834,6 +834,8 @@ config ARCH_EXYNOS
- 	select ARCH_HAS_HOLES_MEMORYMODEL
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARCH_SPARSEMEM_ENABLE
-+	select ARM_AMBA
-+	select ARM_DMA_USE_IOMMU
- 	select ARM_GIC
- 	select COMMON_CLK
- 	select CPU_V7
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index df56e4c..5feadb8 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -178,16 +178,14 @@ config TEGRA_IOMMU_SMMU
- 
- config EXYNOS_IOMMU
- 	bool "Exynos IOMMU Support"
--	depends on ARCH_EXYNOS && EXYNOS_DEV_SYSMMU
-+	depends on ARCH_EXYNOS
- 	select IOMMU_API
- 	help
--	  Support for the IOMMU(System MMU) of Samsung Exynos application
--	  processor family. This enables H/W multimedia accellerators to see
-+	  Support for the IOMMU (System MMU) of Samsung Exynos application
-+	  processor family. This enables H/W multimedia accelerators to see
- 	  non-linear physical memory chunks as a linear memory in their
- 	  address spaces
- 
--	  If unsure, say N here.
--
- config EXYNOS_IOMMU_DEBUG
- 	bool "Debugging log for Exynos IOMMU"
- 	depends on EXYNOS_IOMMU
-diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 0f1d3f0..cbb9b67 100755
---- a/drivers/iommu/exynos-iommu.c
-+++ b/drivers/iommu/exynos-iommu.c
-@@ -25,6 +25,7 @@
- #include <linux/list.h>
- #include <linux/memblock.h>
- #include <linux/export.h>
-+#include <linux/of.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/pgtable.h>
-@@ -494,7 +495,7 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
- 	read_unlock_irqrestore(&data->lock, flags);
- }
- 
--static int exynos_sysmmu_probe(struct platform_device *pdev)
-+static int __init exynos_sysmmu_probe(struct platform_device *pdev)
- {
- 	int irq, ret;
- 	struct device *dev = &pdev->dev;
-@@ -548,11 +549,21 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct platform_driver exynos_sysmmu_driver = {
--	.probe		= exynos_sysmmu_probe,
--	.driver		= {
-+static const struct of_device_id sysmmu_of_match[] __initconst = {
-+	{ .compatible	= "samsung,sysmmu-v1", },
-+	{ .compatible	= "samsung,sysmmu-v2", },
-+	{ .compatible	= "samsung,sysmmu-v3.1", },
-+	{ .compatible	= "samsung,sysmmu-v3.2", },
-+	{ .compatible	= "samsung,sysmmu-v3.3", },
-+	{ },
-+};
+diff --git a/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt b/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
+new file mode 100644
+index 0000000..16e13a2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/iommu/samsung,sysmmu.txt
+@@ -0,0 +1,79 @@
++Samsung Exynos IOMMU H/W, System MMU (System Memory Management Unit)
 +
-+static struct platform_driver exynos_sysmmu_driver __refdata = {
-+	.probe	= exynos_sysmmu_probe,
-+	.driver	= {
- 		.owner		= THIS_MODULE,
- 		.name		= "exynos-sysmmu",
-+		.of_match_table	= sysmmu_of_match,
- 	}
- };
- 
++Samsung's Exynos architecture contains System MMUs that enables scattered
++physical memory chunks visible as a contiguous region to DMA-capable peripheral
++devices like MFC, FIMC, FIMD, GScaler, FIMC-IS and so forth.
++
++System MMU is an IOMMU and supports identical translation table format to
++ARMv7 translation tables with minimum set of page properties including access
++permissions, shareability and security protection. In addition, System MMU has
++another capabilities like L2 TLB or block-fetch buffers to minimize translation
++latency.
++
++System MMUs are in many to one relation with peripheral devices, i.e. single
++peripheral device might have multiple System MMUs (usually one for each bus
++master), but one System MMU can handle transactions from only one peripheral
++device. The relation between a System MMU and the peripheral device needs to be
++defined in device node of the peripheral device.
++
++MFC in all Exynos SoCs and FIMD, M2M Scalers and G2D in Exynos5420 has 2 System
++MMUs.
++* MFC has one System MMU on its left and right bus.
++* FIMD in Exynos5420 has one System MMU for window 0 and 4, the other system MMU
++  for window 1, 2 and 3.
++* M2M Scalers and G2D in Exynos5420 has one System MMU on the read channel and
++  the other System MMU on the write channel.
++The drivers must consider how to handle those System MMUs. One of the idea is
++to implement child devices or sub-devices which are the client devices of the
++System MMU.
++
++Required properties:
++- compatible: Should be one of:
++		"samsung,sysmmu-v1"
++		"samsung,sysmmu-v2"
++		"samsung,sysmmu-v3.1"
++		"samsung,sysmmu-v3.2"
++		"samsung,sysmmu-v3.3"
++
++- reg: A tuple of base address and size of System MMU registers.
++- interrupt-parent: The phandle of the interrupt controller of System MMU
++- interrupts: An interrupt specifier for interrupt signal of System MMU,
++	      according to the format defined by a particular interrupt
++	      controller.
++- clock-names: Should be "sysmmu" if the System MMU is needed to gate its clock.
++	       Optional "master" if the clock to the System MMU is gated by
++	       another gate clock other than "sysmmu".
++	       Exynos4 SoCs, there needs no "master" clock.
++	       Exynos5 SoCs, some System MMUs must have "master" clocks.
++- clocks: Required if the System MMU is needed to gate its clock.
++- samsung,power-domain: Required if the System MMU is needed to gate its power.
++	  Please refer to the following document:
++	  Documentation/devicetree/bindings/arm/exynos/power_domain.txt
++- mmu-masters: A phandle to device nodes representing the master for which
++               the System MMU can provide a translation. Any additional values
++	       after the phandle will be ignored because a System MMU never
++	       have two or more masters. "#stream-id-cells" specified in the
++	       master's node will be also ignored.
++	       If more than one phandle is specified, only the first phandle
++	       will be treated.
++
++Examples:
++	gsc_0: gsc@13e00000 {
++		compatible = "samsung,exynos5-gsc";
++		reg = <0x13e00000 0x1000>;
++		interrupts = <0 85 0>;
++		samsung,power-domain = <&pd_gsc>;
++		clocks = <&clock CLK_GSCL0>;
++		clock-names = "gscl";
++	};
++
++	sysmmu_gsc0: sysmmu@13E80000 {
++		compatible = "samsung,sysmmu-v3.2";
++		reg = <0x13E80000 0x1000>;
++		interrupt-parent = <&combiner>;
++		interrupts = <2 0>;
++		clock-names = "sysmmu", "master";
++		clocks = <&clock CLK_SMMU_GSCL0>, <&clock CLK_GSCL0>;
++		samsung,power-domain = <&pd_gsc>;
++		mmu-masters = <&gsc_0>;
++	};
 -- 
 1.7.9.5
 
