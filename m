@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaD0VRv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 17:17:51 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:49649 "EHLO fiona.linuxhacker.ru"
+	id S1753461AbaD0VRt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 17:17:49 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:49650 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668AbaD0VRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753329AbaD0VRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 17:17:47 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Oleg Drokin <green@linuxhacker.ru>
-Subject: [PATCH 0/5] Lustre Klocwork fixes
-Date: Sun, 27 Apr 2014 17:17:21 -0400
-Message-Id: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
+Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 5/5] staging/lustre/lnet: fix potential null pointer dereference
+Date: Sun, 27 Apr 2014 17:17:26 -0400
+Message-Id: <1398633446-16719-6-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
+References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is just splitting big lnet fixes patch from Klocwork static
-analysis tool into smaller bits.
+From: Dmitry Eremin <dmitry.eremin@intel.com>
 
-Dmitry Eremin (5):
-  staging/lustre/lnet: fix potential null pointer dereference
-  staging/lustre/lnet: remove unused variable
-  staging/lustre/lnet: fix potential null pointer dereference
-  staging/lustre/lnet: fix potential null pointer dereference
-  staging/lustre/lnet: fix potential null pointer dereference
+Pointer 'ni' checked for NULL at line 1569 may be passed to
+function and may be dereferenced there by passing argument 1 to
+function 'lnet_ni_notify_locked' at line 1621.
+found by Klocwork Insight tool
 
- drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c |  8 ++++++--
- drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c    |  4 ++--
- drivers/staging/lustre/lnet/lnet/api-ni.c              |  6 +++---
- drivers/staging/lustre/lnet/lnet/router.c              |  3 ++-
- drivers/staging/lustre/lnet/selftest/framework.c       | 14 +++++++++++---
- 5 files changed, 24 insertions(+), 11 deletions(-)
+Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
+Reviewed-on: http://review.whamcloud.com/9386
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4629
+Reviewed-by: John L. Hammond <john.hammond@intel.com>
+Reviewed-by: Isaac Huang <he.huang@intel.com>
+Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+---
+ drivers/staging/lustre/lnet/lnet/router.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index 995f509..ba0278e 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -1559,7 +1559,8 @@ lnet_notify(lnet_ni_t *ni, lnet_nid_t nid, int alive, cfs_time_t when)
+ 
+ 	lnet_notify_locked(lp, ni == NULL, alive, when);
+ 
+-	lnet_ni_notify_locked(ni, lp);
++	if (ni != NULL)
++		lnet_ni_notify_locked(ni, lp);
+ 
+ 	lnet_peer_decref_locked(lp);
+ 
 -- 
 1.9.0
 
