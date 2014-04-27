@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794AbaD0SSI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 14:18:08 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:58604 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609AbaD0SSG (ORCPT
+	id S1753127AbaD0SUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 14:20:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58448 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609AbaD0SUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 14:18:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kgene.kim@samsung.com, prathyush.k@samsung.com, grundler@chromium.org,
-        joro@8bytes.org, supash.ramaswamy@linaro.org, tomasz.figa@gmail.com,
-        joshi@samsung.com, sachin.kamat@linaro.org, s.nawrocki@samsung.com,
-        Varun.Sethi@freescale.com, a.motakis@virtualopensystems.com,
-        pullip.cho@samsung.com, t.figa@samsung.com, rahul.sharma@samsung.com
-Subject: Re: [PATCH v12 15/31] iommu/exynos: handle 'mmu-masters' property of DT and improve handling sysmmu
-Date: Sun, 27 Apr 2014 20:17:48 +0200
-Message-ID: <13595839.WFkdpM5auQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398584283-22846-16-git-send-email-shaik.ameer@samsung.com>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <1398584283-22846-16-git-send-email-shaik.ameer@samsung.com>
+	Sun, 27 Apr 2014 14:20:14 -0400
+Date: Sun, 27 Apr 2014 20:20:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC PATCH] rtmutex: Do not prio boost when timeout is used
+In-Reply-To: <20140425162848.0e1deed8@gandalf.local.home>
+Message-ID: <alpine.DEB.2.02.1404271947260.6261@ionos.tec.linutronix.de>
+References: <20140425162848.0e1deed8@gandalf.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:W8Xporq8ix0igGQHfhVULx+FEwwXiu1m9qoM7pSEuLJ
- zFMFyfqdzCCYeg7dMgIF7Z4l70YUhxlFt5+aYZN1P56+Ne86ON
- KYrJocosGFmnTwDtfqoHxyYgrEqrdzXyjxOBWlg8LXRzTV/EbY
- GWchs0B2ZL0BipImjwPGKIWtrgxTMGgylbEIkEox8lvUIeFvbv
- TphZyqduebf7rXfu0WXE4HZcaWMsFHQoQgbqepSwJ03numH6AV
- FjAB4ForLN5DdsCvEhOT/mya6rGHo0e1LqhNIxPsPGQ3No9iWc
- G5td76oeRwmjzbs9iATuRc/PP5xp9fTONgz0rdwQtecR2mUrtQ
- 9Uz5ES3LA7vuPIhHmZMs=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 April 2014 13:07:47 Shaik Ameer Basha wrote:
-> @@ -542,14 +592,41 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
->  		}
->  	}
->  
-> +	/* Relation between master and System MMU is 1:1. */
-> +	node = of_parse_phandle(dev->of_node, "mmu-masters", 0);
-> +	if (node) {
-> +		struct platform_device *master = of_find_device_by_node(node);
-> +
-> +		if (!master) {
-> +			dev_err(dev, "%s: mmu-master '%s' not found\n",
-> +				__func__, node->name);
-> +			return -EINVAL;
-> +		}
-> +
-> +		if (master->dev.archdata.iommu != NULL) {
-> +			dev_err(dev, "%s: '%s' is master of other MMU\n",
-> +				__func__, node->name);
-> +			return -EINVAL;
-> +		}
-> +
-> +		/*
-> +		 * archdata.iommu will be initialized with exynos_iommu_client
-> +		 * in sysmmu_hook_driver_register().
-> +		 */
-> +		master->dev.archdata.iommu = dev;
-> +	}
+On Fri, 25 Apr 2014, Steven Rostedt wrote:
 
-I think parsing of generic properties like this shouldn't be done
-by the individual driver. It belongs into core iommu code and should
-be done when the devices are probed.
+> I've been discussing an issue on IRC with deadlock checking and found
+> something wrong with it. Mainly, if any of the locks have a timeout,
+> then even if the chain loops, there is no real deadlock. If one of the
+> locks in the chain times out, then things will move forward again.
+> 
+> Now it may not be nice to have locks that do this, but we can break
+> applications that use futex priority boosting and may use timeouts to
+> break deadlocks.
 
-> +
-> +static struct notifier_block sysmmu_notifier = {
-> +	.notifier_call = &sysmmu_hook_driver_register,
-> +};
-> +
-> +static int __init exynos_iommu_prepare(void)
-> +{
-> +	static bool registered = false;
-> +	int ret;
-> +
-> +	if (registered)
-> +		return 0;
-> +
-> +	ret = bus_register_notifier(&platform_bus_type, &sysmmu_notifier);
-> +	if (!ret)
-> +		registered = true;
-> +	else
-> +		pr_err("Failed to register sysmmu_notifier\n");
-> +
-> +	return ret;
-> +}
+And we rightfully break them. Using timeouts to work around potential
+deadlocks is broken by definition.
 
-This also means we should not have notifiers. Put it into core code to
-make sure all IOMMUs are handled the same way.
+We did forbid that forever, so no application developer can claim that
+he had been using that before with PI futexes. It simply never worked.
 
-	Arnd
+If that application was using non PI futexes and worked around the
+deadlock with timeouts and now decided to switch that broken code to
+use PI, it's none of our problems and we are not going to change a
+single line of code to support that brainfart.
+
+> As priority boosting is made to prevent unbounded latencies, and a
+> timeout grabbing of a lock is a bounded latency, I'm suggesting that we
+> do not bother boosting the owner or even treating the task as being
+> blocked.
+
+That's complete and utter bullsh*it.
+
+T1 holds A and tries to grab B
+
+T2 holds B and tries to grab A with a timeout T. 
+
+So T1 prevents T2 for time T to grab the lock, i.e. a (temporary)
+deadlock. Depending on the requirements of T1, T might be well outside
+the bounds which are critical for T1. That's still bounded by some
+definition, but violates the bounds of T1.
+
+Even the most basic "locking for dummies" cookbook will tell you that
+if you need to take locks in reverse order the only sane thing is to
+use trylock.
+
+Aside of that you would penalize legitimate and sane users of timeouts
+which suddenly would run into priority inversions for no good reason.
+
+We really have better things to do, than changing the rules just to
+please some random (probably commercial) application which has been
+programmed along the coding rules from hell.
+
+Thanks,
+
+	tglx
