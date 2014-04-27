@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaD0JQM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 05:16:12 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:53817 "EHLO
+	id S1753449AbaD0JPK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 05:15:10 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:57663 "EHLO
 	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167AbaD0JQI (ORCPT
+	with ESMTP id S1752988AbaD0JPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 05:16:08 -0400
-Message-ID: <535CCAD2.4060304@gmail.com>
-Date: Sun, 27 Apr 2014 11:16:02 +0200
+	Sun, 27 Apr 2014 05:15:06 -0400
+Message-ID: <535CCA93.1080504@gmail.com>
+Date: Sun, 27 Apr 2014 11:14:59 +0200
 From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
 To: NeilBrown <neilb@suse.de>
 CC: mtk.manpages@gmail.com, "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>, Rich Felker <dalias@libc.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org,
         Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Christoph Hellwig <hch@infradead.org>, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: flock() and NFS [Was: Re: [PATCH] locks: rename file-private locks
- to file-description locks]
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
 References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>	<20140421140246.GB26358@brightrain.aerifal.cx>	<535529FA.8070709@gmail.com>	<20140421161004.GC26358@brightrain.aerifal.cx>	<5355644C.7000801@gmail.com>	<20140421184640.GD26358@brightrain.aerifal.cx>	<535573E0.9080106@gmail.com>	<20140421155520.3b33fbef@ipyr.poochiereds.net>	<53558A73.3010602@samba.org>	<5355F60C.8010004@gmail.com> <20140427145125.21e7e6c6@notabene.brown>
 In-Reply-To: <20140427145125.21e7e6c6@notabene.brown>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -31,57 +31,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Trimming some folk from CC, and adding various NFS people]
-
 On 04/27/2014 06:51 AM, NeilBrown wrote:
+> On Tue, 22 Apr 2014 06:54:36 +0200 "Michael Kerrisk (man-pages)"
+> <mtk.manpages@gmail.com> wrote:
+> 
+>> On 04/21/2014 11:15 PM, Stefan (metze) Metzmacher wrote:
+>>> Am 21.04.2014 21:55, schrieb Jeff Layton:
+>>>> On Mon, 21 Apr 2014 21:39:12 +0200
+>>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+>>>>
+>>>>> On 04/21/2014 08:46 PM, Rich Felker wrote:
+>>>>>> On Mon, Apr 21, 2014 at 08:32:44PM +0200, Michael Kerrisk (man-pages) wrote:
+>>>>>>> On 04/21/2014 06:10 PM, Rich Felker wrote:
+>>>>>>>> I'm well aware of that. The problem is that the proposed API is using
+>>>>>>>> the two-letter abbreviation FD, which ALWAYS means file descriptor and
+>>>>>>>> NEVER means file description (in existing usage) to mean file
+>>>>>>>> description. That's what's wrong.
+>>>>>>>
+>>>>>>> So, can you *please* answer this question: what do you call (i.e., 
+>>>>>>> what  everyday technical language term do use for) the thing
+>>>>>>> that sits between a file descriptor and an i-node? 
+>>>>>>>
+>>>>>>> (Please don't say 'struct file' -- that is not is an implementation 
+>>>>>>> detail, and does not qualify as the kind of term that I could use 
+>>>>>>> when documenting this feature in man pages.)
+>>>>>>
+>>>>>> "Open file description".
+>>>>>
+>>>>> Oh! I didn't realize we agreed :-).
+>>>>>
+>>>>>>> POSIX uses (or invented, I am not sure which) the term file description
+>>>>>>> for a good reason: it is unambiguous, and therefore precise. I do agree
+>>>>>>> that there's a risk of confusion between 'open file descriptor" and 
+>>>>>>> 'and file description'--it's the same kind of risk as between English 
+>>>>>>> terms such as 'arbitrator' and 'arbitration' (and any number of other
+>>>>>>> examples), and as language speakers we deal with this every day.
+>>>>>>
+>>>>>> There's not a problem when the full word is used. On the other hand,
+>>>>>> if you use "arb" as an abbreviation for "arbitration" in a context
+>>>>>> where it was already universally understood as meaning "arbitrator",
+>>>>>> that would be a big problem.
+>>>>>>
+>>>>>> Likewise the problem here isn't that "open file description" is a bad
+>>>>>> term. It's that using "FD" to mean "[open] file description" is
+>>>>>> utterly confusing, even moreso than just making up a new completely
+>>>>>> random word.
+>>>>>
+>>>>> Ohh -- I had thought you a problem not just with "FD" but also
+>>>>> "(open) file description".
+>>>>>
+>>>>>>>>> 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+>>>>>>>>>    that are visually very close to the traditional POSIX lock names 
+>>>>>>>>>    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+>>>>>>>>>    when someone mistypes in code and/or misses such a misttyping
+>>>>>>>>>    when reading code. That really must be fixed.
+>>>>>>>>
+>>>>>>>> I agree, but I don't think making it worse is a solution.
+>>>>>>>
+>>>>>>> I don't agree that it's making it worse. The real problem here is 
+>>>>>>> that people use no good unambiguous term for the thing between a file
+>>>>>>> descriptor and an inode. POSIX provides us with a solution that may
+>>>>>>> not seem perfect, but it is unambiguous, and I think it might feel
+>>>>>>> more comfortable if we used it often enough.
+>>>>>>
+>>>>>> I would like to see it used more too, and in particular, I think it
+>>>>>> belongs in the documentation for these new locking interfaces. But
+>>>>>> that still doesn't answer the question of what to call them (the
+>>>>>> macros) unless you want:
+>>>>>>
+>>>>>> F_OPEN_FILE_DESCRIPTION_GETLK
+>>>>>> F_OPEN_FILE_DESCRIPTION_SETLK
+>>>>>> F_OPEN_FILE_DESCRIPTION_SETLKW
+>>>>>
+>>>>> Or just 'F_OFD_*'?
+>>>>>
+>>>>>> Perhaps "OP" (for open-private, i.e. private to the particular open)
+>>>>>> would be a sensible choice; OTOH people are likely to misread it as
+>>>>>> OPeration. The general principle I have in mind though is that it
+>>>>>> might be nice to highlight the word "open" in "open file description"
+>>>>>
+>>>>> (Fair enough.)
+>>>>>
+>>>>>> since it (1) contrasts with file descriptor, despite file descriptors
+>>>>>> also dealing with open files, and (2) contrasts well with legacy fcntl
+>>>>>> locks, which are (this is the whole bug) associated with the
+>>>>>> underlying file and not the open file description.
+>>>>>
+>>>>> Makes sense to me. (We are in more agreement that I realized.)
+>>>>>
+>>>>> Cheers,
+>>>>>
+>>>>> Michael
+>>>>>
+>>>>>
+>>>>>
+>>>>
+>>>> So the motion is to call them "open file description locks" and change
+>>>> the macros to read *_OFD_*. Does anyone object?
+>>>
+>>> Works fine for me...
+>>
+>> And works for me.
+>>
+>>
+> 
+> I think the word "open" is important here.
+> I find that "description" is not a word I would have every thought was
+> relevant here - it is obviously too long since I have read the man pages.
+> 
+> I would prefer
+>   per-open locks
 
-[...]
+The problem I see with that is that the term doesn't really convey
+any meaning. So, I think OFD locks is better (albeit a bit of a mouthful).
+
+> which are contrasted with
+>   per-process locks
+
+And that term isn't really used, except in recent discussions.
+
+> An alternative might be "flock-like" as locks created with "flock" have
+> exactly the property we are trying to describe.  Reading the man page for
+> "flock" then suggests "open file table entry locks" 
+
+That was true until a few days ago:
+http://git.kernel.org/cgit/docs/man-pages/man-pages.git/commit/?id=61a37c81ef11da9a12df91da181b943ef29cf2ba
+
+> which is even more of a
+> mouthful.  "oftel" is pronounceable though.  Then we could talk about "oftel
+> locks" in the same sentence as "pin numbers" and "RAM memory".
+
+I'll give full marks for inventiveness. But, the man-pages are moving 
+(even) more consistently to the POSIX terminology, so I think that term
+would have its own confusions.
+
+> But maybe I came too late to this party, and the boat has sailed?
+
+Jeff's decision in the end, but I suspect yes. 
 
 > Note to Michael: The text
 >    flock() does not lock files over NFS.
 > in flock(2) is no longer accurate.  The reality is ... complex.
 > See nfs(5), and search for "local_lock".
 
-Ahhh -- I see: 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5eebde23223aeb0ad2d9e3be6590ff8bbfab0fc2
+I'll take this to a separate mail...
 
-Thanks for the heads up.
-
-Just in general, it would be great if the flock(2) and fcntl(2) man pages
-contained correct details for NFS, of course. So, for example, if there 
-are any current gotchas for NFS and fcntl() byte-range locking, I'd like 
-to add those to the fcntl(2) man page.
-
-Anyway, returning to your point about flock(), how would this text
-look for the flock(2) manual page:
-
-    NOTES
-       Since  kernel  2.0,  flock() is implemented as a system call in
-       its own right rather than being emulated in the GNU  C  library
-       as  a  call  to fcntl(2).  This yields classical BSD semantics:
-       there is no interaction between the types  of  lock  placed  by
-       flock()  and  fcntl(2),  and  flock() does not detect deadlock.
-       (Note, however, that on some modern BSDs, flock() and  fcntl(2)
-       locks do interact with one another.)
-
-       In Linux kernels up to 2.6.11, flock() does not lock files over
-       NFS (i.e., the scope of locks was limited to the local system).
-       Instead,  one could use fcntl(2) byte-range locking, which does
-       work over NFS, given a sufficiently recent version of Linux and
-       a  server  which  supports  locking.   Since  Linux 2.6.12, NFS
-       clients support flock() locks by emulating them  as  byte-range
-       locks on the entire file.  This means that fcntl(2) and flock()
-       locks do interact with  one  another  over  NFS.   Since  Linux
-       2.6.37,  the  kernel  supports a compatibility mode that allows
-       flock() locks (and also  fcntl(2)  byte  region  locks)  to  be
-       treated  as  local; see the discussion of the local_lock option
-       in nfs(5).
-?
-
-Thanks,
+Cheers,
 
 Michael
-
 
 -- 
 Michael Kerrisk
