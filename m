@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaD0T26 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 15:28:58 -0400
-Received: from smtp22.services.sfr.fr ([93.17.128.10]:63894 "EHLO
-	smtp22.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaD0T24 (ORCPT
+	id S1752973AbaD0Tfa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 15:35:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:38154 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaD0Tf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 15:28:56 -0400
-X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Apr 2014 15:28:55 EDT
-Authentication-Results: sfrmc.priv.atos.fr; dkim=none (no signature);
-	dkim-adsp=none (no policy) header.from=mpeg.blue@free.fr
-X-SFR-UUID: 20140427191735245.3C02770000D6@msfrf2221.sfr.fr
-Message-ID: <535D57CF.50402@free.fr>
-Date: Sun, 27 Apr 2014 21:17:35 +0200
-From: Mason <mpeg.blue@free.fr>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101
-	Firefox/28.0 SeaMonkey/2.25
+	Sun, 27 Apr 2014 15:35:28 -0400
+Date: Sun, 27 Apr 2014 21:34:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Henrik Austad <henrik@austad.us>, Dario Faggioli <raistlin@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        Michael Trimarchi <michael@amarulasolutions.com>,
+        Fabio Checconi <fchecconi@gmail.com>,
+        Tommaso Cucinotta <tommaso.cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, Dhaval Giani <dhaval.giani@gmail.com>,
+        hgu1972@gmail.com, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Insop Song <insop.song@gmail.com>, liming.wang@windriver.com,
+        jkacur@redhat.com, linux-man <linux-man@vger.kernel.org>
+Subject: Re: sched_{set,get}attr() manpage
+Message-ID: <20140427193449.GB17778@laptop.programming.kicks-ass.net>
+References: <20131217123352.692059839@infradead.org>
+ <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
+ <20140121153851.GZ31570@twins.programming.kicks-ass.net>
+ <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
+ <20140214161929.GL27965@twins.programming.kicks-ass.net>
+ <53020C9D.1050208@gmail.com>
+ <20140409092510.GQ11096@twins.programming.kicks-ass.net>
+ <20140409151911.GA4041@austad.us>
+ <20140409154204.GD10526@twins.programming.kicks-ass.net>
+ <CAKgNAki5BkOyckf1zxJCRs2tq-eG9bWW_yRGi3hDynz12wz+QQ@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-embedded@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Using ftrace to identify source of excessive latency of USB write
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAki5BkOyckf1zxJCRs2tq-eG9bWW_yRGi3hDynz12wz+QQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On Sun, Apr 27, 2014 at 05:47:25PM +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Peter,
+> 
+> Following the review comments that one or two people sent, are you
+> planning to send in a revised version of this page?
 
-I'm using Linux on a embedded system similar in spec to a desktop PC
-from 15 years ago (256 MB RAM, 800-MHz CPU, USB). The system's primary
-use is recording high-definition digital television programs.
+Yes, I just suck at getting around to it :-(, I'll do it first thing
+tomorrow.
 
-Typically, the storage sub-system consists of a recent hard-disk drive
-connected over USB (Hi-Speed, effective throughput ~20-30 MB/s), using
-a single ext4 partition (journal disabled), mounted noexec+noatime
-(trying to minimize metadata interference).
+> Also, is there any test code lying about somewhere that I could play with?
 
-Typical bit-rate for this HD content ~1-3 MB/s
-
-Data is accumulated in two 800-kB buffers; when one buffer is full,
-it is written to file (using write(2)), which was opened O_SYNC.
-(Note to self: try O_DSYNC instead of O_SYNC)
-
-If I plot the latency of the write(2) operation, 99% of them complete
-in under 80 ms. However, in rare cases, there is a huge latency spike
-(up to 800 ms). If several of these rare outliers occur in a row,
-the recording is messed up.
-
-I am trying to figure out the source of these latency spikes.
-
-It could be the OS, the USB controller, the HDD controller... I was
-hoping I could use ftrace to determine whether the problem came from
-the OS itself. Is that the best tool for the job?
-
-Any recommendations on how to proceed?
-
-Regards.
-
-[I would be grateful if you could CC me in your replies. Thanks!]
+Juri?
