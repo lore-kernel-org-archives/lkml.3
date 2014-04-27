@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbaD0KZA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 06:25:00 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:57250 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaD0KY7 (ORCPT
+	id S1753756AbaD0K1v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 06:27:51 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:46021 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167AbaD0K1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 06:24:59 -0400
+	Sun, 27 Apr 2014 06:27:49 -0400
+Date: Sun, 27 Apr 2014 12:27:19 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Xiao Jin <jin.xiao@intel.com>
+Cc: Johan Hovold <jhovold@gmail.com>, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        juan.zou@intel.com, yanmin.zhang@intel.com,
+        david.a.cohen@linux.intel.com, "Zhang, Qi1" <qi1.zhang@intel.com>
+Subject: Re: [PATCH] usb_wwan: some improvement on write and resume
+Message-ID: <20140427102719.GJ2206@localhost>
+References: <1398387435-13829-1-git-send-email-jin.xiao@intel.com>
+ <20140425091959.GC2206@localhost>
+ <535C6851.9050506@intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [95.23.103.39]
-In-Reply-To: <alpine.DEB.2.02.1404271135590.2006@localhost6.localdomain6>
-References: <1398558586-28931-1-git-send-email-javier@dowhile0.org>
-	<20140427051428.GA2671@katana>
-	<CABxcv==8F2CghQKVDp==5Mx8-OBJnc+yZWEBqi7OFGij8OHaeg@mail.gmail.com>
-	<alpine.DEB.2.02.1404271135590.2006@localhost6.localdomain6>
-Date: Sun, 27 Apr 2014 12:24:57 +0200
-Message-ID: <CABxcv=nzGJczrYZbGarK8-tM6WXc5JQrTRsX=_88a1npkcBXQw@mail.gmail.com>
-Subject: Re: [Cocci] [PATCH 1/1] scripts/coccinelle: use BIT() macro if possible
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Michal Marek <mmarek@suse.cz>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535C6851.9050506@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Julia,
+On Sun, Apr 27, 2014 at 10:15:45AM +0800, Xiao Jin wrote:
+> > They are however two distinct bugs and should be fixed separately. Could
+> > you split the fixes into two patches and resubmit?
+> >
+> > Please also include a more descriptive subject line for each patch, for
+> > example:
+> >
+> > 	"USB: usb_wwan: fix urb leak in write error path"
+> > 	"USB: usb_wwan: fix race between write and resume"
+> >
+> > You should probably point out that the write-resume race could also lead
+> > to writes being reordered in the description of that patch.
+> >
+> 
+> Thanks. I will resubmit two patches.
 
-On Sun, Apr 27, 2014 at 11:36 AM, Julia Lawall <julia.lawall@lip6.fr> wrote:
->
->
-> On Sun, 27 Apr 2014, Javier Martinez Canillas wrote:
->
->> Hello Wolfram,
->>
->> Thanks a lot for your feedback.
->>
->> On Sun, Apr 27, 2014 at 7:14 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->> > On Sun, Apr 27, 2014 at 02:29:46AM +0200, Javier Martinez Canillas wrote:
->> >> Using the BIT() macro instead of manually shifting bits
->> >> makes the code less error prone and also more readable.
->> >
->> > Does it? It is a taste thing, yet I don't think it makes the code that
->> > much more readable that it is worth changing the whole tree.
->> >
->>
->> I believe there is a reason for that macro but yes I agree with you
->> that is a matter of taste and the it shouldn't be enforced.
->>
->> I'm doing a big refactoring for the GPIO subsystem and was told to use
->> coccinelle so this patch was part of my learning. I posted it because
->> I thought that it could be useful but I don't mind the patch to be
->> dropped if that is not the case.
->
-> Perhaps it could be useful in files that already use BIT somewhere?
->
+Thanks for resending. I'll include them in the autosuspend series I'll
+hopefully be able to post shortly.
 
-Well the semantic patch already has a rule that checks if the file
-includes <linux/bitops.h> so files that don't include this header will
-be skipped.
-
-I've checked and in most cases when that header is included is because
-at least the BIT macro is used once on the file. My guess is that the
-original author included the header and used the macro but other
-people modifying the file after its original creation just used 1 << n
-instead.
-
-But as I said, I've no strong opinion about this patch. I just used to
-learn the basics of SmPL and to cleanup a driver I maintain and
-thought it was a good touch to post it in case more people find it
-useful.
-
-> julia
-
-Thanks a lot and best regards,
-Javier
+Johan
