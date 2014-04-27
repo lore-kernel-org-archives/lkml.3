@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797AbaD0Hst (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:48:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57842 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaD0HkJ (ORCPT
+	id S1753921AbaD0Htx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:49:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31256 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293AbaD0HkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:40:09 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-3d-535cb4581b05
+	Sun, 27 Apr 2014 03:40:06 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-34-535cb4559bdc
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,39 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 29/31] ARM: dts: add System MMU nodes of exynos4x12
-Date: Sun, 27 Apr 2014 13:08:01 +0530
-Message-id: <1398584283-22846-30-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 28/31] ARM: dts: add System MMU nodes of exynos4210
+Date: Sun, 27 Apr 2014 13:08:00 +0530
+Message-id: <1398584283-22846-29-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkTjdiS0ywweGpWhZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkSjd0S0ywwZfZ5hZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bF7d/Y
-	CtrEK1ZvX8jSwHhKqIuRk0NCwETicv9vFghbTOLCvfVsXYxcHEICSxkl3m46yAZT9HzGTnaI
-	xCJGiWVLrkM5E5gkVq9ewAhSxSZgKLH93hVWkISIwGpGib6LZ8CqmAXuMknMWfUOrEpYwF2i
-	/8xlsLksAqoS9x7MYAaxeQU8JHYubwWKcwDtU5CYM8kGJMwJFH5yZw/YfUJArW9PfQFbICEw
-	k0Oid9s3qDkCEt8mH2KB6JWV2HSAGeJsSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3ISK84Mbe4
-	NC9dLzk/dxMjMCJP/3vWt4Px5gHrQ4zJQOMmMkuJJucDIzqvJN7Q2MzIwtTE1NjI3NKMNGEl
-	cd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDWZLw1fPTl0syUB8bvAwIFH+/xVY8o
-	3TljS+zbB2JvF0RcP89heFpZ0bzHJrw+SfDDd7+Z/HMEtRIjNq39VKi4ms00S7HfSfxGIDu/
-	+kz5fbrHXEROLf/v9svm+JYL338vyDw8aV4pU+oCvx0zFvxu+yy56fWb6QcPNL6vux7n2dN1
-	/+16ZuUjSizFGYmGWsxFxYkAjyTe3N4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAd2ILTHBBrd/yVvcuXuO1WL+ESDx
-	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
-	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
-	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzLm7/xlbQJl6xevtClgbGU0JdjJwcEgImEs9n7GSHsMUkLtxb
-	z9bFyMUhJLCIUWLZkuvsEM4EJonVqxcwglSxCRhKbL93hRUkISKwmlGi7+IZsCpmgbtMEnNW
-	vQOrEhZwl+g/c5kNxGYRUJW492AGM4jNK+AhsXN5K1CcA2ifgsScSTYgYU6g8JM7e1hAbCGg
-	1renvrBOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM43p9J72Bc1WBxiFGAg1GJ
-	h/eHdEywEGtiWXFl7iFGCQ5mJRFezulAId6UxMqq1KL8+KLSnNTiQ4zJQEdNZJYSTc4HpqK8
-	knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamCcvPzb2l8y31aV
-	9QSzRKfs8lSfdmvtu+qfR6cq/MnYOc84ic1Oe8XbvU9fzFypxfjd5q5OZ/JPsQ9/rdOE315d
-	23Y9ze/4Ov9/TBwPSvJt0v+Y7fko8PFiGety4YSHTcl1q3MOtNfOeOsbdIV5RRmT0OwZ5p4T
-	5KZ43vp0cP6P7Iv/6v/cLvjiosRSnJFoqMVcVJwIAESsNbs7AwAA
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8bFP3IF
+	W7kqWi8sZ29g3MTRxcjJISFgInHk9xVmCFtM4sK99WxdjFwcQgJLGSUOrj7GDFM0fdJeFhBb
+	SGARo8Tt134QRROYJP4evs8GkmATMJTYfu8KK0hCRGA1o0TfxTPsIA6zwF0miTmr3jGCVAkL
+	uEtcuPgczGYRUJWYt/sPkM3BwSvgIdHWVAtiSggoSMyZZANSwQkUfXJnD9Rid4m3p76AzZcQ
+	mMohcejgbxaIMQIS3yYfYoHolZXYdADqaEmJgytusExgFF7AyLCKUTS1ILmgOCm9yEivODG3
+	uDQvXS85P3cTIzAWT/971reD8eYB60OMyUDjJjJLiSbnA2M5ryTe0NjMyMLUxNTYyNzSjDRh
+	JXHeRQ+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwKjDskPcP31auwLFk/ePiz1JZYXUt
+	DFO7vbL+LVC+1x39/nRm1EF1hic5Xyb97Pjbtpdj66Pz/Amscx89WbvaeanP8jmXtpy6tyT3
+	S+DZmPXCd8MfJUhInK9iNOROCjjBMW37j5QirZ/czw5s23D3V3vjDffAfQuC5z2yi9jsJuU+
+	cef1SctlW5RYijMSDbWYi4oTAXwVXkDbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jAd3QLTHBBl2bdC3u3D3HajH/CJB4
+	deQHk8WC/dYWnbM3sFt83/WF3aJ3wVU2i02Pr7FaXN41h81ixvl9TBYXVmxkt/jXe5DRYsqi
+	w6wWh9+0s1qc/NPLaNFyvZfJYv2M1ywWq3b9YbSYeWsNi4Owx5OD85g8ZjdcZPH4d7ifyWPn
+	rLvsHneu7WHz2Lyk3mPyjeWMHn1bVjF6fN4k53Hl6BmmAK6oBkabjNTElNQihdS85PyUzLx0
+	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKDXlBTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGENYwZF//IFWzlqmi9sJy9gXETRxcjJ4eEgInE9El7WSBsMYkL99az
+	gdhCAosYJW6/9uti5AKyJzBJ/D18HyzBJmAosf3eFVaQhIjAakaJvotn2EEcZoG7TBJzVr1j
+	BKkSFnCXuHDxOZjNIqAqMW/3HyCbg4NXwEOirakWxJQQUJCYM8kGpIITKPrkzh4WiMXuEm9P
+	fWGdwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwpD+T2sG4ssHiEKMAB6MSD+8C
+	yZhgIdbEsuLK3EOMEhzMSiK8nNOBQrwpiZVVqUX58UWlOanFhxiTgW6ayCwlmpwPTEJ5JfGG
+	xibmpsamliYWJmaWpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cDotWD9DRset3X++/6u
+	iPhekbfS60RzoOi5X3Vvy7433jPJuGRqO8OfU+WUuoBQ5/5bHL4FPuerDB1uqr+KTTSXnVnA
+	r3r536MLdleD501TUdKxvPUk3uVZ9bEcyztCpWtm9Qq8rTQ7tH2/RcGvObvUd1tw+54NL9ts
+	PmmL3uVgVZfk+QelO2yUWIozEg21mIuKEwEc8vHPOAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,106 +60,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This patch adds System MMU nodes that are specifict to exynos4x12
-series.
+This patch adds System MMUs that are specific to exynos4210.
 
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- arch/arm/boot/dts/exynos4x12.dtsi |   78 ++++++++++++++++++++++++++++++++++++-
- 1 file changed, 77 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/exynos4210.dtsi |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-index c4a9306..21cb164 100644
---- a/arch/arm/boot/dts/exynos4x12.dtsi
-+++ b/arch/arm/boot/dts/exynos4x12.dtsi
-@@ -119,7 +119,7 @@
- 		interrupts = <0 72 0>;
- 	};
- 
--	g2d@10800000 {
-+	g2d: g2d@10800000 {
- 		compatible = "samsung,exynos4212-g2d";
- 		reg = <0x10800000 0x1000>;
- 		interrupts = <0 89 0>;
-@@ -243,4 +243,80 @@
- 		clock-names = "biu", "ciu";
+diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+index cacf614..0b4ece1 100644
+--- a/arch/arm/boot/dts/exynos4210.dtsi
++++ b/arch/arm/boot/dts/exynos4210.dtsi
+@@ -114,7 +114,7 @@
  		status = "disabled";
  	};
+ 
+-	g2d@12800000 {
++	g2d: g2d@12800000 {
+ 		compatible = "samsung,s5pv210-g2d";
+ 		reg = <0x12800000 0x1000>;
+ 		interrupts = <0 89 0>;
+@@ -153,4 +153,25 @@
+ 			samsung,lcd-wb;
+ 		};
+ 	};
 +
-+	sysmmu_g2d: sysmmu@10A40000{
++	sysmmu_g2d: sysmmu@12A20000 {
 +		compatible = "samsung,sysmmu-v1";
-+		reg = <0x10A40000 0x1000>;
++		reg = <0x12A20000 0x1000>;
 +		interrupt-parent = <&combiner>;
 +		interrupts = <4 7>;
 +		clock-names = "sysmmu";
 +		clocks = <&clock CLK_SMMU_G2D>;
++		samsung,power-domain = <&pd_lcd0>;
 +		mmu-masters = <&g2d>;
 +	};
 +
-+	sysmmu_fimc_isp: sysmmu@12260000 {
++	sysmmu_fimd1: sysmmu@12220000 {
 +		compatible = "samsung,sysmmu-v1";
-+		reg = <0x12260000 0x1000>;
 +		interrupt-parent = <&combiner>;
-+		interrupts = <16 2>;
-+		samsung,power-domain = <&pd_isp>;
++		reg = <0x12220000 0x1000>;
++		interrupts = <5 3>;
 +		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_ISP>;
-+		mmu-masters = <&fimc_is>;
-+	};
-+
-+	sysmmu_fimc_drc: sysmmu@12270000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x12270000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <16 3>;
-+		samsung,power-domain = <&pd_isp>;
-+		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_DRC>;
-+		mmu-masters = <&fimc_is>;
-+	};
-+
-+	sysmmu_fimc_fd: sysmmu@122A0000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x122A0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <16 4>;
-+		samsung,power-domain = <&pd_isp>;
-+		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_FD>;
-+		mmu-masters = <&fimc_is>;
-+	};
-+
-+	sysmmu_fimc_mcuctl: sysmmu@122B0000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x122B0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <16 5>;
-+		samsung,power-domain = <&pd_isp>;
-+		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_ISPCX>;
-+		mmu-masters = <&fimc_is>;
-+	};
-+
-+	sysmmu_fimc_lite0: sysmmu@123B0000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x123B0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <16 0>;
-+		samsung,power-domain = <&pd_isp>;
-+		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_LITE0>;
-+		mmu-masters = <&fimc_lite_0>;
-+	};
-+
-+	sysmmu_fimc_lite1: sysmmu@123C0000 {
-+		compatible = "samsung,sysmmu-v1";
-+		reg = <0x123C0000 0x1000>;
-+		interrupt-parent = <&combiner>;
-+		interrupts = <16 1>;
-+		samsung,power-domain = <&pd_isp>;
-+		clock-names = "sysmmu";
-+		clocks = <&clock CLK_SMMU_LITE1>;
-+		mmu-masters = <&fimc_lite_1>;
++		clocks = <&clock CLK_SMMU_FIMD1>;
++		samsung,power-domain = <&pd_lcd1>;
 +	};
  };
 -- 
