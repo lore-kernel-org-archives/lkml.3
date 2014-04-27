@@ -1,118 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481AbaD0QP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 12:15:57 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59283 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaD0QPQ (ORCPT
+	id S1754176AbaD0QQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 12:16:59 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40759 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753373AbaD0QPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 12:15:16 -0400
+	Sun, 27 Apr 2014 12:15:46 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V1 01/22] vfs: Add generic IS_ACL() test for acl support
-Date: Sun, 27 Apr 2014 21:44:32 +0530
-Message-Id: <1398615293-22931-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V1 11/22] richacl: Permission mapping functions
+Date: Sun, 27 Apr 2014 21:44:42 +0530
+Message-Id: <1398615293-22931-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042716-1396-0000-0000-000004BED8F4
+x-cbid: 14042716-7014-0000-0000-000004CCD69A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andreas Gruenbacher <agruen@kernel.org>
 
-When IS_POSIXACL() is true, the vfs does not apply the umask.  Other acl
-models will need the same exception, so introduce a separate IS_ACL()
-test.
-
-The IS_POSIX_ACL() test is still needed so that nfsd can determine when
-the underlying file system supports POSIX ACLs (as opposed to some other
-kind).
+We need to map from POSIX permissions to NFSv4 permissions when a
+chmod() is done, from NFSv4 permissions to POSIX permissions when an acl
+is set (which implicitly sets the file permission bits), and from the
+MAY_READ/MAY_WRITE/MAY_EXEC/MAY_APPEND flags to NFSv4 permissions when
+doing an access check in a richacl.
 
 Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c              | 8 ++++----
- include/linux/fs.h      | 6 ++++++
- include/uapi/linux/fs.h | 2 +-
- 3 files changed, 11 insertions(+), 5 deletions(-)
+ fs/richacl_base.c       | 117 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/richacl.h |  47 +++++++++++++++++++
+ 2 files changed, 164 insertions(+)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index c6157c894fce..c7fee619691f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2650,7 +2650,7 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	}
+diff --git a/fs/richacl_base.c b/fs/richacl_base.c
+index 689e1a6dace7..bca20936aed1 100644
+--- a/fs/richacl_base.c
++++ b/fs/richacl_base.c
+@@ -56,6 +56,123 @@ richacl_clone(const struct richacl *acl)
+ }
  
- 	mode = op->mode;
--	if ((open_flag & O_CREAT) && !IS_POSIXACL(dir))
-+	if ((open_flag & O_CREAT) && !IS_ACL(dir))
- 		mode &= ~current_umask();
- 
- 	excl = (open_flag & (O_EXCL | O_CREAT)) == (O_EXCL | O_CREAT);
-@@ -2834,7 +2834,7 @@ static int lookup_open(struct nameidata *nd, struct path *path,
- 	/* Negative dentry, just create the file */
- 	if (!dentry->d_inode && (op->open_flag & O_CREAT)) {
- 		umode_t mode = op->mode;
--		if (!IS_POSIXACL(dir->d_inode))
-+		if (!IS_ACL(dir->d_inode))
- 			mode &= ~current_umask();
- 		/*
- 		 * This write is needed to ensure that a
-@@ -3422,7 +3422,7 @@ retry:
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
--	if (!IS_POSIXACL(path.dentry->d_inode))
-+	if (!IS_ACL(path.dentry->d_inode))
- 		mode &= ~current_umask();
- 	error = security_path_mknod(&path, dentry, mode, dev);
- 	if (error)
-@@ -3491,7 +3491,7 @@ retry:
- 	if (IS_ERR(dentry))
- 		return PTR_ERR(dentry);
- 
--	if (!IS_POSIXACL(path.dentry->d_inode))
-+	if (!IS_ACL(path.dentry->d_inode))
- 		mode &= ~current_umask();
- 	error = security_path_mkdir(&path, dentry, mode);
- 	if (!error)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7a9c5bca2b76..9fb63b71a014 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1611,6 +1611,12 @@ struct super_operations {
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
- 
- /*
-+ * IS_ACL() tells the VFS to not apply the umask
-+ * and use check_acl for acl permission checks when defined.
+ /**
++ * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
++ * @mask:	%ACE4_* permission mask
++ *
++ * See richacl_masks_to_mode().
 + */
-+#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
++static int
++richacl_mask_to_mode(unsigned int mask)
++{
++	int mode = 0;
 +
++	if (mask & ACE4_POSIX_MODE_READ)
++		mode |= MAY_READ;
++	if (mask & ACE4_POSIX_MODE_WRITE)
++		mode |= MAY_WRITE;
++	if (mask & ACE4_POSIX_MODE_EXEC)
++		mode |= MAY_EXEC;
++
++	return mode;
++}
++
++/**
++ * richacl_masks_to_mode  -  compute the file permission bits from the file masks
++ *
++ * When setting a richacl, we set the file permission bits to indicate maximum
++ * permissions: for example, we set the Write permission when a mask contains
++ * ACE4_APPEND_DATA even if it does not also contain ACE4_WRITE_DATA.
++ *
++ * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
++ * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
++ * Such permissions can still be effective, but not for new files or after a
++ * chmod(), and only if they were set explicitly, for example, by setting a
++ * richacl.
++ */
++int
++richacl_masks_to_mode(const struct richacl *acl)
++{
++	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
++	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
++	       richacl_mask_to_mode(acl->a_other_mask);
++}
++EXPORT_SYMBOL_GPL(richacl_masks_to_mode);
++
++/**
++ * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
++ *
++ * When the file permission bits of a file are set with chmod(), this specifies
++ * the maximum permissions that processes will get.  All permissions beyond
++ * that will be removed from the file masks, and become ineffective.
++ *
++ * We also add in the permissions which are always allowed no matter what the
++ * acl says.
++ */
++unsigned int
++richacl_mode_to_mask(mode_t mode)
++{
++	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
++
++	if (mode & MAY_READ)
++		mask |= ACE4_POSIX_MODE_READ;
++	if (mode & MAY_WRITE)
++		mask |= ACE4_POSIX_MODE_WRITE;
++	if (mode & MAY_EXEC)
++		mask |= ACE4_POSIX_MODE_EXEC;
++
++	return mask;
++}
++
++/**
++ * richacl_want_to_mask  - convert the iop->permission want argument to a mask
++ * @want:	@want argument of the permission inode operation
++ *
++ * When checking for append, @want is (MAY_WRITE | MAY_APPEND).
++ *
++ * Richacls use the iop->may_create and iop->may_delete hooks which are
++ * used for checking if creating and deleting files is allowed.  These hooks do
++ * not use richacl_want_to_mask(), so we do not have to deal with mapping
++ * MAY_WRITE to ACE4_ADD_FILE, ACE4_ADD_SUBDIRECTORY, and ACE4_DELETE_CHILD
++ * here.
++ */
++unsigned int
++richacl_want_to_mask(unsigned int want)
++{
++	unsigned int mask = 0;
++
++	if (want & MAY_READ)
++		mask |= ACE4_READ_DATA;
++	if (want & MAY_DELETE_SELF)
++		mask |= ACE4_DELETE;
++	if (want & MAY_TAKE_OWNERSHIP)
++		mask |= ACE4_WRITE_OWNER;
++	if (want & MAY_CHMOD)
++		mask |= ACE4_WRITE_ACL;
++	if (want & MAY_SET_TIMES)
++		mask |= ACE4_WRITE_ATTRIBUTES;
++	if (want & MAY_EXEC)
++		mask |= ACE4_EXECUTE;
++	/*
++	 * differentiate MAY_WRITE from these request
++	 */
++	if (want & (MAY_APPEND |
++		    MAY_CREATE_FILE | MAY_CREATE_DIR |
++		    MAY_DELETE_CHILD)) {
++		if (want & MAY_APPEND)
++			mask |= ACE4_APPEND_DATA;
++		if (want & MAY_CREATE_FILE)
++			mask |= ACE4_ADD_FILE;
++		if (want & MAY_CREATE_DIR)
++			mask |= ACE4_ADD_SUBDIRECTORY;
++		if (want & MAY_DELETE_CHILD)
++			mask |= ACE4_DELETE_CHILD;
++	} else if (want & MAY_WRITE)
++		mask |= ACE4_WRITE_DATA;
++	return mask;
++}
++EXPORT_SYMBOL_GPL(richacl_want_to_mask);
++
++/**
+  * richace_is_same_identifier  -  are both identifiers the same?
+  */
+ int
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 51d6937651f1..fe875fe24636 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -119,6 +119,49 @@ struct richacl {
+ 	ACE4_WRITE_OWNER |				\
+ 	ACE4_SYNCHRONIZE)
+ 
 +/*
-  * Inode state bits.  Protected by inode->i_lock
-  *
-  * Three bits determine the dirty state of the inode, I_DIRTY_SYNC,
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index ca1a11bb4443..1e14b9c82703 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -80,7 +80,7 @@ struct inodes_stat_t {
- #define MS_VERBOSE	32768	/* War is peace. Verbosity is silence.
- 				   MS_VERBOSE is deprecated. */
- #define MS_SILENT	32768
--#define MS_POSIXACL	(1<<16)	/* VFS does not apply the umask */
-+#define MS_POSIXACL	(1<<16)	/* Supports POSIX ACLs */
- #define MS_UNBINDABLE	(1<<17)	/* change to unbindable */
- #define MS_PRIVATE	(1<<18)	/* change to private */
- #define MS_SLAVE	(1<<19)	/* change to slave */
++ * The POSIX permissions are supersets of the following NFSv4 permissions:
++ *
++ *  - MAY_READ maps to READ_DATA or LIST_DIRECTORY, depending on the type
++ *    of the file system object.
++ *
++ *  - MAY_WRITE maps to WRITE_DATA or ACE4_APPEND_DATA for files, and to
++ *    ADD_FILE, ACE4_ADD_SUBDIRECTORY, or ACE4_DELETE_CHILD for directories.
++ *
++ *  - MAY_EXECUTE maps to ACE4_EXECUTE.
++ *
++ *  (Some of these NFSv4 permissions have the same bit values.)
++ */
++#define ACE4_POSIX_MODE_READ (			\
++		ACE4_READ_DATA |		\
++		ACE4_LIST_DIRECTORY)
++#define ACE4_POSIX_MODE_WRITE (			\
++		ACE4_WRITE_DATA |		\
++		ACE4_ADD_FILE |			\
++		ACE4_APPEND_DATA |		\
++		ACE4_ADD_SUBDIRECTORY |		\
++		ACE4_DELETE_CHILD)
++#define ACE4_POSIX_MODE_EXEC ACE4_EXECUTE
++#define ACE4_POSIX_MODE_ALL (			\
++		ACE4_POSIX_MODE_READ |		\
++		ACE4_POSIX_MODE_WRITE |		\
++		ACE4_POSIX_MODE_EXEC)
++/*
++ * These permissions are always allowed
++ * no matter what the acl says.
++ */
++#define ACE4_POSIX_ALWAYS_ALLOWED (	\
++		ACE4_SYNCHRONIZE |	\
++		ACE4_READ_ATTRIBUTES |	\
++		ACE4_READ_ACL)
++/*
++ * The owner is implicitly granted
++ * these permissions under POSIX.
++ */
++#define ACE4_POSIX_OWNER_ALLOWED (		\
++		ACE4_WRITE_ATTRIBUTES |		\
++		ACE4_WRITE_OWNER |		\
++		ACE4_WRITE_ACL)
+ /**
+  * richacl_get  -  grab another reference to a richacl handle
+  */
+@@ -234,4 +277,8 @@ richace_is_deny(const struct richace *ace)
+ extern struct richacl *richacl_alloc(int);
+ extern int richace_is_same_identifier(const struct richace *,
+ 				      const struct richace *);
++extern int richacl_masks_to_mode(const struct richacl *);
++extern unsigned int richacl_mode_to_mask(mode_t);
++extern unsigned int richacl_want_to_mask(unsigned int);
++
+ #endif /* __RICHACL_H */
 -- 
 1.9.1
 
