@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaD0HlY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:41:24 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31207 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaD0Hjr (ORCPT
+	id S1753834AbaD0HlW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:41:22 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:8628 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259AbaD0Hjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:47 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-df-535cb442a9f5
+	Sun, 27 Apr 2014 03:39:44 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-f0-535cb43f9b93
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,39 +18,40 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 21/31] iommu/exynos: fix address handling
-Date: Sun, 27 Apr 2014 13:07:53 +0530
-Message-id: <1398584283-22846-22-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 20/31] iommu/exynos: add devices attached to the System MMU
+ to an IOMMU group
+Date: Sun, 27 Apr 2014 13:07:52 +0530
+Message-id: <1398584283-22846-21-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkVtdpS0ywwde5ghZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkWtd+S0ywwYSbshZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8asV4vY
-	C17LVjy6+IOxgfGURBcjJ4eEgInEpvcP2SFsMYkL99azdTFycQgJLGWUWHhlERNM0f3226wg
-	tpDAIkaJ9ftyIYomMEm0zFkCVsQmYCix/d4VVpCEiMBqRom+i2fYQRxmgbtMEnNWvWMEqRIW
-	sJWYNXMSWAeLgKrE13+3wHbzCnhIdO24DRTnAFqnIDFnkg1ImBMo/OTOHhaIze4Sb099AVsg
-	ITCTQ6Jv0g2oOQIS3yYfYoHolZXYdIAZ4mpJiYMrbrBMYBRewMiwilE0tSC5oDgpvchIrzgx
-	t7g0L10vOT93EyMwHk//e9a3g/HmAetDjMlA4yYyS4km5wPjOa8k3tDYzMjC1MTU2Mjc0ow0
-	YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MLL8ulGsLrew+Gi8Ua/9IY4Tshxc
-	r38o1ns84qpaGhfptih507NHXP3xN23ftC2ouiP0e6redSbGozbHzjYsWM4cu6c88/c19kVM
-	C173Klc+s9B46Ol7UHGL6u3oA0w6iesk2oKEbtn+NZdOVQ1Yzb7Gwkf6s+GeM98XhzyM+/+3
-	dK+h0uO+20osxRmJhlrMRcWJACUsQiPdAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV2nLTHBBvOWslncuXuO1WL+ESDx
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8atWcfZ
+	CrbxVVybe4GpgbGDp4uRk0NCwETi29rTTBC2mMSFe+vZuhi5OIQEljJKbPjayAhT1LOgiQUi
+	sYhRoq29jxnCmcAk8fbCNbB2NgFDie33rrCCJEQEVjNK9F08ww7iMAvcZZKYs+od2CxhgWSJ
+	CVcms4DYLAKqEmsPPmIFsXkFPCTeXp4G1MABtE9BYs4kG5AwJ1D4yZ09YOVCAu4Sb099AVsg
+	ITCTQ2LJ+ylQcwQkvk0+xALRKyux6QAzxNmSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGhXnFi
+	bnFpXrpecn7uJkZgRJ7+96x3B+PtA9aHGJOBxk1klhJNzgdGdF5JvKGxmZGFqYmpsZG5pRlp
+	wkrivEkPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MLoEGcgs53WquJ8z32mTgnbjSu9t
+	sh85jl+9rt707fG2irBr07lX2aiE/F2mfX1r8brPGkZPV1dZ+IRMf3jg+VaeT1s3HNMQkHSf
+	vnGnTM/rvdKMN56cin3QO9umTSyu97j30pqOXffZG5es+fqqMEnjj2bDXcGFl3LZbiz0XPsp
+	b/P0uWuKfz1WYinOSDTUYi4qTgQAxLu/T94CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jAV37LTHBBjPuClvcuXuO1WL+ESDx
 	6sgPJosF+60tOmdvYLf4vusLu0XvgqtsFpseX2O1uLxrDpvFjPP7mCwurNjIbvGv9yCjxZRF
 	h1ktDr9pZ7U4+aeX0aLlei+TxfoZr1ksVu36w2gx89YaFgdhjycH5zF5zG64yOLx73A/k8fO
 	WXfZPe5c28PmsXlJvcfkG8sZPfq2rGL0+LxJzuPK0TNMAVxRDYw2GamJKalFCql5yfkpmXnp
 	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUCvKSmUJeaUAoUCEouLlfTtME0IDXHT
-	tYBpjND1DQmC6zEyQAMJaxgzZr1axF7wWrbi0cUfjA2MpyS6GDk5JARMJO6332aFsMUkLtxb
-	zwZiCwksYpRYvy+3i5ELyJ7AJNEyZwkTSIJNwFBi+70rrCAJEYHVjBJ9F8+wgzjMAneZJOas
-	escIUiUsYCsxa+YksA4WAVWJr/9usYPYvAIeEl07bgPFOYDWKUjMmWQDEuYECj+5s4cFYrO7
-	xNtTX1gnMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc7c+kdzCuarA4xCjAwajE
-	w/tDOiZYiDWxrLgy9xCjBAezkggv53SgEG9KYmVValF+fFFpTmrxIcZkoKMmMkuJJucDE1Fe
-	SbyhsYm5qbGppYmFiZklacJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTC2NvxJ7H/6Np33
-	rY3S9zttcd+zzi3ra2T0sJoy83LwrSmCaaukDtdN1JRru5VlliiWMHvrz0fv/3gFmpXcuTgv
-	f9Pud+v3r2WcuPTMRuOuptIp7lHrJyqufXsk8c0Jvu3Ox0I85YyS5/1tFFo/4dtGb+bHNjNs
-	Dz6cO2U6Q+mahqLkBI9qge3iSizFGYmGWsxFxYkAIWdhXDoDAAA=
+	tYBpjND1DQmC6zEyQAMJaxgzbs06zlawja/i2twLTA2MHTxdjJwcEgImEj0LmlggbDGJC/fW
+	s3UxcnEICSxilGhr72OGcCYwSby9cI0JpIpNwFBi+70rrCAJEYHVjBJ9F8+wgzjMAneZJOas
+	escIUiUskCwx4cpksLksAqoSaw8+YgWxeQU8JN5engbUwAG0T0FiziQbkDAnUPjJnT1g5UIC
+	7hJvT31hncDIu4CRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcLw/k97BuKrB4hCjAAej
+	Eg/vD+mYYCHWxLLiytxDjBIczEoivJzTgUK8KYmVValF+fFFpTmpxYcYk4GOmsgsJZqcD0xF
+	eSXxhsYm5qbGppYmFiZmlqQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAWDO/g2eZYZzR
+	JDOdXbebXk+cvi7ZM+iT2JZPzG+3//4Vzryh7lGnR9/rKw3fZqpOLXii+Fkz9OW/araAjYXX
+	/R5Pdlioqn857M7RhbrS9h4FHRGPpkd+dTA/z897bdH1PY/Vn22S/hGgWe4ZyDFr01KBemO/
+	YpuSbX8C38qqC2xQq4n/tGzbWyWW4oxEQy3mouJEAIr2HBM7AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,111 +59,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cho KyongHo <pullip.cho@samsung.com>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
 
-Use of __pa and __va macro is changed to virt_to_phys and phys_to_virt
-which are recommended in driver code. printk formatting of physical
-address is also fixed to %pa.
+Patch written by Antonios Motakis <a.motakis@virtualopensystems.com>:
 
-Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+IOMMU groups are expected by certain users of the IOMMU API,
+e.g. VFIO. Since each device is behind its own System MMU, we
+can allocate a new IOMMU group for each device.
+
+Reviewd-by: Cho KyongHo <pullip.cho@samsung.com>
+Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
 ---
- drivers/iommu/exynos-iommu.c |   33 +++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 16 deletions(-)
+ drivers/iommu/exynos-iommu.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 5c7f4d2..08a7ce0 100755
+index c9076e1..5c7f4d2 100755
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -131,7 +131,8 @@ static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
- 
- static unsigned long *page_entry(unsigned long *sent, unsigned long iova)
- {
--	return (unsigned long *)__va(lv2table_base(sent)) + lv2ent_offset(iova);
-+	return (unsigned long *)phys_to_virt(
-+				lv2table_base(sent)) + lv2ent_offset(iova);
+@@ -1208,6 +1208,32 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
+ 	return phys;
  }
  
- enum exynos_sysmmu_inttype {
-@@ -204,7 +205,7 @@ struct sysmmu_drvdata {
- 	struct iommu_domain *domain;
- 	bool powered_on;
- 	bool suspended;
--	unsigned long pgtable;
-+	phys_addr_t pgtable;
- };
- 
- static bool set_sysmmu_active(struct sysmmu_drvdata *data)
-@@ -296,17 +297,17 @@ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
- 
- static void show_fault_information(const char *name,
- 		enum exynos_sysmmu_inttype itype,
--		unsigned long pgtable_base, unsigned long fault_addr)
-+		phys_addr_t pgtable_base, unsigned long fault_addr)
- {
- 	unsigned long *ent;
- 
- 	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
- 		itype = SYSMMU_FAULT_UNKNOWN;
- 
--	pr_err("%s occurred at 0x%lx by %s(Page table base: 0x%lx)\n",
--		sysmmu_fault_name[itype], fault_addr, name, pgtable_base);
-+	pr_err("%s occurred at %#lx by %s(Page table base: %pa)\n",
-+		sysmmu_fault_name[itype], fault_addr, name, &pgtable_base);
- 
--	ent = section_entry(__va(pgtable_base), fault_addr);
-+	ent = section_entry(phys_to_virt(pgtable_base), fault_addr);
- 	pr_err("\tLv1 entry: 0x%lx\n", *ent);
- 
- 	if (lv1ent_page(ent)) {
-@@ -909,7 +910,7 @@ static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
- 	for (i = 0; i < NUM_LV1ENTRIES; i++)
- 		if (lv1ent_page(priv->pgtable + i))
- 			kmem_cache_free(lv2table_kmem_cache,
--					__va(lv2table_base(priv->pgtable + i)));
-+				phys_to_virt(lv2table_base(priv->pgtable + i)));
- 
- 	free_pages((unsigned long)priv->pgtable, 2);
- 	free_pages((unsigned long)priv->lv2entcnt, 1);
-@@ -928,8 +929,7 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 
--
--	ret = __exynos_sysmmu_enable(dev, __pa(priv->pgtable), domain);
-+	ret = __exynos_sysmmu_enable(dev, pagetable, domain);
- 	if (ret == 0) {
- 		list_add_tail(&owner->client, &priv->clients);
- 		owner->domain = domain;
-@@ -937,13 +937,14 @@ static int exynos_iommu_attach_device(struct iommu_domain *domain,
- 
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_err(dev, "%s: Failed to attach IOMMU with pgtable %pa\n",
--					__func__, &pagetable);
--	else
--		dev_dbg(dev, "%s: Attached IOMMU with pgtable %pa%s\n",
--					__func__, &pagetable,
--					(ret == 0) ? "" : ", again");
-+				__func__, &pagetable);
-+		return ret;
++static int exynos_iommu_add_device(struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
++
++	group = iommu_group_get(dev);
++
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			dev_err(dev, "Failed to allocate IOMMU group\n");
++			return PTR_ERR(group);
++		}
 +	}
 +
-+	dev_dbg(dev, "%s: Attached IOMMU with pgtable %pa %s\n",
-+		__func__, &pagetable, (ret == 0) ? "" : ", again");
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
++
++	return ret;
++}
++
++static void exynos_iommu_remove_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
+ static struct iommu_ops exynos_iommu_ops = {
+ 	.domain_init = &exynos_iommu_domain_init,
+ 	.domain_destroy = &exynos_iommu_domain_destroy,
+@@ -1216,6 +1242,8 @@ static struct iommu_ops exynos_iommu_ops = {
+ 	.map = &exynos_iommu_map,
+ 	.unmap = &exynos_iommu_unmap,
+ 	.iova_to_phys = &exynos_iommu_iova_to_phys,
++	.add_device = &exynos_iommu_add_device,
++	.remove_device = &exynos_iommu_remove_device,
+ 	.pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
+ };
  
- 	return ret;
- }
-@@ -993,7 +994,7 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
- 		if (!pent)
- 			return ERR_PTR(-ENOMEM);
- 
--		*sent = mk_lv1ent_page(__pa(pent));
-+		*sent = mk_lv1ent_page(virt_to_phys(pent));
- 		*pgcounter = NUM_LV2ENTRIES;
- 		pgtable_flush(pent, pent + NUM_LV2ENTRIES);
- 		pgtable_flush(sent, sent + 1);
 -- 
 1.7.9.5
 
