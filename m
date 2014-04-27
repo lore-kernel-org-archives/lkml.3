@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaD0Ng4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 09:36:56 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:35501 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaD0Ngh (ORCPT
+	id S1753242AbaD0NiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 09:38:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60528 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752751AbaD0NiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 09:36:37 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        riel@redhat.com, liuj97@gmail.com, peterz@infradead.org,
-        hannes@cmpxchg.org, mgorman@suse.de, aarcange@redhat.com,
-        sasha.levin@oracle.com, liwanp@linux.vnet.ibm.com, nasa4836@gmail.com,
-        khalid.aziz@oracle.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RFC 2/2] mm: introdule compound_head_by_tail()
-Date: Sun, 27 Apr 2014 21:36:24 +0800
-Message-Id: <2c87e00d633153ba7b710bab12710cc3a58704dd.1398605516.git.nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc1
-In-Reply-To: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
-References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
+	Sun, 27 Apr 2014 09:38:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Date: Sun, 27 Apr 2014 15:54:32 +0200
+Message-ID: <2356289.56GzXmbvd0@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140426105537.GI26782@laptop.programming.kicks-ass.net>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <15044031.LGKXdkz8J7@vostro.rjw.lan> <20140426105537.GI26782@laptop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In put_comound_page(), we call compound_head() after !PageTail
-check fails, so in compound_head() PageTail is quite likely to
-be true, but instead it is checked with:
+On Saturday, April 26, 2014 12:55:37 PM Peter Zijlstra wrote:
+> On Sat, Apr 26, 2014 at 02:18:58AM +0200, Rafael J. Wysocki wrote:
+> > And why do we have to do things that we hate it when they are done by others?
+> 
+> Well, I'm assuming that these things that I dislike are actually useful
+> and liked by the majority (me not fitting that is nothing new). If
+> everybody hates these things, WTF are they still the default on pretty
+> much every OS out there, Windows and Mac OS do the same screen dimming
+> things when they loose AC last time I touched one of them.
 
-   if (unlikely(PageTail(page)))
+Well, vendors have certain battery life targets for their products (you
+know, something for the marketing people to brag about) and tend to be
+quite aggressive about doing whatever they can to reach them.
 
-in this case, this unlikely macro is a negative hint for compiler.
+We don't have such targets for the mainline kernel, though, do we? ;-)
 
-So this patch introduce compound_head_by_tail() which deal with
-a possible tail page(though it could be spilt by a racy thread),
-and make compound_head() a wrapper on it.
+> Also, whilst I dislike screen dimming with a passion, I wouldn't
+> actually dislike the power aware balancer (assuming it would actually
+> work). Then I'm on BAT I tend to not actually do much more than read
+> email/browse web and maybe write some code. But I rarely if ever compile
+> when on battery.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- include/linux/mm.h | 34 ++++++++++++++++++++++------------
- mm/swap.c          |  2 +-
- 2 files changed, 23 insertions(+), 13 deletions(-)
+So the relative value of energy grows for you when going from AC to battery.
+That may happen in other situations too (like when the cost of energy in
+terms of money depends on the time of day which may be the case in some
+geographies etc.), so "battery vs AC" is not really special.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index bf9811e..1bc7baf 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -405,20 +405,30 @@ static inline void compound_unlock_irqrestore(struct page *page,
- #endif
- }
- 
-+/**
-+ * Note: this function must be called on a possible tail page,
-+ * this tail page may not be tail anymore upon we calling this funciton,
-+ * because we may race with __split_huge_page_refcount tearing down it.
-+ */
-+static inline struct page *compound_head_by_tail(struct page *page)
-+{
-+	struct page *head = page->first_page;
-+
-+	/*
-+	 * page->first_page may be a dangling pointer to an old
-+	 * compound page, so recheck that it is still a tail
-+	 * page before returning.
-+	 */
-+	smp_rmb();
-+	if (likely(PageTail(page)))
-+		return head;
-+	return page;
-+}
-+
- static inline struct page *compound_head(struct page *page)
- {
--	if (unlikely(PageTail(page))) {
--		struct page *head = page->first_page;
--
--		/*
--		 * page->first_page may be a dangling pointer to an old
--		 * compound page, so recheck that it is still a tail
--		 * page before returning.
--		 */
--		smp_rmb();
--		if (likely(PageTail(page)))
--			return head;
--	}
-+	if (unlikely(PageTail(page)))
-+		return compound_head_by_tail(page);
- 	return page;
- }
- 
-diff --git a/mm/swap.c b/mm/swap.c
-index 0d8d891..0b05355 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -256,7 +256,7 @@ static void put_compound_page(struct page *page)
- 	 *  Case 3 is possible, as we may race with
- 	 *  __split_huge_page_refcount tearing down a THP page.
- 	 */
--	head_page = compound_head(page);
-+	head_page = compound_head_by_tail(page);
- 	if (!__compound_tail_refcounted(head_page))
- 		put_unrefcounted_compound_page(head_page, page);
- 	else
 -- 
-2.0.0-rc1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
