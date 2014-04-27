@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaD0Smu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 14:42:50 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:48976 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaD0Smt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 14:42:49 -0400
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Oleg Drokin <green@linuxhacker.ru>, Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH] staging/lustre/llite: Fix a compile warning.
-Date: Sun, 27 Apr 2014 14:42:29 -0400
-Message-Id: <1398624149-8209-1-git-send-email-green@linuxhacker.ru>
-X-Mailer: git-send-email 1.8.5.3
+	id S1754036AbaD0Ssz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 14:48:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:53241 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751897AbaD0Ssy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 14:48:54 -0400
+Date: Sun, 27 Apr 2014 14:48:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC PATCH] rtmutex: Do not prio boost when timeout is used
+Message-ID: <20140427144852.389311e6@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.02.1404271947260.6261@ionos.tec.linutronix.de>
+References: <20140425162848.0e1deed8@gandalf.local.home>
+	<alpine.DEB.2.02.1404271947260.6261@ionos.tec.linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quiet the warning below in Lustre code.
-Actually the warning is invalid since we either always assign
-the symname in ll_readlink_internal or return an error there and
-then the following rc check would assign symlink variable explicitly.
+Glad I put on my shark repellent.
 
-In file included from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_compat25.h:41:0,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lvfs.h:48,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lvfs.h:45,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_support.h:41,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/obd_class.h:40,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/linux/lustre_lite.h:49,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/../include/lustre_lite.h:45,
-                 from /home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:42:
-/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c: In function ‘ll_follow_link’:
-/home/green/bk/linux/include/linux/namei.h:88:29: warning: ‘symname’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  nd->saved_names[nd->depth] = path;
-                             ^
-/home/green/bk/linux/drivers/staging/lustre/lustre/llite/symlink.c:123:8: note: ‘symname’ was declared here
-  char *symname;
-        ^
+On Sun, 27 Apr 2014 20:20:26 +0200 (CEST)
+Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> We really have better things to do, than changing the rules just to
+> please some random (probably commercial) application which has been
+> programmed along the coding rules from hell.
+> 
 
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
----
- drivers/staging/lustre/lustre/llite/symlink.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Peter had already pointed out that the current behavior is actually
+specified by the standards. This patch is thus NULL and void. I only
+posted this patch because you haven't bitched at me in a while and I
+figured I was due.
 
-diff --git a/drivers/staging/lustre/lustre/llite/symlink.c b/drivers/staging/lustre/lustre/llite/symlink.c
-index 80d48b5..129d302 100644
---- a/drivers/staging/lustre/lustre/llite/symlink.c
-+++ b/drivers/staging/lustre/lustre/llite/symlink.c
-@@ -120,7 +120,7 @@ static void *ll_follow_link(struct dentry *dentry, struct nameidata *nd)
- 	struct inode *inode = dentry->d_inode;
- 	struct ptlrpc_request *request = NULL;
- 	int rc;
--	char *symname;
-+	char *symname = NULL;
- 
- 	CDEBUG(D_VFSTRACE, "VFS Op\n");
- 	/* Limit the recursive symlink depth to 5 instead of default
--- 
-1.8.5.3
+I just noticed this when we were trying to debug why an application is
+reporting EDEADLOCK on a lock. This was a side discussion as there were
+no timeout locks in the application.
 
+It looks more like a bug in the glibc implementation, as they have
+both RECURSIVE and PRIO_INHERIT set on the mutex, and it seems that it
+is deadlocking on a lock it already owns when it tries to retake it.
+
+-- Steve
