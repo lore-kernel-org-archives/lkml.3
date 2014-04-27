@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675AbaD0HlD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 03:41:03 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:8600 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243AbaD0Hj1 (ORCPT
+	id S1753652AbaD0Hk6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 03:40:58 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:31149 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242AbaD0HjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 03:39:27 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-a0-535cb42e2ab5
+	Sun, 27 Apr 2014 03:39:25 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-50-535cb42b844f
 From: Shaik Ameer Basha <shaik.ameer@samsung.com>
 To: linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
@@ -18,39 +18,39 @@ Cc: kgene.kim@samsung.com, tomasz.figa@gmail.com, pullip.cho@samsung.com,
         sachin.kamat@linaro.org, supash.ramaswamy@linaro.org,
         Varun.Sethi@freescale.com, s.nawrocki@samsung.com, t.figa@samsung.com,
         joshi@samsung.com
-Subject: [PATCH v12 14/31] iommu/exynos: remove custom fault handler
-Date: Sun, 27 Apr 2014 13:07:46 +0530
-Message-id: <1398584283-22846-15-git-send-email-shaik.ameer@samsung.com>
+Subject: [PATCH v12 13/31] iommu/exynos: gating clocks of master H/W
+Date: Sun, 27 Apr 2014 13:07:45 +0530
+Message-id: <1398584283-22846-14-git-send-email-shaik.ameer@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
 References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsWyRsSkTldvS0ywwfwrhhZ37p5jtZh/BEi8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkVldnS0ywweE5TBZ37p5jtZh/BEi8
 	OvKDyWLBfmuLztkb2C2+7/rCbtG74CqbxabH11gtLu+aw2Yx4/w+JosLKzayW/zrPchoMWXR
 	YVaLw2/aWS1O/ulltGi53stksX7GaxaLVbv+MFrMvLWGxUHY48nBeUwesxsusnj8O9zP5LFz
-	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV8azefcZ
-	C26rVcyZeZa5gfGPfBcjJ4eEgInEm65f7BC2mMSFe+vZuhi5OIQEljJK7Dg4i7WLkQOsaNHT
-	WIj4IkaJX6snsEA4E5gkHs04wwbSzSZgKLH93hVWkISIwGpGib6LZ9hBHGaBu0wSc1a9YwSp
-	EhZwkfg89zYziM0ioCpx7NQyJhCbV8BDYsLiK2wQ6xQk5kyyAQlzAoWf3NnDAmILCbhLvD31
-	BWyBhMBcDolb596xQ8wRkPg2+RALRK+sxKYDzBDvSEocXHGDZQKj8AJGhlWMoqkFyQXFSelF
-	hnrFibnFpXnpesn5uZsYgfF4+t+z3h2Mtw9YH2JMBho3kVlKNDkfGM95JfGGxmZGFqYmpsZG
-	5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDo0/e+9oR2/uz07w33+np7
-	djsVpk5rucZ/XIfTa4Fv0Owg4Reu++/PeX7p78Kj02VLJDjXuPGuDkucfqFqr/8lf+9/Aua/
-	+2ULFzz837sk2nbJYrn5E4Vsvp58dvNFD5e67KGrB5qUXE8+2s4Yc9OAzf+eR5es0wz5F7uX
-	e4kGaoVb7l9q3+SnxFKckWioxVxUnAgAHIGoUN0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV29LTHBBvN61Czu3D3HajH/CJB4
+	1l12jzvX9rB5bF5S7zH5xnJGj74tqxg9Pm+S87hy9AxTAFcUl01Kak5mWWqRvl0CV0bP7gts
+	BScUK2avbGZvYDwt3cXIySEhYCJxas8qNghbTOLCvfVgtpDAUkaJnqO2MDXTt4LUcAHFFzFK
+	rDp2nwnCmcAksX79GUaQKjYBQ4nt966wgiREBFYzSvRdPMMO4jAL3GWSmLPqHViVsICLxJTp
+	M5lAbBYBVYkJ528D2RwcvAIeEvdOc4CYEgIKEnMm2YBUcAJFn9zZwwJxkbvE21NfwOZLCMzk
+	kDi4/RMbxBgBiW+TD7FA9MpKbDrADHG1pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtc
+	mpeul5yfu4kRGI2n/z2buIPx/gHrQ4zJQOMmMkuJJucDozmvJN7Q2MzIwtTE1NjI3NKMNGEl
+	cd70R0lBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhjtK2cmqGWtOy7ivPj8nqMlHnsf+R92
+	KtZ8/DiESbnQa0Pa00z91LsGomKfnjE9+l1qpJ8Sa6Ex2fCBAtvHy/GbrWXqP+sU/1mxNC1s
+	292aiH1CrskanoG7pbwKdEqtW72lHj+VNdlgMTeL91Sw/N4jjzvS8pzdbu34Pm2Fv0915v/1
+	M6XkVZRYijMSDbWYi4oTATfoptbcAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOKsWRmVeSWpSXmKPExsVy+t9jAV3tLTHBBjs7TSzu3D3HajH/CJB4
 	deQHk8WC/dYWnbM3sFt83/WF3aJ3wVU2i02Pr7FaXN41h81ixvl9TBYXVmxkt/jXe5DRYsqi
 	w6wWh9+0s1qc/NPLaNFyvZfJYv2M1ywWq3b9YbSYeWsNi4Owx5OD85g8ZjdcZPH4d7ifyWPn
 	rLvsHneu7WHz2Lyk3mPyjeWMHn1bVjF6fN4k53Hl6BmmAK6oBkabjNTElNQihdS85PyUzLx0
 	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKDXlBTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGENYwZz+bdZyy4rVYxZ+ZZ5gbGP/JdjBwcEgImEouexnYxcgKZYhIX
-	7q1n62Lk4hASWMQo8Wv1BBYIZwKTxKMZZ9hAqtgEDCW237vCCpIQEVjNKNF38Qw7iMMscJdJ
-	Ys6qd4wgVcICLhKf595mBrFZBFQljp1axgRi8wp4SExYfIUNYrWCxJxJNiBhTqDwkzt7WEBs
-	IQF3ibenvrBOYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM42p9J72Bc1WBxiFGA
-	g1GJh/eHdEywEGtiWXFl7iFGCQ5mJRFezulAId6UxMqq1KL8+KLSnNTiQ4zJQEdNZJYSTc4H
-	JqK8knhDYxNzU2NTSxMLEzNL0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamDMkuiZwKys
-	ZygvbmqcoFOWrO3H7m9vUPoke72ykb+qj+whqfsOepsnizSvuXpGp+Hx74hNWsdLDp15KRc/
-	jeNn/JWPr5wr6x5K3D46d/38S76iRr/2xuztPtSov+XVymtr81abbrDen/mVO6xQIHfflm2T
-	EnI6OyYaTo73Dui8fXiDCU/wE2slluKMREMt5qLiRABi/nJ2OgMAAA==
+	WsA0Ruj6hgTB9RgZoIGENYwZPbsvsBWcUKyYvbKZvYHxtHQXIyeHhICJxPStq9ggbDGJC/fW
+	A9lcHEICixglVh27zwThTGCSWL/+DCNIFZuAocT2e1dYQRIiAqsZJfounmEHcZgF7jJJzFn1
+	DqxKWMBFYsr0mUwgNouAqsSE87eBbA4OXgEPiXunOUBMCQEFiTmTbEAqOIGiT+7sYQGxhQTc
+	Jd6e+sI6gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgaH8mvYNxVYPFIUYBDkYl
+	Ht4f0jHBQqyJZcWVuYcYJTiYlUR4OacDhXhTEiurUovy44tKc1KLDzEmA900kVlKNDkfmIjy
+	SuINjU3MTY1NLU0sTMwsSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGRs8FnQZvXM7sa
+	oTfzKkVWzmyPtve1vHg4X2HSpTnNPy+stKveMDlUVPQRp8O8W6EZfeeXLPga93OudmTn1ar9
+	Ss3Zd5N5d33/I7ZixbTdTEwvljiI8dzf4nFo9UbJKzMXLmi7I1E7L3f6WsWiorfzbUUT9Pue
+	b8hmmKQw+ep6/zuLTjl/f/bguxJLcUaioRZzUXEiAPdbj2g6AwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,151 +60,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Cho KyongHo <pullip.cho@samsung.com>
 
-This commit removes custom fault handler. The device drivers that
-need to register fault handler can register
-with iommu_set_fault_handler().
+This patch gates clocks of master H/W as well as clocks of System MMU
+if master clocks are specified.
 
-CC: Grant Grundler <grundler@chromium.org>
+Some Exynos SoCs (i.e. GScalers in Exynos5250) have dependencies in
+the gating clocks of master H/W and its System MMU. If a H/W is the
+case, accessing control registers of System MMU is prohibited unless
+both of the gating clocks of System MMU and its master H/W.
+
+CC: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c |   80 +++++++++++++-----------------------------
- 1 file changed, 24 insertions(+), 56 deletions(-)
+ drivers/iommu/exynos-iommu.c |   40 ++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index ba477c4..b07b78b 100755
+index cbb9b67..ba477c4 100755
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -125,16 +125,6 @@ enum exynos_sysmmu_inttype {
- 	SYSMMU_FAULTS_NUM
- };
- 
--/*
-- * @itype: type of fault.
-- * @pgtable_base: the physical address of page table base. This is 0 if @itype
-- *                is SYSMMU_BUSERROR.
-- * @fault_addr: the device (virtual) address that the System MMU tried to
-- *             translated. This is 0 if @itype is SYSMMU_BUSERROR.
-- */
--typedef int (*sysmmu_fault_handler_t)(enum exynos_sysmmu_inttype itype,
--			unsigned long pgtable_base, unsigned long fault_addr);
--
- static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
- 	REG_PAGE_FAULT_ADDR,
- 	REG_AR_FAULT_ADDR,
-@@ -176,7 +166,6 @@ struct sysmmu_drvdata {
+@@ -172,6 +172,7 @@ struct sysmmu_drvdata {
+ 	struct device *dev;	/* Owner of system MMU */
+ 	void __iomem *sfrbase;
+ 	struct clk *clk;
++	struct clk *clk_master;
  	int activations;
  	rwlock_t lock;
  	struct iommu_domain *domain;
--	sysmmu_fault_handler_t fault_handler;
- 	unsigned long pgtable;
- };
+@@ -300,6 +301,8 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
  
-@@ -245,34 +234,17 @@ static void __sysmmu_set_ptbase(void __iomem *sfrbase,
- 	__sysmmu_tlb_invalidate(sfrbase);
- }
+ 	WARN_ON(!is_sysmmu_active(data));
  
--static void __set_fault_handler(struct sysmmu_drvdata *data,
--					sysmmu_fault_handler_t handler)
--{
--	unsigned long flags;
--
--	write_lock_irqsave(&data->lock, flags);
--	data->fault_handler = handler;
--	write_unlock_irqrestore(&data->lock, flags);
--}
--
--void exynos_sysmmu_set_fault_handler(struct device *dev,
--					sysmmu_fault_handler_t handler)
--{
--	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
--
--	__set_fault_handler(data, handler);
--}
--
--static int default_fault_handler(enum exynos_sysmmu_inttype itype,
--		     unsigned long pgtable_base, unsigned long fault_addr)
-+static void show_fault_information(const char *name,
-+		enum exynos_sysmmu_inttype itype,
-+		unsigned long pgtable_base, unsigned long fault_addr)
- {
- 	unsigned long *ent;
++	if (!IS_ERR(data->clk_master))
++		clk_enable(data->clk_master);
+ 	itype = (enum exynos_sysmmu_inttype)
+ 		__ffs(__raw_readl(data->sfrbase + REG_INT_STATUS));
+ 	if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
+@@ -326,6 +329,9 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 	if (itype != SYSMMU_FAULT_UNKNOWN)
+ 		sysmmu_unblock(data->sfrbase);
  
- 	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
- 		itype = SYSMMU_FAULT_UNKNOWN;
- 
--	pr_err("%s occurred at 0x%lx(Page table base: 0x%lx)\n",
--			sysmmu_fault_name[itype], fault_addr, pgtable_base);
-+	pr_err("%s occurred at 0x%lx by %s(Page table base: 0x%lx)\n",
-+		sysmmu_fault_name[itype], fault_addr, name, pgtable_base);
- 
- 	ent = section_entry(__va(pgtable_base), fault_addr);
- 	pr_err("\tLv1 entry: 0x%lx\n", *ent);
-@@ -281,12 +253,6 @@ static int default_fault_handler(enum exynos_sysmmu_inttype itype,
- 		ent = page_entry(ent, fault_addr);
- 		pr_err("\t Lv2 entry: 0x%lx\n", *ent);
- 	}
--
--	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
--
--	BUG();
--
--	return 0;
- }
- 
- static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
-@@ -310,24 +276,28 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
- 	else
- 		addr = __raw_readl(data->sfrbase + fault_reg_offset[itype]);
- 
--	if (data->domain)
--		ret = report_iommu_fault(data->domain, data->dev, addr, itype);
--
--	if ((ret == -ENOSYS) && data->fault_handler) {
--		unsigned long base = data->pgtable;
--		if (itype != SYSMMU_FAULT_UNKNOWN)
--			base = __raw_readl(data->sfrbase + REG_PT_BASE_ADDR);
--		ret = data->fault_handler(itype, base, addr);
-+	if (itype == SYSMMU_FAULT_UNKNOWN) {
-+		pr_err("%s: Fault is not occurred by System MMU '%s'!\n",
-+			__func__, dev_name(data->sysmmu));
-+		pr_err("%s: Please check if IRQ is correctly configured.\n",
-+			__func__);
-+		BUG();
-+	} else {
-+		unsigned long base =
-+				__raw_readl(data->sfrbase + REG_PT_BASE_ADDR);
-+		show_fault_information(dev_name(data->sysmmu),
-+					itype, base, addr);
-+		if (data->domain)
-+			ret = report_iommu_fault(data->domain,
-+					data->dev, addr, itype);
- 	}
- 
--	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
--		__raw_writel(1 << itype, data->sfrbase + REG_INT_CLEAR);
--	else
--		dev_dbg(data->sysmmu, "%s is not handled.\n",
--				sysmmu_fault_name[itype]);
-+	/* fault is not recovered by fault handler */
-+	BUG_ON(ret != 0);
- 
--	if (itype != SYSMMU_FAULT_UNKNOWN)
--		sysmmu_unblock(data->sfrbase);
-+	__raw_writel(1 << itype, data->sfrbase + REG_INT_CLEAR);
++	if (!IS_ERR(data->clk_master))
++		clk_disable(data->clk_master);
 +
-+	sysmmu_unblock(data->sfrbase);
+ 	read_unlock(&data->lock);
  
- 	if (!IS_ERR(data->clk_master))
- 		clk_disable(data->clk_master);
-@@ -576,8 +546,6 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ 	return IRQ_HANDLED;
+@@ -341,9 +347,14 @@ static bool __exynos_sysmmu_disable(struct sysmmu_drvdata *data)
+ 	if (!set_sysmmu_inactive(data))
+ 		goto finish;
+ 
++	if (!IS_ERR(data->clk_master))
++		clk_enable(data->clk_master);
++
+ 	__raw_writel(CTRL_DISABLE, data->sfrbase + REG_MMU_CTRL);
+ 
+ 	clk_disable(data->clk);
++	if (!IS_ERR(data->clk_master))
++		clk_disable(data->clk_master);
+ 
+ 	disabled = true;
+ 	data->pgtable = 0;
+@@ -386,14 +397,19 @@ static int __exynos_sysmmu_enable(struct sysmmu_drvdata *data,
+ 		goto finish;
+ 	}
+ 
+-	clk_enable(data->clk);
+-
+ 	data->pgtable = pgtable;
+ 
++	if (!IS_ERR(data->clk_master))
++		clk_enable(data->clk_master);
++	clk_enable(data->clk);
++
+ 	__sysmmu_set_ptbase(data->sfrbase, pgtable);
+ 
+ 	__raw_writel(CTRL_ENABLE, data->sfrbase + REG_MMU_CTRL);
+ 
++	if (!IS_ERR(data->clk_master))
++		clk_disable(data->clk_master);
++
+ 	data->domain = domain;
+ 
+ 	dev_dbg(data->sysmmu, "Enabled\n");
+@@ -450,6 +466,10 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
+ 	if (is_sysmmu_active(data)) {
+ 		unsigned int maj;
+ 		unsigned int num_inv = 1;
++
++		if (!IS_ERR(data->clk_master))
++			clk_enable(data->clk_master);
++
+ 		maj = __raw_readl(data->sfrbase + REG_MMU_VERSION);
+ 		/*
+ 		 * L2TLB invalidation required
+@@ -469,6 +489,8 @@ static void sysmmu_tlb_invalidate_entry(struct device *dev, unsigned long iova,
+ 							num_inv);
+ 			sysmmu_unblock(data->sfrbase);
+ 		}
++		if (!IS_ERR(data->clk_master))
++			clk_disable(data->clk_master);
+ 	} else {
+ 		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
+ 	}
+@@ -484,10 +506,14 @@ void exynos_sysmmu_tlb_invalidate(struct device *dev)
+ 	read_lock_irqsave(&data->lock, flags);
+ 
+ 	if (is_sysmmu_active(data)) {
++		if (!IS_ERR(data->clk_master))
++			clk_enable(data->clk_master);
+ 		if (sysmmu_block(data->sfrbase)) {
+ 			__sysmmu_tlb_invalidate(data->sfrbase);
+ 			sysmmu_unblock(data->sfrbase);
+ 		}
++		if (!IS_ERR(data->clk_master))
++			clk_disable(data->clk_master);
+ 	} else {
+ 		dev_dbg(data->sysmmu, "Disabled. Skipping invalidating TLB.\n");
+ 	}
+@@ -536,6 +562,16 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	data->clk_master = devm_clk_get(dev, "master");
++	if (!IS_ERR(data->clk_master)) {
++		ret = clk_prepare(data->clk_master);
++		if (ret) {
++			clk_unprepare(data->clk);
++			dev_err(dev, "Failed to prepare master's clk\n");
++			return ret;
++		}
++	}
++
+ 	data->sysmmu = dev;
  	rwlock_init(&data->lock);
  	INIT_LIST_HEAD(&data->node);
- 
--	__set_fault_handler(data, &default_fault_handler);
--
- 	platform_set_drvdata(pdev, data);
- 
- 	pm_runtime_enable(dev);
 -- 
 1.7.9.5
 
