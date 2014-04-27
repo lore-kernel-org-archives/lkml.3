@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751902AbaD0Mtr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 08:49:47 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:40252 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaD0Mtp (ORCPT
+	id S1752871AbaD0NHA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 09:07:00 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56489 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752252AbaD0NG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 08:49:45 -0400
-Message-ID: <535CFCE1.5000507@hitachi.com>
-Date: Sun, 27 Apr 2014 21:49:37 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
+	Sun, 27 Apr 2014 09:06:58 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to reduce
- cache misshits
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424090134.GC7768@gmail.com> <5358F7A3.1000108@hitachi.com> <20140425082056.GB24829@gmail.com> <535A2E41.40005@hitachi.com> <20140426071214.GA2374@gmail.com>
-In-Reply-To: <20140426071214.GA2374@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Date: Sun, 27 Apr 2014 15:23:24 +0200
+Message-ID: <1586415.tT6O0p7OWR@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140426061744.GB1944@gmail.com>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <15044031.LGKXdkz8J7@vostro.rjw.lan> <20140426061744.GB1944@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/26 16:12), Ingo Molnar wrote:
+On Saturday, April 26, 2014 08:17:44 AM Ingo Molnar wrote:
 > 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> * Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
 > 
->> (2014/04/25 17:20), Ingo Molnar wrote:
->>>
->>> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>>> So I don't think this should be a Kconfig entry, just enable it 
->>>>> unconditionally. That will further simplify the code.
->>>>
->>>> Hmm, it consumes some amount of memory (36KB/core) just for the 
->>>> case of several thousand of kprobes. On enterprise servers and 
->>>> desktop it's OK, no problem. But I think, some embedded systems 
->>>> with small resources will not want that. [...]
->>>
->>> They'll just disable kprobes in general.
->>
->> No, I'd like to provide kprobes (and dynamic events) to them 
->> (including me) for debugging and dynamic monitoring, instead of 
->> modifying code for adding events on their kernel. To solve some 
->> specific issues, specific events (not generic events) are required. 
->> Making local patches to add such events is an option, but it 
->> increases maintenance cost for rebasing. It is better to pay cost to 
->> maintain this kconfig on upstream as the maintainer for me instead 
->> of paying such ugly local cost. :(
->>
->> Anyway, this option is not easy for beginners, I think it should be 
->> defined with "if EXPERT" option and make it enabled by default.
->>
->>> Really, at this point complexity is our main concern.
->>
->> Agreed about complexity issue. However, even if we remove the 
->> Kconfig, we can just save 6 lines of the code, and one #ifdef block. 
->> Can that really solve the complexity problem?
+> > > > Well, so now the question is whether or not we relly want to 
+> > > > always go to the "power" (or "energy efficiency" if you will) 
+> > > > mode if the system is on battery.  That arguably may not be a 
+> > > > good thing even for energy efficiency depending on how exactly 
+> > > > the modes are defined.
+> > > 
+> > > Nobody is talking about always. But in general it seems a good 
+> > > enough approach. Hell, many of the AC/BAT switches in todays power 
+> > > management crap things are not always right.
+> > > 
+> > > Do I want it to dim the LCD further when I unplug the laptop -- 
+> > > mostly no, but still it does. And the most annoying one is that it 
+> > > reduces the screen blank time to something near 5 seconds or so.
+> > > 
+> > > Why would this be any different?
+> > 
+> > And why do we have to do things that we hate it when they are done 
+> > by others?
 > 
-> It's more about the mental picture about how kprobes works. The fewer 
-> binary state flags, the better.
+> He replied to your question of 'do we want to act on power events'.
+> 
+> The answer is: yes, from the scheduler point of view we want to act on 
+> power events by default, and if a user does not want that default 
+> behavior, it's not an unprecedented request and GUIs offer various 
+> ways to tweak screen dimming and other power saving details.
+> 
+> So "trying to save power" is the default everywhere, and the scheduler 
+> wants to do the same. The main reason we couldn't do this before was 
+> that the scheduler's 'power saving mode' was dysfunctional. That is 
+> being fixed.
+> 
+> So lets try this, it's high time.
 
-OK, how much the amount of code is changed is not a matter.
+Thanks for stating your perspective clearly, this is good to know.
 
-Hmm, at this point, I'll update it to remove the Kconfig. And also I'd like
-to add a note that this makes kprobes bigger, since without kpcache kprobe
-hash table is just 4KB, but with kpcache, it consumes 4KB + 36KB/core
-(10 times bigger at single core.)
-Of course, it is still enough small for many systems which have 256MB or
-more DRAM.
+Still, I have a rather fundamental problem with the notion that performance
+and energy efficiency are essentially at odds with each other, because quite
+often they aren't.  What is good for performance is often good for energy
+efficiency as well (like when it may be better to do a certain amount of work
+quickly and then go idle instead of slowing down and taking more time to do
+the work, because that time may turn out to be so long that energy used for
+doing the work will actually be greater).  So while I'm all for acting on power
+events, I'm also for being rather careful with that.
 
-And I'll give smaller systems (such as controller/sensor boards for IoT etc.)
-an out-of-tree kconfig patch to disable kpcache if they need... That's better
-than maintaining additional-event patches.
+Moreover, in fact performance and energy efficiency are not the only factors
+that need to be taken into account, there also is the maximum power draw (ie.
+the rate of using energy) that can be sustained.  Arguably, all three of them
+always matter, regardless of whether or not the system is on battery.
 
-Thank you,
+People often mentally translate energy efficiency into battery life, because
+that's probably the most obvious case, but in fact it generally translates into
+the cost of doing work (in therms of money or other things).  Going to battery
+means something like "energy is now more valuable to me", but there may be other
+events meaning the same (for example, energy may be cheaper in the night etc).
+So it looks like we need a global mechanism to represent the current relative
+value of energy to the user and to update it whenever something like "we're on
+battery now" happens (other subsystems would benefit from that too IMO).
+
+The same applies to the maximum sustainable power draw limit more or less.
+While it generally changes between "on battery" and "on AC power", it may also
+depend on other factors like the capacity of the available power supply for a
+data center.
+
+Thanks!
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
