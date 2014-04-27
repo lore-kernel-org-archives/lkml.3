@@ -1,156 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaD0XNZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 19:13:25 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.37]:54483 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaD0XNX (ORCPT
+	id S1751686AbaD0XVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 19:21:37 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:55488 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaD0XVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 19:13:23 -0400
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <20140427185708.GA15007@rhlx01.hs-esslingen.de>
-Message-ID: <cone.1398640399.709208.1804.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Andreas Mohr <andi@lisas.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 0/4] acerhdf/thermal: adding new models and appropriate
-         governor
-Date: Mon, 28 Apr 2014 01:13:19 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+	Sun, 27 Apr 2014 19:21:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140426184721.GL26890@mwanda>
+References: <20140425070459.GA9155@devel>
+	<20140425092607.GH26890@mwanda>
+	<875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
+	<535A5535.6000701@compro.net>
+	<1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
+	<535A7402.1060305@compro.net>
+	<CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
+	<20140426184721.GL26890@mwanda>
+Date: Mon, 28 Apr 2014 08:21:34 +0900
+Message-ID: <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+OK. I'll make my patch based on Mark's patch.
+Thanks.
 
-Andreas Mohr writes:
+Daeseok Youn.
 
-> On Sun, Apr 27, 2014 at 03:23:31AM +0200, Peter Feuerer wrote:
->> This patch series is intended to:
->> 
->>   * Introduce "manual mode" support (Patch 1 & 2), which is needed to control
->>     the fan of a few new models.  Unfortunately this extends lines defining
->>     the bios table over 80 characters, but all other methods make the code
->>     really ugly and hard to read.  So I hope for the reason of readability it
->>     is ok to break this rule.
-> 
-> Hmm... got an idea there. Possibly it's time to do away with direct
-> "device name" <-> open-coded config data mappings.
-> After all a specific device name is not really all too meaningful,
-> can (and will) be invented out of thin air, with its reg config being
-> identical to (read: painfully duplicated)
-> several other names/BIOS versions in the series.
-> So perhaps one should have a helper struct defined,
-> with instances then named as particular base samples of a model series
-> (ideally named after the precise internal development code name of the series),
-> to then be referenced by all model/BIOS names which match.
-> 
-> struct {
->   struct reg_feat_1;
->   struct reg_feat_2;
-> } aao_reg_map;
-> 
-> static const aao_reg_map aao_reg_map_AOAxxx_Acer_orig_version;
-> 
-> 
-> 
-> 
-> { "Acer", "AOA1....", &aao_reg_map_AOAxxx_Acer_orig_version },
-> 
-> Of course you then have the indirection of device name <-> specific
-> register values (quote: "really ugly and hard to read"?),
-> but IMHO that's ok since normally you wouldn't be too focused
-> on looking up register values (...right!?).
-> 
-> And if the next interface-breaking config change came along,
-> you'd otherwise have to add yet another register index pair...
-> (at which point some 100+ char line monsters
-> would be breathing down our neck...)
-
-I think we have been discussing this solution a year ago or something and 
-seems like it is really time to implement it.  As I wrote in the other mail 
-to Boris, I'd like to just do a minor modification for now and then when 
-those 4 patches have been applied concentrate on implementing the splitted 
-structs.
-
-
-> Model additions:
-> Ain't there one MODULE_ALIAS missing?? (7 new models <-> 6 entries!?!?)
->     "Aspire One 753"? But perhaps that's already implicitly covered by
-> another existing entry? [if so, the commit log did not mention it ;)]
-
-You are right, alias for 753 is missing, will add it for the next patch set.
-
-
->>   * Add an appropriate thermal governor (Patch 3 & 4).  Manipulating and
->>     fiddling around with the step-wise governor has been a very fragile thing
->>     in the past and as it broke again, I used the opportunity to add a two
->>     point thermal governor which implements the actual fan handling required by
->>     acerhdf and puts from my point of view things straight.
-> 
-> I'm afraid I don't have the full picture,
-> but so far it seems that this factoring out of common handling
-> is a very good idea.
-
-ok.
-
-
-> -       depends on THERMAL && ACPI
-> +       depends on THERMAL && ACPI && THERMAL_GOV_BANG_BANG
-> Do we actively depend on THERMAL (code-wise, I mean?) Or is it now an
-> implicit dependency given that we request THERMAL_GOV_BANG_BANG? If
-> implicit, then THERMAL probably ought to be removed. But if we use
-> generic thermal APIs (which we probably do), then of course we do have
-> that dependency....
-
-There's an implicit dependency due to the request of THERMAL_GOV_BANG_BANG, so
-yes, we could remove THERMAL here.
-
-
-> "bang_bang_throttle - throttles devices asscciated with the given zone"
-> 
-> Typo ;)
-
-c != o, got it.
-
-
-> "used to force thermal" --> misleading ("we used to do this, but it's
-> bad so we better do that").
-> 
-> "intended to"? "established to"? "added to"? or some simpler wording?
-
-What do you think about this wording:
-/*
- * this struct is used to instruct thermal layer to use bang_bang instead of
- * default governor for acerhdf
- */
-
-
-> pr_err("Thermal governor %s is not compiled into thermal subsystem\n"
->     --> you are lying here... (the only thing we can reliably indicate
->         is that we did not get the expected name -
->         so we should perhaps indicate something like we "didn't get bang-bang,
->         since perhaps not compiled into thermal subsystem").
-
-Fixed in next submit.
-
-
->> Please test/review the patches and send me your comments.
-> 
-> -ENODATA (my crappy JMicron JMF601 SSD had managed to break again,
->     this time with fatal firmware corruption, so I had to reflash
->     firmware to resurrect it, but I haven't restored my environment yet,
->     but I'll obviously report back immediately if something comes up)
-
-Ok, good luck with this.
-
-Thanks for all the good input.
-
--- 
-kind regards,
---peter;
+2014-04-27 3:48 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Sat, Apr 26, 2014 at 11:39:38AM +0900, DaeSeok Youn wrote:
+>> Hi,
+>>
+>> please check below my comments.
+>>
+>> 2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
+>> > On 04/25/2014 08:59 AM, Dan Carpenter wrote:
+>> >> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
+>> >>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
+>> >>>> Hi, Dan.
+>> >>>>
+>> >>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+>> >>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
+>> >>>>> driver?
+>> >>>>>
+>> >>>
+>> >>> I'll look into this. I am clueless on what that would actually mean.
+>> >>>
+>> >>
+>> >> Just add your name with Lidza in the MAINTAINERS file so that people
+>> >> will CC you on all the patches.
+>> >>
+>> >> DIGI EPCA PCI PRODUCTS
+>> >> M:      Lidza Louina <lidza.louina@gmail.com>
+>> >> L:      driverdev-devel@linuxdriverproject.org
+>> >> S:      Maintained
+>> >> F:      drivers/staging/dgap/
+>> >>
+>> >> You don't have to do it if you don't want to, but you seem to be working
+>> >> on this driver and I'm going to refer questions to you either way.  :P
+>> >>
+>> >>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
+>> >>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
+>> >>>>>>               /* Register tty devices */
+>> >>>>>>               rc = tty_register_driver(brd->SerialDriver);
+>> >>>>>>               if (rc < 0)
+>> >>>>>> -                     return rc;
+>> >>>>>> +                     goto free_print_ttys;
+>> >>>>>> +
+>> >>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
+>> >>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
+>> >>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
+>> >>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
+>> >>>>>>               /* Register Transparent Print devices */
+>> >>>>>>               rc = tty_register_driver(brd->PrintDriver);
+>> >>>>>>               if (rc < 0)
+>> >>>>>> -                     return rc;
+>> >>>>>> +                     goto unregister_serial_drv;
+>> >>>>>> +
+>> >>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+>> >>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
+>> >>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
+>> >>>>>>       }
+>> >>>>>>
+>> >>>>>>       return rc;
+>> >>>>>> +
+>> >>>>>> +unregister_serial_drv:
+>> >>>>>> +     tty_unregister_driver(brd->SerialDriver);
+>> >>>>>
+>> >>>>> We only register the ->SerialDriver if someone else hasn't registered it
+>> >>>>> first?  So this should be:
+>> >>>>>
+>> >>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
+>> >>>>>                 tty_unregister_driver(brd->SerialDriver);
+>> >>>>>
+>> >>>>> I haven't followed looked at this.  Who else is registering the serial
+>> >>>>> driver?  You have looked at this, what do you think?  Or Mark.
+>> >>>>
+>> >>>
+>> >>> registering the brd->XxxxxDriver is only done when a board is detected
+>> >>> and only during the firmware_load process. If we fail to
+>> >>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
+>> >>> like freeing after an alloc failure?
+>> >>
+>> >> The allocation is conditional so the free should be conditional.  If we
+>> >> didn't allocate it, then we shouldn't free it.
+>> >>
+>> >> It wouldn't have even been a question except I'm not sure the allocation
+>> >> is *really* conditional because brd->dgap_Major_Serial_Registered might
+>> >> always be "false" like you guys seem to be saying.
+>> >>
+>> >>>
+>> >>>> I think brd struct is from dgap_Board array as global static variable
+>> >>>> when this function is
+>> >>>> called. So brd->dgap_Major_Serial_Registered is always "false".
+>> >>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
+>> >>>> registered.
+>> >>>>
+>> >>>> I'm not sure..
+>> >>>>
+>> >>>
+>> >>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
+>> >>> probably should, but I do see we are calling dgap_tty_register, which
+>> >>> can fail, without actually checking the return value. Also, yes,
+>> >>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
+>> >>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
+>> >>> because the only places we can unregister is at module_cleanup or
+>> >>> "after" it is already registered.
+>> >>>
+>> >>> What is the driver _supposed_ to do if we fail something on the second
+>> >>> or later board? Is the driver supposed to cleanup and exit or are we
+>> >>> supposed to stay loaded for the board/boards that are usable?
+>> >>
+>> >> Stay loaded.
+>> >>
+>> >
+>> > Then these tests on brd->dgap_Major_Serial_Registered need to stay in
+>> > there. If I have 3 boards and the second fails in some way, if I rmmod
+>> > the driver they will protect from unregistering a never registered one.
+>> > At least in the unregister code path. There is probably no need for them
+>> > in the register code path. I'll work up a patch for this.
+>>
+>> Should I update my patch?
+>>
+>> I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
+>> function, because if tty_register_driver() is failed just set "false"
+>> to "dgap_Major_XXX_Registered".
+>
+> Mark sent a patch to remove the check.  Could you redo your patch based
+> on his?
+>
+> regards,
+> dan carpenter
+>
