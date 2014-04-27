@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaD0I6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 04:58:21 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:61422 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaD0I6M (ORCPT
+	id S1753410AbaD0JEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 05:04:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:35024 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943AbaD0JEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 04:58:12 -0400
+	Sun, 27 Apr 2014 05:04:13 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
+        <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH -mm v2 0/6] memcg/kmem: cleanup naming and callflows
+Date: Sun, 27 Apr 2014 13:04:02 +0400
+Message-ID: <cover.1398587474.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-X-Originating-IP: [95.23.103.39]
-In-Reply-To: <20140427051428.GA2671@katana>
-References: <1398558586-28931-1-git-send-email-javier@dowhile0.org>
-	<20140427051428.GA2671@katana>
-Date: Sun, 27 Apr 2014 10:58:09 +0200
-Message-ID: <CABxcv==8F2CghQKVDp==5Mx8-OBJnc+yZWEBqi7OFGij8OHaeg@mail.gmail.com>
-Subject: Re: [Cocci] [PATCH 1/1] scripts/coccinelle: use BIT() macro if possible
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        Nicolas Palix <nicolas.palix@imag.fr>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.24.25.110]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wolfram,
+Hi,
 
-Thanks a lot for your feedback.
+In reply to "[PATCH RFC -mm v2 3/3] memcg, slab: simplify
+synchronization scheme" Johannes wrote:
 
-On Sun, Apr 27, 2014 at 7:14 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Sun, Apr 27, 2014 at 02:29:46AM +0200, Javier Martinez Canillas wrote:
->> Using the BIT() macro instead of manually shifting bits
->> makes the code less error prone and also more readable.
->
-> Does it? It is a taste thing, yet I don't think it makes the code that
-> much more readable that it is worth changing the whole tree.
->
+> I like this patch, but the API names are confusing. Could we fix up
+> that whole thing by any chance?
 
-I believe there is a reason for that macro but yes I agree with you
-that is a matter of taste and the it shouldn't be enforced.
+(see https://lkml.org/lkml/2014/4/18/317)
 
-I'm doing a big refactoring for the GPIO subsystem and was told to use
-coccinelle so this patch was part of my learning. I posted it because
-I thought that it could be useful but I don't mind the patch to be
-dropped if that is not the case.
+So this patch set is about cleaning up memcg/kmem naming.
 
-Best regards,
-Javier
+While preparing it I found that some of the ugly-named functions
+constituting interface between memcontrol.c and slab_common.c can be
+neatly got rid of w/o complicating the code. Quite the contrary, w/o
+them call-flows look much simpler, IMO. So the first four patches do not
+rename anything actually - they just rework call-flows in kmem cache
+creation/destruction and memcg_caches arrays relocations paths. Finally,
+patches 5 and 6 clean up the naming.
+
+v1: http://lkml.org/lkml/2014/4/25/254
+
+Changes in v2:
+ - move memcg_params allocation/free for per memcg caches to
+   slab_common.c, because this way it looks clearer (patch 4)
+ - minor changes in function names and comments
+
+Reviews are appreciated.
+
+Thanks,
+
+Vladimir Davydov (6):
+  memcg: get rid of memcg_create_cache_name
+  memcg: allocate memcg_caches array on first per memcg cache creation
+  memcg: cleanup memcg_caches arrays relocation path
+  memcg: get rid of memcg_{alloc,free}_cache_params
+  memcg: cleanup kmem cache creation/destruction functions naming
+  memcg: cleanup kmem_id-related naming
+
+ include/linux/memcontrol.h |   40 +----
+ include/linux/slab.h       |   11 +-
+ mm/memcontrol.c            |  396 +++++++++++++++++++-------------------------
+ mm/slab.c                  |    4 +-
+ mm/slab.h                  |   24 ++-
+ mm/slab_common.c           |  148 ++++++++++++-----
+ mm/slub.c                  |   10 +-
+ 7 files changed, 314 insertions(+), 319 deletions(-)
+
+-- 
+1.7.10.4
+
