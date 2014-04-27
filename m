@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751629AbaD0Rcr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 13:32:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35389 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaD0Rcq (ORCPT
+	id S1752420AbaD0ReB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 13:34:01 -0400
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:60354 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751909AbaD0Rd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 13:32:46 -0400
-Date: Sun, 27 Apr 2014 10:33:31 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 00/47] Lustre fixes and cleanups
-Message-ID: <20140427173331.GA11038@kroah.com>
-References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
+	Sun, 27 Apr 2014 13:33:58 -0400
+X-Sasl-enc: 60ipgL/H4iG48MJovMYWX0fQXMUNnIpM9HHem1UkQzcd 1398620036
+Date: Sun, 27 Apr 2014 10:34:40 -0700
+From: Greg KH <greg@kroah.com>
+To: Florian Kaiser <fk@florian-kaiser.net>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Linux 3.10.y: backport b04c46190219a4f845e46a459e3102137b7f6cac
+Message-ID: <20140427173440.GA11217@kroah.com>
+References: <535D3AA8.5030306@florian-kaiser.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
+In-Reply-To: <535D3AA8.5030306@florian-kaiser.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 01:06:24PM -0400, Oleg Drokin wrote:
-> Hello!
+On Sun, Apr 27, 2014 at 07:13:12PM +0200, Florian Kaiser wrote:
+> Hello,
 > 
->    This pile of patches brings in most of the recent fixes from
->    current Lustre development tree, also code cleanups, junk removal
->    and such.
->    A relatively unsynced area remaining is in client io stack
->    that is undergoing some major shakeups now, I'll try to tackle
->    it later once things actually settle down some more.
-
-I've applied these, except for the 3 gss patches.
-
-Also, there is now a build warning in the tree thanks to these, please
-send a follow-on patch to fix it before you get an email from the 0-day
-bot about it.
-
->    There are several checkpatch warnings in this patchset that
->    I am not sure what to do aobut since the messages printed are
->    genuinely long:
+> Not sure if you did not include this for a reason in the latest 3.10.y
+> (3.10.38, released 16 hours ago) or if you just missed it. In the latter case,
+> please backport it.
 > 
-> WARNING: quoted string split across lines
-> #61: FILE: drivers/staging/lustre/lustre/ptlrpc/import.c:1424:
-> +		CERROR("%s: don't know how to disconnect from %s "
-> +		       "(connect_op %d): rc = %d\n",
+> Patch from commit b04c46190219a4f845e46a459e3102137b7f6cac should apply with
+> some offsets but otherwise work as expected. We tested with 3.10.37 and did
+> not find any regressions or other unexpected behavior.
 > 
-> total: 0 errors, 1 warnings, 73 lines checked
+> As for now, 3.10.y LTS would still be vulnerable to CVE-2014-2851.
 
-Strings all need to go on one line, and you all need to take out your
-"special" logging macros so that checkpatch will know what to do with
-them.
+I take networking patches from the networking maintainer, and don't
+apply them on my own.  So please ask about this on the netdev list,
+after checking that the netdev stable patchwork queue doesn't already
+have the patch in it (sorry, I don't have the link to that at the
+moment...)
 
 thanks,
 
