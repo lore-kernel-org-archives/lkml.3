@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287AbaD0WPj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 18:15:39 -0400
-Received: from imp01.mtu.ru ([62.5.255.10]:33680 "EHLO imp01.mtu.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752011AbaD0WPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 18:15:37 -0400
-X-Spam-Flag: NO
-Message-ID: <535D8180.1020607@pavlinux.ru>
-Date: Mon, 28 Apr 2014 02:15:28 +0400
-From: Pavel Vasilyev <pavel@pavlinux.ru>
-Reply-To: pavel@pavlinux.ru
-Organization: Pavlinux. Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754251AbaD0WTP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 18:19:15 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:54998 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaD0WTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 18:19:13 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH RT 0/3] Linux 3.2.57-rt84-rc1
-References: <20140427143925.177486597@goodmis.org>
-In-Reply-To: <20140427143925.177486597@goodmis.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
+References: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
+Date: Sun, 27 Apr 2014 15:19:12 -0700
+X-Google-Sender-Auth: t42KXwYWpqBLqX-HFz6ET2zlfEM
+Message-ID: <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
+Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
+ rtl28xxu driver
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-27.04.2014 18:39, Steven Rostedt пишет:
-> Dear RT Folks,
+Brian, please use
+
+ ./scripts/get_maintainer -f drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+
+to get the proper people to send this to, so that it doesn't get lost
+in the flood in lkml.
+
+The indentation of that new entry also seems to be suspect, in that it
+doesn't match the ones around it.
+
+Quoting full email for context for people added.
+
+             Linus
+
+On Sat, Apr 26, 2014 at 9:36 AM, Brian Healy <healybrian@gmail.com> wrote:
+> [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for rtl28xxu driver
 >
-> This is the RT stable review cycle of patch 3.2.57-rt84-rc1.
+> Signed-off-by: Brian Healy <healybrian<at>gmail.com>
 >
-> Please scream at me if I messed something up. Please test the patches too.
-
-
-More than two years our thin clients (about 5000 machines, Intel Atom, x86_32) 
-work with RCU_BOOST.
-
-CONFIG_RCU_BOOST=y
-CONFIG_RCU_BOOST_PRIO=80
-CONFIG_RCU_BOOST_DELAY=400
-
--- 
-
-                                                          Pavel.
+>
+> --- drivers/media/usb/dvb-usb-v2/rtl28xxu.c.orig    2014-04-26
+> 17:02:36.068691000 +0100
+> +++ drivers/media/usb/dvb-usb-v2/rtl28xxu.c    2014-04-26
+> 17:03:11.944691000 +0100
+> @@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28x
+>          &rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+>      { DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
+>          &rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
+> +        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
+> +                &rtl2832u_props, "Peak DVB-T USB", NULL) },
+>
+>      /* RTL2832P devices: */
+>      { DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
