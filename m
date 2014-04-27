@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454AbaD0TFw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 15:05:52 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:63798 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaD0TFu convert rfc822-to-8bit (ORCPT
+	id S1752778AbaD0TJA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 15:09:00 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62307 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaD0TI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 15:05:50 -0400
+	Sun, 27 Apr 2014 15:08:58 -0400
+Message-ID: <535D55C6.9090609@gmail.com>
+Date: Sun, 27 Apr 2014 21:08:54 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140427173932.GP26890@mwanda>
-References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
-	<20140426204704.GB17562@mguzik.redhat.com>
-	<20140426213137.GM26890@mwanda>
-	<20140426215945.GC17562@mguzik.redhat.com>
-	<20140427173932.GP26890@mwanda>
-Date: Sun, 27 Apr 2014 21:05:50 +0200
-Message-ID: <CAH7P7NgrEim8oDVy1_UDRdZHnrEp4RTFtMgcUzu+mBDOYNM_yw@mail.gmail.com>
-Subject: Re: [PATCH] staging: line6: fix possible overrun
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>, tiwai@suse.de,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH] clkdev: only fall through to clk_get_sys() if DT indicates
+ no entry
+References: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk>
+In-Reply-To: <E1We4rQ-0001mv-Ps@rmk-PC.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank's for your answers,
-will try to look deeper,
+On 04/26/2014 05:49 PM, Russell King wrote:
+> There are two failures which DT can return when looking up a phandle:
+> -ENOENT - when DT finds that the desired property/index is not present
+> -EINVAL - when DT finds that the desired property/index is present, but
+>   there is a problem parsing it.
+>
+> We should only fall through to clk_get_sys() (the table driven clock
+> lookup) when DT indicates that there was no entry in the OF tables
+> for the clock.  Doing otherwise causes the clk API to always indicate
+> that there is no entry for this clock, which is not correct behaviour.
+>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> ---
+> Grant, Rob,
+>
+> Please let me know ASAP if this gives you any cause for concern.  This
+> looks to me like a long standing bug which really needs fixing.  Part
+> of the motivation here is similar to Jean-Francois' patch to clkdev
+> which allows a DT specified clock which isn't get present to have
+> clk_get() and friends return -EPROBE_DEFER - again, something that I
+> think really should happen.  Jean-Francois hasn't been able to get
+> much traction for his patch, so let's start with fixing this bug first.
 
->> >
->> > If we want to sovle the truncation issue then we need to think of
->> > shorter names for BassPODxtLive, BassPODxtPro, PODStudioUX1, and
->> > PODStudioUX2.
->> >
->>
->> In that case I suggest compile time assertions that ids and names fit
->
-> That sounds like some magic code which I would love to see.  :)
->
->>  and a WARN_ON + -EINVAL in line6_init_audio to catch future
->>  offenders.
->
-> Returning -EINVAL is a bad idea because it would break the driver
-> completely and make it unusable.
->
->>
->> As a side note I'm not sure if pod_try_init from
->> drivers/staging/line6/pod.c
->> cleans up properly after failed line6_init_audio.
->
-> Yeah.  It doesn't seem to clean up at all.
->
+How about upstream commit a34cd4666f3da84228a82f70c94b8d9b692034ea,
+I thought it already solves the issue you're trying to address in
+this patch ?
 
-Laurent Navet.
--- 
-« On ne résout pas un problème avec les modes de pensée qui l’ont engendré. »
-« You cannot solve current problems with current thinking. Current
-problems are the result of current thinking »
+>   drivers/clk/clkdev.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+> index 48f67218247c..4e65d0e10b05 100644
+> --- a/drivers/clk/clkdev.c
+> +++ b/drivers/clk/clkdev.c
+> @@ -165,7 +165,7 @@ struct clk *clk_get(struct device *dev, const char *con_id)
+>
+>   	if (dev) {
+>   		clk = of_clk_get_by_name(dev->of_node, con_id);
+> -		if (!IS_ERR(clk))
+> +		if (!IS_ERR(clk) || PTR_ERR(clk) != -ENOENT)
+>   			return clk;
+>   	}
+
+--
+Regards,
+Sylwester
