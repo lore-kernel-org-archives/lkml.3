@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaD0KuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 06:50:12 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:52448 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaD0KuK (ORCPT
+	id S1753879AbaD0K57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 06:57:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60916 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaD0K55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 06:50:10 -0400
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Michal Marek <mmarek@suse.cz>, Wolfram Sang <wsa@the-dreams.de>,
-        cocci@systeme.lip6.fr, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier@dowhile0.org>
-Subject: [PATCH v2 1/1] scripts/coccinelle: use BIT macro if used
-Date: Sun, 27 Apr 2014 12:50:00 +0200
-Message-Id: <1398595800-6683-1-git-send-email-javier@dowhile0.org>
-X-Mailer: git-send-email 1.9.1
+	Sun, 27 Apr 2014 06:57:57 -0400
+Date: Sun, 27 Apr 2014 12:57:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv3 07/14] HSI: Add common DT binding for HSI client
+ devices
+Message-ID: <20140427105755.GA12265@amd.pavel.ucw.cz>
+References: <1396053110-21639-1-git-send-email-sre@kernel.org>
+ <1396053110-21639-8-git-send-email-sre@kernel.org>
+ <20140419191612.GG5148@amd.pavel.ucw.cz>
+ <20140425182535.GB22721@earth.universe>
+ <20140425205926.GA30032@earth.universe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425205926.GA30032@earth.universe>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the BIT() macro instead of manually shifting bits
-makes the code less error prone.
+On Fri 2014-04-25 22:59:27, Sebastian Reichel wrote:
+> On Fri, Apr 25, 2014 at 08:25:36PM +0200, Sebastian Reichel wrote:
+> > On Sat, Apr 19, 2014 at 09:16:12PM +0200, Pavel Machek wrote:
+> > > On Sat 2014-03-29 01:31:43, Sebastian Reichel wrote:
+> > > > Implement and document generic DT bindings for HSI clients.
+> > > > 
+> > > > Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> > > 
+> > > Reviewed-by: Pavel Machek <pavel@ucw.cz>
+> > > 
+> > > > diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
+> > > > index 07e1639..5973906 100644
+> > > > --- a/drivers/hsi/hsi.c
+> > > > +++ b/drivers/hsi/hsi.c
+> > > > @@ -26,8 +26,14 @@
+> > > >  #include <linux/slab.h>
+> > > >  #include <linux/string.h>
+> > > >  #include <linux/notifier.h>
+> > > > +#include <linux/of.h>
+> > > > +#include <linux/of_device.h>
+> > > >  #include "hsi_core.h"
+> > > 
+> > > 
+> > > > +	err = hsi_of_property_parse_mode(client, "hsi-mode", &mode);
+> > > > +	if (err) {
+> > > > +		err = hsi_of_property_parse_mode(client, "hsi-rx-mode",
+> > > > +						 &cl->rx_cfg.mode);
+> > > > +		if (err)
+> > > > +			goto err;
+> > > > +
+> > > > +		err = hsi_of_property_parse_mode(client, "hsi-tx-mode",
+> > > > +						 &cl->tx_cfg.mode);
+> > > > +		if (err)
+> > > > +			goto err;
+> > > 
+> > > Will this need some #ifdef CONFIG_OF?
+> > 
+> > It would only be needed to reduce the amount of kernel code for
+> > disabled Device Tree. I don't think its worth it, since there is no
+> > platform in the mainline kernel, which uses HSI without DT.
+> 
+> mh actually it is needed, since there is no stub provided for
+> of_modalias_node in non DT mode (there are stubs for all other
+> of_* methods used). I will include the ifdef in PATCHv5.
 
-If is more readable is a matter of taste so only replace
-if the file is already using this macro.
+Alternatively, you can make driver depend on DT...
 
-Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
----
-
-Changes since v1:
- - Add a rule that checks if the file is already using this macro
-   as suggested by Julia Lawall
-
- scripts/coccinelle/api/bit.cocci | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 scripts/coccinelle/api/bit.cocci
-
-diff --git a/scripts/coccinelle/api/bit.cocci b/scripts/coccinelle/api/bit.cocci
-new file mode 100644
-index 0000000..a02cfd3
---- /dev/null
-+++ b/scripts/coccinelle/api/bit.cocci
-@@ -0,0 +1,30 @@
-+// Use the BIT() macro if is already used
-+//
-+// Confidence: High
-+// Copyright (C) 2014 Javier Martinez Canillas.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Options: --include-headers
-+
-+@hasbitops@
-+@@
-+
-+#include <linux/bitops.h>
-+
-+@usesbit@
-+@@
-+
-+BIT(...)
-+
-+@depends on hasbitops && usesbit@
-+expression E;
-+@@
-+
-+- 1 << E
-++ BIT(E)
-+
-+@depends on hasbitops && usesbit@
-+expression E;
-+@@
-+
-+- BIT((E))
-++ BIT(E)
+Thanks,
+									Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
