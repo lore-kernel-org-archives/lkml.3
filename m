@@ -1,164 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686AbaD0XVh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 19:21:37 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:55488 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445AbaD0XVf (ORCPT
+	id S1751902AbaD0X2m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 19:28:42 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:50244 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661AbaD0X2k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 19:21:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140426184721.GL26890@mwanda>
-References: <20140425070459.GA9155@devel>
-	<20140425092607.GH26890@mwanda>
-	<875455568.760649.1398423734122.JavaMail.root@mx2.compro.net>
-	<535A5535.6000701@compro.net>
-	<1016949935.761818.1398430870736.JavaMail.root@mx2.compro.net>
-	<535A7402.1060305@compro.net>
-	<CAHb8M2AgDzTzABys5Ec=tjg4xDaAORjPpVcjXykgWFKPtPnCMQ@mail.gmail.com>
-	<20140426184721.GL26890@mwanda>
-Date: Mon, 28 Apr 2014 08:21:34 +0900
-Message-ID: <CAHb8M2DC==5Z40iNdq=or+9E15KH3UR-w_yeTzt1PT_-dCnZ0A@mail.gmail.com>
-Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Mark Hounschell <markh@compro.net>, devel <devel@driverdev.osuosl.org>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 27 Apr 2014 19:28:40 -0400
+Subject: Re: [PATCH 5/5] staging/lustre/lnet: fix potential null pointer dereference
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140427223925.GC1563@kroah.com>
+Date: Sun, 27 Apr 2014 19:28:27 -0400
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Dmitry Eremin <dmitry.eremin@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <207D440C-EF42-45AC-A845-130985E215EA@linuxhacker.ru>
+References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru> <1398633446-16719-6-git-send-email-green@linuxhacker.ru> <20140427223925.GC1563@kroah.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK. I'll make my patch based on Mark's patch.
-Thanks.
+Hello!
 
-Daeseok Youn.
+On Apr 27, 2014, at 6:39 PM, Greg Kroah-Hartman wrote:
+>> 
+>> -	lnet_ni_notify_locked(ni, lp);
+>> +	if (ni != NULL)
+>> +		lnet_ni_notify_locked(ni, lp);
+> 
+> Why can't lnet_ni_notify_locked() accept NULL as an input?
 
-2014-04-27 3:48 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Sat, Apr 26, 2014 at 11:39:38AM +0900, DaeSeok Youn wrote:
->> Hi,
->>
->> please check below my comments.
->>
->> 2014-04-25 23:41 GMT+09:00 Mark Hounschell <markh@compro.net>:
->> > On 04/25/2014 08:59 AM, Dan Carpenter wrote:
->> >> On Fri, Apr 25, 2014 at 08:29:41AM -0400, Mark Hounschell wrote:
->> >>> On 04/25/2014 07:02 AM, DaeSeok Youn wrote:
->> >>>> Hi, Dan.
->> >>>>
->> >>>> 2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
->> >>>>> Mark, maybe you should add yourself to the MAINTAINERS entry for this
->> >>>>> driver?
->> >>>>>
->> >>>
->> >>> I'll look into this. I am clueless on what that would actually mean.
->> >>>
->> >>
->> >> Just add your name with Lidza in the MAINTAINERS file so that people
->> >> will CC you on all the patches.
->> >>
->> >> DIGI EPCA PCI PRODUCTS
->> >> M:      Lidza Louina <lidza.louina@gmail.com>
->> >> L:      driverdev-devel@linuxdriverproject.org
->> >> S:      Maintained
->> >> F:      drivers/staging/dgap/
->> >>
->> >> You don't have to do it if you don't want to, but you seem to be working
->> >> on this driver and I'm going to refer questions to you either way.  :P
->> >>
->> >>>>> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
->> >>>>>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
->> >>>>>>               /* Register tty devices */
->> >>>>>>               rc = tty_register_driver(brd->SerialDriver);
->> >>>>>>               if (rc < 0)
->> >>>>>> -                     return rc;
->> >>>>>> +                     goto free_print_ttys;
->> >>>>>> +
->> >>>>>>               brd->dgap_Major_Serial_Registered = TRUE;
->> >>>>>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
->> >>>>>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
->> >>>>>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
->> >>>>>>               /* Register Transparent Print devices */
->> >>>>>>               rc = tty_register_driver(brd->PrintDriver);
->> >>>>>>               if (rc < 0)
->> >>>>>> -                     return rc;
->> >>>>>> +                     goto unregister_serial_drv;
->> >>>>>> +
->> >>>>>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
->> >>>>>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
->> >>>>>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
->> >>>>>>       }
->> >>>>>>
->> >>>>>>       return rc;
->> >>>>>> +
->> >>>>>> +unregister_serial_drv:
->> >>>>>> +     tty_unregister_driver(brd->SerialDriver);
->> >>>>>
->> >>>>> We only register the ->SerialDriver if someone else hasn't registered it
->> >>>>> first?  So this should be:
->> >>>>>
->> >>>>>         if (we_were_the_ones_who_registered_the_serial_driver)
->> >>>>>                 tty_unregister_driver(brd->SerialDriver);
->> >>>>>
->> >>>>> I haven't followed looked at this.  Who else is registering the serial
->> >>>>> driver?  You have looked at this, what do you think?  Or Mark.
->> >>>>
->> >>>
->> >>> registering the brd->XxxxxDriver is only done when a board is detected
->> >>> and only during the firmware_load process. If we fail to
->> >>> tty_register_driver do we _need_ to tty_unregister_driver? Isn't that
->> >>> like freeing after an alloc failure?
->> >>
->> >> The allocation is conditional so the free should be conditional.  If we
->> >> didn't allocate it, then we shouldn't free it.
->> >>
->> >> It wouldn't have even been a question except I'm not sure the allocation
->> >> is *really* conditional because brd->dgap_Major_Serial_Registered might
->> >> always be "false" like you guys seem to be saying.
->> >>
->> >>>
->> >>>> I think brd struct is from dgap_Board array as global static variable
->> >>>> when this function is
->> >>>> called. So brd->dgap_Major_Serial_Registered is always "false".
->> >>>> If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
->> >>>> registered.
->> >>>>
->> >>>> I'm not sure..
->> >>>>
->> >>>
->> >>> I don't see any check for (dgap_NumBoards <  MAXBOARDS), which I think I
->> >>> probably should, but I do see we are calling dgap_tty_register, which
->> >>> can fail, without actually checking the return value. Also, yes,
->> >>> dgap_Major_Xxxx_Registered seems to be always "false" until registered,
->> >>> and it looks like dgap_Major_Xxxxx_Registered flags could be removed
->> >>> because the only places we can unregister is at module_cleanup or
->> >>> "after" it is already registered.
->> >>>
->> >>> What is the driver _supposed_ to do if we fail something on the second
->> >>> or later board? Is the driver supposed to cleanup and exit or are we
->> >>> supposed to stay loaded for the board/boards that are usable?
->> >>
->> >> Stay loaded.
->> >>
->> >
->> > Then these tests on brd->dgap_Major_Serial_Registered need to stay in
->> > there. If I have 3 boards and the second fails in some way, if I rmmod
->> > the driver they will protect from unregistering a never registered one.
->> > At least in the unregister code path. There is probably no need for them
->> > in the register code path. I'll work up a patch for this.
->>
->> Should I update my patch?
->>
->> I think "if (!brd->dgap_Major_XXX_Registered)" line can be removed in this
->> function, because if tty_register_driver() is failed just set "false"
->> to "dgap_Major_XXX_Registered".
->
-> Mark sent a patch to remove the check.  Could you redo your patch based
-> on his?
->
-> regards,
-> dan carpenter
->
+It makes no sense, because then there is nowhere to send the notification.
+That said, it appears a race is possible where one caller updated let_peer structure to ask for a notification
+and then we fell through here with a NULL ni and called into lnet_ni_notify_locked
+where we'd try to dereference this NULL ni.
+But this is the only called that accepts separate ni and lp, where as the only other caller gets them from the same struct
+where they are updated more in sync.
+
+I guess it makes sense to update lnet_ni_notify_locked as a future-proofing excercise.
+
+Thanks, I'll update this patch.
+
+Bye,
+    Oleg
