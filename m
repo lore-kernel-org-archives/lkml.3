@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaD0VRt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 17:17:49 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:49650 "EHLO fiona.linuxhacker.ru"
+	id S1753938AbaD0VSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 17:18:36 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:49646 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329AbaD0VRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 17:17:47 -0400
+	id S1752763AbaD0VRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 17:17:45 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
 Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
         Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 5/5] staging/lustre/lnet: fix potential null pointer dereference
-Date: Sun, 27 Apr 2014 17:17:26 -0400
-Message-Id: <1398633446-16719-6-git-send-email-green@linuxhacker.ru>
+Subject: [PATCH 4/5] staging/lustre/lnet: fix potential null pointer dereference
+Date: Sun, 27 Apr 2014 17:17:25 -0400
+Message-Id: <1398633446-16719-5-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
 References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru>
@@ -23,9 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dmitry Eremin <dmitry.eremin@intel.com>
 
-Pointer 'ni' checked for NULL at line 1569 may be passed to
-function and may be dereferenced there by passing argument 1 to
-function 'lnet_ni_notify_locked' at line 1621.
+Null pointer 'cp' that comes from line 2544 may be dereferenced
+at line 2618.
 found by Klocwork Insight tool
 
 Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
@@ -35,22 +34,32 @@ Reviewed-by: John L. Hammond <john.hammond@intel.com>
 Reviewed-by: Isaac Huang <he.huang@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 ---
- drivers/staging/lustre/lnet/lnet/router.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
-index 995f509..ba0278e 100644
---- a/drivers/staging/lustre/lnet/lnet/router.c
-+++ b/drivers/staging/lustre/lnet/lnet/router.c
-@@ -1559,7 +1559,8 @@ lnet_notify(lnet_ni_t *ni, lnet_nid_t nid, int alive, cfs_time_t when)
+diff --git a/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c b/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c
+index 6173e74..9bf6c94 100644
+--- a/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c
++++ b/drivers/staging/lustre/lnet/klnds/o2iblnd/o2iblnd_cb.c
+@@ -2609,13 +2609,17 @@ kiblnd_rejected (kib_conn_t *conn, int reason, void *priv, int priv_nob)
  
- 	lnet_notify_locked(lp, ni == NULL, alive, when);
+ 			case IBLND_REJECT_MSG_QUEUE_SIZE:
+ 				CERROR("%s rejected: incompatible message queue depth %d, %d\n",
+-				       libcfs_nid2str(peer->ibp_nid), cp->ibcp_queue_depth,
++				       libcfs_nid2str(peer->ibp_nid),
++				       cp != NULL ? cp->ibcp_queue_depth :
++				       IBLND_MSG_QUEUE_SIZE(rej->ibr_version),
+ 				       IBLND_MSG_QUEUE_SIZE(conn->ibc_version));
+ 				break;
  
--	lnet_ni_notify_locked(ni, lp);
-+	if (ni != NULL)
-+		lnet_ni_notify_locked(ni, lp);
- 
- 	lnet_peer_decref_locked(lp);
+ 			case IBLND_REJECT_RDMA_FRAGS:
+ 				CERROR("%s rejected: incompatible # of RDMA fragments %d, %d\n",
+-				       libcfs_nid2str(peer->ibp_nid), cp->ibcp_max_frags,
++				       libcfs_nid2str(peer->ibp_nid),
++				       cp != NULL ? cp->ibcp_max_frags :
++				       IBLND_RDMA_FRAGS(rej->ibr_version),
+ 				       IBLND_RDMA_FRAGS(conn->ibc_version));
+ 				break;
  
 -- 
 1.9.0
