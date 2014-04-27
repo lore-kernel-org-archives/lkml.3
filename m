@@ -1,115 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaD0WMa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 18:12:30 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:37293 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752286AbaD0WM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 18:12:28 -0400
-Message-ID: <535D80C8.9090906@semaphore.gr>
-Date: Mon, 28 Apr 2014 01:12:24 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
+	id S1754287AbaD0WPj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 18:15:39 -0400
+Received: from imp01.mtu.ru ([62.5.255.10]:33680 "EHLO imp01.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011AbaD0WPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 18:15:37 -0400
+X-Spam-Flag: NO
+Message-ID: <535D8180.1020607@pavlinux.ru>
+Date: Mon, 28 Apr 2014 02:15:28 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: intel_pstate: Change the calculation of next pstate
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH RT 0/3] Linux 3.2.57-rt84-rc1
+References: <20140427143925.177486597@goodmis.org>
+In-Reply-To: <20140427143925.177486597@goodmis.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the driver calculates the next pstate proportional to
-core_busy factor and reverse proportional to current pstate.
+27.04.2014 18:39, Steven Rostedt пишет:
+> Dear RT Folks,
+>
+> This is the RT stable review cycle of patch 3.2.57-rt84-rc1.
+>
+> Please scream at me if I messed something up. Please test the patches too.
 
-Change the above method and calculate the next pstate independently
-of current pstate.
 
-Tested on Intel i7-3770 CPU @ 3.40GHz.
-Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-increase ~1.5% in performance. Below the test results using turbostat
-(5 iterations):
+More than two years our thin clients (about 5000 machines, Intel Atom, x86_32) 
+work with RCU_BOOST.
 
-Without patch:
+CONFIG_RCU_BOOST=y
+CONFIG_RCU_BOOST_PRIO=80
+CONFIG_RCU_BOOST_DELAY=400
 
-Ph. avg Time	Total time	PkgWatt		Total Energy
-	79.63	266.416		57.74		15382.85984
-	79.63	265.609		57.87		15370.79283
-	79.57	266.994		57.54		15362.83476
-	79.53	265.304		57.83		15342.53032
-	79.71	265.977		57.76		15362.83152
-avg	79.61	266.06		57.74		15364.36985
-
-With patch:
-
-Ph. avg Time	Total time	PkgWatt		Total Energy
-	78.23	258.826		59.14		15306.96964
-	78.41	259.110		59.15		15326.35650
-	78.40	258.530		59.26		15320.48780
-	78.46	258.673		59.20		15313.44160
-	78.19	259.075		59.16		15326.87700
-avg	78.34	258.842		59.18		15318.82650
-
-The total test time reduced by ~2.6%, while the total energy
-consumption during a test iteration reduced by ~0.35%
-
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/intel_pstate.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-index 0999673..8e309db 100644
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -608,28 +608,27 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
- 	mod_timer_pinned(&cpu->timer, jiffies + delay);
- }
- 
--static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
-+static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
- {
--	int32_t core_busy, max_pstate, current_pstate;
-+	int32_t core_busy, max_pstate;
- 
- 	core_busy = cpu->sample.core_pct_busy;
- 	max_pstate = int_tofp(cpu->pstate.max_pstate);
--	current_pstate = int_tofp(cpu->pstate.current_pstate);
--	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
-+	core_busy = mul_fp(core_busy, max_pstate);
- 	return FP_ROUNDUP(core_busy);
- }
- 
- static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
- {
--	int32_t busy_scaled;
-+	int32_t busy;
- 	struct _pid *pid;
- 	signed int ctl = 0;
- 	int steps;
- 
- 	pid = &cpu->pid;
--	busy_scaled = intel_pstate_get_scaled_busy(cpu);
-+	busy = intel_pstate_get_busy(cpu);
- 
--	ctl = pid_calc(pid, busy_scaled);
-+	ctl = pid_calc(pid, busy);
- 
- 	steps = abs(ctl);
- 
-@@ -651,7 +650,7 @@ static void intel_pstate_timer_func(unsigned long __data)
- 	intel_pstate_adjust_busy_pstate(cpu);
- 
- 	trace_pstate_sample(fp_toint(sample->core_pct_busy),
--			fp_toint(intel_pstate_get_scaled_busy(cpu)),
-+			fp_toint(intel_pstate_get_busy(cpu)),
- 			cpu->pstate.current_pstate,
- 			sample->mperf,
- 			sample->aperf,
 -- 
-1.9.0
+
+                                                          Pavel.
