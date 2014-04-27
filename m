@@ -1,456 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaD0DbX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Apr 2014 23:31:23 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:63851 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaD0DbU (ORCPT
+	id S1752730AbaD0Dho (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Apr 2014 23:37:44 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:22419 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902AbaD0Dhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Apr 2014 23:31:20 -0400
-Date: Sat, 26 Apr 2014 23:31:11 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Thomas Schwinge <thomas@codesourcery.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@surriel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+	Sat, 26 Apr 2014 23:37:41 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-60-535c7b83e86e
+From: Jungseok Lee <jays.lee@samsung.com>
+To: "'Steve Capper'" <steve.capper@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        Catalin.Marinas@arm.com, "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
+        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
         linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: radeon: screen garbled after page allocator change, was: Re:
- [patch v2 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20140427033110.GA15091@gmail.com>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org>
- <1375457846-21521-4-git-send-email-hannes@cmpxchg.org>
- <87r45fajun.fsf@schwinge.name>
- <20140424133722.GD4107@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140424133722.GD4107@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        sungjinn.chung@samsung.com, "'Arnd Bergmann'" <arnd@arndb.de>,
+        kgene.kim@samsung.com, ilho215.lee@samsung.com
+References: <000701cf5adc$1aa35350$4fe9f9f0$@samsung.com>
+ <20140423160149.GA2895@linaro.org>
+In-reply-to: <20140423160149.GA2895@linaro.org>
+Subject: Re: [PATCH v3 6/7] arm64: mm: Implement 4 levels of translation tables
+Date: Sun, 27 Apr 2014 12:37:35 +0900
+Message-id: <000f01cf61ca$099017c0$1cb04740$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQEwOLV2T7J4c6AXE+OM9P/BYKiiCgHvV63/nFOcTGA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+Zvm5zdUywwc1eYYu/k46xW7xf1sNo
+	8eL1P0aLo/8WMlr0LrjKZvHx1HF2i02Pr7FaXN41h81ixvl9TBZ/7/xjs1gxbxmbxYcZKxkd
+	eDzWzFvD6PH71yRGjzvX9rB5nN+0htlj85J6j74tqxg9Pm+SC2CP4rJJSc3JLEst0rdL4MrY
+	fPk/a8F0i4rOv5oNjPO0uxg5OSQETCQ+XZ3MCmGLSVy4t56ti5GLQ0hgGaPEuaU7mWGKrrzd
+	yQqRWMQo8fXrDXYI5w+jxIT/38Da2QQ0JR7d7WEHsUUEdCROXmsDizMLdDBL9BxgAbGFBOIk
+	9q9eAxbnFNCXODP1JVi9sIC/xJFjp4FWc3CwCKhKNN/jAzF5BSwldm9OAangFRCU+DH5HgvE
+	RC2J9TuPM0HY8hKb17yFulNBYsfZ14wgrSICVhKtXcUQJSIS+168YwS5WEJgLofE1S8fweaw
+	CAhIfJt8iAWkXkJAVmLTAagxkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCel
+	FxnqFSfmFpfmpesl5+duYoREf+8OxtsHrA8xJgOtn8gsJZqcD0weeSXxhsZmRhamJqbGRuaW
+	ZqQJK4nzJj1MChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAqPTWn8fo6vusK6cjZ/lFNlUq
+	ztoxh/XZ6sMsS/u8+KPey0764Xeq3fFUYhSL/VHhm3m3aqqfCLL922AU1pxqWV561KP3j+8U
+	jsuX3Cb+n2Yp/1bgQ78fs09WfPYpPQGOj7qe2gLFM2Ln5vw6/TbD2GTinsiL9lb773+p35Y5
+	u9hzxpcXm0svKrEUZyQaajEXFScCAA2w6ogUAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsVy+t9jAd3m6phgg09NvBZ/Jx1jt3i/rIfR
+	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
+	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yf
+	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
+	0BA3XQuYxghd35AguB4jAzSQsI4xY/Pl/6wF0y0qOv9qNjDO0+5i5OSQEDCRuPJ2JyuELSZx
+	4d56ti5GLg4hgUWMEl+/3mCHcP4wSkz4/w2sik1AU+LR3R52EFtEQEfi5LU2sDizQAezRM8B
+	FhBbSCBOYv/qNWBxTgF9iTNTX4LVCwv4Sxw5dhpoAwcHi4CqRPM9PhCTV8BSYvfmFJAKXgFB
+	iR+T77FATNSSWL/zOBOELS+xec1bZog7FSR2nH3NCNIqImAl0dpVDFEiIrHvxTvGCYxCs5BM
+	moVk0iwkk2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzi1PJPawbiyweIQowAH
+	oxIP7wLJmGAh1sSy4srcQ4wSHMxKIrydXkAh3pTEyqrUovz4otKc1OJDjMlAb05klhJNzgem
+	vbySeENjEzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYDRepHv6SGj1
+	4hOflN+I/GkIurqOiXX7/BAL7rsHDzBdyhas3ZM9U8CBM4L5FMfvyzdmdQfsSQmtPDHvQmnV
+	nF0ej68cvHaDl+Pzgwu2W7z33/p35qnEkjv+j/PuBF55ar3k9X2vmRezWFOtNxSenSz0LaFJ
+	TVs2zOxTVoZAYNDiwq4zTnPP30tTYinOSDTUYi4qTgQAo66fDnEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 09:37:22AM -0400, Johannes Weiner wrote:
-> Hi Thomas,
-> 
-> On Wed, Apr 02, 2014 at 04:26:08PM +0200, Thomas Schwinge wrote:
-> > Hi!
-> > 
-> > On Fri,  2 Aug 2013 11:37:26 -0400, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > > Each zone that holds userspace pages of one workload must be aged at a
-> > > speed proportional to the zone size.  [...]
-> > 
-> > > Fix this with a very simple round robin allocator.  [...]
-> > 
-> > This patch, adding NR_ALLOC_BATCH, eventually landed in mainline as
-> > commit 81c0a2bb515fd4daae8cab64352877480792b515 (2013-09-11).
-> > 
-> > I recently upgraded a Debian testing system from a 3.11 kernel to 3.12,
-> > and it started to exhibit "strange" issues, which I then bisected to this
-> > patch.  I'm not saying that the patch is faulty, as it seems to be
-> > working fine for everyone else, so I rather assume that something in a
-> > (vastly?) different corner of the kernel (or my hardware?) is broken.
-> > ;-)
-> > 
-> > The issue is that when X.org/lightdm starts up, there are "garbled"
-> > section on the screen, for example, rectangular boxes that are just black
-> > or otherwise "distorted", and/or sets of glyphs (corresponding to a set
-> > of characters; but not all characters) are displayed as rectangular gray
-> > or black boxes, and/or icons in a GNOME session are not displayed
-> > properly, and so on.  (Can take a snapshot if that helps?)  Switching to
-> > a Linux console, I can use that one fine.  Switching back to X, in the
-> > majority of all cases, the screen will be completely black, but with the
-> > mouse cursor still rendered properly (done in hardware, I assume).
-> > 
-> > Reverting commit 81c0a2bb515fd4daae8cab64352877480792b515, for example on
-> > top of v3.12, and everything is back to normal.  The problem also
-> > persists with a v3.14 kernel that I just built.
-> > 
-> > I will try to figure out what's going on, but will gladly take any
-> > pointers, or suggestions about how to tackle such a problem.
-> > 
-> > The hardware is a Fujitsu Siemens Esprimo E5600, mainboard D2264-A1, CPU
-> > AMD Sempron 3000+.  There is a on-board graphics thingy, but I'm not
-> > using that; instead I put in a Sapphire Radeon HD 4350 card.
-> 
-> I went over this code change repeatedly but I could not see anything
-> directly that would explain it.  However, this patch DOES change the
-> way allocations are placed (while still respecting zone specifiers
-> like __GFP_DMA etc.) and so it's possible that they unearthed a
-> corruption, or a wrongly set dma mask in the drivers.
-> 
-> Ccing the radeon driver guys.  Full quote follows.
-> 
-> >     $ cat < /proc/cpuinfo
-> >     processor       : 0
-> >     vendor_id       : AuthenticAMD
-> >     cpu family      : 15
-> >     model           : 47
-> >     model name      : AMD Sempron(tm) Processor 3000+
-> >     stepping        : 2
-> >     cpu MHz         : 1000.000
-> >     cache size      : 128 KB
-> >     physical id     : 0
-> >     siblings        : 1
-> >     core id         : 0
-> >     cpu cores       : 1
-> >     apicid          : 0
-> >     initial apicid  : 0
-> >     fpu             : yes
-> >     fpu_exception   : yes
-> >     cpuid level     : 1
-> >     wp              : yes
-> >     flags           : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx mmxext fxsr_opt lm 3dnowext 3dnow rep_good nopl pni lahf_lm
-> >     bogomips        : 2000.20
-> >     TLB size        : 1024 4K pages
-> >     clflush size    : 64
-> >     cache_alignment : 64
-> >     address sizes   : 40 bits physical, 48 bits virtual
-> >     power management: ts fid vid ttp tm stc
-> >     $ sudo lspci -nn -k -vv
-> >     00:00.0 Host bridge [0600]: Silicon Integrated Systems [SiS] 761/M761 Host [1039:0761] (rev 01)
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 Motherboard [1734:1099]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
-> >             Latency: 64
-> >             Region 0: Memory at f0000000 (32-bit, non-prefetchable) [size=32M]
-> >             Capabilities: [a0] AGP version 3.0
-> >                     Status: RQ=32 Iso- ArqSz=2 Cal=3 SBA+ ITACoh- GART64- HTrans- 64bit- FW- AGP3+ Rate=x4,x8
-> >                     Command: RQ=1 ArqSz=0 Cal=0 SBA+ AGP- GART64- 64bit- FW- Rate=<none>
-> >             Capabilities: [d0] HyperTransport: Slave or Primary Interface
-> >                     Command: BaseUnitID=0 UnitCnt=17 MastHost- DefDir- DUL-
-> >                     Link Control 0: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0 IsocEn- LSEn- ExtCTL- 64b-
-> >                     Link Config 0: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit DwFcInEn- LWO=16bit DwFcOutEn-
-> >                     Link Control 1: CFlE- CST- CFE- <LkFail+ Init- EOC+ TXO+ <CRCErr=0 IsocEn- LSEn- ExtCTL- 64b-
-> >                     Link Config 1: MLWI=N/C DwFcIn- MLWO=N/C DwFcOut- LWI=N/C DwFcInEn- LWO=N/C DwFcOutEn-
-> >                     Revision ID: 1.05
-> >                     Link Frequency 0: 800MHz
-> >                     Link Error 0: <Prot- <Ovfl- <EOC- CTLTm-
-> >                     Link Frequency Capability 0: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+ 800MHz+ 1.0GHz+ 1.2GHz+ 1.4GHz- 1.6GHz- Vend-
-> >                     Feature Capability: IsocFC- LDTSTOP+ CRCTM- ECTLT- 64bA+ UIDRD-
-> >                     Link Frequency 1: 200MHz
-> >                     Link Error 1: <Prot- <Ovfl- <EOC- CTLTm-
-> >                     Link Frequency Capability 1: 200MHz- 300MHz- 400MHz- 500MHz- 600MHz- 800MHz- 1.0GHz- 1.2GHz- 1.4GHz- 1.6GHz- Vend-
-> >                     Error Handling: PFlE- OFlE- PFE- OFE- EOCFE- RFE- CRCFE- SERRFE- CF- RE- PNFE- ONFE- EOCNFE- RNFE- CRCNFE- SERRNFE-
-> >                     Prefetchable memory behind bridge Upper: 00-00
-> >                     Bus Number: 00
-> >             Capabilities: [f0] HyperTransport: Interrupt Discovery and Configuration
-> >             Capabilities: [5c] HyperTransport: Revision ID: 1.05
-> >             Kernel driver in use: agpgart-amd64
-> >     
-> >     00:01.0 PCI bridge [0604]: Silicon Integrated Systems [SiS] PCI-to-PCI bridge [1039:0004] (prog-if 00 [Normal decode])
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 0, Cache Line Size: 64 bytes
-> >             Bus: primary=00, secondary=01, subordinate=01, sec-latency=0
-> >             I/O behind bridge: 00002000-00002fff
-> >             Memory behind bridge: f2100000-f21fffff
-> >             Prefetchable memory behind bridge: e0000000-efffffff
-> >             Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ <SERR- <PERR-
-> >             BridgeCtl: Parity+ SERR+ NoISA+ VGA+ MAbort- >Reset- FastB2B-
-> >                     PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-> >             Capabilities: [d0] Express (v1) Root Port (Slot+), MSI 00
-> >                     DevCap: MaxPayload 128 bytes, PhantFunc 0
-> >                             ExtTag+ RBE-
-> >                     DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> >                             RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> >                             MaxPayload 128 bytes, MaxReadReq 128 bytes
-> >                     DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-> >                     LnkCap: Port #0, Speed 2.5GT/s, Width x16, ASPM L0s L1, Exit Latency L0s <1us, L1 <2us
-> >                             ClockPM- Surprise- LLActRep+ BwNot-
-> >                     LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk+
-> >                             ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> >                     LnkSta: Speed 2.5GT/s, Width x16, TrErr- Train- SlotClk+ DLActive+ BWMgmt- ABWMgmt-
-> >                     SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-> >                             Slot #0, PowerLimit 75.000W; Interlock- NoCompl-
-> >                     SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-> >                             Control: AttnInd Off, PwrInd Off, Power- Interlock-
-> >                     SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-> >                             Changed: MRL- PresDet- LinkState-
-> >                     RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
-> >                     RootCap: CRSVisible-
-> >                     RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-> >             Capabilities: [bc] HyperTransport: MSI Mapping Enable- Fixed+
-> >             Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit-
-> >                     Address: 00000000  Data: 0000
-> >             Capabilities: [f4] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: pcieport
-> >     
-> >     00:02.0 ISA bridge [0601]: Silicon Integrated Systems [SiS] SiS965 [MuTIOL Media IO] [1039:0965] (rev 48)
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle+ MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
-> >             Latency: 0
-> >     
-> >     00:02.5 IDE interface [0101]: Silicon Integrated Systems [SiS] 5513 IDE Controller [1039:5513] (rev 01) (prog-if 80 [Master])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 Motherboard [1734:1095]
-> >             Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 128
-> >             Interrupt: pin ? routed to IRQ 16
-> >             Region 0: I/O ports at 01f0 [size=8]
-> >             Region 1: I/O ports at 03f4
-> >             Region 2: I/O ports at 0170 [size=8]
-> >             Region 3: I/O ports at 0374
-> >             Region 4: I/O ports at 1c80 [size=16]
-> >             Capabilities: [58] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: pata_sis
-> >     
-> >     00:02.7 Multimedia audio controller [0401]: Silicon Integrated Systems [SiS] SiS7012 AC'97 Sound Controller [1039:7012] (rev a0)
-> >             Subsystem: Fujitsu Technology Solutions Device [1734:109c]
-> >             Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 173 (13000ns min, 2750ns max)
-> >             Interrupt: pin C routed to IRQ 18
-> >             Region 0: I/O ports at 1400 [size=256]
-> >             Region 1: I/O ports at 1000 [size=128]
-> >             Capabilities: [48] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=55mA PME(D0-,D1-,D2-,D3hot+,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: snd_intel8x0
-> >     
-> >     00:03.0 USB controller [0c03]: Silicon Integrated Systems [SiS] USB 1.1 Controller [1039:7001] (rev 0f) (prog-if 10 [OHCI])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 Motherboard [1734:1095]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64 (20000ns max)
-> >             Interrupt: pin A routed to IRQ 20
-> >             Region 0: Memory at f2000000 (32-bit, non-prefetchable) [size=4K]
-> >             Kernel driver in use: ohci-pci
-> >     
-> >     00:03.1 USB controller [0c03]: Silicon Integrated Systems [SiS] USB 1.1 Controller [1039:7001] (rev 0f) (prog-if 10 [OHCI])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 Motherboard [1734:1095]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64 (20000ns max)
-> >             Interrupt: pin B routed to IRQ 21
-> >             Region 0: Memory at f2001000 (32-bit, non-prefetchable) [size=4K]
-> >             Kernel driver in use: ohci-pci
-> >     
-> >     00:03.2 USB controller [0c03]: Silicon Integrated Systems [SiS] USB 1.1 Controller [1039:7001] (rev 0f) (prog-if 10 [OHCI])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 Motherboard [1734:1095]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64 (20000ns max)
-> >             Interrupt: pin C routed to IRQ 22
-> >             Region 0: Memory at f2002000 (32-bit, non-prefetchable) [size=4K]
-> >             Kernel driver in use: ohci-pci
-> >     
-> >     00:03.3 USB controller [0c03]: Silicon Integrated Systems [SiS] USB 2.0 Controller [1039:7002] (prog-if 20 [EHCI])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 [1734:1095]
-> >             Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64 (20000ns max)
-> >             Interrupt: pin D routed to IRQ 23
-> >             Region 0: Memory at f2003000 (32-bit, non-prefetchable) [size=4K]
-> >             Capabilities: [50] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: ehci-pci
-> >     
-> >     00:05.0 IDE interface [0101]: Silicon Integrated Systems [SiS] 182 SATA/RAID Controller [1039:0182] (rev 01) (prog-if 8f [Master SecP SecO PriP PriO])
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 [1734:1095]
-> >             Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64
-> >             Interrupt: pin A routed to IRQ 17
-> >             Region 0: I/O ports at 1cb0 [size=8]
-> >             Region 1: I/O ports at 1ca4 [size=4]
-> >             Region 2: I/O ports at 1ca8 [size=8]
-> >             Region 3: I/O ports at 1ca0 [size=4]
-> >             Region 4: I/O ports at 1c90 [size=16]
-> >             Region 5: I/O ports at 1c00 [size=128]
-> >             Capabilities: [58] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: sata_sis
-> >     
-> >     00:06.0 PCI bridge [0604]: Silicon Integrated Systems [SiS] PCI-to-PCI bridge [1039:000a] (prog-if 00 [Normal decode])
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 0, Cache Line Size: 64 bytes
-> >             Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
-> >             Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-> >             BridgeCtl: Parity+ SERR+ NoISA+ VGA- MAbort- >Reset- FastB2B-
-> >                     PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-> >             Capabilities: [b0] Subsystem: Silicon Integrated Systems [SiS] Device [1039:0000]
-> >             Capabilities: [c0] MSI: Enable+ Count=1/1 Maskable- 64bit-
-> >                     Address: fee0100c  Data: 4181
-> >             Capabilities: [d0] Express (v1) Root Port (Slot+), MSI 00
-> >                     DevCap: MaxPayload 128 bytes, PhantFunc 0
-> >                             ExtTag+ RBE-
-> >                     DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> >                             RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> >                             MaxPayload 128 bytes, MaxReadReq 128 bytes
-> >                     DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> >                     LnkCap: Port #0, Speed 2.5GT/s, Width x16, ASPM L0s L1, Exit Latency L0s <1us, L1 <2us
-> >                             ClockPM- Surprise- LLActRep- BwNot-
-> >                     LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk-
-> >                             ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> >                     LnkSta: Speed 2.5GT/s, Width x0, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-> >                     SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-> >                             Slot #0, PowerLimit 0.000W; Interlock- NoCompl-
-> >                     SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-> >                             Control: AttnInd Off, PwrInd Off, Power- Interlock-
-> >                     SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-> >                             Changed: MRL- PresDet- LinkState-
-> >                     RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
-> >                     RootCap: CRSVisible-
-> >                     RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-> >             Capabilities: [f4] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Capabilities: [100 v1] Virtual Channel
-> >                     Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
-> >                     Arb:    Fixed- WRR32- WRR64- WRR128-
-> >                     Ctrl:   ArbSelect=Fixed
-> >                     Status: InProgress-
-> >                     VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-> >                             Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-> >                             Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
-> >                             Status: NegoPending- InProgress-
-> >             Capabilities: [130 v1] Advanced Error Reporting
-> >                     UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-> >                     UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-> >                     UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-> >                     CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-> >                     CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-> >                     AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
-> >             Kernel driver in use: pcieport
-> >     
-> >     00:09.0 Ethernet controller [0200]: Realtek Semiconductor Co., Ltd. RTL8169 PCI Gigabit Ethernet Controller [10ec:8169] (rev 10)
-> >             Subsystem: Fujitsu Technology Solutions D2030-A1 [1734:1091]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 64 (8000ns min, 16000ns max), Cache Line Size: 32 bytes
-> >             Interrupt: pin A routed to IRQ 19
-> >             Region 0: I/O ports at 1800 [size=256]
-> >             Region 1: Memory at f2004000 (32-bit, non-prefetchable) [size=256]
-> >             Capabilities: [dc] Power Management version 2
-> >                     Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA PME(D0-,D1+,D2+,D3hot+,D3cold+)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Kernel driver in use: r8169
-> >     
-> >     00:18.0 Host bridge [0600]: Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration [1022:1100]
-> >             Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Capabilities: [80] HyperTransport: Host or Secondary Interface
-> >                     Command: WarmRst+ DblEnd- DevNum=0 ChainSide- HostHide+ Slave- <EOCErr- DUL-
-> >                     Link Control: CFlE- CST- CFE- <LkFail- Init+ EOC- TXO- <CRCErr=0 IsocEn- LSEn- ExtCTL- 64b-
-> >                     Link Config: MLWI=16bit DwFcIn- MLWO=16bit DwFcOut- LWI=16bit DwFcInEn- LWO=16bit DwFcOutEn-
-> >                     Revision ID: 1.02
-> >                     Link Frequency: 800MHz
-> >                     Link Error: <Prot- <Ovfl- <EOC- CTLTm-
-> >                     Link Frequency Capability: 200MHz+ 300MHz- 400MHz+ 500MHz- 600MHz+ 800MHz+ 1.0GHz- 1.2GHz- 1.4GHz- 1.6GHz- Vend-
-> >                     Feature Capability: IsocFC- LDTSTOP+ CRCTM- ECTLT- 64bA- UIDRD- ExtRS- UCnfE-
-> >     
-> >     00:18.1 Host bridge [0600]: Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Address Map [1022:1101]
-> >             Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >     
-> >     00:18.2 Host bridge [0600]: Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] DRAM Controller [1022:1102]
-> >             Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Kernel driver in use: amd64_edac
-> >     
-> >     00:18.3 Host bridge [0600]: Advanced Micro Devices, Inc. [AMD] K8 [Athlon64/Opteron] Miscellaneous Control [1022:1103]
-> >             Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-> >             Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Kernel driver in use: k8temp
-> >     
-> >     01:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc. [AMD/ATI] RV710/M92 [Mobility Radeon HD 4530/4570/545v] [1002:9553] (prog-if 00 [VGA controller])
-> >             Subsystem: PC Partner Limited / Sapphire Technology Device [174b:3092]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
-> >             Latency: 0, Cache Line Size: 64 bytes
-> >             Interrupt: pin A routed to IRQ 42
-> >             Region 0: Memory at e0000000 (64-bit, prefetchable) [size=256M]
-> >             Region 2: Memory at f2100000 (64-bit, non-prefetchable) [size=64K]
-> >             Region 4: I/O ports at 2000 [size=256]
-> >             [virtual] Expansion ROM at f2120000 [disabled] [size=128K]
-> >             Capabilities: [50] Power Management version 3
-> >                     Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Capabilities: [58] Express (v2) Legacy Endpoint, MSI 00
-> >                     DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
-> >                             ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-> >                     DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> >                             RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> >                             MaxPayload 128 bytes, MaxReadReq 128 bytes
-> >                     DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-> >                     LnkCap: Port #0, Speed 2.5GT/s, Width x16, ASPM L0s L1, Exit Latency L0s <64ns, L1 <1us
-> >                             ClockPM- Surprise- LLActRep- BwNot-
-> >                     LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk+
-> >                             ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> >                     LnkSta: Speed 2.5GT/s, Width x16, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-> >                     DevCap2: Completion Timeout: Not Supported, TimeoutDis-, LTR-, OBFF Not Supported
-> >                     DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-, LTR-, OBFF Disabled
-> >                     LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance- SpeedDis-
-> >                              Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
-> >                              Compliance De-emphasis: -6dB
-> >                     LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-
-> >                              EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> >             Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> >                     Address: 00000000fee0100c  Data: 41e1
-> >             Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
-> >             Kernel driver in use: radeon
-> >     
-> >     01:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI] RV710/730 HDMI Audio [Radeon HD 4000 series] [1002:aa38]
-> >             Subsystem: PC Partner Limited / Sapphire Technology Device [174b:aa38]
-> >             Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
-> >             Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> >             Latency: 0, Cache Line Size: 64 bytes
-> >             Interrupt: pin B routed to IRQ 41
-> >             Region 0: Memory at f2110000 (64-bit, non-prefetchable) [size=16K]
-> >             Capabilities: [50] Power Management version 3
-> >                     Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-> >                     Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> >             Capabilities: [58] Express (v2) Legacy Endpoint, MSI 00
-> >                     DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <4us, L1 unlimited
-> >                             ExtTag+ AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
-> >                     DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> >                             RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-> >                             MaxPayload 128 bytes, MaxReadReq 128 bytes
-> >                     DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
-> >                     LnkCap: Port #0, Speed 2.5GT/s, Width x16, ASPM L0s L1, Exit Latency L0s <64ns, L1 <1us
-> >                             ClockPM- Surprise- LLActRep- BwNot-
-> >                     LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- CommClk+
-> >                             ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> >                     LnkSta: Speed 2.5GT/s, Width x16, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-> >                     DevCap2: Completion Timeout: Not Supported, TimeoutDis-, LTR-, OBFF Not Supported
-> >                     DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-, LTR-, OBFF Disabled
-> >                     LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-, EqualizationPhase1-
-> >                              EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> >             Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> >                     Address: 00000000fee0100c  Data: 41d1
-> >             Capabilities: [100 v1] Vendor Specific Information: ID=0001 Rev=1 Len=010 <?>
-> >             Kernel driver in use: snd_hda_intel
-> > 
-> > 
-> > Grüße,
-> >  Thomas
+On Thursday, April 24, 2014 1:02 AM, Steve Capper wrote:
+> On Fri, Apr 18, 2014 at 04:59:20PM +0900, Jungseok Lee wrote:
 
-Thomas can you provide output of lspci -t
+[ ... ]
 
-Also did you had a chance to test my ugly patch ?
+> > diff --git a/arch/arm64/kernel/head.S b/arch/arm64/kernel/head.S index
+> > 0fd5650..f313a7a 100644
+> > --- a/arch/arm64/kernel/head.S
+> > +++ b/arch/arm64/kernel/head.S
+> > @@ -37,8 +37,8 @@
+> >
+> >  /*
+> >   * swapper_pg_dir is the virtual address of the initial page table.
+> > We place
+> > - * the page tables 3 * PAGE_SIZE below KERNEL_RAM_VADDR. The
+> > idmap_pg_dir has
+> > - * 2 pages and is placed below swapper_pg_dir.
+> > + * the page tables 4 * PAGE_SIZE below KERNEL_RAM_VADDR. The
+> > + idmap_pg_dir has
+> > + * 3 pages and is placed below swapper_pg_dir.
+> >   */
+> >  #define KERNEL_RAM_VADDR	(PAGE_OFFSET + TEXT_OFFSET)
+> >
+> > @@ -46,8 +46,8 @@
+> >  #error KERNEL_RAM_VADDR must start at 0xXXX80000  #endif
+> >
+> > -#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
+> > -#define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
+> > +#define SWAPPER_DIR_SIZE	(4 * PAGE_SIZE)
+> > +#define IDMAP_DIR_SIZE		(3 * PAGE_SIZE)
+> >
+> >  	.globl	swapper_pg_dir
+> >  	.equ	swapper_pg_dir, KERNEL_RAM_VADDR - SWAPPER_DIR_SIZE
+> > @@ -371,16 +371,29 @@ ENDPROC(__calc_phys_offset)
+> >
+> >  /*
+> >   * Macro to populate the PGD for the corresponding block entry in the
+> > next
+> > - * level (tbl) for the given virtual address.
+> > + * levels (tbl1 and tbl2) for the given virtual address.
+> >   *
+> > - * Preserves:	pgd, tbl, virt
+> > + * Preserves:	pgd, tbl1, tbl2, virt
+> 
+> tbl1 and tbl2 are *not* preserved for 4 level. tbl1 is bumped up one page to make space for the pud,
+> then fed into create_block_mapping later.
+> 
+> >   * Corrupts:	tmp1, tmp2
+> >   */
+> > -	.macro	create_pgd_entry, pgd, tbl, virt, tmp1, tmp2
+> > +	.macro	create_pgd_entry, pgd, tbl1, tbl2, virt, tmp1, tmp2
+> >  	lsr	\tmp1, \virt, #PGDIR_SHIFT
+> >  	and	\tmp1, \tmp1, #PTRS_PER_PGD - 1	// PGD index
+> > -	orr	\tmp2, \tbl, #3			// PGD entry table type
+> > +	orr	\tmp2, \tbl1, #3		// PGD entry table type
+> >  	str	\tmp2, [\pgd, \tmp1, lsl #3]
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> > +	ldr	\tbl2, =FIXADDR_TOP
+> > +	cmp	\tbl2, \virt
+> 
+> Do we need this extra logic? See my other comment below where the fixed mapping is placed down.
+> 
+> > +	add	\tbl2, \tbl1, #PAGE_SIZE
+> > +	b.ne	1f
+> > +	add	\tbl2, \tbl2, #PAGE_SIZE
+> > +1:
+> > +	lsr	\tmp1, \virt, #PUD_SHIFT
+> > +	and	\tmp1, \tmp1, #PTRS_PER_PUD - 1	// PUD index
+> > +	orr	\tmp2, \tbl2, #3		// PUD entry table type
+> > +	str	\tmp2, [\tbl1, \tmp1, lsl #3]
+> > +	mov	\tbl1, \tbl2
+> > +#endif
+> 
+> It may be easier to read to have a create_pud_entry macro too?
+> 
+> >  	.endm
+> >
+> >  /*
+> > @@ -444,7 +457,7 @@ __create_page_tables:
+> >  	add	x0, x25, #PAGE_SIZE		// section table address
+> >  	ldr	x3, =KERNEL_START
+> >  	add	x3, x3, x28			// __pa(KERNEL_START)
+> > -	create_pgd_entry x25, x0, x3, x5, x6
+> > +	create_pgd_entry x25, x0, x1, x3, x5, x6
+> >  	ldr	x6, =KERNEL_END
+> >  	mov	x5, x3				// __pa(KERNEL_START)
+> >  	add	x6, x6, x28			// __pa(KERNEL_END)
+> > @@ -455,7 +468,7 @@ __create_page_tables:
+> >  	 */
+> >  	add	x0, x26, #PAGE_SIZE		// section table address
+> >  	mov	x5, #PAGE_OFFSET
+> > -	create_pgd_entry x26, x0, x5, x3, x6
+> > +	create_pgd_entry x26, x0, x1, x5, x3, x6
+> >  	ldr	x6, =KERNEL_END
+> >  	mov	x3, x24				// phys offset
+> >  	create_block_map x0, x7, x3, x5, x6
+> > @@ -480,8 +493,11 @@ __create_page_tables:
+> >  	 * Create the pgd entry for the fixed mappings.
+> >  	 */
+> >  	ldr	x5, =FIXADDR_TOP		// Fixed mapping virtual address
+> > -	add	x0, x26, #2 * PAGE_SIZE		// section table address
+> > -	create_pgd_entry x26, x0, x5, x6, x7
+> > +	add	x0, x26, #PAGE_SIZE
+> > +#ifndef CONFIG_ARM64_4_LEVELS
+> > +	add	x0, x0, #PAGE_SIZE
+> > +#endif
+> 
+> This is overly complicated. For <4 levels we set x0 to be:
+> ttbr1 + 2*PAGE_SIZE. For 4-levels, we set x0 to be ttbr1 + PAGE_SIZE, then inside the create_pgd_entry
+> macro, we check the VA for FIXADDR_TOP then add another PAGE_SIZE. This is presumably done so the same
+> PUD is used for the swapper block map and the FIXADDR map.
 
-Cheers,
-Jérôme
+Is it too complicated to understand the logic?
 
+1) For <4 levels:
+PAGE_SIZE is added for FIXADDR map and x0 is passed to create pgd entry.
+2) For =4 levels:
+PAGE_SIZE is added in the create_pgd_entry macro since FIXADDR map info
+is needed to create pud entry.
+
+However, I agree that the code should be revised if other people feel
+like it is a labyrinthine logic.
+
+> If you assume that the PUD always follows the PGD for 4-levels, then you can remove this #ifdef and
+> the conditional VA logic in set_pgd_entry. To make the logic simpler for <4 levels, you could call
+> create_pud_entry in the middle of create_pgd_entry, then put down the actual pgd after.
+
+create_pud_entry should distinguish block map from FIXADDR map although
+PUD always follows the PGD in case of 4 levels. If we would like to avoid
+unnecessary #ifdef, the conditional logic should be introduced in create_
+pgd_entry macro.
+
+I cannot find the "best" way even though I've tried to figure it out.
+I would like to find out the most clear and self-descriptive expression.
+
+Could you give an idea on how to remove both conditional VA logic and #ifdef?
+
+> > +	create_pgd_entry x26, x0, x1, x5, x6, x7
+> >
+> 
+> So before this patch we have the following created by
+> __create_page_tables:
+> 
+> +========================+ <--- TEXT_OFFSET + PHYS_OFFSET
+> | FIXADDR (pmd or pte)   |
+> +------------------------+
+> | block map (pmd or pte) |
+> +------------------------+
+> | PGDs for swapper       |
+> +========================+ <--- TTBR1 swapper_pg_dir
+> | block map for idmap    |
+> +------------------------+
+> | PGDs for idmap         |
+> +------------------------+ <--- TTBR0 idmap_pg_dir
 > 
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> After the patch, for 4 levels activated we have:
+> +========================+ <--- TEXT_OFFSET + PHYS_OFFSET
+> | FIXADDR (ptes)         |
+> +------------------------+
+> | block map (ptes)       |
+> +------------------------+
+> | PUDs for swapper       |
+> +------------------------+
+> | PGDs for swapper       |
+> +========================+ <--- TTBR1 swapper_pg_dir
+> | block map for idmap    |
+> +------------------------+
+> | PUDs for idmap         |
+> +------------------------+
+> | PGDs for idmap         |
+> +------------------------+ <--- TTBR0 idmap_pg_dir
+> 
+> and without 4 levels activated we have:
+> +========================+ <--- TEXT_OFFSET + PHYS_OFFSET
+> | ZERO BYTES             |
+> +------------------------+
+> | FIXADDR (pmd or pte)   |
+> +------------------------+
+> | block map (pmd or pte) |
+> +------------------------+
+> | PGDs for swapper       |
+> +========================+ <--- TTBR1 swapper_pg_dir
+> | ZERO BYTES             |
+> +------------------------+
+> | block map for idmap    |
+> +------------------------+
+> | PGDs for idmap         |
+> +------------------------+ <--- TTBR0 idmap_pg_dir
+
+This is definitely helpful to understand head.S.
+It would be good to add these figures to Documentation or comments.
+
+Best Regards
+Jungseok Lee
+
