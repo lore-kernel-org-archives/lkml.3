@@ -1,198 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514AbaD0Ukc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 16:40:32 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44147 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaD0Uka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 16:40:30 -0400
-Message-ID: <535D6B31.3040604@infradead.org>
-Date: Sun, 27 Apr 2014 13:40:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com> <535992DD.3060808@infradead.org> <20140425100459.7824f676@annuminas.surriel.com> <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <535D3E0F.2090905@infradead.org>
-In-Reply-To: <535D3E0F.2090905@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751502AbaD0Uvf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 16:51:35 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:49527 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751303AbaD0Uve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 16:51:34 -0400
+From: Oleg Drokin <green@linuxhacker.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Oleg Drokin <green@linuxhacker.ru>, Rohit Seth <rohit.seth@intel.com>
+Subject: [PATCH] sysctl: Fix division by zero in percpu_pagelist_fraction handler
+Date: Sun, 27 Apr 2014 16:51:07 -0400
+Message-Id: <1398631867-6211-1-git-send-email-green@linuxhacker.ru>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/14 10:27, Randy Dunlap wrote:
-> On 04/26/14 23:26, Paul E. McKenney wrote:
->> On Fri, Apr 25, 2014 at 01:52:30PM -0700, Randy Dunlap wrote:
->>> On 04/25/14 13:44, Randy Dunlap wrote:
->>>> On 04/25/14 07:04, Rik van Riel wrote:
->>>>> On Thu, 24 Apr 2014 15:40:29 -0700
->>>>> Randy Dunlap <rdunlap@infradead.org> wrote:
->>>>>
->>>>>
->>>>>> uml on x86_64 defconfig:
->>>>>>
->>>>>> drivers/built-in.o: In function `__handle_sysrq':
->>>>>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
->>>>>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
->>>>>
->>>>> Randy, does the patch below fix it?
->>>
->>> CONFIG_TINY_RCU=y
->>>
->>> tiny.c does not provide these functions...  Paul...
->>>
->>>> Hm, no, it does not.  I'll look into it.
->>>>
->>>>> Mike, this patch should also address your concerns.
->>>>>
->>>>> Andrew, this can be a -fix patch for the sysctl-rcu patch,
->>>>> assuming it fixes things :)
->>>>>
->>>>> Signed-off-by: Rik van Riel <riel@redhat.com
->>>>> ---
->>>>>  drivers/tty/sysrq.c | 1 +
->>>>>  kernel/rcu/update.c | 3 ++-
->>>>>  2 files changed, 3 insertions(+), 1 deletion(-)
->>>>>
->>>>> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
->>>>> index dd53af9..0867433 100644
->>>>> --- a/drivers/tty/sysrq.c
->>>>> +++ b/drivers/tty/sysrq.c
->>>>> @@ -46,6 +46,7 @@
->>>>>  #include <linux/jiffies.h>
->>>>>  #include <linux/syscalls.h>
->>>>>  #include <linux/of.h>
->>>>> +#include <linux/rcupdate.h>
->>>>>  
->>>>>  #include <asm/ptrace.h>
->>>>>  #include <asm/irq_regs.h>
->>>>> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
->>>>> index 2ac3289..d22309c 100644
->>>>> --- a/kernel/rcu/update.c
->>>>> +++ b/kernel/rcu/update.c
->>>>> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
->>>>>  
->>>>>  void rcu_sysrq_start(void)
->>>>>  {
->>>>> -	rcu_cpu_stall_suppress = 2;
->>>>> +	if (!rcu_cpu_stall_suppress)
->>>>> +		rcu_cpu_stall_suppress = 2;
->>>>>  }
->>>>>  
->>>>>  void rcu_sysrq_end(void)
->>
->> You would think that I would have learned by now that RCU requires a bit
->> more care...  Anyway, patch containing only the APIs that -should- work
->> is below.  Currently testing it on the usual set of configs.
->>
->> 							Thanx, Paul
->>
->> ------------------------------------------------------------------------
->>
->> rcu: Provide API to suppress stall warnings while sysrc runs
->>
->> Some sysrq handlers can run for a long time, because they dump a lot
->> of data onto a serial console. Having RCU stall warnings pop up in
->> the middle of them only makes the problem worse.
->>
->> This commit provides rcu_sysrq_start() and rcu_sysrq_end() APIs to
->> temporarily suppress RCU CPU stall warnings while a sysrq request is
->> handled.
->>
->> Signed-off-by: Rik van Riel <riel@redhat.com>
->> [ paulmck: Fix TINY_RCU build error. ]
->> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+percpu_pagelist_fraction_sysctl_handler calls proc_dointvec_minmax
+and blindly assumes that return value of 0 means success.
+In fact the other valid case is when it got a zero length input.
 
-I guess that you want static inline on those functions...
+After that it proceeds to a division by percpu_pagelist_fraction
+value which is conveniently set to a default of zero, resulting in
+division by zero.
 
+Other than checking the bytecount to be more than zero, perhaps
+a better default value for percpu_pagelist_fraction would help too.
 
-> Still on uml on x86_64 defconfig:
-> 
->   LD      init/built-in.o
-> init/version.o: In function `rcu_sysrq_start':
-> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> init/main.o:include/linux/rcupdate.h:258: first defined here
-> init/version.o: In function `rcu_sysrq_end':
-> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> init/main.o:include/linux/rcupdate.h:261: first defined here
-> init/mounts.o: In function `rcu_sysrq_start':
-> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> init/main.o:include/linux/rcupdate.h:258: first defined here
-> init/mounts.o: In function `rcu_sysrq_end':
-> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> init/main.o:include/linux/rcupdate.h:261: first defined here
-> init/noinitramfs.o: In function `rcu_sysrq_start':
-> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> init/main.o:include/linux/rcupdate.h:258: first defined here
-> init/noinitramfs.o: In function `rcu_sysrq_end':
-> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> init/main.o:include/linux/rcupdate.h:261: first defined here
-> init/init_task.o: In function `rcu_sysrq_start':
-> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> init/main.o:include/linux/rcupdate.h:258: first defined here
-> init/init_task.o: In function `rcu_sysrq_end':
-> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> init/main.o:include/linux/rcupdate.h:261: first defined here
-> make[2]: *** [init/built-in.o] Error 1
-> 
-> 
-> 
->>
->> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
->> index a6f2664a1b77..3f53c96b3b77 100644
->> --- a/include/linux/rcupdate.h
->> +++ b/include/linux/rcupdate.h
->> @@ -248,6 +248,18 @@ void rcu_idle_exit(void);
->>  void rcu_irq_enter(void);
->>  void rcu_irq_exit(void);
->>  
->> +#ifdef CONFIG_RCU_STALL_COMMON
->> +void rcu_sysrq_start(void);
->> +void rcu_sysrq_end(void);
->> +#else /* #ifdef CONFIG_RCU_STALL_COMMON */
->> +void rcu_sysrq_start(void)
->> +{
->> +}
->> +void rcu_sysrq_end(void)
->> +{
->> +}
->> +#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
->> +
->>  #ifdef CONFIG_RCU_USER_QS
->>  void rcu_user_enter(void);
->>  void rcu_user_exit(void);
->> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
->> index ed7a0d72562c..a2aeb4df0f60 100644
->> --- a/kernel/rcu/update.c
->> +++ b/kernel/rcu/update.c
->> @@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
->>  	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
->>  }
->>  
->> +void rcu_sysrq_start(void)
->> +{
->> +	if (!rcu_cpu_stall_suppress)
->> +		rcu_cpu_stall_suppress = 2;
->> +}
->> +
->> +void rcu_sysrq_end(void)
->> +{
->> +	if (rcu_cpu_stall_suppress == 2)
->> +		rcu_cpu_stall_suppress = 0;
->> +}
->> +
->>  static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
->>  {
->>  	rcu_cpu_stall_suppress = 1;
->>
-> 
-> 
+[  661.985469] divide error: 0000 [#1] SMP DEBUG_PAGEALLOC
+[  661.985868] Modules linked in: binfmt_misc cfg80211 rfkill rpcsec_gss_krb5 ttm drm_kms_helper drm i2c_piix4 microcode i2c_core joydev serio_raw pcspkr virtio_blk nfsd
+[  661.986008] CPU: 1 PID: 9142 Comm: badarea_io Not tainted 3.15.0-rc2-vm-nfs+ #19
+[  661.986008] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  661.986008] task: ffff8800d5aeb6e0 ti: ffff8800d87a2000 task.ti: ffff8800d87a2000
+[  661.986008] RIP: 0010:[<ffffffff81152664>]  [<ffffffff81152664>] percpu_pagelist_fraction_sysctl_handler+0x84/0x120
+[  661.988031] RSP: 0018:ffff8800d87a3e78  EFLAGS: 00010246
+[  661.988031] RAX: 0000000000000f89 RBX: ffff88011f7fd000 RCX: 0000000000000000
+[  661.988031] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000010
+[  661.988031] RBP: ffff8800d87a3e98 R08: ffffffff81d002c8 R09: ffff8800d87a3f50
+[  661.988031] R10: 000000000000000b R11: 0000000000000246 R12: 0000000000000060
+[  661.988031] R13: ffffffff81c3c3e0 R14: ffffffff81cfddf8 R15: ffff8801193b0800
+[  661.988031] FS:  00007f614f1e9740(0000) GS:ffff88011f440000(0000) knlGS:0000000000000000
+[  661.988031] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  661.988031] CR2: 00007f614f1fa000 CR3: 00000000d9291000 CR4: 00000000000006e0
+[  661.988031] Stack:
+[  661.988031]  0000000000000001 ffffffffffffffea ffffffff81c3c3e0 0000000000000000
+[  661.988031]  ffff8800d87a3ee8 ffffffff8122b163 ffff8800d87a3f50 00007fff1564969c
+[  661.988031]  0000000000000000 ffff8800d8098f00 00007fff1564969c ffff8800d87a3f50
+[  661.988031] Call Trace:
+[  661.988031]  [<ffffffff8122b163>] proc_sys_call_handler+0xb3/0xc0
+[  661.988031]  [<ffffffff8122b184>] proc_sys_write+0x14/0x20
+[  661.988031]  [<ffffffff811ba93a>] vfs_write+0xba/0x1e0
+[  661.988031]  [<ffffffff811bb486>] SyS_write+0x46/0xb0
+[  661.988031]  [<ffffffff816db7ff>] tracesys+0xe1/0xe6
+[  661.988031] Code: 1f 84 00 00 00 00 00 48 83 bb b0 06 00 00 00 0f 84 7c 00 00 00 48 63 0d 93 6a e1 00 48 8b 83 b8 06 00 00 31 d2 41 bc 60 00 00 00 <48> f7 f1 ba 01 00 00 00 49 89 c5 48 c1 e8 02 48 85 c0 48 0f 44
 
+Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
+CC: Rohit Seth <rohit.seth@intel.com>
+---
+ mm/page_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5dba293..91d0265 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5854,7 +5854,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
+ 	int ret;
+ 
+ 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
+-	if (!write || (ret < 0))
++	if (!write || (ret < 0) || !*length)
+ 		return ret;
+ 
+ 	mutex_lock(&pcp_batch_high_lock);
 -- 
-~Randy
+1.9.0
+
