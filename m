@@ -1,100 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaD0Ugv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 16:36:51 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:49457 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751335AbaD0Ugu convert rfc822-to-8bit (ORCPT
+	id S1751514AbaD0Ukc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 16:40:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44147 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaD0Uka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 16:36:50 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] x86/dumpstack: Walk frames when built with frame pointers
-From: Richard Yao <ryao@gentoo.org>
-In-Reply-To: <CA+55aFw39HcWMYsPXb=PMK6--bHCSWwrjucGK+4VswEZrWLbGA@mail.gmail.com>
-Date: Sun, 27 Apr 2014 16:36:39 -0400
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel@gentoo.org, Brian Behlendorf <behlendorf1@llnl.gov>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?windows-1252?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8791C231-A0EB-4D95-970D-DD7E5E00FEAE@gentoo.org>
-References: <1398535818-14217-1-git-send-email-ryao@gentoo.org> <20140427120820.GC22116@gmail.com> <CA+55aFw39HcWMYsPXb=PMK6--bHCSWwrjucGK+4VswEZrWLbGA@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1874)
+	Sun, 27 Apr 2014 16:40:30 -0400
+Message-ID: <535D6B31.3040604@infradead.org>
+Date: Sun, 27 Apr 2014 13:40:17 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
+        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com> <535992DD.3060808@infradead.org> <20140425100459.7824f676@annuminas.surriel.com> <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <535D3E0F.2090905@infradead.org>
+In-Reply-To: <535D3E0F.2090905@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 27, 2014, at 4:08 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On 04/27/14 10:27, Randy Dunlap wrote:
+> On 04/26/14 23:26, Paul E. McKenney wrote:
+>> On Fri, Apr 25, 2014 at 01:52:30PM -0700, Randy Dunlap wrote:
+>>> On 04/25/14 13:44, Randy Dunlap wrote:
+>>>> On 04/25/14 07:04, Rik van Riel wrote:
+>>>>> On Thu, 24 Apr 2014 15:40:29 -0700
+>>>>> Randy Dunlap <rdunlap@infradead.org> wrote:
+>>>>>
+>>>>>
+>>>>>> uml on x86_64 defconfig:
+>>>>>>
+>>>>>> drivers/built-in.o: In function `__handle_sysrq':
+>>>>>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
+>>>>>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
+>>>>>
+>>>>> Randy, does the patch below fix it?
+>>>
+>>> CONFIG_TINY_RCU=y
+>>>
+>>> tiny.c does not provide these functions...  Paul...
+>>>
+>>>> Hm, no, it does not.  I'll look into it.
+>>>>
+>>>>> Mike, this patch should also address your concerns.
+>>>>>
+>>>>> Andrew, this can be a -fix patch for the sysctl-rcu patch,
+>>>>> assuming it fixes things :)
+>>>>>
+>>>>> Signed-off-by: Rik van Riel <riel@redhat.com
+>>>>> ---
+>>>>>  drivers/tty/sysrq.c | 1 +
+>>>>>  kernel/rcu/update.c | 3 ++-
+>>>>>  2 files changed, 3 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+>>>>> index dd53af9..0867433 100644
+>>>>> --- a/drivers/tty/sysrq.c
+>>>>> +++ b/drivers/tty/sysrq.c
+>>>>> @@ -46,6 +46,7 @@
+>>>>>  #include <linux/jiffies.h>
+>>>>>  #include <linux/syscalls.h>
+>>>>>  #include <linux/of.h>
+>>>>> +#include <linux/rcupdate.h>
+>>>>>  
+>>>>>  #include <asm/ptrace.h>
+>>>>>  #include <asm/irq_regs.h>
+>>>>> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+>>>>> index 2ac3289..d22309c 100644
+>>>>> --- a/kernel/rcu/update.c
+>>>>> +++ b/kernel/rcu/update.c
+>>>>> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
+>>>>>  
+>>>>>  void rcu_sysrq_start(void)
+>>>>>  {
+>>>>> -	rcu_cpu_stall_suppress = 2;
+>>>>> +	if (!rcu_cpu_stall_suppress)
+>>>>> +		rcu_cpu_stall_suppress = 2;
+>>>>>  }
+>>>>>  
+>>>>>  void rcu_sysrq_end(void)
+>>
+>> You would think that I would have learned by now that RCU requires a bit
+>> more care...  Anyway, patch containing only the APIs that -should- work
+>> is below.  Currently testing it on the usual set of configs.
+>>
+>> 							Thanx, Paul
+>>
+>> ------------------------------------------------------------------------
+>>
+>> rcu: Provide API to suppress stall warnings while sysrc runs
+>>
+>> Some sysrq handlers can run for a long time, because they dump a lot
+>> of data onto a serial console. Having RCU stall warnings pop up in
+>> the middle of them only makes the problem worse.
+>>
+>> This commit provides rcu_sysrq_start() and rcu_sysrq_end() APIs to
+>> temporarily suppress RCU CPU stall warnings while a sysrq request is
+>> handled.
+>>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+>> [ paulmck: Fix TINY_RCU build error. ]
+>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> On Sun, Apr 27, 2014 at 5:08 AM, Ingo Molnar <mingo@kernel.org> wrote:
->> 
->> So it's useful information for hairy bugs and it would be sad to
->> remove them.
-> 
-> I tend to agree. I've often found the left-overs to be good clues
-> about what just got called. Although equally often it's another kind
-> of clue entirely: that the stack frame of some of the functions
-> involved in the real call frame is much too big, leaving room for that
-> stale information to lay around.
+I guess that you want static inline on those functions...
 
-Getting information about the frames being too big is a useful side effect. I don’t think the omission of historical frames from the stack traces needs to eliminate that. In particular, we could print the stack depth, frame size and number of possible pointers to kernel code spotted in the frame alongside the stack frames that we obtain from unwinding the stack.
 
->> Having said that, your complaint that '?' entries can make reading of
->> back traces more difficult is valid as well - so maybe we can do
->> something about that.
+> Still on uml on x86_64 defconfig:
 > 
-> Quite frankly, I'd much rather just remove the annoying hex numbers
-> that are imnsho *much* more distracting. Possibly even the "/0xsize"
-> part (although that is at least somewhat useful to judge where in the
-> function it is).
+>   LD      init/built-in.o
+> init/version.o: In function `rcu_sysrq_start':
+> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
+> init/main.o:include/linux/rcupdate.h:258: first defined here
+> init/version.o: In function `rcu_sysrq_end':
+> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
+> init/main.o:include/linux/rcupdate.h:261: first defined here
+> init/mounts.o: In function `rcu_sysrq_start':
+> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
+> init/main.o:include/linux/rcupdate.h:258: first defined here
+> init/mounts.o: In function `rcu_sysrq_end':
+> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
+> init/main.o:include/linux/rcupdate.h:261: first defined here
+> init/noinitramfs.o: In function `rcu_sysrq_start':
+> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
+> init/main.o:include/linux/rcupdate.h:258: first defined here
+> init/noinitramfs.o: In function `rcu_sysrq_end':
+> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
+> init/main.o:include/linux/rcupdate.h:261: first defined here
+> init/init_task.o: In function `rcu_sysrq_start':
+> include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
+> init/main.o:include/linux/rcupdate.h:258: first defined here
+> init/init_task.o: In function `rcu_sysrq_end':
+> include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
+> init/main.o:include/linux/rcupdate.h:261: first defined here
+> make[2]: *** [init/built-in.o] Error 1
 > 
-> And while it would be horrible for readability, it might also be a
-> good idea to replace the newlines with something like " -> " instead,
-> because we are quite often vertically challenged. But that could
-> really make things pretty unreadable.
 > 
-> So to take your example, it might be something like this
 > 
-> arch_trigger_all_cpu_backtrace+0x3c -> do_raw_spin_lock+0xb7
-> -> _raw_spin_lock_irqsave+0x35 -> ? prepare_to_wait+0x18
-> -> prepare_to_wait+0x18 -> ? generic_make_request+0x80
-> -> ? unmap_underlying_metadata+0x2e -> __wait_on_bit+0x20
-> -> ? submit_bio+0xd2 -> out_of_line_wait_on_bit+0x54
-> -> ? unmap_underlying_metadata+0x2e -> ? autoremove_wake_function+0x31
-> -> __wait_on_buffer+0x1b -> __ext3_get_inode_loc+0x1ef -> ext3_iget+0x45
-> -> ext3_lookup+0x97 -> lookup_real+0x20 -> __lookup_hash+0x2a
-> -> lookup_slow+0x36 -> path_lookupat+0xf9 -> filename_lookup+0x1f
-> -> user_path_at_empty+0x3f -> user_path_at+0xd -> vfs_fstatat+0x40
-> -> ? lg_local_unlock+0x31 -> vfs_stat+0x13 -> sys_stat64+0x11
-> -> ? __fput+0x187 -> ? restore_all+0xf -> ? trace_hardirqs_on_thunk+0xc
-> -> syscall_call+0x7
+>>
+>> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+>> index a6f2664a1b77..3f53c96b3b77 100644
+>> --- a/include/linux/rcupdate.h
+>> +++ b/include/linux/rcupdate.h
+>> @@ -248,6 +248,18 @@ void rcu_idle_exit(void);
+>>  void rcu_irq_enter(void);
+>>  void rcu_irq_exit(void);
+>>  
+>> +#ifdef CONFIG_RCU_STALL_COMMON
+>> +void rcu_sysrq_start(void);
+>> +void rcu_sysrq_end(void);
+>> +#else /* #ifdef CONFIG_RCU_STALL_COMMON */
+>> +void rcu_sysrq_start(void)
+>> +{
+>> +}
+>> +void rcu_sysrq_end(void)
+>> +{
+>> +}
+>> +#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
+>> +
+>>  #ifdef CONFIG_RCU_USER_QS
+>>  void rcu_user_enter(void);
+>>  void rcu_user_exit(void);
+>> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+>> index ed7a0d72562c..a2aeb4df0f60 100644
+>> --- a/kernel/rcu/update.c
+>> +++ b/kernel/rcu/update.c
+>> @@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
+>>  	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
+>>  }
+>>  
+>> +void rcu_sysrq_start(void)
+>> +{
+>> +	if (!rcu_cpu_stall_suppress)
+>> +		rcu_cpu_stall_suppress = 2;
+>> +}
+>> +
+>> +void rcu_sysrq_end(void)
+>> +{
+>> +	if (rcu_cpu_stall_suppress == 2)
+>> +		rcu_cpu_stall_suppress = 0;
+>> +}
+>> +
+>>  static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+>>  {
+>>  	rcu_cpu_stall_suppress = 1;
+>>
 > 
-> which is admittedly complete line noise, but is just 13 lines rather
-> than 31. That can sometimes be a really big deal.
 > 
-> Also, we might want to cap the number of lines regardless. It is true
-> that sometimes the really deep call chains can be interesting, but
-> equally often they make other important stuff scroll off the screen
-> (oopses that don't get caught in /sys/log/messages because they kill
-> the machine are the worst to debug, and we still end up having people
-> send pictures taken with digital cameras of them), so it's a "win
-> some, lose some" kind of thing.
-> 
-> Of course, the questionable stale entries on the stack can (and do)
-> make the whole "scroll off the screen" thing worse. So I dunno.
-> 
->              Linus
 
-I suppose one option would be to write a patch to make this configurable via sysctl, throw it into staging so only kernel developers have access to it (I hope) and then try out each of these variations on our own machines to see which one we like best. The patch I submitted to the list is one that I am using myself and I have come to really like having only stack frames described by frame pointers printed. I think others who try more condensed stacks will come to like them too.
 
-If you are interested in doing that experiment, I could put a patch together to do it.
+-- 
+~Randy
