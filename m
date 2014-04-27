@@ -1,64 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaD0QPP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 12:15:15 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:57630 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865AbaD0QPM (ORCPT
+	id S1753481AbaD0QP5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 12:15:57 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:59283 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753260AbaD0QPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 12:15:12 -0400
+	Sun, 27 Apr 2014 12:15:16 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
-Date: Sun, 27 Apr 2014 21:44:31 +0530
-Message-Id: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V1 01/22] vfs: Add generic IS_ACL() test for acl support
+Date: Sun, 27 Apr 2014 21:44:32 +0530
+Message-Id: <1398615293-22931-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042716-9264-0000-0000-000005F5F04F
+x-cbid: 14042716-1396-0000-0000-000004BED8F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Andreas Gruenbacher <agruen@kernel.org>
 
-As per LSF/MM summit discussion I am reposting the richacl patchset for
-upstream inclusion. The patchset includes minimal changes required to implement
-a new acl model similar to NFSv4 ACL. The acl model selection is based on
-file system feature flag. 
+When IS_POSIXACL() is true, the vfs does not apply the umask.  Other acl
+models will need the same exception, so introduce a separate IS_ACL()
+test.
 
-The following set of patches implements VFS and ext4 changes needed to implement
-a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-extended by file masks to fit into the standard POSIX file permission model.
-They are designed to work seamlessly locally as well as across the NFSv4 and
-CIFS/SMB2 network file system protocols.
+The IS_POSIX_ACL() test is still needed so that nfsd can determine when
+the underlying file system supports POSIX ACLs (as opposed to some other
+kind).
 
-A user-space utility for displaying and changing richacls is available at [1]
-(a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/namei.c              | 8 ++++----
+ include/linux/fs.h      | 6 ++++++
+ include/uapi/linux/fs.h | 2 +-
+ 3 files changed, 11 insertions(+), 5 deletions(-)
 
-[1] git://github.com/kvaneesh/richacl-tools.git master
-
-To test richacl on ext4, create the file sytem with richacl feature flag
-(mkfs.ext4 -O richacl or  tune2fs -O richacl). With richacl feature enabled
-using mount option "acl" will switch to using richacl instead of posixacl.
-
-More details regarding richacl can be found at
-http://acl.bestbits.at/richacl/
-
-Previous posting of the patchset can be found at:
-http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
-"[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
-
-The complete patchset can also be found at:
-https://github.com/kvaneesh/linux/commits/richacl-for-upstream
-
-Since we are trying to get the changes merged upstream after a long time, I am
-posting this as V1 again. I Also dropped the Acked-by tag from
-David Howells <dhowells@redhat.com> and J. Bruce Fields <bfields@redhat.com>.
-Please let me know if I can add them back again.
-
--aneesh
+diff --git a/fs/namei.c b/fs/namei.c
+index c6157c894fce..c7fee619691f 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2650,7 +2650,7 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
+ 	}
+ 
+ 	mode = op->mode;
+-	if ((open_flag & O_CREAT) && !IS_POSIXACL(dir))
++	if ((open_flag & O_CREAT) && !IS_ACL(dir))
+ 		mode &= ~current_umask();
+ 
+ 	excl = (open_flag & (O_EXCL | O_CREAT)) == (O_EXCL | O_CREAT);
+@@ -2834,7 +2834,7 @@ static int lookup_open(struct nameidata *nd, struct path *path,
+ 	/* Negative dentry, just create the file */
+ 	if (!dentry->d_inode && (op->open_flag & O_CREAT)) {
+ 		umode_t mode = op->mode;
+-		if (!IS_POSIXACL(dir->d_inode))
++		if (!IS_ACL(dir->d_inode))
+ 			mode &= ~current_umask();
+ 		/*
+ 		 * This write is needed to ensure that a
+@@ -3422,7 +3422,7 @@ retry:
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+-	if (!IS_POSIXACL(path.dentry->d_inode))
++	if (!IS_ACL(path.dentry->d_inode))
+ 		mode &= ~current_umask();
+ 	error = security_path_mknod(&path, dentry, mode, dev);
+ 	if (error)
+@@ -3491,7 +3491,7 @@ retry:
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 
+-	if (!IS_POSIXACL(path.dentry->d_inode))
++	if (!IS_ACL(path.dentry->d_inode))
+ 		mode &= ~current_umask();
+ 	error = security_path_mkdir(&path, dentry, mode);
+ 	if (!error)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 7a9c5bca2b76..9fb63b71a014 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1611,6 +1611,12 @@ struct super_operations {
+ #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+ 
+ /*
++ * IS_ACL() tells the VFS to not apply the umask
++ * and use check_acl for acl permission checks when defined.
++ */
++#define IS_ACL(inode)		__IS_FLG(inode, MS_POSIXACL)
++
++/*
+  * Inode state bits.  Protected by inode->i_lock
+  *
+  * Three bits determine the dirty state of the inode, I_DIRTY_SYNC,
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index ca1a11bb4443..1e14b9c82703 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -80,7 +80,7 @@ struct inodes_stat_t {
+ #define MS_VERBOSE	32768	/* War is peace. Verbosity is silence.
+ 				   MS_VERBOSE is deprecated. */
+ #define MS_SILENT	32768
+-#define MS_POSIXACL	(1<<16)	/* VFS does not apply the umask */
++#define MS_POSIXACL	(1<<16)	/* Supports POSIX ACLs */
+ #define MS_UNBINDABLE	(1<<17)	/* change to unbindable */
+ #define MS_PRIVATE	(1<<18)	/* change to private */
+ #define MS_SLAVE	(1<<19)	/* change to slave */
+-- 
+1.9.1
 
