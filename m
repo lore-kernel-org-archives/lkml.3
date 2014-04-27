@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaD0LeI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 07:34:08 -0400
-Received: from mail.kernel.org ([198.145.19.201]:43655 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099AbaD0LeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 07:34:06 -0400
-Date: Sun, 27 Apr 2014 13:33:59 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv3 07/14] HSI: Add common DT binding for HSI client devices
-Message-ID: <20140427113358.GB2092@earth.universe>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-8-git-send-email-sre@kernel.org>
- <20140419191612.GG5148@amd.pavel.ucw.cz>
- <20140425182535.GB22721@earth.universe>
- <20140425205926.GA30032@earth.universe>
- <20140427105755.GA12265@amd.pavel.ucw.cz>
+	id S1753101AbaD0Lta (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 07:49:30 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:55028 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367AbaD0Lt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 07:49:29 -0400
+Date: Sun, 27 Apr 2014 13:49:24 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf x86: Fix perf to use non-executable stack, again
+Message-ID: <20140427114924.GB21935@gmail.com>
+References: <1398538965-10620-1-git-send-email-minipli@googlemail.com>
+ <20140427092649.GA1111@krava.brq.redhat.com>
+ <CA+rthh_-nbyb=9TU5X=2gDMMgzngU6LqLejRMU8GNvrDZ1kVTA@mail.gmail.com>
+ <20140427103915.GC1111@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="xXmbgvnjoT4axfJE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140427105755.GA12265@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140427103915.GC1111@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-On Sun, Apr 27, 2014 at 12:57:55PM +0200, Pavel Machek wrote:
-> On Fri 2014-04-25 22:59:27, Sebastian Reichel wrote:
-> > On Fri, Apr 25, 2014 at 08:25:36PM +0200, Sebastian Reichel wrote:
-> > > On Sat, Apr 19, 2014 at 09:16:12PM +0200, Pavel Machek wrote:
-> > > > On Sat 2014-03-29 01:31:43, Sebastian Reichel wrote:
-> > > > > Implement and document generic DT bindings for HSI clients.
-> > > > >=20
-> > > > > Signed-off-by: Sebastian Reichel <sre@kernel.org>
-> > > >=20
-> > > > Reviewed-by: Pavel Machek <pavel@ucw.cz>
-> > > >=20
-> > > > > diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
-> > > > > index 07e1639..5973906 100644
-> > > > > --- a/drivers/hsi/hsi.c
-> > > > > +++ b/drivers/hsi/hsi.c
-> > > > > @@ -26,8 +26,14 @@
-> > > > >  #include <linux/slab.h>
-> > > > >  #include <linux/string.h>
-> > > > >  #include <linux/notifier.h>
-> > > > > +#include <linux/of.h>
-> > > > > +#include <linux/of_device.h>
-> > > > >  #include "hsi_core.h"
-> > > >=20
-> > > >=20
-> > > > > +	err =3D hsi_of_property_parse_mode(client, "hsi-mode", &mode);
-> > > > > +	if (err) {
-> > > > > +		err =3D hsi_of_property_parse_mode(client, "hsi-rx-mode",
-> > > > > +						 &cl->rx_cfg.mode);
-> > > > > +		if (err)
-> > > > > +			goto err;
-> > > > > +
-> > > > > +		err =3D hsi_of_property_parse_mode(client, "hsi-tx-mode",
-> > > > > +						 &cl->tx_cfg.mode);
-> > > > > +		if (err)
-> > > > > +			goto err;
-> > > >=20
-> > > > Will this need some #ifdef CONFIG_OF?
-> > >=20
-> > > It would only be needed to reduce the amount of kernel code for
-> > > disabled Device Tree. I don't think its worth it, since there is no
-> > > platform in the mainline kernel, which uses HSI without DT.
-> >=20
-> > mh actually it is needed, since there is no stub provided for
-> > of_modalias_node in non DT mode (there are stubs for all other
-> > of_* methods used). I will include the ifdef in PATCHv5.
->=20
-> Alternatively, you can make driver depend on DT...
+> On Sun, Apr 27, 2014 at 12:03:50PM +0200, Mathias Krause wrote:
+> 
+> SNIP
+> 
+> > >> 1.7.10.4
+> > >>
+> > >
+> > > hum, how about fixing this once and for all.. ;-)
+> > > please check attached patch, thanks
+> > 
+> > Yeah, I thought about this option too but declined it for two reasons:
+> > 1/ The kernel sources should provide good quality examples, even for
+> > usage outside of the kernel. Imagine somebody taking the memcpy
+> > implementation for his own project but not copying the LDFLAGS. That
+> > would make his code have an executable stack while with the .GNU-stack
+> > marker in the assembler file it won't.
+> 
+> that 'somebody' should check/know better ;-) but ok, fair enough
+> 
+> > 2/ What if somebody tries to add/link code to perf that makes use of
+> > nested functions? That'll make perf fail as the trampoline code
+> > generated by gcc won't be executable due to the enforced
+> > non-executable stack by -Wl,-z,noexecstack.
+> 
+> I guess in that case he would change the Makefile as well?
+> 
+> anyway I have no objection for leaving that code in assembly
+> objects, but I suggest we use the global option as well to
+> prevent any future surprise..
 
-I would be ok with making individual HSI client or controller
-drivers dependent on DT, but I don't think its a good idea to make
-the whole HSI framework dependent on DT.
+Correct. Regression in this area is 'silent' and can go unnoticed for 
+long, because it has no functional side effects. So being defensive 
+and forcing the secure option we want is important.
 
--- Sebastian
+That way if an executable stack is needed by a patch then perf will 
+break visibly, and the patch that relies on an executable stack can be 
+fixed ...
 
---xXmbgvnjoT4axfJE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So for the combo solution:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-iQIcBAEBCgAGBQJTXOsmAAoJENju1/PIO/qa13EP/00riztm9sWYM+GJm/smFZDj
-cNdD4rMEyh5qSn/NVXkATuJAqzLBW4u5iX4KYnk25cBc/f6Hl3JYidlHpRuT95Lb
-cnAaYN9bMNdOie3vNBV+QN9bcoVtcADgq7N+Ad/vLbkoFCKX/G8yqz/bQ56nZJZG
-79IBCF0SfSJ6SHZHeCwIYlqri15bWLuN+E3o2J+FjhYOOK+jfMuo718G1asOfEye
-moyPsYC1sn4iWegqd4SrzYEVnyGC67uRC5CUSolsCnalyR4/KXpyB9MtV/K4Q4ew
-WQsxIzmYclxCYaZzinqP3dAqSQJOaoy9vDzwyZ8QJOa3MtgWaTnkoI1roK6Sr2tq
-Di2oqCWZlB8sLA/UC/wEFZMbCwKoE6EAVh5wOWimBA7veOT6fNIPxVgVZ4iQr/h6
-wXgIGSmVuqvpVUetmMx2Q+nFGF/LTWMzGwANw00mefU/XygJzqFMZ8GhDjq/tabg
-pGLTpXLFcQB3sp4tjpVqlDGN4s+2jr6plLyhDPq9JJknjPpOKU5kH2uawpyXO2SN
-4W6WWxWpUWastkE+cBXjjXbfhvF7dhNJxRSKAFJOBTHsFkXGaxUEwZofkd46TPNo
-6qkXM6/5EwUAuO9bXampWuvNEOXeTZJl20IuLFn5WWpaNKKcxQMnGwZP5blRj0em
-AXTtQhrgtauTRtMeaNEO
-=Dzyn
------END PGP SIGNATURE-----
+Thanks,
 
---xXmbgvnjoT4axfJE--
+	Ingo
