@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaD0Ocx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 10:32:53 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:59001 "EHLO
+	id S1753430AbaD0Oez (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 10:34:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39244 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752735AbaD0Obn (ORCPT
+	by vger.kernel.org with ESMTP id S1750843AbaD0Oew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 10:31:43 -0400
-Message-Id: <20140427143140.235594430@goodmis.org>
+	Sun, 27 Apr 2014 10:34:52 -0400
+Message-Id: <20140427143451.418167100@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sun, 27 Apr 2014 10:31:20 -0400
+Date: Sun, 27 Apr 2014 10:34:31 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
@@ -18,18 +18,18 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 1/4] net: gianfar: do not disable interrupts
-References: <20140427143119.898655303@goodmis.org>
+Subject: [PATCH RT 1/3] net: gianfar: do not disable interrupts
+References: <20140427143430.589333461@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline; filename=0001-net-gianfar-do-not-disable-interrupts.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10.37-rt38-rc1 stable review patch.
+3.8.13.14-rt31-rc1 stable review patch.
 If anyone has any objections, please let me know.
 
 ------------------
@@ -57,10 +57,10 @@ Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
  3 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-index 0343a14..5c0efcc 100644
+index 5c53535..f11aa5a 100644
 --- a/drivers/net/ethernet/freescale/gianfar.c
 +++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -1274,7 +1274,7 @@ static int gfar_suspend(struct device *dev)
+@@ -1263,7 +1263,7 @@ static int gfar_suspend(struct device *dev)
  
  	if (netif_running(ndev)) {
  
@@ -69,7 +69,7 @@ index 0343a14..5c0efcc 100644
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -1292,7 +1292,7 @@ static int gfar_suspend(struct device *dev)
+@@ -1281,7 +1281,7 @@ static int gfar_suspend(struct device *dev)
  
  		unlock_rx_qs(priv);
  		unlock_tx_qs(priv);
@@ -78,7 +78,7 @@ index 0343a14..5c0efcc 100644
  
  		disable_napi(priv);
  
-@@ -1334,7 +1334,7 @@ static int gfar_resume(struct device *dev)
+@@ -1323,7 +1323,7 @@ static int gfar_resume(struct device *dev)
  	/* Disable Magic Packet mode, in case something
  	 * else woke us up.
  	 */
@@ -87,7 +87,7 @@ index 0343a14..5c0efcc 100644
  	lock_tx_qs(priv);
  	lock_rx_qs(priv);
  
-@@ -1346,7 +1346,7 @@ static int gfar_resume(struct device *dev)
+@@ -1335,7 +1335,7 @@ static int gfar_resume(struct device *dev)
  
  	unlock_rx_qs(priv);
  	unlock_tx_qs(priv);
@@ -96,7 +96,7 @@ index 0343a14..5c0efcc 100644
  
  	netif_device_attach(ndev);
  
-@@ -2346,7 +2346,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+@@ -2324,7 +2324,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
  	u32 tempval;
  
  	regs = priv->gfargrp[0].regs;
@@ -104,8 +104,8 @@ index 0343a14..5c0efcc 100644
 +	local_irq_save_nort(flags);
  	lock_rx_qs(priv);
  
- 	if (features & NETIF_F_HW_VLAN_CTAG_TX) {
-@@ -2379,7 +2379,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+ 	if (features & NETIF_F_HW_VLAN_TX) {
+@@ -2356,7 +2356,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
  	gfar_change_mtu(dev, dev->mtu);
  
  	unlock_rx_qs(priv);
@@ -114,9 +114,9 @@ index 0343a14..5c0efcc 100644
  }
  
  static int gfar_change_mtu(struct net_device *dev, int new_mtu)
-@@ -3258,14 +3258,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
+@@ -3226,14 +3226,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
  			dev->stats.tx_dropped++;
- 			atomic64_inc(&priv->extra_stats.tx_underrun);
+ 			priv->extra_stats.tx_underrun++;
  
 -			local_irq_save(flags);
 +			local_irq_save_nort(flags);
@@ -132,10 +132,10 @@ index 0343a14..5c0efcc 100644
  		netif_dbg(priv, tx_err, dev, "Transmit Error\n");
  	}
 diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-index 21cd881..c965c0a 100644
+index ab6762c..bc450e2 100644
 --- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
 +++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-@@ -501,7 +501,7 @@ static int gfar_sringparam(struct net_device *dev,
+@@ -504,7 +504,7 @@ static int gfar_sringparam(struct net_device *dev,
  		/* Halt TX and RX, and process the frames which
  		 * have already been received
  		 */
@@ -144,7 +144,7 @@ index 21cd881..c965c0a 100644
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -509,7 +509,7 @@ static int gfar_sringparam(struct net_device *dev,
+@@ -512,7 +512,7 @@ static int gfar_sringparam(struct net_device *dev,
  
  		unlock_rx_qs(priv);
  		unlock_tx_qs(priv);
@@ -153,7 +153,7 @@ index 21cd881..c965c0a 100644
  
  		for (i = 0; i < priv->num_rx_queues; i++)
  			gfar_clean_rx_ring(priv->rx_queue[i],
-@@ -552,7 +552,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+@@ -555,7 +555,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
  		/* Halt TX and RX, and process the frames which
  		 * have already been received
  		 */
@@ -162,7 +162,7 @@ index 21cd881..c965c0a 100644
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -560,7 +560,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+@@ -563,7 +563,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
  
  		unlock_tx_qs(priv);
  		unlock_rx_qs(priv);
@@ -172,7 +172,7 @@ index 21cd881..c965c0a 100644
  		for (i = 0; i < priv->num_rx_queues; i++)
  			gfar_clean_rx_ring(priv->rx_queue[i],
 diff --git a/drivers/net/ethernet/freescale/gianfar_sysfs.c b/drivers/net/ethernet/freescale/gianfar_sysfs.c
-index acb55af..f0160e67 100644
+index cd14a4d..da304d2 100644
 --- a/drivers/net/ethernet/freescale/gianfar_sysfs.c
 +++ b/drivers/net/ethernet/freescale/gianfar_sysfs.c
 @@ -68,7 +68,7 @@ static ssize_t gfar_set_bd_stash(struct device *dev,
