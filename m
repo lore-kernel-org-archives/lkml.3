@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251AbaD0WTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 18:19:15 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:54998 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbaD0WTN (ORCPT
+	id S1754410AbaD0WUT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 18:20:19 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:49969 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753992AbaD0WUS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 18:19:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
-References: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
-Date: Sun, 27 Apr 2014 15:19:12 -0700
-X-Google-Sender-Auth: t42KXwYWpqBLqX-HFz6ET2zlfEM
-Message-ID: <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
-Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
- rtl28xxu driver
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Brian Healy <healybrian@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 27 Apr 2014 18:20:18 -0400
+Subject: Re: [PATCH 1/5] staging/lustre/lnet: fix potential null pointer dereference
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140427230548.347fbb21@alan.etchedpixels.co.uk>
+Date: Sun, 27 Apr 2014 18:19:59 -0400
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Dmitry Eremin <dmitry.eremin@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0B38703A-0903-469F-B2A3-D71E7E1D19E9@linuxhacker.ru>
+References: <1398633446-16719-1-git-send-email-green@linuxhacker.ru> <1398633446-16719-2-git-send-email-green@linuxhacker.ru> <20140427230548.347fbb21@alan.etchedpixels.co.uk>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brian, please use
+On Apr 27, 2014, at 6:05 PM, One Thousand Gnomes wrote:
 
- ./scripts/get_maintainer -f drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+>> Reviewed-by: John L. Hammond <john.hammond@intel.com>
+>> Reviewed-by: Isaac Huang <he.huang@intel.com>
+>> Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+>> ---
+>> drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c | 4 ++--
+>> 1 file changed, 2 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+>> index 21d36ee..516f623 100644
+>> --- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+>> +++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd.c
+>> @@ -829,14 +829,14 @@ ksocknal_select_ips(ksock_peer_t *peer, __u32 *peerips, int n_peerips)
+>> 				best_npeers = iface->ksni_npeers;
+>> 			}
+>> 
+>> +			LASSERT(best_iface != NULL);
+>> +
+> 
+> And this solves the problem how ???
 
-to get the proper people to send this to, so that it doesn't get lost
-in the flood in lkml.
-
-The indentation of that new entry also seems to be suspect, in that it
-doesn't match the ones around it.
-
-Quoting full email for context for people added.
-
-             Linus
-
-On Sat, Apr 26, 2014 at 9:36 AM, Brian Healy <healybrian@gmail.com> wrote:
-> [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for rtl28xxu driver
->
-> Signed-off-by: Brian Healy <healybrian<at>gmail.com>
->
->
-> --- drivers/media/usb/dvb-usb-v2/rtl28xxu.c.orig    2014-04-26
-> 17:02:36.068691000 +0100
-> +++ drivers/media/usb/dvb-usb-v2/rtl28xxu.c    2014-04-26
-> 17:03:11.944691000 +0100
-> @@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28x
->          &rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
->      { DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
->          &rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-> +        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-> +                &rtl2832u_props, "Peak DVB-T USB", NULL) },
->
->      /* RTL2832P devices: */
->      { DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+This does not really solve anything.
+Just moves the check to where it's actually going to do anything instead of the check being guarded by the NULL pointer access earlier on.
+Could have been removed instead of course to just get an oops at all times.
