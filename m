@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaD0RIs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 13:08:48 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:48148 "EHLO fiona.linuxhacker.ru"
+	id S1754611AbaD0RJX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 13:09:23 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:48161 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754497AbaD0RIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 13:08:44 -0400
+	id S1754565AbaD0RIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 13:08:51 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Li Xi <lixi@ddn.com>, James Simmons <uja.ornl@gmail.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH 42/47] staging/lustre: remove assertion of spin_is_locked()
-Date: Sun, 27 Apr 2014 13:07:06 -0400
-Message-Id: <1398618431-29757-43-git-send-email-green@linuxhacker.ru>
+Cc: Oleg Drokin <green@linuxhacker.ru>, Oleg Drokin <oleg.drokin@intel.com>
+Subject: [PATCH 46/47] staging/lustre: Fix unsafe userspace access in many proc files
+Date: Sun, 27 Apr 2014 13:07:10 -0400
+Message-Id: <1398618431-29757-47-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
 References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
@@ -21,312 +20,334 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Xi <lixi@ddn.com>
+Apparently we are pretty bad about verifying our buffers passed
+from userspace.
 
-spin_is_locked() is always false when the platform is
-uniprocessor and CONFIG_DEBUG_SPINLOCK is not enabled.
-This patch replaces its assertion by assert_spin_locked().
-
-Signed-off-by: Li Xi <lixi@ddn.com>
-Signed-off-by: James Simmons <uja.ornl@gmail.com>
-Reviewed-on: http://review.whamcloud.com/8144
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4199
-Reviewed-by: Alexey Lyashkov <alexey_lyashkov@xyratex.com>
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+Reviewed-on: http://review.whamcloud.com/9059
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4563
+Reviewed-by: Dmitry Eremin <dmitry.eremin@intel.com>
+Reviewed-by: James Simmons <uja.ornl@gmail.com>
 ---
- drivers/staging/lustre/include/linux/libcfs/linux/linux-lock.h | 2 +-
- drivers/staging/lustre/lustre/include/lustre_dlm.h             | 2 +-
- drivers/staging/lustre/lustre/include/lustre_net.h             | 2 +-
- drivers/staging/lustre/lustre/lov/lov_merge.c                  | 4 ++--
- drivers/staging/lustre/lustre/obdclass/cl_lock.c               | 2 +-
- drivers/staging/lustre/lustre/obdclass/cl_object.c             | 4 ++--
- drivers/staging/lustre/lustre/obdclass/cl_page.c               | 2 +-
- drivers/staging/lustre/lustre/osc/osc_cache.c                  | 4 ++--
- drivers/staging/lustre/lustre/osc/osc_cl_internal.h            | 9 +++++++++
- drivers/staging/lustre/lustre/ptlrpc/client.c                  | 8 +++-----
- drivers/staging/lustre/lustre/ptlrpc/gss/gss_pipefs.c          | 4 ++--
- drivers/staging/lustre/lustre/ptlrpc/import.c                  | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c            | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/pinger.c                  | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c                | 2 +-
- drivers/staging/lustre/lustre/ptlrpc/service.c                 | 4 ++--
- 16 files changed, 31 insertions(+), 24 deletions(-)
+ drivers/staging/lustre/lustre/fid/lproc_fid.c      | 41 +++++++---
+ .../lustre/lustre/include/lustre/lustre_idl.h      |  2 +-
+ drivers/staging/lustre/lustre/llite/lproc_llite.c  | 91 +++++++++++++++++-----
+ .../lustre/lustre/obdclass/linux/linux-module.c    |  9 ++-
+ drivers/staging/lustre/lustre/osc/lproc_osc.c      | 16 +++-
+ 5 files changed, 124 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/linux-lock.h b/drivers/staging/lustre/include/linux/libcfs/linux/linux-lock.h
-index d6e00f9..b75e401 100644
---- a/drivers/staging/lustre/include/linux/libcfs/linux/linux-lock.h
-+++ b/drivers/staging/lustre/include/linux/libcfs/linux/linux-lock.h
-@@ -66,7 +66,7 @@
-  * - spin_unlock(x)
-  * - spin_unlock_bh(x)
-  * - spin_trylock(x)
-- * - spin_is_locked(x)
-+ * - assert_spin_locked(x)
-  *
-  * - spin_lock_irq(x)
-  * - spin_lock_irqsave(x, f)
-diff --git a/drivers/staging/lustre/lustre/include/lustre_dlm.h b/drivers/staging/lustre/lustre/include/lustre_dlm.h
-index e28e31a..0c6b784 100644
---- a/drivers/staging/lustre/lustre/include/lustre_dlm.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_dlm.h
-@@ -1445,7 +1445,7 @@ static inline void unlock_res(struct ldlm_resource *res)
- /** Check if resource is already locked, assert if not. */
- static inline void check_res_locked(struct ldlm_resource *res)
- {
--	LASSERT(spin_is_locked(&res->lr_lock));
-+	assert_spin_locked(&res->lr_lock);
- }
+diff --git a/drivers/staging/lustre/lustre/fid/lproc_fid.c b/drivers/staging/lustre/lustre/fid/lproc_fid.c
+index ddd813c..6f5674d 100644
+--- a/drivers/staging/lustre/lustre/fid/lproc_fid.c
++++ b/drivers/staging/lustre/lustre/fid/lproc_fid.c
+@@ -54,32 +54,49 @@
+ #include <lustre_fid.h>
+ #include "fid_internal.h"
  
- struct ldlm_resource * lock_res_and_lock(struct ldlm_lock *lock);
-diff --git a/drivers/staging/lustre/lustre/include/lustre_net.h b/drivers/staging/lustre/lustre/include/lustre_net.h
-index 7640e17..f6b7d10 100644
---- a/drivers/staging/lustre/lustre/include/lustre_net.h
-+++ b/drivers/staging/lustre/lustre/include/lustre_net.h
-@@ -719,7 +719,7 @@ struct ptlrpc_nrs_pol_ops {
- 	 *			 \a nrq
- 	 * \param[in,out] nrq	 The request
- 	 *
--	 * \pre spin_is_locked(&svcpt->scp_req_lock)
-+	 * \pre assert_spin_locked(&svcpt->scp_req_lock)
- 	 *
- 	 * \see ptlrpc_nrs_req_stop_nolock()
- 	 */
-diff --git a/drivers/staging/lustre/lustre/lov/lov_merge.c b/drivers/staging/lustre/lustre/lov/lov_merge.c
-index 0a14cee..da959e9 100644
---- a/drivers/staging/lustre/lustre/lov/lov_merge.c
-+++ b/drivers/staging/lustre/lustre/lov/lov_merge.c
-@@ -58,7 +58,7 @@ int lov_merge_lvb_kms(struct lov_stripe_md *lsm,
- 	int i;
- 	int rc = 0;
- 
--	LASSERT(spin_is_locked(&lsm->lsm_lock));
-+	assert_spin_locked(&lsm->lsm_lock);
- 	LASSERT(lsm->lsm_lock_owner == current_pid());
- 
- 	CDEBUG(D_INODE, "MDT ID "DOSTID" initial value: s="LPU64" m="LPU64
-@@ -145,7 +145,7 @@ int lov_adjust_kms(struct obd_export *exp, struct lov_stripe_md *lsm,
- 	int stripe = 0;
- 	__u64 kms;
- 
--	LASSERT(spin_is_locked(&lsm->lsm_lock));
-+	assert_spin_locked(&lsm->lsm_lock);
- 	LASSERT(lsm->lsm_lock_owner == current_pid());
- 
- 	if (shrink) {
-diff --git a/drivers/staging/lustre/lustre/obdclass/cl_lock.c b/drivers/staging/lustre/lustre/obdclass/cl_lock.c
-index f8040a8..df77c4f 100644
---- a/drivers/staging/lustre/lustre/obdclass/cl_lock.c
-+++ b/drivers/staging/lustre/lustre/obdclass/cl_lock.c
-@@ -478,7 +478,7 @@ static struct cl_lock *cl_lock_lookup(const struct lu_env *env,
- 	struct cl_object_header *head;
- 
- 	head = cl_object_header(obj);
--	LINVRNT(spin_is_locked(&head->coh_lock_guard));
-+	assert_spin_locked(&head->coh_lock_guard);
- 	CS_LOCK_INC(obj, lookup);
- 	list_for_each_entry(lock, &head->coh_locks, cll_linkage) {
- 		int matched;
-diff --git a/drivers/staging/lustre/lustre/obdclass/cl_object.c b/drivers/staging/lustre/lustre/obdclass/cl_object.c
-index 2837cbc..41cbc95 100644
---- a/drivers/staging/lustre/lustre/obdclass/cl_object.c
-+++ b/drivers/staging/lustre/lustre/obdclass/cl_object.c
-@@ -220,7 +220,7 @@ int cl_object_attr_get(const struct lu_env *env, struct cl_object *obj,
- 	struct lu_object_header *top;
- 	int result;
- 
--	LASSERT(spin_is_locked(cl_object_attr_guard(obj)));
-+	assert_spin_locked(cl_object_attr_guard(obj));
- 
- 	top = obj->co_lu.lo_header;
- 	result = 0;
-@@ -251,7 +251,7 @@ int cl_object_attr_set(const struct lu_env *env, struct cl_object *obj,
- 	struct lu_object_header *top;
- 	int result;
- 
--	LASSERT(spin_is_locked(cl_object_attr_guard(obj)));
-+	assert_spin_locked(cl_object_attr_guard(obj));
- 
- 	top = obj->co_lu.lo_header;
- 	result = 0;
-diff --git a/drivers/staging/lustre/lustre/obdclass/cl_page.c b/drivers/staging/lustre/lustre/obdclass/cl_page.c
-index a4b04cb..1b616e4 100644
---- a/drivers/staging/lustre/lustre/obdclass/cl_page.c
-+++ b/drivers/staging/lustre/lustre/obdclass/cl_page.c
-@@ -130,7 +130,7 @@ struct cl_page *cl_page_lookup(struct cl_object_header *hdr, pgoff_t index)
- {
- 	struct cl_page *page;
- 
--	LASSERT(spin_is_locked(&hdr->coh_page_guard));
-+	assert_spin_locked(&hdr->coh_page_guard);
- 
- 	page = radix_tree_lookup(&hdr->coh_tree, index);
- 	if (page != NULL)
-diff --git a/drivers/staging/lustre/lustre/osc/osc_cache.c b/drivers/staging/lustre/lustre/osc/osc_cache.c
-index fe9989a..00f38ee 100644
---- a/drivers/staging/lustre/lustre/osc/osc_cache.c
-+++ b/drivers/staging/lustre/lustre/osc/osc_cache.c
-@@ -1311,7 +1311,7 @@ static int osc_completion(const struct lu_env *env, struct osc_async_page *oap,
- static void osc_consume_write_grant(struct client_obd *cli,
- 				    struct brw_page *pga)
- {
--	LASSERT(spin_is_locked(&cli->cl_loi_list_lock.lock));
-+	assert_spin_locked(&cli->cl_loi_list_lock.lock);
- 	LASSERT(!(pga->flag & OBD_BRW_FROM_GRANT));
- 	atomic_inc(&obd_dirty_pages);
- 	cli->cl_dirty += PAGE_CACHE_SIZE;
-@@ -1326,7 +1326,7 @@ static void osc_consume_write_grant(struct client_obd *cli,
- static void osc_release_write_grant(struct client_obd *cli,
- 				    struct brw_page *pga)
- {
--	LASSERT(spin_is_locked(&cli->cl_loi_list_lock.lock));
-+	assert_spin_locked(&cli->cl_loi_list_lock.lock);
- 	if (!(pga->flag & OBD_BRW_FROM_GRANT)) {
- 		return;
- 	}
-diff --git a/drivers/staging/lustre/lustre/osc/osc_cl_internal.h b/drivers/staging/lustre/lustre/osc/osc_cl_internal.h
-index 9e7899f..e74b7bb 100644
---- a/drivers/staging/lustre/lustre/osc/osc_cl_internal.h
-+++ b/drivers/staging/lustre/lustre/osc/osc_cl_internal.h
-@@ -176,7 +176,16 @@ static inline void osc_object_unlock(struct osc_object *obj)
- 
- static inline int osc_object_is_locked(struct osc_object *obj)
- {
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	return spin_is_locked(&obj->oo_lock);
-+#else
-+	/*
-+	 * It is not perfect to return true all the time.
-+	 * But since this function is only used for assertion
-+	 * and checking, it seems OK.
-+	 */
-+	return 1;
-+#endif
- }
- 
++/* Format: [0x64BIT_INT - 0x64BIT_INT] + 32 bytes just in case */
++#define MAX_FID_RANGE_STRLEN (32 + 2 * 2 * sizeof(__u64))
  /*
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/client.c b/drivers/staging/lustre/lustre/ptlrpc/client.c
-index 2098772..7246e8c 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/client.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/client.c
-@@ -2271,7 +2271,7 @@ static int __ptlrpc_req_finished(struct ptlrpc_request *request, int locked);
+  * Note: this function is only used for testing, it is no safe for production
+  * use.
   */
- void ptlrpc_req_finished_with_imp_lock(struct ptlrpc_request *request)
+-static int
+-lprocfs_fid_write_common(const char *buffer, unsigned long count,
+-			 struct lu_seq_range *range)
++static int lprocfs_fid_write_common(const char __user *buffer, size_t count,
++				    struct lu_seq_range *range)
  {
--	LASSERT(spin_is_locked(&request->rq_import->imp_lock));
-+	assert_spin_locked(&request->rq_import->imp_lock);
- 	(void)__ptlrpc_req_finished(request, 1);
+ 	struct lu_seq_range tmp;
+ 	int rc;
++	char kernbuf[MAX_FID_RANGE_STRLEN];
+ 
+ 	LASSERT(range != NULL);
+ 
+-	rc = sscanf(buffer, "[%llx - %llx]\n",
++	if (count >= sizeof(kernbuf))
++		return -EINVAL;
++
++	if (copy_from_user(kernbuf, buffer, count))
++		return -EFAULT;
++
++	kernbuf[count] = 0;
++
++	if (count == 5 && strcmp(kernbuf, "clear") == 0) {
++		memset(range, 0, sizeof(*range));
++		return count;
++	}
++
++	/* of the form "[0x0000000240000400 - 0x000000028000400]" */
++	rc = sscanf(kernbuf, "[%llx - %llx]\n",
+ 		    (long long unsigned *)&tmp.lsr_start,
+ 		    (long long unsigned *)&tmp.lsr_end);
+-	if (rc != 2 || !range_is_sane(&tmp) || range_is_zero(&tmp))
++	if (!range_is_sane(&tmp) || range_is_zero(&tmp) ||
++	    tmp.lsr_start < range->lsr_start || tmp.lsr_end > range->lsr_end)
+ 		return -EINVAL;
+ 	*range = tmp;
+-	return 0;
++	return count;
  }
- EXPORT_SYMBOL(ptlrpc_req_finished_with_imp_lock);
-@@ -2452,9 +2452,7 @@ void ptlrpc_free_committed(struct obd_import *imp)
- 	bool		       skip_committed_list = true;
  
- 	LASSERT(imp != NULL);
+ /* Client side procfs stuff */
+-static ssize_t
+-lprocfs_fid_space_seq_write(struct file *file, const char *buffer,
+-			    size_t count, loff_t *off)
++static ssize_t lprocfs_fid_space_seq_write(struct file *file,
++					   const char __user *buffer,
++					   size_t count, loff_t *off)
+ {
+ 	struct lu_client_seq *seq = ((struct seq_file *)file->private_data)->private;
+ 	int rc;
+@@ -114,9 +131,9 @@ lprocfs_fid_space_seq_show(struct seq_file *m, void *unused)
+ 	return rc;
+ }
+ 
+-static ssize_t
+-lprocfs_fid_width_seq_write(struct file *file, const char *buffer,
+-			    size_t count, loff_t *off)
++static ssize_t lprocfs_fid_width_seq_write(struct file *file,
++					   const char __user *buffer,
++					   size_t count, loff_t *off)
+ {
+ 	struct lu_client_seq *seq = ((struct seq_file *)file->private_data)->private;
+ 	__u64  max;
+diff --git a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+index abd29bf..83014c9 100644
+--- a/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
++++ b/drivers/staging/lustre/lustre/include/lustre/lustre_idl.h
+@@ -265,7 +265,7 @@ static inline __u64 range_space(const struct lu_seq_range *range)
+ 
+ static inline void range_init(struct lu_seq_range *range)
+ {
+-	range->lsr_start = range->lsr_end = range->lsr_index = 0;
++	memset(range, 0, sizeof(*range));
+ }
+ 
+ /**
+diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+index 6d70c65..77ee9e5 100644
+--- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
++++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
+@@ -367,8 +367,9 @@ static int ll_max_cached_mb_seq_show(struct seq_file *m, void *v)
+ 			cache->ccc_lru_shrinkers);
+ }
+ 
+-static ssize_t ll_max_cached_mb_seq_write(struct file *file, const char *buffer,
+-				      size_t count, loff_t *off)
++static ssize_t ll_max_cached_mb_seq_write(struct file *file,
++					  const char __user *buffer,
++					  size_t count, loff_t *off)
+ {
+ 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
+ 	struct ll_sb_info *sbi = ll_s2sbi(sb);
+@@ -376,9 +377,18 @@ static ssize_t ll_max_cached_mb_seq_write(struct file *file, const char *buffer,
+ 	int mult, rc, pages_number;
+ 	int diff = 0;
+ 	int nrpages = 0;
++	char kernbuf[128];
++
++	if (count >= sizeof(kernbuf))
++		return -EINVAL;
++
++	if (copy_from_user(kernbuf, buffer, count))
++		return -EFAULT;
++	kernbuf[count] = 0;
+ 
+ 	mult = 1 << (20 - PAGE_CACHE_SHIFT);
+-	buffer = lprocfs_find_named_value(buffer, "max_cached_mb:", &count);
++	buffer += lprocfs_find_named_value(kernbuf, "max_cached_mb:", &count) -
++		  kernbuf;
+ 	rc = lprocfs_write_frac_helper(buffer, count, &pages_number, mult);
+ 	if (rc)
+ 		return rc;
+@@ -1163,7 +1173,8 @@ static int ll_rw_extents_stats_pp_seq_show(struct seq_file *seq, void *v)
+ }
+ 
+ static ssize_t ll_rw_extents_stats_pp_seq_write(struct file *file,
+-						const char *buf, size_t len,
++						const char __user *buf,
++						size_t len,
+ 						loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+@@ -1172,10 +1183,24 @@ static ssize_t ll_rw_extents_stats_pp_seq_write(struct file *file,
+ 	int i;
+ 	int value = 1, rc = 0;
+ 
++	if (len == 0)
++		return -EINVAL;
++
+ 	rc = lprocfs_write_helper(buf, len, &value);
+-	if (rc < 0 && (strcmp(buf, "disabled") == 0 ||
+-		       strcmp(buf, "Disabled") == 0))
+-		value = 0;
++	if (rc < 0 && len < 16) {
++		char kernbuf[16];
++
++		if (copy_from_user(kernbuf, buf, len))
++			return -EFAULT;
++		kernbuf[len] = 0;
++
++		if (kernbuf[len - 1] == '\n')
++			kernbuf[len - 1] = 0;
++
++		if (strcmp(kernbuf, "disabled") == 0 ||
++		    strcmp(kernbuf, "Disabled") == 0)
++			value = 0;
++	}
+ 
+ 	if (value == 0)
+ 		sbi->ll_rw_stats_on = 0;
+@@ -1222,8 +1247,9 @@ static int ll_rw_extents_stats_seq_show(struct seq_file *seq, void *v)
+ 	return 0;
+ }
+ 
+-static ssize_t ll_rw_extents_stats_seq_write(struct file *file, const char *buf,
+-					size_t len, loff_t *off)
++static ssize_t ll_rw_extents_stats_seq_write(struct file *file,
++					     const char __user *buf,
++					     size_t len, loff_t *off)
+ {
+ 	struct seq_file *seq = file->private_data;
+ 	struct ll_sb_info *sbi = seq->private;
+@@ -1231,15 +1257,30 @@ static ssize_t ll_rw_extents_stats_seq_write(struct file *file, const char *buf,
+ 	int i;
+ 	int value = 1, rc = 0;
+ 
++	if (len == 0)
++		return -EINVAL;
++
+ 	rc = lprocfs_write_helper(buf, len, &value);
+-	if (rc < 0 && (strcmp(buf, "disabled") == 0 ||
+-		       strcmp(buf, "Disabled") == 0))
+-		value = 0;
++	if (rc < 0 && len < 16) {
++		char kernbuf[16];
++
++		if (copy_from_user(kernbuf, buf, len))
++			return -EFAULT;
++		kernbuf[len] = 0;
++
++		if (kernbuf[len - 1] == '\n')
++			kernbuf[len - 1] = 0;
++
++		if (strcmp(kernbuf, "disabled") == 0 ||
++		    strcmp(kernbuf, "Disabled") == 0)
++			value = 0;
++	}
+ 
+ 	if (value == 0)
+ 		sbi->ll_rw_stats_on = 0;
+ 	else
+ 		sbi->ll_rw_stats_on = 1;
++
+ 	spin_lock(&sbi->ll_pp_extent_lock);
+ 	for (i = 0; i <= LL_PROCESS_HIST_MAX; i++) {
+ 		io_extents->pp_extents[i].pid = 0;
+@@ -1250,7 +1291,6 @@ static ssize_t ll_rw_extents_stats_seq_write(struct file *file, const char *buf,
+ 
+ 	return len;
+ }
 -
--	LASSERT(spin_is_locked(&imp->imp_lock));
--
-+	assert_spin_locked(&imp->imp_lock);
+ LPROC_SEQ_FOPS(ll_rw_extents_stats);
  
- 	if (imp->imp_peer_committed_transno == imp->imp_last_transno_checked &&
- 	    imp->imp_generation == imp->imp_last_generation_checked) {
-@@ -2585,7 +2583,7 @@ void ptlrpc_retain_replayable_request(struct ptlrpc_request *req,
+ void ll_rw_stats_tally(struct ll_sb_info *sbi, pid_t pid,
+@@ -1410,8 +1450,9 @@ static int ll_rw_offset_stats_seq_show(struct seq_file *seq, void *v)
+ 	return 0;
+ }
+ 
+-static ssize_t ll_rw_offset_stats_seq_write(struct file *file, const char *buf,
+-				       size_t len, loff_t *off)
++static ssize_t ll_rw_offset_stats_seq_write(struct file *file,
++					    const char __user *buf,
++					    size_t len, loff_t *off)
  {
- 	struct list_head *tmp;
+ 	struct seq_file *seq = file->private_data;
+ 	struct ll_sb_info *sbi = seq->private;
+@@ -1419,11 +1460,25 @@ static ssize_t ll_rw_offset_stats_seq_write(struct file *file, const char *buf,
+ 	struct ll_rw_process_info *offset_info = sbi->ll_rw_offset_info;
+ 	int value = 1, rc = 0;
  
--	LASSERT(spin_is_locked(&imp->imp_lock));
-+	assert_spin_locked(&imp->imp_lock);
++	if (len == 0)
++		return -EINVAL;
++
+ 	rc = lprocfs_write_helper(buf, len, &value);
  
- 	if (req->rq_transno == 0) {
- 		DEBUG_REQ(D_EMERG, req, "saving request with zero transno");
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/gss/gss_pipefs.c b/drivers/staging/lustre/lustre/ptlrpc/gss/gss_pipefs.c
-index 7a1ff4f..3be5bc1 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/gss/gss_pipefs.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/gss/gss_pipefs.c
-@@ -137,7 +137,7 @@ void ctx_enhash_pf(struct ptlrpc_cli_ctx *ctx, struct hlist_head *hash)
- static
- void ctx_unhash_pf(struct ptlrpc_cli_ctx *ctx, struct hlist_head *freelist)
+-	if (rc < 0 && (strcmp(buf, "disabled") == 0 ||
+-			   strcmp(buf, "Disabled") == 0))
+-		value = 0;
++	if (rc < 0 && len < 16) {
++		char kernbuf[16];
++
++		if (copy_from_user(kernbuf, buf, len))
++			return -EFAULT;
++		kernbuf[len] = 0;
++
++		if (kernbuf[len - 1] == '\n')
++			kernbuf[len - 1] = 0;
++
++		if (strcmp(kernbuf, "disabled") == 0 ||
++		    strcmp(kernbuf, "Disabled") == 0)
++			value = 0;
++	}
+ 
+ 	if (value == 0)
+ 		sbi->ll_rw_stats_on = 0;
+diff --git a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+index dec1037..0334882 100644
+--- a/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
++++ b/drivers/staging/lustre/lustre/obdclass/linux/linux-module.c
+@@ -279,8 +279,15 @@ static ssize_t obd_proc_jobid_var_seq_write(struct file *file, const char *buffe
+ 		return -EINVAL;
+ 
+ 	memset(obd_jobid_var, 0, JOBSTATS_JOBID_VAR_MAX_LEN + 1);
++
++	/* This might leave the var invalid on error, which is probably fine.*/
++	if (copy_from_user(obd_jobid_var, buffer, count))
++		return -EFAULT;
++
+ 	/* Trim the trailing '\n' if any */
+-	memcpy(obd_jobid_var, buffer, count - (buffer[count - 1] == '\n'));
++	if (obd_jobid_var[count - 1] == '\n')
++		obd_jobid_var[count - 1] = 0;
++
+ 	return count;
+ }
+ LPROC_SEQ_FOPS(obd_proc_jobid_var);
+diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+index 0b59fc1..358e32c 100644
+--- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
++++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+@@ -174,15 +174,25 @@ static int osc_cached_mb_seq_show(struct seq_file *m, void *v)
+ }
+ 
+ /* shrink the number of caching pages to a specific number */
+-static ssize_t osc_cached_mb_seq_write(struct file *file, const char *buffer,
+-				   size_t count, loff_t *off)
++static ssize_t osc_cached_mb_seq_write(struct file *file,
++				       const char __user *buffer,
++				       size_t count, loff_t *off)
  {
--	LASSERT(spin_is_locked(&ctx->cc_sec->ps_lock));
-+	assert_spin_locked(&ctx->cc_sec->ps_lock);
- 	LASSERT(atomic_read(&ctx->cc_refcount) > 0);
- 	LASSERT(test_bit(PTLRPC_CTX_CACHED_BIT, &ctx->cc_flags));
- 	LASSERT(!hlist_unhashed(&ctx->cc_cache));
-@@ -719,7 +719,7 @@ void gss_unhash_msg_nolock(struct gss_upcall_msg *gmsg)
- 	__u32 idx = gmsg->gum_mechidx;
+ 	struct obd_device *dev = ((struct seq_file *)file->private_data)->private;
+ 	struct client_obd *cli = &dev->u.cli;
+ 	int pages_number, mult, rc;
++	char kernbuf[128];
++
++	if (count >= sizeof(kernbuf))
++		return -EINVAL;
++
++	if (copy_from_user(kernbuf, buffer, count))
++		return -EFAULT;
++	kernbuf[count] = 0;
  
- 	LASSERT(idx < MECH_MAX);
--	LASSERT(spin_is_locked(&upcall_locks[idx]));
-+	assert_spin_locked(&upcall_locks[idx]);
- 
- 	if (list_empty(&gmsg->gum_list))
- 		return;
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/import.c b/drivers/staging/lustre/lustre/ptlrpc/import.c
-index b231452..1c73194 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/import.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/import.c
-@@ -194,7 +194,7 @@ int ptlrpc_set_import_discon(struct obd_import *imp, __u32 conn_cnt)
- /* Must be called with imp_lock held! */
- static void ptlrpc_deactivate_and_unlock_import(struct obd_import *imp)
- {
--	LASSERT(spin_is_locked(&imp->imp_lock));
-+	assert_spin_locked(&imp->imp_lock);
- 
- 	CDEBUG(D_HA, "setting import %s INVALID\n", obd2cli_tgt(imp->imp_obd));
- 	imp->imp_invalid = 1;
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-index 7a422ff..6b9c6db 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-@@ -449,7 +449,7 @@ void nrs_policy_get_info_locked(struct ptlrpc_nrs_policy *policy,
- {
- 	LASSERT(policy != NULL);
- 	LASSERT(info != NULL);
--	LASSERT(spin_is_locked(&policy->pol_nrs->nrs_lock));
-+	assert_spin_locked(&policy->pol_nrs->nrs_lock);
- 
- 	memcpy(info->pi_name, policy->pol_desc->pd_name, NRS_POL_NAME_MAX);
- 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/pinger.c b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
-index 6dff502..38099d9 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/pinger.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/pinger.c
-@@ -368,7 +368,7 @@ EXPORT_SYMBOL(ptlrpc_pinger_sending_on_import);
- void ptlrpc_pinger_commit_expected(struct obd_import *imp)
- {
- 	ptlrpc_update_next_ping(imp, 1);
--	LASSERT(spin_is_locked(&imp->imp_lock));
-+	assert_spin_locked(&imp->imp_lock);
- 	/*
- 	 * Avoid reading stale imp_connect_data.  When not sure if pings are
- 	 * expected or not on next connection, we assume they are not and force
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c b/drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c
-index 1d46b5e..9d51bad 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c
-@@ -450,7 +450,7 @@ out:
- 
- static inline void enc_pools_wakeup(void)
- {
--	LASSERT(spin_is_locked(&page_pools.epp_lock));
-+	assert_spin_locked(&page_pools.epp_lock);
- 	LASSERT(page_pools.epp_waitqlen >= 0);
- 
- 	if (unlikely(page_pools.epp_waitqlen)) {
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/service.c b/drivers/staging/lustre/lustre/ptlrpc/service.c
-index 5d0eb6c..d278f2e 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/service.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/service.c
-@@ -384,8 +384,8 @@ void ptlrpc_dispatch_difficult_reply(struct ptlrpc_reply_state *rs)
- void
- ptlrpc_schedule_difficult_reply(struct ptlrpc_reply_state *rs)
- {
--	LASSERT(spin_is_locked(&rs->rs_svcpt->scp_rep_lock));
--	LASSERT(spin_is_locked(&rs->rs_lock));
-+	assert_spin_locked(&rs->rs_svcpt->scp_rep_lock);
-+	assert_spin_locked(&rs->rs_lock);
- 	LASSERT(rs->rs_difficult);
- 	rs->rs_scheduled_ever = 1;  /* flag any notification attempt */
- 
+ 	mult = 1 << (20 - PAGE_CACHE_SHIFT);
+-	buffer = lprocfs_find_named_value(buffer, "used_mb:", &count);
++	buffer += lprocfs_find_named_value(kernbuf, "used_mb:", &count) -
++		  kernbuf;
+ 	rc = lprocfs_write_frac_helper(buffer, count, &pages_number, mult);
+ 	if (rc)
+ 		return rc;
 -- 
 1.8.5.3
 
