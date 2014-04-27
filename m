@@ -1,145 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaD0KEA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 06:04:00 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:41528 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160AbaD0KDw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 06:03:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140427092649.GA1111@krava.brq.redhat.com>
-References: <1398538965-10620-1-git-send-email-minipli@googlemail.com>
-	<20140427092649.GA1111@krava.brq.redhat.com>
-Date: Sun, 27 Apr 2014 12:03:50 +0200
-Message-ID: <CA+rthh_-nbyb=9TU5X=2gDMMgzngU6LqLejRMU8GNvrDZ1kVTA@mail.gmail.com>
-Subject: Re: [PATCH] perf x86: Fix perf to use non-executable stack, again
-From: Mathias Krause <minipli@googlemail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753672AbaD0KEs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 06:04:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38915 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753160AbaD0KEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 06:04:45 -0400
+Date: Sun, 27 Apr 2014 20:04:31 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        Suresh Jayaraman <sjayaraman@suse.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Christoph Hellwig <hch@infradead.org>, linux-nfs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: flock() and NFS [Was: Re: [PATCH] locks: rename file-private
+ locks to file-description locks]
+Message-ID: <20140427200431.426c98d1@notabene.brown>
+In-Reply-To: <535CCAD2.4060304@gmail.com>
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
+	<20140421140246.GB26358@brightrain.aerifal.cx>
+	<535529FA.8070709@gmail.com>
+	<20140421161004.GC26358@brightrain.aerifal.cx>
+	<5355644C.7000801@gmail.com>
+	<20140421184640.GD26358@brightrain.aerifal.cx>
+	<535573E0.9080106@gmail.com>
+	<20140421155520.3b33fbef@ipyr.poochiereds.net>
+	<53558A73.3010602@samba.org>
+	<5355F60C.8010004@gmail.com>
+	<20140427145125.21e7e6c6@notabene.brown>
+	<535CCAD2.4060304@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/b_Cw9pVrnZdG+ROhM72w9ER"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 April 2014 11:26, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Sat, Apr 26, 2014 at 09:02:45PM +0200, Mathias Krause wrote:
->> arch/x86/tests/regs_load.S is missing the linker note about the stack
->> requirements, therefore making the linker fall back to an executable
->> stack. As this object gets linked against the final perf binary, it'll
->> needlessly end up with an executable stack.
->>
->> Fix this by adding the appropriate linker note.
->>
->> Fixes: 3c8b06f981 ("perf tests x86: Introduce perf_regs_load function")
->> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->>
->> ---
->>  tools/perf/arch/x86/tests/regs_load.S |    8 +++++++-
->>  1 file changed, 7 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
->> index 99167bf644..60875d5c55 100644
->> --- a/tools/perf/arch/x86/tests/regs_load.S
->> +++ b/tools/perf/arch/x86/tests/regs_load.S
->> @@ -1,4 +1,3 @@
->> -
->>  #include <linux/linkage.h>
->>
->>  #define AX    0
->> @@ -90,3 +89,10 @@ ENTRY(perf_regs_load)
->>       ret
->>  ENDPROC(perf_regs_load)
->>  #endif
->> +
->> +/*
->> + * We need to provide note.GNU-stack section, saying that we want
->> + * NOT executable stack. Otherwise the final linking will assume that
->> + * the ELF stack should not be restricted at all and set it RWX.
->> + */
->> +.section .note.GNU-stack,"",@progbits
->> --
->> 1.7.10.4
->>
->
-> hum, how about fixing this once and for all.. ;-)
-> please check attached patch, thanks
+--Sig_/b_Cw9pVrnZdG+ROhM72w9ER
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, I thought about this option too but declined it for two reasons:
-1/ The kernel sources should provide good quality examples, even for
-usage outside of the kernel. Imagine somebody taking the memcpy
-implementation for his own project but not copying the LDFLAGS. That
-would make his code have an executable stack while with the .GNU-stack
-marker in the assembler file it won't.
-2/ What if somebody tries to add/link code to perf that makes use of
-nested functions? That'll make perf fail as the trampoline code
-generated by gcc won't be executable due to the enforced
-non-executable stack by -Wl,-z,noexecstack.
+On Sun, 27 Apr 2014 11:16:02 +0200 "Michael Kerrisk (man-pages)"
+<mtk.manpages@gmail.com> wrote:
 
-So, consistently adding the (brain damaged!) .GNU-stack annotations to
-assembler files handles both cases well. It serves as a good example
-to fulfill the requirements for the PT_GNU_STACK program header and
-will also work out of the box in case someone later on tries to add
-code to perf that makes use of nested functions. The latter might even
-be in code outside of perf, e.g. in some library. Adding
--Wl,-z,noexecstack unconditionally would needlessly break that case.
+> [Trimming some folk from CC, and adding various NFS people]
+>=20
+> On 04/27/2014 06:51 AM, NeilBrown wrote:
+>=20
+> [...]
+>=20
+> > Note to Michael: The text
+> >    flock() does not lock files over NFS.
+> > in flock(2) is no longer accurate.  The reality is ... complex.
+> > See nfs(5), and search for "local_lock".
+>=20
+> Ahhh -- I see:=20
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=
+=3D5eebde23223aeb0ad2d9e3be6590ff8bbfab0fc2
+>=20
+> Thanks for the heads up.
+>=20
+> Just in general, it would be great if the flock(2) and fcntl(2) man pages
+> contained correct details for NFS, of course. So, for example, if there=20
+> are any current gotchas for NFS and fcntl() byte-range locking, I'd like=
+=20
+> to add those to the fcntl(2) man page.
 
-Thanks,
-Mathias
+The only peculiarities I can think of are:
+ - With NFS, locking or unlocking a region forces a flush of any cached dat=
+a=20
+   for that file (or maybe for the region of the file).  I'm not sure if th=
+is
+   is worth mentioning.
 
->
-> jirka
->
->
-> ---
-> diff --git a/tools/perf/bench/mem-memcpy-x86-64-asm.S b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-> index fcd9cf0..a20780b 100644
-> --- a/tools/perf/bench/mem-memcpy-x86-64-asm.S
-> +++ b/tools/perf/bench/mem-memcpy-x86-64-asm.S
-> @@ -4,9 +4,3 @@
->  #define Lmemcpy_c globl memcpy_c; memcpy_c
->  #define Lmemcpy_c_e globl memcpy_c_e; memcpy_c_e
->  #include "../../../arch/x86/lib/memcpy_64.S"
-> -/*
-> - * We need to provide note.GNU-stack section, saying that we want
-> - * NOT executable stack. Otherwise the final linking will assume that
-> - * the ELF stack should not be restricted at all and set it RWX.
-> - */
-> -.section .note.GNU-stack,"",@progbits
-> diff --git a/tools/perf/bench/mem-memset-x86-64-asm.S b/tools/perf/bench/mem-memset-x86-64-asm.S
-> index 9e5af89..cb92170 100644
-> --- a/tools/perf/bench/mem-memset-x86-64-asm.S
-> +++ b/tools/perf/bench/mem-memset-x86-64-asm.S
-> @@ -4,10 +4,3 @@
->  #define Lmemset_c globl memset_c; memset_c
->  #define Lmemset_c_e globl memset_c_e; memset_c_e
->  #include "../../../arch/x86/lib/memset_64.S"
-> -
-> -/*
-> - * We need to provide note.GNU-stack section, saying that we want
-> - * NOT executable stack. Otherwise the final linking will assume that
-> - * the ELF stack should not be restricted at all and set it RWX.
-> - */
-> -.section .note.GNU-stack,"",@progbits
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index d50869e..dd56b6b 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -117,6 +117,9 @@ CFLAGS += -Wall
->  CFLAGS += -Wextra
->  CFLAGS += -std=gnu99
->
-> +# force non-executable stack
-> +LDFLAGS += -Wl,-z,noexecstack
-> +
->  EXTLIBS = -lelf -lpthread -lrt -lm -ldl
->
->  ifneq ($(OUTPUT),)
+ - With NFSv4 the client can lose a lock if it is out of contact with the
+   server for a period of time.  When this happens, any IO to the file by a
+   process which "thinks" it holds a lock will fail until that process clos=
+es
+   and re-opens the file.
+   This behaviour is since 3.12.  Prior to that the client might lose and
+   regain the lock without ever knowing thus potentially risking corruption
+   (but only if client and server lost contact for an extended period).
+
+>=20
+> Anyway, returning to your point about flock(), how would this text
+> look for the flock(2) manual page:
+>=20
+>     NOTES
+>        Since  kernel  2.0,  flock() is implemented as a system call in
+>        its own right rather than being emulated in the GNU  C  library
+>        as  a  call  to fcntl(2).  This yields classical BSD semantics:
+>        there is no interaction between the types  of  lock  placed  by
+>        flock()  and  fcntl(2),  and  flock() does not detect deadlock.
+>        (Note, however, that on some modern BSDs, flock() and  fcntl(2)
+>        locks do interact with one another.)
+>=20
+>        In Linux kernels up to 2.6.11, flock() does not lock files over
+>        NFS (i.e., the scope of locks was limited to the local system).
+>        Instead,  one could use fcntl(2) byte-range locking, which does
+>        work over NFS, given a sufficiently recent version of Linux and
+>        a  server  which  supports  locking.   Since  Linux 2.6.12, NFS
+>        clients support flock() locks by emulating them  as  byte-range
+>        locks on the entire file.  This means that fcntl(2) and flock()
+>        locks do interact with  one  another  over  NFS.   Since  Linux
+>        2.6.37,  the  kernel  supports a compatibility mode that allows
+>        flock() locks (and also  fcntl(2)  byte  region  locks)  to  be
+>        treated  as  local; see the discussion of the local_lock option
+>        in nfs(5).
+> ?
+
+That seems to cover it quite well - thanks.
+
+NeilBrown
+
+>=20
+> Thanks,
+>=20
+> Michael
+>=20
+>=20
+
+
+--Sig_/b_Cw9pVrnZdG+ROhM72w9ER
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU1zWLznsnt1WYoG5AQIQ1xAAvhAxQJlDBiviYnwNPdtQGyNrsoYskQYw
+LuGtp/ZetrLoQd8UVXqsToMbrkadmua2Adi8e8WGaAPenA6ApW4jxATqnraLIpSQ
+toROSemWPYQJQ16RWcwYWspmtOc07qIyy271OU/bHulQPGNlkrAfemmMRIhIhMb/
+kM38QJT+Tew9pvquvbMvBKOuwE6LsrfXpNMYOhr8WzHdCS8eWbljPr1DwTDcV2OZ
+i9p/liLE65NXEZepK5sCHTv48kNQsgnnAVRXWUX6+je4/4eSbvpRo/UN92fTStby
+jDnsNQKp0xEtaPYXjvjDb3A6+f19MelNlZ1Dk2KBO9ro3ZdWoXPsfx+UX412QfoU
+uGPjhuNUBULoeQDbgn9gpzW1rr2RQCiBQQ5Jwoe6//N5ucUPfbVMpPU/A+YKi0jb
+9M+ex89w8d1foWSwqFrB8w0B+g/XKTo72+nckQUJVgQILXmlhYtucm9SazrXnSYe
+i7gpjNCdBF7uN2EfPYMcx/osU7yD++LsMXgV7u4xvVphfwD+P0C0IDUeXY9t7Itp
+lEQpcIXEHWuRsez4sEGBD2ZcEe565mAG9udqoJO/NfHGyDceFlSkAoZsMKPlBw5T
+dq9aOsMfYf7omkRnGfK41rKthNMJFZRCHDqXgBUe0VrZUlL8K24htbHltd8l0+d5
+I5jhP0p3c98=
+=VmRa
+-----END PGP SIGNATURE-----
+
+--Sig_/b_Cw9pVrnZdG+ROhM72w9ER--
