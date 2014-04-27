@@ -1,236 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaD0QQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 12:16:59 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40759 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373AbaD0QPq (ORCPT
+	id S932170AbaD0QRW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 12:17:22 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39703 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599AbaD0QQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 12:15:46 -0400
+	Sun, 27 Apr 2014 12:16:22 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com
 Cc: aneesh.kumar@linux.vnet.ibm.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -V1 11/22] richacl: Permission mapping functions
-Date: Sun, 27 Apr 2014 21:44:42 +0530
-Message-Id: <1398615293-22931-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V1 22/22] ext4: Add Ext4 compat richacl feature flag
+Date: Sun, 27 Apr 2014 21:44:53 +0530
+Message-Id: <1398615293-22931-23-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042716-7014-0000-0000-000004CCD69A
+x-cbid: 14042716-5140-0000-0000-00000503CF98
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Gruenbacher <agruen@kernel.org>
+This feature flag can be used to enable richacl on
+the file system. Once enabled the "acl" mount option
+will enable richacl instead of posix acl
 
-We need to map from POSIX permissions to NFSv4 permissions when a
-chmod() is done, from NFSv4 permissions to POSIX permissions when an acl
-is set (which implicitly sets the file permission bits), and from the
-MAY_READ/MAY_WRITE/MAY_EXEC/MAY_APPEND flags to NFSv4 permissions when
-doing an access check in a richacl.
-
-Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/richacl_base.c       | 117 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/richacl.h |  47 +++++++++++++++++++
- 2 files changed, 164 insertions(+)
+ fs/ext4/ext4.h  |  3 ++-
+ fs/ext4/super.c | 47 ++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 40 insertions(+), 10 deletions(-)
 
-diff --git a/fs/richacl_base.c b/fs/richacl_base.c
-index 689e1a6dace7..bca20936aed1 100644
---- a/fs/richacl_base.c
-+++ b/fs/richacl_base.c
-@@ -56,6 +56,123 @@ richacl_clone(const struct richacl *acl)
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 66946aa62127..17ff4a1cf91e 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -976,7 +976,7 @@ struct ext4_inode_info {
+ #define EXT4_MOUNT_UPDATE_JOURNAL	0x01000	/* Update the journal format */
+ #define EXT4_MOUNT_NO_UID32		0x02000  /* Disable 32-bit UIDs */
+ #define EXT4_MOUNT_XATTR_USER		0x04000	/* Extended user attributes */
+-#define EXT4_MOUNT_POSIX_ACL		0x08000	/* POSIX Access Control Lists */
++#define EXT4_MOUNT_ACL			0x08000	/* Access Control Lists */
+ #define EXT4_MOUNT_NO_AUTO_DA_ALLOC	0x10000	/* No auto delalloc mapping */
+ #define EXT4_MOUNT_BARRIER		0x20000 /* Use block barriers */
+ #define EXT4_MOUNT_QUOTA		0x80000 /* Some quota option set */
+@@ -1505,6 +1505,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_COMPAT_EXT_ATTR		0x0008
+ #define EXT4_FEATURE_COMPAT_RESIZE_INODE	0x0010
+ #define EXT4_FEATURE_COMPAT_DIR_INDEX		0x0020
++#define EXT4_FEATURE_COMPAT_RICHACL		0x0200
+ 
+ #define EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
+ #define EXT4_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 6f9e6fadac04..2a0221652d79 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1274,6 +1274,30 @@ static ext4_fsblk_t get_sb_block(void **data)
+ 	return sb_block;
  }
  
- /**
-+ * richacl_mask_to_mode  -  compute the file permission bits which correspond to @mask
-+ * @mask:	%ACE4_* permission mask
-+ *
-+ * See richacl_masks_to_mode().
-+ */
-+static int
-+richacl_mask_to_mode(unsigned int mask)
++static void enable_acl(struct super_block *sb)
 +{
-+	int mode = 0;
-+
-+	if (mask & ACE4_POSIX_MODE_READ)
-+		mode |= MAY_READ;
-+	if (mask & ACE4_POSIX_MODE_WRITE)
-+		mode |= MAY_WRITE;
-+	if (mask & ACE4_POSIX_MODE_EXEC)
-+		mode |= MAY_EXEC;
-+
-+	return mode;
++#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
++	return;
++#endif
++	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
++		sb->s_flags |= MS_RICHACL;
++		sb->s_flags &= ~MS_POSIXACL;
++	} else {
++		sb->s_flags |= MS_POSIXACL;
++		sb->s_flags &= ~MS_RICHACL;
++	}
++	return;
 +}
 +
-+/**
-+ * richacl_masks_to_mode  -  compute the file permission bits from the file masks
-+ *
-+ * When setting a richacl, we set the file permission bits to indicate maximum
-+ * permissions: for example, we set the Write permission when a mask contains
-+ * ACE4_APPEND_DATA even if it does not also contain ACE4_WRITE_DATA.
-+ *
-+ * Permissions which are not in ACE4_POSIX_MODE_READ, ACE4_POSIX_MODE_WRITE, or
-+ * ACE4_POSIX_MODE_EXEC cannot be represented in the file permission bits.
-+ * Such permissions can still be effective, but not for new files or after a
-+ * chmod(), and only if they were set explicitly, for example, by setting a
-+ * richacl.
-+ */
-+int
-+richacl_masks_to_mode(const struct richacl *acl)
++static void disable_acl(struct super_block *sb)
 +{
-+	return richacl_mask_to_mode(acl->a_owner_mask) << 6 |
-+	       richacl_mask_to_mode(acl->a_group_mask) << 3 |
-+	       richacl_mask_to_mode(acl->a_other_mask);
-+}
-+EXPORT_SYMBOL_GPL(richacl_masks_to_mode);
-+
-+/**
-+ * richacl_mode_to_mask  - compute a file mask from the lowest three mode bits
-+ *
-+ * When the file permission bits of a file are set with chmod(), this specifies
-+ * the maximum permissions that processes will get.  All permissions beyond
-+ * that will be removed from the file masks, and become ineffective.
-+ *
-+ * We also add in the permissions which are always allowed no matter what the
-+ * acl says.
-+ */
-+unsigned int
-+richacl_mode_to_mask(mode_t mode)
-+{
-+	unsigned int mask = ACE4_POSIX_ALWAYS_ALLOWED;
-+
-+	if (mode & MAY_READ)
-+		mask |= ACE4_POSIX_MODE_READ;
-+	if (mode & MAY_WRITE)
-+		mask |= ACE4_POSIX_MODE_WRITE;
-+	if (mode & MAY_EXEC)
-+		mask |= ACE4_POSIX_MODE_EXEC;
-+
-+	return mask;
++#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
++	return;
++#endif
++	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
++	return;
 +}
 +
-+/**
-+ * richacl_want_to_mask  - convert the iop->permission want argument to a mask
-+ * @want:	@want argument of the permission inode operation
-+ *
-+ * When checking for append, @want is (MAY_WRITE | MAY_APPEND).
-+ *
-+ * Richacls use the iop->may_create and iop->may_delete hooks which are
-+ * used for checking if creating and deleting files is allowed.  These hooks do
-+ * not use richacl_want_to_mask(), so we do not have to deal with mapping
-+ * MAY_WRITE to ACE4_ADD_FILE, ACE4_ADD_SUBDIRECTORY, and ACE4_DELETE_CHILD
-+ * here.
-+ */
-+unsigned int
-+richacl_want_to_mask(unsigned int want)
-+{
-+	unsigned int mask = 0;
-+
-+	if (want & MAY_READ)
-+		mask |= ACE4_READ_DATA;
-+	if (want & MAY_DELETE_SELF)
-+		mask |= ACE4_DELETE;
-+	if (want & MAY_TAKE_OWNERSHIP)
-+		mask |= ACE4_WRITE_OWNER;
-+	if (want & MAY_CHMOD)
-+		mask |= ACE4_WRITE_ACL;
-+	if (want & MAY_SET_TIMES)
-+		mask |= ACE4_WRITE_ATTRIBUTES;
-+	if (want & MAY_EXEC)
-+		mask |= ACE4_EXECUTE;
-+	/*
-+	 * differentiate MAY_WRITE from these request
-+	 */
-+	if (want & (MAY_APPEND |
-+		    MAY_CREATE_FILE | MAY_CREATE_DIR |
-+		    MAY_DELETE_CHILD)) {
-+		if (want & MAY_APPEND)
-+			mask |= ACE4_APPEND_DATA;
-+		if (want & MAY_CREATE_FILE)
-+			mask |= ACE4_ADD_FILE;
-+		if (want & MAY_CREATE_DIR)
-+			mask |= ACE4_ADD_SUBDIRECTORY;
-+		if (want & MAY_DELETE_CHILD)
-+			mask |= ACE4_DELETE_CHILD;
-+	} else if (want & MAY_WRITE)
-+		mask |= ACE4_WRITE_DATA;
-+	return mask;
-+}
-+EXPORT_SYMBOL_GPL(richacl_want_to_mask);
-+
-+/**
-  * richace_is_same_identifier  -  are both identifiers the same?
-  */
- int
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index 51d6937651f1..fe875fe24636 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -119,6 +119,49 @@ struct richacl {
- 	ACE4_WRITE_OWNER |				\
- 	ACE4_SYNCHRONIZE)
+ #define DEFAULT_JOURNAL_IOPRIO (IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, 3))
+ static char deprecated_msg[] = "Mount option \"%s\" will be removed by %s\n"
+ 	"Contact linux-ext4@vger.kernel.org if you think we should keep it.\n";
+@@ -1417,9 +1441,9 @@ static const struct mount_opts {
+ 	 MOPT_NO_EXT2 | MOPT_DATAJ},
+ 	{Opt_user_xattr, EXT4_MOUNT_XATTR_USER, MOPT_SET},
+ 	{Opt_nouser_xattr, EXT4_MOUNT_XATTR_USER, MOPT_CLEAR},
+-#ifdef CONFIG_EXT4_FS_POSIX_ACL
+-	{Opt_acl, EXT4_MOUNT_POSIX_ACL, MOPT_SET},
+-	{Opt_noacl, EXT4_MOUNT_POSIX_ACL, MOPT_CLEAR},
++#if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
++	{Opt_acl, EXT4_MOUNT_ACL, MOPT_SET},
++	{Opt_noacl, EXT4_MOUNT_ACL, MOPT_CLEAR},
+ #else
+ 	{Opt_acl, 0, MOPT_NOSUPPORT},
+ 	{Opt_noacl, 0, MOPT_NOSUPPORT},
+@@ -3496,8 +3520,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		set_opt(sb, NO_UID32);
+ 	/* xattr user namespace & acls are now defaulted on */
+ 	set_opt(sb, XATTR_USER);
+-#ifdef CONFIG_EXT4_FS_POSIX_ACL
+-	set_opt(sb, POSIX_ACL);
++#if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
++	set_opt(sb, ACL);
+ #endif
+ 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
+ 		set_opt(sb, JOURNAL_DATA);
+@@ -3569,8 +3593,12 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 			clear_opt(sb, DELALLOC);
+ 	}
  
-+/*
-+ * The POSIX permissions are supersets of the following NFSv4 permissions:
-+ *
-+ *  - MAY_READ maps to READ_DATA or LIST_DIRECTORY, depending on the type
-+ *    of the file system object.
-+ *
-+ *  - MAY_WRITE maps to WRITE_DATA or ACE4_APPEND_DATA for files, and to
-+ *    ADD_FILE, ACE4_ADD_SUBDIRECTORY, or ACE4_DELETE_CHILD for directories.
-+ *
-+ *  - MAY_EXECUTE maps to ACE4_EXECUTE.
-+ *
-+ *  (Some of these NFSv4 permissions have the same bit values.)
-+ */
-+#define ACE4_POSIX_MODE_READ (			\
-+		ACE4_READ_DATA |		\
-+		ACE4_LIST_DIRECTORY)
-+#define ACE4_POSIX_MODE_WRITE (			\
-+		ACE4_WRITE_DATA |		\
-+		ACE4_ADD_FILE |			\
-+		ACE4_APPEND_DATA |		\
-+		ACE4_ADD_SUBDIRECTORY |		\
-+		ACE4_DELETE_CHILD)
-+#define ACE4_POSIX_MODE_EXEC ACE4_EXECUTE
-+#define ACE4_POSIX_MODE_ALL (			\
-+		ACE4_POSIX_MODE_READ |		\
-+		ACE4_POSIX_MODE_WRITE |		\
-+		ACE4_POSIX_MODE_EXEC)
-+/*
-+ * These permissions are always allowed
-+ * no matter what the acl says.
-+ */
-+#define ACE4_POSIX_ALWAYS_ALLOWED (	\
-+		ACE4_SYNCHRONIZE |	\
-+		ACE4_READ_ATTRIBUTES |	\
-+		ACE4_READ_ACL)
-+/*
-+ * The owner is implicitly granted
-+ * these permissions under POSIX.
-+ */
-+#define ACE4_POSIX_OWNER_ALLOWED (		\
-+		ACE4_WRITE_ATTRIBUTES |		\
-+		ACE4_WRITE_OWNER |		\
-+		ACE4_WRITE_ACL)
- /**
-  * richacl_get  -  grab another reference to a richacl handle
-  */
-@@ -234,4 +277,8 @@ richace_is_deny(const struct richace *ace)
- extern struct richacl *richacl_alloc(int);
- extern int richace_is_same_identifier(const struct richace *,
- 				      const struct richace *);
-+extern int richacl_masks_to_mode(const struct richacl *);
-+extern unsigned int richacl_mode_to_mask(mode_t);
-+extern unsigned int richacl_want_to_mask(unsigned int);
-+
- #endif /* __RICHACL_H */
+-	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+-		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
++	/*
++	 * clear ACL flags
++	 */
++	disable_acl(sb);
++	if (test_opt(sb, ACL))
++		enable_acl(sb);
+ 
+ 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
+ 	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
+@@ -4844,8 +4872,9 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
+ 		ext4_abort(sb, "Abort forced by user");
+ 
+-	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+-		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
++	disable_acl(sb);
++	if (test_opt(sb, ACL))
++		enable_acl(sb);
+ 
+ 	es = sbi->s_es;
+ 
 -- 
 1.9.1
 
