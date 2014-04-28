@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044AbaD1KTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:19:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54541 "EHLO mx2.suse.de"
+	id S1755173AbaD1KT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:19:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54555 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753989AbaD1KS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:18:59 -0400
-Date: Mon, 28 Apr 2014 12:18:57 +0200
-Message-ID: <s5h1twhdaem.wl%tiwai@suse.de>
+	id S1755004AbaD1KTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 06:19:24 -0400
+Date: Mon, 28 Apr 2014 12:19:23 +0200
+Message-ID: <s5hzjj5bvtg.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Masanari Iida <standby24x7@gmail.com>
-Cc: perex@perex.cz, linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH] sound: core: Fix format string mismatch in seq_midi.c
-In-Reply-To: <1398166925-26412-1-git-send-email-standby24x7@gmail.com>
-References: <1398166925-26412-1-git-send-email-standby24x7@gmail.com>
+Cc: perex@perex.cz, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: usb: Fix format string mismatch in mixer.c
+In-Reply-To: <1398658135-19971-1-git-send-email-standby24x7@gmail.com>
+References: <1398658135-19971-1-git-send-email-standby24x7@gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -23,11 +23,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Tue, 22 Apr 2014 20:42:05 +0900,
+At Mon, 28 Apr 2014 13:08:55 +0900,
 Masanari Iida wrote:
 > 
-> Fix format string mismatch in snd_seq_midisynth_register_port().
-> Argument type of p is unsigned int.
+> Fix format string mismatch in parse_audio_selector_unit().
 > 
 > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
@@ -37,29 +36,22 @@ Thanks, applied.
 Takashi
 
 > ---
->  sound/core/seq/seq_midi.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  sound/usb/mixer.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/sound/core/seq/seq_midi.c b/sound/core/seq/seq_midi.c
-> index 3e05c55..a1fd77a 100644
-> --- a/sound/core/seq/seq_midi.c
-> +++ b/sound/core/seq/seq_midi.c
-> @@ -362,13 +362,13 @@ snd_seq_midisynth_register_port(struct snd_seq_device *dev)
->  		if (! port->name[0]) {
->  			if (info->name[0]) {
->  				if (ports > 1)
-> -					snprintf(port->name, sizeof(port->name), "%s-%d", info->name, p);
-> +					snprintf(port->name, sizeof(port->name), "%s-%u", info->name, p);
->  				else
->  					snprintf(port->name, sizeof(port->name), "%s", info->name);
->  			} else {
->  				/* last resort */
->  				if (ports > 1)
-> -					sprintf(port->name, "MIDI %d-%d-%d", card->number, device, p);
-> +					sprintf(port->name, "MIDI %d-%d-%u", card->number, device, p);
->  				else
->  					sprintf(port->name, "MIDI %d-%d", card->number, device);
->  			}
+> diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+> index d40a285..6fe83e4 100644
+> --- a/sound/usb/mixer.c
+> +++ b/sound/usb/mixer.c
+> @@ -1986,7 +1986,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
+>  		if (! len && check_input_term(state, desc->baSourceID[i], &iterm) >= 0)
+>  			len = get_term_name(state, &iterm, namelist[i], MAX_ITEM_NAME_LEN, 0);
+>  		if (! len)
+> -			sprintf(namelist[i], "Input %d", i);
+> +			sprintf(namelist[i], "Input %u", i);
+>  	}
+>  
+>  	kctl = snd_ctl_new1(&mixer_selectunit_ctl, cval);
 > -- 
-> 2.0.0.rc0.26.g779792a
+> 2.0.0.rc1
 > 
