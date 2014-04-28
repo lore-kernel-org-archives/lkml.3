@@ -1,148 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaD1JJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:09:17 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:34799 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656AbaD1JJO (ORCPT
+	id S1754609AbaD1JJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:09:52 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:62298 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573AbaD1JJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:09:14 -0400
-From: Thomas Schwinge <thomas@codesourcery.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-CC: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@surriel.com>,
-        "Andrea Arcangeli" <aarcange@redhat.com>,
-        Zlatko Calusic <zcalusic@bitsync.net>,
-        Minchan Kim <minchan@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?utf-8?Q?K=C3=B6nig?= <christian.koenig@amd.com>,
-        <dri-devel@lists.freedesktop.org>,
-        "Johannes Weiner" <hannes@cmpxchg.org>
-Subject: Re: radeon: screen garbled after page allocator change, was: Re: [patch v2 3/3] mm: page_alloc: fair zone allocator policy
-In-Reply-To: <87sioxq3rx.fsf@schwinge.name>
-References: <1375457846-21521-1-git-send-email-hannes@cmpxchg.org> <1375457846-21521-4-git-send-email-hannes@cmpxchg.org> <87r45fajun.fsf@schwinge.name> <20140424133722.GD4107@cmpxchg.org> <20140425214746.GC5915@gmail.com> <20140425215055.GD5915@gmail.com> <20140425230321.GG5915@gmail.com> <87sioxq3rx.fsf@schwinge.name>
-User-Agent: Notmuch/0.9-101-g81dad07 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Mon, 28 Apr 2014 11:09:00 +0200
-Message-ID: <87k3a9q0r7.fsf@schwinge.name>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-="; micalg=pgp-sha1;
-	protocol="application/pgp-signature"
-X-OriginalArrivalTime: 28 Apr 2014 09:09:06.0046 (UTC) FILETIME=[81A729E0:01CF62C1]
+	Mon, 28 Apr 2014 05:09:50 -0400
+Message-ID: <1398676186.30930.49.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 28 Apr 2014 11:09:46 +0200
+In-Reply-To: <1398661784.30930.33.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	 <1397918766.5436.16.camel@marge.simpson.net>
+	 <1398411635.11930.45.camel@marge.simpson.net>
+	 <1398501491.12941.5.camel@marge.simpson.net>
+	 <1398520699.28726.22.camel@marge.simpson.net>
+	 <1398661784.30930.33.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-04-28 at 07:09 +0200, Mike Galbraith wrote: 
+> Hi Nicholas,
+> 
+> On Sat, 2014-04-26 at 15:58 +0200, Mike Galbraith wrote: 
+> > On Sat, 2014-04-26 at 10:38 +0200, Mike Galbraith wrote: 
+> > > On Fri, 2014-04-25 at 09:40 +0200, Mike Galbraith wrote:
+> > > 
+> > > > Hotplug can still deadlock in rt trees too, and will if you beat it
+> > > > hard.
+> > > 
+> > > Box actually deadlocks like so.
+> > 
+> > ...
+> > 
+> > 3.12-rt looks a bit busted migrate_disable/enable() wise.
+> > 
+> > /me eyeballs 3.10-rt (looks better), confirms 3.10-rt hotplug works,
+> > swipes working code, confirms 3.12-rt now works.  Yup, that was it.
+> 
+> My boxen, including 64 core DL980 that ran hotplug stress for 3 hours
+> yesterday with pre-pushdown rwlocks, say the migrate_disable/enable
+> pushdown patches are very definitely busted.
 
-Hi!
+migrate_disable-pushd-down-in-atomic_dec_and_spin_lo.patch
 
-On Mon, 28 Apr 2014 10:03:46 +0200, I wrote:
-> On Fri, 25 Apr 2014 19:03:22 -0400, Jerome Glisse <j.glisse@gmail.com> wr=
-ote:
-> > On Fri, Apr 25, 2014 at 05:50:57PM -0400, Jerome Glisse wrote:
-> > > On Fri, Apr 25, 2014 at 05:47:48PM -0400, Jerome Glisse wrote:
-> > > > On Thu, Apr 24, 2014 at 09:37:22AM -0400, Johannes Weiner wrote:
-> > > > > On Wed, Apr 02, 2014 at 04:26:08PM +0200, Thomas Schwinge wrote:
-> > > > > > On Fri,  2 Aug 2013 11:37:26 -0400, Johannes Weiner <hannes@cmp=
-xchg.org> wrote:
-> > > > > > > Each zone that holds userspace pages of one workload must be =
-aged at a
-> > > > > > > speed proportional to the zone size.  [...]
-> > > > > >=20
-> > > > > > > Fix this with a very simple round robin allocator.  [...]
-> > > > > >=20
-> > > > > > This patch, adding NR_ALLOC_BATCH, eventually landed in mainlin=
-e as
-> > > > > > commit 81c0a2bb515fd4daae8cab64352877480792b515 (2013-09-11).
-> > > > > >=20
-> > > > > > I recently upgraded a Debian testing system from a 3.11 kernel =
-to 3.12,
-> > > > > > and it started to exhibit "strange" issues, which I then bisect=
-ed to this
-> > > > > > patch.  I'm not saying that the patch is faulty, as it seems to=
- be
-> > > > > > working fine for everyone else, so I rather assume that somethi=
-ng in a
-> > > > > > (vastly?) different corner of the kernel (or my hardware?) is b=
-roken.
-> > > > > > ;-)
-> > > > > >=20
-> > > > > > The issue is that when X.org/lightdm starts up, there are "garb=
-led"
-> > > > > > section on the screen, for example, rectangular boxes that are =
-just black
-> > > > > > or otherwise "distorted", and/or sets of glyphs (corresponding =
-to a set
-> > > > > > of characters; but not all characters) are displayed as rectang=
-ular gray
-> > > > > > or black boxes, and/or icons in a GNOME session are not display=
-ed
-> > > > > > properly, and so on.  (Can take a snapshot if that helps?)  Swi=
-tching to
-> > > > > > a Linux console, I can use that one fine.  Switching back to X,=
- in the
-> > > > > > majority of all cases, the screen will be completely black, but=
- with the
-> > > > > > mouse cursor still rendered properly (done in hardware, I assum=
-e).
-> > > > > >=20
-> > > > > > Reverting commit 81c0a2bb515fd4daae8cab64352877480792b515, for =
-example on
-> > > > > > top of v3.12, and everything is back to normal.  The problem al=
-so
-> > > > > > persists with a v3.14 kernel that I just built.
+bug: migrate_disable() after blocking is too late.
 
-> > > > My guess is that the pcie bridge can only remap dma page with 32bit=
- dma
-> > > > mask while the gpu is fine with 40bit dma mask. I always thought th=
-at the
-> > > > pcie/pci code did take care of such thing for us.
-> > >=20
-> > > Forgot to attach patch to test my theory. Does the attached patch fix
-> > > the issue ?
->=20
-> Unfortunately it does not.  :-/
+@@ -1028,12 +1028,12 @@ int atomic_dec_and_spin_lock(atomic_t *a
+        /* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
+        if (atomic_add_unless(atomic, -1, 1))
+                return 0;
+-       migrate_disable();
+        rt_spin_lock(lock);
+-       if (atomic_dec_and_test(atomic))
++       if (atomic_dec_and_test(atomic)){
++               migrate_disable();
+                return 1;
++       }
+        rt_spin_unlock(lock);
+-       migrate_enable();
+        return 0;
+ }
+ EXPORT_SYMBOL(atomic_dec_and_spin_lock);
 
-Ha, the following seems to do it: additionally to dma_bits (your patch),
-I'm also overriding need_dma32 for later use in
-drivers/gpu/drm/ttm/ttm_bo.c:ttm_bo_add_ttm, I assume.  With that hack
-applied, I have now rebooted a v3.14 build a few times, and so far things
-"look" fine.
+read_lock-migrate_disable-pushdown-to-rt_read_lock.patch
 
-diff --git drivers/gpu/drm/radeon/radeon_device.c drivers/gpu/drm/radeon/ra=
-deon_device.c
-index 044bc98..90baf2f 100644
-=2D-- drivers/gpu/drm/radeon/radeon_device.c
-+++ drivers/gpu/drm/radeon/radeon_device.c
-@@ -1243,6 +1243,8 @@ int radeon_device_init(struct radeon_device *rdev,
- 		rdev->need_dma32 =3D true;
-=20
- 	dma_bits =3D rdev->need_dma32 ? 32 : 40;
-+	dma_bits =3D 32;
-+	rdev->need_dma32 =3D true;
- 	r =3D pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
- 	if (r) {
- 		rdev->need_dma32 =3D true;
+bug: ditto.
 
+@@ -244,8 +246,10 @@ void __lockfunc rt_read_lock(rwlock_t *r
+        /*
+         * recursive read locks succeed when current owns the lock
+         */
+-       if (rt_mutex_owner(lock) != current)
++       if (rt_mutex_owner(lock) != current) {
+                __rt_spin_lock(lock);
++               migrate_disable();
++       }
+        rwlock->read_depth++;
+ }
 
-Gr=C3=BC=C3=9Fe,
- Thomas
+Moving that migrate_disable() up will likely fix my hotplug troubles.
+I'll find out when I get back from physical torture (therapy) session.
 
---=-=-=
-Content-Type: application/pgp-signature
+-Mike
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJTXhqsAAoJENuKOtuXzphJGMIH/RCTzpPcqXgxlpnyXYYGY1Hs
-B9HYAtTZZS2QN0zQUo02ZG2CPqSUCNSyVEKvSR3Q9XcQw0y8SXVxc/nY3UxaJ1Bc
-Ul9eRavAZJg1XOjJz/oqAonI6lQdz4uDX8xD7asqs7rKzlpb35dg4cSwXvvz1zdi
-cD9xxVkaQRec0uQLEenToRGfB0LGa1u7bg3JPyRg1vtSOX6AGs2KA26CABLThxWm
-7uU3pl05vtgeqJo9f0aveN1wXrkHMML1QxCOYLmZnYwcY20BwUPgon+V22f5Ioin
-ZTQXSqAo2S69RN7eez8el6hO0gYofPgNzsTjJglU66FSYqAXKTsPd+nIVknmNog=
-=coWV
------END PGP SIGNATURE-----
---=-=-=--
