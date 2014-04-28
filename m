@@ -1,134 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaD1M0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:26:55 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:44755 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaD1M0x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:26:53 -0400
-Date: Mon, 28 Apr 2014 13:26:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, t.figa@samsung.com, chow.kim@samsung.com,
-        yg1004.jang@samsung.com, vikas.sajjan@samsung.com,
-        b.zolnierkie@samsung.com, Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RESUBMIT RFC PATCH v2 3/3] drivers: mfd: Add support for Exynos
- PMU driver
-Message-ID: <20140428122646.GF21279@lee--X1>
-References: <1398687607-4554-1-git-send-email-pankaj.dubey@samsung.com>
- <1398687607-4554-4-git-send-email-pankaj.dubey@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398687607-4554-4-git-send-email-pankaj.dubey@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932257AbaD1M1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:27:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57808 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755553AbaD1M1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:27:04 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Date: Mon, 28 Apr 2014 14:26:42 +0200
+Message-Id: <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.0.0.rc0
+In-Reply-To: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch moves Exynos PMU driver implementation from
-> "arm/mach-exynos" to "drivers/mfd".
-> This driver is mainly used for setting misc bits of register from PMU IP
-> of Exynos SoC which will be required to configure before Suspend/Resume.
-> Currently all these settings are done in "arch/arm/mach-exynos/pmu.c" but
-> moving ahead for ARM64 based SoC support, there is a need of DT based
-> implementation of PMU driver.
-> This driver uses already existing DT binding information.
-> 
-> CC: Sangbeom Kim <sbkim73@samsung.com>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> CC: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/Kconfig                           |    2 ++
->  arch/arm/mach-exynos/Makefile                          |    2 --
->  drivers/mfd/Kconfig                                    |    9 +++++++++
->  drivers/mfd/Makefile                                   |    1 +
->  arch/arm/mach-exynos/pmu.c => drivers/mfd/exynos-pmu.c |    0
->  5 files changed, 12 insertions(+), 2 deletions(-)
->  rename arch/arm/mach-exynos/pmu.c => drivers/mfd/exynos-pmu.c (100%)
+This patch introduces low limit reclaim. The low_limit acts as a reclaim
+protection because groups which are under their low_limit are considered
+ineligible for reclaim. While hardlimit protects from using more memory
+than allowed lowlimit protects from getting bellow memory assigned to
+the group due to external memory pressure.
 
-So I just took a look at the code as zero changes looks suspicious to
-me. The driver can not simply be copied and pasted into the MFD
-subsystem in its current state.
+More precisely a group is considered eligible for the reclaim under a
+specific hierarchy represented by its root only if the group is above
+its low limit and the same applies to all parents up the hierarchy to
+the root. Nevertheless the limit still might be ignored if all groups
+under the reclaimed hierarchy are under their low limits. This will
+prevent from OOM rather than protecting the memory.
 
-The fundamental question is; is this chip actually an MFD? What does
-it do besides Power Management?
+Consider the following hierarchy with memory pressure coming from the
+group A (hard limit reclaim - l-low_limit_in_bytes, u-usage_in_bytes,
+h-limit_in_bytes):
+		root_mem_cgroup
+			.
+		  _____/
+		 /
+		A (l = 80 u=90 h=90)
+	       /
+	      / \_________
+	     /            \
+	    B (l=0 u=50)   C (l=50 u=40)
+	                    \
+			     D (l=0 u=30)
 
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index 2f60c90..79559b4 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -27,6 +27,7 @@ config ARCH_EXYNOS4
->  	select PM_GENERIC_DOMAINS if PM_RUNTIME
->  	select S5P_DEV_MFC
->  	select MFD_SYSCON
-> +	select MFD_EXYNOS_PMU
->  	help
->  	  Samsung EXYNOS4 SoCs based systems
->  
-> @@ -38,6 +39,7 @@ config ARCH_EXYNOS5
->  	select HAVE_SMP
->  	select PINCTRL
->  	select MFD_SYSCON
-> +	select MFD_EXYNOS_PMU
->  	help
->  	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
->  
-> diff --git a/arch/arm/mach-exynos/Makefile b/arch/arm/mach-exynos/Makefile
-> index a656dbe..19fdf17 100644
-> --- a/arch/arm/mach-exynos/Makefile
-> +++ b/arch/arm/mach-exynos/Makefile
-> @@ -18,8 +18,6 @@ obj-$(CONFIG_PM_SLEEP)		+= pm.o sleep.o
->  obj-$(CONFIG_PM_GENERIC_DOMAINS) += pm_domains.o
->  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
->  
-> -obj-$(CONFIG_ARCH_EXYNOS)	+= pmu.o
-> -
->  obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
->  
->  obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 3383412..fd48870 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -1203,6 +1203,15 @@ config MFD_STW481X
->  	  in various ST Microelectronics and ST-Ericsson embedded
->  	  Nomadik series.
->  
-> +config MFD_EXYNOS_PMU
-> +	tristate "Support Exynos Power Managment Unit"
-> +	depends on ARM || ARM64
-> +	help
-> +	Exynos SoC have Power Management Unit (PMU) which controls power and
-> +	operation state of Exynos SoC in two different ways. This driver
-> +	provides impmentation of PMU driver and provides basic functionality
-> +	required during these operation state.
-> +
->  menu "Multimedia Capabilities Port drivers"
->  	depends on ARCH_SA1100
->  
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 2851275..7c43d07 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -166,3 +166,4 @@ obj-$(CONFIG_MFD_RETU)		+= retu-mfd.o
->  obj-$(CONFIG_MFD_AS3711)	+= as3711.o
->  obj-$(CONFIG_MFD_AS3722)	+= as3722.o
->  obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
-> +obj-$(CONFIG_MFD_EXYNOS_PMU)	+= exynos-pmu.o
-> diff --git a/arch/arm/mach-exynos/pmu.c b/drivers/mfd/exynos-pmu.c
-> similarity index 100%
-> rename from arch/arm/mach-exynos/pmu.c
-> rename to drivers/mfd/exynos-pmu.c
+A and B are reclaimable but C and D are not (D is protected by C).
 
+The low_limit is 0 by default so every group is eligible. This patch
+doesn't provide a way to set the limit yet although the core
+infrastructure is there already.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/memcontrol.h  |  9 +++++++++
+ include/linux/res_counter.h | 27 +++++++++++++++++++++++++++
+ mm/memcontrol.c             | 23 +++++++++++++++++++++++
+ mm/vmscan.c                 | 34 +++++++++++++++++++++++++++++++++-
+ 4 files changed, 92 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 1fa23244fe37..6c59056f4bc6 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -92,6 +92,9 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+ bool task_in_mem_cgroup(struct task_struct *task,
+ 			const struct mem_cgroup *memcg);
+ 
++extern bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
++		struct mem_cgroup *root);
++
+ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+ 
+@@ -288,6 +291,12 @@ static inline struct lruvec *mem_cgroup_page_lruvec(struct page *page,
+ 	return &zone->lruvec;
+ }
+ 
++static inline bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
++		struct mem_cgroup *root)
++{
++	return true;
++}
++
+ static inline struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ {
+ 	return NULL;
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index 56b7bc32db4f..408724eeec71 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -40,6 +40,11 @@ struct res_counter {
+ 	 */
+ 	unsigned long long soft_limit;
+ 	/*
++	 * the limit under which the usage cannot be pushed
++	 * due to external pressure.
++	 */
++	unsigned long long low_limit;
++	/*
+ 	 * the number of unsuccessful attempts to consume the resource
+ 	 */
+ 	unsigned long long failcnt;
+@@ -175,6 +180,28 @@ res_counter_soft_limit_excess(struct res_counter *cnt)
+ 	return excess;
+ }
+ 
++/**
++ * Get the difference between the usage and the low limit
++ * @cnt: The counter
++ *
++ * Returns 0 if usage is less than or equal to low limit
++ * The difference between usage and low limit, otherwise.
++ */
++static inline unsigned long long
++res_counter_low_limit_excess(struct res_counter *cnt)
++{
++	unsigned long long excess;
++	unsigned long flags;
++
++	spin_lock_irqsave(&cnt->lock, flags);
++	if (cnt->usage <= cnt->low_limit)
++		excess = 0;
++	else
++		excess = cnt->usage - cnt->low_limit;
++	spin_unlock_irqrestore(&cnt->lock, flags);
++	return excess;
++}
++
+ static inline void res_counter_reset_max(struct res_counter *cnt)
+ {
+ 	unsigned long flags;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 19d620b3d69c..40e517630138 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2808,6 +2808,29 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+ 	return mem_cgroup_from_id(id);
+ }
+ 
++/**
++ * mem_cgroup_reclaim_eligible - checks whether given memcg is eligible for the
++ * reclaim
++ * @memcg: target memcg for the reclaim
++ * @root: root of the reclaim hierarchy (null for the global reclaim)
++ *
++ * The given group is reclaimable if it is above its low limit and the same
++ * applies for all parents up the hierarchy until root (including).
++ */
++bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
++		struct mem_cgroup *root)
++{
++	do {
++		if (!res_counter_low_limit_excess(&memcg->res))
++			return false;
++		if (memcg == root)
++			break;
++
++	} while ((memcg = parent_mem_cgroup(memcg)));
++
++	return true;
++}
++
+ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ {
+ 	struct mem_cgroup *memcg = NULL;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c1cd99a5074b..0f428158254e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2215,9 +2215,11 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ 	}
+ }
+ 
+-static void shrink_zone(struct zone *zone, struct scan_control *sc)
++static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
++		bool follow_low_limit)
+ {
+ 	unsigned long nr_reclaimed, nr_scanned;
++	unsigned nr_scanned_groups = 0;
+ 
+ 	do {
+ 		struct mem_cgroup *root = sc->target_mem_cgroup;
+@@ -2234,7 +2236,23 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ 		do {
+ 			struct lruvec *lruvec;
+ 
++			/*
++			 * Memcg might be under its low limit so we have to
++			 * skip it during the first reclaim round
++			 */
++			if (follow_low_limit &&
++					!mem_cgroup_reclaim_eligible(memcg, root)) {
++				/*
++				 * It would be more optimal to skip the memcg
++				 * subtree now but we do not have a memcg iter
++				 * helper for that. Anyone?
++				 */
++				memcg = mem_cgroup_iter(root, memcg, &reclaim);
++				continue;
++			}
++
+ 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
++			nr_scanned_groups++;
+ 
+ 			shrink_lruvec(lruvec, sc);
+ 
+@@ -2262,6 +2280,20 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ 
+ 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
+ 					 sc->nr_scanned - nr_scanned, sc));
++
++	return nr_scanned_groups;
++}
++
++static void shrink_zone(struct zone *zone, struct scan_control *sc)
++{
++	if (!__shrink_zone(zone, sc, true)) {
++		/*
++		 * First round of reclaim didn't find anything to reclaim
++		 * because of low limit protection so try again and ignore
++		 * the low limit this time.
++		 */
++		__shrink_zone(zone, sc, false);
++	}
+ }
+ 
+ /* Returns true if compaction should go ahead for a high-order request */
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.0.0.rc0
+
