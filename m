@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084AbaD1BbV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:21 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42998 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752760AbaD1B3W (ORCPT
+	id S1754758AbaD1B7G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:59:06 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:43344 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaD1B7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:22 -0400
+	Sun, 27 Apr 2014 21:59:01 -0400
+Message-ID: <1398650332.3046.67.camel@ThinkPad-T5421>
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Johan Hovold <jhovold@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com
+Date: Mon, 28 Apr 2014 09:58:52 +0800
+In-Reply-To: <Pine.LNX.4.44L0.1404250954360.1140-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1404250954360.1140-100000@iolanthe.rowland.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Brian Norris" <computersforpeace@gmail.com>,
-        "Kamlakant Patel" <kamlakant.patel@broadcom.com>,
-        "Ajesh Kunhipurayil Vijayan" <ajesh@broadcom.com>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.304355811@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 44/94] jffs2: Fix crash due to truncation of csize
-In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042801-2966-0000-0000-00000B1190D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, 2014-04-25 at 09:59 -0400, Alan Stern wrote:
+> On Fri, 25 Apr 2014, Li Zhong wrote:
+> 
+> > > No, this isn't self removal. The driver-attribute (not device-attribute)
+> > > store operation simply grabs a lock that is also held while the driver
+> > > is being deregistered at module unload. Taking a reference to the module
+> > > in this case will prevent deregistration while store is running.
+> > > 
+> > > But it seems like this can be solved for usb-serial by simply not
+> > > holding the lock while deregistering.
+> > 
+> > I didn't look carefully about this lock. 
+> > 
+> > But I'm not sure whether there are such requirements for driver
+> > attributes:
+> > 
+> > some lock needs be grabbed in the driver attributes store callbacks, and
+> > the same lock also needs to be grabbed during driver unregister. 
+> 
+> In this case, the lock does _not_ need to be grabbed during driver 
+> unregister.  The driver grabs the lock, but it doesn't need to.
 
-------------------
+OK.
 
-From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+> 
+> > If we have such requirements currently or in the future, I think they
+> > could all be solved by breaking active protection after get the module
+> > reference.
+> 
+> No!  That would be very bad.
+> 
+> Unloading modules is quite different from unbinding drivers.  After the
+> driver is unbound, its attribute callback routines can continue to run.  
+> But after a driver module has been unloaded, its attribute callback 
+> routines _cannot_ run because they aren't present in memory any more.
+> 
+> If we allowed a module to be unloaded while one of its callbacks was 
+> running (because active protection was broken), imagine what would 
+> happen...
 
-commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
+I don't think the module could be unloaded after we increased the module
+reference counter. 
 
-mounting JFFS2 partition sometimes crashes with this call trace:
+Thanks, Zhong
 
-[ 1322.240000] Kernel bug detected[#1]:
-[ 1322.244000] Cpu 2
-[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
-[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
-[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
-[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
-[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
-[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
-[ 1322.292000] $24   : 0000000000000004 0000000000000000
-[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
-[ 1322.308000] Hi    : 000000000000023c
-[ 1322.312000] Lo    : 000000000003f802
-[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
-[ 1322.320000]     Not tainted
-[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
-[ 1322.336000] Cause : 00800034
-[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
-[ 1322.344000] Modules linked in:
-[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
-[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
-        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
-        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
-        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
-        0000008600000000 0000000000000000 0000000000000000 0000000000000000
-        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
-        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
-        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
-        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
-        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
-        ...
-[ 1322.424000] Call Trace:
-[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
-[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
-[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
-[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
-[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
-[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
-[ 1322.472000]
-[ 1322.472000]
-Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
-[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
+> 
+> Alan Stern
+> 
 
-The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
-is used to hold the compressed data length(csize) which is declared as uint32_t.
-So, when the value of csize exceeds 16bits, it gets truncated when assigned to
-tn->csize. This is causing a kernel BUG.
-Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
-
-Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
-Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- fs/jffs2/nodelist.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
- 
 
