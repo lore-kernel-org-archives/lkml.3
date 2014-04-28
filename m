@@ -1,83 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaD1QL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:11:27 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33297 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932550AbaD1QLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:11:24 -0400
-Date: Mon, 28 Apr 2014 11:11:10 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the usb tree
-Message-ID: <20140428161110.GL30292@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140428152044.5b5dd87a9e3d885129bb2485@canb.auug.org.au>
+	id S932746AbaD1QMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:12:34 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:38430 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755968AbaD1QMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 12:12:31 -0400
+Date: Mon, 28 Apr 2014 13:10:41 -0300
+From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+To: George Cherian <george.cherian@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, bcousson@baylibre.com,
+        tony@atomide.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Ezequiel =?iso-8859-1?Q?Garc=EDa?= 
+	<ezequiel@vanguardiasur.com.ar>
+Subject: Re: [PATCH 1/4] ARM: dts: am335x-bone-common: use phandles for USB
+ and DMA refs
+Message-ID: <20140428161041.GA6140@solid>
+References: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
+ <535E689D.7010204@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2OzUYMsT4j3Kc+NU"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140428152044.5b5dd87a9e3d885129bb2485@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <535E689D.7010204@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2OzUYMsT4j3Kc+NU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 28, 2014 at 08:11:33PM +0530, George Cherian wrote:
+> On 4/28/2014 7:28 PM, Guido Martínez wrote:
+> >Use phandles instead of unit adresses to reference usb and dma nodes.
+> >This makes the DT more robust and readable.
+> The series will give dtb build errors
+> Error: arch/arm/boot/dts/am335x-bone-common.dtsi:186.2-15 syntax error
+> FATAL ERROR: Unable to parse input tree
+> Error: arch/arm/boot/dts/am335x-evmsk.dts:367.2-15 syntax error
+> FATAL ERROR: Unable to parse input tree
+> make[1]: *** [arch/arm/boot/dts/am335x-bone.dtb] Error 1
+> make[1]: *** Waiting for unfinished jobs....
+> Error: arch/arm/boot/dts/am335x-evm.dts:334.2-15 syntax error
+> FATAL ERROR: Unable to parse input tree
+> make[1]: *** [arch/arm/boot/dts/am335x-evmsk.dtb] Error 1
+> make[1]: *** [arch/arm/boot/dts/am335x-evm.dtb] Error 1
+> Error: arch/arm/boot/dts/am335x-igep0033.dtsi:204.2-15 syntax error
+> FATAL ERROR: Unable to parse input tree
+> make[1]: *** [arch/arm/boot/dts/am335x-base0033.dtb] Error 1
+> Error: arch/arm/boot/dts/am335x-bone-common.dtsi:186.2-15 syntax error
+> FATAL ERROR: Unable to parse input tree
+> make[1]: *** [arch/arm/boot/dts/am335x-boneblack.dtb] Error 1
+> make: *** [dtbs] Error 2
+> 
+Terribly sorry about this. I'll send a v2.
 
-On Mon, Apr 28, 2014 at 03:20:44PM +1000, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/phy/phy-mv-u3d-usb.c between commit 543cab640279 ("usb: phy:
-> mv_u3d: Remove usb phy driver for mv_u3d") from the usb tree and commit
-> 041832565e40 ("usb: phy: mv-u3d: switch over to writel/readl") from the
-> usb-gadget tree.
->=20
-> I fixed it up (the former removes the file, so I did that) and can carry
-> the fix as necessary (no action is required).
+> >
+> >Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+> >---
+> >  arch/arm/boot/dts/am335x-bone-common.dtsi | 12 ++++++------
+> >  1 file changed, 6 insertions(+), 6 deletions(-)
+> >
+> >diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> >index 2e7d932..b95bc9a 100644
+> >--- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> >+++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> >@@ -183,28 +183,28 @@
+> >  &usb {
+> >  	status = "okay";
+> >-	control@44e10620 {
+> >+	&usb_ctrl_mod {
+> >  		status = "okay";
+> >  	};
+> >-	usb-phy@47401300 {
+> >+	&usb0_phy {
+> >  		status = "okay";
+> >  	};
+> >-	usb-phy@47401b00 {
+> >+	&usb1_phy {
+> >  		status = "okay";
+> >  	};
+> >-	usb@47401000 {
+> >+	&usb0 {
+> >  		status = "okay";
+> >  	};
+> >-	usb@47401800 {
+> >+	&usb1 {
+> >  		status = "okay";
+> >  		dr_mode = "host";
+> >  	};
+> >-	dma-controller@47402000  {
+> >+	&cppi41dma  {
+> >  		status = "okay";
+> >  	};
+> >  };
+> Instead the patch should be
+> 
+>      diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> b/arch/arm/boot/dts/am335x-bone-common.dtsi
+>      index 2e7d932..06be20a 100644
+>      --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+>      +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+>      @@ -182,31 +182,30 @@
+> 
+>       &usb {
+>              status = "okay";
+>      +};
+>      +&usb_ctrl_mod {
+>      +       status = "okay";
+>      +};
+> 
+>      -       control@44e10620 {
+>      -               status = "okay";
+>      -       };
+>      -
+>      -       usb-phy@47401300 {
+>      -               status = "okay";
+>      -       };
+>      +&usb0_phy {
+>      +       status = "okay";
+>      +};
+> 
+>      -       usb-phy@47401b00 {
+>      -               status = "okay";
+>      -       };
+>      +&usb1_phy {
+>      +       status = "okay";
+>      +};
+> 
+>      -       usb@47401000 {
+>      -               status = "okay";
+>      -       };
+>      +&usb {
+>      +       status = "okay";
+>      +};
+> 
+>      -       usb@47401800 {
+>      -               status = "okay";
+>      -               dr_mode = "host";
+>      -       };
+>      +&usb1 {
+>      +       status = "okay";
+>      +       dr_mode = "host";
+>      +};
+> 
+>      -       dma-controller@47402000  {
+>      -               status = "okay";
+>      -       };
+>      +&cppi41dma  {
+>      +       status = "okay";
+>       };
+> 
+> 
+> 
+> -- 
+> -George
+> 
 
-I actually rejected that patch as you can see from the archives:
-
-http://marc.info/?l=3Dlinux-usb&m=3D139758276329167&w=3D2
-
-I said that it doesn't break anything and can even build in any
-architecture if we switch over to writel/readl instead of _relaxed
-versions which are only available on ARM (afaict).
-
-Greg, looks like this commit went in your tree by mistake.
-
-cheers
-
---=20
-balbi
-
---2OzUYMsT4j3Kc+NU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTXn2eAAoJEIaOsuA1yqREHTcP/0RlnxVSdIG7aG8yLfvzk5h/
-unw2ID5GYMF9kq/ctOFWOo1qtW/bwltlHyS1g4nI847Ck4+oE+WcWbU+n/y1KAoc
-5TrWgXJlPEm7uyGnc4LRP4g3n9qDHa/AZ9dmF16enNJMqqTLAVk/itm+c7wP1TmQ
-hqbybjinTzLgCe5LqTvMoEpjtQF6T7i5/XcUD7r8P2zQJoh7yRdm3tiE0zl0fyip
-4FrtSlEAIhmCxI4228FKouuem62XoF59zWYNlWLcSwDrHzMmshOh3y+KQf34BmmQ
-ZEWKzk2WzDdUBUiTALXmG4b7UoHLxx6AfzvNEgvbtw/g0K7vkuVY/xl5nIOcMacH
-jC8VJdiradgu5/IxYRtzRNyi++nkjFDt87fufTm/oe3fll+4vM0dSWIeYwB5yurX
-p10w4p/CbyjC1gR2sUq6OisbvDoK0fYNKhdLxr/r/2f4B1yDC9U/wtKY3I1M3E94
-ZT9BpS1mdvVpV6fz3kz51eyY++l0Gznbr4+bXgwqGsQszSbBntfBzFEfvpCrzn6W
-XUb8AHvirtbA9/lRLt+BLAGDGJP6FsPlferbGQUW4ArLwyAMMEYVV/aB1PqVamf5
-q592+IITGlrtu6Y1MQtgb2eRl/NfAPBzlsXuJNsZesVlwXKTG7/ks5NxnjyP6yO1
-mtJauCwUy01jYvmkG/H+
-=vX5H
------END PGP SIGNATURE-----
-
---2OzUYMsT4j3Kc+NU--
+-- 
+Guido Martínez, VanguardiaSur
+www.vanguardiasur.com.ar
