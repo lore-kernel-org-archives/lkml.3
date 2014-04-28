@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaD1Ban (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43087 "EHLO
+	id S1753670AbaD1Bal (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43072 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752871AbaD1B3Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752862AbaD1B3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:24 -0400
+	Sun, 27 Apr 2014 21:29:23 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.398895229@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wolfram Sang" <wsa@the-dreams.de>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        "Hans de Goede" <hdegoede@redhat.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.235285677@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 14/94] isdnloop: several buffer overflows
+Subject: [PATCH 3.2 33/94] [media] media: gspca: sn9c20x: add ID for
+ Genius Look 1320 V2
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,94 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
+commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
 
-There are three buffer overflows addressed in this patch.
-
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
-
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
-
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
-
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ Documentation/video4linux/gspca.txt | 1 +
+ drivers/media/video/gspca/sn9c20x.c | 1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
- static void
- isdnloop_fake_err(isdnloop_card * card)
- {
--	char buf[60];
-+	char buf[64];
- 
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
- }
-@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card * card)
- 		case 7:
- 			/* 0x;EAZ */
- 			p += 3;
-+			if (strlen(p) >= sizeof(card->eazlist[0]))
-+				break;
- 			strcpy(card->eazlist[ch - 1], p);
- 			break;
- 		case 8:
-@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl * c, isdnloop
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
- 
-@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl * c, isdnloop
- 				break;
- 			if ((c->arg & 255) < ISDNLOOP_BCH) {
- 				char *p;
--				char dial[50];
- 				char dcode[4];
- 
- 				a = c->arg;
-@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl * c, isdnloop
- 				} else
- 					/* Normal Dial */
- 					strcpy(dcode, "CAL");
--				strcpy(dial, p);
--				sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--					dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+				snprintf(cbuf, sizeof(cbuf),
-+					 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+					 dcode, p, c->parm.setup.si1,
-+					 c->parm.setup.si2, c->parm.setup.eazmsn);
- 				i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 			}
- 			break;
+--- a/Documentation/video4linux/gspca.txt
++++ b/Documentation/video4linux/gspca.txt
+@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
+ sonixj		0458:7025	Genius Eye 311Q
+ sn9c20x		0458:7029	Genius Look 320s
+ sonixj		0458:702e	Genius Slim 310 NB
++sn9c20x		0458:7045	Genius Look 1320 V2
+ sn9c20x		0458:704a	Genius Slim 1320
+ sn9c20x		0458:704c	Genius i-Look 1321
+ sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
+--- a/drivers/media/video/gspca/sn9c20x.c
++++ b/drivers/media/video/gspca/sn9c20x.c
+@@ -2521,6 +2521,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
+ 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
+ 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
++	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
+ 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
 
