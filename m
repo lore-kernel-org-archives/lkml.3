@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119AbaD1X6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:58:11 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:55916 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858AbaD1X4o (ORCPT
+	id S1757277AbaD1X64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:58:56 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40405 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757248AbaD1X6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:56:44 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Himangi Saraogi <himangi774@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 09/19] rcu: Protect uses of ->jiffies_stall with ACCESS_ONCE()
-Date: Mon, 28 Apr 2014 16:56:22 -0700
-Message-Id: <1398729392-15087-9-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140428235600.GA12200@linux.vnet.ibm.com>
- <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042823-7164-0000-0000-0000015FB4FD
+	Mon, 28 Apr 2014 19:58:53 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhFPAOrpXlN5LEcvPGdsb2JhbABZgwZPqxooDAEBAQWHAZJ1gRoXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcDFxOIQA7IdBcWhUSIHREBUAeEOQSZC4x6E4kVK4EuBxcG
+Date: Tue, 29 Apr 2014 09:58:49 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20140428235849.GN15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20140427222019.GF15995@dastard>
+ <87zjj6auvv.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjj6auvv.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Himangi Saraogi <himangi774@gmail.com>
+On Mon, Apr 28, 2014 at 10:54:52AM +0530, Aneesh Kumar K.V wrote:
+> Dave Chinner <david@fromorbit.com> writes:
+> > On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
+> >> Hi
+> >> 
+> >> As per LSF/MM summit discussion I am reposting the richacl patchset for
+> >> upstream inclusion. The patchset includes minimal changes required to implement
+> >> a new acl model similar to NFSv4 ACL. The acl model selection is based on
+> >> file system feature flag. 
+> >> 
+> >> The following set of patches implements VFS and ext4 changes needed to implement
+> >> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> >> extended by file masks to fit into the standard POSIX file permission model.
+> >> They are designed to work seamlessly locally as well as across the NFSv4 and
+> >> CIFS/SMB2 network file system protocols.
+> >> 
+> >> A user-space utility for displaying and changing richacls is available at [1]
+> >> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+....
+> >> More details regarding richacl can be found at
+> >> http://acl.bestbits.at/richacl/
+> >> 
+> >> Previous posting of the patchset can be found at:
+> >> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
+> >> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
+> >> 
+> >> The complete patchset can also be found at:
+> >> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
+> >
+> > Where are the tests? We need comprehensive coverage in xfstests so
+> > we can validate that it works the way it is supposed to and that we
+> > don't break it in future, and that all filesystems behave the same
+> > way....
+> >
+> 
+> https://github.com/kvaneesh/richacl-tools/tree/master/test
 
-Some of the accesses to the rcu_state structure's ->jiffies_stall
-field are unprotected. This patch protects them with ACCESS_ONCE().
-The following coccinelle script was used to acheive this:
-/* coccinelle script to protect uses of ->jiffies_stall with ACCESS_ONCE() */
-@@
-identifier a;
-@@
-(
-	ACCESS_ONCE(a->jiffies_stall)
-|
--	a->jiffies_stall
-+	ACCESS_ONCE(a->jiffies_stall)
-)
+FYI, I doubt very much that anyone will run a stand-alone richacls
+test suite regularly.  Can you please work to integrate this into
+xfstests so it becomes a regular part of a filesystem developer's
+daily workflow?
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tiny_plugin.h | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Cheers,
 
-diff --git a/kernel/rcu/tiny_plugin.h b/kernel/rcu/tiny_plugin.h
-index 431528520562..858c56569127 100644
---- a/kernel/rcu/tiny_plugin.h
-+++ b/kernel/rcu/tiny_plugin.h
-@@ -144,7 +144,7 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 		return;
- 	rcp->ticks_this_gp++;
- 	j = jiffies;
--	js = rcp->jiffies_stall;
-+	js = ACCESS_ONCE(rcp->jiffies_stall);
- 	if (*rcp->curtail && ULONG_CMP_GE(j, js)) {
- 		pr_err("INFO: %s stall on CPU (%lu ticks this GP) idle=%llx (t=%lu jiffies q=%ld)\n",
- 		       rcp->name, rcp->ticks_this_gp, rcu_dynticks_nesting,
-@@ -152,17 +152,17 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 		dump_stack();
- 	}
- 	if (*rcp->curtail && ULONG_CMP_GE(j, js))
--		rcp->jiffies_stall = jiffies +
-+		ACCESS_ONCE(rcp->jiffies_stall) = jiffies +
- 			3 * rcu_jiffies_till_stall_check() + 3;
- 	else if (ULONG_CMP_GE(j, js))
--		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
-+		ACCESS_ONCE(rcp->jiffies_stall) = jiffies + rcu_jiffies_till_stall_check();
- }
- 
- static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
- {
- 	rcp->ticks_this_gp = 0;
- 	rcp->gp_start = jiffies;
--	rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
-+	ACCESS_ONCE(rcp->jiffies_stall) = jiffies + rcu_jiffies_till_stall_check();
- }
- 
- static void check_cpu_stalls(void)
+Dave.
 -- 
-1.8.1.5
-
+Dave Chinner
+david@fromorbit.com
