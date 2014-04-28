@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaD1Lax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:30:53 -0400
-Received: from david.siemens.de ([192.35.17.14]:51029 "EHLO david.siemens.de"
+	id S1755567AbaD1LbJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:31:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754440AbaD1Lav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:30:51 -0400
-Message-ID: <535E3BDA.1000008@siemens.com>
-Date: Mon, 28 Apr 2014 13:30:34 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1754944AbaD1LbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 07:31:02 -0400
+Message-ID: <535E3BEA.4050704@redhat.com>
+Date: Mon, 28 Apr 2014 13:30:50 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] KVM: nVMX: additional checks on vmxon region
-References: <1398661204-4822-1-git-send-email-bsd@redhat.com> <1398661204-4822-3-git-send-email-bsd@redhat.com>
-In-Reply-To: <1398661204-4822-3-git-send-email-bsd@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@kernel.org
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v5 5/5] KVM: MMU: flush tlb out of mmu lock when write-protect
+ the sptes
+References: <1397725576-6617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1397725576-6617-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <1397725576-6617-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
@@ -24,122 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-28 07:00, Bandan Das wrote:
-> Currently, the vmxon region isn't used in the nested case.
-> However, according to the spec, the vmxon instruction performs
-> additional sanity checks on this region and the associated
-> pointer. Modify emulated vmxon to better adhere to the spec
-> requirements
-> 
-> Signed-off-by: Bandan Das <bsd@redhat.com>
-> ---
->  arch/x86/kvm/vmx.c | 53 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 53 insertions(+)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c18fe9a4..d5342c7 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -354,6 +354,7 @@ struct vmcs02_list {
->  struct nested_vmx {
->  	/* Has the level1 guest done vmxon? */
->  	bool vmxon;
-> +	gpa_t vmxon_ptr;
->  
->  	/* The guest-physical address of the current VMCS L1 keeps for L2 */
->  	gpa_t current_vmptr;
-> @@ -5840,9 +5841,19 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
->  	struct kvm_segment cs;
->  	struct vcpu_vmx *vmx = to_vmx(vcpu);
->  	struct vmcs *shadow_vmcs;
-> +	gva_t gva;
-> +	gpa_t vmptr;
-> +	struct x86_exception e;
-> +	struct page *page;
-> +
->  	const u64 VMXON_NEEDED_FEATURES = FEATURE_CONTROL_LOCKED
->  		| FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
->  
-> +	/* Guest physical Address Width */
-> +	struct kvm_cpuid_entry2 *best =
-> +		kvm_find_cpuid_entry(vcpu, 0x80000008, 0);
+What about some editing of the big comment...
 
-We have cpuid_maxphyaddr().
+/*
+ * Currently, shadow PTEs are write protected in two cases, 1) write protecting
+ * guest page tables, 2) resetting dirty tracking after KVM_GET_DIRTY_LOG. The
+ * differences between these two sorts are:
+ *
+ * a) only the first case clears SPTE_MMU_WRITEABLE bit.
+ *
+ * b) the first case requires flushing the TLB immediately to avoid corruption
+ *    of the shadow page table on other VCPUs.  In order to synchronize with
+ *    other VCPUs the flush is done under the MMU lock.
+ *
+ *    The second case instead can delay flushing of the TLB until just before
+ *    returning the dirty bitmap is returned to userspace; this is because it
+ *    only write-protects pages that are set in the bitmap, and further writes
+ *    to those pages can be safely ignored until userspace examines the bitmap.
+ *    We rely on this to flush the TLB outside the MMU lock.
+ *
+ * A problem arises when these two cases occur concurrently.  Userspace can
+ * call KVM_GET_DIRTY_LOG, which write-protects pages but does not immediately
+ * flush the TLB; in the meanwhile, KVM wants to write-protect a guest page
+ * table, sees it's already write-protected, and the result is a corrupted TLB.
+ *
+ * To avoid this problem, when write protecting guest page tables we *always*
+ * flush the TLB if the spte has the SPTE_MMU_WRITEABLE bit set, even if 
+ * the spte was already write-protected.  This works since case 2 never touches
+ * SPTE_MMU_WRITEABLE bit.  In other words, whenever a spte is updated (only
+ * permission and status bits are changed) we need to check whether a spte with
+ * SPTE_MMU_WRITEABLE becomes readonly.  If that happens, we flush the TLB.
+ * mmu_spte_update() handles this.
+ *
+ * The rules to use SPTE_MMU_WRITEABLE and PT_WRITABLE_MASK are as follows:
+ *
+ * a) if you want to see if it has a writable TLB entry, or if the spte can be
+ *    writable on the mmu mapping, check SPTE_MMU_WRITEABLE.  This is the most
+ *    common case, otherwise
+ *
+ * b) when fixing a page fault on the spte or doing write-protection for
+ *    dirty logging, check PT_WRITABLE_MASK.
 
-> +
-> +
->  	/* The Intel VMX Instruction Reference lists a bunch of bits that
->  	 * are prerequisite to running VMXON, most notably cr4.VMXE must be
->  	 * set to 1 (see vmx_set_cr4() for when we allow the guest to set this).
-> @@ -5865,6 +5876,46 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
->  		kvm_inject_gp(vcpu, 0);
->  		return 1;
->  	}
-> +
-> +	if (get_vmx_mem_address(vcpu, vmcs_readl(EXIT_QUALIFICATION),
-> +				vmcs_read32(VMX_INSTRUCTION_INFO), &gva))
-> +		return 1;
-> +
-> +	if (kvm_read_guest_virt(&vcpu->arch.emulate_ctxt, gva, &vmptr,
-> +				sizeof(vmptr), &e)) {
-> +		kvm_inject_page_fault(vcpu, &e);
-> +		return 1;
-> +	}
-> +
-> +	/* Don't bailout if best is NULL */
-> +	WARN_ON(!best);
-> +
-> +	/*
-> +	 * SDM 3: 24.11.5
-> +	 * VMXON pointer must be 4KB aligned
-> +	 * VMXON pointer must not set any bits beyond processor's
-> +	 * physical address width
-> +	 * The first 4 bytes of VMXON region contain the supported
-> +	 * VMCS revision identifier
-> +	 *
-> +	 * Note - IA32_VMX_BASIC[48] will never be 1 for the nested case;
-> +	 * which replaces physical address width with 32
-> +	 */
-> +	if (!IS_ALIGNED(vmptr, PAGE_SIZE) || (best &&
-> +					      (vmptr >> (best->eax & 0xff)))) {
-> +		nested_vmx_failInvalid(vcpu);
-> +		skip_emulated_instruction(vcpu);
-> +		return 1;
-> +	}
-> +
-> +	page = nested_get_page(vcpu, vmptr);
-> +	if ((page == NULL) || ((*(u32 *)kmap(page) != VMCS12_REVISION))) {
 
-Style: you don't need braces around the comparisons.
+Is the above accurate?
 
-> +		nested_vmx_failInvalid(vcpu);
-> +		kunmap(page);
-> +		skip_emulated_instruction(vcpu);
-> +		return 1;
-> +	}
-> +
->  	if (vmx->nested.vmxon) {
->  		nested_vmx_failValid(vcpu, VMXERR_VMXON_IN_VMX_ROOT_OPERATION);
->  		skip_emulated_instruction(vcpu);
-> @@ -5896,9 +5947,11 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
->  	vmx->nested.preemption_timer.function = vmx_preemption_timer_fn;
->  
->  	vmx->nested.vmxon = true;
-> +	vmx->nested.vmxon_ptr = vmptr;
->  
->  	skip_emulated_instruction(vcpu);
->  	nested_vmx_succeed(vcpu);
-> +	kunmap(page);
+>  * TODO: introduce APIs to split these two cases.
 
-This late unmapping leaks the page in other error cases.
+What do you mean exactly?
 
-Jan
-
->  	return 1;
->  }
->  
-> 
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Paolo
