@@ -1,62 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743AbaD1P1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:27:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17088 "EHLO mx1.redhat.com"
+	id S932759AbaD1P2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:28:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58625 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932430AbaD1P1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:27:35 -0400
-Message-ID: <535E734E.3020307@redhat.com>
-Date: Mon, 28 Apr 2014 17:27:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756827AbaD1PPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:15:53 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nm@ti.com>
+Subject: [PATCH V3 17/20] bus: omap_l3_noc: Add information about the context of operation
+Date: Mon, 28 Apr 2014 10:14:57 -0500
+Message-ID: <1398698101-25513-18-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-CC: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@kernel.org>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/2] KVM: async_pf: change async_pf_execute() to use get_user_pages(tsk
- => NULL)
-References: <20140421132543.GA13594@redhat.com> <535E361D.3050902@redhat.com> <20140428141532.GD10488@redhat.com> <20140428150234.GA19879@redhat.com> <20140428150300.GB19879@redhat.com>
-In-Reply-To: <20140428150300.GB19879@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 28/04/2014 17:03, Oleg Nesterov ha scritto:
-> async_pf_execute() passes tsk == current to gup(), this is doesn't
-> hurt but unnecessary and misleading. "tsk" is only used to account
-> the number of faults and current is the random workqueue thread.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  virt/kvm/async_pf.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 0ced4f3..62f4223 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -81,7 +81,7 @@ static void async_pf_execute(struct work_struct *work)
->  	might_sleep();
->
->  	down_read(&mm->mmap_sem);
-> -	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
-> +	get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
->  	up_read(&mm->mmap_sem);
->  	kvm_async_page_present_sync(vcpu, apf);
->
->
+L3 error may be triggered using Debug interface (example JTAG) or
+due to other errors, for example an opcode fetch (due to function
+pointer or stack corruption) or a data access (due to some other
+failure). NOC registers contain additional information to help aid
+debug information.
 
-Thanks, added a Suggested-by for Andrea and applied together with 1/2 to 
-kvm/queue.
+With this, we can enhance the error information to more detailed form:
+"
+L3 Custom Error: MASTER MPU TARGET L4PER2 (Read): Data Access in User mode
+during Functional access
+"
 
-(Actually, I'm back from a longish vacation and I have a pretty large 
-queue, so I haven't even compile tested these for now.  Once I get round 
-to at least smoke-test them, I'll really push to kvm/queue).
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+---
+V3: no change
+ drivers/bus/omap_l3_noc.c |   18 ++++++++++++++----
+ drivers/bus/omap_l3_noc.h |    2 ++
+ 2 files changed, 16 insertions(+), 4 deletions(-)
 
-Paolo
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 9d021d0..08344b0 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -60,15 +60,16 @@ static int l3_handle_target(struct omap_l3 *l3, void __iomem *base,
+ {
+ 	int k;
+ 	u32 std_err_main, clear, masterid;
+-	u8 op_code;
++	u8 op_code, m_req_info;
+ 	void __iomem *l3_targ_base;
+ 	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+-	void __iomem *l3_targ_hdr;
++	void __iomem *l3_targ_hdr, *l3_targ_info;
+ 	struct l3_target_data *l3_targ_inst;
+ 	struct l3_masters_data *master;
+ 	char *target_name, *master_name = "UN IDENTIFIED";
+ 	char *err_description;
+ 	char err_string[30] = { 0 };
++	char info_string[60] = { 0 };
+ 
+ 	/* We DONOT expect err_src to go out of bounds */
+ 	BUG_ON(err_src > MAX_CLKDM_TARGETS);
+@@ -99,6 +100,7 @@ static int l3_handle_target(struct omap_l3 *l3, void __iomem *base,
+ 
+ 		l3_targ_mstaddr = l3_targ_base + L3_TARG_STDERRLOG_MSTADDR;
+ 		l3_targ_hdr = l3_targ_base + L3_TARG_STDERRLOG_HDR;
++		l3_targ_info = l3_targ_base + L3_TARG_STDERRLOG_INFO;
+ 		break;
+ 
+ 	case CUSTOM_ERROR:
+@@ -107,6 +109,7 @@ static int l3_handle_target(struct omap_l3 *l3, void __iomem *base,
+ 		l3_targ_mstaddr = l3_targ_base +
+ 				  L3_TARG_STDERRLOG_CINFO_MSTADDR;
+ 		l3_targ_hdr = l3_targ_base + L3_TARG_STDERRLOG_CINFO_OPCODE;
++		l3_targ_info = l3_targ_base + L3_TARG_STDERRLOG_CINFO_INFO;
+ 		break;
+ 
+ 	default:
+@@ -128,13 +131,20 @@ static int l3_handle_target(struct omap_l3 *l3, void __iomem *base,
+ 
+ 	op_code = readl_relaxed(l3_targ_hdr) & 0x7;
+ 
++	m_req_info = readl_relaxed(l3_targ_info) & 0xF;
++	snprintf(info_string, sizeof(info_string),
++		 ": %s in %s mode during %s access",
++		 (m_req_info & BIT(0)) ? "Opcode Fetch" : "Data Access",
++		 (m_req_info & BIT(1)) ? "Supervisor" : "User",
++		 (m_req_info & BIT(3)) ? "Debug" : "Functional");
++
+ 	WARN(true,
+-	     "%s:L3 %s Error: MASTER %s TARGET %s (%s)%s\n",
++	     "%s:L3 %s Error: MASTER %s TARGET %s (%s)%s%s\n",
+ 	     dev_name(l3->dev),
+ 	     err_description,
+ 	     master_name, target_name,
+ 	     l3_transaction_type[op_code],
+-	     err_string);
++	     err_string, info_string);
+ 
+ 	/* clear the std error log*/
+ 	clear = std_err_main | CLEAR_STDERR_LOG;
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 6670fd9..36dc48b 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -31,7 +31,9 @@
+ #define L3_TARG_STDERRLOG_MAIN		0x48
+ #define L3_TARG_STDERRLOG_HDR		0x4c
+ #define L3_TARG_STDERRLOG_MSTADDR	0x50
++#define L3_TARG_STDERRLOG_INFO		0x58
+ #define L3_TARG_STDERRLOG_SLVOFSLSB	0x5c
++#define L3_TARG_STDERRLOG_CINFO_INFO	0x64
+ #define L3_TARG_STDERRLOG_CINFO_MSTADDR	0x68
+ #define L3_TARG_STDERRLOG_CINFO_OPCODE	0x6c
+ #define L3_FLAGMUX_REGERR0		0xc
+-- 
+1.7.9.5
+
