@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278AbaD1BdY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42844 "EHLO
+	id S1755651AbaD1BdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42822 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752276AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.435705666@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "=?UTF-8?q?Peter=20Bostr=C3=B6m?=" <peter.bostrom@netrounds.com>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.273722047@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 83/94] ALSA: ice1712: Fix boundary checks in PCM
- pointer ops
+Subject: [PATCH 3.2 04/94] vlan: Set correct source MAC address with TX
+ VLAN  offload enabled
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,85 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Peter Boström <peter.bostrom@netrounds.com>
 
-commit 4f8e940095536bc002a81666a4107a581c84e9b9 upstream.
+[ Upstream commit dd38743b4cc2f86be250eaf156cf113ba3dd531a ]
 
-PCM pointer callbacks in ice1712 driver check the buffer size boundary
-wrongly between bytes and frames.  This leads to PCM core warnings
-like:
-   snd_pcm_update_hw_ptr0: 105 callbacks suppressed
-   ALSA pcm_lib.c:352 BUG: pcmC3D0c:0, pos = 5461, buffer size = 5461, period size = 2730
+With TX VLAN offload enabled the source MAC address for frames sent using the
+VLAN interface is currently set to the address of the real interface. This is
+wrong since the VLAN interface may be configured with a different address.
 
-This patch fixes these checks to be placed after the proper unit
-conversions.
+The bug was introduced in commit 2205369a314e12fcec4781cc73ac9c08fc2b47de
+("vlan: Fix header ops passthru when doing TX VLAN offload.").
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This patch sets the source address before calling the create function of the
+real interface.
+
+Signed-off-by: Peter Boström <peter.bostrom@netrounds.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/ice1712/ice1712.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ net/8021q/vlan_dev.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/pci/ice1712/ice1712.c
-+++ b/sound/pci/ice1712/ice1712.c
-@@ -686,9 +686,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_PBK_CTRL) & 1))
- 		return 0;
- 	ptr = runtime->buffer_size - inw(ice->ddma_port + 4);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -529,6 +529,9 @@ static int vlan_passthru_hard_header(str
+ {
+ 	struct net_device *real_dev = vlan_dev_info(dev)->real_dev;
+ 
++	if (saddr == NULL)
++		saddr = dev->dev_addr;
++
+ 	return dev_hard_header(skb, real_dev, type, daddr, saddr, len);
  }
  
- static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substream *substream)
-@@ -705,9 +706,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 		addr = ICE1712_DSC_ADDR0;
- 	ptr = snd_ice1712_ds_read(ice, substream->number * 2, addr) -
- 		ice->playback_con_virt_addr[substream->number];
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *substream)
-@@ -718,9 +720,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_CAP_CTRL) & 1))
- 		return 0;
- 	ptr = inl(ICEREG(ice, CONCAP_ADDR)) - ice->capture_con_virt_addr;
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback = {
-@@ -1114,9 +1117,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_PLAYBACK_START))
- 		return 0;
- 	ptr = ice->playback_pro_size - (inw(ICEMT(ice, PLAYBACK_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substream *substream)
-@@ -1127,9 +1131,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_CAPTURE_START_SHADOW))
- 		return 0;
- 	ptr = ice->capture_pro_size - (inw(ICEMT(ice, CAPTURE_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback_pro = {
 
