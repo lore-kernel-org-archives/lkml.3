@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662AbaD1PCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:02:05 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:43235 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370AbaD1PCA (ORCPT
+	id S1756613AbaD1PBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:01:08 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:44960 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbaD1PBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:02:00 -0400
-Message-ID: <535E6D65.80909@gmail.com>
-Date: Mon, 28 Apr 2014 09:01:57 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 28 Apr 2014 11:01:03 -0400
+Date: Mon, 28 Apr 2014 16:59:31 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-pwm@vger.kernel.org, broonie@kernel.org, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
+Message-ID: <20140428145930.GC28443@ulmo>
+References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+ <1395377590-23537-3-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
-CC: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] perf tools: Fix bfd dependency libraries detection
-References: <1398676935-6615-1-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1398676935-6615-1-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7DO5AaGCk89r4vaK"
+Content-Disposition: inline
+In-Reply-To: <1395377590-23537-3-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/14, 3:22 AM, Jiri Olsa wrote:
-> From: Jiri Olsa <jolsa@redhat.com>
->
-> There's false assumption in the library detection code
-> assuming -liberty and -lz are always present once bfd
-> is detected. The fails on Ubuntu (14.04) as reported
-> by Ingo.
->
-> Forcing the bdf dependency libraries detection any
-> time bfd library is detected.
 
-Have you tried static builds? I need to do those occasionally and I 
-always have to muck around with the Makefiles to get it to succeed -- 
-something with the -liberty and bfd checks.
+--7DO5AaGCk89r4vaK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> Reported-by: Ingo Molnar <mingo@kernel.org>
-> Tested-by: Ingo Molnar <mingo@kernel.org>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+On Fri, Mar 21, 2014 at 12:53:09PM +0800, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 > ---
->   tools/perf/config/Makefile | 34 +++++++++++++++++++++++-----------
->   1 file changed, 23 insertions(+), 11 deletions(-)
->
-> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-> index a71fb39..a57d59e 100644
-> --- a/tools/perf/config/Makefile
-> +++ b/tools/perf/config/Makefile
-> @@ -194,7 +194,10 @@ VF_FEATURE_TESTS =			\
->   	stackprotector-all		\
->   	timerfd				\
->   	libunwind-debug-frame		\
-> -	bionic
-> +	bionic				\
-> +	liberty				\
-> +	liberty-z			\
-> +	cplus-demangle
->
->   # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
->   # If in the future we need per-feature checks/flags for features not
-> @@ -512,7 +515,21 @@ else
->   endif
->
->   ifeq ($(feature-libbfd), 1)
-> -  EXTLIBS += -lbfd -lz -liberty
-> +  EXTLIBS += -lbfd
-> +
-> +  # call all detections now so we get correct
-> +  # status in VF output
+>  drivers/pwm/pwm-fsl-ftm.c | 83 +++++++++++++++++++++++++----------------------
+>  1 file changed, 44 insertions(+), 39 deletions(-)
 
-Are you folding the "VF" into V?
+This could explain the advantages of converting to regmap. Looking at
+this diffstat above, it's not immediately obvious that there's an
+advantage because you end up adding 5 lines.
 
-David
+Again I'm guessing this is in preparation to add endianess support, and
+it will be really easy to add that using regmap, so the gains will only
+become obvious later on.
+
+That's the kind of thing I'd like to see in the patch description. It
+tells me why this patch makes sense.
+
+Thierry
+
+--7DO5AaGCk89r4vaK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTXmzSAAoJEN0jrNd/PrOhvRYP/jYJ24/oiAcaY67EZ5u1XPlT
+HCT4KC2+n6zRh0tZVaKNK8cgcCr3eWD/cA536ItuPICy3pQ0MZob13tHHXb9ZNFq
+5YxJFV5aGq438s+3+i1/c4JmQFpBKwdFcQoO4VP+VLeidGeVpiz6DfIPT5k4e7J1
+IHv8bG6J3Lh67YMi0T+CirlVZyouSBXBrotTTSbYajg5ZYWZoHNLKlH2u7sHpPvw
+IkHc+74kPWttR19vgB2cRRGwwwZJPpGOFIe5OUYKt2Tj/snSZ1yaa0lgl10KOIva
+nLXKIvjE4whaO70S69SMxHgJq3Vxw4Kcp4s/ZKIBDcij6lrwbFSWDD5Ksjv6TAts
+aYZI1a7M30+xheJYr1/3SQdzppg7L0nQRxKfi8BNktUDizUfTG+dxfqIZgGYDFQG
+wm+KHw30R89mWdKFztEy0rRcWxQhKBglbmU3D/LqvP0uET1vhTvpycdxEnoq1/N9
+sPf6/D/LQYYhACTdztuJW17+NL8yFLrSX8Pd1+iipNIYtE98ToIDj+uTDDaHziro
+vDRSGkyPwH8lY2zwGvZdO3NZh4daI+u9ToOIaniro/wOEKwozfOJhrGzrY9UjqzF
+ZAWYjD4TcMV3V8jt6D7Md8ZPmMIJVIc8qJVBewZzp31DzCSULWzSm0ceOgK3+U2J
+IEAkt6AOdY/0kp5KN8Gd
+=Fa26
+-----END PGP SIGNATURE-----
+
+--7DO5AaGCk89r4vaK--
