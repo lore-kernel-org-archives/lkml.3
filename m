@@ -1,157 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaD1BiO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:38:14 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37472 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902AbaD1BiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:38:11 -0400
-Message-ID: <1398649066.30694.2.camel@pasglop>
-Subject: Re: [PATCH v2 21/21] of: push struct boot_param_header and defines
- into powerpc
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 28 Apr 2014 11:37:46 +1000
-In-Reply-To: <1398215901-25609-22-git-send-email-robherring2@gmail.com>
-References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
-	 <1398215901-25609-22-git-send-email-robherring2@gmail.com>
+	id S1755502AbaD1BdE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42827 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752342AbaD1B3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.342887870@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 91/94] powernow-k6: disable cache when changing frequency
+In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 20:18 -0500, Rob Herring wrote:
-> From: Rob Herring <robh@kernel.org>
-> 
-> Now powerpc is the only user of struct boot_param_header and FDT defines,
-> so they can be moved into the powerpc architecture code.
-> 
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> ---
+3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
 
-I assume we want to get rid of that too eventually ? :-)
+------------------
 
-We should be able to get the definitions from libfdt too....
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-In the meantime:
+commit e20e1d0ac02308e2211306fc67abcd0b2668fb8b upstream.
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
---
+I found out that a system with k6-3+ processor is unstable during network
+server load. The system locks up or the network card stops receiving. The
+reason for the instability is the CPU frequency scaling.
 
-> v2: no change
-> 
->  arch/powerpc/include/asm/prom.h | 39 +++++++++++++++++++++++++++++++++++++++
->  include/linux/of_fdt.h          | 37 -------------------------------------
->  2 files changed, 39 insertions(+), 37 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/prom.h b/arch/powerpc/include/asm/prom.h
-> index d977b9b..74b79f0 100644
-> --- a/arch/powerpc/include/asm/prom.h
-> +++ b/arch/powerpc/include/asm/prom.h
-> @@ -26,6 +26,45 @@
->  #include <linux/of_irq.h>
->  #include <linux/platform_device.h>
->  
-> +#define OF_DT_BEGIN_NODE	0x1		/* Start of node, full name */
-> +#define OF_DT_END_NODE		0x2		/* End node */
-> +#define OF_DT_PROP		0x3		/* Property: name off, size,
-> +						 * content */
-> +#define OF_DT_NOP		0x4		/* nop */
-> +#define OF_DT_END		0x9
-> +
-> +#define OF_DT_VERSION		0x10
-> +
-> +/*
-> + * This is what gets passed to the kernel by prom_init or kexec
-> + *
-> + * The dt struct contains the device tree structure, full pathes and
-> + * property contents. The dt strings contain a separate block with just
-> + * the strings for the property names, and is fully page aligned and
-> + * self contained in a page, so that it can be kept around by the kernel,
-> + * each property name appears only once in this page (cheap compression)
-> + *
-> + * the mem_rsvmap contains a map of reserved ranges of physical memory,
-> + * passing it here instead of in the device-tree itself greatly simplifies
-> + * the job of everybody. It's just a list of u64 pairs (base/size) that
-> + * ends when size is 0
-> + */
-> +struct boot_param_header {
-> +	__be32	magic;			/* magic word OF_DT_HEADER */
-> +	__be32	totalsize;		/* total size of DT block */
-> +	__be32	off_dt_struct;		/* offset to structure */
-> +	__be32	off_dt_strings;		/* offset to strings */
-> +	__be32	off_mem_rsvmap;		/* offset to memory reserve map */
-> +	__be32	version;		/* format version */
-> +	__be32	last_comp_version;	/* last compatible version */
-> +	/* version 2 fields below */
-> +	__be32	boot_cpuid_phys;	/* Physical CPU id we're booting on */
-> +	/* version 3 fields below */
-> +	__be32	dt_strings_size;	/* size of the DT strings block */
-> +	/* version 17 fields below */
-> +	__be32	dt_struct_size;		/* size of the DT structure block */
-> +};
-> +
->  /*
->   * OF address retreival & translation
->   */
-> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-> index 1f882e1..5c0ab05 100644
-> --- a/include/linux/of_fdt.h
-> +++ b/include/linux/of_fdt.h
-> @@ -17,45 +17,8 @@
->  
->  /* Definitions used by the flattened device tree */
->  #define OF_DT_HEADER		0xd00dfeed	/* marker */
-> -#define OF_DT_BEGIN_NODE	0x1		/* Start of node, full name */
-> -#define OF_DT_END_NODE		0x2		/* End node */
-> -#define OF_DT_PROP		0x3		/* Property: name off, size,
-> -						 * content */
-> -#define OF_DT_NOP		0x4		/* nop */
-> -#define OF_DT_END		0x9
-> -
-> -#define OF_DT_VERSION		0x10
->  
->  #ifndef __ASSEMBLY__
-> -/*
-> - * This is what gets passed to the kernel by prom_init or kexec
-> - *
-> - * The dt struct contains the device tree structure, full pathes and
-> - * property contents. The dt strings contain a separate block with just
-> - * the strings for the property names, and is fully page aligned and
-> - * self contained in a page, so that it can be kept around by the kernel,
-> - * each property name appears only once in this page (cheap compression)
-> - *
-> - * the mem_rsvmap contains a map of reserved ranges of physical memory,
-> - * passing it here instead of in the device-tree itself greatly simplifies
-> - * the job of everybody. It's just a list of u64 pairs (base/size) that
-> - * ends when size is 0
-> - */
-> -struct boot_param_header {
-> -	__be32	magic;			/* magic word OF_DT_HEADER */
-> -	__be32	totalsize;		/* total size of DT block */
-> -	__be32	off_dt_struct;		/* offset to structure */
-> -	__be32	off_dt_strings;		/* offset to strings */
-> -	__be32	off_mem_rsvmap;		/* offset to memory reserve map */
-> -	__be32	version;		/* format version */
-> -	__be32	last_comp_version;	/* last compatible version */
-> -	/* version 2 fields below */
-> -	__be32	boot_cpuid_phys;	/* Physical CPU id we're booting on */
-> -	/* version 3 fields below */
-> -	__be32	dt_strings_size;	/* size of the DT strings block */
-> -	/* version 17 fields below */
-> -	__be32	dt_struct_size;		/* size of the DT structure block */
-> -};
->  
->  #if defined(CONFIG_OF_FLATTREE)
->  
+During frequency transition the processor is in "EPM Stop Grant" state.
+The documentation says that the processor doesn't respond to inquiry
+requests in this state. Consequently, coherency of processor caches and
+bus master devices is not maintained, causing the system instability.
 
+This patch flushes the cache during frequency transition. It fixes the
+instability.
+
+Other minor changes:
+* u64 invalue changed to unsigned long because the variable is 32-bit
+* move the logic to set the multiplier to a separate function
+  powernow_k6_set_cpu_multiplier
+* preserve lower 5 bits of the powernow port instead of 4 (the voltage
+  field has 5 bits)
+* mask interrupts when reading the multiplier, so that the port is not
+  open during other activity (running other kernel code with the port open
+  shouldn't cause any misbehavior, but we should better be safe and keep
+  the port closed)
+
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/cpufreq/powernow-k6.c | 56 ++++++++++++++++++++++++++++++-------------
+ 1 file changed, 39 insertions(+), 17 deletions(-)
+
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -43,23 +43,58 @@ static struct cpufreq_frequency_table cl
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+  *
+- *   Returns the current setting of the frequency multiplier. Core clock
++ * Returns the current setting of the frequency multiplier. Core clock
+  * speed is frequency of the Front-Side Bus multiplied with this value.
+  */
+ static int powernow_k6_get_cpu_multiplier(void)
+ {
+-	u64 invalue = 0;
++	unsigned long invalue = 0;
+ 	u32 msrval;
+ 
++	local_irq_disable();
++
+ 	msrval = POWERNOW_IOPORT + 0x1;
+ 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
+ 	invalue = inl(POWERNOW_IOPORT + 0x8);
+ 	msrval = POWERNOW_IOPORT + 0x0;
+ 	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
+ 
++	local_irq_enable();
++
+ 	return clock_ratio[(invalue >> 5)&7].index;
+ }
+ 
++static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
++{
++	unsigned long outvalue, invalue;
++	unsigned long msrval;
++	unsigned long cr0;
++
++	/* we now need to transform best_i to the BVC format, see AMD#23446 */
++
++	/*
++	 * The processor doesn't respond to inquiry cycles while changing the
++	 * frequency, so we must disable cache.
++	 */
++	local_irq_disable();
++	cr0 = read_cr0();
++	write_cr0(cr0 | X86_CR0_CD);
++	wbinvd();
++
++	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
++
++	msrval = POWERNOW_IOPORT + 0x1;
++	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
++	invalue = inl(POWERNOW_IOPORT + 0x8);
++	invalue = invalue & 0x1f;
++	outvalue = outvalue | invalue;
++	outl(outvalue, (POWERNOW_IOPORT + 0x8));
++	msrval = POWERNOW_IOPORT + 0x0;
++	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
++
++	write_cr0(cr0);
++	local_irq_enable();
++}
+ 
+ /**
+  * powernow_k6_set_state - set the PowerNow! multiplier
+@@ -69,8 +104,6 @@ static int powernow_k6_get_cpu_multiplie
+  */
+ static void powernow_k6_set_state(unsigned int best_i)
+ {
+-	unsigned long outvalue = 0, invalue = 0;
+-	unsigned long msrval;
+ 	struct cpufreq_freqs freqs;
+ 
+ 	if (clock_ratio[best_i].index > max_multiplier) {
+@@ -84,18 +117,7 @@ static void powernow_k6_set_state(unsign
+ 
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+ 
+-	/* we now need to transform best_i to the BVC format, see AMD#23446 */
+-
+-	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
+-
+-	msrval = POWERNOW_IOPORT + 0x1;
+-	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
+-	invalue = inl(POWERNOW_IOPORT + 0x8);
+-	invalue = invalue & 0xf;
+-	outvalue = outvalue | invalue;
+-	outl(outvalue , (POWERNOW_IOPORT + 0x8));
+-	msrval = POWERNOW_IOPORT + 0x0;
+-	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
++	powernow_k6_set_cpu_multiplier(best_i);
+ 
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+ 
+@@ -163,7 +185,7 @@ static int powernow_k6_cpu_init(struct c
+ 	}
+ 
+ 	/* cpuinfo and default policy values */
+-	policy->cpuinfo.transition_latency = 200000;
++	policy->cpuinfo.transition_latency = 500000;
+ 	policy->cur = busfreq * max_multiplier;
+ 
+ 	result = cpufreq_frequency_table_cpuinfo(policy, clock_ratio);
 
