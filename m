@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420AbaD1FZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:25:08 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36833 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaD1FZF (ORCPT
+	id S1752561AbaD1Fat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 01:30:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49097 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaD1Far (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:25:05 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20140427222019.GF15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140427222019.GF15995@dastard>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 28 Apr 2014 10:54:52 +0530
-Message-ID: <87zjj6auvv.fsf@linux.vnet.ibm.com>
+	Mon, 28 Apr 2014 01:30:47 -0400
+From: Keerthy <j-keerthy@ti.com>
+To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <grant.likely@linaro.org>,
+        <robh+dt@kernel.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
+        Keerthy <j-keerthy@ti.com>
+Subject: [PATCH 0/2] TPS65917: Drivers for TPS65917 PMIC 
+Date: Mon, 28 Apr 2014 10:58:24 +0530
+Message-ID: <1398662906-4398-1-git-send-email-j-keerthy@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042805-6102-0000-0000-000005750904
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+The TPS65917 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-> On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
->> Hi
->> 
->> As per LSF/MM summit discussion I am reposting the richacl patchset for
->> upstream inclusion. The patchset includes minimal changes required to implement
->> a new acl model similar to NFSv4 ACL. The acl model selection is based on
->> file system feature flag. 
->> 
->> The following set of patches implements VFS and ext4 changes needed to implement
->> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
->> extended by file masks to fit into the standard POSIX file permission model.
->> They are designed to work seamlessly locally as well as across the NFSv4 and
->> CIFS/SMB2 network file system protocols.
->> 
->> A user-space utility for displaying and changing richacls is available at [1]
->> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
->> 
->> [1] git://github.com/kvaneesh/richacl-tools.git master
->> 
->> To test richacl on ext4, create the file sytem with richacl feature flag
->> (mkfs.ext4 -O richacl or  tune2fs -O richacl). With richacl feature enabled
->> using mount option "acl" will switch to using richacl instead of posixacl.
->
-> No mount options, please. The ACL configuration needs to be
-> determined solely by the superblock feature bit - we cannot support
-> filesystems with mixed ACL types, and that's what this mount option
-> does.
+ - Regulators.
+ - GPADC.
+ - Over Temperature warning and Shut down.
 
-For ext4 since acls are enabled by default we really don't need to
-speciy -o acl in mount. What i meant by above is that using "acl/noacl" mount
-option will now enabe/disable POSIX or RICHacl based on the superblock
-feature bit. 
+This patch series adds support for TPS65917 mfd device. At this time only
+the regulator functionality is made available.
 
->
->> More details regarding richacl can be found at
->> http://acl.bestbits.at/richacl/
->> 
->> Previous posting of the patchset can be found at:
->> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
->> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
->> 
->> The complete patchset can also be found at:
->> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
->
-> Where are the tests? We need comprehensive coverage in xfstests so
-> we can validate that it works the way it is supposed to and that we
-> don't break it in future, and that all filesystems behave the same
-> way....
->
+The closest drivers are PALMAS series drivers.
+The register set is changed. Bit-field defenitions are changed.
+Hence based on the PALMAS drivers and created a new set of drivers
+with code changes as required.
 
-https://github.com/kvaneesh/richacl-tools/tree/master/test
+The patches are boot tested on DRA7-EVM.
 
+Keerthy (2):
+  MFD: TPS65917: Add driver for the TPS65917 PMIC
+  Regulators: TPS65917: Add Regulator driver for TPS65917 PMIC
 
--aneesh
+ drivers/mfd/Kconfig                    |   10 +
+ drivers/mfd/Makefile                   |    1 +
+ drivers/mfd/tps65917.c                 |  542 ++++++++++++
+ drivers/regulator/Kconfig              |   12 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps65917-regulator.c |  903 +++++++++++++++++++
+ include/linux/mfd/tps65917.h           | 1508 ++++++++++++++++++++++++++++++++
+ 7 files changed, 2977 insertions(+)
+ create mode 100644 drivers/mfd/tps65917.c
+ create mode 100644 drivers/regulator/tps65917-regulator.c
+ create mode 100644 include/linux/mfd/tps65917.h
+
+-- 
+1.7.9.5
 
