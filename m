@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaD1CBY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:01:24 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:51427 "EHLO fiona.linuxhacker.ru"
+	id S1754917AbaD1CBX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 22:01:23 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:51434 "EHLO fiona.linuxhacker.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754746AbaD1CBM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:01:12 -0400
+	id S1754582AbaD1CBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 22:01:17 -0400
 From: Oleg Drokin <green@linuxhacker.ru>
 To: linux-kernel@vger.kernel.org
-Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH v2 2/4] staging/lustre/lnet: remove unused variable in lnet_destroy_remote_nets_table
-Date: Sun, 27 Apr 2014 22:00:47 -0400
-Message-Id: <1398650449-4587-3-git-send-email-green@linuxhacker.ru>
+Cc: Oleg Drokin <green@linuxhacker.ru>, Oleg Drokin <oleg.drokin@intel.com>,
+        Dmitry Eremin <dmitry.eremin@intel.com>,
+        Liang Zhen <liang.zhen@intel.com>
+Subject: [PATCH v2 4/4] staging/lustre/lnet: fix potential null pointer dereference
+Date: Sun, 27 Apr 2014 22:00:49 -0400
+Message-Id: <1398650449-4587-5-git-send-email-green@linuxhacker.ru>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1398650449-4587-1-git-send-email-green@linuxhacker.ru>
 References: <1398650449-4587-1-git-send-email-green@linuxhacker.ru>
@@ -20,45 +21,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Eremin <dmitry.eremin@intel.com>
-
-Local variable 'hash' is never used
+Pointer 'ni' checked for NULL at line 1569 may be passed to
+function and may be dereferenced there by passing argument 1 to
+function 'lnet_ni_notify_locked' at line 1621.
 found by Klocwork Insight tool
 
-Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
-Reviewed-on: http://review.whamcloud.com/9386
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4629
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Isaac Huang <he.huang@intel.com>
 Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+CC: Dmitry Eremin <dmitry.eremin@intel.com>
+CC: Liang Zhen <liang.zhen@intel.com>
 ---
- drivers/staging/lustre/lnet/lnet/api-ni.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lnet/lnet/router.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
-index 85b8d81..3f1fdaa 100644
---- a/drivers/staging/lustre/lnet/lnet/api-ni.c
-+++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
-@@ -127,8 +127,7 @@ lnet_create_remote_nets_table(void)
- static void
- lnet_destroy_remote_nets_table(void)
- {
--	int		i;
--	struct list_head	*hash;
-+	int i;
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index 995f509..926923a 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -145,7 +145,7 @@ lnet_ni_notify_locked(lnet_ni_t *ni, lnet_peer_t *lp)
+ 	 * NB individual events can be missed; the only guarantee is that you
+ 	 * always get the most recent news */
  
- 	if (the_lnet.ln_remote_nets_hash == NULL)
+-	if (lp->lp_notifying)
++	if (lp->lp_notifying || ni == NULL)
  		return;
-@@ -137,7 +136,8 @@ lnet_destroy_remote_nets_table(void)
- 		LASSERT(list_empty(&the_lnet.ln_remote_nets_hash[i]));
  
- 	LIBCFS_FREE(the_lnet.ln_remote_nets_hash,
--		    LNET_REMOTE_NETS_HASH_SIZE * sizeof(*hash));
-+		    LNET_REMOTE_NETS_HASH_SIZE *
-+		    sizeof(the_lnet.ln_remote_nets_hash[0]));
- 	the_lnet.ln_remote_nets_hash = NULL;
- }
- 
+ 	lp->lp_notifying = 1;
 -- 
 1.9.0
 
