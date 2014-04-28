@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaD1J6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:58:45 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46827 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754099AbaD1J6n (ORCPT
+	id S1754838AbaD1J7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:59:24 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:44690 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754247AbaD1J7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:58:43 -0400
-Message-ID: <535E264B.7050806@linaro.org>
-Date: Mon, 28 Apr 2014 18:58:35 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "eparis@redhat.com" <eparis@redhat.com>,
-        "rgb@redhat.com" <rgb@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>
-Subject: Re: [PATCH v5 2/4] arm64: split syscall_trace() into separate functions
- for enter/exit
-References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org> <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org> <1394861948-28712-3-git-send-email-takahiro.akashi@linaro.org> <20140416132716.GA1001@arm.com>
-In-Reply-To: <20140416132716.GA1001@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Apr 2014 05:59:21 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-ee-535e2678d846
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH 1/2] f2fs: set errno when f2fs_iget failed in
+ recover_dentry
+Date: Mon, 28 Apr 2014 17:58:34 +0800
+Message-id: <000501cf62c8$86ae39e0$940aada0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9ih2VOcOsdeE/3QXuPU+obt2PigA==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jAd0Ktbhgg2tveS2u7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyti4/RRrwW3WirZ/
+	T5gbGA+wdDFyckgImEi0zz/ODGGLSVy4t56ti5GLQ0hgEaPEqzmN7BDOD0aJpQ9esoNUsQmo
+	SCzv+M8EYosIKEpseL8BLM4skClxr2kG2CRhgQiJWesbwDawCKhKtHdPAavhFbCUWHp6PiOE
+	LSjxY/I9FoheLYn1O48zQdjyEpvXvIW6SEFix9nXjBC79CS2NJ1nhagRl9h45BbLBEaBWUhG
+	zUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzKz6R2MK5ssDjEKMDB
+	qMTDGzEnNliINbGsuDL3EKMEB7OSCO9+ibhgId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0D
+	hQTSE0tSs1NTC1KLYLJMHJxSDYzFk6uE3/4tb1rTHjjDtHcyx9T3vw5K6RmlehYr7s86nfC/
+	QCbqoumpsibbb5Xn9og4Xt+6/UdBZsmEyTdmT88NnpLX4COox/0ocMWqFddlIlkkj009IFb/
+	63/Moa6dFx//sF+2eGZPN99lM6Uy+U03tz7vOLE8pPRb+X3Tyfbaf+NuXW+XP8SnxFKckWio
+	xVxUnAgAQjnYG2ECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 10:27 PM, Will Deacon wrote:
-> Hi Akashi,
->
-> On Sat, Mar 15, 2014 at 05:39:06AM +0000, AKASHI Takahiro wrote:
->> As done in arm, this change makes it easy to confirm we invoke syscall
->> related hooks, including syscall tracepoint, audit and seccomp which would
->> be implemented later, in correct order. That is, undoing operations in the
->> opposite order on exit that they were done on entry.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->
-> [...]
->
->> +static void tracehook_report_syscall(struct pt_regs *regs,
->> +				     enum ptrace_syscall_dir dir)
->>   {
->> +	int scrach;
->
-> s/scrach/scratch/
+We should set the error number correctly when we fail in recover_dentry(), so
+the recover flow could stop for the reason as error number shows instead of
+continuing.
 
-I will fix it.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/recovery.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Although, I'd rather have a variable with a more meaningful name. How about
-> regno?
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index be1e3e8..e950a2f 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -75,7 +75,8 @@ retry:
+ 		einode = f2fs_iget(inode->i_sb, le32_to_cpu(de->ino));
+ 		if (IS_ERR(einode)) {
+ 			WARN_ON(1);
+-			if (PTR_ERR(einode) == -ENOENT)
++			err = PTR_ERR(einode);
++			if (err == -ENOENT)
+ 				err = -EEXIST;
+ 			goto out_unmap_put;
+ 		}
+-- 
+1.7.9.5
 
-OK, I will use regno in the next revision, which I will submit soon.
 
-> With that,
->
->    Acked-by: Will Deacon <will.deacon@arm.com>
-
-Thank you so much,
--Takahiro AKASHI
-
-> Cheers,
->
-> Will
->
