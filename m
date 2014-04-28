@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaD1Bah (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43048 "EHLO
+	id S1753474AbaD1Baf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43063 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752825AbaD1B3X (ORCPT
+	by vger.kernel.org with ESMTP id S1752849AbaD1B3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:23 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dave Kleikamp" <dave.kleikamp@oracle.com>,
-        "Hugh Dickins" <hughd@google.com>, sparclinux@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.595997505@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Kees Cook" <keescook@chromium.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Paul Mundt" <lethal@linux-sh.org>,
+        "Matt Fleming" <matt.fleming@intel.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.995597937@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 17/94] Revert "sparc64: Fix __copy_{to,from}_user_inatomic
-  defines."
+Subject: [PATCH 3.2 75/94] sh: fix format string bug in stack tracer
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-[ Upstream commit 16932237f2978a2265662f8de4af743b1f55a209 ]
+commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
 
-This reverts commit 145e1c0023585e0e8f6df22316308ec61c5066b2.
+Kees reported the following error:
 
-This commit broke the behavior of __copy_from_user_inatomic when
-it is only partially successful. Instead of returning the number
-of bytes not copied, it now returns 1. This translates to the
-wrong value being returned by iov_iter_copy_from_user_atomic.
+   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
+   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
 
-xfstests generic/246 and LTP writev01 both fail on btrfs and nfs
-because of this.
+Use the "%s" format so that it's impossible to interpret 'data' as a
+format string.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: Kees Cook <keescook@chromium.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/include/asm/uaccess_64.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sh/kernel/dumpstack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/sparc/include/asm/uaccess_64.h b/arch/sparc/include/asm/uaccess_64.h
-index 3e1449f..6d6c731 100644
---- a/arch/sparc/include/asm/uaccess_64.h
-+++ b/arch/sparc/include/asm/uaccess_64.h
-@@ -267,8 +267,8 @@ extern long __strnlen_user(const char __user *, long len);
- 
- #define strlen_user __strlen_user
- #define strnlen_user __strnlen_user
--#define __copy_to_user_inatomic ___copy_to_user
--#define __copy_from_user_inatomic ___copy_from_user
-+#define __copy_to_user_inatomic __copy_to_user
-+#define __copy_from_user_inatomic __copy_from_user
- 
- #endif  /* __ASSEMBLY__ */
+--- a/arch/sh/kernel/dumpstack.c
++++ b/arch/sh/kernel/dumpstack.c
+@@ -80,7 +80,7 @@ static int print_trace_stack(void *data,
+  */
+ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ {
+-	printk(data);
++	printk("%s", (char *)data);
+ 	printk_address(addr, reliable);
+ }
  
 
