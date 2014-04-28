@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaD1OBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:01:22 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:59959 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667AbaD1OAq (ORCPT
+	id S1755718AbaD1OAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:00:45 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:38352 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbaD1OAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:00:46 -0400
+	Mon, 28 Apr 2014 10:00:38 -0400
 From: =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
 To: LKML <linux-kernel@vger.kernel.org>, bcousson@baylibre.com,
         tony@atomide.com
@@ -16,9 +16,9 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Ezequiel=20Garc=C3=ADa?= <ezequiel@vanguardiasur.com.ar>,
         =?UTF-8?q?Guido=20Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>
-Subject: [PATCH 4/4] ARM: dts: am335x-igep0033: use phandles for USB and DMA refs
-Date: Mon, 28 Apr 2014 10:58:32 -0300
-Message-Id: <1398693512-5355-4-git-send-email-guido@vanguardiasur.com.ar>
+Subject: [PATCH 2/4] ARM: dts: am335x-evm: use phandles for USB and DMA refs
+Date: Mon, 28 Apr 2014 10:58:30 -0300
+Message-Id: <1398693512-5355-2-git-send-email-guido@vanguardiasur.com.ar>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
 References: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
@@ -34,14 +34,14 @@ This makes the DT more robust and readable.
 
 Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
 ---
- arch/arm/boot/dts/am335x-igep0033.dtsi | 12 ++++++------
+ arch/arm/boot/dts/am335x-evm.dts | 12 ++++++------
  1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am335x-igep0033.dtsi b/arch/arm/boot/dts/am335x-igep0033.dtsi
-index 9f22c18..81cf68b 100644
---- a/arch/arm/boot/dts/am335x-igep0033.dtsi
-+++ b/arch/arm/boot/dts/am335x-igep0033.dtsi
-@@ -201,28 +201,28 @@
+diff --git a/arch/arm/boot/dts/am335x-evm.dts b/arch/arm/boot/dts/am335x-evm.dts
+index 6028217..e802627 100644
+--- a/arch/arm/boot/dts/am335x-evm.dts
++++ b/arch/arm/boot/dts/am335x-evm.dts
+@@ -331,28 +331,28 @@
  &usb {
  	status = "okay";
  
