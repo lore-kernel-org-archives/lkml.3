@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519AbaD1BbS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43036 "EHLO
+	id S1754478AbaD1BbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42900 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752813AbaD1B3W (ORCPT
+	by vger.kernel.org with ESMTP id S1752801AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.924226157@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.717968490@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 24/94] ARM: mm: introduce present, faulting entries
- for PAGE_NONE
+Subject: [PATCH 3.2 38/94] rtlwifi: rtl8192se: Fix too long disable of IRQs
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,90 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 26ffd0d43b186b0d5186354da8714a1c2d360df0 upstream.
+commit 2610decdd0b3808ba20471a999835cfee5275f98 upstream.
 
-PROT_NONE mappings apply the page protection attributes defined by _P000
-which translate to PAGE_NONE for ARM. These attributes specify an XN,
-RDONLY pte that is inaccessible to userspace. However, on kernels
-configured without support for domains, such a pte *is* accessible to
-the kernel and can be read via get_user, allowing tasks to read
-PROT_NONE pages via syscalls such as read/write over a pipe.
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8192se.
 
-This patch introduces a new software pte flag, L_PTE_NONE, that is set
-to identify faulting, present entries.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-[bwh: Backported to 3.2 as dependency of commit b6ccb9803e90
- ('ARM: 7954/1: mm: remove remaining domain support from ARMv6'):
- - Drop 3-level changes
- - Adjust filename, context]
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop change to an error path that we don't have]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/arm/include/asm/pgtable-2level.h
-+++ b/arch/arm/include/asm/pgtable-2level.h
-@@ -123,6 +123,7 @@
- #define L_PTE_USER		(_AT(pteval_t, 1) << 8)
- #define L_PTE_XN		(_AT(pteval_t, 1) << 9)
- #define L_PTE_SHARED		(_AT(pteval_t, 1) << 10)	/* shared(v6), coherent(xsc3) */
-+#define L_PTE_NONE		(_AT(pteval_t, 1) << 11)
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
+@@ -924,7 +924,7 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
+ 	struct rtl_efuse *rtlefuse = rtl_efuse(rtl_priv(hw));
+ 	u8 tmp_byte = 0;
+-
++	unsigned long flags;
+ 	bool rtstatus = true;
+ 	u8 tmp_u1b;
+ 	int err = false;
+@@ -936,6 +936,16 @@ int rtl92se_hw_init(struct ieee80211_hw
  
- /*
-  * These are the memory types, defined to be compatible with
---- a/arch/arm/include/asm/pgtable.h
-+++ b/arch/arm/include/asm/pgtable.h
-@@ -74,7 +74,7 @@ extern pgprot_t		pgprot_kernel;
+ 	rtlpci->being_init_adapter = true;
  
- #define _MOD_PROT(p, b)	__pgprot(pgprot_val(p) | (b))
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
  
--#define PAGE_NONE		_MOD_PROT(pgprot_user, L_PTE_XN | L_PTE_RDONLY)
-+#define PAGE_NONE		_MOD_PROT(pgprot_user, L_PTE_XN | L_PTE_RDONLY | L_PTE_NONE)
- #define PAGE_SHARED		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_XN)
- #define PAGE_SHARED_EXEC	_MOD_PROT(pgprot_user, L_PTE_USER)
- #define PAGE_COPY		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_RDONLY | L_PTE_XN)
-@@ -84,7 +84,7 @@ extern pgprot_t		pgprot_kernel;
- #define PAGE_KERNEL		_MOD_PROT(pgprot_kernel, L_PTE_XN)
- #define PAGE_KERNEL_EXEC	pgprot_kernel
+ 	/* 1. MAC Initialize */
+@@ -969,7 +979,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 3. Initialize MAC/PHY Config by MACPHY_reg.txt */
+ 	if (rtl92s_phy_mac_config(hw) != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ("MAC Config failed\n"));
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
  
--#define __PAGE_NONE		__pgprot(_L_PTE_DEFAULT | L_PTE_RDONLY | L_PTE_XN)
-+#define __PAGE_NONE		__pgprot(_L_PTE_DEFAULT | L_PTE_RDONLY | L_PTE_XN | L_PTE_NONE)
- #define __PAGE_SHARED		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_XN)
- #define __PAGE_SHARED_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER)
- #define __PAGE_COPY		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_RDONLY | L_PTE_XN)
-@@ -279,7 +279,7 @@ static inline pte_t pte_mkspecial(pte_t
+ 	/* Make sure BB/RF write OK. We should prevent enter IPS. radio off. */
+@@ -979,7 +990,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 	/* 4. Initialize BB After MAC Config PHY_reg.txt, AGC_Tab.txt */
+ 	if (rtl92s_phy_bb_config(hw) != true) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_EMERG, ("BB Config failed\n"));
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
  
- static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
- {
--	const pteval_t mask = L_PTE_XN | L_PTE_RDONLY | L_PTE_USER;
-+	const pteval_t mask = L_PTE_XN | L_PTE_RDONLY | L_PTE_USER | L_PTE_NONE;
- 	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
- 	return pte;
+ 	/* 5. Initiailze RF RAIO_A.txt RF RAIO_B.txt */
+@@ -1015,7 +1027,8 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	if (rtl92s_phy_rf_config(hw) != true) {
+ 		RT_TRACE(rtlpriv, COMP_INIT, DBG_DMESG, ("RF Config failed\n"));
+-		return rtstatus;
++		err = rtstatus;
++		goto exit;
+ 	}
+ 
+ 	/* After read predefined TXT, we must set BB/MAC/RF
+@@ -1089,8 +1102,9 @@ int rtl92se_hw_init(struct ieee80211_hw
+ 
+ 	rtlpriv->cfg->ops->led_control(hw, LED_CTL_POWER_ON);
+ 	rtl92s_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpci->being_init_adapter = false;
+-
+ 	return err;
  }
---- a/arch/arm/mm/proc-macros.S
-+++ b/arch/arm/mm/proc-macros.S
-@@ -166,6 +166,10 @@
- 	tst	r1, #L_PTE_YOUNG
- 	tstne	r1, #L_PTE_PRESENT
- 	moveq	r3, #0
-+#ifndef CONFIG_CPU_USE_DOMAINS
-+	tstne	r1, #L_PTE_NONE
-+	movne	r3, #0
-+#endif
  
- 	str	r3, [r0]
- 	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -171,6 +171,10 @@ ENTRY(cpu_v7_set_pte_ext)
- 
- 	tst	r1, #L_PTE_YOUNG
- 	tstne	r1, #L_PTE_PRESENT
-+#ifndef CONFIG_CPU_USE_DOMAINS
-+	eorne	r1, r1, #L_PTE_NONE
-+	tstne	r1, #L_PTE_NONE
-+#endif
- 	moveq	r3, #0
- 
-  ARM(	str	r3, [r0, #2048]! )
 
