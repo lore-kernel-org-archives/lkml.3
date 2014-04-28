@@ -1,91 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaD1LHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:07:35 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53566 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760AbaD1LHc (ORCPT
+	id S1755449AbaD1LJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:09:09 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62423 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440AbaD1LJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:07:32 -0400
-Message-ID: <535E3673.8020606@linaro.org>
-Date: Mon, 28 Apr 2014 13:07:31 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 28 Apr 2014 07:09:05 -0400
+Date: Mon, 28 Apr 2014 13:07:32 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 RESEND 0/5] Add Broadcom Kona PWM Support
+Message-ID: <20140428110731.GH19455@ulmo>
+References: <1398450675-19609-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
-References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <535911DC.9050109@linaro.org> <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com> <2713863.BLQTYQm2Oa@vostro.rjw.lan> <20140425132055.GC11096@twins.programming.kicks-ass.net> <535A94E3.5080004@linaro.org> <20140425184327.GH26782@laptop.programming.kicks-ass.net> <535E28D0.7050502@linaro.org> <20140428102819.GG27561@twins.programming.kicks-ass.net>
-In-Reply-To: <20140428102819.GG27561@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q6STzHxy03qt/hK9"
+Content-Disposition: inline
+In-Reply-To: <1398450675-19609-1-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 12:28 PM, Peter Zijlstra wrote:
-> On Mon, Apr 28, 2014 at 12:09:20PM +0200, Daniel Lezcano wrote:
->> I agree a numerical value is not flexible. But it sounds weird to put a
->> scheduler option in the sysfs and maybe more options will follow.
->>
->> I am wondering if we shouldn't create a new cgroup for 'energy' and put
->> everything in there. So we will have more flexibility for extension and we
->> will be able to create a group of tasks for performance and a group of tasks
->> for energy saving.
->>
->> Does it make sense ?
->
-> The old knobs used to live here:
->
-> -What:          /sys/devices/system/cpu/sched_mc_power_savings
-> -               /sys/devices/system/cpu/sched_smt_power_savings
 
-Ah right.
+--Q6STzHxy03qt/hK9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Not entirely sure that's a fine place, but it has precedent.
+On Fri, Apr 25, 2014 at 11:31:10AM -0700, Tim Kryger wrote:
+> This series introduces the driver for the Kona PWM controller found in
+> Broadcom mobile SoCs like bcm281xx and updates the device tree and the
+> defconfig to enable use of this hardware on the bcm28155 AP board.
+>=20
+> Changes since v5:
+>   - Rebased on v3.15-rc1
+>=20
+> Changes since v4:
+>   - Added in real polarity support
+>   - Labeled trigger bits as such rather than use the name from hw docs
+>   - Listed unsual hardware characteristics at the top of the file
+>   - Removed default from Kconfig and update defconfig accordingly
+>   - Always use unsigned int for temporary register values
+>=20
+> Changes since v3:
+>   - Removed polarity support for now
+>   - Cleaned up whitespace issues, shortened some variable names
+>   - Use container_of instead of dev_get_drvdata to get private data
+>   - Removed workaround for PWM framework bug
+>   - Reworded some binding documentation
+>=20
+> Changes since v2:
+>   - SoC DTS file updated to use real clock's phandle + specifier
+>   - Toggle smooth mode off during apply so new settings take immediately
+>=20
+> Changes since v1:
+>   - Fixed up macros to be clearer and more complete
+>   - Corrected spelling and punctuation mistakes
+>   - Added support for polarity
+>   - Made peripheral clock use more efficient
+>   - Made prescale and duty computation clearer
+>   - Moved Makefile addition to keep alphabetical
+>   - Split complex lines into multiple steps
+>=20
+>=20
+> Tim Kryger (5):
+>   Documentation: dt: Add Kona PWM binding
+>   pwm: kona: Introduce Kona PWM controller support
+>   ARM: dts: Declare the PWM for bcm11351 (bcm281xx)
+>   ARM: dts: Enable the PWM for bcm28155 AP board
+>   ARM: bcm_defconfig: Enable PWM and Backlight
+>=20
+>  .../devicetree/bindings/pwm/bcm-kona-pwm.txt       |   21 ++
+>  arch/arm/boot/dts/bcm11351.dtsi                    |    8 +
+>  arch/arm/boot/dts/bcm28155-ap.dts                  |    4 +
+>  arch/arm/configs/bcm_defconfig                     |    3 +
+>  drivers/pwm/Kconfig                                |    9 +
+>  drivers/pwm/Makefile                               |    1 +
+>  drivers/pwm/pwm-bcm-kona.c                         |  319 ++++++++++++++=
+++++++
+>  7 files changed, 365 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+>  create mode 100644 drivers/pwm/pwm-bcm-kona.c
 
-I share your doubts about the right place.
+I've applied patches 1 and 2 (with two tiny whitespace cleanups) to my
+for-next branch.
 
-I'm really wondering if the cgroup couldn't be a good solution:
+Thanks,
+Thierry
 
-Amit pointed the conflict about the power vs performance with some 
-applications. We want to have for example a game to run fast performance 
-and some other application to save power.
+--Q6STzHxy03qt/hK9
+Content-Type: application/pgp-signature
 
-The cgroup will allow to:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  * eg. create a couple of cgroup one for performance and the other one 
-for power and assign the different applications to one of these group
+iQIcBAEBAgAGBQJTXjZzAAoJEN0jrNd/PrOhkLsP/29qxlKh/dhTfb4gSR+V5t9a
+WwdhhsZNLlNSgQ03c40DwV8DtEHD2Z4BbxeF+ElCYq0xeDU79erEDVIjonu9939v
+jL1FyE0UHU9sLvwU03R7Sjcco3ljbuAG8H1TEsPyw7OKGBmcjrSEBJcgLlcHqXrg
+/z2cOdgOkrBWplxqMUNVr6sh5ErT1584DceUWfJsrD6M3g6Bd39FnKhZrcPPRQAM
+CN8dRcBIXsrelEpJHkLenxgb93ADFZSR1N1tU1UexQn0ufZnDJmAwRFHeTnmPtd3
+kreSGOphiZwvUOy7cNC3Sxj5irCzn8vGcWiixy50SkvRwnCe5C6G+4OBwHKaj+36
+FmdpP/un3AYaZ53pMoCXSYnxiMS/LboMNmXLh70VM/N1tx2j+hAL10u5LzOqFJNU
+WyujvbYAs9e6FwTyLTi24j3BbPRCFJmj/cEWzuqqaMOnVnwq20Z9xFkmfBgkZlV1
+WjPNRq9B1WkV/arbk5SBM7BHrylSEneo4pOl+bgEVVnes2LnL4lhWCMP4G2KAhMa
+KR6vtDpVbzILz2jQbCRC4W93emOv/w+ZnkG9UmOOECf3gLDSzhiE5QPnW5AvIH/s
+4LjuLg9PBCzz5ZykOZVmRPG461nRuUR+oCwuKelFs0gqvmYofa8jZ6e8Rp7Ikgoy
+pHvmyR4lXBY5+KdSgkqU
+=nxgn
+-----END PGP SIGNATURE-----
 
-  * tweak the options just for a group of processes. Depending of the 
-behavior of the task, the userspace can create and change some options 
-for a specific application for optimum performance or energy saving
-
-  * add more energy options in a place easy to extend
-
-  * use string based options
-
-  * alternatively use a single configuration for the entire system
-
-  * use the event based file to trigger event about power consumption 
-(threshold reached) and from there we can easily freeze the group of 
-processes consuming too much energy
-
-The cgroup will provide a highly configurable mechanism based on tasks 
-and could use with some other cgroup subsys (eg. to force the tasks on a 
-set of cpus).
-
-IMHO, the cgroup is a good place.
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+--Q6STzHxy03qt/hK9--
