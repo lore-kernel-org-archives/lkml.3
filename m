@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169AbaD1V7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:59:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45454 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230AbaD1V7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:59:34 -0400
-Message-ID: <535ECF3F.4010607@infradead.org>
-Date: Mon, 28 Apr 2014 14:59:27 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Richard Weinberger <richard@nod.at>, Rik van Riel <riel@redhat.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <535992DD.3060808@infradead.org> <20140425100459.7824f676@annuminas.surriel.com> <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <20140428135540.GA14661@linux.vnet.ibm.com> <535E8D14.7080405@infradead.org> <535E8E17.2050600@nod.at> <20140428200640.GG4430@linux.vnet.ibm.com> <535EBAE6.3080907@infradead.org> <20140428211535.GK4430@linux.vnet.ibm.com>
-In-Reply-To: <20140428211535.GK4430@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933240AbaD1WF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:05:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43858 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932520AbaD1WFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:05:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
+   d="scan'208";a="502535809"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: "David E. Box" <david.e.box@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, Durgadoss R <durgadoss.r@intel.com>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 1/5] powercap/rapl: further relax energy counter checks
+Date: Mon, 28 Apr 2014 07:04:36 -0700
+Message-Id: <1398693880-13428-2-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/14 14:15, Paul E. McKenney wrote:
-> On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
->> On 04/28/14 13:06, Paul E. McKenney wrote:
->>> On Mon, Apr 28, 2014 at 07:21:27PM +0200, Richard Weinberger wrote:
->>>> Am 28.04.2014 19:17, schrieb Randy Dunlap:
->>>>>
->>>>> uml defconfig on x86_64:
->>>>>
->>>>>   CC      arch/um/kernel/asm-offsets.s
->>>>> In file included from include/linux/sem.h:5:0,
->>>>>                  from include/linux/sched.h:35,
->>>>>                  from arch/x86/um/shared/sysdep/kernel-offsets.h:2,
->>>>>                  from arch/um/kernel/asm-offsets.c:1:
->>>>> include/linux/rcupdate.h:257:20: error: static declaration of 'rcu_sysrq_start' follows non-static declaration
->>>>> include/linux/rcupdate.h:250:6: note: previous declaration of 'rcu_sysrq_start' was here
->>>>> include/linux/rcupdate.h:260:20: error: static declaration of 'rcu_sysrq_end' follows non-static declaration
->>>>> include/linux/rcupdate.h:251:6: note: previous declaration of 'rcu_sysrq_end' was here
->>>>> make[2]: *** [arch/um/kernel/asm-offsets.s] Error 1
->>>>>
->>>>>
->>>>> Please test your patch(es).
->>>
->>> Against exactly what?  ;-)
->>
->> see $Subject
-> 
-> Testing my patches against MMOTM would be Stephen Rothwell's job.  ;-)
+Energy counters may roll slowly for some RAPL domains, checking all
+of them can be time consuming and takes unpredictable amount of time.
+Therefore, we relax the sanity check by only checking availability of the
+MSRs and non-zero value of the energy status counters. It has been shown
+sufficient for all the platforms tested to filter out inactive domains.
 
-I guess that's a joke, based on your emoticon.
-Otherwise it makes no sense.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ drivers/powercap/intel_rapl.c | 29 +++++++++--------------------
+ 1 file changed, 9 insertions(+), 20 deletions(-)
 
-
+diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+index d9a0770..1c987d2 100644
+--- a/drivers/powercap/intel_rapl.c
++++ b/drivers/powercap/intel_rapl.c
+@@ -1124,8 +1124,7 @@ err_cleanup_package:
+ static int rapl_check_domain(int cpu, int domain)
+ {
+ 	unsigned msr;
+-	u64 val1, val2 = 0;
+-	int retry = 0;
++	u64 val = 0;
+ 
+ 	switch (domain) {
+ 	case RAPL_DOMAIN_PACKAGE:
+@@ -1144,26 +1143,13 @@ static int rapl_check_domain(int cpu, int domain)
+ 		pr_err("invalid domain id %d\n", domain);
+ 		return -EINVAL;
+ 	}
+-	if (rdmsrl_safe_on_cpu(cpu, msr, &val1))
+-		return -ENODEV;
+-
+-	/* PP1/uncore/graphics domain may not be active at the time of
+-	 * driver loading. So skip further checks.
++	/* make sure domain counters are available and contains non-zero
++	 * values, otherwise skip it.
+ 	 */
+-	if (domain == RAPL_DOMAIN_PP1)
+-		return 0;
+-	/* energy counters roll slowly on some domains */
+-	while (++retry < 10) {
+-		usleep_range(10000, 15000);
+-		rdmsrl_safe_on_cpu(cpu, msr, &val2);
+-		if ((val1 & ENERGY_STATUS_MASK) != (val2 & ENERGY_STATUS_MASK))
+-			return 0;
+-	}
+-	/* if energy counter does not change, report as bad domain */
+-	pr_info("domain %s energy ctr %llu:%llu not working, skip\n",
+-		rapl_domain_names[domain], val1, val2);
++	if (rdmsrl_safe_on_cpu(cpu, msr, &val) || !val)
++		return -ENODEV;
+ 
+-	return -ENODEV;
++	return 0;
+ }
+ 
+ /* Detect active and valid domains for the given CPU, caller must
+@@ -1180,6 +1166,9 @@ static int rapl_detect_domains(struct rapl_package *rp, int cpu)
+ 		/* use physical package id to read counters */
+ 		if (!rapl_check_domain(cpu, i))
+ 			rp->domain_map |= 1 << i;
++		else
++			pr_warn("RAPL domain %s detection failed\n",
++				rapl_domain_names[i]);
+ 	}
+ 	rp->nr_domains = bitmap_weight(&rp->domain_map,	RAPL_DOMAIN_MAX);
+ 	if (!rp->nr_domains) {
 -- 
-~Randy
+1.8.1.2
+
