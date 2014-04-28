@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230AbaD1Kaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:30:46 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61939 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755079AbaD1Kag (ORCPT
+	id S1755294AbaD1Ka6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:30:58 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37680 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192AbaD1Kay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:30:36 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-0b-535e2dcab839
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        k.debski@samsung.com, "'Alan Stern'" <stern@rowland.harvard.edu>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1398677132-30600-1-git-send-email-gautam.vivek@samsung.com>
- <1398677132-30600-3-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1398677132-30600-3-git-send-email-gautam.vivek@samsung.com>
-Subject: Re: [PATCH 2/4] usb: ehci-exynos: Use struct device instead of
- platform_device
-Date: Mon, 28 Apr 2014 19:30:34 +0900
-Message-id: <001901cf62cc$e32a3bc0$a97eb340$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9iw9w6YhzHZgLWRU6+r8z+O0+mMQACPeWA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+Zke4p3bhgg4NHRC0O3q+3mH/kHKtF
-	25WD7BbNi9ezWVxeeInV4sfrC2wWvQuusllsenyN1WJh2xIWi8u75rBZzDi/j8li0bJWZosJ
-	vy+wOfB67J+7ht1j85J6j9l3fzB69G1Zxehx/MZ2Jo/Pm+QC2KK4bFJSczLLUov07RK4MrZe
-	n8lesJur4tP9+0wNjMc5uhg5OSQETCSWzXvIBmGLSVy4tx7I5uIQEljGKPH6yDYWmKIpOx8w
-	QSSmM0pcvn+TBcL5zSix6ewssCo2ATWJL18Os4PYIgK5ErPermQGKWIWWMUk8erkVaiOdkaJ
-	Pe3rmECqOAU8Jf62zwNbLiwQKXG1fRoziM0ioCpxeuptVhCbV8BW4vb+B1C2oMSPyffAtjEL
-	aEms33mcCcKWl9i85i1QLwfQreoSj/7qQhxhJPH/UTNUuYjEvhfvGEFukBCYyyFx+sE2dohd
-	AhLfJh9igeiVldh0gBniZUmJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0ouM
-	9IoTc4tL89L1kvNzNzFCkkDfDsabB6wPMSYDrZ/ILCWanA9MInkl8YbGZkYWpiamxkbmlmak
-	CSuJ8y56mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgZG9esfsB4fmhCa+/P7zQvoq7+dn
-	Nt+3dFzMFr4g0iryVcD6H7buzm4PmIW+XbRYc9GzsCzg8um+xPDLkQ+2FQsr80142v3jzJT4
-	t2/3P0kyTN73+5n8dCfnuKooa8X++J2bhf1majmU7ZOIClrV6M3mPSUylifMuef/fZUF8TEZ
-	RacMUlLv3VNiKc5INNRiLipOBAD8TiojGAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEKsWRmVeSWpSXmKPExsVy+t9jQd1TunHBBscmC1ocvF9vMf/IOVaL
-	tisH2S2aF69ns7i88BKrxY/XF9gsehdcZbPY9Pgaq8XCtiUsFpd3zWGzmHF+H5PFomWtzBYT
-	fl9gc+D12D93DbvH5iX1HrPv/mD06NuyitHj+I3tTB6fN8kFsEU1MNpkpCampBYppOYl56dk
-	5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAB2qpFCWmFMKFApILC5W0rfDNCE0
-	xE3XAqYxQtc3JAiux8gADSSsY8zYen0me8FuropP9+8zNTAe5+hi5OSQEDCRmLLzAROELSZx
-	4d56ti5GLg4hgemMEpfv32SBcH4zSmw6O4sFpIpNQE3iy5fD7CC2iECuxKy3K5lBipgFVjFJ
-	vDp5FaqjnVFiT/s6sLmcAp4Sf9vnsYHYwgKRElfbpzGD2CwCqhKnp95mBbF5BWwlbu9/AGUL
-	SvyYfA9sG7OAlsT6nceZIGx5ic1r3gL1cgDdqi7x6K8uxBFGEv8fNUOVi0jse/GOcQKj0Cwk
-	k2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOMc+kdjCubLA4xCjA
-	wajEwxsxJzZYiDWxrLgy9xCjBAezkgjvfom4YCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3O
-	B6a/vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgTL6v619j
-	r+K+OfbhFFY5L9s9bxqfrg3+dVUvX+fy+bIjbZtfnGbqVjrw/8KR+BMMip4F++56LlFmj9kl
-	fCyG6XHTmhaPiaKPG3z+bd2bzOHPKtZX+JPvw+SrZj6+jA+2cnbrvX3GvOhdzsFb+jP+vJ/V
-	8Mb4tlG32cdJN8U5PCL8mao+t/NuUWIpzkg01GIuKk4EAOEPN651AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 28 Apr 2014 06:30:54 -0400
+Message-ID: <535E2DD5.3020501@linaro.org>
+Date: Mon, 28 Apr 2014 11:30:45 +0100
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Colin Cross <ccross@android.com>, kernel-team@android.com
+Subject: Re: [RFC v3 7/9] kdb: Categorize kdb commands (similar to SysRq categorization)
+References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>	<1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>	<1398443370-12668-8-git-send-email-daniel.thompson@linaro.org> <20140425125735.334add30@gandalf.local.home>
+In-Reply-To: <20140425125735.334add30@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 28, 2014 6:26 PM, Vivek Gautam wrote:
+On 25/04/14 17:57, Steven Rostedt wrote:
+>> +	KDB_ENABLE_ALL_NO_ARGS = KDB_ENABLE_ALL << 16,
+>> +	KDB_ENABLE_MEM_READ_NO_ARGS = KDB_ENABLE_MEM_READ << 16,
+>> +	KDB_ENABLE_MEM_WRITE_NO_ARGS = KDB_ENABLE_MEM_WRITE << 16,
+>> +	KDB_ENABLE_REG_READ_NO_ARGS = KDB_ENABLE_REG_READ << 16,
+>> +	KDB_ENABLE_REG_WRITE_NO_ARGS = KDB_ENABLE_REG_WRITE << 16,
+>> +	KDB_ENABLE_INSPECT_NO_ARGS = KDB_ENABLE_INSPECT << 16,
+>> +	KDB_ENABLE_FLOW_CTRL_NO_ARGS = KDB_ENABLE_FLOW_CTRL << 16,
+>> +	KDB_ENABLE_SIGNAL_NO_ARGS = KDB_ENABLE_SIGNAL << 16,
+>> +	KDB_ENABLE_REBOOT_NO_ARGS = KDB_ENABLE_REBOOT << 16,
+>> +	KDB_ENABLE_ALWAYS_SAFE_NO_ARGS = KDB_ENABLE_ALWAYS_SAFE << 16,
+>> +	KDB_ENABLE_MASK_NO_ARGS = KDB_ENABLE_MASK << 16,
 > 
-> Change to use struct device instead of struct platform_device
-> for some static functions.
+> I would recommend defining a KDB_NO_ARGS_SHIFT to be 16 and use that
+> instead of having a magic number 16 to deal with. This also makes it
+> easier if you need to shift a bit more in the future.
 > 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
+> 	KDB_ENABLE_ALL_NO_ARGS = KDB_ENABLE_ALL << KDB_NO_ARGS_SHIFT,
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+Good point. I will fix this (and reduce KDB_NO_ARGS_SHIFT to the proper
+value).
 
-Best regards,
-Jingoo Han
+> Although, I'm not sure why you just didn't have a KDB_ENABLE_ARGS flag,
+> and then you don't need to repeat all the flags again. Seems rather
+> silly.
+> 
+> KDB_ENABLE_ALL_NO_ARGS would then be just
+> KDB_ENABLE_ALL|KDB_ENABLE_NO_ARGS.
+> 
+> Or can you have multiple settings? That is, MEM_READ and
+> MEM_WRITE_NO_ARGS both set such that you can't just have a simple args
+> or no args command for the entire flags?
 
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> ---
->  drivers/usb/host/ehci-exynos.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
-> index 7f425ac..4d763dc 100644
-> --- a/drivers/usb/host/ehci-exynos.c
-> +++ b/drivers/usb/host/ehci-exynos.c
-> @@ -50,9 +50,8 @@ struct exynos_ehci_hcd {
-> 
->  #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
-> 
-> -static void exynos_setup_vbus_gpio(struct platform_device *pdev)
-> +static void exynos_setup_vbus_gpio(struct device *dev)
->  {
-> -	struct device *dev = &pdev->dev;
->  	int err;
->  	int gpio;
-> 
-> @@ -88,7 +87,7 @@ static int exynos_ehci_probe(struct platform_device *pdev)
->  	if (err)
->  		return err;
-> 
-> -	exynos_setup_vbus_gpio(pdev);
-> +	exynos_setup_vbus_gpio(&pdev->dev);
-> 
->  	hcd = usb_create_hcd(&exynos_ehci_hc_driver,
->  			     &pdev->dev, dev_name(&pdev->dev));
-> --
-> 1.7.10.4
+That's basically it. Some commands change classification if they have an
+argument ('go' is the best example; it changes from always-safe to
+register-write because if an argument is given it gets copied to the PC).
 
+Actually only two of the _NO_ARGS values are currently used, however
+having a shift relationship between the flags makes it much simpler to
+do the permissions check.
+
+
+Daniel.
