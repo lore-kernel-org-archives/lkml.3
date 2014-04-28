@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665AbaD1WqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:46:01 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:17596 "EHLO
-	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229AbaD1Wp7 (ORCPT
+	id S932395AbaD1Wzb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:55:31 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59412 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932166AbaD1WzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:45:59 -0400
-From: Jason Low <jason.low2@hp.com>
-To: mingo@kernel.org, peterz@infradead.org, jason.low2@hp.com
-Cc: linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com
-Subject: [PATCH 1/2] sched: Fix updating rq->max_idle_balance_cost and rq->next_balance in idle_balance()
-Date: Mon, 28 Apr 2014 15:45:54 -0700
-Message-Id: <1398725155-7591-2-git-send-email-jason.low2@hp.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
-References: <1398725155-7591-1-git-send-email-jason.low2@hp.com>
+	Mon, 28 Apr 2014 18:55:23 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Date: Tue, 29 Apr 2014 01:11:47 +0200
+Message-ID: <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <535E3673.8020606@linaro.org>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <20140428102819.GG27561@twins.programming.kicks-ass.net> <535E3673.8020606@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit e5fc6611 can potentially cause rq->max_idle_balance_cost to not be
-updated, even when load_balance(NEWLY_IDLE) is attempted and the per-sd
-max cost value is updated.
+On Monday, April 28, 2014 01:07:31 PM Daniel Lezcano wrote:
+> On 04/28/2014 12:28 PM, Peter Zijlstra wrote:
+> > On Mon, Apr 28, 2014 at 12:09:20PM +0200, Daniel Lezcano wrote:
+> >> I agree a numerical value is not flexible. But it sounds weird to put a
+> >> scheduler option in the sysfs and maybe more options will follow.
+> >>
+> >> I am wondering if we shouldn't create a new cgroup for 'energy' and put
+> >> everything in there. So we will have more flexibility for extension and we
+> >> will be able to create a group of tasks for performance and a group of tasks
+> >> for energy saving.
+> >>
+> >> Does it make sense ?
+> >
+> > The old knobs used to live here:
+> >
+> > -What:          /sys/devices/system/cpu/sched_mc_power_savings
+> > -               /sys/devices/system/cpu/sched_smt_power_savings
+> 
+> Ah right.
+> 
+> > Not entirely sure that's a fine place, but it has precedent.
+> 
+> I share your doubts about the right place.
+> 
+> I'm really wondering if the cgroup couldn't be a good solution:
+> 
+> Amit pointed the conflict about the power vs performance with some 
+> applications. We want to have for example a game to run fast performance 
+> and some other application to save power.
 
-Preeti noticed a similar issue with updating rq->next_balance.
+You can't save power.
 
-In this patch, we fix this by making sure we still check/update those values
-even if a task gets enqueued while browsing the domains.
+Power is the energy flow *rate*.  It's like speed, so how can you save it?
 
-Cc: daniel.lezcano@linaro.org
-Cc: alex.shi@linaro.org   
-Cc: efault@gmx.de
-Cc: vincent.guittot@linaro.org
-Cc: morten.rasmussen@arm.com
-Cc: aswin@hp.com
-Cc: mingo@kernel.org
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Signed-off-by: Jason Low <jason.low2@hp.com>
----
- kernel/sched/fair.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+If you talk about saving in this context, please always talk about energy as
+well, because that's what we want to save.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index af47873..e0f3019 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6658,6 +6658,7 @@ static int idle_balance(struct rq *this_rq)
- 	int this_cpu = this_rq->cpu;
- 
- 	idle_enter_fair(this_rq);
-+
- 	/*
- 	 * We must set idle_stamp _before_ calling idle_balance(), such that we
- 	 * measure the duration of idle_balance() as idle time.
-@@ -6714,14 +6715,16 @@ static int idle_balance(struct rq *this_rq)
- 
- 	raw_spin_lock(&this_rq->lock);
- 
-+	if (curr_cost > this_rq->max_idle_balance_cost)
-+		this_rq->max_idle_balance_cost = curr_cost;
-+
- 	/*
--	 * While browsing the domains, we released the rq lock.
--	 * A task could have be enqueued in the meantime
-+	 * While browsing the domains, we released the rq lock, a task could
-+	 * have been enqueued in the meantime. Since we're not going idle,
-+	 * pretend we pulled a task.
- 	 */
--	if (this_rq->cfs.h_nr_running && !pulled_task) {
-+	if (this_rq->cfs.h_nr_running && !pulled_task)
- 		pulled_task = 1;
--		goto out;
--	}
- 
- 	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
- 		/*
-@@ -6731,9 +6734,6 @@ static int idle_balance(struct rq *this_rq)
- 		this_rq->next_balance = next_balance;
- 	}
- 
--	if (curr_cost > this_rq->max_idle_balance_cost)
--		this_rq->max_idle_balance_cost = curr_cost;
--
- out:
- 	/* Is there a task of a high priority class? */
- 	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
+This means that positioning power against performance doesn't make any sense
+whatsoever.  You could try to position energy efficiency (that is, the relative
+cost of doing work in terms of energy) against performance, but even that is
+questionable, because, as I said in one of the previous messages, what is good
+for performance is often good for energy efficiency too (think about race to
+idle for example).
+
+In other words, you want to have a knob whose both ends may happen to mean
+the same thing.  Wouldn't that be a little odd?
+
+In my opinion it would be much better to have a knob representing the current
+relative value of energy to the user (which may depend on things like whether
+or not the system is on battery etc) and meaning how far we need to go with
+energy saving efforts.
+
+So if that knob is 0, we'll do things that are known-good for performance.
+If it is 1, we'll do some extra effort to save enery as well possibly at
+a small expense of performance if that's necessary.  If it is 100, we'll do
+all we can to save as much energy as possible without caring about performance
+at all.
+
+And it doesn't even have to be scheduler-specific, it very well may be global.
+
+Thanks!
+
+
 -- 
-1.7.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
