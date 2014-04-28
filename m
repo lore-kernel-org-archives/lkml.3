@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610AbaD1ML2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:11:28 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:32873 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaD1MLZ (ORCPT
+	id S1755657AbaD1MOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:14:01 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:61579 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830AbaD1MN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:11:25 -0400
-Date: Mon, 28 Apr 2014 13:11:20 +0100
+	Mon, 28 Apr 2014 08:13:59 -0400
+Date: Mon, 28 Apr 2014 13:13:52 +0100
 From: Lee Jones <lee.jones@linaro.org>
 To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        linux-kernel@vger.kernel.org,
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 2/2] mfd: sec-core: Fix IRQ handling after resume if this
- is not a wakeup source
-Message-ID: <20140428121120.GB21279@lee--X1>
-References: <1398175162-20244-1-git-send-email-k.kozlowski@samsung.com>
- <1398175225-20396-1-git-send-email-k.kozlowski@samsung.com>
+Subject: Re: [PATCH v2 3/6] rtc: s5m: Use shorter time of register update
+Message-ID: <20140428121352.GC21279@lee--X1>
+References: <1397827139-14589-1-git-send-email-k.kozlowski@samsung.com>
+ <1397827139-14589-4-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398175225-20396-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1397827139-14589-4-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014, Krzysztof Kozlowski wrote:
-
-> During suspend the IRQ should be disabled even if this is not a wakeup
-> source. This is a proper way of fixing the IRQ handling issue during
-> resume (IRQ handler fails because I2C bus did not resume yet).
-> 
-> When device is suspended and sec-core interrupt is signaled the irq chip
-> will try to handle it regardless of wakeup source. Device could be woken
-> up by different IRQ but still the IRQ handler will try to read the
-> registers over I2C bus and fail because I2C bus won't be ready yet.
+> Set the time needed for updating alarm and time registers to 0.45 ms.
+> The default is 7.32 ms which is too long and leads to warnings when
+> setting alarm or time:
+> 	s5m-rtc: waiting for UDR update, reached max number of retries
 > 
 > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  drivers/mfd/sec-core.c | 28 +++++++++++++---------------
->  1 file changed, 13 insertions(+), 15 deletions(-)
+>  drivers/rtc/rtc-s5m.c           |  7 +++++++
+>  include/linux/mfd/samsung/rtc.h | 10 ++++++++++
 
-It's pretty worrying that these two patches are so alike and they
-actually change different files. Is there any way we can unify more of
-the code?
-
-Patch applied, thanks.
+For the MFD changes:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
 Lee Jones
