@@ -1,63 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635AbaD1JNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:13:34 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:51437 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559AbaD1JN3 (ORCPT
+	id S1754667AbaD1JNv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:13:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37253 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaD1JNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:13:29 -0400
-Message-ID: <535E1BB4.2070904@redhat.com>
-Date: Mon, 28 Apr 2014 11:13:24 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 28 Apr 2014 05:13:47 -0400
+Date: Mon, 28 Apr 2014 11:13:41 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Daniel Willmann <daniel@totalueberwachung.de>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH] mmc: mxs: fix card detection function for broken card
+ detect
+Message-ID: <20140428091341.GA5918@pengutronix.de>
+References: <dec3cef26b7470cabfc11a83750a88db5b545a41.1397944151.git.daniel@totalueberwachung.de>
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
-        kvm@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2] kvm: Use pci_enable_msix_exact() instead of pci_enable_msix()
-References: <1392804931-30671-11-git-send-email-agordeev@redhat.com> <5304B09D.7010900@redhat.com> <20140221170414.GM17353@dhcp-26-207.brq.redhat.com> <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dec3cef26b7470cabfc11a83750a88db5b545a41.1397944151.git.daniel@totalueberwachung.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:52:55 up 5 days,  2:24, 40 users,  load average: 0.04, 0.09, 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/02/2014 18:05, Alexander Gordeev ha scritto:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
->
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Gleb Natapov <gleb@kernel.org>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: kvm@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
+On Sat, Apr 19, 2014 at 11:59:18PM +0200, Daniel Willmann wrote:
+> Return -ENOSYS in get_cd if broken-cd is specified in the device tree.
+> 
+> Commit a91fe279ae75 (mmc: mxs: use standard flag for broken card
+> detection) sets MMC_CAP_NEEDS_POLL when broken-cd is specified. This
+> driver sets this flag unconditionally as it does not support a card
+> detect interrupt. Instead, broken-cd means that there is no card detect
+> signal connected.
+> 
+> The mmc core checks the get_cd function return value to determine if a
+> card is present. Only for a non-zero return value it will attempt to
+> initialize the card. So retuning -ENOSYS will allow the card to be
+> initialized.
+> For comparison, mmc_gpio_get_cd in slot-gpio.c also returns -ENOSYS if
+> the card detect GPIO is not valid.
+
+Short answer for fixing this regression:
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Long answer:
+
+This is broken in the MMC OF parser. When the parser finds the
+'broken-cd' property it just sets the MMC_CAP_NEEDS_POLL flag. This is
+wrong.  broken-cd means that we cannot rely on any card detection, but
+instead have to talk to the card to find out if it's available.
+Currently there is no flag to signal this situation, so the host driver
+has to handle this by returning true in the get_cd callback, just like
+the patch below does.
+
+IMO the correct solution would be to add a MMC_CAP_CD_NEEDS_TALK_TO_CARD
+flag to the core.
+
+Sascha
+
+> 
+> Signed-off-by: Daniel Willmann <daniel@totalueberwachung.de>
 > ---
->  virt/kvm/assigned-dev.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
-> index 8db4370..bf06577 100644
-> --- a/virt/kvm/assigned-dev.c
-> +++ b/virt/kvm/assigned-dev.c
-> @@ -395,7 +395,8 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
->  	if (dev->entries_nr == 0)
->  		return r;
->
-> -	r = pci_enable_msix(dev->dev, dev->host_msix_entries, dev->entries_nr);
-> +	r = pci_enable_msix_exact(dev->dev,
-> +				  dev->host_msix_entries, dev->entries_nr);
->  	if (r)
->  		return r;
->
->
+> This might be relevant for stable kernels. The patch was tested with 3.14.1 on
+> olinuxino nano.
+> 
+>  drivers/mmc/host/mxs-mmc.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 073e871a0fc8..babfea03ba8a 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -70,6 +70,7 @@ struct mxs_mmc_host {
+>  	unsigned char			bus_width;
+>  	spinlock_t			lock;
+>  	int				sdio_irq_en;
+> +	bool				broken_cd;
+>  };
+>  
+>  static int mxs_mmc_get_cd(struct mmc_host *mmc)
+> @@ -78,6 +79,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>  	struct mxs_ssp *ssp = &host->ssp;
+>  	int present, ret;
+>  
+> +	if (host->broken_cd)
+> +		return -ENOSYS;
+> +
+>  	ret = mmc_gpio_get_cd(mmc);
+>  	if (ret >= 0)
+>  		return ret;
+> @@ -568,6 +572,7 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>  {
+>  	const struct of_device_id *of_id =
+>  			of_match_device(mxs_mmc_dt_ids, &pdev->dev);
+> +	struct device_node *np = pdev->dev.of_node;
+>  	struct mxs_mmc_host *host;
+>  	struct mmc_host *mmc;
+>  	struct resource *iores;
+> @@ -634,6 +639,8 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>  	mmc->caps = MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED |
+>  		    MMC_CAP_SDIO_IRQ | MMC_CAP_NEEDS_POLL;
+>  
+> +	host->broken_cd = of_property_read_bool(np, "broken-cd");
+> +
+>  	mmc->f_min = 400000;
+>  	mmc->f_max = 288000000;
+>  
+> -- 
+> 1.8.4.2
+> 
+> 
 
-Applying this to kvm/master (i.e. for 3.15), thanks.
-
-Paolo
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
