@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaD1ENo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 00:13:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44735 "EHLO bear.ext.ti.com"
+	id S1753834AbaD1ENy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 00:13:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44745 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753520AbaD1ENh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 00:13:37 -0400
+	id S1753733AbaD1ENr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 00:13:47 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
         <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
         <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: [PATCH 3/6] drivers: net: cpsw: Enable CPTS for DRA7xx and AM4372
-Date: Mon, 28 Apr 2014 09:40:22 +0530
-Message-ID: <1398658225-25873-4-git-send-email-george.cherian@ti.com>
+Subject: [PATCH 4/6] drivers: net: cpsw: Enable Annexe F Time sync
+Date: Mon, 28 Apr 2014 09:40:23 +0530
+Message-ID: <1398658225-25873-5-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
 References: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
@@ -31,46 +31,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable cpts hardware time stamping for Dra7xx and AM4372.
-This enables PTPv2 for DRA7xx and AM4372.
+Enable the Annex F Time Sync explicitly for DRA7x and AM4372.
+With this enabled the L2 PTP is working.
+
+while at that rename TS_BIT8 to TS_TTL_NONZERO
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/ti/cpsw.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 36aa109..085ffb5 100644
+index 085ffb5..af1423b 100644
 --- a/drivers/net/ethernet/ti/cpsw.c
 +++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1398,7 +1398,8 @@ static int cpsw_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
- 	struct hwtstamp_config cfg;
+@@ -248,7 +248,8 @@ struct cpsw_ss_regs {
+ #define TS_131              (1<<11) /* Time Sync Dest IP Addr 131 enable */
+ #define TS_130              (1<<10) /* Time Sync Dest IP Addr 130 enable */
+ #define TS_129              (1<<9)  /* Time Sync Dest IP Addr 129 enable */
+-#define TS_BIT8             (1<<8)  /* ts_ttl_nonzero? */
++#define TS_TTL_NONZERO      (1<<8)  /* Time Sync Time To Live Non-zero enable */
++#define TS_ANNEX_F_EN       (1<<6)  /* Time Sync Annex F enable */
+ #define TS_ANNEX_D_EN       (1<<4)  /* Time Sync Annex D enable */
+ #define TS_LTYPE2_EN        (1<<3)  /* Time Sync LTYPE 2 enable */
+ #define TS_LTYPE1_EN        (1<<2)  /* Time Sync LTYPE 1 enable */
+@@ -256,8 +257,9 @@ struct cpsw_ss_regs {
+ #define TS_RX_EN            (1<<0)  /* Time Sync Receive Enable */
  
- 	if (priv->version != CPSW_VERSION_1 &&
--	    priv->version != CPSW_VERSION_2)
-+	    priv->version != CPSW_VERSION_2 &&
-+	    priv->version != CPSW_VERSION_3)
- 		return -EOPNOTSUPP;
+ #define CTRL_TS_BITS \
+-	(TS_320 | TS_319 | TS_132 | TS_131 | TS_130 | TS_129 | TS_BIT8 | \
+-	 TS_ANNEX_D_EN | TS_LTYPE1_EN)
++	(TS_320 | TS_319 | TS_132 | TS_131 | TS_130 | TS_129 |\
++	 TS_TTL_NONZERO | TS_ANNEX_F_EN | TS_ANNEX_D_EN |\
++	 TS_LTYPE1_EN)
  
- 	if (copy_from_user(&cfg, ifr->ifr_data, sizeof(cfg)))
-@@ -1443,6 +1444,7 @@ static int cpsw_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
- 		cpsw_hwtstamp_v1(priv);
- 		break;
- 	case CPSW_VERSION_2:
-+	case CPSW_VERSION_3:
- 		cpsw_hwtstamp_v2(priv);
- 		break;
- 	default:
-@@ -1459,7 +1461,8 @@ static int cpsw_hwtstamp_get(struct net_device *dev, struct ifreq *ifr)
- 	struct hwtstamp_config cfg;
- 
- 	if (priv->version != CPSW_VERSION_1 &&
--	    priv->version != CPSW_VERSION_2)
-+	    priv->version != CPSW_VERSION_2 &&
-+	    priv->version != CPSW_VERSION_3)
- 		return -EOPNOTSUPP;
- 
- 	cfg.flags = 0;
+ #define CTRL_ALL_TS_MASK (CTRL_TS_BITS | TS_TX_EN | TS_RX_EN)
+ #define CTRL_TX_TS_BITS  (CTRL_TS_BITS | TS_TX_EN)
 -- 
 1.8.3.1
 
