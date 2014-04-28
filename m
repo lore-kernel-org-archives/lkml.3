@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216AbaD1Bbi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42938 "EHLO
+	id S1755236AbaD1Bcb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42961 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752605AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752651AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:21 -0400
+	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wengang Wang" <wen.gang.wang@oracle.com>,
-        "Joel Becker" <jlbec@evilplan.org>, "Mark Fasheh" <mfasheh@suse.com>,
-        "Sunil Mushran" <sunil.mushran@gmail.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Srinivas Eeda" <srinivas.eeda@oracle.com>,
-        "Junxiao Bi" <junxiao.bi@oracle.com>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.711207072@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
+        "Tomi Valkeinen" <tomi.valkeinen@ti.com>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.132934904@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 76/94] ocfs2: dlm: fix lock migration crash
+Subject: [PATCH 3.2 27/94] framebuffer: fix cfb_copyarea
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,117 +31,398 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
+commit 00a9d699bc85052d2d3ed56251cd928024ce06a3 upstream.
 
-This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
-list_for_each_entry where benefical") in 2007 where it replaced
-list_for_each with list_for_each_entry.  The variable "lock" will point
-to invalid data if "tmpq" list is empty and a panic will be triggered
-due to this.  Sunil advised reverting it back, but the old version was
-also not right.  At the end of the outer for loop, that
-list_for_each_entry will also set "lock" to an invalid data, then in the
-next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
-data and cause the panic.  So reverting the list_for_each back and reset
-"lock" to NULL to fix this issue.
+The function cfb_copyarea is buggy when the copy operation is not aligned on
+long boundary (4 bytes on 32-bit machines, 8 bytes on 64-bit machines).
 
-Another concern is that this seemes can not happen because the "tmpq"
-list should not be empty.  Let me describe how.
+How to reproduce:
+- use x86-64 machine
+- use a framebuffer driver without acceleration (for example uvesafb)
+- set the framebuffer to 8-bit depth
+	(for example fbset -a 1024x768-60 -depth 8)
+- load a font with character width that is not a multiple of 8 pixels
+	note: the console-tools package cannot load a font that has
+	width different from 8 pixels. You need to install the packages
+	"kbd" and "console-terminus" and use the program "setfont" to
+	set font width (for example: setfont Uni2-Terminus20x10)
+- move some text left and right on the bash command line and you get a
+	screen corruption
 
-old lock resource owner(node 1):                                  migratation target(node 2):
-image there's lockres with a EX lock from node 2 in
-granted list, a NR lock from node x with convert_type
-EX in converting list.
-dlm_empty_lockres() {
- dlm_pick_migration_target() {
-   pick node 2 as target as its lock is the first one
-   in granted list.
- }
- dlm_migrate_lockres() {
-   dlm_mark_lockres_migrating() {
-     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
-     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
-	 //after the above code, we can not dirty lockres any more,
-     // so dlm_thread shuffle list will not run
-                                                                   downconvert lock from EX to NR
-                                                                   upconvert lock from NR to EX
-<<< migration may schedule out here, then
-<<< node 2 send down convert request to convert type from EX to
-<<< NR, then send up convert request to convert type from NR to
-<<< EX, at this time, lockres granted list is empty, and two locks
-<<< in the converting list, node x up convert lock followed by
-<<< node 2 up convert lock.
+To expose more bugs, put this line to the end of uvesafb_init_info:
+info->flags |= FBINFO_HWACCEL_COPYAREA | FBINFO_READS_FAST;
+- Now framebuffer console will use cfb_copyarea for console scrolling.
+You get a screen corruption when console is scrolled.
 
-	 // will set lockres RES_MIGRATING flag, the following
-	 // lock/unlock can not run
-     dlm_lockres_release_ast(dlm, res);
-   }
+This patch is a rewrite of cfb_copyarea. It fixes the bugs, with this
+patch, console scrolling in 8-bit depth with a font width that is not a
+multiple of 8 pixels works fine.
 
-   dlm_send_one_lockres()
-                                                                 dlm_process_recovery_data()
-                                                                   for (i=0; i<mres->num_locks; i++)
-                                                                     if (ml->node == dlm->node_num)
-                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
-                                                                        list_for_each_entry(lock, tmpq, list)
-                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
-                                                                       }
-                                                                       if (lock->ml.node != ml->node)
-                                                                         BUG() >>> crash here
- }
+The cfb_copyarea code was very buggy and it looks like it was written
+and never tried with non-8-pixel font.
 
-I see the above locks status from a vmcore of our internal bug.
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/dlm/dlmrecovery.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/video/cfbcopyarea.c | 153 ++++++++++++++++++++++----------------------
+ 1 file changed, 78 insertions(+), 75 deletions(-)
 
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1752,13 +1752,13 @@ static int dlm_process_recovery_data(str
- 				     struct dlm_migratable_lockres *mres)
- {
- 	struct dlm_migratable_lock *ml;
--	struct list_head *queue;
-+	struct list_head *queue, *iter;
- 	struct list_head *tmpq = NULL;
- 	struct dlm_lock *newlock = NULL;
- 	struct dlm_lockstatus *lksb = NULL;
- 	int ret = 0;
- 	int i, j, bad;
--	struct dlm_lock *lock = NULL;
-+	struct dlm_lock *lock;
- 	u8 from = O2NM_MAX_NODES;
- 	unsigned int added = 0;
- 	__be64 c;
-@@ -1793,14 +1793,16 @@ static int dlm_process_recovery_data(str
- 			/* MIGRATION ONLY! */
- 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
+--- a/drivers/video/cfbcopyarea.c
++++ b/drivers/video/cfbcopyarea.c
+@@ -43,13 +43,22 @@
+      */
  
-+			lock = NULL;
- 			spin_lock(&res->spinlock);
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
--				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+				list_for_each(iter, tmpq) {
-+					lock = list_entry(iter,
-+						  struct dlm_lock, list);
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
-+					lock = NULL;
+ static void
+-bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+-		const unsigned long __iomem *src, int src_idx, int bits,
++bitcpy(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
++		const unsigned long __iomem *src, unsigned src_idx, int bits,
+ 		unsigned n, u32 bswapmask)
+ {
+ 	unsigned long first, last;
+ 	int const shift = dst_idx-src_idx;
+-	int left, right;
++
++#if 0
++	/*
++	 * If you suspect bug in this function, compare it with this simple
++	 * memmove implementation.
++	 */
++	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	return;
++#endif
+ 
+ 	first = fb_shifted_pixels_mask_long(p, dst_idx, bswapmask);
+ 	last = ~fb_shifted_pixels_mask_long(p, (dst_idx+n) % bits, bswapmask);
+@@ -98,9 +107,8 @@ bitcpy(struct fb_info *p, unsigned long
+ 		unsigned long d0, d1;
+ 		int m;
+ 
+-		right = shift & (bits - 1);
+-		left = -shift & (bits - 1);
+-		bswapmask &= shift;
++		int const left = shift & (bits - 1);
++		int const right = -shift & (bits - 1);
+ 
+ 		if (dst_idx+n <= bits) {
+ 			// Single destination word
+@@ -110,15 +118,15 @@ bitcpy(struct fb_info *p, unsigned long
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			if (shift > 0) {
+ 				// Single source word
+-				d0 >>= right;
++				d0 <<= left;
+ 			} else if (src_idx+n <= bits) {
+ 				// Single source word
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src + 1);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0<<left | d1>>right;
++				d0 = d0 >> right | d1 << left;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+@@ -135,60 +143,59 @@ bitcpy(struct fb_info *p, unsigned long
+ 			if (shift > 0) {
+ 				// Single source word
+ 				d1 = d0;
+-				d0 >>= right;
+-				dst++;
++				d0 <<= left;
+ 				n -= bits - dst_idx;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src++);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+ 
+-				d0 = d0<<left | d1>>right;
+-				dst++;
++				d0 = d0 >> right | d1 << left;
+ 				n -= bits - dst_idx;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+ 			d0 = d1;
++			dst++;
+ 
+ 			// Main chunk
+ 			m = n % bits;
+ 			n /= bits;
+ 			while ((n >= 4) && !bswapmask) {
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = FB_READL(src++);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0 << left | d1 >> right;
++				d0 = d0 >> right | d1 << left;
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(d0, dst++);
+ 				d0 = d1;
+ 			}
+ 
+ 			// Trailing bits
+-			if (last) {
+-				if (m <= right) {
++			if (m) {
++				if (m <= bits - right) {
+ 					// Single source word
+-					d0 <<= left;
++					d0 >>= right;
+ 				} else {
+ 					// 2 source words
+ 					d1 = FB_READL(src);
+ 					d1 = fb_rev_pixels_in_long(d1,
+ 								bswapmask);
+-					d0 = d0<<left | d1>>right;
++					d0 = d0 >> right | d1 << left;
  				}
- 				if (lock)
- 					break;
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+@@ -202,43 +209,46 @@ bitcpy(struct fb_info *p, unsigned long
+      */
+ 
+ static void
+-bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+-		const unsigned long __iomem *src, int src_idx, int bits,
++bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
++		const unsigned long __iomem *src, unsigned src_idx, int bits,
+ 		unsigned n, u32 bswapmask)
+ {
+ 	unsigned long first, last;
+ 	int shift;
+ 
+-	dst += (n-1)/bits;
+-	src += (n-1)/bits;
+-	if ((n-1) % bits) {
+-		dst_idx += (n-1) % bits;
+-		dst += dst_idx >> (ffs(bits) - 1);
+-		dst_idx &= bits - 1;
+-		src_idx += (n-1) % bits;
+-		src += src_idx >> (ffs(bits) - 1);
+-		src_idx &= bits - 1;
+-	}
++#if 0
++	/*
++	 * If you suspect bug in this function, compare it with this simple
++	 * memmove implementation.
++	 */
++	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	return;
++#endif
++
++	dst += (dst_idx + n - 1) / bits;
++	src += (src_idx + n - 1) / bits;
++	dst_idx = (dst_idx + n - 1) % bits;
++	src_idx = (src_idx + n - 1) % bits;
+ 
+ 	shift = dst_idx-src_idx;
+ 
+-	first = fb_shifted_pixels_mask_long(p, bits - 1 - dst_idx, bswapmask);
+-	last = ~fb_shifted_pixels_mask_long(p, bits - 1 - ((dst_idx-n) % bits),
+-					    bswapmask);
++	first = ~fb_shifted_pixels_mask_long(p, (dst_idx + 1) % bits, bswapmask);
++	last = fb_shifted_pixels_mask_long(p, (bits + dst_idx + 1 - n) % bits, bswapmask);
+ 
+ 	if (!shift) {
+ 		// Same alignment for source and dest
+ 
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			// Single word
+-			if (last)
+-				first &= last;
+-			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
++			if (first)
++				last &= first;
++			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
+ 		} else {
+ 			// Multiple destination words
+ 
+ 			// Leading bits
+-			if (first != ~0UL) {
++			if (first) {
+ 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
+ 				dst--;
+ 				src--;
+@@ -262,7 +272,7 @@ bitcpy_rev(struct fb_info *p, unsigned l
+ 				FB_WRITEL(FB_READL(src--), dst--);
+ 
+ 			// Trailing bits
+-			if (last)
++			if (last != -1UL)
+ 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
+ 		}
+ 	} else {
+@@ -270,29 +280,28 @@ bitcpy_rev(struct fb_info *p, unsigned l
+ 		unsigned long d0, d1;
+ 		int m;
+ 
+-		int const left = -shift & (bits-1);
+-		int const right = shift & (bits-1);
+-		bswapmask &= shift;
++		int const left = shift & (bits-1);
++		int const right = -shift & (bits-1);
+ 
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			// Single destination word
+-			if (last)
+-				first &= last;
++			if (first)
++				last &= first;
+ 			d0 = FB_READL(src);
+ 			if (shift < 0) {
+ 				// Single source word
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else if (1+(unsigned long)src_idx >= n) {
+ 				// Single source word
+-				d0 >>= right;
++				d0 <<= left;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src - 1);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0>>right | d1<<left;
++				d0 = d0 << left | d1 >> right;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+-			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
++			FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+ 		} else {
+ 			// Multiple destination words
+ 			/** We must always remember the last value read, because in case
+@@ -307,12 +316,12 @@ bitcpy_rev(struct fb_info *p, unsigned l
+ 			if (shift < 0) {
+ 				// Single source word
+ 				d1 = d0;
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src--);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0>>right | d1<<left;
++				d0 = d0 << left | d1 >> right;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+@@ -325,39 +334,39 @@ bitcpy_rev(struct fb_info *p, unsigned l
+ 			n /= bits;
+ 			while ((n >= 4) && !bswapmask) {
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = FB_READL(src--);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0 >> right | d1 << left;
++				d0 = d0 << left | d1 >> right;
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(d0, dst--);
+ 				d0 = d1;
+ 			}
+ 
+ 			// Trailing bits
+-			if (last) {
+-				if (m <= left) {
++			if (m) {
++				if (m <= bits - left) {
+ 					// Single source word
+-					d0 >>= right;
++					d0 <<= left;
+ 				} else {
+ 					// 2 source words
+ 					d1 = FB_READL(src);
+ 					d1 = fb_rev_pixels_in_long(d1,
+ 								bswapmask);
+-					d0 = d0>>right | d1<<left;
++					d0 = d0 << left | d1 >> right;
+ 				}
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+@@ -371,9 +380,9 @@ void cfb_copyarea(struct fb_info *p, con
+ 	u32 dx = area->dx, dy = area->dy, sx = area->sx, sy = area->sy;
+ 	u32 height = area->height, width = area->width;
+ 	unsigned long const bits_per_line = p->fix.line_length*8u;
+-	unsigned long __iomem *dst = NULL, *src = NULL;
++	unsigned long __iomem *base = NULL;
+ 	int bits = BITS_PER_LONG, bytes = bits >> 3;
+-	int dst_idx = 0, src_idx = 0, rev_copy = 0;
++	unsigned dst_idx = 0, src_idx = 0, rev_copy = 0;
+ 	u32 bswapmask = fb_compute_bswapmask(p);
+ 
+ 	if (p->state != FBINFO_STATE_RUNNING)
+@@ -389,7 +398,7 @@ void cfb_copyarea(struct fb_info *p, con
+ 
+ 	// split the base of the framebuffer into a long-aligned address and the
+ 	// index of the first bit
+-	dst = src = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
++	base = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
+ 	dst_idx = src_idx = 8*((unsigned long)p->screen_base & (bytes-1));
+ 	// add offset of source and target area
+ 	dst_idx += dy*bits_per_line + dx*p->var.bits_per_pixel;
+@@ -402,20 +411,14 @@ void cfb_copyarea(struct fb_info *p, con
+ 		while (height--) {
+ 			dst_idx -= bits_per_line;
+ 			src_idx -= bits_per_line;
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy_rev(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy_rev(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel, bswapmask);
+ 		}
+ 	} else {
+ 		while (height--) {
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel, bswapmask);
+ 			dst_idx += bits_per_line;
+ 			src_idx += bits_per_line;
 
