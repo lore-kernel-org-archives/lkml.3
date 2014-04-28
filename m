@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaD1EQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 00:16:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:56711 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529AbaD1ENj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 00:13:39 -0400
-From: George Cherian <george.cherian@ti.com>
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
-        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
-        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
-        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
-        <mugunthanvnm@ti.com>, <george.cherian@ti.com>, <t-kristo@ti.com>,
-        <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: [PATCH 2/6] ARM: dts: am33xx: Add clock names for cpsw and cpts
-Date: Mon, 28 Apr 2014 09:40:21 +0530
-Message-ID: <1398658225-25873-3-git-send-email-george.cherian@ti.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
+	id S1752062AbaD1Eja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 00:39:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45432 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808AbaD1Ej2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 00:39:28 -0400
+Date: Sun, 27 Apr 2014 21:39:09 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20140428043909.GA26778@infradead.org>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CPSW fck and CPTS clock and clock names
+This doesn't address any or the previous points:
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- arch/arm/boot/dts/am33xx.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ - common implementation instead of the godawful boilerplate code
+   (and we even fixed most of this for Posix ACL by now, so even less
+   reason to do the same crap again!)
+ - common data structure with Posix ACLs
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 9770e35..d1e2b36 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -665,6 +665,8 @@
- 		mac: ethernet@4a100000 {
- 			compatible = "ti,cpsw";
- 			ti,hwmods = "cpgmac0";
-+			clocks = <&cpsw_125mhz_gclk>, <&cpsw_cpts_rft_clk>;
-+			clock-names = "fck", "cpts";
- 			cpdma_channels = <8>;
- 			ale_entries = <1024>;
- 			bd_ram_size = <0x2000>;
--- 
-1.8.3.1
+And of course no real explanation why we need the braindead access/deny
+scheme at how it will get properly integrated with the system.
 
+So in this for a clear NAK.
