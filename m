@@ -1,165 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238AbaD1VU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:20:58 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:55867 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654AbaD1VUz (ORCPT
+	id S1757259AbaD1VVx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:21:53 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:60548 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974AbaD1VVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:20:55 -0400
-Date: Mon, 28 Apr 2014 14:15:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Richard Weinberger <richard@nod.at>, Rik van Riel <riel@redhat.com>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140428211535.GK4430@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <535992DD.3060808@infradead.org>
- <20140425100459.7824f676@annuminas.surriel.com>
- <535AC91A.1070504@infradead.org>
- <535ACB0E.4070600@infradead.org>
- <20140427062650.GW4496@linux.vnet.ibm.com>
- <20140428135540.GA14661@linux.vnet.ibm.com>
- <535E8D14.7080405@infradead.org>
- <535E8E17.2050600@nod.at>
- <20140428200640.GG4430@linux.vnet.ibm.com>
- <535EBAE6.3080907@infradead.org>
+	Mon, 28 Apr 2014 17:21:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535EBAE6.3080907@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042821-0928-0000-0000-0000018C3789
+In-Reply-To: <20140420080203.GB19672@pd.tnic>
+References: <20140419025308.2408.51252.stgit@amt.stowe>
+	<20140419025331.2408.40589.stgit@amt.stowe>
+	<20140420080203.GB19672@pd.tnic>
+Date: Mon, 28 Apr 2014 15:21:49 -0600
+Message-ID: <CAL-B5D2yYyig6zEyjFHSiJrp83XL1SHuR=ETJMbp3uEVT9smhw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] x86/PCI: Miscellaneous code clean up for early_fillup_mp_bus_info
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Borislav Petkov <bp@suse.de>
+Cc: Myron Stowe <myron.stowe@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com, daniel@numascale.com,
+        Thomas Gleixner <tglx@linutronix.de>, mingo@redhat.com, hpa@zytor.com,
+        x86 <x86@kernel.org>, sp@numascale.com,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
-> On 04/28/14 13:06, Paul E. McKenney wrote:
-> > On Mon, Apr 28, 2014 at 07:21:27PM +0200, Richard Weinberger wrote:
-> >> Am 28.04.2014 19:17, schrieb Randy Dunlap:
-> >>>
-> >>> uml defconfig on x86_64:
-> >>>
-> >>>   CC      arch/um/kernel/asm-offsets.s
-> >>> In file included from include/linux/sem.h:5:0,
-> >>>                  from include/linux/sched.h:35,
-> >>>                  from arch/x86/um/shared/sysdep/kernel-offsets.h:2,
-> >>>                  from arch/um/kernel/asm-offsets.c:1:
-> >>> include/linux/rcupdate.h:257:20: error: static declaration of 'rcu_sysrq_start' follows non-static declaration
-> >>> include/linux/rcupdate.h:250:6: note: previous declaration of 'rcu_sysrq_start' was here
-> >>> include/linux/rcupdate.h:260:20: error: static declaration of 'rcu_sysrq_end' follows non-static declaration
-> >>> include/linux/rcupdate.h:251:6: note: previous declaration of 'rcu_sysrq_end' was here
-> >>> make[2]: *** [arch/um/kernel/asm-offsets.s] Error 1
-> >>>
-> >>>
-> >>> Please test your patch(es).
-> > 
-> > Against exactly what?  ;-)
-> 
-> see $Subject
+On Sun, Apr 20, 2014 at 2:02 AM, Borislav Petkov <bp@suse.de> wrote:
+> On Fri, Apr 18, 2014 at 08:53:31PM -0600, Myron Stowe wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>
+>> * Refactoring of the early_fill_mp_bus_info function into multiple helper
+>>   functions since it is getting long, and difficult to follow.
+>
+> Much better.
+>
 
-Testing my patches against MMOTM would be Stephen Rothwell's job.  ;-)
+Yes, it had become too big!
 
-> >> Just in case, to build an x86_64 UML please run:
-> >>
-> >> make defconfig ARCH=um SUBARCH=x86_64
-> >> make linux ARCH=um SUBARCH=x86_64
-> > 
-> > Hmmm....  Builds without errors in my local tree.
-> > 
-> > Make a clone of linux-next...
-> > 
-> > OK, now I get a different build failure:
-> > 
-> > /home/paulmck/public_git/linux-next/drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
-> > /home/paulmck/public_git/linux-next/drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
-> > 
-> > This is due to Rik's "#include <linux/rcupdate.h>" getting lost somehow.
-> > This #include is needed in drivers/tty/sysrq.c.
-> > 
-> > But maybe I need to be using some other branch of linux-next.  Am currently
-> > on 5bd4e10b96ce20271688aa31d8bd739441249152, which is origin/master.  And
-> > is also next-20140428.  If I should be somewhere else, please let me know.
-> > 
-> > OK, it also appears that my change to make TINY_RCU work is also missing,
-> > possibly because Randy applied it by hand.
-> 
-> nope.
-> 
-> > Please see below for a patch against next-20140428 that makes this build
-> > for me.  This is derived from Rik's patch, my patch, and is consistent with
-> > Arnd's patch.
-> > 
-> > 							Thanx, Paul
-> 
-> Thnx, works for me.  Finally.
+>> * Merge early_fill_mp_bus_info into amd_postcore_init as there is no need to
+>>   have this as a separate function.
+>>
+>> * Use pr_xxx instead of printk
+>
+> You can convert the printk(KERN_CONT -> pr_cont( too, while at it.
+> Although, this would prepend the fmt thing on every line ...
+>
 
-Good!
+Yeah, I ignored this since the additional pr_fmt() output was too
+noisy and redundant
 
-Rik, how would you like to proceed with this?
+>> * Prepend "AMD-Bus" for each print.
+>
+> That's done with pr_fmt
+>
 
-							Thanx, Paul
+Done
 
-> > ------------------------------------------------------------------------
-> > 
-> > diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> > index 6c3d11b..38d5f9a 100644
-> > --- a/drivers/tty/sysrq.c
-> > +++ b/drivers/tty/sysrq.c
-> > @@ -46,6 +46,7 @@
-> >  #include <linux/jiffies.h>
-> >  #include <linux/syscalls.h>
-> >  #include <linux/of.h>
-> > +#include <linux/rcupdate.h>
-> >  
-> >  #include <asm/ptrace.h>
-> >  #include <asm/irq_regs.h>
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index e9cc71c..7b0a669 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -247,8 +247,17 @@ void rcu_idle_enter(void);
-> >  void rcu_idle_exit(void);
-> >  void rcu_irq_enter(void);
-> >  void rcu_irq_exit(void);
-> > +#ifdef CONFIG_RCU_STALL_COMMON
-> >  void rcu_sysrq_start(void);
-> >  void rcu_sysrq_end(void);
-> > +#else /* #ifdef CONFIG_RCU_STALL_COMMON */
-> > +static inline void rcu_sysrq_start(void)
-> > +{
-> > +}
-> > +static inline void rcu_sysrq_end(void)
-> > +{
-> > +}
-> > +#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
-> >  
-> >  #ifdef CONFIG_RCU_USER_QS
-> >  void rcu_user_enter(void);
-> > diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> > index 20caaf0..a2aeb4d 100644
-> > --- a/kernel/rcu/update.c
-> > +++ b/kernel/rcu/update.c
-> > @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
-> >  
-> >  void rcu_sysrq_start(void)
-> >  {
-> > -	rcu_cpu_stall_suppress = 2;
-> > +	if (!rcu_cpu_stall_suppress)
-> > +		rcu_cpu_stall_suppress = 2;
-> >  }
-> >  
-> >  void rcu_sysrq_end(void)
-> > 
-> > --
-> 
-> 
-> -- 
-> ~Randy
-> 
-
+>> * The current code is using "fam10h_mmconf_*" in several place.  As this
+>>   file is no longer specific to family10h systems, this patch changes
+>>   such occurrances to "amd_mmconf_*" instead for clarity.
+>
+> ...
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
