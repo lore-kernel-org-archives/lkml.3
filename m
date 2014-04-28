@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaD1Bbh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42940 "EHLO
+	id S932184AbaD1Bbf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42931 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752593AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752631AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Fabian Yamaguchi" <fabs@goesec.de>,
-        "Mike Marciniszyn" <mike.marciniszyn@intel.com>,
-        "Dennis Dalessandro" <dennis.dalessandro@intel.com>,
-        "Roland Dreier" <roland@purestorage.com>,
-        "Nico Golde" <nico@ngolde.de>
+CC: akpm@linux-foundation.org, "Lee Jones" <lee.jones@linaro.org>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.204418996@decadent.org.uk>
+Message-ID: <lsq.1398647482.737500401@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 49/94] IB/ipath: Fix potential buffer overrun in
- sending diag packet routine
+Subject: [PATCH 3.2 52/94] mfd: max8997: Fix possible NULL pointer
+ dereference on i2c_new_dummy error
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,140 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
+commit 97dc4ed3fa377ec91bb60ba98b70d645c2099384 upstream.
 
-Guard against a potential buffer overrun.  The size to read from the
-user is passed in, and due to the padding that needs to be taken into
-account, as well as the place holder for the ICRC it is possible to
-overflow the 32bit value which would cause more data to be copied from
-user space than is allocated in the buffer.
+During probe the driver allocates dummy I2C devices for RTC, haptic and
+MUIC with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
+
+If i2c_new_dummy() fails for RTC, haptic or MUIC devices, fail also the
+probe for main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
- 1 file changed, 25 insertions(+), 41 deletions(-)
+ drivers/mfd/max8997.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struc
- 				   size_t count, loff_t *off)
- {
- 	u32 __iomem *piobuf;
--	u32 plen, clen, pbufn;
-+	u32 plen, pbufn, maxlen_reserve;
- 	struct ipath_diag_pkt odp;
- 	struct ipath_diag_xpkt dp;
- 	u32 *tmpbuf = NULL;
-@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struc
- 	u64 val;
- 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -148,10 +148,26 @@ static int max8997_i2c_probe(struct i2c_
+ 	mutex_init(&max8997->iolock);
  
--	if (count < sizeof(odp)) {
--		ret = -EINVAL;
--		goto bail;
--	}
- 
- 	if (count == sizeof(dp)) {
- 		if (copy_from_user(&dp, data, sizeof(dp))) {
- 			ret = -EFAULT;
- 			goto bail;
- 		}
--	} else if (copy_from_user(&odp, data, sizeof(odp))) {
--		ret = -EFAULT;
-+	} else if (count == sizeof(odp)) {
-+		if (copy_from_user(&odp, data, sizeof(odp))) {
-+			ret = -EFAULT;
-+			goto bail;
-+		}
-+	} else {
-+		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	/*
--	 * Due to padding/alignment issues (lessened with new struct)
--	 * the old and new structs are the same length. We need to
--	 * disambiguate them, which we can do because odp.len has never
--	 * been less than the total of LRH+BTH+DETH so far, while
--	 * dp.unit (same offset) unit is unlikely to get that high.
--	 * Similarly, dp.data, the pointer to user at the same offset
--	 * as odp.unit, is almost certainly at least one (512byte)page
--	 * "above" NULL. The if-block below can be omitted if compatibility
--	 * between a new driver and older diagnostic code is unimportant.
--	 * compatibility the other direction (new diags, old driver) is
--	 * handled in the diagnostic code, with a warning.
--	 */
--	if (dp.unit >= 20 && dp.data < 512) {
--		/* very probable version mismatch. Fix it up */
--		memcpy(&odp, &dp, sizeof(odp));
--		/* We got a legacy dp, copy elements to dp */
--		dp.unit = odp.unit;
--		dp.data = odp.data;
--		dp.len = odp.len;
--		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
--	}
--
- 	/* send count must be an exact number of dwords */
- 	if (dp.len & 3) {
- 		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	clen = dp.len >> 2;
-+	plen = dp.len >> 2;
- 
- 	dd = ipath_lookup(dp.unit);
- 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
-@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struc
- 		goto bail;
- 	}
- 
--	/* need total length before first word written */
--	/* +1 word is for the qword padding */
--	plen = sizeof(u32) + dp.len;
--
--	if ((plen + 4) > dd->ipath_ibmaxlen) {
-+	/*
-+	 * need total length before first word written, plus 2 Dwords. One Dword
-+	 * is for padding so we get the full user data when not aligned on
-+	 * a word boundary. The other Dword is to make sure we have room for the
-+	 * ICRC which gets tacked on later.
-+	 */
-+	maxlen_reserve = 2 * sizeof(u32);
-+	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
- 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
--			  plen - 4, dd->ipath_ibmaxlen);
-+			  dp.len, dd->ipath_ibmaxlen);
- 		ret = -EINVAL;
--		goto bail;	/* before writing pbc */
-+		goto bail;
- 	}
+ 	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max8997->rtc) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8997->rtc, max8997);
 +
-+	plen = sizeof(u32) + dp.len;
+ 	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max8997->haptic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max8997->haptic, max8997);
 +
- 	tmpbuf = vmalloc(plen);
- 	if (!tmpbuf) {
- 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
-@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struc
- 	 */
- 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
- 		ipath_flush_wc();
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
- 		ipath_flush_wc();
--		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
-+		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
- 	} else
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
+ 	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max8997->muic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
++		ret = -ENODEV;
++		goto err_i2c_muic;
++	}
+ 	i2c_set_clientdata(max8997->muic, max8997);
  
- 	ipath_flush_wc();
- 
+ 	pm_runtime_set_active(max8997->dev);
+@@ -178,7 +194,9 @@ static int max8997_i2c_probe(struct i2c_
+ err_mfd:
+ 	mfd_remove_devices(max8997->dev);
+ 	i2c_unregister_device(max8997->muic);
++err_i2c_muic:
+ 	i2c_unregister_device(max8997->haptic);
++err_i2c_haptic:
+ 	i2c_unregister_device(max8997->rtc);
+ err:
+ 	kfree(max8997);
 
