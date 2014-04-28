@@ -1,131 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaD1JNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:13:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37253 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238AbaD1JNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:13:47 -0400
-Date: Mon, 28 Apr 2014 11:13:41 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Daniel Willmann <daniel@totalueberwachung.de>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH] mmc: mxs: fix card detection function for broken card
- detect
-Message-ID: <20140428091341.GA5918@pengutronix.de>
-References: <dec3cef26b7470cabfc11a83750a88db5b545a41.1397944151.git.daniel@totalueberwachung.de>
+	id S1754710AbaD1JOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:14:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754672AbaD1JOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 05:14:07 -0400
+Message-ID: <535E1BD9.8000800@redhat.com>
+Date: Mon, 28 Apr 2014 11:14:01 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <dec3cef26b7470cabfc11a83750a88db5b545a41.1397944151.git.daniel@totalueberwachung.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:52:55 up 5 days,  2:24, 40 users,  load average: 0.04, 0.09, 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: x86: Check for host supported fields in shadow
+ vmcs
+References: <jpgk3aiv6a9.fsf@nelium.bos.redhat.com>
+In-Reply-To: <jpgk3aiv6a9.fsf@nelium.bos.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 11:59:18PM +0200, Daniel Willmann wrote:
-> Return -ENOSYS in get_cd if broken-cd is specified in the device tree.
-> 
-> Commit a91fe279ae75 (mmc: mxs: use standard flag for broken card
-> detection) sets MMC_CAP_NEEDS_POLL when broken-cd is specified. This
-> driver sets this flag unconditionally as it does not support a card
-> detect interrupt. Instead, broken-cd means that there is no card detect
-> signal connected.
-> 
-> The mmc core checks the get_cd function return value to determine if a
-> card is present. Only for a non-zero return value it will attempt to
-> initialize the card. So retuning -ENOSYS will allow the card to be
-> initialized.
-> For comparison, mmc_gpio_get_cd in slot-gpio.c also returns -ENOSYS if
-> the card detect GPIO is not valid.
-
-Short answer for fixing this regression:
-
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-Long answer:
-
-This is broken in the MMC OF parser. When the parser finds the
-'broken-cd' property it just sets the MMC_CAP_NEEDS_POLL flag. This is
-wrong.  broken-cd means that we cannot rely on any card detection, but
-instead have to talk to the card to find out if it's available.
-Currently there is no flag to signal this situation, so the host driver
-has to handle this by returning true in the get_cd callback, just like
-the patch below does.
-
-IMO the correct solution would be to add a MMC_CAP_CD_NEEDS_TALK_TO_CARD
-flag to the core.
-
-Sascha
-
-> 
-> Signed-off-by: Daniel Willmann <daniel@totalueberwachung.de>
+Il 21/04/2014 21:20, Bandan Das ha scritto:
+>
+> We track shadow vmcs fields through two static lists,
+> one for read only and another for r/w fields. However, with
+> addition of new vmcs fields, not all fields may be supported on
+> all hosts. If so, copy_vmcs12_to_shadow() trying to vmwrite on
+> unsupported hosts will result in a vmwrite error. For example, commit
+> 36be0b9deb23161 introduced GUEST_BNDCFGS, which is not supported
+> by all processors. Filter out host unsupported fields before
+> letting guests use shadow vmcs
+>
+> Signed-off-by: Bandan Das <bsd@redhat.com>
 > ---
-> This might be relevant for stable kernels. The patch was tested with 3.14.1 on
-> olinuxino nano.
-> 
->  drivers/mmc/host/mxs-mmc.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> index 073e871a0fc8..babfea03ba8a 100644
-> --- a/drivers/mmc/host/mxs-mmc.c
-> +++ b/drivers/mmc/host/mxs-mmc.c
-> @@ -70,6 +70,7 @@ struct mxs_mmc_host {
->  	unsigned char			bus_width;
->  	spinlock_t			lock;
->  	int				sdio_irq_en;
-> +	bool				broken_cd;
+> v2:
+>   - Just compress the original lists instead of creating new ones
+>   - Change commit message slightly to reflect this change
+>
+>  arch/x86/kvm/vmx.c | 54 ++++++++++++++++++++++++++++++++++++++++++------------
+>  1 file changed, 42 insertions(+), 12 deletions(-)
+>
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 7bed3e3..26a632f 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -503,7 +503,7 @@ static inline struct vcpu_vmx *to_vmx(struct kvm_vcpu *vcpu)
+>  				[number##_HIGH] = VMCS12_OFFSET(name)+4
+>
+>
+> -static const unsigned long shadow_read_only_fields[] = {
+> +static unsigned long shadow_read_only_fields[] = {
+>  	/*
+>  	 * We do NOT shadow fields that are modified when L0
+>  	 * traps and emulates any vmx instruction (e.g. VMPTRLD,
+> @@ -526,10 +526,10 @@ static const unsigned long shadow_read_only_fields[] = {
+>  	GUEST_LINEAR_ADDRESS,
+>  	GUEST_PHYSICAL_ADDRESS
 >  };
->  
->  static int mxs_mmc_get_cd(struct mmc_host *mmc)
-> @@ -78,6 +79,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
->  	struct mxs_ssp *ssp = &host->ssp;
->  	int present, ret;
->  
-> +	if (host->broken_cd)
-> +		return -ENOSYS;
+> -static const int max_shadow_read_only_fields =
+> +static int max_shadow_read_only_fields =
+>  	ARRAY_SIZE(shadow_read_only_fields);
+>
+> -static const unsigned long shadow_read_write_fields[] = {
+> +static unsigned long shadow_read_write_fields[] = {
+>  	GUEST_RIP,
+>  	GUEST_RSP,
+>  	GUEST_CR0,
+> @@ -558,7 +558,7 @@ static const unsigned long shadow_read_write_fields[] = {
+>  	HOST_FS_SELECTOR,
+>  	HOST_GS_SELECTOR
+>  };
+> -static const int max_shadow_read_write_fields =
+> +static int max_shadow_read_write_fields =
+>  	ARRAY_SIZE(shadow_read_write_fields);
+>
+>  static const unsigned short vmcs_field_to_offset_table[] = {
+> @@ -3009,6 +3009,42 @@ static void free_kvm_area(void)
+>  	}
+>  }
+>
+> +static void init_vmcs_shadow_fields(void)
+> +{
+> +	int i, j;
 > +
->  	ret = mmc_gpio_get_cd(mmc);
->  	if (ret >= 0)
->  		return ret;
-> @@ -568,6 +572,7 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+> +	/* No checks for read only fields yet */
+> +
+> +	for (i = j = 0; i < max_shadow_read_write_fields; i++) {
+> +
+> +		switch (shadow_read_write_fields[i]) {
+> +		case GUEST_BNDCFGS:
+> +			if (!vmx_mpx_supported())
+> +				continue;
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +
+> +		if (j < i)
+> +			shadow_read_write_fields[j] =
+> +				shadow_read_write_fields[i];
+> +		j++;
+> +	}
+> +	max_shadow_read_write_fields = j;
+> +
+> +	/* shadowed fields guest access without vmexit */
+> +	for (i = 0; i < max_shadow_read_write_fields; i++) {
+> +		clear_bit(shadow_read_write_fields[i],
+> +			  vmx_vmwrite_bitmap);
+> +		clear_bit(shadow_read_write_fields[i],
+> +			  vmx_vmread_bitmap);
+> +	}
+> +	for (i = 0; i < max_shadow_read_only_fields; i++)
+> +		clear_bit(shadow_read_only_fields[i],
+> +			  vmx_vmread_bitmap);
+> +}
+> +
+>  static __init int alloc_kvm_area(void)
 >  {
->  	const struct of_device_id *of_id =
->  			of_match_device(mxs_mmc_dt_ids, &pdev->dev);
-> +	struct device_node *np = pdev->dev.of_node;
->  	struct mxs_mmc_host *host;
->  	struct mmc_host *mmc;
->  	struct resource *iores;
-> @@ -634,6 +639,8 @@ static int mxs_mmc_probe(struct platform_device *pdev)
->  	mmc->caps = MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED |
->  		    MMC_CAP_SDIO_IRQ | MMC_CAP_NEEDS_POLL;
->  
-> +	host->broken_cd = of_property_read_bool(np, "broken-cd");
-> +
->  	mmc->f_min = 400000;
->  	mmc->f_max = 288000000;
->  
-> -- 
-> 1.8.4.2
-> 
-> 
+>  	int cpu;
+> @@ -3039,6 +3075,8 @@ static __init int hardware_setup(void)
+>  		enable_vpid = 0;
+>  	if (!cpu_has_vmx_shadow_vmcs())
+>  		enable_shadow_vmcs = 0;
+> +	if (enable_shadow_vmcs)
+> +		init_vmcs_shadow_fields();
+>
+>  	if (!cpu_has_vmx_ept() ||
+>  	    !cpu_has_vmx_ept_4levels()) {
+> @@ -8817,14 +8855,6 @@ static int __init vmx_init(void)
+>
+>  	memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
+>  	memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
+> -	/* shadowed read/write fields */
+> -	for (i = 0; i < max_shadow_read_write_fields; i++) {
+> -		clear_bit(shadow_read_write_fields[i], vmx_vmwrite_bitmap);
+> -		clear_bit(shadow_read_write_fields[i], vmx_vmread_bitmap);
+> -	}
+> -	/* shadowed read only fields */
+> -	for (i = 0; i < max_shadow_read_only_fields; i++)
+> -		clear_bit(shadow_read_only_fields[i], vmx_vmread_bitmap);
+>
+>  	/*
+>  	 * Allow direct access to the PC debug port (it is often used for I/O
+>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Applying this to kvm/master, thanks.
+
+Paolo
