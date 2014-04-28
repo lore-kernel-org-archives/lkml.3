@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaD1Bb1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42904 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752576AbaD1B3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:21 -0400
+	id S1754268AbaD1B5R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:57:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47726 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752458AbaD1B5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 21:57:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,940,1389772800"; 
+   d="scan'208";a="522121016"
+Message-ID: <1398650223.2443.12.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V5 09/12] ACPI: introduce acpi platform exclude id list
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Date: Mon, 28 Apr 2014 09:57:03 +0800
+In-Reply-To: <5562797.vTJauiAbJc@vostro.rjw.lan>
+References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
+	 <1396886819-2637-10-git-send-email-rui.zhang@intel.com>
+	 <5562797.vTJauiAbJc@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Emmanuel Grumbach" <emmanuel.grumbach@intel.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.332959730@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 45/94] iwlwifi: dvm: take mutex when sending SYNC BT
- config command
-In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-04-28 at 00:21 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, April 08, 2014 12:06:56 AM Zhang Rui wrote:
+> > For ACPI PIC (PNP0000) and Timer (PNP0100) device objects, although
+> > they have _HID control method, but they should not be enumerated to
+> > platform bus, because there will never be any platform drivers for them.
+> > 
+> > Thus an exclude id list is introduced in this patch to prevent
+> > those platform device nodes from being created.
+> > 
+> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> 
+> This should go into [6/12] as well.
+> 
+I think it is okay to keep them as separate patches because they do not
+break bisect. And this patch is just a cleanup, it does not fix a real
+BUG in patch 6/12.
 
-------------------
+thanks,
+rui
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+> > ---
+> >  drivers/acpi/acpi_platform.c |   14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> > 
+> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> > index 33376a9..91ed43a 100644
+> > --- a/drivers/acpi/acpi_platform.c
+> > +++ b/drivers/acpi/acpi_platform.c
+> > @@ -22,6 +22,17 @@
+> >  
+> >  ACPI_MODULE_NAME("platform");
+> >  
+> > +static const struct acpi_device_id excluded_id_list[] = {
+> > +	{"PNP0000", 0},	/* PIC */
+> > +	{"PNP0100", 0},	/* Timer */
+> > +	{"", 0},
+> > +};
+> > +
+> > +static bool is_exclusive_device(struct acpi_device *dev)
+> > +{
+> > +	return !acpi_match_device_ids(dev, excluded_id_list);
+> > +}
+> > +
+> >  /**
+> >   * acpi_create_platform_device - Create platform device for ACPI device node
+> >   * @adev: ACPI device node to create a platform device for.
+> > @@ -48,6 +59,9 @@ int acpi_create_platform_device(struct acpi_device *adev,
+> >  	if (adev->physical_node_count)
+> >  		return 0;
+> >  
+> > +	if (is_exclusive_device(adev))
+> > +		return 0;
+> > +
+> >  	INIT_LIST_HEAD(&resource_list);
+> >  	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
+> >  	if (count < 0) {
+> > 
+> 
 
-commit 82e5a649453a3cf23516277abb84273768a1592b upstream.
-
-There is a flow in which we send the host command in SYNC
-mode, but we don't take priv->mutex.
-
-Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1046495
-
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-[bwh: Backported to 3.2:
- - Adjust filename, context
- - mutex is priv->shrd->mutex]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/wireless/iwlwifi/iwl-agn.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -246,13 +246,17 @@ static void iwl_bg_bt_runtime_config(str
- 	struct iwl_priv *priv =
- 		container_of(work, struct iwl_priv, bt_runtime_config);
- 
-+	mutex_lock(&priv->shrd->mutex);
- 	if (test_bit(STATUS_EXIT_PENDING, &priv->shrd->status))
--		return;
-+		goto out;
- 
- 	/* dont send host command if rf-kill is on */
- 	if (!iwl_is_ready_rf(priv->shrd))
--		return;
-+		goto out;
-+
- 	iwlagn_send_advance_bt_config(priv);
-+out:
-+	mutex_unlock(&priv->shrd->mutex);
- }
- 
- static void iwl_bg_bt_full_concurrency(struct work_struct *work)
 
