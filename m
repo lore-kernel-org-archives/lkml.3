@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133AbaD1BcU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43010 "EHLO
+	id S1755113AbaD1BcS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:18 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43006 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778AbaD1B3W (ORCPT
+	by vger.kernel.org with ESMTP id S1752782AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,21 +13,19 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
-        "Bob Liu" <bob.liu@oracle.com>, "Sasha Levin" <sasha.levin@oracle.com>,
-        "Vlastimil Babka" <vbabka@suse.cz>, "Mel Gorman" <mgorman@suse.de>,
-        "Rik van Riel" <riel@redhat.com>,
-        "Joonsoo Kim" <iamjoonsoo.kim@lge.com>,
-        "Hugh Dickins" <hughd@google.com>,
-        "Michel Lespinasse" <walken@google.com>,
+CC: akpm@linux-foundation.org, "Joonsoo Kim" <iamjoonsoo.kim@lge.com>,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
         "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "David Rientjes" <rientjes@google.com>
+        "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>,
+        "Michal Hocko" <mhocko@suse.cz>,
+        "Aneesh Kumar" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
+        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.469240383@decadent.org.uk>
+Message-ID: <lsq.1398647482.692955072@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 80/94] mm: try_to_unmap_cluster() should lock_page()
- before mlocking
+Subject: [PATCH 3.2 81/94] mm: hugetlb: fix softlockup when a large number
+ of hugepages are freed.
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -40,89 +38,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
 
-commit 57e68e9cd65b4b8eb4045a1e0d0746458502554c upstream.
+commit 55f67141a8927b2be3e51840da37b8a2320143ed upstream.
 
-A BUG_ON(!PageLocked) was triggered in mlock_vma_page() by Sasha Levin
-fuzzing with trinity.  The call site try_to_unmap_cluster() does not lock
-the pages other than its check_page parameter (which is already locked).
+When I decrease the value of nr_hugepage in procfs a lot, softlockup
+happens.  It is because there is no chance of context switch during this
+process.
 
-The BUG_ON in mlock_vma_page() is not documented and its purpose is
-somewhat unclear, but apparently it serializes against page migration,
-which could otherwise fail to transfer the PG_mlocked flag.  This would
-not be fatal, as the page would be eventually encountered again, but
-NR_MLOCK accounting would become distorted nevertheless.  This patch adds
-a comment to the BUG_ON in mlock_vma_page() and munlock_vma_page() to that
-effect.
+On the other hand, when I allocate a large number of hugepages, there is
+some chance of context switch.  Hence softlockup doesn't happen during
+this process.  So it's necessary to add the context switch in the
+freeing process as same as allocating process to avoid softlockup.
 
-The call site try_to_unmap_cluster() is fixed so that for page !=
-check_page, trylock_page() is attempted (to avoid possible deadlocks as we
-already have check_page locked) and mlock_vma_page() is performed only
-upon success.  If the page lock cannot be obtained, the page is left
-without PG_mlocked, which is again not a problem in the whole unevictable
-memory design.
+When I freed 12 TB hugapages with kernel-2.6.32-358.el6, the freeing
+process occupied a CPU over 150 seconds and following softlockup message
+appeared twice or more.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Bob Liu <bob.liu@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
+$ echo 6000000 > /proc/sys/vm/nr_hugepages
+$ cat /proc/sys/vm/nr_hugepages
+6000000
+$ grep ^Huge /proc/meminfo
+HugePages_Total:   6000000
+HugePages_Free:    6000000
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+$ echo 0 > /proc/sys/vm/nr_hugepages
+
+BUG: soft lockup - CPU#16 stuck for 67s! [sh:12883] ...
+Pid: 12883, comm: sh Not tainted 2.6.32-358.el6.x86_64 #1
+Call Trace:
+  free_pool_huge_page+0xb8/0xd0
+  set_max_huge_pages+0x128/0x190
+  hugetlb_sysctl_handler_common+0x113/0x140
+  hugetlb_sysctl_handler+0x1e/0x20
+  proc_sys_call_handler+0x97/0xd0
+  proc_sys_write+0x14/0x20
+  vfs_write+0xb8/0x1a0
+  sys_write+0x51/0x90
+  __audit_syscall_exit+0x265/0x290
+  system_call_fastpath+0x16/0x1b
+
+I have not confirmed this problem with upstream kernels because I am not
+able to prepare the machine equipped with 12TB memory now.  However I
+confirmed that the amount of decreasing hugepages was directly
+proportional to the amount of required time.
+
+I measured required times on a smaller machine.  It showed 130-145
+hugepages decreased in a millisecond.
+
+  Amount of decreasing     Required time      Decreasing rate
+  hugepages                     (msec)         (pages/msec)
+  ------------------------------------------------------------
+  10,000 pages == 20GB         70 -  74          135-142
+  30,000 pages == 60GB        208 - 229          131-144
+
+It means decrement of 6TB hugepages will trigger softlockup with the
+default threshold 20sec, in this decreasing rate.
+
+Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
 Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mlock.c |  2 ++
- mm/rmap.c  | 14 ++++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ mm/hugetlb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -78,6 +78,7 @@ void __clear_page_mlock(struct page *pag
-  */
- void mlock_vma_page(struct page *page)
- {
-+	/* Serialize with page migration */
- 	BUG_ON(!PageLocked(page));
- 
- 	if (!TestSetPageMlocked(page)) {
-@@ -105,6 +106,7 @@ void mlock_vma_page(struct page *page)
-  */
- void munlock_vma_page(struct page *page)
- {
-+	/* For try_to_munlock() and to serialize with page migration */
- 	BUG_ON(!PageLocked(page));
- 
- 	if (TestClearPageMlocked(page)) {
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1385,9 +1385,19 @@ static int try_to_unmap_cluster(unsigned
- 		BUG_ON(!page || PageAnon(page));
- 
- 		if (locked_vma) {
--			mlock_vma_page(page);   /* no-op if already mlocked */
--			if (page == check_page)
-+			if (page == check_page) {
-+				/* we know we have check_page locked */
-+				mlock_vma_page(page);
- 				ret = SWAP_MLOCK;
-+			} else if (trylock_page(page)) {
-+				/*
-+				 * If we can lock the page, perform mlock.
-+				 * Otherwise leave the page alone, it will be
-+				 * eventually encountered again later.
-+				 */
-+				mlock_vma_page(page);
-+				unlock_page(page);
-+			}
- 			continue;	/* don't unmap */
- 		}
- 
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1447,6 +1447,7 @@ static unsigned long set_max_huge_pages(
+ 	while (min_count < persistent_huge_pages(h)) {
+ 		if (!free_pool_huge_page(h, nodes_allowed, 0))
+ 			break;
++		cond_resched_lock(&hugetlb_lock);
+ 	}
+ 	while (count < persistent_huge_pages(h)) {
+ 		if (!adjust_pool_surplus(h, nodes_allowed, 1))
 
