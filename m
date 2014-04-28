@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaD1ILx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 04:11:53 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35450 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaD1ILu (ORCPT
+	id S1753238AbaD1IQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 04:16:27 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:50343 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145AbaD1IQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 04:11:50 -0400
-Date: Mon, 28 Apr 2014 10:11:45 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] s390: add slab.h for kzalloc/kfree
-Message-ID: <20140428081145.GB4337@osiris>
-References: <535D782F.3020801@suse.com>
+	Mon, 28 Apr 2014 04:16:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535D782F.3020801@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042808-0342-0000-0000-000008942CD7
+In-Reply-To: <20140312191851.GB28891@katana>
+References: <1385100726-32165-1-git-send-email-ch.naveen@samsung.com>
+ <1391748171-12451-1-git-send-email-ch.naveen@samsung.com> <20140312191851.GB28891@katana>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Mon, 28 Apr 2014 13:45:54 +0530
+Message-ID: <CAHfPSqDAUpJWO3Udnjxim-LRY_hjW4+W2j5eTm+Xuk_Np+jhFA@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v4] i2c: exynos5: add support for HSI2C on Exynos5260 SoC
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 05:35:43PM -0400, Jeff Mahoney wrote:
-> This fixes:
-> arch/s390/appldata/appldata_mem.c:135:2: error: implicit declaration of function 'kzalloc' [-Werror=implicit-function-declaration]
-> arch/s390/appldata/appldata_mem.c:141:3: error: implicit declaration of function 'kfree' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-> ---
->  arch/s390/appldata/appldata_mem.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- a/arch/s390/appldata/appldata_mem.c
-> +++ b/arch/s390/appldata/appldata_mem.c
-> @@ -13,6 +13,7 @@
->  #include <linux/kernel_stat.h>
->  #include <linux/pagemap.h>
->  #include <linux/swap.h>
-> +#include <linux/slab.h>
->  #include <asm/io.h>
+Hello Wolfram,
 
-Applied, thanks.
+On 13 March 2014 00:48, Wolfram Sang <wsa@the-dreams.de> wrote:
+> On Fri, Feb 07, 2014 at 10:12:51AM +0530, Naveen Krishna Chatradhi wrote:
+>> This patch adds a new compatible and uses variant struct to support
+>> HSI2C module on Exynos5260. Updates the Documentation dt bindings.
+>> Also resets the module as an init sequence (Needed by Exynos5260).
+>>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>
+> This patch has clearly not been tested :( Build failure!
+comma was missing, Not sure, how i missed it.
+Will fix it.
+>
+>> +struct exynos_hsi2c_variant {
+>> +     unsigned int                fifo_depth;
+>> +};
+>
+> Why so many tabs? In general, I'd prefer one space.
+>
+>> -     exynos5_i2c_init(i2c);
+>> +     exynos5_i2c_reset(i2c);
+>
+> Is this a related change?
+Exynos5260 needs the HSI2C module to be reset during the init.
+As per Tomasz's comment on earlier version. We will reset the status
+during init for every SoC.
+>
 
+
+
+-- 
+Shine bright,
+(: Nav :)
