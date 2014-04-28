@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302AbaD1LCq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:02:46 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:35440 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226AbaD1LCn (ORCPT
+	id S1755377AbaD1LDY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:03:24 -0400
+Received: from gateway.yasar.edu.tr ([82.222.172.68]:56183 "EHLO
+	mgateway.yasar.edu.tr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820AbaD1LDW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:02:43 -0400
+	Mon, 28 Apr 2014 07:03:22 -0400
+X-Greylist: delayed 1239 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 07:03:22 EDT
+Date: Mon, 28 Apr 2014 13:41:56 +0300 (EEST)
+From: Mert Paldrak <mert.paldrak@yasar.edu.tr>
+Subject: Avis!!!
+Message-ID: <7ddc4e70-02c9-4c7a-aebc-20c8c7b63adb@webmail>
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1398540855-27367-3-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1398540855-27367-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1398540855-27367-3-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 28 Apr 2014 13:02:42 +0200
-Message-ID: <CAPDyKFrd0zeUy-Umm6GQ0oVonFU4VRcwGL5zYqVYmMSPeEmogg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 2/3] mmc: mvsdio: workaround for spurious irqs
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Chris Ball <chris@printf.net>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [41.203.69.5]
+X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
+To: undisclosed-recipients:;
+X-TM-AS-MML: disable
+X-TM-AS-Product-Ver: IMSVA-8.5.0.1165-7.5.0.1017-20660.006
+X-TM-AS-Result: No-2.066-5.0-31-10
+X-imss-scan-details: No-2.066-5.0-31-10
+X-TMASE-Version: IMSVA-8.5.0.1165-7.5.1017-20660.006
+X-TMASE-Result: 10-2.065600-5.000000
+X-TMASE-MatchedRID: qTK2/yuzXy2BeQAB95QvC3XKrrExVAT67Asy0XNU2A5nzkfvXPnYLugI
+	9wpBAxutuhH51pcEWLCJIG0pP8yLBr9ZdlL8eonarHEFvjQmpqJIxh/NsvArEVBIVsvVu9ABWBd
+	6ltyXuvvGw6Wkcdv7sEhVebrBvqZo6LpJMwhm0gPdH59pcPyx7d8usozaZ+R8pDy+D4h9cOkJtY
+	pPtQlVscfpKEHhbqPyno/jvUCiBgFYyYxOdCdbPVCmu7GmZALdvQ/TIYViaP9PtZTJ60aIhMml/
+	8TeVGswftwZ3X11IV0=
+X-IMSS-DKIM-White-List: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 April 2014 21:34, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
-> SDIO controllers found on Marvell Kirkwood SoCs seem to cause a late,
-> spurious irq although all interrupts have been disabled. This irq
-> doesn't do any harm, neither to HW nor driver. To avoid some
-> "unexpected irq" warning later, we workaround above issue by bailing
-> out of irq handler early, if we didn't expect any.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> ---
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory Clement <gregory.clement@free-electrons.com>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
+Votre boîte de réception a presque dépassé sa limite de stockage. Il ne sera pas en mesure d'envoyer et de recevoir des e-mails si elle dépassait la limite, et votre compte de messagerie est supprimée de notre serveur de base de données. Pour éviter ce problème, vous devez mettre à jour votre quota de boîte mail en cliquant sur le lien ci-dessous.
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+http://accountupgrade13.yolasite.com
 
-> ---
->  drivers/mmc/host/mvsdio.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
->
-> diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
-> index 41aca7f28c23..9377284f8544 100644
-> --- a/drivers/mmc/host/mvsdio.c
-> +++ b/drivers/mmc/host/mvsdio.c
-> @@ -354,6 +354,20 @@ static irqreturn_t mvsd_irq(int irq, void *dev)
->                 intr_status, mvsd_read(MVSD_NOR_INTR_EN),
->                 mvsd_read(MVSD_HW_STATE));
->
-> +       /*
-> +        * It looks like, SDIO IP can issue one late, spurious irq
-> +        * although all irqs should be disabled. To work around this,
-> +        * bail out early, if we didn't expect any irqs to occur.
-> +        */
-> +       if (!mvsd_read(MVSD_NOR_INTR_EN) && !mvsd_read(MVSD_ERR_INTR_EN)) {
-> +               dev_dbg(host->dev, "spurious irq detected intr 0x%04x intr_en 0x%04x erri 0x%04x erri_en 0x%04x\n",
-> +                       mvsd_read(MVSD_NOR_INTR_STATUS),
-> +                       mvsd_read(MVSD_NOR_INTR_EN),
-> +                       mvsd_read(MVSD_ERR_INTR_STATUS),
-> +                       mvsd_read(MVSD_ERR_INTR_EN));
-> +               return IRQ_HANDLED;
-> +       }
-> +
->         spin_lock(&host->lock);
->
->         /* PIO handling, if needed. Messy business... */
-> --
-> 1.9.1
->
+
+Remarque : Votre compte sera suspendu si ne pas se conformer.
+
+Merci.
+Aider l'administrateur du bureau.
+
+
+Bu elektronik postada bulunan tum fikir ve gorusler ve ekindeki dosyalar sadece adres sahip/sahiplerine ait olup,
+Yasar Universitesi bu mesajin icerigi ile ilgili olarak hic bir hukuksal sorumlulugu kabul etmez. Eger gonderilmesi
+dusunulen kisi veya kurulus degilseniz, lutfen gonderen kisiyi derhal haberdar ediniz ve mesaji sisteminizden siliniz.<br><br>
+The information contained in this e-mail and any files transmitted with it are intended solely for the use of the
+individual or entity to whom they are addressed Yasar University does not accept legal responsibility for the 
+contents. If you are not the intended recipient, please immediately notify the sender and delete the message from your system.
+
