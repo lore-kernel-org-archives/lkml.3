@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753041AbaD1CyG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:54:06 -0400
-Received: from ozlabs.org ([103.22.144.67]:41168 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752290AbaD1CyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:54:04 -0400
-Date: Mon, 28 Apr 2014 12:53:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Vince Bridgers <vbridger@altera.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140428125354.ad04d9e14a89f7f34913d79e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Apr_2014_12_53_54_+1000_xToPOnTx0Fm0T/3q"
+	id S1752608AbaD1C5y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 22:57:54 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:51713 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267AbaD1C5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 22:57:53 -0400
+X-Original-SENDERIP: 10.186.119.240
+X-Original-MAILFROM: yjay.kim@lge.com
+From: "yjay.kim" <yjay.kim@lge.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, "yjay.kim" <yjay.kim@lge.com>
+Subject: [PATCH] sched/deadline: remove dl_new checking condition from dl_task_timer()
+Date: Mon, 28 Apr 2014 11:57:25 +0900
+Message-Id: <1398653845-22615-1-git-send-email-yjay.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Apr_2014_12_53_54_+1000_xToPOnTx0Fm0T/3q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "yjay.kim" <yjay.kim@lge.com>
 
-Hi all,
+yield_task_dl() sets dl.dl_new as 1 and dequeue current dl task.
+After that it expects that next bandwidth timer callback `dl_task_timer()` will
+replenish budget of dl task and enqueue it again.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/altera/altera_sgdma.c between commit 37c0ffaad214
-("Altera TSE: Work around unaligned DMA receive packet issue with Altera
-SGDMA") from the net tree and commit d42f157b3498 ("Altera TSE: Remove
-unnecessary cast of void pointers") from the net-next tree.
+But current dl_task_timer() does nothing in case dl.dl_new is 1.
+So when dl task calls sched_yield(), it will never be scheduled again.
 
-I fixed it up (the former removes the code updated by the latter, so I
-did that) and can carry the fix as necessary (no action is required).
+dl_task_timer() should works in case dl_new is 1.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: yjay.kim <yjay.kim@lge.com>
+---
+ kernel/sched/deadline.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---Signature=_Mon__28_Apr_2014_12_53_54_+1000_xToPOnTx0Fm0T/3q
-Content-Type: application/pgp-signature
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 27ef409..6fb4004 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -522,7 +522,7 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
+ 	 * different from SCHED_DEADLINE or changed its reservation
+ 	 * parameters (through sched_setscheduler()).
+ 	 */
+-	if (!dl_task(p) || dl_se->dl_new)
++	if (!dl_task(p))
+ 		goto unlock;
+ 
+ 	sched_clock_tick();
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTXcLJAAoJEMDTa8Ir7ZwV0a8P/0U5uVyGtLx3J//bX0jNnEpR
-x9WzUoWwQWa81XEUbtyyBJtHW5rrZdoY3wPViuAK4PPQS/SpMvXkxhZJoQbZAS5q
-qC326P84icGq9+8nW/v/NjOzApPEl+6j2dIna7KQyWkHlX0NTZzLpIFiMDElx1T0
-YKPy0VzTWNsADOSrBGjmY1ZBoyhRpObq4ge7dHUJZ9nRphgGfpu2rwDIm6T+Qlt7
-2G/SGGBka1h/THJLM+q054R3skqEd3B//pvLKK8ZoqnsikpX1/pQqJjQCMgwrgAg
-Oe2Jdxr+meVbh+yoxfcx/AIuPXR8qPTuEE6cu0n8IQC3H5PZUPrBqdTqWlq82cXJ
-8jAc4hhzmxMIA3Vtm3+vy7zeV4Yf3PDJPBU/RWHtKFlxSWZAHb5ulfITKo9F7XRn
-YKLgBlTJDbtSPieiyAI7Uhk8drmY71fSLbAIwQ24KSwP+0wcDPb51V52Dw9GV7T0
-+4tUaexBhxppm5eFwzKK4QSEtZMiUpIGY0fo0xhX9pzVPc3fh147/XDw+5ym/aZb
-n96E5MbAyV/bbZCDoEpsWAQdXdUMzQDhmPE9vGslUMcIpsec+gj5CevEXhIrVKnH
-8/QQi6frQ6YJEB/yK787ynYNIgOkzqOM0B+tV67bXiNKDZXnRRomh9g25kRstJvp
-YslEjEvxgOQupEdqadOu
-=chkW
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Apr_2014_12_53_54_+1000_xToPOnTx0Fm0T/3q--
