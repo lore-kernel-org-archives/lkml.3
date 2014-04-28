@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaD1UXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:23:20 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:25229 "EHLO
+	id S1756020AbaD1UYR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:24:17 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:25418 "EHLO
 	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752561AbaD1UXT (ORCPT
+	by vger.kernel.org with ESMTP id S1751690AbaD1UYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:23:19 -0400
+	Mon, 28 Apr 2014 16:24:16 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvkTAP+3XlNXQw00/2dsb2JhbABZgwasDQUBAQEFmXICAoEaF3SCUxMcGgkYMFIkE4hFAckahVqIKFcRhC8BA458ig8BinOHa4MzO4Et
-Date: Mon, 28 Apr 2014 22:25:21 +0200
+X-IronPort-Anti-Spam-Result: AiUUAP+3XlNXQw00/2dsb2JhbABZgwaCQKlNBQEBAQWZcgICgRoXdIJTExwjGIECJBOIRQHJGoVaiH+EQAEDjnyKDwGKc4drgzM7
+Date: Mon, 28 Apr 2014 22:26:19 +0200
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] MM: make vmpressure_win dynamic
-Message-Id: <20140428222521.29a711c33e720ff5e2c00e2d@skynet.be>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] mm/memblock.c: use PFN_DOWN
+Message-Id: <20140428222619.ae74ca75971d8d9002784419@skynet.be>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,100 +24,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize vmpressure_win in vmstat using
-calculate_normal_threshold() based on each zone/cpu * SWAP_CLUSTER_SIZE
+Replace ((x) >> PAGE_SHIFT) by pfn macro.
 
-Value refreshed through cpu notifier
-
-Cc: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- mm/vmpressure.c | 16 +---------------
- mm/vmstat.c     | 24 ++++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 15 deletions(-)
+ mm/memblock.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmpressure.c b/mm/vmpressure.c
-index d4042e7..909169d 100644
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -24,21 +24,7 @@
- #include <linux/printk.h>
- #include <linux/vmpressure.h>
+diff --git a/mm/memblock.c b/mm/memblock.c
+index e9d6ca9..b459009 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1329,9 +1329,8 @@ int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
+ 	if (mid == -1)
+ 		return -1;
  
--/*
-- * The window size (vmpressure_win) is the number of scanned pages before
-- * we try to analyze scanned/reclaimed ratio. So the window is used as a
-- * rate-limit tunable for the "low" level notification, and also for
-- * averaging the ratio for medium/critical levels. Using small window
-- * sizes can cause lot of false positives, but too big window size will
-- * delay the notifications.
-- *
-- * As the vmscan reclaimer logic works with chunks which are multiple of
-- * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
-- *
-- * TODO: Make the window size depend on machine size, as we do for vmstat
-- * thresholds. Currently we set it to 512 pages (2MB for 4KB pages).
-- */
--static const unsigned long vmpressure_win = SWAP_CLUSTER_MAX * 16;
-+extern unsigned long vmpressure_win;
+-	*start_pfn = type->regions[mid].base >> PAGE_SHIFT;
+-	*end_pfn = (type->regions[mid].base + type->regions[mid].size)
+-			>> PAGE_SHIFT;
++	*start_pfn = PFN_DOWN(type->regions[mid].base);
++	*end_pfn = PFN_DOWN(type->regions[mid].base + type->regions[mid].size);
  
- /*
-  * These thresholds are used when we account memory pressure through
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 302dd07..b8f8ff2 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -23,6 +23,23 @@
- 
- #include "internal.h"
- 
-+/*
-+ * The window size (vmpressure_win) is the number of scanned pages before
-+ * we try to analyze scanned/reclaimed ratio. So the window is used as a
-+ * rate-limit tunable for the "low" level notification, and also for
-+ * averaging the ratio for medium/critical levels. Using small window
-+ * sizes can cause lot of false positives, but too big window size will
-+ * delay the notifications.
-+ *
-+ * As the vmscan reclaimer logic works with chunks which are multiple of
-+ * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
-+ *
-+ */
-+#ifdef CONFIG_MEMCG
-+static DEFINE_SPINLOCK(vmpressure_win_lock);
-+unsigned long vmpressure_win __read_mostly = SWAP_CLUSTER_MAX * 16;
-+#endif
-+
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
- EXPORT_PER_CPU_SYMBOL(vm_event_states);
-@@ -163,11 +180,13 @@ void refresh_zone_stat_thresholds(void)
- 	struct zone *zone;
- 	int cpu;
- 	int threshold;
-+	unsigned long new_vmpressure_win = 0;
- 
- 	for_each_populated_zone(zone) {
- 		unsigned long max_drift, tolerate_drift;
- 
- 		threshold = calculate_normal_threshold(zone);
-+		new_vmpressure_win += threshold;
- 
- 		for_each_online_cpu(cpu)
- 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-@@ -184,6 +203,11 @@ void refresh_zone_stat_thresholds(void)
- 			zone->percpu_drift_mark = high_wmark_pages(zone) +
- 					max_drift;
- 	}
-+#ifdef CONFIG_MEMCG
-+	spin_lock(&vmpressure_win_lock);
-+	vmpressure_win = new_vmpressure_win * SWAP_CLUSTER_MAX;
-+	spin_unlock(&vmpressure_win_lock);
-+#endif
+ 	return type->regions[mid].nid;
  }
- 
- void set_pgdat_percpu_threshold(pg_data_t *pgdat,
 -- 
 1.8.4.5
 
