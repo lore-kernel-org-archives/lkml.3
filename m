@@ -1,134 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaD1Jga (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:36:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27099 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260AbaD1Jg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:36:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,942,1389772800"; 
-   d="scan'208";a="522269394"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org,
-        dave.hansen@intel.com, Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-In-Reply-To: <1398675690-16186-2-git-send-email-maddy@linux.vnet.ibm.com>
-References: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com>
- <1398675690-16186-2-git-send-email-maddy@linux.vnet.ibm.com>
-Subject: RE: [PATCH V3 1/2] mm: move FAULT_AROUND_ORDER to arch/
-Content-Transfer-Encoding: 7bit
-Message-Id: <20140428093606.95B90E009B@blue.fi.intel.com>
-Date: Mon, 28 Apr 2014 12:36:06 +0300 (EEST)
+	id S1754415AbaD1Jil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:38:41 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:50526 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaD1Jii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 05:38:38 -0400
+Date: Mon, 28 Apr 2014 10:38:32 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mfd: sec-core: Update sec_pmic documentation
+Message-ID: <20140428093832.GP6264@lee--X1>
+References: <1398326738-17248-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398326738-17248-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Madhavan Srinivasan wrote:
-> Kirill A. Shutemov with 8c6e50b029 commit introduced
-> vm_ops->map_pages() for mapping easy accessible pages around
-> fault address in hope to reduce number of minor page faults.
+On Thu, 24 Apr 2014, Krzysztof Kozlowski wrote:
+
+> Update the documentation for sec_pmic state container structure to
+> reflect current code.
 > 
-> This patch creates infrastructure to modify the FAULT_AROUND_ORDER
-> value using mm/Kconfig. This will enable architecture maintainers
-> to decide on suitable FAULT_AROUND_ORDER value based on
-> performance data for that architecture. Patch also defaults
-> FAULT_AROUND_ORDER Kconfig element to 4.
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 > 
-> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
 > ---
->  mm/Kconfig  |    8 ++++++++
->  mm/memory.c |   11 ++++-------
->  2 files changed, 12 insertions(+), 7 deletions(-)
+> Changes since v2:
+>  - Rebased on lee/mfd.
+
+You did? Which tree/branch? I still get:
+
+Applying: mfd: sec-core: Update sec_pmic documentation
+Using index info to reconstruct a base tree...
+M	include/linux/mfd/samsung/core.h
+Falling back to patching base and 3-way merge...
+Auto-merging include/linux/mfd/samsung/core.h
+CONFLICT (content): Merge conflict in include/linux/mfd/samsung/core.h
+Recorded preimage for 'include/linux/mfd/samsung/core.h'
+Failed to merge in the changes.
+Patch failed at 0002 mfd: sec-core: Update sec_pmic documentation
+The copy of the patch that failed is found in:
+   /home/lee/projects/linux/.git/rebase-apply/patch
+When you have resolved this problem, run "git am --resolved".
+If you prefer to skip this patch, run "git am --skip" instead.
+To restore the original branch and stop patching, run "git am -abort".
+
+> Changes since v1:
+>  - Update documentation after review from Lee Jones.
+> ---
+>  include/linux/mfd/samsung/core.h | 29 +++++++++++++++++------------
+>  1 file changed, 17 insertions(+), 12 deletions(-)
 > 
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index ebe5880..c7fc4f1 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -176,6 +176,14 @@ config MOVABLE_NODE
->  config HAVE_BOOTMEM_INFO_NODE
->  	def_bool n
+> diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+> index e7e12ebacb9b..47d84242940b 100644
+> --- a/include/linux/mfd/samsung/core.h
+> +++ b/include/linux/mfd/samsung/core.h
+> @@ -24,18 +24,23 @@ enum sec_device_type {
+>  };
 >  
-> +#
-> +# Fault around order is a control knob to decide the fault around pages.
-> +# Default value is set to 4 , but the arch can override it as desired.
-> +#
-> +config FAULT_AROUND_ORDER
-> +	int
-> +	default	4
-> +
->  # eventually, we can have this option just 'select SPARSEMEM'
->  config MEMORY_HOTPLUG
->  	bool "Allow for memory hot-add"
-> diff --git a/mm/memory.c b/mm/memory.c
-> index d0f0bef..457436d 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3382,11 +3382,9 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
->  	update_mmu_cache(vma, address, pte);
->  }
->  
-> -#define FAULT_AROUND_ORDER 4
-> +unsigned int fault_around_order = CONFIG_FAULT_AROUND_ORDER;
->  
->  #ifdef CONFIG_DEBUG_FS
-> -static unsigned int fault_around_order = FAULT_AROUND_ORDER;
-> -
->  static int fault_around_order_get(void *data, u64 *val)
->  {
->  	*val = fault_around_order;
-> @@ -3395,7 +3393,6 @@ static int fault_around_order_get(void *data, u64 *val)
->  
->  static int fault_around_order_set(void *data, u64 val)
->  {
-> -	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
->  	if (1UL << val > PTRS_PER_PTE)
->  		return -EINVAL;
->  	fault_around_order = val;
-> @@ -3430,14 +3427,14 @@ static inline unsigned long fault_around_pages(void)
->  {
->  	unsigned long nr_pages;
->  
-> -	nr_pages = 1UL << FAULT_AROUND_ORDER;
-> +	nr_pages = 1UL << fault_around_order;
->  	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
+>  /**
+> - * struct sec_pmic_dev - s5m87xx master device for sub-drivers
+> - * @dev: master device of the chip (can be used to access platform data)
+> - * @pdata: pointer to private data used to pass platform data to child
+> - * @i2c: i2c client private data for regulator
+> - * @iolock: mutex for serializing io access
+> - * @irqlock: mutex for buslock
+> - * @irq_base: base IRQ number for sec-pmic, required for IRQs
+> - * @irq: generic IRQ number for s5m87xx
+> - * @ono: power onoff IRQ number for s5m87xx
+> - * @irq_masks_cur: currently active value
+> - * @irq_masks_cache: cached hardware value
+> - * @type: indicate which s5m87xx "variant" is used
+> + * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
+> + * @dev:		Master device of the chip
+> + * @pdata:		Platform data populated with data from DTS
+> + *			or board files
+> + * @regmap_pmic:	Regmap associated with PMIC's I2C address
+> + * @i2c:		I2C client of the main driver
+> + * @device_type:	Type of device, matches enum sec_device_type
+> + * @irq_base:		Base IRQ number for device, required for IRQs
+> + * @irq:		Generic IRQ number for device
+> + * @irq_data:		Runtime data structure for IRQ controller
+> + * @ono:		Power onoff IRQ number for s5m87xx
+> + * @wakeup:		Whether or not this is a wakeup device
+> + * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
+> + *			Timer Software Reset (registers set to default value
+> + *			after PWRHOLD falling) and Sudden Momentary Power Loss
+> + *			(PMIC will enter power on sequence after short drop in
+> + *			VBATT voltage).
+>   */
+>  struct sec_pmic_dev {
+>  	struct device *dev;
 
-This BUILD_BUG_ON() doesn't make sense any more since compiler usually can't
-prove anything about extern variable.
-
-Drop it or change to VM_BUG_ON() or something.
-
->  	return nr_pages;
->  }
->  
->  static inline unsigned long fault_around_mask(void)
->  {
-> -	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
-> +	return ~((1UL << (PAGE_SHIFT + fault_around_order)) - 1);
-
-fault_around_pages() and fault_around_mask() should be moved outside of
-#ifdef CONFIG_DEBUG_FS and consolidated since they are practically identical
-both branches after the changes.
-
->  }
->  #endif
->  
-> @@ -3495,7 +3492,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	 * if page by the offset is not ready to be mapped (cold cache or
->  	 * something).
->  	 */
-> -	if (vma->vm_ops->map_pages) {
-> +	if ((vma->vm_ops->map_pages) && (fault_around_order)) {
-
-Way too many parentheses.
-
->  		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
->  		do_fault_around(vma, address, pte, pgoff, flags);
->  		if (!pte_same(*pte, orig_pte))
 -- 
- Kirill A. Shutemov
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
