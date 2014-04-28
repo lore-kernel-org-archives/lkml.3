@@ -1,491 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606AbaD1FUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:20:48 -0400
-Received: from g6t1524.atlanta.hp.com ([15.193.200.67]:47773 "EHLO
-	g6t1524.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbaD1FUq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:20:46 -0400
-Message-ID: <1398662395.2528.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] rwsem: Support optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Date: Sun, 27 Apr 2014 22:19:55 -0700
-In-Reply-To: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1753225AbaD1FVX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 01:21:23 -0400
+Received: from ozlabs.org ([103.22.144.67]:60194 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752924AbaD1FUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 01:20:51 -0400
+Date: Mon, 28 Apr 2014 15:20:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: linux-next: manual merge of the usb-gadget tree with the usb tree
+Message-Id: <20140428152044.5b5dd87a9e3d885129bb2485@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
+--Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 2014-04-22 at 15:19 -0700, Davidlohr Bueso wrote:
-> We have reached the point where our mutexes are quite fine tuned
-> for a number of situations. This includes the use of heuristics
-> and optimistic spinning, based on MCS locking techniques.
-> 
-> Exclusive ownership of read-write semaphores are, conceptually,
-> just about the same as mutexes, making them close cousins. To
-> this end we need to make them both perform similarly, and
-> right now, rwsems are simply not up to it. This was discovered
-> by both reverting commit 4fc3f1d6 (mm/rmap, migration: Make
-> rmap_walk_anon() and try_to_unmap_anon() more scalable) and
-> similarly, converting some other mutexes (ie: i_mmap_mutex) to
-> rwsems. This creates a situation where users have to choose
-> between a rwsem and mutex taking into account this important
-> performance difference. Specifically, biggest difference between
-> both locks is when we fail to acquire a mutex in the fastpath,
-> optimistic spinning comes in to play and we can avoid a large
-> amount of unnecessary sleeping and overhead of moving tasks in
-> and out of wait queue. Rwsems do not have such logic.
-> 
-> This patch, based on the work from Tim Chen and I, adds support
-> for write-side optimistic spinning when the lock is contended.
-> It also includes support for the recently added cancelable MCS
-> locking for adaptive spinning.
-> 
-> Allowing optimistic spinning before putting the writer on the wait
-> queue reduces wait queue contention and provided greater chance
-> for the rwsem to get acquired. With these changes, rwsem is on par
-> with mutex. The performance benefits can be seen on a number of
-> workloads. For instance, on a 8 socket, 80 core 64bit Westmere box,
-> aim7 shows the following improvements in throughput:
-> 
-> +--------------+---------------------+-----------------+
-> |   Workload   | throughput-increase | number of users |
-> +--------------+---------------------+-----------------+
-> | alltests     | 20%                 | >1000           |
-> | custom       | 27%, 60%            | 10-100, >1000   |
-> | high_systime | 36%, 30%            | >100, >1000     |
-> | shared       | 58%, 29%            | 10-100, >1000   |
-> +--------------+---------------------+-----------------+
-> 
-> There was also improvement on smaller systems, such as a quad-core
-> x86-64 laptop running a 30Gb PostgreSQL (pgbench) workload for up
-> to +60% in throughput for over 50 clients. Additionally, benefits
-> were also noticed in exim (mail server) workloads. Furthermore, no
-> performance regression have been seen at all.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->  include/linux/rwsem.h       |   9 +-
->  kernel/locking/rwsem-xadd.c | 213 +++++++++++++++++++++++++++++++++++++++-----
->  kernel/locking/rwsem.c      |  31 ++++++-
->  3 files changed, 231 insertions(+), 22 deletions(-)
-> 
-> diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-> index 03f3b05..6f992e2 100644
-> --- a/include/linux/rwsem.h
-> +++ b/include/linux/rwsem.h
-> @@ -16,6 +16,7 @@
->  
->  #include <linux/atomic.h>
->  
-> +struct optimistic_spin_queue;
->  struct rw_semaphore;
->  
->  #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
-> @@ -26,6 +27,10 @@ struct rw_semaphore {
->  	long			count;
->  	raw_spinlock_t		wait_lock;
->  	struct list_head	wait_list;
-> +#ifdef CONFIG_SMP
-> +	struct task_struct	     *owner; /* write owner */
-> +	struct optimistic_spin_queue *osq;   /* spinner MCS lock */
-> +#endif
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  	struct lockdep_map	dep_map;
->  #endif
-> @@ -58,7 +63,9 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
->  #define __RWSEM_INITIALIZER(name)			\
->  	{ RWSEM_UNLOCKED_VALUE,				\
->  	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
-> -	  LIST_HEAD_INIT((name).wait_list)		\
-> +	  LIST_HEAD_INIT((name).wait_list),		\
-> +	  NULL, /* owner */				\
-> +	  NULL /* mcs lock */                           \
->  	  __RWSEM_DEP_MAP_INIT(name) }
->  
->  #define DECLARE_RWSEM(name) \
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index 1d66e08..b6a67fe 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -5,12 +5,18 @@
->   *
->   * Writer lock-stealing by Alex Shi <alex.shi@intel.com>
->   * and Michel Lespinasse <walken@google.com>
-> + *
-> + * Optimistic spinning by Tim Chen <tim.c.chen@intel.com>
-> + * and Davidlohr Bueso <davidlohr@hp.com>. Based on mutexes.
->   */
->  #include <linux/rwsem.h>
->  #include <linux/sched.h>
->  #include <linux/init.h>
-> +#include <linux/sched/rt.h>
->  #include <linux/export.h>
->  
-> +#include "mcs_spinlock.h"
-> +
->  /*
->   * Initialize an rwsem:
->   */
-> @@ -27,6 +33,10 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
->  	sem->count = RWSEM_UNLOCKED_VALUE;
->  	raw_spin_lock_init(&sem->wait_lock);
->  	INIT_LIST_HEAD(&sem->wait_list);
-> +#ifdef CONFIG_SMP
-> +	sem->owner = NULL;
-> +	sem->osq = NULL;
-> +#endif
->  }
->  
->  EXPORT_SYMBOL(__init_rwsem);
-> @@ -188,15 +198,183 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
->  	return sem;
->  }
->  
-> +static inline int rwsem_try_write_lock(long count, struct rw_semaphore *sem)
-> +{
-> +	if (!(count & RWSEM_ACTIVE_MASK)) {
-> +		/* Try acquiring the write lock. */
-> +		if (sem->count == RWSEM_WAITING_BIAS &&
-> +		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> +			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
-> +			if (!list_is_singular(&sem->wait_list))
-> +				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> +			return 1;
-> +		}
-> +	}
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Try to acquire write lock before the writer has been put on wait queue.
-> + */
-> +static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> +{
-> +	long count = ACCESS_ONCE(sem->count);
-> +retry:
-> +	if (count == RWSEM_WAITING_BIAS) {
-> +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
-> +		/* allow write lock stealing, try acquiring the write lock. */
-> +		if (count == RWSEM_WAITING_BIAS)
-> +			goto acquired;
-> +		else if (count == 0)
-> +			goto retry;
-> +	} else if (count == 0) {
-> +		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
-> +		if (count == 0)
-> +			goto acquired;
-> +		else if (count == RWSEM_WAITING_BIAS)
-> +			goto retry;
-> +	}
-> +	return false;
-> +
-> +acquired:
-> +	return true;
-> +}
-> +
-> +#ifdef CONFIG_SMP
-> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> +{
-> +	int retval;
-> +	struct task_struct *owner;
-> +
-> +	rcu_read_lock();
-> +	owner = ACCESS_ONCE(sem->owner);
-> +
-> +	/* Spin only if active writer running */
-> +	if (owner)
-> +		retval = owner->on_cpu;
-> +	else {
-> +		/*
-> +		 * When the owner is not set, the sem owner may have just
-> +		 * acquired it and not set the owner yet, or the sem has
-> +		 * been released, or reader active.
-> +		 */
-> +		retval = false;
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return retval;
-> +}
-> +
-> +static inline bool owner_running(struct rw_semaphore *lock,
-> +				 struct task_struct *owner)
-> +{
-> +	if (lock->owner != owner)
-> +		return false;
-> +
-> +	/*
-> +	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-> +	 * lock->owner still matches owner, if that fails, owner might
-> +	 * point to free()d memory, if it still matches, the rcu_read_lock()
-> +	 * ensures the memory stays valid.
-> +	 */
-> +	barrier();
-> +
-> +	return owner->on_cpu;
-> +}
-> +
-> +static noinline
-> +int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
-> +{
-> +	rcu_read_lock();
-> +	while (owner_running(lock, owner)) {
-> +		if (need_resched())
-> +			break;
-> +
-> +		arch_mutex_cpu_relax();
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	/*
-> +	 * We break out the loop above on need_resched() or when the
-> +	 * owner changed, which is a sign for heavy contention. Return
-> +	 * success only when lock->owner is NULL.
-> +	 */
-> +	return lock->owner == NULL;
-> +}
-> +
-> +static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
-> +{
-> +	struct task_struct *owner;
-> +	bool taken = false;
-> +
-> +	preempt_disable();
-> +
-> +	/* sem->wait_lock should not be held when doing optimistic spinning */
-> +	if (!rwsem_can_spin_on_owner(sem))
-> +		goto done;
-> +
-> +	if (!osq_lock(&sem->osq))
-> +		goto done;
-> +
-> +	while (true) {
-> +		owner = ACCESS_ONCE(sem->owner);
-> +		if (owner && !rwsem_spin_on_owner(sem, owner))
-> +			break;
-> +
-> +		/* wait_lock will be acquired if write_lock is obtained */
-> +		if (rwsem_try_write_lock_unqueued(sem)) {
-> +			taken = true;
-> +			break;
-> +		}
-> +
-> +		/*
-> +		 * When there's no owner, we might have preempted between the
-> +		 * owner acquiring the lock and setting the owner field. If
-> +		 * we're an RT task that will live-lock because we won't let
-> +		 * the owner complete.
-> +		 */
-> +		if (!owner && (need_resched() || rt_task(current)))
-> +			break;
-> +
-> +		/*
-> +		 * The cpu_relax() call is a compiler barrier which forces
-> +		 * everything in this loop to be re-loaded. We don't need
-> +		 * memory barriers as we'll eventually observe the right
-> +		 * values at the cost of a few extra spins.
-> +		 */
-> +		arch_mutex_cpu_relax();
-> +	}
-> +	osq_unlock(&sem->osq);
-> +done:
-> +	preempt_enable();
-> +	return taken;
-> +}
-> +
-> +#else
-> +static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
-> +{
-> +	return false;
-> +}
-> +#endif
-> +
->  /*
->   * wait until we successfully acquire the write lock
->   */
->  __visible
->  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  {
-> -	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
-> +	long count;
->  	struct rwsem_waiter waiter;
->  	struct task_struct *tsk = current;
-> +	bool waiting = true;
-> +
-> +	/* undo write bias from down_write operation, stop active locking */
-> +	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
-> +
-> +	/* do optimistic spinning and steal lock if possible */
-> +	if (rwsem_optimistic_spin(sem))
-> +		goto done;
->  
->  	/* set up my own style of waitqueue */
->  	waiter.task = tsk;
-> @@ -204,34 +382,29 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  
->  	raw_spin_lock_irq(&sem->wait_lock);
->  	if (list_empty(&sem->wait_list))
-> -		adjustment += RWSEM_WAITING_BIAS;
-> +		waiting = false;
->  	list_add_tail(&waiter.list, &sem->wait_list);
->  
->  	/* we're now waiting on the lock, but no longer actively locking */
-> -	count = rwsem_atomic_update(adjustment, sem);
-> +	if (waiting)
-> +		count = ACCESS_ONCE(sem->count);
-> +	else
-> +		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> +
->  
-> -	/* If there were already threads queued before us and there are no
-> +	/*
-> +	 * If there were already threads queued before us and there are no
->  	 * active writers, the lock must be read owned; so we try to wake
-> -	 * any read locks that were queued ahead of us. */
-> -	if (count > RWSEM_WAITING_BIAS &&
-> -	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
-> +	 * any read locks that were queued ahead of us.
-> +	 */
-> +	if ((count > RWSEM_WAITING_BIAS) && waiting)
->  		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
->  
->  	/* wait until we successfully acquire the lock */
->  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
->  	while (true) {
-> -		if (!(count & RWSEM_ACTIVE_MASK)) {
-> -			/* Try acquiring the write lock. */
-> -			count = RWSEM_ACTIVE_WRITE_BIAS;
-> -			if (!list_is_singular(&sem->wait_list))
-> -				count += RWSEM_WAITING_BIAS;
-> -
-> -			if (sem->count == RWSEM_WAITING_BIAS &&
-> -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-> -							RWSEM_WAITING_BIAS)
-> -				break;
-> -		}
-> -
-> +		if (rwsem_try_write_lock(count, sem))
-> +			break;
->  		raw_spin_unlock_irq(&sem->wait_lock);
->  
->  		/* Block until there are no active lockers. */
-> @@ -245,8 +418,8 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
->  
->  	list_del(&waiter.list);
->  	raw_spin_unlock_irq(&sem->wait_lock);
-> +done:
->  	tsk->state = TASK_RUNNING;
-> -
->  	return sem;
->  }
->  
-> diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
-> index cfff143..a911dbf 100644
-> --- a/kernel/locking/rwsem.c
-> +++ b/kernel/locking/rwsem.c
-> @@ -12,6 +12,27 @@
->  
->  #include <linux/atomic.h>
->  
-> +#ifdef CONFIG_SMP
-> +static inline void rwsem_set_owner(struct rw_semaphore *sem)
-> +{
-> +	sem->owner = current;
-> +}
-> +
-> +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-> +{
-> +	sem->owner = NULL;
-> +}
-> +
-> +#else
-> +static inline void rwsem_set_owner(struct rw_semaphore *sem)
-> +{
-> +}
-> +
-> +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
-> +{
-> +}
-> +#endif
-> +
->  /*
->   * lock for reading
->   */
-> @@ -48,6 +69,7 @@ void __sched down_write(struct rw_semaphore *sem)
->  	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
->  
->  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-> +	rwsem_set_owner(sem);
->  }
->  
->  EXPORT_SYMBOL(down_write);
-> @@ -59,8 +81,11 @@ int down_write_trylock(struct rw_semaphore *sem)
->  {
->  	int ret = __down_write_trylock(sem);
->  
-> -	if (ret == 1)
-> +	if (ret == 1) {
->  		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
-> +		rwsem_set_owner(sem);
-> +	}
-> +
->  	return ret;
->  }
->  
-> @@ -86,6 +111,7 @@ void up_write(struct rw_semaphore *sem)
->  	rwsem_release(&sem->dep_map, 1, _RET_IP_);
->  
->  	__up_write(sem);
-> +	rwsem_clear_owner(sem);
->  }
->  
->  EXPORT_SYMBOL(up_write);
-> @@ -100,6 +126,7 @@ void downgrade_write(struct rw_semaphore *sem)
->  	 * dependency.
->  	 */
->  	__downgrade_write(sem);
-> +	rwsem_clear_owner(sem);
->  }
->  
->  EXPORT_SYMBOL(downgrade_write);
-> @@ -122,6 +149,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
->  	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
->  
->  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-> +	rwsem_set_owner(sem);
->  }
->  
->  EXPORT_SYMBOL(_down_write_nest_lock);
-> @@ -141,6 +169,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
->  	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
->  
->  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
-> +	rwsem_set_owner(sem);
->  }
->  
->  EXPORT_SYMBOL(down_write_nested);
+Hi Felipe,
 
+Today's linux-next merge of the usb-gadget tree got a conflict in
+drivers/usb/phy/phy-mv-u3d-usb.c between commit 543cab640279 ("usb: phy:
+mv_u3d: Remove usb phy driver for mv_u3d") from the usb tree and commit
+041832565e40 ("usb: phy: mv-u3d: switch over to writel/readl") from the
+usb-gadget tree.
 
+I fixed it up (the former removes the file, so I did that) and can carry
+the fix as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTXeUwAAoJEMDTa8Ir7ZwVA3AQAInCV0eQm730HjBo0S97wOcw
+HUjHf2M6Eg1sQt0Bc24nal/Ew48AyF/FlgDL5uvpRiZu+EzqSCA6VOuRkMfj9jxW
+dt8F9x4LdZZO4WCAvRsrV50pQtJ1WuPRbs6mL5EnC5bvUGEqgFUEai5LbtSxNNC4
+jpUdopTNmx/pMCrqn/bYRKOVf0rC6DNszazfXgmj7RVYbfzIMDsWAIyfDllFlOpc
+QwfJ/Y8V1DekiQGx2MeydrbK3FBiw1nPpvP3rIZOBegF9u/0fGRSKeUxt+pDS+UV
+gCUQBjz5omvOY1xG6MdefZ0tXOI5jWWvROx5H9yAjzbsP+YKWCaqiGdaRzvrsf8b
+F1Y63K+/hZtDOQvNvKd9RWw5ExJCN9cwhrWeTvZ++d1vbCp7mNum+H86rSyzssAq
+GE6AdIDecnDoFsz1XBmSTyLo1+LJsQpNImuWD/V98FlAnpiOxBVvwggTIZJ0dqBI
+gMNgtrFHU/gHiTJUQEbiD3pO/Gpv596orSLksrN1/VpLfeUesvf+v1PWHMcyZ9Uf
+j541XBn+k1N94ifYu/LtOSF5O9Prmq4uziMBJjW9iGxTCpYxW81mK7/bv4vMD4pn
+wP8teeUTy+M++gd6+KfpRMMHybJ6qZ4F2EroBdoiH7WVDMmiR0IoA7N4RlFmzxfu
+Y1HvhynyoKPytkcuptlv
+=PAEV
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q--
