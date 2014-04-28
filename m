@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076AbaD1K0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:26:46 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:58588 "EHLO
-	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbaD1K0n (ORCPT
+	id S932109AbaD1K1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:27:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42836 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932080AbaD1K06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:26:43 -0400
-Date: Mon, 28 Apr 2014 18:26:34 +0800
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Leilei Zhao <leilei.zhao@atmel.com>
-Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nicolas@eukrea.com,
-        nicolas.ferre@atmel.com
-Subject: Re: [PATCH 0/2] crypto: atmel-aes: fixes on block size of aes cfb
- mode
-Message-ID: <20140428102634.GD17037@gondor.apana.org.au>
-References: <1398151404-23408-1-git-send-email-leilei.zhao@atmel.com>
+	Mon, 28 Apr 2014 06:26:58 -0400
+Date: Mon, 28 Apr 2014 03:25:34 -0700
+From: tip-bot for Randy Dunlap <tipbot@zytor.com>
+Message-ID: <tip-def5f1273c5f18abf8fcaee03a115d3e907ad407@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rdunlap@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rdunlap@infradead.org, tglx@linutronix.de
+In-Reply-To: <535DD2FD.7030804@infradead.org>
+References: <535DD2FD.7030804@infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] linux/interrupt.h: fix new kernel-doc warnings
+Git-Commit-ID: def5f1273c5f18abf8fcaee03a115d3e907ad407
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1398151404-23408-1-git-send-email-leilei.zhao@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 03:23:22PM +0800, Leilei Zhao wrote:
-> Hi:
-> 
-> These two patches correct the block size in atmel-aes driver while processing cfb8 and cfb64 mode of aes.
+Commit-ID:  def5f1273c5f18abf8fcaee03a115d3e907ad407
+Gitweb:     http://git.kernel.org/tip/def5f1273c5f18abf8fcaee03a115d3e907ad407
+Author:     Randy Dunlap <rdunlap@infradead.org>
+AuthorDate: Sun, 27 Apr 2014 21:03:09 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 28 Apr 2014 12:19:59 +0200
 
-Both patches applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+linux/interrupt.h: fix new kernel-doc warnings
+
+Fix new kernel-doc warnings in <linux/interrupt.h>:
+
+Warning(include/linux/interrupt.h:219): No description found for parameter 'cpumask'
+Warning(include/linux/interrupt.h:219): Excess function parameter 'mask' description in 'irq_set_affinity'
+Warning(include/linux/interrupt.h:236): No description found for parameter 'cpumask'
+Warning(include/linux/interrupt.h:236): Excess function parameter 'mask' description in 'irq_force_affinity'
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Link: http://lkml.kernel.org/r/535DD2FD.7030804@infradead.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/interrupt.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 8834a7e..97ac926 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -210,7 +210,7 @@ extern int __irq_set_affinity(unsigned int irq, const struct cpumask *cpumask,
+ /**
+  * irq_set_affinity - Set the irq affinity of a given irq
+  * @irq:	Interrupt to set affinity
+- * @mask:	cpumask
++ * @cpumask:	cpumask
+  *
+  * Fails if cpumask does not contain an online CPU
+  */
+@@ -223,7 +223,7 @@ irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
+ /**
+  * irq_force_affinity - Force the irq affinity of a given irq
+  * @irq:	Interrupt to set affinity
+- * @mask:	cpumask
++ * @cpumask:	cpumask
+  *
+  * Same as irq_set_affinity, but without checking the mask against
+  * online cpus.
