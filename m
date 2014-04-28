@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755903AbaD1NCG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:02:06 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43284 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851AbaD1NCD (ORCPT
+	id S1755915AbaD1NDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:03:05 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:65132 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755685AbaD1NDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:02:03 -0400
-Message-ID: <535E4FDC.70306@ti.com>
-Date: Mon, 28 Apr 2014 18:25:56 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
-        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
-        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
-        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
-        <mugunthanvnm@ti.com>, <t-kristo@ti.com>, <mturquette@linaro.org>,
-        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH 5/6] ARM: AM43xx: clk: Change the cpts ref clock source
- to dpll_core_m5 clk
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com> <1398658225-25873-6-git-send-email-george.cherian@ti.com> <20140428071034.GB4380@netboy>
-In-Reply-To: <20140428071034.GB4380@netboy>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Apr 2014 09:03:02 -0400
+Subject: Re: [PATCH 1/3] perf tools: Cache register accesses for unwind
+ processing
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jean Pihet <jean.pihet@linaro.org>
+In-Reply-To: <20140428094826.GD1109@krava.brq.redhat.com>
+References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
+	 <1397756352-26694-2-git-send-email-jolsa@redhat.com>
+	 <1398608961.1689.9.camel@leonhard>
+	 <20140428094826.GD1109@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Apr 2014 22:02:55 +0900
+Message-ID: <1398690175.1724.5.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/2014 12:40 PM, Richard Cochran wrote:
-> On Mon, Apr 28, 2014 at 09:40:24AM +0530, George Cherian wrote:
->> cpsw_cpts_rft_clk has got the choice of 3 clocksources
->>   -dpll_core_m4_ck
->>   -dpll_core_m5_ck
->>   -dpll_disp_m2_ck
->>
->> By default dpll_core_m4_ck is selected, witn this as clock
->> source the CPTS doesnot work properly. It gives clockcheck errors
->> while running PTP.
->>
->>   clockcheck: clock jumped backward or running slower than expected!
-> It is strange that I have never seen this error, since I have often
-> tested linuxptp on a beagle bone white.
-In beagle bone white (AM335x)  CPTS has a choice of 2 clocksource
--dpll_core_m5_ck
--dpll_core_m4_ck
-and by default  dpll_core_m5_ck is used. Where as in AM437x the default 
-clocksource used is dpll_core_m4_ck .
+Hi Jiri,
 
-You can change the clocksource in beagle bone white by writing  1 to 
-0x44e00520 (By default its 0).
->
-> Can you please explain why this clock doesn't work correctly?
->
->> By selecting dpll_core_m5_ck as the clocksource fixes this issue.
->> In AM335x dpll_core_m5_ck is the default clocksource.
-> The choice of clock source in the CPTS driver originally came from
-> TI. It would be nice to know why that was the wrong choice.
->
-> Thanks,
-> Richard
+2014-04-28 (월), 11:48 +0200, Jiri Olsa:
+> On Sun, Apr 27, 2014 at 11:29:21PM +0900, Namhyung Kim wrote:
+> > Hi Jiri,
+> > 
+> > 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
+> > > Caching registers value into an array. Got about 4% speed up
+> > > of perf_reg_value function for report command processing
+> > > dwarf unwind stacks.
+> > 
+> > I'm not familiar with the code base, so probably silly questions:  Where
+> > does the speed up come from?  IOW I don't know what's the difference
+> > between the regs->regs and regs->cached_regs.  And does the cached_regs
+> > contain correct values of registers for each frame?
+> 
+> the current way register's value is accessed is to get its
+> index in the sample's regs array.. based on register's id
+> and the registers mask
+> 
+> so each time you want register value you traverse the registers
+> mask and count reg's index for the sample regs array
+> 
+> this patch does this only once for each register (at the time it's
+> first accessed) and cache its value in the array (cache_regs). The
+> cache_mask is used to identify which regs are already cached.
 
+That means it'll get the same value everytime it accesses a register in
+frames in a sample?
 
--- 
--George
+Thanks,
+Namhyung
+
 
