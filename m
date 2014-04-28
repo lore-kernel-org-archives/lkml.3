@@ -1,134 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337AbaD1Kk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:40:56 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:51647 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754695AbaD1Kkw (ORCPT
+	id S1755351AbaD1KlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:41:16 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40114 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500AbaD1KlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:40:52 -0400
-Date: Mon, 28 Apr 2014 12:39:20 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        kgene.kim@samsung.com, Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        prathyush.k@samsung.com, grundler@chromium.org, joro@8bytes.org,
-        supash.ramaswamy@linaro.org, linux-kernel@vger.kernel.org,
-        pullip.cho@samsung.com, tomasz.figa@gmail.com, sachin.kamat@linaro.org,
-        iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        s.nawrocki@samsung.com, a.motakis@virtualopensystems.com,
-        Varun.Sethi@freescale.com, joshi@samsung.com, t.figa@samsung.com,
-        rahul.sharma@samsung.com, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v12 11/31] documentation: iommu: add binding document of
- Exynos System MMU
-Message-ID: <20140428103919.GF19455@ulmo>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com>
- <1398584283-22846-12-git-send-email-shaik.ameer@samsung.com>
- <4447051.OnJtcFSqFV@wuerfel>
+	Mon, 28 Apr 2014 06:41:14 -0400
+Message-ID: <535E3040.7090402@linaro.org>
+Date: Mon, 28 Apr 2014 19:41:04 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OzxllxdKGCiKxUZM"
-Content-Disposition: inline
-In-Reply-To: <4447051.OnJtcFSqFV@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Will Deacon <will.deacon@arm.com>
+CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 6/7] arm64: ftrace: Add CALLER_ADDRx macros
+References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org> <20140416135217.GF1001@arm.com>
+In-Reply-To: <20140416135217.GF1001@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Will,
 
---OzxllxdKGCiKxUZM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/16/2014 10:52 PM, Will Deacon wrote:
+> On Sat, Mar 15, 2014 at 05:45:52AM +0000, AKASHI Takahiro wrote:
+>> CALLER_ADDRx returns caller's address at specified level in call stacks.
+>> They are used for several tracers like irqsoff and preemptoff.
+>> Strange to say, however, they are refered even without FTRACE.
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>   arch/arm64/include/asm/ftrace.h    | 13 ++++++++-
+>>   arch/arm64/kernel/Makefile         |  3 ++-
+>>   arch/arm64/kernel/return_address.c | 55 ++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 69 insertions(+), 2 deletions(-)
+>>   create mode 100644 arch/arm64/kernel/return_address.c
+>>
+>> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+>> index ed5c448..c44c4b1 100644
+>> --- a/arch/arm64/include/asm/ftrace.h
+>> +++ b/arch/arm64/include/asm/ftrace.h
+>> @@ -18,6 +18,7 @@
+>>
+>>   #ifndef __ASSEMBLY__
+>>   extern void _mcount(unsigned long);
+>> +extern void *return_address(unsigned int);
+>>
+>>   struct dyn_arch_ftrace {
+>>   	/* No extra data needed for arm64 */
+>> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>>   	 */
+>>   	return addr;
+>>   }
+>> -#endif /* __ASSEMBLY__ */
+>> +
+>> +#define HAVE_ARCH_CALLER_ADDR
+>> +
+>> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+>> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
+>> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
+>> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
+>> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
+>> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
+>> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
+>> +#endif /* ifndef __ASSEMBLY__ */
+>
+> Hmm, I thought you were going to take a look at reworking the core code for
+> this, as Steve and I suggested?
+>
+>    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/240239.html
 
-On Sun, Apr 27, 2014 at 08:23:06PM +0200, Arnd Bergmann wrote:
-> On Sunday 27 April 2014 13:07:43 Shaik Ameer Basha wrote:
-> > +- mmu-masters: A phandle to device nodes representing the master for w=
-hich
-> > +               the System MMU can provide a translation. Any additiona=
-l values
-> > +              after the phandle will be ignored because a System MMU n=
-ever
-> > +              have two or more masters. "#stream-id-cells" specified i=
-n the
-> > +              master's node will be also ignored.
-> > +              If more than one phandle is specified, only the first ph=
-andle
-> > +              will be treated.
->=20
-> This seems completely backwards: Why would you list the masters for an IO=
-MMU
-> in the IOMMU node?
->=20
-> The master should have a standard property pointing to the IOMMU instead.
->=20
-> We don't have a generic binding for IOMMUs yet it seems, but the time is
-> overdue to make one.
->=20
-> Consider this NAKed until there is a generic binding for IOMMUs that all
-> relevant developers have agreed to.
+Sorry that I've forgot to submit a new revision with this change.
+I will post it soon.
 
-I'd like to take this opportunity and revive one of the hibernating
-patch sets that we have for Tegra. The last effort to get things merged
-was back in January I think. I haven't bothered to look up the reference
-since it's probably good to start from scratch anyway.
+Thanks,
+-Takahiro AKASHI
 
-The latest version of the binding that was under discussion back then I
-think looked something like this:
-
-	device@... {
-		iommus =3D <&iommu [spec]>[, <&other_iommu [other_spec]>...];
-	};
-
-And possibly with a iommu-names property to go along with that. The idea
-being that a device can be a master on possibly multiple IOMMUs. Using
-the above it would also be possible to have one device be multiple
-masters on the same IOMMU.
-
-On Tegra the specifier would be used to encode a memory controller's
-client ID. One discussion point back at the time was to encode the ID as
-a bitmask to allow more than a single master per entry. Another solution
-which I think is a little cleaner and more generic, would be to use one
-entry per master and use a single cell to encode the client ID. Devices
-with multiple clients to the same IOMMU could then use multiple entries
-referencing the same IOMMU.
-
-I've added Hiroshi Doyu on Cc since he knows the Tegra IOMMU best.
-Hiroshi, can you summarize exactly what the proposed bindings were. If
-my memory serves me well they were mostly along the lines of what Arnd
-proposes here, and perhaps they are something that can also be used for
-Exynos.
-
-Will Deacon (I think) had some comments on the earlier discussion as
-well, so I've added him on Cc for visibility. Sorry if I'm confusing you
-with someone else, Will. In that case perhaps you know who to include in
-the discussion from the ARM side.
-
-Also adding Stephen Warren for visibility.
-
-Thierry
-
---OzxllxdKGCiKxUZM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTXi/XAAoJEN0jrNd/PrOhC9kQAJhNUI7/j97xgFjGVeB2IPkl
-z1FZYXz4/0HagUOZ3sd2thCn3YhiGTggEYAEmXymyUIhaPXD9dzUMw2H9ZAab4CW
-ONWI1pPbv6QowSVlvsEC4bZCTt8wpamsLeuS7C0rjqaw4bkK8TQ15oDfD5Rfv27g
-KM2YiURjiKcEm7mkdpwa8hBgz5hvO7N5ulV2n1E52D7YGhA/e4IGQYzp/RkOj0s+
-byzfA9edGiZA0c7y19uR5+TrmRcaH5ERR1+fvOdl1jMw54rYdolkm857BrbFlKEN
-EO79HCcQaSFY71fR/EqPWO6M5ZJ2LLVNNIZw6hD8dBCiX8Nu8Z6obsnMEkzFNx48
-YBxHhZT2lngtIGVpEeoNJfn4V8E9q2/RnzxKN3lZh1P9eQ7uTWOUROaCgqKfETL0
-Nqd8bcvsOFtHwjI5/JCeUvP8e6DtrnIhDDur8x+29wVeiKyDNEQ4g2EOIxeDjqhy
-maRYRal2u643H6cFAnYnuZFdkJy5zrHG6ZwF/BoKwib+2mZKpveOP494ybgAF7h7
-DiqbwyviutAqZ2hfKjdzYZB9VkSSGV2M+dhOkfet4sEEhMq8gbAcwxP2i/fllDN5
-qjOQ8wG3rmu2GsncbOtF54oZCT2O5mP7MTGtFkgBUDwK605Hml0QRo6+GsU8qNhT
-2c+7sqiN3FnrwF8QpcYA
-=TPNI
------END PGP SIGNATURE-----
-
---OzxllxdKGCiKxUZM--
+> Will
+>
