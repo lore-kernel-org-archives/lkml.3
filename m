@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaD1NgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:06 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58231 "EHLO extserv.mm-sol.com"
+	id S932286AbaD1NgD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:03 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58236 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756025AbaD1NfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756020AbaD1NfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 09:35:20 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
@@ -12,9 +12,9 @@ Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Subject: [PATCH v8 01/20] usb: phy: msm: Make driver selectable on ARCH_QCOM
-Date: Mon, 28 Apr 2014 16:34:04 +0300
-Message-Id: <1398692063-11372-2-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v8 04/20] usb: phy: msm: Enable deferred driver probing
+Date: Mon, 28 Apr 2014 16:34:07 +0300
+Message-Id: <1398692063-11372-5-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
@@ -24,33 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Controller could be found on APQ and MSM platforms,
-make configuration description more generic.
+Using platform_driver_probe() prevent driver from requesting
+probe deferral. Fix this.
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/usb/phy/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/phy/phy-msm-usb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 416e0c8..0c668a3 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -171,11 +171,11 @@ config USB_ISP1301
- 	  module will be called phy-isp1301.
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 6bae936..b7d73f2 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -1736,6 +1736,7 @@ static const struct dev_pm_ops msm_otg_dev_pm_ops = {
+ };
 
- config USB_MSM_OTG
--	tristate "OTG support for Qualcomm on-chip USB controller"
--	depends on (USB || USB_GADGET) && ARCH_MSM
-+	tristate "Qualcomm on-chip USB OTG controller support"
-+	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
- 	select USB_PHY
- 	help
--	  Enable this to support the USB OTG transceiver on MSM chips. It
-+	  Enable this to support the USB OTG transceiver on Qualcomm chips. It
- 	  handles PHY initialization, clock management, and workarounds
- 	  required after resetting the hardware and power management.
- 	  This driver is required even for peripheral only or host only
+ static struct platform_driver msm_otg_driver = {
++	.probe = msm_otg_probe,
+ 	.remove = msm_otg_remove,
+ 	.driver = {
+ 		.name = DRIVER_NAME,
+@@ -1744,7 +1745,7 @@ static struct platform_driver msm_otg_driver = {
+ 	},
+ };
+
+-module_platform_driver_probe(msm_otg_driver, msm_otg_probe);
++module_platform_driver(msm_otg_driver);
+
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("MSM USB transceiver driver");
 --
 1.8.3.2
 
