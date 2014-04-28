@@ -1,93 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaD1TMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:12:15 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34581 "EHLO bear.ext.ti.com"
+	id S932181AbaD1TM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:12:56 -0400
+Received: from mout.gmx.net ([212.227.15.18]:64812 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754196AbaD1TMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:12:09 -0400
-Date: Mon, 28 Apr 2014 12:54:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v8 02/20] usb: phy: msm: Remove __init macro from driver
- probe method
-Message-ID: <20140428175443.GT30292@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
- <1398692063-11372-3-git-send-email-iivanov@mm-sol.com>
- <535E893B.7050609@cogentembedded.com>
- <20140428170357.GP30292@saruman.home>
- <1398707568.23146.0.camel@violet>
+	id S1754195AbaD1TMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:12:14 -0400
+Date: Mon, 28 Apr 2014 20:47:27 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: dan.carpenter@oracle.com, gregkh@linuxfoundation.org, chad@dahc.us,
+        tulinizer@gmail.com, michael.banken@mathe.stud.uni-erlangen.de,
+        lorenz@badgers.com, rashika.kheria@gmail.com,
+        andriy.shevchenko@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: silicom: Remove unused pointer in
+ bypass_init_module()
+Message-ID: <20140428204727.699dc618@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dBMBt2YGaTHbdllf"
-Content-Disposition: inline
-In-Reply-To: <1398707568.23146.0.camel@violet>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+ boundary="Sig_/ajU.YptsbzL9cpVx6oNU=c/"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:vGiCbWaAiu3Ph3Pr6XdBHmlQWcTvDzNxxPi4FHCDnD0vjwIW0L2
+ zNyKo5OKt7ohcdvgJw5J0WCTN5u1r3RkIGlu/XqcCiPmGd0pxdA5bBAdLNO3w86gmFQ8QEy
+ 7F7SGogyhyfmzDuC9EjvH5gOl4JSEMkc+z2Tr5ShjHckv+ubE08C/BDXZdKx58YNwXhE2/M
+ GfatwaBAPiJT+cvv2JO9w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---dBMBt2YGaTHbdllf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_/ajU.YptsbzL9cpVx6oNU=c/
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 28, 2014 at 08:52:48PM +0300, Ivan T. Ivanov wrote:
-> On Mon, 2014-04-28 at 12:03 -0500, Felipe Balbi wrote:
-> > On Mon, Apr 28, 2014 at 09:00:43PM +0400, Sergei Shtylyov wrote:
-> > > Hello.
-> > >=20
-> > > On 04/28/2014 05:34 PM, Ivan T. Ivanov wrote:
-> > >=20
-> > > >From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > >=20
-> > > >This fixes following:
-> > >=20
-> > > >WARNING: drivers/usb/phy/built-in.o(.data+0x68): Section mismatch in=
- reference from the variable msm_otg_driver to the function .init.text:msm_=
-otg_probe()
-> > > >The variable msm_otg_driver references
-> > > >the function __init msm_otg_probe()
-> > >=20
-> > >    Hm, this warning shouldn't occur before patch #4, no?
-> >=20
-> > good catch, this could probably be merged there.
->=20
-> True. Should I resend it?
+Pointer 'pbpctl_dev_c' in function bypass_init_module() is unused. Thus rem=
+ove
+it. With the last variable declaration gone, there is no more need for an o=
+wn
+block. Remove it and adapt the indenting accordingly.
 
-hold on, that's simple enough to sort out while applying. Unless there
-are any other big comments with your series, no need to resend.
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+v2: Added changes requested by Dan Carpenter:
 
-cheers
+    Dan pointed out that with the declaration gone, the indent block shall =
+be
+    removed. This was intentionally left out in v1 in order to keep the
+    changeset more readable. However, according to the input, also with the
+    additional indenting change this still qualifies for one logical change.
 
+Compile tested and applies against v3.15-rc2 as well as branch staging-next
+of tree git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/silicom/bpctl_mod.c | 41 +++++++++++++++------------------=
+----
+ 1 file changed, 17 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/=
+bpctl_mod.c
+index 7f3d884..2fb9a6f 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -6371,33 +6371,26 @@ static int __init bypass_init_module(void)
+=20
+ 	sema_init(&bpctl_sema, 1);
+ 	spin_lock_init(&bpvm_lock);
+-	{
+-
+-		struct bpctl_dev *pbpctl_dev_c =3D NULL;
+-		for (idx_dev =3D 0, dev =3D bpctl_dev_arr;
+-		     idx_dev < device_num && dev->pdev;
+-		     idx_dev++, dev++) {
+-			if (dev->bp_10g9) {
+-				pbpctl_dev_c =3D get_status_port_fn(dev);
+-				if (is_bypass_fn(dev)) {
+-					printk(KERN_INFO "%s found, ",
+-					       dev->name);
+-					dev->bp_fw_ver =3D bypass_fw_ver(dev);
+-					printk("firmware version: 0x%x\n",
+-					       dev->bp_fw_ver);
+-				}
+-				dev->wdt_status =3D WDT_STATUS_UNKNOWN;
+-				dev->reset_time =3D 0;
+-				atomic_set(&dev->wdt_busy, 0);
+-				dev->bp_status_un =3D 1;
+-
+-				bypass_caps_init(dev);
+-
+-				init_bypass_wd_auto(dev);
+-				init_bypass_tpl_auto(dev);
+=20
++	for (idx_dev =3D 0, dev =3D bpctl_dev_arr;
++	     idx_dev < device_num && dev->pdev;
++	     idx_dev++, dev++) {
++		if (dev->bp_10g9) {
++			if (is_bypass_fn(dev)) {
++				printk(KERN_INFO "%s found, ", dev->name);
++				dev->bp_fw_ver =3D bypass_fw_ver(dev);
++				printk("firmware version: 0x%x\n",
++				       dev->bp_fw_ver);
+ 			}
++			dev->wdt_status =3D WDT_STATUS_UNKNOWN;
++			dev->reset_time =3D 0;
++			atomic_set(&dev->wdt_busy, 0);
++			dev->bp_status_un =3D 1;
++
++			bypass_caps_init(dev);
+=20
++			init_bypass_wd_auto(dev);
++			init_bypass_tpl_auto(dev);
+ 		}
+ 	}
+=20
 --=20
-balbi
+1.9.1
 
---dBMBt2YGaTHbdllf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/ajU.YptsbzL9cpVx6oNU=c/
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTXpXjAAoJEIaOsuA1yqRE0ewP/3c6SZOPiBcn5ypibisudBTM
-idLw7lcbi7cdI27vxDQAG/Ed4dIr5LasCey7Sdt3QcNUK1dTkAS5QjRY2Oof5oms
-XP+5bQJz4e7Q8j/x+U/gK0eWDvv4b5lnUBH4/oDQgZwvYEo0l5hkP4lEy1Cx8Vmx
-sBqTNi/ErEpJPEqYQoTQ5u350v0Tz8Kbo+yperKTZmZ4TReF0TIqCTKm0bQRkL2o
-HWbYcJPjs+L/GXATGEBpNCANNznoF+0t6eOBthefTVZEVXXH6xhN7z0Ih7l4e41Q
-Ku6pBXgV3aTnbqI9zPuL/MGFGVgkpNMFE2cd25X1Qyqm7ZhgBtPc0HJe8SjFrXo9
-UhYE5fVVBIP5QTiIS2heZp4OMR6vfNNfZQU7QFBvJgf/Nc9SePI9YkUDUnNpvMlH
-fMml8M82QE3k4eVpIv6ngIO7BuXE2zF9g2btjRuBEaXgutKwxob7fyDRWA3o1Q+Z
-IgQq6vZaPEkiCPnypJGl/PLCcFSo15QFajHVG9ycIZecxKnwPUKJkTDIem9JJN5g
-Tw6J4tQ3JQ6skD8jzEJqShcwPiMb2Lyep1zgdGFMB9AVicHq4lLN08fPiOxuSmGi
-5axi54nhqOObZbUxp/IHLXDUtDGaFI6mSReoMGATKYqoyxNKTj12RPLO9XJh+edz
-qhsaBL4fuUOy1ceirDoV
-=lhrl
+iQIcBAEBAgAGBQJTXqI/AAoJEKssnEpaPQKE0R4QAMOqKEugwKs2hYMbAcA7Um8U
+pNFhCLnd3sukTI8aD5NJ14eVArESxQMysDT+OdWrE44pxofy1gHYG2N4SgWuEh+K
+VTQr+D8yNR528djo8dckGQtmIDV2yexZA8U1mSDvtmKobBZQ50BVnE7UieyTUYoR
+UBezhoJCnzc2qwzrjt1N3El9jHskyLcegr9Gs5uGdPyfeiE42z1olJwnac+6dk34
+2QGD5jWc+WxaeTQViEyzIvaP1Vaq8gbmPBOlcXeKBTqzYiocafXniOIqMI7HXmBx
+oacXX2zppXePRzH43+PKx1wj4rLrxEE1Ut6kTcanS1ugHEr2LLNEBI6a+tVJhrOh
+ePUEWuM96Hu2gLej5wzK1g/eY6J+l1YUyKJEQ1GrtvNu/MU3ZrW2Qt5rACzkBb4j
+3so5uIQQbHq8k76lKaGp1qB6lQN5j+NGbl4PDrDtSPcCUcU6KIGPqqcNPx1vI8bG
+feU7NmLE1oIz7CynedljUKQUqEHVpUnNBaK0BIJrAJ64/w6PHXA8Z7qoa0Ij9CyW
+wnJQ35PpKDoGALR4dhYKIdv31a6pEreRCmGH+yLTPBEL08ne/tgJdYBMaBqSS4yO
+Q1Ge4jo15ICa1G5xFTE/B0FJbwAs/xX0vYBDPoH9vcO/zJvSvXEuvLt8VL6cY85e
+FsmpyCtYiKycy/27On2d
+=ufNP
 -----END PGP SIGNATURE-----
 
---dBMBt2YGaTHbdllf--
+--Sig_/ajU.YptsbzL9cpVx6oNU=c/--
