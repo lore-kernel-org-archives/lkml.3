@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaD1BdL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42853 "EHLO
+	id S1755553AbaD1BdJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42895 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752470AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752534AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:20 -0400
+	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Jeff Mahoney" <jeffm@suse.com>
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Yann Droneaud" <ydroneaud@opteya.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.269188649@decadent.org.uk>
+Message-ID: <lsq.1398647482.573278347@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 72/94] reiserfs: fix race in readdir
+Subject: [PATCH 3.2 70/94] IB/mthca: Return an error on ib_copy_to_udata()
+ failure
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,45 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
+commit 08e74c4b00c30c232d535ff368554959403d0432 upstream.
 
-jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
+In case of error when writing to userspace, the function mthca_create_cq()
+does not set an error code before following its error path.
 
-The -ENOENT is due to readdir calling dir_emit on the same entry twice.
+This patch sets the error code to -EFAULT when ib_copy_to_udata() fails.
 
-If the dir_emit callback sleeps and the tree is changed underneath us,
-we won't be able to trust deh_offset(deh) anymore. We need to save
-next_pos before we might sleep so we can find the next entry.
+This was caught when using spatch (aka. coccinelle)
+to rewrite call to ib_copy_{from,to}_udata().
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/reiserfs/dir.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/infiniband/hw/mthca/mthca_provider.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -128,6 +128,7 @@ int reiserfs_readdir_dentry(struct dentr
- 				char *d_name;
- 				off_t d_off;
- 				ino_t d_ino;
-+				loff_t cur_pos = deh_offset(deh);
+--- a/drivers/infiniband/hw/mthca/mthca_provider.c
++++ b/drivers/infiniband/hw/mthca/mthca_provider.c
+@@ -695,6 +695,7 @@ static struct ib_cq *mthca_create_cq(str
  
- 				if (!de_visible(deh))
- 					/* it is hidden entry */
-@@ -200,8 +201,9 @@ int reiserfs_readdir_dentry(struct dentr
- 				if (local_buf != small_buf) {
- 					kfree(local_buf);
- 				}
--				// next entry should be looked for with such offset
--				next_pos = deh_offset(deh) + 1;
-+
-+				/* deh_offset(deh) may be invalid now. */
-+				next_pos = cur_pos + 1;
+ 	if (context && ib_copy_to_udata(udata, &cq->cqn, sizeof (__u32))) {
+ 		mthca_free_cq(to_mdev(ibdev), cq);
++		err = -EFAULT;
+ 		goto err_free;
+ 	}
  
- 				if (item_moved(&tmp_ih, &path_to_entry)) {
- 					goto research;
 
