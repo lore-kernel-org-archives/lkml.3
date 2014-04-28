@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaD1Bar (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43086 "EHLO
+	id S1753727AbaD1Ban (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43087 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752874AbaD1B3Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752871AbaD1B3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        "Dave Kleikamp" <dave.kleikamp@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Allen Pais" <allen.pais@oracle.com>,
-        "Bob Picco" <bob.picco@oracle.com>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
 Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.803107968@decadent.org.uk>
+Message-ID: <lsq.1398647481.398895229@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 19/94] sparc64: don't treat 64-bit syscall return
- codes as  32-bit
+Subject: [PATCH 3.2 14/94] isdnloop: several buffer overflows
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,48 +31,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 1535bd8adbdedd60a0ee62e28fd5225d66434371 ]
+[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
 
-When checking a system call return code for an error,
-linux_sparc_syscall was sign-extending the lower 32-bit value and
-comparing it to -ERESTART_RESTARTBLOCK. lseek can return valid return
-codes whose lower 32-bits alone would indicate a failure (such as 4G-1).
-Use the whole 64-bit value to check for errors. Only the 32-bit path
-should sign extend the lower 32-bit value.
+There are three buffer overflows addressed in this patch.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Bob Picco <bob.picco@oracle.com>
-Acked-by: Allen Pais <allen.pais@oracle.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
+then copy it into a 60 character buffer.  I have made the destination
+buffer 64 characters and I'm changed the sprintf() to a snprintf().
+
+2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
+character buffer so we have 54 characters.  The ->eazlist[] is 11
+characters long.  I have modified the code to return if the source
+buffer is too long.
+
+3) In isdnloop_command() the cbuf[] array was 60 characters long but the
+max length of the string then can be up to 79 characters.  I made the
+cbuf array 80 characters long and changed the sprintf() to snprintf().
+I also removed the temporary "dial" buffer and changed it to use "p"
+directly.
+
+Unfortunately, we pass the "cbuf" string from isdnloop_command() to
+isdnloop_writecmd() which truncates anything over 60 characters to make
+it fit in card->omsg[].  (It can accept values up to 255 characters so
+long as there is a '\n' character every 60 characters).  For now I have
+just fixed the memory corruption bug and left the other problems in this
+driver alone.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/kernel/syscalls.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 817187d..557212c 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -184,7 +184,8 @@ linux_sparc_syscall32:
- 	 mov	%i0, %l5				! IEU1
- 5:	call	%l7					! CTI	Group brk forced
- 	 srl	%i5, 0, %o5				! IEU1
--	ba,a,pt	%xcc, 3f
-+	ba,pt	%xcc, 3f
-+	 sra	%o0, 0, %o0
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
+ static void
+ isdnloop_fake_err(isdnloop_card * card)
+ {
+-	char buf[60];
++	char buf[64];
  
- 	/* Linux native system calls enter here... */
- 	.align	32
-@@ -212,7 +213,6 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
+-	sprintf(buf, "E%s", card->omsg);
++	snprintf(buf, sizeof(buf), "E%s", card->omsg);
+ 	isdnloop_fake(card, buf, -1);
+ 	isdnloop_fake(card, "NAK", -1);
+ }
+@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card * card)
+ 		case 7:
+ 			/* 0x;EAZ */
+ 			p += 3;
++			if (strlen(p) >= sizeof(card->eazlist[0]))
++				break;
+ 			strcpy(card->eazlist[ch - 1], p);
+ 			break;
+ 		case 8:
+@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl * c, isdnloop
+ {
+ 	ulong a;
+ 	int i;
+-	char cbuf[60];
++	char cbuf[80];
+ 	isdn_ctrl cmd;
+ 	isdnloop_cdef cdef;
  
+@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl * c, isdnloop
+ 				break;
+ 			if ((c->arg & 255) < ISDNLOOP_BCH) {
+ 				char *p;
+-				char dial[50];
+ 				char dcode[4];
+ 
+ 				a = c->arg;
+@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl * c, isdnloop
+ 				} else
+ 					/* Normal Dial */
+ 					strcpy(dcode, "CAL");
+-				strcpy(dial, p);
+-				sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
+-					dcode, dial, c->parm.setup.si1,
+-				c->parm.setup.si2, c->parm.setup.eazmsn);
++				snprintf(cbuf, sizeof(cbuf),
++					 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
++					 dcode, p, c->parm.setup.si1,
++					 c->parm.setup.si2, c->parm.setup.eazmsn);
+ 				i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
+ 			}
+ 			break;
 
