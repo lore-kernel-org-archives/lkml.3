@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaD1Bcz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42874 "EHLO
+	id S1755404AbaD1Bcw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42959 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752503AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752638AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Haiyang Zhang" <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Jason Wang" <jasowang@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
+        "Felipe Balbi" <balbi@ti.com>,
+        "Gregory CLEMENT" <gregory.clement@free-electrons.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.751965476@decadent.org.uk>
+Message-ID: <lsq.1398647482.981605371@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 60/94] x86, hyperv: Bypass the timer_irq_works() check
+Subject: [PATCH 3.2 36/94] usb: gadget: atmel_usba: fix crashed during
+ stopping when DEBUG is enabled
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,53 +34,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit ca3ba2a2f4a49a308e7d78c784d51b2332064f15 upstream.
+commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
 
-This patch bypass the timer_irq_works() check for hyperv guest since:
+commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
+unbinding) introduced a crash when DEBUG is enabled.
 
-- It was guaranteed to work.
-- timer_irq_works() may fail sometime due to the lpj calibration were inaccurate
-  in a hyperv guest or a buggy host.
+The debug trace in the atmel_usba_stop function made the assumption that the
+driver pointer passed in parameter was not NULL, but since the commit above,
+such assumption was no longer always true.
 
-In the future, we should get the tsc frequency from hypervisor and use preset
-lpj instead.
+This commit now uses the driver pointer stored in udc which fixes this
+issue.
 
-[ hpa: I would prefer to not defer things to "the future" in the future... ]
+[ balbi@ti.com : improved commit log a bit ]
 
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Link: http://lkml.kernel.org/r/1393558229-14755-1-git-send-email-jasowang@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/cpu/mshyperv.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -18,6 +18,7 @@
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/timer.h>
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1875,12 +1875,13 @@ static int atmel_usba_stop(struct usb_ga
  
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -70,6 +71,11 @@ static void __init ms_hyperv_init_platfo
+ 	driver->unbind(&udc->gadget);
+ 	udc->gadget.dev.driver = NULL;
+-	udc->driver = NULL;
  
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ 	clk_disable(udc->hclk);
+ 	clk_disable(udc->pclk);
+ 
+-	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
++	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
 +
-+#ifdef CONFIG_X86_IO_APIC
-+	no_timer_check = 1;
-+#endif
-+
++	udc->driver = NULL;
+ 
+ 	return 0;
  }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
 
