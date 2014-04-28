@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaD1TIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:08:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42033 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750993AbaD1TIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:08:13 -0400
-Message-ID: <535E8DC2.4010504@ti.com>
-Date: Mon, 28 Apr 2014 12:20:02 -0500
-From: Joel Fernandes <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Dave Martin <Dave.Martin@arm.com>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Nishanth Menon <nm@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary
- CPU
-References: <1398191506-3741-1-git-send-email-joelf@ti.com> <20140428164348.GA14354@e103592.cambridge.arm.com>
-In-Reply-To: <20140428164348.GA14354@e103592.cambridge.arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1751745AbaD1TI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:08:28 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51734 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751601AbaD1TIY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:08:24 -0400
+Message-ID: <1398707451.20390.14.camel@hornet>
+Subject: Re: [PATCH 1/3] driver core & of: Mark of_nodes of added device as
+ populated
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, lm-sensors@lm-sensors.org,
+        Lee Jones <lee.jones@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 28 Apr 2014 18:50:51 +0100
+In-Reply-To: <1398706660.20390.5.camel@hornet>
+References: <1392137610-27842-1-git-send-email-pawel.moll@arm.com>
+	 <1392137610-27842-2-git-send-email-pawel.moll@arm.com>
+	 <CAL_JsqJQy7ob87=wPOLxn3X0fTrt2QhAEJ2nPTAmCMZqNZp+sw@mail.gmail.com>
+	 <1398706660.20390.5.camel@hornet>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 11:43 AM, Dave Martin wrote:
-> On Tue, Apr 22, 2014 at 01:31:46PM -0500, Joel Fernandes wrote:
->> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
->> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
->> seems to be because the CPU is in ARM mode once the ROM hands over control to
->> the kernel.  Switch to THUMB mode if required once the kernel is control of
->> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
->> entry so this is not required and SMP boot works as is.
->>
->> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Nishanth Menon <nm@ti.com>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Signed-off-by: Joel Fernandes <joelf@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
->> index 75e9295..1809dce 100644
->> --- a/arch/arm/mach-omap2/omap-headsmp.S
->> +++ b/arch/arm/mach-omap2/omap-headsmp.S
->> @@ -1,7 +1,7 @@
->>  /*
->>   * Secondary CPU startup routine source file.
->>   *
->> - * Copyright (C) 2009 Texas Instruments, Inc.
->> + * Copyright (C) 2014 Texas Instruments, Inc.
->>   *
->>   * Author:
->>   *      Santosh Shilimkar <santosh.shilimkar@ti.com>
->> @@ -28,9 +28,13 @@
->>   * code.  This routine also provides a holding flag into which
->>   * secondary core is held until we're ready for it to initialise.
->>   * The primary core will update this flag using a hardware
->> -+ * register AuxCoreBoot0.
->> + * register AuxCoreBoot0.
->>   */
->>  ENTRY(omap5_secondary_startup)
+On Mon, 2014-04-28 at 18:37 +0100, Pawel Moll wrote:
+> On Thu, 2014-02-13 at 13:15 -0600, Rob Herring wrote:
+> > On Tue, Feb 11, 2014 at 10:53 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > > In "Device Tree powered" systems, platform devices are usually
+> > > massively populated with of_platform_populate() call, executed
+> > > at some level of initcalls, either by generic architecture
+> > > or by platform-specific code.
+> >
+> > Go read Grant's and my comments from your last posting.
 > 
-> Are you sure this problem is not caused by the missing ENDPROC() for
-> omap5_secondary_startup?
-> 
-> You have END() instead (which may have been accidental).
-> 
-> Without ENDPROC(), the symbol is not marked as a function and so
-> the Thumb bit won't be set when taking a pointer -- so the kernel
-> is actually telling the firmware to enter in ARM state.
-> 
-> 
-> Try changing END() to ENDPROC() without this patch, and see if it
-> makes a difference.
-> 
-> If it still doesn't work, then the firmware either doesn't support
-> entering in ARM, or is buggy.
+> Right, I can't explain why I missed those. Will do right now.
 
-Thanks for the suggestion. I'm guessing what you mean is with ENDPROC,
-interworking code uses bx instead of bl to set thumb mode.
+Actually I can't seem to find it in my mail archive, but I remember you
+were saying that it shouldn't spoil into the driver base code. You're
+probably right, so the updated patch will be limited to of_platform_*
+API.
 
-But ROM/firmware doesn't have access to symbol table, how would it know
-the type of the symbol to be ARM or THUMB before it branches?
+Grant was suggesting that I shouldn't be using the device model if I
+have to initialize some early stuff. The thing is that my stuff is not
+that early at all. The device model works for me perfectly, as long as I
+can initialize 3 crucial devices in a correct order (and *then* do mass
+population). And the init levels are perfect for this job. The only
+thing I need is a small refinement in the way DT-based devices are
+populated and this is exactly what I propose. Hope it makes more sense
+now.
 
-regards,
- -Joel
+Cheers!
 
-
+Pawel
 
