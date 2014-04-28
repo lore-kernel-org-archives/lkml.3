@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbaD1BdN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42820 "EHLO
+	id S1755569AbaD1BdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42853 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752461AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752470AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "" <openipmi-developer@lists.sourceforge.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Jiri Slaby" <jslaby@suse.cz>, "Corey Minyard" <minyard@acm.org>,
-        "Tomas Cech" <tcech@suse.cz>, "Corey Minyard" <cminyard@mvista.com>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
+        "Jeff Mahoney" <jeffm@suse.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.417635741@decadent.org.uk>
+Message-ID: <lsq.1398647482.269188649@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 89/94] Char: ipmi_bt_sm, fix infinite loop
+Subject: [PATCH 3.2 72/94] reiserfs: fix race in readdir
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,47 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
+commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
 
-In read_all_bytes, we do
+jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
 
-  unsigned char i;
-  ...
-  bt->read_data[0] = BMC2HOST;
-  bt->read_count = bt->read_data[0];
-  ...
-  for (i = 1; i <= bt->read_count; i++)
-    bt->read_data[i] = BMC2HOST;
+The -ENOENT is due to readdir calling dir_emit on the same entry twice.
 
-If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
-'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
-overflow and finish the loop after 255 iterations every time.
+If the dir_emit callback sleeps and the tree is changed underneath us,
+we won't be able to trust deh_offset(deh) anymore. We need to save
+next_pos before we might sleep so we can find the next entry.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
-Cc: Tomas Cech <tcech@suse.cz>
-Cc: Corey Minyard <minyard@acm.org>
-Cc: <openipmi-developer@lists.sourceforge.net>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/ipmi/ipmi_bt_sm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/reiserfs/dir.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-index f5e4cd7..61e7161 100644
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -352,7 +352,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -128,6 +128,7 @@ int reiserfs_readdir_dentry(struct dentr
+ 				char *d_name;
+ 				off_t d_off;
+ 				ino_t d_ino;
++				loff_t cur_pos = deh_offset(deh);
  
- static inline int read_all_bytes(struct si_sm_data *bt)
- {
--	unsigned char i;
-+	unsigned int i;
+ 				if (!de_visible(deh))
+ 					/* it is hidden entry */
+@@ -200,8 +201,9 @@ int reiserfs_readdir_dentry(struct dentr
+ 				if (local_buf != small_buf) {
+ 					kfree(local_buf);
+ 				}
+-				// next entry should be looked for with such offset
+-				next_pos = deh_offset(deh) + 1;
++
++				/* deh_offset(deh) may be invalid now. */
++				next_pos = cur_pos + 1;
  
- 	/*
- 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
+ 				if (item_moved(&tmp_ih, &path_to_entry)) {
+ 					goto research;
 
