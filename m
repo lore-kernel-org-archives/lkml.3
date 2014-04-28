@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333AbaD1T5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:57:10 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28072 "EHLO
+	id S933317AbaD1T5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:57:09 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28071 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933058AbaD1Tx2 (ORCPT
+	by vger.kernel.org with ESMTP id S933054AbaD1Tx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 15:53:28 -0400
 From: Pawel Moll <pawel.moll@arm.com>
@@ -14,96 +14,89 @@ To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 01/10] of: Keep track of populated platform devices
-Date: Mon, 28 Apr 2014 18:57:48 +0100
-Message-Id: <1398707877-22596-2-git-send-email-pawel.moll@arm.com>
+        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH 00/10] Versatile Express changes for 3.16
+Date: Mon, 28 Apr 2014 18:57:47 +0100
+Message-Id: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
-References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In "Device Tree powered" systems, platform devices are usually
-massively populated with of_platform_populate() call, executed
-at some level of initcalls, either by generic architecture
-or by platform-specific code.
+Greetings,
 
-There are situations though where certain devices must be
-created (and bound with drivers) before all the others.
-This presents a challenge, as devices created explicitly
-would be created again by of_platform_populate().
+What follows is the (hopefully) last take on the vexpress
+infrastructure changes. With the exception of the first
+patch, everything else has been discussed and acked
+(or at least not naked) in the past:
 
-This patch tries to solve that issue in a generic way,
-adding a "populated" flag for a DT node description.
-Once set, this device will never be created again via
-of_* API, so of_platform_populate() will skip such nodes
-(and its children) in a similar way to the non-available
-ones.
+http://thread.gmane.org/gmane.linux.kernel/1645586/
+http://thread.gmane.org/gmane.linux.kernel/1619575/
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
----
- drivers/of/platform.c | 10 ++++++++--
- include/linux/of.h    |  1 +
- 2 files changed, 9 insertions(+), 2 deletions(-)
+I'd like to see it merged in the 3.16, so if there are
+no major issues, I'll send a pull request next week.
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..0ae757a 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -204,7 +204,8 @@ static struct platform_device *of_platform_device_create_pdata(
- {
- 	struct platform_device *dev;
- 
--	if (!of_device_is_available(np))
-+	if (!of_device_is_available(np) ||
-+			of_node_check_flag(np, OF_POPULATED))
- 		return NULL;
- 
- 	dev = of_device_alloc(np, bus_id, parent);
-@@ -230,6 +231,8 @@ static struct platform_device *of_platform_device_create_pdata(
- 		return NULL;
- 	}
- 
-+	of_node_set_flag(np, OF_POPULATED);
-+
- 	return dev;
- }
- 
-@@ -262,7 +265,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 
- 	pr_debug("Creating amba device %s\n", node->full_name);
- 
--	if (!of_device_is_available(node))
-+	if (!of_device_is_available(node) ||
-+			of_node_check_flag(node, OF_POPULATED))
- 		return NULL;
- 
- 	dev = amba_device_alloc(NULL, 0, 0);
-@@ -305,6 +309,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
- 		goto err_free;
- 	}
- 
-+	of_node_set_flag(node, OF_POPULATED);
-+
- 	return dev;
- 
- err_free:
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 3bad8d1..fd3aaee 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -197,6 +197,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
- /* flag descriptions */
- #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
- #define OF_DETACHED	2 /* node has been detached from the device tree */
-+#define OF_POPULATED	3 /* device already created for the node */
- 
- #define OF_IS_DYNAMIC(x) test_bit(OF_DYNAMIC, &x->_flags)
- #define OF_MARK_DYNAMIC(x) set_bit(OF_DYNAMIC, &x->_flags)
+The series, based on 3.15-rc3, is available at:
+
+  git://git.linaro.org/people/pawel.moll/linux.git vexpress/sysreg
+
+Pawel Moll (9):
+  of: Keep track of populated platform devices
+  mfd: vexpress: Convert custom func API to regmap
+  mfd: syscon: Add platform data with a regmap config name
+  mfd: vexpress: Define the device as MFD cells
+  clk: versatile: Split config options for sp810 and vexpress_osc
+  clocksource: Sched clock source for Versatile Express
+  ARM: vexpress: Simplify SMP operations for DT-powered system
+  ARM: vexpress: move HBI check to sysreg driver
+  hwmon: vexpress: Use devm helper for hwmon device registration
+
+Sudeep KarkadaNagesha (1):
+  ARM: vexpress: remove redundant vexpress_dt_cpus_num to get cpu count
+
+ .../devicetree/bindings/arm/vexpress-sysreg.txt    |  79 ++-
+ Documentation/devicetree/bindings/arm/vexpress.txt |  15 +-
+ arch/arm/boot/dts/vexpress-v2m-rs1.dtsi            |  76 ++-
+ arch/arm/boot/dts/vexpress-v2m.dtsi                |  76 ++-
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |   5 +-
+ arch/arm/mach-vexpress/core.h                      |   3 +-
+ arch/arm/mach-vexpress/ct-ca9x4.c                  |  10 +-
+ arch/arm/mach-vexpress/platsmp.c                   | 187 ++-----
+ arch/arm/mach-vexpress/v2m.c                       |  82 +--
+ arch/arm64/boot/dts/rtsm_ve-motherboard.dtsi       |   2 +-
+ drivers/bus/Kconfig                                |   9 +
+ drivers/bus/Makefile                               |   2 +
+ drivers/bus/vexpress-config.c                      | 202 ++++++++
+ drivers/clk/Kconfig                                |   9 +-
+ drivers/clk/versatile/Kconfig                      |  26 +
+ drivers/clk/versatile/Makefile                     |   5 +-
+ drivers/clk/versatile/clk-vexpress-osc.c           |  94 ++--
+ drivers/clocksource/Kconfig                        |  11 +
+ drivers/clocksource/Makefile                       |   1 +
+ drivers/clocksource/versatile.c                    |  40 ++
+ drivers/hwmon/vexpress.c                           | 104 ++--
+ drivers/mfd/Kconfig                                |  15 +-
+ drivers/mfd/Makefile                               |   2 +-
+ drivers/mfd/syscon.c                               |   4 +
+ drivers/mfd/vexpress-config.c                      | 287 -----------
+ drivers/mfd/vexpress-sysreg.c                      | 554 ++++++---------------
+ drivers/misc/Kconfig                               |   9 +
+ drivers/misc/Makefile                              |   1 +
+ drivers/misc/vexpress-syscfg.c                     | 324 ++++++++++++
+ drivers/of/platform.c                              |  10 +-
+ drivers/power/reset/vexpress-poweroff.c            |  16 +-
+ drivers/regulator/vexpress.c                       |  50 +-
+ include/linux/of.h                                 |   1 +
+ include/linux/platform_data/syscon.h               |   8 +
+ include/linux/vexpress.h                           |  94 +---
+ 35 files changed, 1209 insertions(+), 1204 deletions(-)
+ create mode 100644 drivers/bus/vexpress-config.c
+ create mode 100644 drivers/clk/versatile/Kconfig
+ create mode 100644 drivers/clocksource/versatile.c
+ delete mode 100644 drivers/mfd/vexpress-config.c
+ create mode 100644 drivers/misc/vexpress-syscfg.c
+ create mode 100644 include/linux/platform_data/syscon.h
+
 -- 
 1.9.1
 
