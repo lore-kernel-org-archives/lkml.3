@@ -1,73 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249AbaD1TQB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:16:01 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51848 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754877AbaD1TPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:15:10 -0400
-Date: Mon, 28 Apr 2014 12:11:26 -0700
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 5/7] ARM: sun7i: dt: add pinmux configuration for the
- PWM
-Message-ID: <20140428191126.GC3134@lukather>
-References: <1398701834-3719-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1398701834-3719-6-git-send-email-alexandre.belloni@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="t0UkRYy7tHLRMCai"
-Content-Disposition: inline
-In-Reply-To: <1398701834-3719-6-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755522AbaD1TQk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:16:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44623 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755261AbaD1TQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:16:35 -0400
+Message-ID: <1398706387.24318.289.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v5 09/11] VFIO_PLATFORM: Return IRQ info
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: kvmarm@lists.cs.columbia.edu, iommu@lists.linux-foundation.org,
+        tech@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        kvm@vger.kernel.org, christoffer.dall@linaro.org, will.deacon@arm.com,
+        kim.phillips@freescale.com, stuart.yoder@freescale.com,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Apr 2014 11:33:07 -0600
+In-Reply-To: <1398700371-20096-10-git-send-email-a.motakis@virtualopensystems.com>
+References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1398700371-20096-10-git-send-email-a.motakis@virtualopensystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-04-28 at 17:52 +0200, Antonios Motakis wrote:
+> Return information for the interrupts exposed by the device.
+> This patch extends VFIO_DEVICE_GET_INFO with the number of IRQs
+> and enables VFIO_DEVICE_GET_IRQ_INFO
+> 
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/Makefile                |  2 +-
+>  drivers/vfio/platform/vfio_platform.c         | 35 +++++++++++++--
+>  drivers/vfio/platform/vfio_platform_irq.c     | 63 +++++++++++++++++++++++++++
+>  drivers/vfio/platform/vfio_platform_private.h | 11 +++++
+>  4 files changed, 106 insertions(+), 5 deletions(-)
+>  create mode 100644 drivers/vfio/platform/vfio_platform_irq.c
+> 
+> diff --git a/drivers/vfio/platform/Makefile b/drivers/vfio/platform/Makefile
+> index df3a014..2c53327 100644
+> --- a/drivers/vfio/platform/Makefile
+> +++ b/drivers/vfio/platform/Makefile
+> @@ -1,4 +1,4 @@
+>  
+> -vfio-platform-y := vfio_platform.o
+> +vfio-platform-y := vfio_platform.o vfio_platform_irq.o
+>  
+>  obj-$(CONFIG_VFIO_PLATFORM) += vfio-platform.o
+> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> index 37beff3..2e16595 100644
+> --- a/drivers/vfio/platform/vfio_platform.c
+> +++ b/drivers/vfio/platform/vfio_platform.c
+> @@ -79,6 +79,7 @@ static void vfio_platform_release(void *device_data)
+>  	struct vfio_platform_device *vdev = device_data;
+>  
+>  	vfio_platform_regions_cleanup(vdev);
+> +	vfio_platform_irq_cleanup(vdev);
+>  
+>  	module_put(THIS_MODULE);
+>  }
+> @@ -92,12 +93,22 @@ static int vfio_platform_open(void *device_data)
+>  	if (ret)
+>  		return ret;
+>  
+> +	ret = vfio_platform_irq_init(vdev);
+> +	if (ret)
+> +		goto err_irq;
+> +
+>  	if (!try_module_get(THIS_MODULE)) {
+> -		vfio_platform_regions_cleanup(vdev);
+> -		return -ENODEV;
+> +		ret = -ENODEV;
+> +		goto err_mod;
+>  	}
 
---t0UkRYy7tHLRMCai
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 28, 2014 at 06:17:12PM +0200, Alexandre Belloni wrote:
-> Add the pinctrl descriptions for both PWM channels of the Allwinner A20.
->=20
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Same comments from REGION_INFO patch apply here.  Ordering above,
+paranoia about keeping num_irqs consistent with allocation, nit about
+local variable use in initialization loop.  Thanks,
 
-Applied, thanks!
+Alex
+>  
+>  	return 0;
+> +
+> +err_mod:
+> +	vfio_platform_irq_cleanup(vdev);
+> +err_irq:
+> +	vfio_platform_regions_cleanup(vdev);
+> +	return ret;
+>  }
+>  
+>  static long vfio_platform_ioctl(void *device_data,
+> @@ -119,7 +130,7 @@ static long vfio_platform_ioctl(void *device_data,
+>  
+>  		info.flags = VFIO_DEVICE_FLAGS_PLATFORM;
+>  		info.num_regions = vdev->num_regions;
+> -		info.num_irqs = 0;
+> +		info.num_irqs = vdev->num_irqs;
+>  
+>  		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+> @@ -145,7 +156,23 @@ static long vfio_platform_ioctl(void *device_data,
+>  		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+>  	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
+> -		return -EINVAL;
+> +		struct vfio_irq_info info;
+> +
+> +		minsz = offsetofend(struct vfio_irq_info, count);
+> +
+> +		if (copy_from_user(&info, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (info.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if (info.index >= vdev->num_irqs)
+> +			return -EINVAL;
+> +
+> +		info.flags = vdev->irq[info.index].flags;
+> +		info.count = vdev->irq[info.index].count;
+> +
+> +		return copy_to_user((void __user *)arg, &info, minsz);
+>  
+>  	} else if (cmd == VFIO_DEVICE_SET_IRQS)
+>  		return -EINVAL;
+> diff --git a/drivers/vfio/platform/vfio_platform_irq.c b/drivers/vfio/platform/vfio_platform_irq.c
+> new file mode 100644
+> index 0000000..075c401
+> --- /dev/null
+> +++ b/drivers/vfio/platform/vfio_platform_irq.c
+> @@ -0,0 +1,63 @@
+> +/*
+> + * VFIO platform devices interrupt handling
+> + *
+> + * Copyright (C) 2013 - Virtual Open Systems
+> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License, version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/eventfd.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/iommu.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/notifier.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/vfio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/irq.h>
+> +
+> +#include "vfio_platform_private.h"
+> +
+> +int vfio_platform_irq_init(struct vfio_platform_device *vdev)
+> +{
+> +	int cnt = 0, i;
+> +
+> +	while (platform_get_irq(vdev->pdev, cnt) > 0)
+> +		cnt++;
+> +
+> +	vdev->num_irqs = cnt;
+> +
+> +	vdev->irq = kzalloc(sizeof(struct vfio_platform_irq) * vdev->num_irqs,
+> +				GFP_KERNEL);
+> +	if (!vdev->irq)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < cnt; i++) {
+> +		struct vfio_platform_irq irq;
+> +
+> +		irq.flags = 0;
+> +		irq.count = 1;
+> +
+> +		vdev->irq[i] = irq;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev)
+> +{
+> +	kfree(vdev->irq);
+> +}
+> diff --git a/drivers/vfio/platform/vfio_platform_private.h b/drivers/vfio/platform/vfio_platform_private.h
+> index 3448f918..9776cff 100644
+> --- a/drivers/vfio/platform/vfio_platform_private.h
+> +++ b/drivers/vfio/platform/vfio_platform_private.h
+> @@ -24,6 +24,11 @@
+>  #define VFIO_PLATFORM_INDEX_TO_OFFSET(index)	\
+>  	((u64)(index) << VFIO_PLATFORM_OFFSET_SHIFT)
+>  
+> +struct vfio_platform_irq {
+> +	u32			flags;
+> +	u32			count;
+> +};
+> +
+>  struct vfio_platform_region {
+>  	u64			addr;
+>  	resource_size_t		size;
+> @@ -34,6 +39,12 @@ struct vfio_platform_device {
+>  	struct platform_device		*pdev;
+>  	struct vfio_platform_region	*region;
+>  	u32				num_regions;
+> +	struct vfio_platform_irq	*irq;
+> +	u32				num_irqs;
+>  };
+>  
+> +extern int vfio_platform_irq_init(struct vfio_platform_device *vdev);
+> +
+> +extern void vfio_platform_irq_cleanup(struct vfio_platform_device *vdev);
+> +
+>  #endif /* VFIO_PLATFORM_PRIVATE_H */
 
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
 
---t0UkRYy7tHLRMCai
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTXqfeAAoJEBx+YmzsjxAgsUQP/isk6H/fjzMi4DAMRj4QaEmq
-b40OFC9rupZ9KnNP9Jx+PGEWx51GMZ8VE+/ssool7b7YiarCDoc6vuunr1DYRQzb
-OC1tsBXXHYcGdvqPX/CzEbHKuxhkpH4DTAnEc8LgZPJV+OLH5fFcnZHimdqL2Apw
-mqi0mDX4n3Y8sC04NWZCYH31yqEq97cfEVEVZCvehTMRyXr+EN7L75tc02LzG4r1
-AbIpChyOg31rgbfjRjlWImO0PLwwvZG/5rGBpVDv2IZTEq850YTY8eKcu7AgmsPl
-GFkHo6cY7iuZbYtBMceJGUTX1gwmweXI78dZx3VV9g4iVsMPSV5Tz0xqhIe4mrlk
-n+YCI74Ho3pyyVM73MchSWbt9YR0o+riPvPUm08ukNBs82WxUuHPWcwbn9DUn2/T
-FGGJR+oTwBOr+CudfwqO39vStGu7NehbmMKvztU43L5y+GX2AQ3/TRvTZxs/S0p+
-+x1HtUQIXXd2mC1tfTDib4Qin+5sghaD+6p5YTKGJbK4NIIuGR/pNSeBDUAwZRwI
-LOFwLV/N/yIumQ52XMKrxRRejtMq0Mwt01j65Z8Atg+iKosQkjBuMFZp2654w/1k
-68Q2N+mvtUB05FYTPaJ1C20jct+6GHWRXwJqsXb1Ec/Qmkvz/dJyhor11fw8g1FE
-+PSvmPUt22F/ytR8Fb+E
-=k+AL
------END PGP SIGNATURE-----
-
---t0UkRYy7tHLRMCai--
