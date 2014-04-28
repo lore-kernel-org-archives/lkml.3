@@ -1,83 +1,418 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaD1C6I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:58:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:39044 "EHLO ozlabs.org"
+	id S1752899AbaD1DCX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 23:02:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7213 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785AbaD1C6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:58:05 -0400
-Date: Mon, 28 Apr 2014 12:57:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140428125759.47924ab500af7624f401d424@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Apr_2014_12_57_59_+1000_2bWsHzvFS5IrcEcj"
+	id S1752419AbaD1DCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 23:02:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,940,1389772800"; 
+   d="scan'208";a="502033342"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
+Subject: RE: [PATCH v2 3/5] ACPICA: Add <asm/acenv.h> to remove mis-ordered
+ inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+Thread-Topic: [PATCH v2 3/5] ACPICA: Add <asm/acenv.h> to remove mis-ordered
+ inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+Thread-Index: AQHPYl6Ei5A5bX/F70+i/inXfH4mrJsmVyaA
+Date: Mon, 28 Apr 2014 03:02:12 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E880255865E@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1396930406.git.lv.zheng@intel.com>
+ <cover.1398232408.git.lv.zheng@intel.com>
+ <522ac0c3a52f1697d75363cc808a213773dca295.1398232409.git.lv.zheng@intel.com>
+ <1469560.3p9s15HIYZ@vostro.rjw.lan>
+In-Reply-To: <1469560.3p9s15HIYZ@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3S32Wnx020128
 
---Signature=_Mon__28_Apr_2014_12_57_59_+1000_2bWsHzvFS5IrcEcj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi, Rafael
 
-Hi all,
+> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> Sent: Monday, April 28, 2014 5:37 AM
+> To: Zheng, Lv
+> 
+> On Wednesday, April 23, 2014 02:54:06 PM Lv Zheng wrote:
+> > There is a mis-order inclusion for <asm/acpi.h>.
+> >
+> > As we will enforce including <linux/acpi.h> for all Linux ACPI users, we
+> > can find the inclusion order is as follows:
+> >
+> > <linux/acpi.h>
+> >   <acpi/acpi.h>
+> >    <acpi/platform/acenv.h>
+> >     (acenv.h before including aclinux.h)
+> >     <acpi/platform/aclinux.h>
+> > ...........................................................................
+> >      (aclinux.h before including asm/acpi.h)
+> >      <asm/acpi.h>                             @Redundant@
+> >       (ACPICA specific stuff)
+> > ...........................................................................
+> > ...........................................................................
+> >       (Linux ACPI specific stuff) ? - - - - - - - - - - - - +
+> >      (aclinux.h after including asm/acpi.h)   @Invisible@   |
+> >     (acenv.h after including aclinux.h)       @Invisible@   |
+> >    other ACPICA headers                       @Invisible@   |
+> > ............................................................|..............
+> >   <acpi/acpi_bus.h>                                         |
+> >   <acpi/acpi_drivers.h>                                     |
+> >   <asm/acpi.h> (Excluded)                                   |
+> >    (Linux ACPI specific stuff) ! <- - - - - - - - - - - - - +
+> >
+> > NOTE that, in ACPICA, <acpi/platform/acenv.h> is more like Kconfig
+> > generated <generated/autoconf.h> for Linux, it is meant to be included
+> > before including any ACPICA code.
+> >
+> > In the above figure, there is a question mark for "Linux ACPI specific
+> > stuff" in <asm/acpi.h> which should be included after including all other
+> > ACPICA header files.  Thus they really need to be moved to the position
+> > marked with exclaimation mark or the definitions in the blocks marked with
+> > "@Invisible@" will be invisible to such architecture specific "Linux ACPI
+> > specific stuff" header blocks.  This leaves 2 issues:
+> > 1. All environmental definitions in these blocks should have a copy in the
+> >    area marked with "@Redundant@" if they are required by the "Linux ACPI
+> >    specific stuff".
+> > 2. We cannot use any ACPICA defined types in <asm/acpi.h>.
+> >
+> > This patch splits architecture specific ACPICA stuff from <asm/acpi.h> to
+> > fix this issue.
+> >
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Cc: Tony Luck <tony.luck@intel.com>
+> > Cc: Fenghua Yu <fenghua.yu@intel.com>
+> > Cc: linux-ia64@vger.kernel.org
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: x86@kernel.org
+> > ---
+> >  arch/ia64/include/asm/acenv.h   |   71 +++++++++++++++++++++++++++++++++++++++
+> >  arch/ia64/include/asm/acpi.h    |   50 ---------------------------
+> >  arch/x86/include/asm/acenv.h    |   65 +++++++++++++++++++++++++++++++++++
+> >  arch/x86/include/asm/acpi.h     |   45 -------------------------
+> >  include/acpi/platform/aclinux.h |    2 +-
+> 
+> Please rename the files first (in a separate patch) and then modify the
+> renamed ones.  That will make changes much easier to follow.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/netlink/af_netlink.c between commit 5187cd055b6e ("netlink: Rename
-netlink_capable netlink_allowed") from the net tree and commit
-4f520900522f ("netlink: have netlink per-protocol bind function return an
-error code") from the net-next tree.
+This patch doesn't provide a rename.
+Currently, <asm/acpi.h> includes:
+1. arch specific ACPI stuff
+2. arch specific ACPICA stuff
+This patch moves "2" to a separate file <asm/acenv.h>, thus no renaming happens here.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks and best regards
+-Lv
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc net/netlink/af_netlink.c
-index 81dca96d2be6,92f4b6915e89..000000000000
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@@ -1492,8 -1445,8 +1510,8 @@@ static int netlink_bind(struct socket *
-  		return -EINVAL;
- =20
-  	/* Only superuser is allowed to listen multicasts */
-- 	if (nladdr->nl_groups) {
-+ 	if (groups) {
- -		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
- +		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
-  			return -EPERM;
-  		err =3D netlink_realloc_groups(sk);
-  		if (err)
-
---Signature=_Mon__28_Apr_2014_12_57_59_+1000_2bWsHzvFS5IrcEcj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTXcO8AAoJEMDTa8Ir7ZwVUMEQAIL8aJKBOL6UgouDX1WrMc7F
-XHMeodZdBqSdU30ujeT0zmHYrBt12b2bcX8/ydF4XApPTzwVbe6flqCurDM1iCDH
-Y/wqJArEgtc9l0r/mbsyYisOULTlg2oe3fpjQRbp0Zshe8ACpJZ6JVyPi6JDxhm3
-xBYZjKA3AsrSPYx8M3H0Q4P+PzCtGcSDwb0fkV0P85SahsSEV5sHTNTEMRtJ8f2a
-UvTD4skGvFD77oOBupEu52/c0Ql1fpxBs6CPWeY8T/AXISO2qFvoMX7bGupNkA1U
-7K+v0bL2+F59MqH+3sQA8A2kVbG2+eRDxbFU4urB4DzKWFx1xp+Czaf49P/gFsVB
-HORU2l7VY+skR/pwbHYm3EExOvrKvpXBMi5FgZ+p7jEX8PfazBsHlBSSnOxQZ6ge
-Yw4GKdo3FPCNbXtRgEQjx/O5+jCl5oO0max6PTM0y41GKad0t2iALjKpkJHTBrNJ
-cVsAJ9AqwUVLbqDTRTQ/YTv57mVmNEHLLLvcXcQKawK4x8zrHVy1rluUQeV0TjeD
-G3PspWX4Rsg1s7zjsJaJykvkDU+5NhanFM/zNw/CltLSofHjjtG+ESlz8ZZqfzW1
-KNil7CzwGk6MCfr1orpu80OKUH6g3SF1Ex2IOVLLeJf/ZwQw6h3VI59FuGD8ad3V
-XEioZfvRwRgO4gZiBm4v
-=Nth7
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Apr_2014_12_57_59_+1000_2bWsHzvFS5IrcEcj--
+> 
+> >  5 files changed, 137 insertions(+), 96 deletions(-)
+> >  create mode 100644 arch/ia64/include/asm/acenv.h
+> >  create mode 100644 arch/x86/include/asm/acenv.h
+> >
+> > diff --git a/arch/ia64/include/asm/acenv.h b/arch/ia64/include/asm/acenv.h
+> > new file mode 100644
+> > index 0000000..e0896eb
+> > --- /dev/null
+> > +++ b/arch/ia64/include/asm/acenv.h
+> > @@ -0,0 +1,71 @@
+> > +/*
+> > + * IA64 specific ACPICA environments and implementation
+> > + *
+> > + * Copyright (C) 2014, Intel Corporation
+> > + *   Author: Lv Zheng <lv.zheng@intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef _ASM_IA64_ACENV_H
+> > +#define _ASM_IA64_ACENV_H
+> > +
+> > +#include <asm/intrinsics.h>
+> > +
+> > +#define COMPILER_DEPENDENT_INT64	long
+> > +#define COMPILER_DEPENDENT_UINT64	unsigned long
+> > +
+> > +/*
+> > + * Calling conventions:
+> > + *
+> > + * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+> > + * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+> > + * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+> > + * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+> > + */
+> > +#define ACPI_SYSTEM_XFACE
+> > +#define ACPI_EXTERNAL_XFACE
+> > +#define ACPI_INTERNAL_XFACE
+> > +#define ACPI_INTERNAL_VAR_XFACE
+> > +
+> > +/* Asm macros */
+> > +
+> > +#define ACPI_FLUSH_CPU_CACHE()
+> > +
+> > +#ifdef CONFIG_ACPI
+> > +
+> > +static inline int
+> > +ia64_acpi_acquire_global_lock(unsigned int *lock)
+> > +{
+> > +	unsigned int old, new, val;
+> > +	do {
+> > +		old = *lock;
+> > +		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
+> > +		val = ia64_cmpxchg4_acq(lock, new, old);
+> > +	} while (unlikely (val != old));
+> > +	return (new < 3) ? -1 : 0;
+> > +}
+> > +
+> > +static inline int
+> > +ia64_acpi_release_global_lock(unsigned int *lock)
+> > +{
+> > +	unsigned int old, new, val;
+> > +	do {
+> > +		old = *lock;
+> > +		new = old & ~0x3;
+> > +		val = ia64_cmpxchg4_acq(lock, new, old);
+> > +	} while (unlikely (val != old));
+> > +	return old & 0x1;
+> > +}
+> > +
+> > +#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
+> > +	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
+> > +
+> > +#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
+> > +	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
+> > +
+> > +#endif
+> > +
+> > +#endif /* _ASM_IA64_ACENV_H */
+> > diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+> > index d651102..b0ddcfd 100644
+> > --- a/arch/ia64/include/asm/acpi.h
+> > +++ b/arch/ia64/include/asm/acpi.h
+> > @@ -34,56 +34,6 @@
+> >  #include <linux/numa.h>
+> >  #include <asm/numa.h>
+> >
+> > -#define COMPILER_DEPENDENT_INT64	long
+> > -#define COMPILER_DEPENDENT_UINT64	unsigned long
+> > -
+> > -/*
+> > - * Calling conventions:
+> > - *
+> > - * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+> > - * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+> > - * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+> > - * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+> > - */
+> > -#define ACPI_SYSTEM_XFACE
+> > -#define ACPI_EXTERNAL_XFACE
+> > -#define ACPI_INTERNAL_XFACE
+> > -#define ACPI_INTERNAL_VAR_XFACE
+> > -
+> > -/* Asm macros */
+> > -
+> > -#define ACPI_FLUSH_CPU_CACHE()
+> > -
+> > -static inline int
+> > -ia64_acpi_acquire_global_lock (unsigned int *lock)
+> > -{
+> > -	unsigned int old, new, val;
+> > -	do {
+> > -		old = *lock;
+> > -		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
+> > -		val = ia64_cmpxchg4_acq(lock, new, old);
+> > -	} while (unlikely (val != old));
+> > -	return (new < 3) ? -1 : 0;
+> > -}
+> > -
+> > -static inline int
+> > -ia64_acpi_release_global_lock (unsigned int *lock)
+> > -{
+> > -	unsigned int old, new, val;
+> > -	do {
+> > -		old = *lock;
+> > -		new = old & ~0x3;
+> > -		val = ia64_cmpxchg4_acq(lock, new, old);
+> > -	} while (unlikely (val != old));
+> > -	return old & 0x1;
+> > -}
+> > -
+> > -#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
+> > -	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
+> > -
+> > -#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
+> > -	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
+> > -
+> >  #ifdef	CONFIG_ACPI
+> >  #define acpi_disabled 0	/* ACPI always enabled on IA64 */
+> >  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
+> > diff --git a/arch/x86/include/asm/acenv.h b/arch/x86/include/asm/acenv.h
+> > new file mode 100644
+> > index 0000000..6978584
+> > --- /dev/null
+> > +++ b/arch/x86/include/asm/acenv.h
+> > @@ -0,0 +1,65 @@
+> > +/*
+> > + * X86 specific ACPICA environments and implementation
+> > + *
+> > + * Copyright (C) 2014, Intel Corporation
+> > + *   Author: Lv Zheng <lv.zheng@intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef _ASM_X86_ACENV_H
+> > +#define _ASM_X86_ACENV_H
+> > +
+> > +#include <asm/special_insns.h>
+> > +
+> > +#define COMPILER_DEPENDENT_INT64   long long
+> > +#define COMPILER_DEPENDENT_UINT64  unsigned long long
+> > +
+> > +/*
+> > + * Calling conventions:
+> > + *
+> > + * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+> > + * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+> > + * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+> > + * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+> > + */
+> > +#define ACPI_SYSTEM_XFACE
+> > +#define ACPI_EXTERNAL_XFACE
+> > +#define ACPI_INTERNAL_XFACE
+> > +#define ACPI_INTERNAL_VAR_XFACE
+> > +
+> > +/* Asm macros */
+> > +
+> > +#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
+> > +
+> > +#ifdef CONFIG_ACPI
+> > +
+> > +int __acpi_acquire_global_lock(unsigned int *lock);
+> > +int __acpi_release_global_lock(unsigned int *lock);
+> > +
+> > +#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
+> > +	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
+> > +
+> > +#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
+> > +	((Acq) = __acpi_release_global_lock(&facs->global_lock))
+> > +
+> > +/*
+> > + * Math helper asm macros
+> > + */
+> > +#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
+> > +	asm("divl %2;"				     \
+> > +	    : "=a"(q32), "=d"(r32)		     \
+> > +	    : "r"(d32),				     \
+> > +	     "0"(n_lo), "1"(n_hi))
+> > +
+> > +#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
+> > +	asm("shrl   $1,%2	;"	\
+> > +	    "rcrl   $1,%3;"		\
+> > +	    : "=r"(n_hi), "=r"(n_lo)	\
+> > +	    : "0"(n_hi), "1"(n_lo))
+> > +
+> > +#endif
+> > +
+> > +#endif /* _ASM_X86_ACENV_H */
+> > diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+> > index c8c1e70..e06225e 100644
+> > --- a/arch/x86/include/asm/acpi.h
+> > +++ b/arch/x86/include/asm/acpi.h
+> > @@ -32,51 +32,6 @@
+> >  #include <asm/mpspec.h>
+> >  #include <asm/realmode.h>
+> >
+> > -#define COMPILER_DEPENDENT_INT64   long long
+> > -#define COMPILER_DEPENDENT_UINT64  unsigned long long
+> > -
+> > -/*
+> > - * Calling conventions:
+> > - *
+> > - * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+> > - * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+> > - * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+> > - * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+> > - */
+> > -#define ACPI_SYSTEM_XFACE
+> > -#define ACPI_EXTERNAL_XFACE
+> > -#define ACPI_INTERNAL_XFACE
+> > -#define ACPI_INTERNAL_VAR_XFACE
+> > -
+> > -/* Asm macros */
+> > -
+> > -#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
+> > -
+> > -int __acpi_acquire_global_lock(unsigned int *lock);
+> > -int __acpi_release_global_lock(unsigned int *lock);
+> > -
+> > -#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
+> > -	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
+> > -
+> > -#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
+> > -	((Acq) = __acpi_release_global_lock(&facs->global_lock))
+> > -
+> > -/*
+> > - * Math helper asm macros
+> > - */
+> > -#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
+> > -	asm("divl %2;"				     \
+> > -	    : "=a"(q32), "=d"(r32)		     \
+> > -	    : "r"(d32),				     \
+> > -	     "0"(n_lo), "1"(n_hi))
+> > -
+> > -
+> > -#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
+> > -	asm("shrl   $1,%2	;"	\
+> > -	    "rcrl   $1,%3;"		\
+> > -	    : "=r"(n_hi), "=r"(n_lo)	\
+> > -	    : "0"(n_hi), "1"(n_lo))
+> > -
+> >  #ifdef CONFIG_ACPI
+> >  extern int acpi_lapic;
+> >  extern int acpi_ioapic;
+> > diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
+> > index a20f051..99d0546 100644
+> > --- a/include/acpi/platform/aclinux.h
+> > +++ b/include/acpi/platform/aclinux.h
+> > @@ -71,7 +71,7 @@
+> >  #ifdef EXPORT_ACPI_INTERFACES
+> >  #include <linux/export.h>
+> >  #endif
+> > -#include <asm/acpi.h>
+> > +#include <asm/acenv.h>
+> >
+> >  /* Host-dependent types and defines for in-kernel ACPICA */
+> >
+> >
+> 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
