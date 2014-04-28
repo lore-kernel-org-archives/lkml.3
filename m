@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335AbaD1Ddf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 23:33:35 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:20166 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218AbaD1Ddd (ORCPT
+	id S1753428AbaD1Des (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 23:34:48 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:45373 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508AbaD1Der (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 23:33:33 -0400
-Message-ID: <535DCBFC.4000404@huawei.com>
-Date: Mon, 28 Apr 2014 11:33:16 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Sun, 27 Apr 2014 23:34:47 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hannes@cmpxchg.org>, <mhocko@suse.cz>, <nasa4836@gmail.com>
-Subject: Re: [PATCH 6/6] cgroup, memcg: implement css->id and convert css_from_id()
- to use it
-References: <1398373333-1521-1-git-send-email-tj@kernel.org> <1398373333-1521-7-git-send-email-tj@kernel.org>
-In-Reply-To: <1398373333-1521-7-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [111.240.65.69]
+In-Reply-To: <alpine.DEB.2.02.1404272031210.6261@ionos.tec.linutronix.de>
+References: <1398611627.24297.1.camel@phoenix>
+	<alpine.DEB.2.02.1404272031210.6261@ionos.tec.linutronix.de>
+Date: Mon, 28 Apr 2014 11:34:46 +0800
+Message-ID: <CAFRkauCmiDr+NugoVtvBaNNAaHfxVuwN_8qx7DhJK_q8A0KK8A@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: vt8500: Switch to a simple write clear for
+ Interrupt Status Register
+From: Axel Lin <axel.lin@ingics.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/25 5:02, Tejun Heo wrote:
-> Until now, cgroup->id has been used to identify all the associated
-> csses and css_from_id() takes cgroup ID and returns the matching css
-> by looking up the cgroup and then dereferencing the css associated
-> with it; however, now that the lifetimes of cgroup and css are
-> separate, this is incorrect and breaks on the unified hierarchy when a
-> controller is disabled and enabled back again before the previous
-> instance is released.
-> 
-> This patch adds css->id which is a subsystem-unique ID and converts
-> css_from_id() to look up by the new css->id instead.  memcg is the
-> only user of css_from_id() and also converted to use css->id instead.
-> 
+2014-04-28 2:34 GMT+08:00 Thomas Gleixner <tglx@linutronix.de>:
+> On Sun, 27 Apr 2014, Axel Lin wrote:
+>
+>> According to the datasheet, the attribute of Interrupt Status Register is RW0S,
+>> which means:
+>>       Software can read the register.
+>>       Software can also "write 1 to clear". "write 0" has no effect.
+>> Thus switch the read/modify/write to a simple write clear.
+>>
+>> A read/modify/write does not make sense for an irq status register like this,
+>> since otherwise a read/modify/write can race with a device raising an interrupt
+>> and then clear the pending bit unintentionally.
+>
+> That's right, but what you are not seeing is that this is the mask
+> callback which is supposed to mask the interrupt at the interrupt
+> controller level.
+>
+> I have a hard time to see (even without reading the data sheet) how
+> clearing a potentially pending interrupt in the status register will
+> mask the interrupt line.
 
-netprio_cgroup also needs to be updated.
+ok, I'll send a v2 to update the commit log.
+Thanks for the review.
 
-> For traditional hierarchies, this shouldn't make any functional
-> difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  include/linux/cgroup.h |  9 ++++++++
->  kernel/cgroup.c        | 59 ++++++++++++++++++++++++++++++++------------------
->  mm/memcontrol.c        |  4 ++--
->  3 files changed, 49 insertions(+), 23 deletions(-)
-> 
-
-
+Regards,
+Axel
