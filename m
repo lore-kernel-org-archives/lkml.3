@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaD1Kgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:36:39 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:56574 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362AbaD1Kgg (ORCPT
+	id S1755250AbaD1Ki0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:38:26 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:63775 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877AbaD1KiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:36:36 -0400
-Date: Mon, 28 Apr 2014 11:36:29 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: sameo@linux.intel.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: twl6040: Optional clk32k clock handling
-Message-ID: <20140428103629.GI21279@lee--X1>
-References: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
+	Mon, 28 Apr 2014 06:38:22 -0400
+Message-ID: <535E2F96.908@linaro.org>
+Date: Mon, 28 Apr 2014 16:08:14 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+CC: kgene.kim@samsung.com, prathyush.k@samsung.com, grundler@chromium.org,
+        joro@8bytes.org, tomasz.figa@gmail.com, joshi@samsung.com,
+        sachin.kamat@linaro.org, s.nawrocki@samsung.com,
+        Varun.Sethi@freescale.com, a.motakis@virtualopensystems.com,
+        pullip.cho@samsung.com, t.figa@samsung.com, rahul.sharma@samsung.com
+Subject: Re: [PATCH v12 18/31] iommu/exynos: allow having multiple System
+ MMUs for a master H/W
+References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <1398584283-22846-19-git-send-email-shaik.ameer@samsung.com>
+In-Reply-To: <1398584283-22846-19-git-send-email-shaik.ameer@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In certain boards the source for the clk32k clock can be gated. In these
-> boards the clk32k clock can be provided to the driver and it is going to be
-> enabled/disabled when it is needed.
-> If the clk32k clock is not provided the driver will assume that it is always
-> running.
+On 04/27/2014 01:07 PM, Shaik Ameer Basha wrote:
+> From: Cho KyongHo <pullip.cho@samsung.com>
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  Documentation/devicetree/bindings/mfd/twl6040.txt |  2 ++
->  drivers/mfd/twl6040.c                             | 10 ++++++++++
->  include/linux/mfd/twl6040.h                       |  2 ++
->  3 files changed, 14 insertions(+)
+> Some master device descriptor like fimc-is which is an abstraction
+> of very complex H/W may have multiple System MMUs. For those devices,
+> the design of the link between System MMU and its master H/W is needed
+> to be reconsidered.
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
-> index 0f5dd709d752..a41157b5d930 100644
-> --- a/Documentation/devicetree/bindings/mfd/twl6040.txt
-> +++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
-> @@ -19,6 +19,8 @@ Required properties:
->  
->  Optional properties, nodes:
->  - enable-active-high: To power on the twl6040 during boot.
-> +- clocks: phandle to the clk32k clock provider
-> +- clock-names: Must be "clk32k"
->  
->  Vibra functionality
->  Required properties:
-> diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-> index 2e6504a8e1e3..12b314ea48dc 100644
-> --- a/drivers/mfd/twl6040.c
-> +++ b/drivers/mfd/twl6040.c
-> @@ -291,6 +291,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
->  		if (twl6040->power_count++)
->  			goto out;
->  
-> +		clk_prepare_enable(twl6040->clk32k);
-> +
->  		/* Allow writes to the chip */
->  		regcache_cache_only(twl6040->regmap, false);
->  
-> @@ -346,6 +348,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
->  
->  		twl6040->sysclk = 0;
->  		twl6040->mclk = 0;
-> +
-> +		clk_disable_unprepare(twl6040->clk32k);
->  	}
->  
->  out:
-> @@ -644,6 +648,12 @@ static int twl6040_probe(struct i2c_client *client,
->  
->  	i2c_set_clientdata(client, twl6040);
->  
-> +	twl6040->clk32k = devm_clk_get(&client->dev, "clk32k");
-> +	if (IS_ERR(twl6040->clk32k)) {
-> +		dev_info(&client->dev, "clk32k is not handled\n");
-> +		twl6040->clk32k = NULL;
+> A link structure, sysmmu_list_data is introduced that provides a link
+> to master H/W and that has a pointer to the device descriptor of a
+> System MMU. Given a device descriptor of a master H/W, it is possible
+> to traverse all System MMUs that must be controlled along with the
+> master H/W.
+> 
+> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
 
-So what happens if you pass a NULL clk reference to clk_prepare_enable()?
+Since you are posting the patches, you should also add your
+Signed-of-by.
+
+> ---
+>  drivers/iommu/exynos-iommu.c |  545 ++++++++++++++++++++++++++----------------
+>  1 file changed, 335 insertions(+), 210 deletions(-)
+> 
+> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> index fefedec3..c2e6365 100755
+> --- a/drivers/iommu/exynos-iommu.c
+> +++ b/drivers/iommu/exynos-iommu.c
+
+[ ... ]
+
+>  static int sysmmu_pm_genpd_save_state(struct device *dev)
+> @@ -1215,7 +1349,7 @@ static int sysmmu_pm_genpd_save_state(struct device *dev)
+>  		ret = cb(dev);
+>  
+>  	if (ret == 0)
+> -		sysmmu_save_state(client->sysmmu);
+> +		sysmmu_save_state(dev);
+>  
+
+client is now unused, remove the variable.
+
+>  	return ret;
+>  }
+> @@ -1238,13 +1372,13 @@ static int sysmmu_pm_genpd_restore_state(struct device *dev)
+>  	if (!cb && dev->driver && dev->driver->pm)
+>  		cb = dev->driver->pm->runtime_resume;
+>  
+> -	sysmmu_restore_state(client->sysmmu);
+> +	sysmmu_restore_state(dev);
+>  
+>  	if (cb)
+>  		ret = cb(dev);
+>  
+>  	if (ret)
+> -		sysmmu_save_state(client->sysmmu);
+> +		sysmmu_restore_state(dev);
+>  
+
+client is now unused, remove the variable.
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Tushar Behera
