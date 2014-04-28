@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936AbaD1CiA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:38:00 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:47531 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565AbaD1Ch6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:37:58 -0400
-From: Shan Hai <shan.hai@windriver.com>
-To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/1] ftrace/ring_buffer: reset reader page after consuming read
-Date: Mon, 28 Apr 2014 10:37:39 +0800
-Message-ID: <1398652660-4560-1-git-send-email-shan.hai@windriver.com>
-X-Mailer: git-send-email 1.7.0.5
+	id S1752631AbaD1CpN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 22:45:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276AbaD1CpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 22:45:11 -0400
+Date: Mon, 28 Apr 2014 10:19:15 +0800
+From: Baoquan He <bhe@redhat.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: Re: [PATCH] acpi: try to trust cpu_index from x86_cpu_to_apicid
+Message-ID: <20140428021915.GA1625@dhcp-16-105.nay.redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com>
+ <11963454.DotWb00OAa@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11963454.DotWb00OAa@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/21/14 at 10:51pm, Rafael J. Wysocki wrote:
+> On Tuesday, April 15, 2014 07:55:54 AM Baoquan He wrote:
+> > In smp with multi cpus, when enter into kdump kernel with only 1 cpu,
+> > a warning message is printed out:
+> > 
+> > acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor
+> > 
+> > In this case kdump kernel use the same ACPI tables as 1st kernel,
+> > means lapic information is got from MADT. The acpi_id related to
+> > this cpu index and lapic_id may not be 0, so the code to assign
+> > value to cpu_index is not correct in this case per cpu0_initialized.
+> > cpu index stored in x86_cpu_to_apicid need be respected.
+> > 
+> > Now fix it in this patch per boot_cpu_physical_apicid. When cpu index
+> > related to boot_cpu_physical_apicid is not stored in x86_cpu_to_apicid,
+> > then we can say this is UP system running SMP kernel with no LAPIC in MADT
+> 
+> Why don't you fix the warning message instead to cover this case too? 
+> 
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  drivers/acpi/acpi_processor.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> > index c29c2c3..1ae460c 100644
+> > --- a/drivers/acpi/acpi_processor.c
+> > +++ b/drivers/acpi/acpi_processor.c
+> > @@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+> >  	pr->apic_id = apic_id;
+> >  
+> >  	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> > -	if (!cpu0_initialized) {
+> > +	if (!cpu0_initialized && (boot_cpu_physical_apicid == pr->apic_id)) {
 
-Reading from the 'trace' file after force stopping (by signal) consuming
-read reveals there are stale trace entries in the output, this patch fixes
-the bug by resetting read/write pointers of reader page after the consuming
-read is stopped by force.
+Self NACK this patch.
 
-The issue can be reproduced as below:
+Since this check should be limited on no LAPIC in MADT, so acpi_lapic is
+better for this. Will repost after test.
 
-echo 0 > tracing_on
-echo function > current_tracer
-echo 1 > tracing_on
+Hi Rafael,
 
-1, read the trace file as normal
-        cat trace | head -n 20
-        ...
-        cat trace | head -n 20
-
-        The trace entries are changing at the head of the output.
-        NOTE:
-        If it's not changing at the start please repeat the reading
-        several times because the tracer need time to fill up the
-        whole buffer.
-
-2, read the trace file after stopping 'cat trace_pipe' by Ctrl-C
-        cat trace_pipe
-        Ctrl-C
-        cat trace | head -n 200
-        ...
-        cat trace | head -n 200
-
-        The trace entries at the head of the output stop changing,
-        followed by changing trace entries.
-        NOTE:
-        Please carefully check the time stamps of the trace entries,
-        the time stamps of some of them at the head stop changing
-        in the consecutive read.
-
-        The results of test 1 and 2 are not consistent with respect to the
-        updating of trace buffers, some part of the trace buffers are
-        not updated in the test 2 while all of them are updated in the
-        test 1.
-
-        And the result of test 1 is correct because the trace entries
-        supposed to be changed for the reason the tracer works under
-        overwrite mode by default.
+Do you have any suggestion on this fix?
 
 Thanks
-Shan Hai
+Baoquan
 
