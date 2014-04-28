@@ -1,130 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaD1NMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:12:30 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:38100 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747AbaD1NM2 (ORCPT
+	id S1755988AbaD1NPE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:15:04 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:50519 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757AbaD1NPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:12:28 -0400
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, patches@linaro.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM64
-Date: Mon, 28 Apr 2014 15:12:10 +0200
-Message-Id: <1398690730-5454-1-git-send-email-jean.pihet@linaro.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <CAFrcx1nfkDWTu9vF+a7UGjd1fzHpXS44pzqKLZS9ej7KJwqkOg@mail.gmail.com>
-References: <CAFrcx1nfkDWTu9vF+a7UGjd1fzHpXS44pzqKLZS9ej7KJwqkOg@mail.gmail.com>
+	Mon, 28 Apr 2014 09:15:00 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-3a-535e545241d3
+Message-id: <1398690896.12945.2.camel@AMDC1943>
+Subject: Re: [PATCH 1/2] mfd: max14577: Fix IRQ handling after resume if this
+ is not a wakeup source
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Mon, 28 Apr 2014 15:14:56 +0200
+In-reply-to: <20140428121053.GA21279@lee--X1>
+References: <1398175162-20244-1-git-send-email-k.kozlowski@samsung.com>
+ <20140428121053.GA21279@lee--X1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t/xy7pBIXHBBi3HxCw2zljPanG26Q27
+	xf2vRxktLu+aw2ax9shddovT3awWF1d8YXJg97hzbQ+bx7yTgR59W1YxenzeJBfAEsVlk5Ka
+	k1mWWqRvl8CV8Xf1SfaCfq6KhtmH2BoY/7F3MXJySAiYSNz9fwrKFpO4cG89G4gtJLCUUeLG
+	FT4I+zOjxNNLjiA2r4C+xOk/W5hAbGGBNImGt1vA6tkEjCU2L18CZHNwiAioSJx7Y97FyMXB
+	LPCPUWLVoa3MIDUsAqoS7z6+AtvFKaAr0d/6nAVifpbErDcfGEFsZgF1iUnzFjFD3KMsMW//
+	MSaIvYISPybfY4GokZfYvOYt8wRGgVlIWmYhKZuFpGwBI/MqRtHU0uSC4qT0XEO94sTc4tK8
+	dL3k/NxNjJCg/rKDcfExq0OMAhyMSjy8KxRigoVYE8uKK3MPMUpwMCuJ8E53jQsW4k1JrKxK
+	LcqPLyrNSS0+xMjEwSnVwKidYe5+/todJtWi+HWqn6xap/TJ7BaZtXZ1VaHNponCyc3n1JZO
+	TK65Hmzk/LTrZeUTqUsGzTJvJlxU9X/PaHLC/7zk2VsiMyLy13iYsV37cj/GsqzOr+pEScaC
+	w/t+r+1eoNGtIrVrBd+6wHlusyyfLIntXS5ve/NCq+W349lyniwnFSwD5yixFGckGmoxFxUn
+	AgB/evHQSAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing perf_regs_load function, which is going
-to be used for dwarf unwind test in following patches.
+On pon, 2014-04-28 at 13:10 +0100, Lee Jones wrote:
+> > During suspend the IRQ should be disabled even if this is not a wakeup
+> > source. This is a proper way of fixing the IRQ handling issue during
+> > resume (IRQ handler fails because I2C bus did not resume yet).
+> > 
+> > When device is suspended and max14577 interrupt is signaled the irq chip
+> > will try to handle it regardless of wakeup source. Device could be woken
+> > up by different IRQ but still the IRQ handler will try to read the
+> > registers over I2C bus and fail because I2C bus won't be ready yet:
+> > 	max14577 2-0025: Failed to read IRQ status: -5
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/mfd/max14577.c | 29 +++++++++++++----------------
+> >  1 file changed, 13 insertions(+), 16 deletions(-)
+> 
+> It's pretty worrying that these two patches are so alike and they
+> actually change different files. Is there any way we can unify more of
+> the code?
+> 
+> Patch applied, thanks.
 
-It takes single argument as a pointer to the regs dump
-buffer and populates it with current registers values, as
-expected by the perf built-in unwinding test.
+This whole problem happens also on other MAXIM devices on our boards so
+actually the real issue could sit in I2C bus controller or S3C PM
+suspend/resume code. This is however the easiest fix for now...
 
-Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Steve Capper <steve.capper@linaro.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/arch/arm64/Makefile            |  1 +
- tools/perf/arch/arm64/include/perf_regs.h |  2 ++
- tools/perf/arch/arm64/tests/regs_load.S   | 40 +++++++++++++++++++++++++++++++
- 3 files changed, 43 insertions(+)
- create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
+Thanks for applying the patches.
 
-diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
-index 67e9b3d..9b8f87e 100644
---- a/tools/perf/arch/arm64/Makefile
-+++ b/tools/perf/arch/arm64/Makefile
-@@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
- ifndef NO_LIBUNWIND
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
-+LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
- endif
-diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-index 2359546..1e052f1 100644
---- a/tools/perf/arch/arm64/include/perf_regs.h
-+++ b/tools/perf/arch/arm64/include/perf_regs.h
-@@ -9,6 +9,8 @@
- #define PERF_REG_IP	PERF_REG_ARM64_PC
- #define PERF_REG_SP	PERF_REG_ARM64_SP
- 
-+void perf_regs_load(u64 *regs);
-+
- static inline const char *perf_reg_name(int id)
- {
- 	switch (id) {
-diff --git a/tools/perf/arch/arm64/tests/regs_load.S b/tools/perf/arch/arm64/tests/regs_load.S
-new file mode 100644
-index 0000000..40b8b99
---- /dev/null
-+++ b/tools/perf/arch/arm64/tests/regs_load.S
-@@ -0,0 +1,40 @@
-+#include <linux/linkage.h>
-+
-+/*
-+ * Implementation of void perf_regs_load(u64 *regs);
-+ *
-+ * This functions fills in the 'regs' buffer from the actual registers values,
-+ * in the way the perf built-in unwinding test expects them, e.g. an address
-+ * within the caller:
-+ * - the PC at the time at the call to this function. Since this function
-+ *   is called using a bl instruction, the PC value is taken from LR,
-+ * - the current SP (not touched by this function),
-+ * - the current value of LR is merely retrieved and stored because the
-+ *   value before the call to this function is unknown at this time; it will
-+ *   be unwound from the dwarf information in unwind__get_entries.
-+ */
-+
-+.text
-+.type perf_regs_load,%function
-+ENTRY(perf_regs_load)
-+	stp x0,  x1,  [x0], #16	// store x0..x29
-+	stp x2,  x3,  [x0], #16
-+	stp x4,  x5,  [x0], #16
-+	stp x6,  x7,  [x0], #16
-+	stp x8,  x9,  [x0], #16
-+	stp x10, x11, [x0], #16
-+	stp x12, x13, [x0], #16
-+	stp x14, x15, [x0], #16
-+	stp x16, x17, [x0], #16
-+	stp x18, x19, [x0], #16
-+	stp x20, x21, [x0], #16
-+	stp x22, x23, [x0], #16
-+	stp x24, x25, [x0], #16
-+	stp x26, x27, [x0], #16
-+	stp x28, x29, [x0], #16
-+	mov x1,  sp
-+	stp x30, x1,  [x0], #16	// store lr and sp
-+	str x30, [x0]		// store lr as the PC in order to skip the call
-+				//  to this function
-+	ret
-+ENDPROC(perf_regs_load)
--- 
-1.7.11.7
+Best regards,
+Krzysztof
 
