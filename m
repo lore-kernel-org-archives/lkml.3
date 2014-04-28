@@ -1,39 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439AbaD1OPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:15:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932358AbaD1OPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:15:45 -0400
-Date: Mon, 28 Apr 2014 16:15:33 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] KVM: async_pf: use_mm/mm_users fixes
-Message-ID: <20140428141532.GD10488@redhat.com>
-References: <20140421132543.GA13594@redhat.com>
- <535E361D.3050902@redhat.com>
+	id S1756200AbaD1OSO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:18:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:33908 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752663AbaD1OSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:18:09 -0400
+Date: Mon, 28 Apr 2014 10:18:05 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140428101805.75032f45@gandalf.local.home>
+In-Reply-To: <1398676186.30930.49.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	<1397918766.5436.16.camel@marge.simpson.net>
+	<1398411635.11930.45.camel@marge.simpson.net>
+	<1398501491.12941.5.camel@marge.simpson.net>
+	<1398520699.28726.22.camel@marge.simpson.net>
+	<1398661784.30930.33.camel@marge.simpson.net>
+	<1398676186.30930.49.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535E361D.3050902@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 01:06:05PM +0200, Paolo Bonzini wrote:
-> Patch 1 will be for 3.16 only, I'd like a review from Marcelo or Andrea 
-> though (that's "KVM: async_pf: kill the unnecessary use_mm/unuse_mm 
-> async_pf_execute()" for easier googling).
+On Mon, 28 Apr 2014 11:09:46 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+ 
+> migrate_disable-pushd-down-in-atomic_dec_and_spin_lo.patch
+> 
+> bug: migrate_disable() after blocking is too late.
+> 
+> @@ -1028,12 +1028,12 @@ int atomic_dec_and_spin_lock(atomic_t *a
+>         /* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
+>         if (atomic_add_unless(atomic, -1, 1))
+>                 return 0;
+> -       migrate_disable();
+>         rt_spin_lock(lock);
+> -       if (atomic_dec_and_test(atomic))
+> +       if (atomic_dec_and_test(atomic)){
+> +               migrate_disable();
 
-Patch 1:
+Makes sense, as the CPU can go offline right after the lock is grabbed
+and before the migrate_disable() is called.
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Seems that migrate_disable() must be called before taking the lock as
+it is done in every other location.
 
-I think current->NULL would be better too.
+-- Steve
+
+
+>                 return 1;
+> +       }
+>         rt_spin_unlock(lock);
+> -       migrate_enable();
+>         return 0;
+>  }
+>  EXPORT_SYMBOL(atomic_dec_and_spin_lock);
+> 
+> read_lock-migrate_disable-pushdown-to-rt_read_lock.patch
+> 
+> bug: ditto.
+> 
+> @@ -244,8 +246,10 @@ void __lockfunc rt_read_lock(rwlock_t *r
+>         /*
+>          * recursive read locks succeed when current owns the lock
+>          */
+> -       if (rt_mutex_owner(lock) != current)
+> +       if (rt_mutex_owner(lock) != current) {
+>                 __rt_spin_lock(lock);
+> +               migrate_disable();
+> +       }
+>         rwlock->read_depth++;
+>  }
+> 
+> Moving that migrate_disable() up will likely fix my hotplug troubles.
+> I'll find out when I get back from physical torture (therapy) session.
+> 
+> -Mike
 
