@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaD1HT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 03:19:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51912 "EHLO extserv.mm-sol.com"
+	id S1753724AbaD1HU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 03:20:26 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51987 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426AbaD1HT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 03:19:27 -0400
-Message-ID: <1398669512.5214.11.camel@iivanov-dev>
-Subject: Re: [PATCH v7 05/20] usb: phy: msm: Migrate to Managed Device
- Resource allocation
+	id S1753423AbaD1HUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 03:20:16 -0400
+Message-ID: <1398669562.5214.12.camel@iivanov-dev>
+Subject: Re: [PATCH v7 20/20] usb: phy: msm: Use usb_add_phy_dev() to
+ register device
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com
-Cc: Fabio Estevam <festevam@gmail.com>,
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org
-Date: Mon, 28 Apr 2014 10:18:32 +0300
-In-Reply-To: <20140425205331.GM29632@saruman.home>
+Date: Mon, 28 Apr 2014 10:19:22 +0300
+In-Reply-To: <20140425205346.GN29632@saruman.home>
 References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
-	 <1398354495-20782-6-git-send-email-iivanov@mm-sol.com>
-	 <CAOMZO5COKimLjC0oYqgwSaEvSBUpoy9aP_P-ScU+ozh0KpsCoA@mail.gmail.com>
-	 <20140425205331.GM29632@saruman.home>
+	 <1398354495-20782-21-git-send-email-iivanov@mm-sol.com>
+	 <53594490.7040205@cogentembedded.com> <20140425205346.GN29632@saruman.home>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
 Mime-Version: 1.0
@@ -31,40 +29,24 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2014-04-25 at 15:53 -0500, Felipe Balbi wrote:
-> On Thu, Apr 24, 2014 at 01:49:38PM -0300, Fabio Estevam wrote:
-> > On Thu, Apr 24, 2014 at 12:48 PM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> On Thu, Apr 24, 2014 at 09:06:24PM +0400, Sergei Shtylyov wrote:
+> > Hello.
 > > 
-> > > +       motg->vddcx = devm_regulator_get(motg->phy.dev, "HSUSB_VDDCX");
-> > > +       if (IS_ERR(motg->vddcx)) {
-> > > +               dev_err(motg->phy.dev, "unable to get hsusb vddcx\n");
-> > > +               return PTR_ERR(motg->vddcx);
-> > > +       }
-> > > +
-> > > +       motg->v3p3 = devm_regulator_get(motg->phy.dev, "HSUSB_3p3");
-> > > +       if (IS_ERR(motg->v3p3)) {
-> > > +               dev_err(motg->phy.dev, "unable to get hsusb 3p3\n");
-> > > +               return PTR_ERR(motg->v3p3);
-> > > +       }
-> > > +
-> > > +       motg->v1p8 = devm_regulator_get(motg->phy.dev, "HSUSB_1p8");
-> > > +       if (IS_ERR(motg->v1p8)) {
-> > > +               dev_err(motg->phy.dev, "unable to get hsusb 1p8\n");
-> > > +               return PTR_ERR(motg->v1p8);
-> > > +       }
+> > On 04/24/2014 07:48 PM, Ivan T. Ivanov wrote:
 > > 
-> > It seems that calling devm_regulator_bulk_get() here would simplify
-> > the code here.
+> > >From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > >They could be more than one USB2.0 PHY's on the platform.
+> > 
+> >    s/They/There/
+> > 
+> > >This will allow all of them to be registred successfuly.
+> > 
+> >    s/registred successfuly/registered successfully/
 
-Sure. 
-
-> 
-> any comments here ?? Should I expect a new version ?
-
-
-Will fix rest of the comments and send updated patch set.
+Ouch. will fix it.
 
 Regards,
 Ivan
-> 
 
 
