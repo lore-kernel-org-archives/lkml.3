@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039AbaD1Uag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:30:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16360 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755591AbaD1Uad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:30:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
-   d="scan'208";a="502494902"
-Message-ID: <535EBA4B.5090305@intel.com>
-Date: Mon, 28 Apr 2014 22:30:03 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757074AbaD1UbL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:31:11 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35153 "EHLO
+	alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757059AbaD1UbK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 16:31:10 -0400
+X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 16:31:09 EDT
+Subject: [PATCH] pci: Allow very large resource windows
+To: bhelgaas@google.com, linux-kernel@vger.kernel.org
+From: Alan <gnomes@lxorguk.ukuu.org.uk>
+Date: Mon, 28 Apr 2014 21:23:35 +0100
+Message-ID: <20140428202321.8753.31852.stgit@alan.etchedpixels.co.uk>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v2 3/5] ACPICA: Add <asm/acenv.h> to remove mis-ordered
- inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
-References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com> <522ac0c3a52f1697d75363cc808a213773dca295.1398232409.git.lv.zheng@intel.com> <1469560.3p9s15HIYZ@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E880255865E@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880255865E@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/2014 5:02 AM, Zheng, Lv wrote:
-> Hi, Rafael
->
->> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
->> Sent: Monday, April 28, 2014 5:37 AM
->> To: Zheng, Lv
->>
->> On Wednesday, April 23, 2014 02:54:06 PM Lv Zheng wrote:
->>> There is a mis-order inclusion for <asm/acpi.h>.
->>>
->>> As we will enforce including <linux/acpi.h> for all Linux ACPI users, we
->>> can find the inclusion order is as follows:
->>>
->>> <linux/acpi.h>
->>>    <acpi/acpi.h>
->>>     <acpi/platform/acenv.h>
->>>      (acenv.h before including aclinux.h)
->>>      <acpi/platform/aclinux.h>
->>> ...........................................................................
->>>       (aclinux.h before including asm/acpi.h)
->>>       <asm/acpi.h>                             @Redundant@
->>>        (ACPICA specific stuff)
->>> ...........................................................................
->>> ...........................................................................
->>>        (Linux ACPI specific stuff) ? - - - - - - - - - - - - +
->>>       (aclinux.h after including asm/acpi.h)   @Invisible@   |
->>>      (acenv.h after including aclinux.h)       @Invisible@   |
->>>     other ACPICA headers                       @Invisible@   |
->>> ............................................................|..............
->>>    <acpi/acpi_bus.h>                                         |
->>>    <acpi/acpi_drivers.h>                                     |
->>>    <asm/acpi.h> (Excluded)                                   |
->>>     (Linux ACPI specific stuff) ! <- - - - - - - - - - - - - +
->>>
->>> NOTE that, in ACPICA, <acpi/platform/acenv.h> is more like Kconfig
->>> generated <generated/autoconf.h> for Linux, it is meant to be included
->>> before including any ACPICA code.
->>>
->>> In the above figure, there is a question mark for "Linux ACPI specific
->>> stuff" in <asm/acpi.h> which should be included after including all other
->>> ACPICA header files.  Thus they really need to be moved to the position
->>> marked with exclaimation mark or the definitions in the blocks marked with
->>> "@Invisible@" will be invisible to such architecture specific "Linux ACPI
->>> specific stuff" header blocks.  This leaves 2 issues:
->>> 1. All environmental definitions in these blocks should have a copy in the
->>>     area marked with "@Redundant@" if they are required by the "Linux ACPI
->>>     specific stuff".
->>> 2. We cannot use any ACPICA defined types in <asm/acpi.h>.
->>>
->>> This patch splits architecture specific ACPICA stuff from <asm/acpi.h> to
->>> fix this issue.
->>>
->>> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
->>> Cc: Tony Luck <tony.luck@intel.com>
->>> Cc: Fenghua Yu <fenghua.yu@intel.com>
->>> Cc: linux-ia64@vger.kernel.org
->>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>> Cc: Ingo Molnar <mingo@redhat.com>
->>> Cc: "H. Peter Anvin" <hpa@zytor.com>
->>> Cc: x86@kernel.org
->>> ---
->>>   arch/ia64/include/asm/acenv.h   |   71 +++++++++++++++++++++++++++++++++++++++
->>>   arch/ia64/include/asm/acpi.h    |   50 ---------------------------
->>>   arch/x86/include/asm/acenv.h    |   65 +++++++++++++++++++++++++++++++++++
->>>   arch/x86/include/asm/acpi.h     |   45 -------------------------
->>>   include/acpi/platform/aclinux.h |    2 +-
->> Please rename the files first (in a separate patch) and then modify the
->> renamed ones.  That will make changes much easier to follow.
-> This patch doesn't provide a rename.
-> Currently, <asm/acpi.h> includes:
-> 1. arch specific ACPI stuff
-> 2. arch specific ACPICA stuff
-> This patch moves "2" to a separate file <asm/acenv.h>, thus no renaming happens here.
+From: Alan <alan@linux.intel.com>
 
-Ah, I overlooked that, sorry.
+This is needed for some of the Xeon Phi type systems.
 
-Which I might not do if the changelog said what the patch was really doing.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/pci/setup-bus.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 138bdd6..5679ec2 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -921,7 +921,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ {
+ 	struct pci_dev *dev;
+ 	resource_size_t min_align, align, size, size0, size1;
+-	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
++	resource_size_t aligns[14];	/* Alignments from 1Mb to 8Gb */
+ 	int order, max_order;
+ 	struct resource *b_res = find_free_bus_resource(bus, type);
+ 	unsigned int mem64_mask = 0;
+@@ -960,7 +960,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 			/* For bridges size != alignment */
+ 			align = pci_resource_alignment(dev, r);
+ 			order = __ffs(align) - 20;
+-			if (order > 11) {
++			if (order > 13) {
+ 				dev_warn(&dev->dev, "disabling BAR %d: %pR "
+ 					 "(bad alignment %#llx)\n", i, r,
+ 					 (unsigned long long) align);
 
