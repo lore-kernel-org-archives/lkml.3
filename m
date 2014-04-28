@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaD0X7q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 19:59:46 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:59171 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321AbaD0X7p (ORCPT
+	id S1751872AbaD1AF3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 20:05:29 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:49160 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaD1AF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 19:59:45 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/2] perf tests: Factor out fake_setup_machine()
-References: <1398396494-12811-1-git-send-email-namhyung@kernel.org>
-	<20140425122734.GD4116@krava.brq.redhat.com>
-Date: Mon, 28 Apr 2014 08:59:42 +0900
-In-Reply-To: <20140425122734.GD4116@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Fri, 25 Apr 2014 14:27:34 +0200")
-Message-ID: <871twiqq6p.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 27 Apr 2014 20:05:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140426155315.GA4745@acer>
+References: <20140426155315.GA4745@acer>
+Date: Mon, 28 Apr 2014 09:05:28 +0900
+Message-ID: <CAHb8M2B-xkTyBhaOsC=75UL8gVUd-uTtg5twmTAXRWge_7E+8g@mail.gmail.com>
+Subject: Re: [PATCH next-20140424] staging/cxt1e1: sparse warning corrections
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Sami Laine <laine.j.sami@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, trivial@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi,
 
-On Fri, 25 Apr 2014 14:27:34 +0200, Jiri Olsa wrote:
-> On Fri, Apr 25, 2014 at 12:28:13PM +0900, Namhyung Kim wrote:
->> The fake_setup_machine() is for setting up a environment for testing
->> various hists operations.  As it'll be used for other test cases it'd
->> better factoring it out.
+2014-04-27 0:53 GMT+09:00 Sami Laine <laine.j.sami@gmail.com>:
+> From: Sami Laine <laine.j.sami@gmail.com>
+do not include this line on your patch. it is not necessary.
 >
-> looks like print_hists could be in hists_common.c as well..
-> within another update ;-)
+> Corrected sparse static declaration warnings.
+>
+> Signed-off-by: Sami Laine <laine.j.sami@gmail.com>
+> ---
+> diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+> index cc2151e..2899258 100644
+> --- a/drivers/staging/cxt1e1/hwprobe.c
+> +++ b/drivers/staging/cxt1e1/hwprobe.c
+> @@ -40,10 +40,10 @@ struct net_device * __init c4_add_dev(hdw_info_t *, int, unsigned long,
+>                                       unsigned long, int, int);
+>
+>
+> -struct s_hdw_info hdw_info[MAX_BOARDS];
+> +static struct s_hdw_info hdw_info[MAX_BOARDS];
+hdw_info is used in other files with "extern".
 
-The difference is that one in hists_link.c is working on the input tree
-while one in hists_filter.c is working on the output tree.
+>
+>
+> -void __init
+> +static void __init
+>  show_two(hdw_info_t *hi, int brdno)
+>  {
+>         ci_t       *ci;
+> @@ -88,7 +88,7 @@ show_two(hdw_info_t *hi, int brdno)
+>  }
+>
+>
+> -void __init
+> +static void __init
+>  hdw_sn_get(hdw_info_t *hi, int brdno)
+This function is used in "linux.c"
+>  {
+>         /* obtain hardware EEPROM information */
+> @@ -145,7 +145,7 @@ hdw_sn_get(hdw_info_t *hi, int brdno)
+>  }
+>
+>
+> -       void __init
+> +static void __init
+>  prep_hdw_info(void)
+>  {
+>         hdw_info_t *hi;
+> @@ -164,7 +164,7 @@ prep_hdw_info(void)
+>         }
+>  }
+>
+> -void
+> +static void
+>  cleanup_ioremap(void)
+This function is used in "linux.c"
+>  {
+>         hdw_info_t *hi;
+> @@ -187,7 +187,7 @@ cleanup_ioremap(void)
+>  }
 
 >
-> nice!
 >
-> Acked-by: Jiri Olsa <jolsa@kernel.org>
->
-> for patchset
+> -void
+> +static void
+>  cleanup_devs(void)
+This function is used in "linux.c"
 
-Thanks for review!
-Namhyung
+>  {
+>         hdw_info_t *hi;
+> @@ -287,7 +287,7 @@ c4_hdw_init(struct pci_dev *pdev, int found)
+>         return 1;
+>  }
+>
+> -status_t __init
+> +static status_t __init
+>  c4hw_attach_all(void)
+This function is used in "linux.c"
+
+>  {
+>         hdw_info_t *hi;
+
+And when you send a patch for this, please check maintainers with "
+./scripts/get_maintainer.pl".
+In case of this patch, my email is in CC list. :-)
+
+Regards,
+Daeseok Youn.
