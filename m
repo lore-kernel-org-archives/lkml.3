@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277AbaD1X64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:58:56 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:40405 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757248AbaD1X6x (ORCPT
+	id S1756979AbaD1X6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:58:09 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40178 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934AbaD1X4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:58:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhFPAOrpXlN5LEcvPGdsb2JhbABZgwZPqxooDAEBAQWHAZJ1gRoXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcDFxOIQA7IdBcWhUSIHREBUAeEOQSZC4x6E4kVK4EuBxcG
-Date: Tue, 29 Apr 2014 09:58:49 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20140428235849.GN15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20140427222019.GF15995@dastard>
- <87zjj6auvv.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zjj6auvv.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 19:56:44 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu, Pranith Kumar <pranith@gatech.edu>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 17/19] rcu: Remove duplicate resched_cpu() declaration
+Date: Mon, 28 Apr 2014 16:56:30 -0700
+Message-Id: <1398729392-15087-17-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140428235600.GA12200@linux.vnet.ibm.com>
+ <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042823-1542-0000-0000-00000169B428
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 10:54:52AM +0530, Aneesh Kumar K.V wrote:
-> Dave Chinner <david@fromorbit.com> writes:
-> > On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
-> >> Hi
-> >> 
-> >> As per LSF/MM summit discussion I am reposting the richacl patchset for
-> >> upstream inclusion. The patchset includes minimal changes required to implement
-> >> a new acl model similar to NFSv4 ACL. The acl model selection is based on
-> >> file system feature flag. 
-> >> 
-> >> The following set of patches implements VFS and ext4 changes needed to implement
-> >> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> >> extended by file masks to fit into the standard POSIX file permission model.
-> >> They are designed to work seamlessly locally as well as across the NFSv4 and
-> >> CIFS/SMB2 network file system protocols.
-> >> 
-> >> A user-space utility for displaying and changing richacls is available at [1]
-> >> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-....
-> >> More details regarding richacl can be found at
-> >> http://acl.bestbits.at/richacl/
-> >> 
-> >> Previous posting of the patchset can be found at:
-> >> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
-> >> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
-> >> 
-> >> The complete patchset can also be found at:
-> >> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
-> >
-> > Where are the tests? We need comprehensive coverage in xfstests so
-> > we can validate that it works the way it is supposed to and that we
-> > don't break it in future, and that all filesystems behave the same
-> > way....
-> >
-> 
-> https://github.com/kvaneesh/richacl-tools/tree/master/test
+From: Pranith Kumar <pranith@gatech.edu>
 
-FYI, I doubt very much that anyone will run a stand-alone richacls
-test suite regularly.  Can you please work to integrate this into
-xfstests so it becomes a regular part of a filesystem developer's
-daily workflow?
+Signed-off-by: Pranith Kumar <pranith@gatech.edu>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/tree.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index dbf43f5c86fa..ecd7e046de76 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -975,12 +975,6 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+ 	force_quiescent_state(rsp);  /* Kick them all. */
+ }
+ 
+-/*
+- * This function really isn't for public consumption, but RCU is special in
+- * that context switches can allow the state machine to make progress.
+- */
+-extern void resched_cpu(int cpu);
+-
+ static void print_cpu_stall(struct rcu_state *rsp)
+ {
+ 	int cpu;
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.5
+
