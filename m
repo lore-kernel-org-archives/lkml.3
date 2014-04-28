@@ -1,89 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192AbaD1K3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:29:01 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:40294 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932067AbaD1K26 (ORCPT
+	id S1755129AbaD1KaM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:30:12 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:50101 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754260AbaD1KaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:28:58 -0400
-Message-ID: <535E2D65.4090508@redhat.com>
-Date: Mon, 28 Apr 2014 12:28:53 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 0/6] Emulator speedups - avoid initializations
- where possible
-References: <1397666774-24713-1-git-send-email-bsd@redhat.com>
-In-Reply-To: <1397666774-24713-1-git-send-email-bsd@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Apr 2014 06:30:06 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-26-535e2dace2bf
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        k.debski@samsung.com, "'Alan Stern'" <stern@rowland.harvard.edu>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1398677132-30600-1-git-send-email-gautam.vivek@samsung.com>
+ <1398677132-30600-2-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1398677132-30600-2-git-send-email-gautam.vivek@samsung.com>
+Subject: Re: [PATCH 1/4] usb: ohci-exynos: Use struct device instead of
+ platform_device
+Date: Mon, 28 Apr 2014 19:30:03 +0900
+Message-id: <001801cf62cc$d1286690$737933b0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9iw9nYX27eUdrQSqWm84Q4CF492wACNfkQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+Zse4a3bhgg5/fOS0O3q+3mH/kHKtF
+	25WD7BbNi9ezWVxeeInV4sfrC2wWvQuusllsenyN1WJh2xIWi8u75rBZzDi/j8li0bJWZosJ
+	vy+wOfB67J+7ht1j85J6j9l3fzB69G1Zxehx/MZ2Jo/Pm+QC2KK4bFJSczLLUov07RK4Mh6u
+	8C54LFUxe9UxlgbGyWJdjJwcEgImEpdfX2GBsMUkLtxbz9bFyMUhJLCMUeJc921GmKINS54y
+	QiQWMUp0vFzHDOH8ZpT4+P0kWBWbgJrEly+H2UFsEYFciVlvV4IVMQusYpJ4dfIqC0RHO6PE
+	pP8TwDo4BTwlNj5fC9YhLBApcfTcO1YQm0VAVeLalkawOK+ArcT+wz1QtqDEj8n3wI5lFtCS
+	WL/zOBOELS+xec1boG0cQLeqSzz6qwtxhJHE9ou/oUpEJPa9eAf2goTATA6Jm60dULsEJL5N
+	PsQC0SsrsekAM8TLkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelFxnqFSfm
+	Fpfmpesl5+duYoSkgN4djLcPWB9iTAZaP5FZSjQ5H5hC8kriDY3NjCxMTUyNjcwtzUgTVhLn
+	TXqYFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBsbhCa6fD/COuH8X5OG4wut9k0X+hdPt4
+	iZ/dV+vFr1X2Xvn5Y8Jn7ylHr79f4eT38lWSgMGc9L8yfVX2b4s/XH+S1aIvubw1KKzj65Wl
+	PBvWpzy7rFOQeoWpa9bNmX0tItmPAzI5El/lhU48kZ6fPv1ctYBpzHF29oPRy23Ec2fZJwv8
+	//yuSImlOCPRUIu5qDgRALlilygXAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd01unHBBg8nsFgcvF9vMf/IOVaL
+	tisH2S2aF69ns7i88BKrxY/XF9gsehdcZbPY9Pgaq8XCtiUsFpd3zWGzmHF+H5PFomWtzBYT
+	fl9gc+D12D93DbvH5iX1HrPv/mD06NuyitHj+I3tTB6fN8kFsEU1MNpkpCampBYppOYl56dk
+	5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAB2qpFCWmFMKFApILC5W0rfDNCE0
+	xE3XAqYxQtc3JAiux8gADSSsY8x4uMK74LFUxexVx1gaGCeLdTFyckgImEhsWPKUEcIWk7hw
+	bz1bFyMXh5DAIkaJjpfrmCGc34wSH7+fBKtiE1CT+PLlMDuILSKQKzHr7UqwImaBVUwSr05e
+	ZYHoaGeUmPR/AlgHp4CnxMbna8E6hAUiJY6ee8cKYrMIqEpc29IIFucVsJXYf7gHyhaU+DH5
+	HguIzSygJbF+53EmCFteYvOat0DbOIBuVZd49FcX4ggjie0Xf0OViEjse/GOcQKj0Cwkk2Yh
+	mTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAhOMM+kdjCubLA4xCjAwajE
+	wxsxJzZYiDWxrLgy9xCjBAezkgjvfom4YCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OBya/
+	vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg1LvGk8KaFn1o
+	2e9T97YmCrLlbM5JTJq3/2v60bUzlj5savC8f6E4Kc+g8mB8rqGdZOqn+TdPM9gVlYnccFXO
+	f3yqoXlzyl6+T52NUWlf+87apy34fMMk7rrLR2axn8fzSuJmeuae+1mVcLl+W9LRmW/uvj/2
+	zrvH5O/M6Hon5xem7rqGqZM/KLEUZyQaajEXFScCAEVRJnJ0AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/04/2014 18:46, Bandan Das ha scritto:
-> While initializing emulation context structure, kvm memsets to 0 a
-> number of fields some of which are redundant since they get set
-> eventually in x86_decode_insn. Cleanup unnecessary initializations
-> and remove some fields.
->
-> This is on top of Paolo's RFC
-> KVM: x86: speedups for emulator memory accesses
-> https://lkml.org/lkml/2014/4/1/494
->
-> Here are the new realmode.flat numbers with improvement
-> wrt unpatched kernel -
->
-> 639 cycles/emulated jump instruction (4.3%)
-> 776 cycles/emulated move instruction (7.5%)
-> 791 cycles/emulated arithmetic instruction (11%)
-> 943 cycles/emulated memory load instruction (5.2%)
-> 948 cycles/emulated memory store instruction (7.6%)
-> 929 cycles/emulated memory RMW instruction (9.0%)
->
-> v1 numbers -
-> 639 cycles/emulated jump instruction
-> 786 cycles/emulated move instruction
-> 802 cycles/emulated arithmetic instruction
-> 936 cycles/emulated memory load instruction
-> 970 cycles/emulated memory store instruction
-> 1000 cycles/emulated memory RMW instruction
->
-> v3:
-> Minor changes as proposed in review
->  - 3/6 - cleanup typos
->  - 6/6 - change comment in struct x86_emulate_ctxt and add back a missing
->        	 if in decode_modrm
->
-> v2:
-> All thanks and credit to Paolo!
->  - 1/6 - no change
->  - 2/6 - new patch, inercept and check_perm replaced with checks for bits in ctxt->d
->  - 3/6 - new patch, remove if condition in decode_rm and rearrange bit operations
->  - 4/6 - remove else conditions from v1 and misc cleanups
->  - 5/6 - new patch, remove seg_override and related fields and functions
->  - 6/6 - new patch, remove memopp and move rip_relative to a local variable in
->          decode_modrm
->
-> Bandan Das (6):
->   KVM: emulate: move init_decode_cache to emulate.c
->   KVM: emulate: Remove ctxt->intercept and ctxt->check_perm checks
->   KVM: emulate: cleanup decode_modrm
->   KVM: emulate: clean up initializations in init_decode_cache
->   KVM: emulate: rework seg_override
->   KVM: emulate: remove memopp and rip_relative
->
->  arch/x86/include/asm/kvm_emulate.h | 26 +++++++-----
->  arch/x86/kvm/emulate.c             | 85 ++++++++++++++++++--------------------
->  arch/x86/kvm/x86.c                 | 13 ------
->  3 files changed, 56 insertions(+), 68 deletions(-)
->
+On Monday, April 28, 2014 6:25 PM, Vivek Gautam wrote:
+> 
+> Change to use struct device instead of struct platform_device
+> for some static functions.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
 
-Applied to a private branch collecting all the emulator speedups.  Thanks!
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Paolo
+Best regards,
+Jingoo Han
+
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  drivers/usb/host/ohci-exynos.c |   20 +++++++++-----------
+>  1 file changed, 9 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+> index 9cf80cb..05f00e3 100644
+> --- a/drivers/usb/host/ohci-exynos.c
+> +++ b/drivers/usb/host/ohci-exynos.c
+> @@ -39,18 +39,18 @@ struct exynos_ohci_hcd {
+>  	struct usb_otg *otg;
+>  };
+> 
+> -static void exynos_ohci_phy_enable(struct platform_device *pdev)
+> +static void exynos_ohci_phy_enable(struct device *dev)
+>  {
+> -	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
+>  	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+> 
+>  	if (exynos_ohci->phy)
+>  		usb_phy_init(exynos_ohci->phy);
+>  }
+> 
+> -static void exynos_ohci_phy_disable(struct platform_device *pdev)
+> +static void exynos_ohci_phy_disable(struct device *dev)
+>  {
+> -	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
+>  	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+> 
+>  	if (exynos_ohci->phy)
+> @@ -139,7 +139,7 @@ skip_phy:
+> 
+>  	platform_set_drvdata(pdev, hcd);
+> 
+> -	exynos_ohci_phy_enable(pdev);
+> +	exynos_ohci_phy_enable(&pdev->dev);
+> 
+>  	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+>  	if (err) {
+> @@ -150,7 +150,7 @@ skip_phy:
+>  	return 0;
+> 
+>  fail_add_hcd:
+> -	exynos_ohci_phy_disable(pdev);
+> +	exynos_ohci_phy_disable(&pdev->dev);
+>  fail_io:
+>  	clk_disable_unprepare(exynos_ohci->clk);
+>  fail_clk:
+> @@ -168,7 +168,7 @@ static int exynos_ohci_remove(struct platform_device *pdev)
+>  	if (exynos_ohci->otg)
+>  		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+> 
+> -	exynos_ohci_phy_disable(pdev);
+> +	exynos_ohci_phy_disable(&pdev->dev);
+> 
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> 
+> @@ -190,7 +190,6 @@ static int exynos_ohci_suspend(struct device *dev)
+>  {
+>  	struct usb_hcd *hcd = dev_get_drvdata(dev);
+>  	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+> -	struct platform_device *pdev = to_platform_device(dev);
+>  	bool do_wakeup = device_may_wakeup(dev);
+>  	int rc = ohci_suspend(hcd, do_wakeup);
+> 
+> @@ -200,7 +199,7 @@ static int exynos_ohci_suspend(struct device *dev)
+>  	if (exynos_ohci->otg)
+>  		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+> 
+> -	exynos_ohci_phy_disable(pdev);
+> +	exynos_ohci_phy_disable(dev);
+> 
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> 
+> @@ -211,14 +210,13 @@ static int exynos_ohci_resume(struct device *dev)
+>  {
+>  	struct usb_hcd *hcd			= dev_get_drvdata(dev);
+>  	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
+> -	struct platform_device *pdev		= to_platform_device(dev);
+> 
+>  	clk_prepare_enable(exynos_ohci->clk);
+> 
+>  	if (exynos_ohci->otg)
+>  		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+> 
+> -	exynos_ohci_phy_enable(pdev);
+> +	exynos_ohci_phy_enable(dev);
+> 
+>  	ohci_resume(hcd, false);
+> 
+> --
+> 1.7.10.4
+
