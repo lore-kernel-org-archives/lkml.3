@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaD1Bc2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42930 "EHLO
+	id S1755202AbaD1Bc0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42990 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752586AbaD1B3W (ORCPT
+	by vger.kernel.org with ESMTP id S1752718AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Srinivas Eeda" <srinivas.eeda@oracle.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Joel Becker" <jlbec@evilplan.org>, "Joseph Qi" <joseph.qi@huawei.com>,
-        "alex chen" <alex.chen@huawei.com>, "Mark Fasheh" <mfasheh@suse.com>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.653212127@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Jani Monoses" <jani@ubuntu.com>,
+        "Daniel Vetter" <daniel.vetter@ffwll.ch>,
+        "Jani Nikula" <jani.nikula@intel.com>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.228359547@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 78/94] ocfs2: do not put bh when buffer_uptodate failed
+Subject: [PATCH 3.2 21/94] drm/i915: inverted brightness quirk for Acer
+ Aspire 4736Z
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +33,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: alex chen <alex.chen@huawei.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit f7cf4f5bfe073ad792ab49c04f247626b3e38db6 upstream.
+commit ac4199e0f047546aa40172785e26c82b54bbe811 upstream.
 
-Do not put bh when buffer_uptodate failed in ocfs2_write_block and
-ocfs2_write_super_or_backup, because it will put bh in b_end_io.
-Otherwise it will hit a warning "VFS: brelse: Trying to free free
-buffer".
-
-Signed-off-by: Alex Chen <alex.chen@huawei.com>
-Reviewed-by: Joseph Qi <joseph.qi@huawei.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=53881
+Cc: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Jani Monoses <jani@ubuntu.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/buffer_head_io.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/ocfs2/buffer_head_io.c
-+++ b/fs/ocfs2/buffer_head_io.c
-@@ -90,7 +90,6 @@ int ocfs2_write_block(struct ocfs2_super
- 		 * information for this bh as it's not marked locally
- 		 * uptodate. */
- 		ret = -EIO;
--		put_bh(bh);
- 		mlog_errno(ret);
- 	}
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8946,6 +8946,9 @@ struct intel_quirk intel_quirks[] = {
+ 	/* Acer/Packard Bell NCL20 */
+ 	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
  
-@@ -420,7 +419,6 @@ int ocfs2_write_super_or_backup(struct o
- 
- 	if (!buffer_uptodate(bh)) {
- 		ret = -EIO;
--		put_bh(bh);
- 		mlog_errno(ret);
- 	}
- 
++	/* Acer Aspire 4736Z */
++	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
++
+ 	/* Dell XPS13 HD Sandy Bridge */
+ 	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
+ 	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
 
