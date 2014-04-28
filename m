@@ -1,163 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130AbaD1MJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:09:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8470 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752830AbaD1MJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:09:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,943,1389772800"; 
-   d="scan'208";a="529792167"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Jean Delvare <khali@linux-fr.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] base: platform: name the device already during allocation
-Date: Mon, 28 Apr 2014 15:09:27 +0300
-Message-Id: <1398686967-6086-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.0.0.rc0
+	id S1755449AbaD1MLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:11:01 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:51324 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaD1MLA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:11:00 -0400
+Date: Mon, 28 Apr 2014 13:10:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 1/2] mfd: max14577: Fix IRQ handling after resume if this
+ is not a wakeup source
+Message-ID: <20140428121053.GA21279@lee--X1>
+References: <1398175162-20244-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398175162-20244-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows resources such as GPIOs and clocks, which can be
-matched based on the device name when requested, to be
-assigned even when PLATFORM_DEVID_AUTO is used.
+> During suspend the IRQ should be disabled even if this is not a wakeup
+> source. This is a proper way of fixing the IRQ handling issue during
+> resume (IRQ handler fails because I2C bus did not resume yet).
+> 
+> When device is suspended and max14577 interrupt is signaled the irq chip
+> will try to handle it regardless of wakeup source. Device could be woken
+> up by different IRQ but still the IRQ handler will try to read the
+> registers over I2C bus and fail because I2C bus won't be ready yet:
+> 	max14577 2-0025: Failed to read IRQ status: -5
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max14577.c | 29 +++++++++++++----------------
+>  1 file changed, 13 insertions(+), 16 deletions(-)
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/base/platform.c | 77 ++++++++++++++++++++++++++++++-------------------
- 1 file changed, 47 insertions(+), 30 deletions(-)
+It's pretty worrying that these two patches are so alike and they
+actually change different files. Is there any way we can unify more of
+the code?
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 5b47210..697896d 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -174,11 +174,45 @@ struct platform_object {
-  */
- void platform_device_put(struct platform_device *pdev)
- {
--	if (pdev)
--		put_device(&pdev->dev);
-+	if (!pdev)
-+		return;
-+
-+	if (pdev->id_auto) {
-+		ida_simple_remove(&platform_devid_ida, pdev->id);
-+		pdev->id = PLATFORM_DEVID_AUTO;
-+	}
-+
-+	put_device(&pdev->dev);
- }
- EXPORT_SYMBOL_GPL(platform_device_put);
- 
-+static int pdev_set_name(struct platform_device *pdev)
-+{
-+	int ret;
-+
-+	switch (pdev->id) {
-+	default:
-+		return dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-+	case PLATFORM_DEVID_NONE:
-+		return dev_set_name(&pdev->dev, "%s", pdev->name);
-+	case PLATFORM_DEVID_AUTO:
-+		/*
-+		 * Automatically allocated device ID. We mark it as such so
-+		 * that we remember it must be freed, and we append a suffix
-+		 * to avoid namespace collision with explicit IDs.
-+		 */
-+		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
-+		if (ret < 0)
-+			return ret;
-+		pdev->id = ret;
-+		pdev->id_auto = true;
-+		return dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name,
-+				    pdev->id);
-+	}
-+
-+	return 0;
-+}
-+
- static void platform_device_release(struct device *dev)
- {
- 	struct platform_object *pa = container_of(dev, struct platform_object,
-@@ -211,6 +245,10 @@ struct platform_device *platform_device_alloc(const char *name, int id)
- 		device_initialize(&pa->pdev.dev);
- 		pa->pdev.dev.release = platform_device_release;
- 		arch_setup_pdev_archdata(&pa->pdev);
-+		if (pdev_set_name(&pa->pdev)) {
-+			kfree(pa);
-+			return NULL;
-+		}
- 	}
- 
- 	return pa ? &pa->pdev : NULL;
-@@ -291,28 +329,6 @@ int platform_device_add(struct platform_device *pdev)
- 
- 	pdev->dev.bus = &platform_bus_type;
- 
--	switch (pdev->id) {
--	default:
--		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
--		break;
--	case PLATFORM_DEVID_NONE:
--		dev_set_name(&pdev->dev, "%s", pdev->name);
--		break;
--	case PLATFORM_DEVID_AUTO:
--		/*
--		 * Automatically allocated device ID. We mark it as such so
--		 * that we remember it must be freed, and we append a suffix
--		 * to avoid namespace collision with explicit IDs.
--		 */
--		ret = ida_simple_get(&platform_devid_ida, 0, 0, GFP_KERNEL);
--		if (ret < 0)
--			goto err_out;
--		pdev->id = ret;
--		pdev->id_auto = true;
--		dev_set_name(&pdev->dev, "%s.%d.auto", pdev->name, pdev->id);
--		break;
--	}
--
- 	for (i = 0; i < pdev->num_resources; i++) {
- 		struct resource *p, *r = &pdev->resource[i];
- 
-@@ -355,7 +371,6 @@ int platform_device_add(struct platform_device *pdev)
- 			release_resource(r);
- 	}
- 
-- err_out:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(platform_device_add);
-@@ -375,11 +390,6 @@ void platform_device_del(struct platform_device *pdev)
- 	if (pdev) {
- 		device_del(&pdev->dev);
- 
--		if (pdev->id_auto) {
--			ida_simple_remove(&platform_devid_ida, pdev->id);
--			pdev->id = PLATFORM_DEVID_AUTO;
--		}
--
- 		for (i = 0; i < pdev->num_resources; i++) {
- 			struct resource *r = &pdev->resource[i];
- 			unsigned long type = resource_type(r);
-@@ -397,8 +407,15 @@ EXPORT_SYMBOL_GPL(platform_device_del);
-  */
- int platform_device_register(struct platform_device *pdev)
- {
-+	int ret;
-+
- 	device_initialize(&pdev->dev);
- 	arch_setup_pdev_archdata(pdev);
-+
-+	ret = pdev_set_name(pdev);
-+	if (ret)
-+		return ret;
-+
- 	return platform_device_add(pdev);
- }
- EXPORT_SYMBOL_GPL(platform_device_register);
+Patch applied, thanks.
+
 -- 
-2.0.0.rc0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
