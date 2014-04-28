@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbaD1Phq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:37:46 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:48699 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028AbaD1Phm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:37:42 -0400
-Date: Mon, 28 Apr 2014 23:37:32 +0800
-From: Huang Shijie <shijie8@gmail.com>
-To: Graham Moore <ggrahammoore@gmail.com>
-Cc: Huang Shijie <b32955@freescale.com>, Marek Vasut <marex@denx.de>,
-        Graham Moore <grmoore@altera.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        linux-mtd@lists.infradead.org, Insop Song <insop.song@gainspeed.com>,
-        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
-Message-ID: <20140428153728.GA2020@localhost.localdomain>
-References: <1398175396-7560-1-git-send-email-grmoore@altera.com>
- <201404260012.24311.marex@denx.de>
- <20140426031011.GA4811@localhost.localdomain>
- <201404280706.18068.marex@denx.de>
- <20140428070602.GA29525@localhost>
- <CA+iBjpS9gstvippLHzm_Tpgxx19VxnRzWEwi_tJV5d7+snnfWg@mail.gmail.com>
+	id S1756680AbaD1PPe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:15:34 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49240 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756531AbaD1PP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:15:28 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nm@ti.com>
+Subject: [PATCH V3 07/20] bus: omap_l3_noc: move L3 master data structure out
+Date: Mon, 28 Apr 2014 10:14:47 -0500
+Message-ID: <1398698101-25513-8-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+iBjpS9gstvippLHzm_Tpgxx19VxnRzWEwi_tJV5d7+snnfWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 09:22:58AM -0500, Graham Moore wrote:
-> On Mon, Apr 28, 2014 at 2:06 AM, Huang Shijie <b32955@freescale.com> wrote:
-> > On Mon, Apr 28, 2014 at 07:06:17AM +0200, Marek Vasut wrote:
-> >>
-> >> Two things competing over the same pointer looks misdesigned to me. I will need
-> >> to dig into this one more time ...
-> > Please refer to the code for NAND chip, the nand_get_flash_type() :
-> >
-> > -----------------------------------------------------------
-> >         /* Do not replace user supplied command function! */
-> >         if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
-> >                 chip->cmdfunc = nand_command_lp;
-> > -----------------------------------------------------------
-> >
-> > It uses the same logic:
-> >         " Do not replace user supplied command function!"
-> >
-> > thanks
-> > Huang Shijie
-> 
-> I would like to set the @wait_till_ready in m25p80.c, because the
-> USE_FSR flag is only for Micron chips.  But the m25p80 driver doesn't
-m25p80.c is not the right place. 
+Move the L3 master structure out of the static definition to enable
+reuse for other SoCs.
 
-we should put these code in the spi-nor.c
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+---
+V3: no change
+ drivers/bus/omap_l3_noc.h |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-thanks
-Huang Shijie
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 31984cf..059c707 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -33,6 +33,16 @@
+ 
+ #define NUM_OF_L3_MASTERS	(sizeof(l3_masters)/sizeof(l3_masters[0]))
+ 
++/**
++ * struct l3_masters_data - L3 Master information
++ * @id:		ID of the L3 Master
++ * @name:	master name
++ */
++struct l3_masters_data {
++	u32 id;
++	char *name;
++};
++
+ static u32 l3_flagmux[L3_MODULES] = {
+ 	0x500,
+ 	0x1000,
+@@ -80,10 +90,7 @@ static u32 l3_targ_inst_clk3[] = {
+ 	0x0 /* HOST CLK3 */
+ };
+ 
+-static struct l3_masters_data {
+-	u32 id;
+-	char name[10];
+-} l3_masters[] = {
++static struct l3_masters_data l3_masters[] = {
+ 	{ 0x0 , "MPU"},
+ 	{ 0x10, "CS_ADP"},
+ 	{ 0x14, "xxx"},
+-- 
+1.7.9.5
+
