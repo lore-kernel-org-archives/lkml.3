@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468AbaD1Ocd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:32:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48952 "EHLO bear.ext.ti.com"
+	id S932360AbaD1O12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:27:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53823 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755796AbaD1Oc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:32:28 -0400
-Date: Mon, 28 Apr 2014 09:31:15 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: George Cherian <george.cherian@ti.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
-        <richardcochran@gmail.com>, <jeffrey.t.kirsher@intel.com>,
-        <dborkman@redhat.com>, <ast@plumgrid.com>, <tklauser@distanz.ch>,
-        <mpa@pengutronix.de>, <bhutchings@solarflare.com>, <zonque@gmail.com>,
-        <balbi@ti.com>, <mugunthanvnm@ti.com>, <t-kristo@ti.com>,
-        <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH 1/6] drivers: net: cpts: Remove hardcoded clock name for
- CPTS
-Message-ID: <20140428143115.GC30292@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
- <1398658225-25873-2-git-send-email-george.cherian@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B4IIlcmfBL/1gGOG"
-Content-Disposition: inline
-In-Reply-To: <1398658225-25873-2-git-send-email-george.cherian@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932311AbaD1O1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:27:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,944,1389772800"; 
+   d="scan'208";a="529858812"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tianyu.lan@intel.com
+Subject: [Patch V2 0/9] I2C ACPI operation region handler support 
+Date: Mon, 28 Apr 2014 22:27:39 +0800
+Message-Id: <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---B4IIlcmfBL/1gGOG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
+region. It allows ACPI aml code able to access such kind of devices to
+implement some ACPI standard method.
 
-On Mon, Apr 28, 2014 at 09:40:20AM +0530, George Cherian wrote:
-> CPTS refclk name is hardcoded, which makes it fail in case of DRA7x
-> Remove the hardcoded clock name for CPTS refclk and get the same from DT.
->=20
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->  drivers/net/ethernet/ti/cpts.c | 11 ++++-------
->  1 file changed, 4 insertions(+), 7 deletions(-)
->=20
-> diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpt=
-s.c
-> index 2435139..0b6f6f7 100644
-> --- a/drivers/net/ethernet/ti/cpts.c
-> +++ b/drivers/net/ethernet/ti/cpts.c
-> @@ -236,13 +236,11 @@ static void cpts_overflow_check(struct work_struct =
-*work)
->  	schedule_delayed_work(&cpts->overflow_work, CPTS_OVERFLOW_PERIOD);
->  }
-> =20
-> -#define CPTS_REF_CLOCK_NAME "cpsw_cpts_rft_clk"
-> -
-> -static void cpts_clk_init(struct cpts *cpts)
-> +static void cpts_clk_init(struct device *dev, struct cpts *cpts)
->  {
-> -	cpts->refclk =3D clk_get(NULL, CPTS_REF_CLOCK_NAME);
-> +	cpts->refclk =3D devm_clk_get(dev, "cpts");
->  	if (IS_ERR(cpts->refclk)) {
-> -		pr_err("Failed to clk_get %s\n", CPTS_REF_CLOCK_NAME);
-> +		pr_err("Failed to get cpts refclk\n");
+On the Asus T100TA, Bios use GenericSerialBus operation region to access
+i2c device to get battery info. So battery function depends on the I2C
+operation region support. Here is the bug link.
+https://bugzilla.kernel.org/show_bug.cgi?id=69011
 
-now you have a dev pointer as argument, how about converting this to
-dev_err() ?
+This patchset is to add I2C ACPI operation region handler support.
 
---=20
-balbi
+Change Since V1:
+       Fix some code style and memory leak issues in Patch 7
 
---B4IIlcmfBL/1gGOG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[Patch V2 1/9] ACPICA: Executer: Fix buffer allocation issue for
+[Patch V2 2/9] ACPICA: Export acpi_buffer_to_resource symbol
+[Patch V2 3/9] ACPI: Add acpi_bus_attach_private_data() to facilitate
+[Patch V2 4/9] ACPI/Thermal: Use acpi_bus_attach_private_data() to
+[Patch V2 5/9] I2C: Add smbus quick read/write helper function
+[Patch V2 6/9] I2C: Add smbus word/block process call helper function
+[Patch V2 7/9] I2C/ACPI: Add i2c ACPI operation region support
+[Patch V2 8/9] I2C/ACPI: Move ACPI related code to i2c-acpi.c
+[Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTXmYzAAoJEIaOsuA1yqREXIMP/1Bc/quLxm2iQcjkrvVGV0bG
-8ysMIL84mDbhgbPzyDSj8KUK/wd714H0Lzc3hUbVemWRt3TlqYv/fjrwT6iEct9+
-gKXY+FSHHQ71aMCGAeJq8lazpfgasexWVg6CVaAMHSIAdujQd3HwmXfswskV6aXz
-47BGrfcUBfrmu25Ex2+HPLF6snIqi5lQg9TiejkQdtJKcE2LcVNMuinwExJ19B7b
-8OrXwXhN6Y8zm7aOaP6dNd/yAsn2XTEWUy9nioUV0/t/bpcX7sIMdhkeoCoM/C75
-hxTiMnfCHjhxdCznqsCQRsd3CwzGjX6vHg3tV5aFwHkp7vxbRUJnRIIUp7Q4wYWQ
-So1WfQcsOjkiZcctjG7PdjnUDP15EXWDcSzgWJJLTLLKW63fWVzF5bZUGtlTQGyy
-ERc6jBnfIDF0rD8pa1EEXXzKdJsimb9MhTWRYhieHWz+nNRIiOhhkRowURyl+D+r
-8sm74qhtxxlzURtOHDfYRQX+/TMinKUDT+XEaItJ7sr6wBIYRSnnwzBDd5KEpBhc
-O0QKckywGfxlCArB357BNPxuOuuOFZ5IVfJ4at6mDtJ4GbVB/pd93EVHPPA/Ceur
-GiJUQDY7Cl83cQQZI9sSi/m9jVlYvNsmA4HlQZVI9/6IdFaC2N//py3fgMidqiIT
-IaiVJR78G14uCHOOBCeO
-=3dw5
------END PGP SIGNATURE-----
-
---B4IIlcmfBL/1gGOG--
+ drivers/acpi/acpica/exfield.c  | 104 ++++++++++++++++++++++++++++++++++---
+ drivers/acpi/acpica/rscreate.c |   1 +
+ drivers/acpi/bus.c             |  18 ++++++-
+ drivers/acpi/thermal.c         |   9 ++--
+ drivers/i2c/Kconfig            |  17 ++++++-
+ drivers/i2c/Makefile           |   5 +-
+ drivers/i2c/i2c-acpi.c         | 384 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/i2c/i2c-core.c         | 183 ++++++++++++++++++++++++++++++++---------------------------------
+ include/acpi/acpi_bus.h        |   1 +
+ include/linux/acpi.h           |  11 ++++
+ include/linux/i2c.h            |  18 +++++++
+ 11 files changed, 640 insertions(+), 111 deletions(-)
