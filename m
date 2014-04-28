@@ -1,56 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaD1Fy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:54:29 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55221 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaD1Fy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:54:27 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20140428043909.GA26778@infradead.org>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140428043909.GA26778@infradead.org>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 28 Apr 2014 11:24:08 +0530
-Message-ID: <87wqeaatj3.fsf@linux.vnet.ibm.com>
+	id S1751954AbaD1GAk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 02:00:40 -0400
+Received: from mail.eperm.de ([89.247.134.16]:38502 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808AbaD1GAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 02:00:38 -0400
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: Re: [RFC] /dev/random for in-kernel use
+Date: Mon, 28 Apr 2014 08:00:19 +0200
+Message-ID: <1692538.agAioWpnT4@myon.chronox.de>
+User-Agent: KMail/4.12.4 (Linux/3.13.10-200.fc20.x86_64; KDE/4.12.4; x86_64; ; )
+In-Reply-To: <20140428001941.GA15379@thunk.org>
+References: <2174751.G4Kehsg85c@myon.chronox.de> <20140428001941.GA15379@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042805-6102-0000-0000-000005751255
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+Am Sonntag, 27. April 2014, 20:19:41 schrieb Theodore Ts'o:
 
-> This doesn't address any or the previous points:
->
->  - common implementation instead of the godawful boilerplate code
->    (and we even fixed most of this for Posix ACL by now, so even less
->    reason to do the same crap again!)
+Hi Theodore,
 
-We already do that with richacl. Richacl already have most of the
-details implemented in common code. Comparing to recent posix acl
-changes we could still simplify chmod and xattr bits. I will do that
-in the next update. 
+> On Sun, Apr 27, 2014 at 08:49:48PM +0200, Stephan Mueller wrote:
+> > With the heavy update of random.c during the 3.13 development, the
+> > re-seeding of the nonblocking_pool from the input_pool is now prevented
+> > for a duration of random_min_urandom_seed seconds. Furthermore, the
+> > nonblocking_pool can be read from user space such that it acts as a
+> > deterministic RNG due to the non- blocking behavior if more data is
+> > pulled than is delivered by the noise sources. As the nonblocking_pool is
+> > used when a in-kernel user invokes get_random_bytes, the described
+> > deterministic behavior also applies to this function.
+> 
+> This actually wasn't a major change.  If you are drawing sufficiently
+> heavily from /dev/urandom (and some crypto libraries draw _very_
+> heavily; the Chrome browser in particular draws from /dev/urandom
+> quite liberally), then you'll end up drawing from the input pool
+> faster than it can be filled from noise sources anyway.  So the rate
+> limiting wasn't making a material difference as far as the quality of
+> /dev/urandom and get_random_bytes() is concerned.  What it does do is
+> allow users of /dev/random (such as gpg key generaiton) to complete in
+> a reasonable time.
 
->  - common data structure with Posix ACLs
->
+Thanks for clarifying this. I agree that the change is immaterial considering 
+a "random number hog" in user space with respect to the deterministic 
+behavior.
+> 
+> However, given that we're reseeding once a minute (or as needed), it's
+> actually not a deterministic RNG (per SP 800-90A, section 8.6.5, a
+> DRBG is forbidden to reseed itself automatically).
 
-Can you explain this ?. Why do we want to do that ? 
+To be honest, I do not read that in this section. Moreover, a DRBG must reseed 
+itself -- the caller shall only have the ability to add additional data or 
+trigger a reseeding earlier (the proposed DRBG implementation directly draws 
+from get_random_bytes automatically). But this is a different topic and we 
+should disregard it for the moment.
+> 
+> > Now, get_random_bytes is the only function inside the kernel that can
+> > deliver entropy. For most use cases, the described approach is just fine.
+> > However, when using well defined deterministic RNGs, like the already
+> > existing ANSI X9.31 or the suggested SP800-90A DRBG, seeding these DRNGs
+> > from the DRNG of the nonblocking_pool is typically not a suggested way.
+> > This is visible in user space where /dev/random is preferred when seeding
+> > deterministic RNGs (see libgcrypt as an example).
+> 
+> Well, as far as SP800-90A DRBG is concerned, using either the logical
+> equivalent of /dev/random or /dev/urandom is not allowed, since
+> neither is a "approved" entropy source.  (Then again, given that NIST
+> approved Dual-EC, I'm not sure how much I'm impressed by a NIST
+> approval, but whatever.  :-) But if your goal is to get the NIST
 
+Well spoken words :-)
 
-> And of course no real explanation why we need the braindead access/deny
-> scheme at how it will get properly integrated with the system.
->
-> So in this for a clear NAK.
+Considering that approved entropy sources have to comply with SP800-90B and C, 
+I have prepared already some analyses of random.c whether the blocking or the 
+nonblocking pool meets these requirements. Using several system tap scripts, 
+the statistical behavior of the noise sources and the pool distributions look 
+appropriate. In addition, some theoretical analyses showed that the blocking 
+pool (considering the blocking behavior) would meet the requirements of 
+SP800-90B/C whereas the nonblocking pool does not.
 
--aneesh
+Anticipating that the compliance to SP800-90B/C would be required for a 
+successful FIPS validation somewhen in the future, making the blocking 
+behavior available to in-kernel users would be of interest.
 
+> certification, which IMHO should only matter if you are selling to the
+> US government, it really can really only use RDRAND on Intel platforms
+> --- i.e., get_random_bytes_arch().
+
+I am not too convinced of RDRAND due to the lack of usable source code (i.e. 
+source code that I can build myself). But that is my personal taste :-)
+> 
+> That being said, if some kernel module really wants to get its hands
+> on entropy extracted from the blocking pool, I don't see any reason
+> why we shouldn't deny them that functionality.
+> 
+> > Therefore may I propose the implementation of the blocking concept of
+> > /dev/random as a provider of entropy to in-kernel callers like DRNGs? I
+> > would recommend a function of
+> > 
+> > void get_blocking_bytes_nowait(void *buf, int nbytes,
+> > 
+> > 	void (*cb)(void *buf, int buflen))
+> 
+> Let me make a counter proposal.  Let's instead provide a blocking
+> interface:
+
+[...]
+
+Thanks for these suggestions. Shall I take these suggestions and turn them 
+into a full patch?
+
+Moreover, I read that even for in-kernel users we should use the blocking 
+pool. Or shall we conceive of a third output pool, say, a kernel pool that is 
+independent of the output pools to user space? Adding such a pool more or less 
+only requires to define a new struct entropy_pool instance.
+
+Ciao
+Stephan
+-- 
+| Cui bono? |
