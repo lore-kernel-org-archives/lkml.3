@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbaD1Jsp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:48:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15202 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaD1Jsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:48:43 -0400
-Date: Mon, 28 Apr 2014 11:48:26 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 1/3] perf tools: Cache register accesses for unwind
- processing
-Message-ID: <20140428094826.GD1109@krava.brq.redhat.com>
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
- <1397756352-26694-2-git-send-email-jolsa@redhat.com>
- <1398608961.1689.9.camel@leonhard>
+	id S1754543AbaD1Juc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:50:32 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33123 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaD1Jua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 05:50:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398608961.1689.9.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140427.193027.1833767089712636627.davem@davemloft.net>
+References: <cover.1398412015.git.agordeev@redhat.com>
+	<110dd7806f49f62272bd960ae8101c9da81a3f01.1398412015.git.agordeev@redhat.com>
+	<20140427.193027.1833767089712636627.davem@davemloft.net>
+Date: Mon, 28 Apr 2014 02:50:29 -0700
+X-Google-Sender-Auth: rixKIB9fuIfi4ScAApuexVcrumE
+Message-ID: <CAL3LdT7tFhkvBOH0fEWCJd7qTp+8yD6v78+FOPXudH4Deby5hQ@mail.gmail.com>
+Subject: Re: [E1000-devel] [PATCH net-next 1/2] i40evf: Use
+ pci_enable_msix_range() instead of pci_enable_msix()
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: David Miller <davem@davemloft.net>
+Cc: agordeev@redhat.com, linux.nics@intel.com,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 11:29:21PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
-> > Caching registers value into an array. Got about 4% speed up
-> > of perf_reg_value function for report command processing
-> > dwarf unwind stacks.
-> 
-> I'm not familiar with the code base, so probably silly questions:  Where
-> does the speed up come from?  IOW I don't know what's the difference
-> between the regs->regs and regs->cached_regs.  And does the cached_regs
-> contain correct values of registers for each frame?
+On Sun, Apr 27, 2014 at 4:30 PM, David Miller <davem@davemloft.net> wrote:
+> From: Alexander Gordeev <agordeev@redhat.com>
+> Date: Fri, 25 Apr 2014 10:06:24 +0200
+>
+>> As result of deprecation of MSI-X/MSI enablement functions
+>> pci_enable_msix() and pci_enable_msi_block() all drivers
+>> using these two interfaces need to be updated to use the
+>> new pci_enable_msi_range()  or pci_enable_msi_exact()
+>> and pci_enable_msix_range() or pci_enable_msix_exact()
+>> interfaces.
+>>
+>> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+>
+> Jeff, I assume you will take this in via your tree.
+>
 
-the current way register's value is accessed is to get its
-index in the sample's regs array.. based on register's id
-and the registers mask
+Yes, I have picked this up.
 
-so each time you want register value you traverse the registers
-mask and count reg's index for the sample regs array
-
-this patch does this only once for each register (at the time it's
-first accessed) and cache its value in the array (cache_regs). The
-cache_mask is used to identify which regs are already cached.
-
-jirka
+-- 
+Cheers,
+Jeff
