@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074AbaD1UbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:31:11 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35153 "EHLO
-	alan.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757059AbaD1UbK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:31:10 -0400
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 16:31:09 EDT
-Subject: [PATCH] pci: Allow very large resource windows
-To: bhelgaas@google.com, linux-kernel@vger.kernel.org
-From: Alan <gnomes@lxorguk.ukuu.org.uk>
-Date: Mon, 28 Apr 2014 21:23:35 +0100
-Message-ID: <20140428202321.8753.31852.stgit@alan.etchedpixels.co.uk>
-User-Agent: StGit/0.15
+	id S1757093AbaD1Ucq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:32:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52265 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375AbaD1Ucp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 16:32:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
+   d="scan'208";a="502495786"
+Message-ID: <535EBAAE.5060309@intel.com>
+Date: Mon, 28 Apr 2014 22:31:42 +0200
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        dmitry.torokhov@gmail.com
+Subject: Re: [PATCH V5 09/12] ACPI: introduce acpi platform exclude id list
+References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>	 <1396886819-2637-10-git-send-email-rui.zhang@intel.com>	 <5562797.vTJauiAbJc@vostro.rjw.lan> <1398650223.2443.12.camel@rzhang1-mobl4>
+In-Reply-To: <1398650223.2443.12.camel@rzhang1-mobl4>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan <alan@linux.intel.com>
+On 4/28/2014 3:57 AM, Zhang Rui wrote:
+> On Mon, 2014-04-28 at 00:21 +0200, Rafael J. Wysocki wrote:
+>> On Tuesday, April 08, 2014 12:06:56 AM Zhang Rui wrote:
+>>> For ACPI PIC (PNP0000) and Timer (PNP0100) device objects, although
+>>> they have _HID control method, but they should not be enumerated to
+>>> platform bus, because there will never be any platform drivers for them.
+>>>
+>>> Thus an exclude id list is introduced in this patch to prevent
+>>> those platform device nodes from being created.
+>>>
+>>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>> This should go into [6/12] as well.
+>>
+> I think it is okay to keep them as separate patches because they do not
+> break bisect. And this patch is just a cleanup, it does not fix a real
+> BUG in patch 6/12.
 
-This is needed for some of the Xeon Phi type systems.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- drivers/pci/setup-bus.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 138bdd6..5679ec2 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -921,7 +921,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- {
- 	struct pci_dev *dev;
- 	resource_size_t min_align, align, size, size0, size1;
--	resource_size_t aligns[12];	/* Alignments from 1Mb to 2Gb */
-+	resource_size_t aligns[14];	/* Alignments from 1Mb to 8Gb */
- 	int order, max_order;
- 	struct resource *b_res = find_free_bus_resource(bus, type);
- 	unsigned int mem64_mask = 0;
-@@ -960,7 +960,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 			/* For bridges size != alignment */
- 			align = pci_resource_alignment(dev, r);
- 			order = __ffs(align) - 20;
--			if (order > 11) {
-+			if (order > 13) {
- 				dev_warn(&dev->dev, "disabling BAR %d: %pR "
- 					 "(bad alignment %#llx)\n", i, r,
- 					 (unsigned long long) align);
+OK
 
