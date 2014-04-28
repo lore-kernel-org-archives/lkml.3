@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461AbaD1NgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:20 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58336 "EHLO extserv.mm-sol.com"
+	id S932445AbaD1NgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:19 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58325 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756047AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756036AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 09:35:22 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Felipe Balbi <balbi@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
 Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v8 13/20] usb: phy: msm: Use reset framework for LINK and PHY resets
-Date: Mon, 28 Apr 2014 16:34:16 +0300
-Message-Id: <1398692063-11372-14-git-send-email-iivanov@mm-sol.com>
+        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH v8 12/20] usb: phy: msm: Add device tree support and binding information
+Date: Mon, 28 Apr 2014 16:34:15 +0300
+Message-Id: <1398692063-11372-13-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
@@ -24,94 +30,315 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Using reset framework eliminate need of platform specific
-callbacks and enable reset lines to be specified in DT files.
+Allows controller to be specified via device tree.
 
 Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/usb/phy/phy-msm-usb.c | 29 +++++++++++++++++++++--------
- include/linux/usb/msm_hsusb.h |  3 +++
- 2 files changed, 24 insertions(+), 8 deletions(-)
+ .../devicetree/bindings/usb/msm-hsusb.txt          |  67 ++++++++++++
+ drivers/usb/phy/phy-msm-usb.c                      | 113 +++++++++++++++++----
+ include/linux/usb/msm_hsusb.h                      |   6 +-
+ 3 files changed, 165 insertions(+), 21 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+index 5ea26c6..ee4123d 100644
+--- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
++++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+@@ -15,3 +15,70 @@ Example EHCI controller device node:
+ 		usb-phy = <&usb_otg>;
+ 	};
+
++USB PHY with optional OTG:
++
++Required properties:
++- compatible:   Should contain:
++  "qcom,usb-otg-ci" for chipsets with ChipIdea 45nm PHY
++  "qcom,usb-otg-snps" for chipsets with Synopsys 28nm PHY
++
++- regs:         Offset and length of the register set in the memory map
++- interrupts:   interrupt-specifier for the OTG interrupt.
++
++- clocks:       A list of phandle + clock-specifier pairs for the
++                clocks listed in clock-names
++- clock-names:  Should contain the following:
++  "phy"         USB PHY reference clock
++  "core"        Protocol engine clock
++  "iface"       Interface bus clock
++  "alt_core"    Protocol engine clock for targets with asynchronous
++                reset methodology. (optional)
++
++- vdccx-supply: phandle to the regulator for the vdd supply for
++                digital circuit operation.
++- v1p8-supply:  phandle to the regulator for the 1.8V supply
++- v3p3-supply:  phandle to the regulator for the 3.3V supply
++
++- resets:       A list of phandle + reset-specifier pairs for the
++                resets listed in reset-names
++- reset-names:  Should contain the following:
++  "phy"         USB PHY controller reset
++  "link"        USB LINK controller reset
++
++- qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
++                1 - PHY control
++                2 - PMIC control
++
++Optional properties:
++- dr_mode:      One of "host", "peripheral" or "otg". Defaults to "otg"
++
++- qcom,phy-init-sequence: PHY configuration sequence values. This is related to Device
++                Mode Eye Diagram test. Start address at which these values will be
++                written is ULPI_EXT_VENDOR_SPECIFIC. Value of -1 is reserved as
++                "do not overwrite default value at this address".
++                For example: qcom,phy-init-sequence = < -1 0x63 >;
++                Will update only value at address ULPI_EXT_VENDOR_SPECIFIC + 1.
++
++Example HSUSB OTG controller device node:
++
++    usb@f9a55000 {
++        compatible = "qcom,usb-otg-snps";
++        reg = <0xf9a55000 0x400>;
++        interrupts = <0 134 0>;
++        dr_mode = "peripheral";
++
++        clocks = <&gcc GCC_XO_CLK>, <&gcc GCC_USB_HS_SYSTEM_CLK>,
++                <&gcc GCC_USB_HS_AHB_CLK>;
++
++        clock-names = "phy", "core", "iface";
++
++        vddcx-supply = <&pm8841_s2_corner>;
++        v1p8-supply = <&pm8941_l6>;
++        v3p3-supply = <&pm8941_l24>;
++
++        resets = <&gcc GCC_USB2A_PHY_BCR>, <&gcc GCC_USB_HS_BCR>;
++        reset-names = "phy", "link";
++
++        qcom,otg-control = <1>;
++        qcom,phy-init-sequence = < -1 0x63 >;
++	};
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 1bf2d4e..a6abb1b 100644
+index 7e968aa..1bf2d4e 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -32,6 +32,7 @@
+@@ -30,9 +30,12 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
  #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/reset.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
 
  #include <linux/usb.h>
  #include <linux/usb/otg.h>
-@@ -235,12 +236,15 @@ static void ulpi_init(struct msm_otg *motg)
-
- static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
++#include <linux/usb/of.h>
+ #include <linux/usb/ulpi.h>
+ #include <linux/usb/gadget.h>
+ #include <linux/usb/hcd.h>
+@@ -217,16 +220,16 @@ static struct usb_phy_io_ops msm_otg_io_ops = {
+ static void ulpi_init(struct msm_otg *motg)
  {
--	int ret = 0;
-+	int ret;
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
+-	int *seq = pdata->phy_init_seq;
++	int *seq = pdata->phy_init_seq, idx;
++	u32 addr = ULPI_EXT_VENDOR_SPECIFIC;
 
--	if (!motg->pdata->link_clk_reset)
--		return ret;
-+	if (motg->pdata->link_clk_reset)
-+		ret = motg->pdata->link_clk_reset(motg->clk, assert);
-+	else if (assert)
-+		ret = reset_control_assert(motg->link_rst);
-+	else
-+		ret = reset_control_deassert(motg->link_rst);
+-	if (!seq)
+-		return;
++	for (idx = 0; idx < pdata->phy_init_sz; idx++) {
++		if (seq[idx] == -1)
++			continue;
 
--	ret = motg->pdata->link_clk_reset(motg->clk, assert);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb link clk reset %s failed\n",
- 			assert ? "assert" : "deassert");
-@@ -250,12 +254,13 @@ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+-	while (seq[0] >= 0) {
+ 		dev_vdbg(motg->phy.dev, "ulpi: write 0x%02x to 0x%02x\n",
+-				seq[0], seq[1]);
+-		ulpi_write(&motg->phy, seq[0], seq[1]);
+-		seq += 2;
++				seq[idx], addr + idx);
++		ulpi_write(&motg->phy, seq[idx], addr + idx);
+ 	}
+ }
 
- static int msm_otg_phy_clk_reset(struct msm_otg *motg)
+@@ -1343,26 +1346,96 @@ static void msm_otg_debugfs_cleanup(void)
+ 	debugfs_remove(msm_otg_dbg_root);
+ }
+
++static struct of_device_id msm_otg_dt_match[] = {
++	{
++		.compatible = "qcom,usb-otg-ci",
++		.data = (void *) CI_45NM_INTEGRATED_PHY
++	},
++	{
++		.compatible = "qcom,usb-otg-snps",
++		.data = (void *) SNPS_28NM_INTEGRATED_PHY
++	},
++	{ }
++};
++MODULE_DEVICE_TABLE(of, msm_otg_dt_match);
++
++static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
++{
++	struct msm_otg_platform_data *pdata;
++	const struct of_device_id *id;
++	struct device_node *node = pdev->dev.of_node;
++	struct property *prop;
++	int len, ret, words;
++	u32 val;
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return -ENOMEM;
++
++	motg->pdata = pdata;
++
++	id = of_match_device(msm_otg_dt_match, &pdev->dev);
++	pdata->phy_type = (int) id->data;
++
++	pdata->mode = of_usb_get_dr_mode(node);
++	if (pdata->mode == USB_DR_MODE_UNKNOWN)
++		pdata->mode = USB_DR_MODE_OTG;
++
++	pdata->otg_control = OTG_PHY_CONTROL;
++	if (!of_property_read_u32(node, "qcom,otg-control", &val))
++		if (val == OTG_PMIC_CONTROL)
++			pdata->otg_control = val;
++
++	prop = of_find_property(node, "qcom,phy-init-sequence", &len);
++	if (!prop || !len)
++		return 0;
++
++	words = len / sizeof(u32);
++
++	if (words >= ULPI_EXT_VENDOR_SPECIFIC) {
++		dev_warn(&pdev->dev, "Too big PHY init sequence %d\n", words);
++		return 0;
++	}
++
++	pdata->phy_init_seq = devm_kzalloc(&pdev->dev, len, GFP_KERNEL);
++	if (!pdata->phy_init_seq) {
++		dev_warn(&pdev->dev, "No space for PHY init sequence\n");
++		return 0;
++	}
++
++	ret = of_property_read_u32_array(node, "qcom,phy-init-sequence",
++					 pdata->phy_init_seq, words);
++	if (!ret)
++		pdata->phy_init_sz = words;
++
++	return 0;
++}
++
+ static int msm_otg_probe(struct platform_device *pdev)
  {
--	int ret = 0;
-+	int ret;
+ 	struct regulator_bulk_data regs[3];
+ 	int ret = 0;
++	struct device_node *np = pdev->dev.of_node;
++	struct msm_otg_platform_data *pdata;
+ 	struct resource *res;
+ 	struct msm_otg *motg;
+ 	struct usb_phy *phy;
 
--	if (!motg->pdata->phy_clk_reset)
--		return ret;
-+	if (motg->pdata->phy_clk_reset)
-+		ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
-+	else
-+		ret = reset_control_reset(motg->phy_rst);
+-	dev_info(&pdev->dev, "msm_otg probe\n");
+-	if (!dev_get_platdata(&pdev->dev)) {
+-		dev_err(&pdev->dev, "No platform data given. Bailing out\n");
+-		return -ENODEV;
+-	}
+-
+ 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
+ 	if (!motg) {
+ 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
+ 		return -ENOMEM;
+ 	}
 
--	ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		dev_err(motg->phy.dev, "usb phy clk reset failed\n");
-
-@@ -1377,6 +1382,14 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
- 	id = of_match_device(msm_otg_dt_match, &pdev->dev);
- 	pdata->phy_type = (int) id->data;
-
-+	motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
-+	if (IS_ERR(motg->link_rst))
-+		return PTR_ERR(motg->link_rst);
++	pdata = dev_get_platdata(&pdev->dev);
++	if (!pdata) {
++		if (!np)
++			return -ENXIO;
++		ret = msm_otg_read_dt(pdev, motg);
++		if (ret)
++			return ret;
++	}
 +
-+	motg->phy_rst = devm_reset_control_get(&pdev->dev, "phy");
-+	if (IS_ERR(motg->phy_rst))
-+		return PTR_ERR(motg->phy_rst);
-+
- 	pdata->mode = of_usb_get_dr_mode(node);
- 	if (pdata->mode == USB_DR_MODE_UNKNOWN)
- 		pdata->mode = USB_DR_MODE_OTG;
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index bd68299..4e5d916 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -165,6 +165,9 @@ struct msm_otg {
- 	struct regulator *v3p3;
- 	struct regulator *v1p8;
- 	struct regulator *vddcx;
-+
-+	struct reset_control *phy_rst;
-+	struct reset_control *link_rst;
+ 	motg->phy.otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
+ 				     GFP_KERNEL);
+ 	if (!motg->phy.otg) {
+@@ -1370,17 +1443,17 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+
+-	motg->pdata = dev_get_platdata(&pdev->dev);
+ 	phy = &motg->phy;
+ 	phy->dev = &pdev->dev;
+
+-	motg->phy_reset_clk = devm_clk_get(&pdev->dev, "usb_phy_clk");
++	motg->phy_reset_clk = devm_clk_get(&pdev->dev,
++					   np ? "phy" : "usb_phy_clk");
+ 	if (IS_ERR(motg->phy_reset_clk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_phy_clk\n");
+ 		return PTR_ERR(motg->phy_reset_clk);
+ 	}
+
+-	motg->clk = devm_clk_get(&pdev->dev, "usb_hs_clk");
++	motg->clk = devm_clk_get(&pdev->dev, np ? "core" : "usb_hs_clk");
+ 	if (IS_ERR(motg->clk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_hs_clk\n");
+ 		return PTR_ERR(motg->clk);
+@@ -1392,7 +1465,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	 * operation and USB core cannot tolerate frequency changes on
+ 	 * CORE CLK.
+ 	 */
+-	motg->pclk = devm_clk_get(&pdev->dev, "usb_hs_pclk");
++	motg->pclk = devm_clk_get(&pdev->dev, np ? "iface" : "usb_hs_pclk");
+ 	if (IS_ERR(motg->pclk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_hs_pclk\n");
+ 		return PTR_ERR(motg->pclk);
+@@ -1403,7 +1476,8 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	 * clock is introduced to remove the dependency on AXI
+ 	 * bus frequency.
+ 	 */
+-	motg->core_clk = devm_clk_get(&pdev->dev, "usb_hs_core_clk");
++	motg->core_clk = devm_clk_get(&pdev->dev,
++				      np ? "alt_core" : "usb_hs_core_clk");
+
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	motg->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+@@ -1486,7 +1560,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	device_init_wakeup(&pdev->dev, 1);
+
+ 	if (motg->pdata->mode == USB_DR_MODE_OTG &&
+-			motg->pdata->otg_control == OTG_USER_CONTROL) {
++		motg->pdata->otg_control == OTG_USER_CONTROL) {
+ 		ret = msm_otg_debugfs_init(motg);
+ 		if (ret)
+ 			dev_dbg(&pdev->dev, "Can not create mode change file\n");
+@@ -1639,6 +1713,7 @@ static struct platform_driver msm_otg_driver = {
+ 		.name = DRIVER_NAME,
+ 		.owner = THIS_MODULE,
+ 		.pm = &msm_otg_dev_pm_ops,
++		.of_match_table = msm_otg_dt_match,
+ 	},
  };
 
- #endif
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 262ed80..bd68299 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -100,8 +100,9 @@ enum usb_chg_type {
+ /**
+  * struct msm_otg_platform_data - platform device data
+  *              for msm_otg driver.
+- * @phy_init_seq: PHY configuration sequence. val, reg pairs
+- *              terminated by -1.
++ * @phy_init_seq: PHY configuration sequence values. Value of -1 is reserved as
++ *              "do not overwrite default vaule at this address".
++ * @phy_init_sz: PHY configuration sequence size.
+  * @vbus_power: VBUS power on/off routine.
+  * @power_budget: VBUS power budget in mA (0 will be treated as 500mA).
+  * @mode: Supported mode (OTG/peripheral/host).
+@@ -109,6 +110,7 @@ enum usb_chg_type {
+  */
+ struct msm_otg_platform_data {
+ 	int *phy_init_seq;
++	int phy_init_sz;
+ 	void (*vbus_power)(bool on);
+ 	unsigned power_budget;
+ 	enum usb_dr_mode mode;
 --
 1.8.3.2
 
