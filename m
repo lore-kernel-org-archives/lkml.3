@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaD1TI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:08:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39862 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751305AbaD1TIx (ORCPT
+	id S1752849AbaD1TJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:09:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48931 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaD1TJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:08:53 -0400
-Date: Mon, 28 Apr 2014 20:08:15 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Robert Richter <rric@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>
-Subject: Re: [PATCH] arm64: add OProfile support
-Message-ID: <20140428190815.GA22135@arm.com>
-References: <535B707F.7020802@huawei.com>
- <58ED971B-CC04-4BE1-916C-386D219874A8@arm.com>
- <535B88C9.6000908@huawei.com>
- <535DBDA4.6070607@huawei.com>
+	Mon, 28 Apr 2014 15:09:33 -0400
+Date: Mon, 28 Apr 2014 11:15:24 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-fsdevel@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        David Howells <dhowells@redhat.com>, Sage Weil <sage@inktank.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:9P FILE SYSTEM" <v9fs-developer@lists.sourceforge.net>,
+        "open list:AFS FILESYSTEM &..." <linux-afs@lists.infradead.org>,
+        "open list:CEPH DISTRIBUTED..." <ceph-devel@vger.kernel.org>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        "open list:NFS, SUNRPC, AND..." <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH] locks: ensure that fl_owner is always initialized
+ properly in flock and lease codepaths
+Message-ID: <20140428181524.GA18775@kroah.com>
+References: <1398707413-32384-1-git-send-email-jlayton@poochiereds.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <535DBDA4.6070607@huawei.com>
+In-Reply-To: <1398707413-32384-1-git-send-email-jlayton@poochiereds.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 03:32:04AM +0100, Ding Tianhong wrote:
-> On 2014/4/26 18:22, Ding Tianhong wrote:
-> > On 2014/4/26 17:23, Catalin Marinas wrote:
-> >> On 26 Apr 2014, at 09:38, Ding Tianhong <dingtianhong@huawei.com> wrote:
-> >>> Add OProfile support for arm64,  using the perf backend, and failing back
-> >>> to generic timer based sampling if PMU interrupt is not supported.
-> >>>
-> >>> I have test this patch on Cortex-A53 and Cortex-A57 motherboard, the OProfile
-> >>> could work well by PMU irq or arch timer irq.
-> >>
-> >> This came up before a few times and we also had an implementation but
-> >> decided not to merge it. We should rather get the user space oprofile to
-> >> use the perf kernel API.
-> >>
-> >> That’s an old thread, it may have even made it into mainline oprofile
-> >> but I haven’t followed the development:
-> >>
-> >> http://marc.info/?l=oprofile-list&m=133002515616302&w=2
-> >>
-> >> Catalin
-> >>
+On Mon, Apr 28, 2014 at 01:50:13PM -0400, Jeff Layton wrote:
+> Currently, the fl_owner isn't set for flock locks. Some filesystems use
+> byte-range locks to simulate flock locks and there is a common idiom in
+> those that does:
 > 
-> Hi Cadtalin:
+>     fl->fl_owner = (fl_owner_t)filp;
+>     fl->fl_start = 0;
+>     fl->fl_end = OFFSET_MAX;
 > 
-> Sorry I could not find the implementation that not to merge the orpfile support for aarch64 till now, and
-> I still have questions that the existing code only support oprofile by arch timer event, but not
-> PMU event, this patch only add HW PMU support for oprofile, it is more accurate and stable, can you
-> give me more advise and appreciate for your help.
+> Since flock locks are generally "owned" by the open file description,
+> move this into the common flock lock setup code. The fl_start and fl_end
+> fields are already set appropriately, so remove the unneeded setting of
+> that in flock ops in those filesystems as well.
+> 
+> Finally, the lease code also sets the fl_owner as if they were owned by
+> the process and not the open file description. This is incorrect as
+> leases have the same ownership semantics as flock locks. Set them the
+> same way. The lease code doesn't actually use the fl_owner value for
+> anything, so this is more for consistency's sake than a bugfix.
+> 
+> Reported-by: Trond Myklebust <trond.myklebust@primarydata.com>
+> Signed-off-by: Jeff Layton <jlayton@poochiereds.net>
+> ---
+>  drivers/staging/lustre/lustre/llite/file.c | 17 ++++++-----------
+>  fs/9p/vfs_file.c                           |  3 ---
+>  fs/afs/flock.c                             |  4 ----
+>  fs/ceph/locks.c                            | 10 ++--------
+>  fs/fuse/file.c                             |  1 -
+>  fs/locks.c                                 |  4 +++-
+>  fs/nfs/file.c                              |  4 ----
+>  7 files changed, 11 insertions(+), 32 deletions(-)
 
-Just use the operf tool, which is part of the oprofile project. It uses the
-perf syscall under the hood and doesn't need any kernel-side additions over
-perf.
+Staging portion:
 
-Will
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
