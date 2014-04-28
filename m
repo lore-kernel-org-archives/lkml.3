@@ -1,139 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756414AbaD1TWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:22:54 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:52035 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753127AbaD1TWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:22:51 -0400
-Message-ID: <535E8F68.7040206@free-electrons.com>
-Date: Mon, 28 Apr 2014 19:27:04 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756592AbaD1TX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:23:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756524AbaD1TXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:23:19 -0400
+Date: Mon, 28 Apr 2014 21:23:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] uprobes: use BX register for rip-relative fixups, not
+	AX
+Message-ID: <20140428192304.GA9412@redhat.com>
+References: <1398704774-25173-1-git-send-email-dvlasenk@redhat.com> <1398704774-25173-2-git-send-email-dvlasenk@redhat.com> <20140428173432.GA27363@redhat.com> <535EA6C3.3030903@redhat.com>
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>
-CC: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin <kevin@allwinnertech.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, dev <dev@linux-sunxi.org>
-Subject: Re: [PATCH 7/7] ARM: sunxi: dt: add PRCM clk and reset controller
- subdevices
-References: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com> <1398697130-8338-8-git-send-email-boris.brezillon@free-electrons.com> <CAGb2v67GnW_ziDMjg6zObCAHZrHppGzP=+-VhpWet-NaAzx-Fg@mail.gmail.com>
-In-Reply-To: <CAGb2v67GnW_ziDMjg6zObCAHZrHppGzP=+-VhpWet-NaAzx-Fg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535EA6C3.3030903@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 28/04/2014 18:02, Chen-Yu Tsai wrote:
-> Hi,
+On 04/28, Denys Vlasenko wrote:
 >
-> On Mon, Apr 28, 2014 at 10:58 PM, Boris BREZILLON
-> <boris.brezillon@free-electrons.com> wrote:
->> Add DT definitions for PRCM (Power/Reset/Clock Management) clock and reset
->> controller subdevices.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>  arch/arm/boot/dts/sun6i-a31.dtsi | 49 ++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 49 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
->> index ec3253a..83a1634 100644
->> --- a/arch/arm/boot/dts/sun6i-a31.dtsi
->> +++ b/arch/arm/boot/dts/sun6i-a31.dtsi
->> @@ -501,6 +501,55 @@
->>                 prcm@01f01c00 {
-> Seems the address here was wrong to start with.
-
-Absolutely, I'll fix it.
-
+> On 04/28/2014 07:34 PM, Oleg Nesterov wrote:
+> >
+> > It seems that you are right. But it would be really great if you also
+> > provide the test-case which proves the fix ;)
 >
->>                         compatible = "allwinner,sun6i-a31-prcm";
->>                         reg = <0x01f01400 0x200>;
->> +
->> +                       ar100_mux: ar100_mux {
-> Might we use clk@01f01XXX for the names of the clock nodes?
-
-Actually, I had a discussion with Maxime, and we decided to remove the
-address suffix because the PRCM block is not a bus, and thus should not
-have child node with addresses.
-But I'm not a DT binding expert (it might be acceptable to define child
-nodes with addresses even when the parent is not a bus :-)).
-Advices from DT maintainers on that specific point would be great.
-
-Best Regards,
-
-Boris
-
->> +                               compatible = "allwinner,sun6i-a31-ar100-mux-clk";
->> +                               #clock-cells = <0>;
->> +                               clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
->> +                       };
->> +
->> +                       ar100: ar100 {
->> +                               compatible = "allwinner,sun6i-a31-ar100-clk";
->> +                               #clock-cells = <0>;
->> +                               clocks = <&ar100_mux>;
->> +                       };
->> +
->> +                       ar100_div: ar100_div {
->> +                               compatible = "allwinner,sun6i-a31-ar100-div-clk";
->> +                               #clock-cells = <0>;
->> +                               clocks = <&ar100>;
->> +                       };
->> +
->> +                       ahb0: ahb0 {
->> +                               compatible = "fixed-factor-clock";
->> +                               #clock-cells = <0>;
->> +                               clock-div = <1>;
->> +                               clock-mult = <1>;
->> +                               clocks = <&ar100_div>;
->> +                               clock-output-names = "ahb0";
->> +                       };
->> +
->> +                       apb0: apb0 {
->> +                               compatible = "allwinner,sun6i-a31-apb0-clk";
->> +                               #clock-cells = <0>;
->> +                               clocks = <&ahb0>;
->> +                               clock-output-names = "apb0";
->> +                       };
->> +
->> +                       apb0_gates: apb0_gates {
->> +                               compatible = "allwinner,sun6i-a31-apb0-gates-clk";
->> +                               #clock-cells = <1>;
->> +                               clocks = <&apb0>;
->> +                               clock-output-names = "apb0_pio", "apb0_ir",
->> +                                               "apb0_timer01", "apb0_p2wi",
->> +                                               "apb0_uart", "apb0_1wire",
->> +                                               "apb0_i2c";
->> +                       };
->> +
->> +                       apb0_rst: apb0_rst {
-> Also use reset@01f01XXX here?
+> Working on a testcase for this. So far covered div (test1)
+> and cmpxchg (test2).
 >
->> +                               compatible = "allwinner,sun6i-a31-clock-reset";
->> +                               #reset-cells = <1>;
->> +                       };
->>                 };
->>         };
->>  };
-> Thanks!
->
-> ChenYu
+> Reproduced failure on a fairly old 3.10.11 kernel:
 
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Just in case, confirm. Reproduced on v3.14 + all recent uprobes changes.
+
+Thanks.
+
+> # gcc -Os -Wall test_riprel.c -o test_riprel
+> # ./test_riprel
+> test1: pass
+> test2: pass
+> # perf probe -x ./test_riprel probe1
+> # perf record -e probe_test:probe1 ./test_riprel
+> test1: FAIL
+> test2: pass
+> # perf probe -x ./test_riprel probe2
+> # perf record -e probe_test:probe2 ./test_riprel
+> test1: pass
+> test2: FAIL
+> 
+> Source:
+> 
+> test_riprel.c
+> ==================
+> #include <stdio.h>
+> 
+> static const char *const fail_pass[] = { "FAIL", "pass" };
+> 
+> long two = 2;
+> long test1()
+> {
+> 	long ax=0, dx=0;
+> 	asm volatile("\n"
+> "			xor	%%edx,%%edx\n"
+> "			lea	2(%%edx),%%eax\n"
+> // We divide 2 by 2. Result (in eax) should be 1:
+> "	probe1:		.globl	probe1\n"
+> "			divl	two(%%rip)\n"
+> // If we have a bug (eax mangled on entry) the result will be 2,
+> // because eax gets restored by probe machinery.
+> 	: "=a" (ax), "=d" (dx) /*out*/
+> 	: "0" (ax), "1" (dx) /*in*/
+> 	: "memory" /*clobber*/
+> 	);
+> 	dprintf(2, "%s: %s\n", __func__, fail_pass[ax == 1]);
+> 	return ax;
+> }
+> 
+> long val2 = 0;
+> long test2()
+> {
+> 	long old_val2 = val2;
+> 	long ax=0, dx=0;
+> 	asm volatile("\n"
+> "			mov	val2,%%eax\n"     // eax := val2
+> "			lea	1(%%eax),%%edx\n" // edx := eax+1
+> // eax is equal to val2. cmpxchg should store edx to val2:
+> "	probe2:		.globl  probe2\n"
+> "			cmpxchg %%edx,val2(%%rip)\n"
+> // If we have a bug (eax mangled on entry), val2 will stay unchanged
+> 	: "=a" (ax), "=d" (dx) /*out*/
+> 	: "0" (ax), "1" (dx) /*in*/
+> 	: "memory" /*clobber*/
+> 	);
+> 	dprintf(2, "%s: %s\n", __func__, fail_pass[val2 == old_val2 + 1]);
+> 	return ax == dx;
+> }
+> 
+> int main()
+> {
+> 	test1();
+> 	test2();
+> 	return 0;
+> }
+> 
 
