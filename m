@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348AbaD1OIR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:08:17 -0400
-Received: from ring0.de ([5.45.105.125]:52026 "EHLO ring0.de"
+	id S1756224AbaD1OI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:08:29 -0400
+Received: from ring0.de ([5.45.105.125]:52081 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932263AbaD1OII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:08:08 -0400
+	id S932339AbaD1OIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:08:16 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
@@ -21,9 +21,9 @@ Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
         Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         alsa-devel@alsa-project.org, Sebastian Reichel <sre@kernel.org>
-Subject: [PATCHv2 7/9] ASoC: omap: rx51: Add some error messages
-Date: Mon, 28 Apr 2014 16:07:25 +0200
-Message-Id: <1398694047-28596-8-git-send-email-sre@kernel.org>
+Subject: [PATCHv2 9/9] DTS: OMAP3-N900: Add sound support
+Date: Mon, 28 Apr 2014 16:07:27 +0200
+Message-Id: <1398694047-28596-10-git-send-email-sre@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398694047-28596-1-git-send-email-sre@kernel.org>
 References: <1398694047-28596-1-git-send-email-sre@kernel.org>
@@ -31,58 +31,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add more error messages making it easier to identify problems.
+This patch adds support for the Nokia N900's sound
+system.
 
 Signed-off-by: Sebastian Reichel <sre@kernel.org>
 ---
- sound/soc/omap/rx51.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ arch/arm/boot/dts/omap3-n900.dts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
-index 30cfac0..110deca 100644
---- a/sound/soc/omap/rx51.c
-+++ b/sound/soc/omap/rx51.c
-@@ -298,20 +298,26 @@ static int rx51_aic34_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_nc_pin(dapm, "LINE1R");
+diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
+index 6bc8100..5701f91 100644
+--- a/arch/arm/boot/dts/omap3-n900.dts
++++ b/arch/arm/boot/dts/omap3-n900.dts
+@@ -90,6 +90,19 @@
+ 			};
+ 		};
+ 	};
++
++	sound: n900-audio {
++		compatible = "nokia,n900-audio";
++
++		nokia,cpu-dai = <&mcbsp2>;
++		nokia,audio-codec = <&tlv320aic3x>, <&tlv320aic3x_aux>;
++		nokia,headphone-amplifier = <&tpa6130a2>;
++
++		tvout-selection-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>; /* 40 */
++		jack-detection-gpios = <&gpio6 17 GPIO_ACTIVE_HIGH>; /* 177 */
++		eci-switch-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* 182 */
++		speaker-amplifier-gpios = <&twl_gpio 7 GPIO_ACTIVE_HIGH>;
++	};
+ };
  
- 	err = tpa6130a2_add_controls(codec);
--	if (err < 0)
-+	if (err < 0) {
-+		dev_err(card->dev, "Failed to add TPA6130A2 controls\n");
- 		return err;
-+	}
- 	snd_soc_limit_volume(codec, "TPA6130A2 Headphone Playback Volume", 42);
- 
- 	err = omap_mcbsp_st_add_controls(rtd, 2);
--	if (err < 0)
-+	if (err < 0) {
-+		dev_err(card->dev, "Failed to add MCBSP controls\n");
- 		return err;
-+	}
- 
- 	/* AV jack detection */
- 	err = snd_soc_jack_new(codec, "AV Jack",
- 			       SND_JACK_HEADSET | SND_JACK_VIDEOOUT,
- 			       &rx51_av_jack);
--	if (err)
-+	if (err) {
-+		dev_err(card->dev, "Failed to add AV Jack\n");
- 		return err;
-+	}
- 
- 	/* prepare gpio for snd_soc_jack_add_gpios */
- 	rx51_av_jack_gpios[0].gpio = desc_to_gpio(pdata->jack_detection_gpio);
-@@ -320,6 +326,10 @@ static int rx51_aic34_init(struct snd_soc_pcm_runtime *rtd)
- 	err = snd_soc_jack_add_gpios(&rx51_av_jack,
- 				     ARRAY_SIZE(rx51_av_jack_gpios),
- 				     rx51_av_jack_gpios);
-+	if (err) {
-+		dev_err(card->dev, "Failed to add GPIOs\n");
-+		return err;
-+	}
- 
- 	return err;
- }
+ &omap3_pmx_core {
+@@ -662,3 +675,7 @@
+ 		};
+ 	};
+ };
++
++&mcbsp2 {
++	status = "ok";
++};
 -- 
 1.9.2
 
