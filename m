@@ -1,112 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaD1WVl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:21:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:55909 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751400AbaD1WVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:21:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 28 (drivers/pnp/quirks.c)
-Date: Tue, 29 Apr 2014 00:38:07 +0200
-Message-ID: <4118646.t0YM8Nt49i@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140428220928.GA19838@google.com>
-References: <20140428165724.6361cf10ebd3067b7f998c0f@canb.auug.org.au> <535EC4A7.5070001@intel.com> <20140428220928.GA19838@google.com>
+	id S1757193AbaD1WZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:25:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36564 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662AbaD1WZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:25:49 -0400
+Message-ID: <535ED548.7000400@redhat.com>
+Date: Mon, 28 Apr 2014 18:25:12 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linaro-kernel@lists.linaro.org, arndb@arndb.de,
+        linux-kernel@vger.kernel.org, dsaxena@linaro.org,
+        linux-audit@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH_v8 0/2] arm64: Add audit support
+References: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org> <1394862548-29060-1-git-send-email-takahiro.akashi@linaro.org> <53486087.9060304@redhat.com> <535E249F.2080606@linaro.org>
+In-Reply-To: <535E249F.2080606@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 28, 2014 04:09:28 PM Bjorn Helgaas wrote:
-> On Mon, Apr 28, 2014 at 11:14:15PM +0200, Rafael J. Wysocki wrote:
-> > On 4/28/2014 11:11 PM, Bjorn Helgaas wrote:
-> > >On Mon, Apr 28, 2014 at 10:45:37AM -0700, Randy Dunlap wrote:
-> > >>On 04/27/14 23:57, Stephen Rothwell wrote:
-> > >>>Hi all,
-> > >>>
-> > >>>This tree still fails (more than usual) the powerpc allyesconfig build.
-> > >>>
-> > >>>Changes since 20140424:
-> > >>>
-> > >>on i386:
-> > >>
-> > >>   CC      drivers/pnp/quirks.o
-> > >>drivers/pnp/quirks.c: In function 'quirk_intel_mch':
-> > >>drivers/pnp/quirks.c:393:2: error: implicit declaration of function 'pcibios_bus_to_resource' [-Werror=implicit-function-declaration]
-> > >>cc1: some warnings being treated as errors
-> > >>make[3]: *** [drivers/pnp/quirks.o] Error 1
-> > >Thanks Randy.  This is a config that doesn't define CONFIG_PCI.  Rafael,
-> > >here's an incremental fix, or the full updated patch is below.
-> > 
-> > Well, that went to Linus already, so a fix on top of 3.15-rc3 is needed.
-> 
-> Of course; I should have noticed that.
-> 
-> > >+#if defined(CONFIG_X86) && defined(CONFIG_PCI)
-> > 
-> > Do we need both or would CONFIG_PCI be sufficient?
-> 
-> CONFIG_PCI alone should be sufficient.  Here's a fix on top of
-> v3.15-rc3.  Sorry for all the hassle.
+On 04/28/2014 05:51 AM, AKASHI Takahiro wrote:
+> Hi Don,
+>
+> Sorry for not responding to you soon:
+>
+been there, done that! .. no problem..
 
-Applied, thanks!
+> On 04/12/2014 06:37 AM, Don Dutile wrote:
+>> On 03/15/2014 01:49 AM, AKASHI Takahiro wrote:
+>>> (Please apply this patch after my ftrace patch to resolve some conflict
+>>> on arm64/kernel/ptrace.c, functionally it doesn't depend on ftrace though)
+>>>
+>>> This patchset adds system call audit support on arm64.
+>>> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+>>> are supported. Since arm64 has the exact same set of system calls
+>>> on LE and BE, we don't care about endianness (or more specifically
+>>> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
+>>>
+>>> There are some prerequisites for this patch to work correctly:
+>>> * "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+>>> * "audit: generic compat system call audit support" patch
+>>> * "arm64: __NR_* definitions for compat syscalls" patch from Catalin
+>>> * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+>>> * "arm64: split syscall_trace() into separate functions for enter/exit" patch
+>>> * "arm64: Add regs_return_value() in syscall.h" patch
+>>> * "arm64: is_compat_task is defined both in asm/compat.h and
+>>>     linux/compat.h" patch
+>>> * userspace audit tool (v2.3.2 + my patch for arm64)
+>>>
+>> and the 2/2 patch won't apply to arch/arm64/kernel/ptrace.c
+>> without the patch from  [PATCH v7 7/7] arm64: ftrace: Add system call tracepoint;
+>> My question: do you need all 7 patches from arm64: Add ftrace support
+>> as well for this audit patch to work, or just this 7/7 patch ?
+>
+> Functionally, my audit patch should work without ftrace patchset, but as described
+> in ftrace's [0/7] and audit's [0/2], audit's [2/2] assumes that ftrace patchset, especially
+> [7/7], has been applied in order to avoid any conflict when making changes on the same
+> line of ptrace.c.
+>
+> Thanks,
+> -Takahiro AKASHI
+>
+just a nit for others to see/know if they were having the same fun of
+backporting these patches to work on an existing kernel w/o ftrace patch set.
 
-
-> commit c03ae9359c7f97854567f897bafcb2e6489d155f
-> Author: Bjorn Helgaas <bhelgaas@google.com>
-> Date:   Thu Apr 17 14:22:18 2014 -0600
-> 
->     PNP: Fix compile error
->     
->     Fix the compile error:
->     
->       drivers/pnp/quirks.c:393:2: error: implicit declaration of function 'pcibios_bus_to_resource'
->     
->     that occurs when building with CONFIG_PCI unset.  The quirk is only
->     relevent to Intel devices, so we could use "#if defined(CONFIG_X86) &&
->     defined(CONFIG_PCI)" instead, but testing CONFIG_X86 is not strictly
->     necessary.
->     
->     Reported-by: Randy Dunlap <rdunlap@infradead.org>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-> index 3736bc408adb..ebf0d6710b5a 100644
-> --- a/drivers/pnp/quirks.c
-> +++ b/drivers/pnp/quirks.c
-> @@ -335,7 +335,7 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
->  }
->  #endif
->  
-> -#ifdef CONFIG_X86
-> +#ifdef CONFIG_PCI
->  /* Device IDs of parts that have 32KB MCH space */
->  static const unsigned int mch_quirk_devices[] = {
->  	0x0154,	/* Ivy Bridge */
-> @@ -440,7 +440,7 @@ static struct pnp_fixup pnp_fixups[] = {
->  #ifdef CONFIG_AMD_NB
->  	{"PNP0c01", quirk_amd_mmconfig_area},
->  #endif
-> -#ifdef CONFIG_X86
-> +#ifdef CONFIG_PCI
->  	{"PNP0c02", quirk_intel_mch},
->  #endif
->  	{""}
+>>
+>>> Please review them as well for better understandings.
+>>>
+>>> This code was tested on both 32-bit and 64-bit LE userland
+>>> in the following two ways:
+>>> 1) basic operations with auditctl/autrace
+>>>    # auditctl -a exit,always -S openat -F path=/etc/inittab
+>>>    # auditctl -a exit,always -F dir=/tmp -F perm=rw
+>>>    # auditctl -a task,always
+>>>    # autrace /bin/ls
+>>>      by comparing output from autrace with one from strace
+>>>
+>>> 2) audit-test-code (+ my workarounds for arm/arm64)
+>>>    by running "audit-tool", "filter" and "syscalls" test categories.
+>>>
+>>> Changes v7 -> v8:
+>>> * aligned with the change in "audit: generic compat system call audit
+>>>    support" v5 [1/2]
+>>> * aligned with the change in "arm64: split syscall_trace() into separate
+>>>    functions for enter/exit" v5 [2/2]
+>>>
+>>> Changes v6 -> v7:
+>>> * changed an include file in syscall.h from <linux/audit.h> to
+>>>    <uapi/linux/audit.h> [1/2]
+>>> * aligned with the patch, "arm64: split syscall_trace() into separate
+>>>    functions for enter/exit" [2/2]
+>>>
+>>> Changes v5 -> v6:
+>>> * removed and put "arm64: Add regs_return_value() in syscall.h" patch into
+>>>    a separate set
+>>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>>    for all syscall features" v3 [1/2]
+>>>
+>>> Changes v4 -> v5:
+>>> * rebased to 3.14-rcX
+>>> * added a guard against TIF_SYSCALL_AUDIT [3/3]
+>>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>>    for all syscall features" v2 [3/3]
+>>>
+>>> Changes v3 -> v4:
+>>> * Modified to sync with the patch, "make a single hook to syscall_trace()
+>>>    for all syscall features"
+>>> * aligned with "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+>>>
+>>> Changes v2 -> v3:
+>>> * Remove asm/audit.h.
+>>>    See "generic compat syscall audit support" patch v4
+>>> * Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
+>>> * Remove kernel/syscalls/Makefile which was used to create unistd32.h.
+>>>    See Catalin's "Add __NR_* definitions for compat syscalls" patch
+>>>
+>>> Changes v1 -> v2:
+>>> * Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+>>>    Please note that a required header, unistd_32.h, is automatically
+>>>    generated from unistd32.h.
+>>> * Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+>>>    system call in audit_syscall_entry() [6/6]
+>>> * Include "Add regs_return_value() in syscall.h" patch [2/6],
+>>>    which was not intentionally included in v1 because it could be added
+>>>    by "kprobes support".
+>>>
+>>> AKASHI Takahiro (2):
+>>>    arm64: Add audit support
+>>>    arm64: audit: Add audit hook in syscall_trace_enter/exit()
+>>>
+>>>   arch/arm64/Kconfig               |  2 ++
+>>>   arch/arm64/include/asm/syscall.h | 15 +++++++++++++++
+>>>   arch/arm64/kernel/ptrace.c       |  7 +++++++
+>>>   include/uapi/linux/audit.h       |  1 +
+>>>   4 files changed, 25 insertions(+)
+>>>
+>>
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
