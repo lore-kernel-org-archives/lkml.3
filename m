@@ -1,99 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaD1JJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:09:52 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:62298 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754573AbaD1JJu (ORCPT
+	id S1754465AbaD1JMf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:12:35 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:59576 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751837AbaD1JMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:09:50 -0400
-Message-ID: <1398676186.30930.49.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 28 Apr 2014 11:09:46 +0200
-In-Reply-To: <1398661784.30930.33.camel@marge.simpson.net>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
-	 <1398411635.11930.45.camel@marge.simpson.net>
-	 <1398501491.12941.5.camel@marge.simpson.net>
-	 <1398520699.28726.22.camel@marge.simpson.net>
-	 <1398661784.30930.33.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 28 Apr 2014 05:12:34 -0400
+Date: Mon, 28 Apr 2014 10:12:28 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL v2] regulator: First pull of MFD <-> Regulator IB (v3.16)
+Message-ID: <20140428091228.GJ6264@lee--X1>
+References: <20140423113941.GL21613@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140423113941.GL21613@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 07:09 +0200, Mike Galbraith wrote: 
-> Hi Nicholas,
-> 
-> On Sat, 2014-04-26 at 15:58 +0200, Mike Galbraith wrote: 
-> > On Sat, 2014-04-26 at 10:38 +0200, Mike Galbraith wrote: 
-> > > On Fri, 2014-04-25 at 09:40 +0200, Mike Galbraith wrote:
-> > > 
-> > > > Hotplug can still deadlock in rt trees too, and will if you beat it
-> > > > hard.
-> > > 
-> > > Box actually deadlocks like so.
-> > 
-> > ...
-> > 
-> > 3.12-rt looks a bit busted migrate_disable/enable() wise.
-> > 
-> > /me eyeballs 3.10-rt (looks better), confirms 3.10-rt hotplug works,
-> > swipes working code, confirms 3.12-rt now works.  Yup, that was it.
-> 
-> My boxen, including 64 core DL980 that ran hotplug stress for 3 hours
-> yesterday with pre-pushdown rwlocks, say the migrate_disable/enable
-> pushdown patches are very definitely busted.
+With the Regulator patch removed this time - as requested.
 
-migrate_disable-pushd-down-in-atomic_dec_and_spin_lo.patch
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
-bug: migrate_disable() after blocking is too late.
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-@@ -1028,12 +1028,12 @@ int atomic_dec_and_spin_lock(atomic_t *a
-        /* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
-        if (atomic_add_unless(atomic, -1, 1))
-                return 0;
--       migrate_disable();
-        rt_spin_lock(lock);
--       if (atomic_dec_and_test(atomic))
-+       if (atomic_dec_and_test(atomic)){
-+               migrate_disable();
-                return 1;
-+       }
-        rt_spin_unlock(lock);
--       migrate_enable();
-        return 0;
- }
- EXPORT_SYMBOL(atomic_dec_and_spin_lock);
+are available in the git repository at:
 
-read_lock-migrate_disable-pushdown-to-rt_read_lock.patch
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-regulator-3.16
 
-bug: ditto.
+for you to fetch changes up to c42ba72ec3a7a1b6aa30122931f1f4b91b601c31:
 
-@@ -244,8 +246,10 @@ void __lockfunc rt_read_lock(rwlock_t *r
-        /*
-         * recursive read locks succeed when current owns the lock
-         */
--       if (rt_mutex_owner(lock) != current)
-+       if (rt_mutex_owner(lock) != current) {
-                __rt_spin_lock(lock);
-+               migrate_disable();
-+       }
-        rwlock->read_depth++;
- }
+  mfd: tps65090: Stop caching most registers (2014-04-23 12:32:19 +0100)
 
-Moving that migrate_disable() up will likely fix my hotplug troubles.
-I'll find out when I get back from physical torture (therapy) session.
+----------------------------------------------------------------
+Immutable branch between MFD and Regulator due for v3.16 merge-window.
 
--Mike
+----------------------------------------------------------------
+Doug Anderson (2):
+      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+      mfd: tps65090: Stop caching most registers
 
+ drivers/mfd/tps65090.c           | 41 +++++++++++++++++++++++++----------------
+ drivers/power/tps65090-charger.c | 11 -----------
+ include/linux/mfd/tps65090.h     | 14 ++++++++++++++
+ 3 files changed, 39 insertions(+), 27 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
