@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344AbaD1U5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:57:40 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:33025 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408AbaD1U5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:57:38 -0400
-Date: Mon, 28 Apr 2014 23:57:34 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Cpufreq frequency serialization fixes
-In-Reply-To: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-Message-ID: <alpine.SOC.1.00.1404282357170.13567@math.ut.ee>
-References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1755871AbaD1U7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:59:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60153 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaD1U7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 16:59:24 -0400
+Date: Mon, 28 Apr 2014 22:59:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+cc: linux-kernel@vger.kernel.org, shawn@churchofgit.com,
+        akpm@linux-foundation.org, avagin@openvz.org, xemul@parallels.com,
+        vdavydov@parallels.com
+Subject: Re: [patch 0/3] timerfd -- implement missing parts to checkpoint
+ and restore timerfd state, v2
+In-Reply-To: <20140428205334.GD16176@moon>
+Message-ID: <alpine.DEB.2.02.1404282255590.6261@ionos.tec.linutronix.de>
+References: <20140407174701.734703531@openvz.org> <20140428205334.GD16176@moon>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Meelis Roos reported hangs during boot in the longhaul cpufreq driver, after
-> commit 12478cf0c55 (cpufreq: Make sure frequency transitions are serialized).
-> The root-cause of this issue is the extra invocation of the
-> cpufreq_freq_transition_begin() and cpufreq_freq_transition_end() APIs in the
-> longhaul driver. I found similar issues in the powernow-k6 and powernow-k7
-> drivers as well. This patchset fixes the issue in all the 3 drivers and also
-> adds a debug infrastructure to catch such issues easily.
-> 
-> Patches 1-4 fix the regression in longhaul, powernow-k6 and powernow-k7
-> drivers. (Patch 2 fixes a different bug in powernow-k6, and it is kept as a
-> separate patch instead of merging it with patch 3, because I felt that it was
-> a bit subtle and needed attention in a separate patch).
-> 
-> Patch 5 adds a debug infrastructure to the cpufreq core to catch such problems
-> more easily in the future.
-> 
-> 
-> Changes in v2:
-> --------------
-> 
-> * Modified patch 1 to take error returns into account, as pointed out by
->   Viresh.
-> * Added patch 2 to fix the existing issue in the powernow-k6 driver, pointed
->   out by Viresh.
-> * Added patch 5 to introduce a debug infrastructure to catch such issues
->   easily.
+On Tue, 29 Apr 2014, Cyrill Gorcunov wrote:
 
-This also works on my VIA EPIA.
+> On Mon, Apr 07, 2014 at 09:47:01PM +0400, Cyrill Gorcunov wrote:
+> > Hi, here is an updated series, changes mostly in show_fdinfo code which now
+> > produces a way more information (and documentation update). Please take a look
+> > once time permit. Thanks!
+> 
+> Hi, any new comments on this series?
 
--- 
-Meelis Roos (mroos@linux.ee)
+Looks ok and I did not do anything about it, as I saw a "will update
+in next version" from you in the discussion.
+
+Thanks,
+
+	tglx
+
