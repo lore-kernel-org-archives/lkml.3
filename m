@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236AbaD1K6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:58:24 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:49414 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754848AbaD1K6V convert rfc822-to-8bit (ORCPT
+	id S932254AbaD1K7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:59:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:45206 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948AbaD1K72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:58:21 -0400
+	Mon, 28 Apr 2014 06:59:28 -0400
+Date: Mon, 28 Apr 2014 13:58:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Peng Tao <bergwolf@gmail.com>, Andreas Dilger <andreas.dilger@intel.com>,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        "John L. Hammond" <john.hammond@intel.com>,
+        Dmitry Eremin <dmitry.eremin@intel.com>,
+        Jinshan Xiong <jinshan.xiong@intel.com>,
+        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, walter harms <wharms@bfs.de>
+Subject: [patch 2/2 v2] staging: lustre: integer overflow in
+ obd_ioctl_is_invalid()
+Message-ID: <20140428105858.GA31925@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <20140428105350.GM21279@lee--X1>
-References: <1398670584-26687-1-git-send-email-micky_ching@realsil.com.cn>
-	<20140428105350.GM21279@lee--X1>
-Date: Mon, 28 Apr 2014 12:58:20 +0200
-Message-ID: <CAPDyKFr6kNjfE+adx_j05wes0Y1fg=zD-AwciWy0vQdw=DbOrg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: rtsx: Revert "mmc: rtsx: add support for pre_req and post_req"
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425072317.GD4963@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 April 2014 12:53, Lee Jones <lee.jones@linaro.org> wrote:
->> From: Micky Ching <micky_ching@realsil.com.cn>
->>
->> This reverts commit c42deffd5b53c9e583d83c7964854ede2f12410d.
->
-> Why was this patch even merged without an MFD Ack?
->
->> commit <mmc: rtsx: add support for pre_req and post_req> did use
->> mutex_unlock() in tasklet, but mutex_unlock() can't used in
->> tasklet(atomic context). The driver need use mutex to avoid concurrency,
->> so we can't use tasklet here, the patch need to be removed.
->>
->> The spinlock host->lock and pcr->lock may deadlock, one way to solve the
->> deadlock is remove host->lock in sd_isr_done_transfer(), but if using
->> workqueue the we can avoid using the spinlock and also avoid the problem.
->>
->> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
->> ---
->>  drivers/mfd/rtsx_pcr.c            |  132 ++++--------
->>  drivers/mmc/host/rtsx_pci_sdmmc.c |  418 ++++++-------------------------------
->>  include/linux/mfd/rtsx_common.h   |    1 -
->>  include/linux/mfd/rtsx_pci.h      |    6 -
->>  4 files changed, 109 insertions(+), 448 deletions(-)
->
-> This patch should be sent to the -rcs as soon as possible:
+The obd_ioctl_getdata() function caps "data->ioc_len" at
+OBD_MAX_IOCTL_BUFFER and then calls this obd_ioctl_is_invalid() to check
+that the other values inside data are valid.
 
-Do you mind helping out doing it here Lee? Not sure how busy Chris is
-at the moment.
+There are several lengths inside data but when they are added together
+they must not be larger than "data->ioc_len".  The checks against
+"(data->ioc_inllen1 > (1<<30))" are supposed to ensure that the addition
+does not have an integer overflow.  But "(1<<30) * 4" actually can
+overflow 32 bits, so the checks are insufficient.
 
-Kind regards
-Ulf Hansson
+I have changed it to "> OBD_MAX_IOCTL_BUFFER" instead.
 
->
-> Acked-by: Lee Jones <lee.jones@linaro.org>
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Updated the error messages as Walter Harms pointed out.
+
+diff --git a/drivers/staging/lustre/lustre/include/lustre_lib.h b/drivers/staging/lustre/lustre/include/lustre_lib.h
+index bdc9812..3c26bbd 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_lib.h
++++ b/drivers/staging/lustre/lustre/include/lustre_lib.h
+@@ -179,24 +179,25 @@ static inline int obd_ioctl_packlen(struct obd_ioctl_data *data)
+ 
+ static inline int obd_ioctl_is_invalid(struct obd_ioctl_data *data)
+ {
+-	if (data->ioc_len > (1<<30)) {
+-		CERROR("OBD ioctl: ioc_len larger than 1<<30\n");
++	if (data->ioc_len > OBD_MAX_IOCTL_BUFFER) {
++		CERROR("OBD ioctl: ioc_len larger than %d\n",
++		       OBD_MAX_IOCTL_BUFFER);
+ 		return 1;
+ 	}
+-	if (data->ioc_inllen1 > (1<<30)) {
+-		CERROR("OBD ioctl: ioc_inllen1 larger than 1<<30\n");
++	if (data->ioc_inllen1 > OBD_MAX_IOCTL_BUFFER) {
++		CERROR("OBD ioctl: ioc_inllen1 larger than ioc_len\n");
+ 		return 1;
+ 	}
+-	if (data->ioc_inllen2 > (1<<30)) {
+-		CERROR("OBD ioctl: ioc_inllen2 larger than 1<<30\n");
++	if (data->ioc_inllen2 > OBD_MAX_IOCTL_BUFFER) {
++		CERROR("OBD ioctl: ioc_inllen2 larger than ioc_len\n");
+ 		return 1;
+ 	}
+-	if (data->ioc_inllen3 > (1<<30)) {
+-		CERROR("OBD ioctl: ioc_inllen3 larger than 1<<30\n");
++	if (data->ioc_inllen3 > OBD_MAX_IOCTL_BUFFER) {
++		CERROR("OBD ioctl: ioc_inllen3 larger than ioc_len\n");
+ 		return 1;
+ 	}
+-	if (data->ioc_inllen4 > (1<<30)) {
+-		CERROR("OBD ioctl: ioc_inllen4 larger than 1<<30\n");
++	if (data->ioc_inllen4 > OBD_MAX_IOCTL_BUFFER) {
++		CERROR("OBD ioctl: ioc_inllen4 larger than ioc_len\n");
+ 		return 1;
+ 	}
+ 	if (data->ioc_inlbuf1 && !data->ioc_inllen1) {
