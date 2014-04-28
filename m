@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841AbaD1Moo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:44:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26923 "EHLO mx1.redhat.com"
+	id S1755866AbaD1Mpl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:45:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8354 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755564AbaD1Moj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:44:39 -0400
+	id S1755827AbaD1Mom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:44:42 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: [GIT PULL  0/7] perf/core improvements and fixes
-Date: Mon, 28 Apr 2014 13:59:58 +0200
-Message-Id: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 5/7] perf tools: Reference count map_groups objects
+Date: Mon, 28 Apr 2014 14:00:03 +0200
+Message-Id: <1398686405-31951-6-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
+References: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-thanks,
-jirka
+We will share it among threads in the same process.
+Adding map_groups__get/map_groups__put interface for that.
 
-
-The following changes since commit 2933d7813d8618f18632a7dc7f4e7f1f7d17383a:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-04-25 10:04:46 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to fabf01238289e9ae009499594fc54642f5802a24:
-
-  perf tests: Add map groups sharing with thread object test (2014-04-28 13:43:40 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Add a test case for hists filtering (Namhyung Kim)
-
-. Share map_groups among threads of the same group (Arnaldo Carvalho de Melo, Jiri Olsa)
-
+Signed-off-by: Arnaldo Carvalho de Melo <acme@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1397490723-1992-4-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/map.c    | 7 +++++++
+ tools/perf/util/map.h    | 9 +++++++++
+ tools/perf/util/thread.c | 2 +-
+ 3 files changed, 17 insertions(+), 1 deletion(-)
 
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf tools: Allocate thread map_groups's dynamically
-      perf tools: Reference count map_groups objects
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index ae4c5e1..ba5f5c0c 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -323,6 +323,7 @@ void map_groups__init(struct map_groups *mg)
+ 		INIT_LIST_HEAD(&mg->removed_maps[i]);
+ 	}
+ 	mg->machine = NULL;
++	mg->refcnt = 1;
+ }
+ 
+ static void maps__delete(struct rb_root *maps)
+@@ -374,6 +375,12 @@ void map_groups__delete(struct map_groups *mg)
+ 	free(mg);
+ }
+ 
++void map_groups__put(struct map_groups *mg)
++{
++	if (--mg->refcnt == 0)
++		map_groups__delete(mg);
++}
++
+ void map_groups__flush(struct map_groups *mg)
+ {
+ 	int type;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 1073e2d..d6445b2 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -59,11 +59,20 @@ struct map_groups {
+ 	struct rb_root	 maps[MAP__NR_TYPES];
+ 	struct list_head removed_maps[MAP__NR_TYPES];
+ 	struct machine	 *machine;
++	int		 refcnt;
+ };
+ 
+ struct map_groups *map_groups__new(void);
+ void map_groups__delete(struct map_groups *mg);
+ 
++static inline struct map_groups *map_groups__get(struct map_groups *mg)
++{
++	++mg->refcnt;
++	return mg;
++}
++
++void map_groups__put(struct map_groups *mg);
++
+ static inline struct kmap *map__kmap(struct map *map)
+ {
+ 	return (struct kmap *)(map + 1);
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index dc51d16..b501848 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -50,7 +50,7 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
+ 
+-	map_groups__delete(thread->mg);
++	map_groups__put(thread->mg);
+ 	thread->mg = NULL;
+ 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
+ 		list_del(&comm->list);
+-- 
+1.8.3.1
 
-Jiri Olsa (3):
-      perf tests: Add thread maps lookup automated tests
-      perf tools: Share map_groups among threads of the same group
-      perf tests: Add map groups sharing with thread object test
-
-Namhyung Kim (2):
-      perf tests: Factor out fake_setup_machine()
-      perf tests: Add a test case for hists filtering
-
- tools/perf/Makefile.perf                 |   4 +
- tools/perf/arch/x86/tests/dwarf-unwind.c |   2 +-
- tools/perf/perf.h                        |   6 +
- tools/perf/tests/builtin-test.c          |  12 ++
- tools/perf/tests/hists_common.c          | 148 +++++++++++++++
- tools/perf/tests/hists_common.h          |  44 +++++
- tools/perf/tests/hists_filter.c          | 315 +++++++++++++++++++++++++++++++
- tools/perf/tests/hists_link.c            | 141 +-------------
- tools/perf/tests/mmap-thread-lookup.c    | 233 +++++++++++++++++++++++
- tools/perf/tests/tests.h                 |   3 +
- tools/perf/tests/thread-mg-share.c       |  90 +++++++++
- tools/perf/ui/stdio/hist.c               |   2 +-
- tools/perf/util/event.c                  |   2 +-
- tools/perf/util/machine.c                |  11 ++
- tools/perf/util/map.c                    |  23 +++
- tools/perf/util/map.h                    |  12 ++
- tools/perf/util/thread.c                 |  52 +++--
- tools/perf/util/thread.h                 |   3 +-
- 18 files changed, 948 insertions(+), 155 deletions(-)
- create mode 100644 tools/perf/tests/hists_common.c
- create mode 100644 tools/perf/tests/hists_common.h
- create mode 100644 tools/perf/tests/hists_filter.c
- create mode 100644 tools/perf/tests/mmap-thread-lookup.c
- create mode 100644 tools/perf/tests/thread-mg-share.c
