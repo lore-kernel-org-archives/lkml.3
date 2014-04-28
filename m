@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaD1XFE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:05:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50857 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaD1XFC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:05:02 -0400
-Date: Mon, 28 Apr 2014 16:05:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Richard Weinberger <richard@nod.at>, Randy Dunlap <rdunlap@infradead.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-Id: <20140428160501.df072b191fce77ab5d042054@linux-foundation.org>
-In-Reply-To: <20140428213909.GA16623@linux.vnet.ibm.com>
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
-	<535992DD.3060808@infradead.org>
-	<20140425100459.7824f676@annuminas.surriel.com>
-	<535AC91A.1070504@infradead.org>
-	<535ACB0E.4070600@infradead.org>
-	<20140427062650.GW4496@linux.vnet.ibm.com>
-	<20140428135540.GA14661@linux.vnet.ibm.com>
-	<535E8D14.7080405@infradead.org>
-	<535E8E17.2050600@nod.at>
-	<20140428200640.GG4430@linux.vnet.ibm.com>
-	<20140428213909.GA16623@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754192AbaD1XGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:06:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52653 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752088AbaD1XGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 19:06:54 -0400
+Message-ID: <535EDEC5.7030209@zytor.com>
+Date: Mon, 28 Apr 2014 16:05:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrew Lutomirski <amluto@gmail.com>, comex <comexk@gmail.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com>
+In-Reply-To: <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Apr 2014 14:39:09 -0700 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On 04/23/2014 09:53 PM, Andrew Lutomirski wrote:
+> 
+> This particular vector hurts: you can safely keep trying until it works.
+> 
+> This just gave me an evil idea: what if we make the whole espfix area
+> read-only?  This has some weird effects.  To switch to the espfix
+> stack, you have to write to an alias.  That's a little strange but
+> harmless and barely complicates the implementation.  If the iret
+> faults, though, I think the result will be a #DF.  This may actually
+> be a good thing: if the #DF handler detects that the cause was a bad
+> espfix iret, it could just return directly to bad_iret or send the
+> signal itself the same way that do_stack_segment does.  This could
+> even be written in C :)
+> 
+> Peter, is this idea completely nuts?  The only exceptions that can
+> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
+> so they won't double-fault.
+> 
 
-> On Mon, Apr 28, 2014 at 01:06:40PM -0700, Paul E. McKenney wrote:
-> > On Mon, Apr 28, 2014 at 07:21:27PM +0200, Richard Weinberger wrote:
-> > > Am 28.04.2014 19:17, schrieb Randy Dunlap:
-> > > > 
-> > > > uml defconfig on x86_64:
-> > > > 
-> > > >   CC      arch/um/kernel/asm-offsets.s
-> > > > In file included from include/linux/sem.h:5:0,
-> > > >                  from include/linux/sched.h:35,
-> > > >                  from arch/x86/um/shared/sysdep/kernel-offsets.h:2,
-> > > >                  from arch/um/kernel/asm-offsets.c:1:
-> > > > include/linux/rcupdate.h:257:20: error: static declaration of 'rcu_sysrq_start' follows non-static declaration
-> > > > include/linux/rcupdate.h:250:6: note: previous declaration of 'rcu_sysrq_start' was here
-> > > > include/linux/rcupdate.h:260:20: error: static declaration of 'rcu_sysrq_end' follows non-static declaration
-> > > > include/linux/rcupdate.h:251:6: note: previous declaration of 'rcu_sysrq_end' was here
-> > > > make[2]: *** [arch/um/kernel/asm-offsets.s] Error 1
-> > > > 
-> > > > 
-> > > > Please test your patch(es).
-> > 
-> > Against exactly what?  ;-)
-> > 
-> > > Just in case, to build an x86_64 UML please run:
-> > > 
-> > > make defconfig ARCH=um SUBARCH=x86_64
-> > > make linux ARCH=um SUBARCH=x86_64
-> > 
-> > Hmmm....  Builds without errors in my local tree.
-> > 
-> > Make a clone of linux-next...
-> > 
-> > OK, now I get a different build failure:
-> > 
+So I tried writing this bit up, but it fails in some rather spectacular
+ways.  Furthermore, I have been unable to debug it under Qemu, because
+breakpoints don't work right (common Qemu problem, sadly.)
 
-OK, my tiny brain just burst.  Rik, I think I shall ease
+The kernel code is at:
 
-sysrq-rcu-ify-__handle_sysrq.patch
-sysrq-rcu-ify-__handle_sysrq-fix.patch
-and
-sysrqrcu-suppress-rcu-stall-warnings-while-sysrq-runs.patch
+https://git.kernel.org/cgit/linux/kernel/git/hpa/espfix64.git/
 
-into the bitbucket for now.  Please resend everything when it's all
-sorted out?
+There are two tests:
+
+git://git.zytor.com/users/hpa/test16/test16.git, build it, and run
+./run16 test/hello.elf
+http://www.zytor.com/~hpa/ldttest.c
+
+The former will exercise the irq_return_ldt path, but not the fault
+path; the latter will exercise the fault path, but doesn't actually use
+a 16-bit segment.
+
+Under the 3.14 stock kernel, the former should die with SIGBUS and the
+latter should pass.
+
+	-hpa
+
