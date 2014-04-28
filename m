@@ -1,156 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740AbaD1JvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:51:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43224 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753179AbaD1JvC (ORCPT
+	id S1754848AbaD1Jvj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:51:39 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:59077 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599AbaD1Jvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:51:02 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-af-535e248547a0
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 2/2] f2fs: consider fallocated space for SEEK_DATA
-Date: Mon, 28 Apr 2014 18:48:49 +0900
-Message-id: <1398678529-11067-2-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-In-reply-to: <1398678529-11067-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1398678529-11067-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t8zA91Wlbhgg/XdrBbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZZw6qF/wWKJi1ok3
-	zA2MN4S7GDk5JARMJHaePs0MYYtJXLi3nq2LkYtDSGAZo8Sj1jY2mKLenxuZIRLTGSWaZ9xl
-	hXA6mSQOP53J2MXIwcEmoC2xeb8BSIOIALPEgqnnGUFqmAUmMEr8X/SeBaRGWMBJ4uE8IZAa
-	FgFViTMd3xhBbF4Bd4lDn9czQizTltj2fCLYSE4BD4k1j4NBTCGgktl3SkAmSgj8ZpPYdmEy
-	E8QYAYlvkw+BTZcQkJXYdADqF0mJgytusExgFF7AyLCKUTS1ILmgOCm9yEivODG3uDQvXS85
-	P3cTIyRY+3Yw3jxgfYgxGWjcRGYp0eR8YLDnlcQbGpsZWZiamBobmVuakSasJM676GFSkJBA
-	emJJanZqakFqUXxRaU5q8SFGJg5OqQZGMZYMoe4le/2Pez1weX7ow163o8KTcnZOu55QV3bQ
-	LWX3ucc5f165te0RStDZrv79165Frx+9dZOKPB7/+8nTC8sLGE4WGbi8Vlj19sb6q5dqJUyX
-	z9HMM1FqCan612tnsIBj2vSZz1sr7VYeDjfi7kzZttZoi8j/Q1Yru6qmODhc/vAv5HiAqxJL
-	cUaioRZzUXEiAMRwBAJsAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jQd1Wlbhgg5+zGS2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8w4dVC/4LFExawTb5gbGG8IdzFyckgImEj0/tzIDGGLSVy4t56ti5GLQ0hg
-	OqNE84y7rBBOJ5PE4aczGbsYOTjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4DUCAs4
-	STycJwRSwyKgKnGm4xsjiM0r4C5x6PN6Rohl2hLbnk8EG8kp4CGx5nEwiCkEVDL7TskERt4F
-	jAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYJj4Zn0DsZVDRaHGAU4GJV4eCPmxAYLsSaW
-	FVfmHmKU4GBWEuHdLxEXLMSbklhZlVqUH19UmpNafIgxGeimicxSosn5wDjNK4k3NDYxM7I0
-	MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZGFbdL6x4uKddeOIf35jlvvqUr
-	GRMnxcU94703qbOR6+h6g7KlLfYdnRo/zvxMvf6rdaP8Y5llE+fpxT3uWfy34cQsh2vrfxRG
-	dVVL3IhNYN2xu138e2rSo6a1rifX2Gvt6Nt7YaLZ0saZC7auzFx6KWXzy9CTKftXJmWJneFe
-	d8Nq5bkPs+eaeiixFGckGmoxFxUnAgD2LrP1yQIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 28 Apr 2014 05:51:36 -0400
+Message-ID: <535E249F.2080606@linaro.org>
+Date: Mon, 28 Apr 2014 18:51:27 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Don Dutile <ddutile@redhat.com>
+CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linaro-kernel@lists.linaro.org, arndb@arndb.de,
+        linux-kernel@vger.kernel.org, dsaxena@linaro.org,
+        linux-audit@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH_v8 0/2] arm64: Add audit support
+References: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org> <1394862548-29060-1-git-send-email-takahiro.akashi@linaro.org> <53486087.9060304@redhat.com>
+In-Reply-To: <53486087.9060304@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an amount of data are allocated though fallocate and user writes a couple of
-data among the space, f2fs should return the data offset made by user when
-SEEK_DATA is requested.
+Hi Don,
 
-For example, (N: NEW_ADDR by fallocate, X: NEW_ADDR by user)
-1) fallocate 0 ~ 10MB
-f -> N N N N N N N N N N N N ... N
+Sorry for not responding to you soon:
 
-2) write 4KB at 5MB offset
-f -> N N N N N X N N N N N N ... N
+On 04/12/2014 06:37 AM, Don Dutile wrote:
+> On 03/15/2014 01:49 AM, AKASHI Takahiro wrote:
+>> (Please apply this patch after my ftrace patch to resolve some conflict
+>> on arm64/kernel/ptrace.c, functionally it doesn't depend on ftrace though)
+>>
+>> This patchset adds system call audit support on arm64.
+>> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+>> are supported. Since arm64 has the exact same set of system calls
+>> on LE and BE, we don't care about endianness (or more specifically
+>> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
+>>
+>> There are some prerequisites for this patch to work correctly:
+>> * "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+>> * "audit: generic compat system call audit support" patch
+>> * "arm64: __NR_* definitions for compat syscalls" patch from Catalin
+>> * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+>> * "arm64: split syscall_trace() into separate functions for enter/exit" patch
+>> * "arm64: Add regs_return_value() in syscall.h" patch
+>> * "arm64: is_compat_task is defined both in asm/compat.h and
+>>     linux/compat.h" patch
+>> * userspace audit tool (v2.3.2 + my patch for arm64)
+>>
+> and the 2/2 patch won't apply to arch/arm64/kernel/ptrace.c
+> without the patch from  [PATCH v7 7/7] arm64: ftrace: Add system call tracepoint;
+> My question: do you need all 7 patches from arm64: Add ftrace support
+> as well for this audit patch to work, or just this 7/7 patch ?
 
-3) SEEK_DATA from 0 should return 5MB offset
+Functionally, my audit patch should work without ftrace patchset, but as described
+in ftrace's [0/7] and audit's [0/2], audit's [2/2] assumes that ftrace patchset, especially
+[7/7], has been applied in order to avoid any conflict when making changes on the same
+line of ptrace.c.
 
-So, this patch adds a routine to search the first dirty page to handle that.
-Then, the SEEK_DATA flow skips NEW_ADDR offsets until any dirty page is found.
+Thanks,
+-Takahiro AKASHI
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/file.c | 45 +++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 41 insertions(+), 4 deletions(-)
-
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 3112857..b9f4fbf 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -19,6 +19,7 @@
- #include <linux/compat.h>
- #include <linux/uaccess.h>
- #include <linux/mount.h>
-+#include <linux/pagevec.h>
- 
- #include "f2fs.h"
- #include "node.h"
-@@ -194,13 +195,48 @@ out:
- 	return ret;
- }
- 
-+static pgoff_t __get_first_dirty_index(struct address_space *mapping,
-+						pgoff_t pgofs, int whence)
-+{
-+	struct pagevec pvec;
-+	int nr_pages;
-+
-+	if (whence != SEEK_DATA)
-+		return 0;
-+
-+	/* find first dirty page index */
-+	pagevec_init(&pvec, 0);
-+	nr_pages = pagevec_lookup_tag(&pvec, mapping, &pgofs, PAGECACHE_TAG_DIRTY, 1);
-+	pgofs = nr_pages ? pvec.pages[0]->index: LONG_MAX;
-+	pagevec_release(&pvec);
-+	return pgofs;
-+}
-+
-+static bool __found_offset(block_t blkaddr, pgoff_t dirty, pgoff_t pgofs,
-+							int whence)
-+{
-+	switch (whence) {
-+	case SEEK_DATA:
-+		if ((blkaddr == NEW_ADDR && dirty == pgofs) ||
-+			(blkaddr != NEW_ADDR && blkaddr != NULL_ADDR))
-+			return true;
-+		break;
-+	case SEEK_HOLE:
-+		if (blkaddr == NULL_ADDR)
-+			return true;
-+		break;
-+	}
-+	return false;
-+}
-+
- static loff_t f2fs_seek_block(struct file *file, loff_t offset, int whence)
- {
- 	struct inode *inode = file->f_mapping->host;
- 	loff_t maxbytes = inode->i_sb->s_maxbytes;
- 	struct dnode_of_data dn;
--	pgoff_t pgofs, end_offset;
--	loff_t data_ofs = offset, isize;
-+	pgoff_t pgofs, end_offset, dirty;
-+	loff_t data_ofs = offset;
-+	loff_t isize;
- 	int err = 0;
- 
- 	mutex_lock(&inode->i_mutex);
-@@ -218,6 +254,8 @@ static loff_t f2fs_seek_block(struct file *file, loff_t offset, int whence)
- 
- 	pgofs = (pgoff_t)(offset >> PAGE_CACHE_SHIFT);
- 
-+	dirty = __get_first_dirty_index(inode->i_mapping, pgofs, whence);
-+
- 	for (; data_ofs < isize; data_ofs = pgofs << PAGE_CACHE_SHIFT) {
- 		set_new_dnode(&dn, inode, NULL, NULL, 0);
- 		err = get_dnode_of_data(&dn, pgofs, LOOKUP_NODE_RA);
-@@ -244,8 +282,7 @@ static loff_t f2fs_seek_block(struct file *file, loff_t offset, int whence)
- 			block_t blkaddr;
- 			blkaddr = datablock_addr(dn.node_page, dn.ofs_in_node);
- 
--			if ((whence == SEEK_DATA && blkaddr != NULL_ADDR) ||
--				(whence == SEEK_HOLE && blkaddr == NULL_ADDR)) {
-+			if (__found_offset(blkaddr, dirty, pgofs, whence)) {
- 				f2fs_put_dnode(&dn);
- 				goto found;
- 			}
--- 
-1.8.4.474.g128a96c
-
+>
+>> Please review them as well for better understandings.
+>>
+>> This code was tested on both 32-bit and 64-bit LE userland
+>> in the following two ways:
+>> 1) basic operations with auditctl/autrace
+>>    # auditctl -a exit,always -S openat -F path=/etc/inittab
+>>    # auditctl -a exit,always -F dir=/tmp -F perm=rw
+>>    # auditctl -a task,always
+>>    # autrace /bin/ls
+>>      by comparing output from autrace with one from strace
+>>
+>> 2) audit-test-code (+ my workarounds for arm/arm64)
+>>    by running "audit-tool", "filter" and "syscalls" test categories.
+>>
+>> Changes v7 -> v8:
+>> * aligned with the change in "audit: generic compat system call audit
+>>    support" v5 [1/2]
+>> * aligned with the change in "arm64: split syscall_trace() into separate
+>>    functions for enter/exit" v5 [2/2]
+>>
+>> Changes v6 -> v7:
+>> * changed an include file in syscall.h from <linux/audit.h> to
+>>    <uapi/linux/audit.h> [1/2]
+>> * aligned with the patch, "arm64: split syscall_trace() into separate
+>>    functions for enter/exit" [2/2]
+>>
+>> Changes v5 -> v6:
+>> * removed and put "arm64: Add regs_return_value() in syscall.h" patch into
+>>    a separate set
+>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>    for all syscall features" v3 [1/2]
+>>
+>> Changes v4 -> v5:
+>> * rebased to 3.14-rcX
+>> * added a guard against TIF_SYSCALL_AUDIT [3/3]
+>> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>>    for all syscall features" v2 [3/3]
+>>
+>> Changes v3 -> v4:
+>> * Modified to sync with the patch, "make a single hook to syscall_trace()
+>>    for all syscall features"
+>> * aligned with "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+>>
+>> Changes v2 -> v3:
+>> * Remove asm/audit.h.
+>>    See "generic compat syscall audit support" patch v4
+>> * Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
+>> * Remove kernel/syscalls/Makefile which was used to create unistd32.h.
+>>    See Catalin's "Add __NR_* definitions for compat syscalls" patch
+>>
+>> Changes v1 -> v2:
+>> * Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+>>    Please note that a required header, unistd_32.h, is automatically
+>>    generated from unistd32.h.
+>> * Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+>>    system call in audit_syscall_entry() [6/6]
+>> * Include "Add regs_return_value() in syscall.h" patch [2/6],
+>>    which was not intentionally included in v1 because it could be added
+>>    by "kprobes support".
+>>
+>> AKASHI Takahiro (2):
+>>    arm64: Add audit support
+>>    arm64: audit: Add audit hook in syscall_trace_enter/exit()
+>>
+>>   arch/arm64/Kconfig               |  2 ++
+>>   arch/arm64/include/asm/syscall.h | 15 +++++++++++++++
+>>   arch/arm64/kernel/ptrace.c       |  7 +++++++
+>>   include/uapi/linux/audit.h       |  1 +
+>>   4 files changed, 25 insertions(+)
+>>
+>
