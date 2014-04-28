@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333AbaD1WG1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:06:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58602 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933189AbaD1WFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:05:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
-   d="scan'208";a="502535812"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Linux PM <linux-pm@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "David E. Box" <david.e.box@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, Durgadoss R <durgadoss.r@intel.com>,
-        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 2/5] powercap/rapl: add new cpu ids
-Date: Mon, 28 Apr 2014 07:04:37 -0700
-Message-Id: <1398693880-13428-3-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S933351AbaD1WHB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:07:01 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:52681 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367AbaD1WG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:06:59 -0400
+Date: Mon, 28 Apr 2014 15:05:43 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+In-Reply-To: <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1404281500180.2861@eggly.anvils>
+References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support for Broadwell model 0x3d and HSW model (0x3c)
+On Mon, 28 Apr 2014, Linus Torvalds wrote:
+> On Mon, Apr 28, 2014 at 2:20 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > That said, the bug does seem to be that some path doesn't invalidate
+> > the vmacache sufficiently, or something inserts a vmacache entry into
+> > the current process when looking up a remote process or whatever.
+> > Davidlohr, ideas?
+> 
+> Maybe we missed some use_mm() call. That will change the current mm
+> without flushing the vma cache. The code considers kernel threads to
+> be bad targets for vma caching for this reason (and perhaps others),
+> but maybe we missed something.
+> 
+> I wonder if we should just invalidate the vma cache in use_mm(), and
+> remote the "kernel tasks are special" check.
+> 
+> Srivatsa, are you doing something peculiar on that system that would
+> trigger this? I see some kdump failures in the log, anything else?
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/powercap/intel_rapl.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I doubt that the vmacache has anything to do with the real problem
+(though it *might* suggest that vmacache is less robust than what
+it replaced - maybe).  The log is so full of userspace SIGSEGVs
+and General Protection faults, it looks like userspace was utterly
+broken by some kernel bug messing up the address space.
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index 1c987d2..b1cda6f 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -951,7 +951,9 @@ static const struct x86_cpu_id rapl_ids[] = {
- 	{ X86_VENDOR_INTEL, 6, 0x2d},/* Sandy Bridge EP */
- 	{ X86_VENDOR_INTEL, 6, 0x37},/* Valleyview */
- 	{ X86_VENDOR_INTEL, 6, 0x3a},/* Ivy Bridge */
--	{ X86_VENDOR_INTEL, 6, 0x45},/* Haswell */
-+	{ X86_VENDOR_INTEL, 6, 0x3c},/* Haswell */
-+	{ X86_VENDOR_INTEL, 6, 0x3d},/* Broadwell */
-+	{ X86_VENDOR_INTEL, 6, 0x45},/* Haswell ULT */
- 	/* TODO: Add more CPU IDs after testing */
- 	{}
- };
--- 
-1.8.1.2
-
+Hugh
