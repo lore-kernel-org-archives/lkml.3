@@ -1,44 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533AbaD1GH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 02:07:56 -0400
-Received: from blu0-omc2-s20.blu0.hotmail.com ([65.55.111.95]:20467 "EHLO
-	blu0-omc2-s20.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751200AbaD1GHy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 02:07:54 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 02:07:54 EDT
-X-TMN: [TsQPjV9bLeaGKfjcmgtB5Bf+wO7Vq7WI]
-X-Originating-Email: [yuhongbao_386@hotmail.com]
-Message-ID: <BLU177-W2910B6B805BBE085DE6994C3470@phx.gbl>
-From: Yuhong Bao <yuhongbao_386@hotmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Li, Aubrey" <aubrey.li@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: RE: [BUG] x86: reboot doesn't reboot
-Date: Sun, 27 Apr 2014 23:02:47 -0700
-Importance: Normal
-In-Reply-To: <20140404162108.GA17393@srcf.ucam.org>
-References: <20140403121314.246b03a7@gandalf.local.home>
- <533DED74.6050202@linux.intel.com>
- <20140403194018.7c67aec7@gandalf.local.home>
- <533DF455.4040908@linux.intel.com> <533DF8D2.9060508@zytor.com>
- <533E0A94.5040007@linux.intel.com>
- <20140404151203.GA12370@srcf.u,<20140404162108.GA17393@srcf.ucam.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 28 Apr 2014 06:02:47.0444 (UTC) FILETIME=[7AAFDD40:01CF62A7]
+	id S1753308AbaD1GSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 02:18:15 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:65266 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004AbaD1GSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 02:18:10 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kishon@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        t.figa@samsung.com, k.debski@samsung.com, sylvester.nawrocki@gmail.com
+Subject: [PATCH v7 2/2] phy: exynos5-usbdrd: Add facility for VBUS supply
+Date: Mon, 28 Apr 2014 11:47:54 +0530
+Message-Id: <1398665874-31238-2-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
+References: <1398665874-31238-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'll contact
-> the people I know in Dell and see if I can find anyone from the firmware
-> division who'll actually talk to us.
-What about now?
+Adding support to enable/disable VBUS controlled by a
+regulator, to enable vbus supply on the port.
 
-As a side note, OT, but: http://arstechnica.com/gadgets/2014/04/fast-but-compromised-gigabytes-amd-powered-mini-gaming-pc-reviewed/?comments=1 (notice the Editor's Pick!) 		 	   		  
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+
+Changes from v6:
+ - Rebased on top of [PATCH v7 1/2] phy: Add new Exynos5 USB 3.0 PHY driver.
+
+ drivers/phy/phy-exynos5-usbdrd.c |   32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
+index bc381e3..6e8540e 100644
+--- a/drivers/phy/phy-exynos5-usbdrd.c
++++ b/drivers/phy/phy-exynos5-usbdrd.c
+@@ -23,6 +23,7 @@
+ #include <linux/mutex.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/regmap.h>
++#include <linux/regulator/consumer.h>
+ 
+ /* Exynos USB PHY registers */
+ #define EXYNOS5_FSEL_9MHZ6		0x0
+@@ -170,6 +171,7 @@ struct exynos5_usbdrd_phy {
+ 	} phys[EXYNOS5_DRDPHYS_NUM];
+ 	u32 extrefclk;
+ 	struct clk *ref_clk;
++	struct regulator *vbus;
+ };
+ 
+ static inline
+@@ -438,6 +440,7 @@ static int exynos5_usbdrd_phy_exit(struct phy *phy)
+ 
+ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
+ {
++	int ret;
+ 	struct phy_usb_instance *inst = phy_get_drvdata(phy);
+ 	struct exynos5_usbdrd_phy *phy_drd = to_usbdrd_phy(inst);
+ 
+@@ -445,10 +448,24 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
+ 
+ 	clk_prepare_enable(phy_drd->ref_clk);
+ 
++	/* Enable VBUS supply */
++	if (phy_drd->vbus) {
++		ret = regulator_enable(phy_drd->vbus);
++		if (ret) {
++			dev_err(phy_drd->dev, "Failed to enable VBUS supply\n");
++			goto fail_vbus;
++		}
++	}
++
+ 	/* Power-on PHY*/
+ 	inst->phy_cfg->phy_isol(inst, 0);
+ 
+ 	return 0;
++
++fail_vbus:
++	clk_disable_unprepare(phy_drd->ref_clk);
++
++	return ret;
+ }
+ 
+ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
+@@ -461,6 +478,10 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
+ 	/* Power-off the PHY */
+ 	inst->phy_cfg->phy_isol(inst, 1);
+ 
++	/* Disable VBUS supply */
++	if (phy_drd->vbus)
++		regulator_disable(phy_drd->vbus);
++
+ 	clk_disable_unprepare(phy_drd->ref_clk);
+ 
+ 	return 0;
+@@ -583,6 +604,17 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	/* Get Vbus regulator */
++	phy_drd->vbus = devm_regulator_get(dev, "vbus");
++	if (IS_ERR(phy_drd->vbus)) {
++		ret = PTR_ERR(phy_drd->vbus);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++
++		dev_warn(dev, "Failed to get VBUS supply regulator\n");
++		phy_drd->vbus = NULL;
++	}
++
+ 	dev_vdbg(dev, "Creating usbdrd_phy phy\n");
+ 
+ 	for (i = 0; i < EXYNOS5_DRDPHYS_NUM; i++) {
+-- 
+1.7.10.4
+
