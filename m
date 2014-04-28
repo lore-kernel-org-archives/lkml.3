@@ -1,217 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaD1A01 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 20:26:27 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53248 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaD1A0Y (ORCPT
+	id S1752232AbaD1A1t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 20:27:49 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:55328 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaD1A1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 20:26:24 -0400
-Date: Sun, 27 Apr 2014 17:26:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140428002615.GZ4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
- <535992DD.3060808@infradead.org>
- <20140425100459.7824f676@annuminas.surriel.com>
- <535AC91A.1070504@infradead.org>
- <535ACB0E.4070600@infradead.org>
- <20140427062650.GW4496@linux.vnet.ibm.com>
- <535D3E0F.2090905@infradead.org>
- <535D6B31.3040604@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535D6B31.3040604@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042800-0928-0000-0000-000001867B23
+	Sun, 27 Apr 2014 20:27:48 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>, Barry Song <baohua@kernel.org>
+Cc: Kevin Hilman <khilman@linaro.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching nodes
+Date: Sun, 27 Apr 2014 20:27:40 -0400
+Message-Id: <1398644860-22973-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 01:40:17PM -0700, Randy Dunlap wrote:
-> On 04/27/14 10:27, Randy Dunlap wrote:
-> > On 04/26/14 23:26, Paul E. McKenney wrote:
-> >> On Fri, Apr 25, 2014 at 01:52:30PM -0700, Randy Dunlap wrote:
-> >>> On 04/25/14 13:44, Randy Dunlap wrote:
-> >>>> On 04/25/14 07:04, Rik van Riel wrote:
-> >>>>> On Thu, 24 Apr 2014 15:40:29 -0700
-> >>>>> Randy Dunlap <rdunlap@infradead.org> wrote:
-> >>>>>
-> >>>>>
-> >>>>>> uml on x86_64 defconfig:
-> >>>>>>
-> >>>>>> drivers/built-in.o: In function `__handle_sysrq':
-> >>>>>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
-> >>>>>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
-> >>>>>
-> >>>>> Randy, does the patch below fix it?
-> >>>
-> >>> CONFIG_TINY_RCU=y
-> >>>
-> >>> tiny.c does not provide these functions...  Paul...
-> >>>
-> >>>> Hm, no, it does not.  I'll look into it.
-> >>>>
-> >>>>> Mike, this patch should also address your concerns.
-> >>>>>
-> >>>>> Andrew, this can be a -fix patch for the sysctl-rcu patch,
-> >>>>> assuming it fixes things :)
-> >>>>>
-> >>>>> Signed-off-by: Rik van Riel <riel@redhat.com
-> >>>>> ---
-> >>>>>  drivers/tty/sysrq.c | 1 +
-> >>>>>  kernel/rcu/update.c | 3 ++-
-> >>>>>  2 files changed, 3 insertions(+), 1 deletion(-)
-> >>>>>
-> >>>>> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> >>>>> index dd53af9..0867433 100644
-> >>>>> --- a/drivers/tty/sysrq.c
-> >>>>> +++ b/drivers/tty/sysrq.c
-> >>>>> @@ -46,6 +46,7 @@
-> >>>>>  #include <linux/jiffies.h>
-> >>>>>  #include <linux/syscalls.h>
-> >>>>>  #include <linux/of.h>
-> >>>>> +#include <linux/rcupdate.h>
-> >>>>>  
-> >>>>>  #include <asm/ptrace.h>
-> >>>>>  #include <asm/irq_regs.h>
-> >>>>> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> >>>>> index 2ac3289..d22309c 100644
-> >>>>> --- a/kernel/rcu/update.c
-> >>>>> +++ b/kernel/rcu/update.c
-> >>>>> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
-> >>>>>  
-> >>>>>  void rcu_sysrq_start(void)
-> >>>>>  {
-> >>>>> -	rcu_cpu_stall_suppress = 2;
-> >>>>> +	if (!rcu_cpu_stall_suppress)
-> >>>>> +		rcu_cpu_stall_suppress = 2;
-> >>>>>  }
-> >>>>>  
-> >>>>>  void rcu_sysrq_end(void)
-> >>
-> >> You would think that I would have learned by now that RCU requires a bit
-> >> more care...  Anyway, patch containing only the APIs that -should- work
-> >> is below.  Currently testing it on the usual set of configs.
-> >>
-> >> 							Thanx, Paul
-> >>
-> >> ------------------------------------------------------------------------
-> >>
-> >> rcu: Provide API to suppress stall warnings while sysrc runs
-> >>
-> >> Some sysrq handlers can run for a long time, because they dump a lot
-> >> of data onto a serial console. Having RCU stall warnings pop up in
-> >> the middle of them only makes the problem worse.
-> >>
-> >> This commit provides rcu_sysrq_start() and rcu_sysrq_end() APIs to
-> >> temporarily suppress RCU CPU stall warnings while a sysrq request is
-> >> handled.
-> >>
-> >> Signed-off-by: Rik van Riel <riel@redhat.com>
-> >> [ paulmck: Fix TINY_RCU build error. ]
-> >> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> I guess that you want static inline on those functions...
+l2x0_of_init() is executed unconditionally within the sirfsoc_l2x0_init()
+early initcall. In a multi v7 kernel this causes bcm281xx and bcm21664
+platform to fail boot since they have their own pre l2x0 init sequence
+that is required. Fix this by checking that a matching OF ID is present
+before calling l2x0_of_init().
 
-Indeed I do, please see the subsequent patch.
+Reported-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+Applies against next-20140424 to fix the issue introduced in
+50655e6 ARM: l2c: prima2: remove cache size override
 
-One of my favorite mistakes, leaving out static inline...
+ arch/arm/mach-prima2/l2x0.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-							Thanx, Paul
-
-> > Still on uml on x86_64 defconfig:
-> > 
-> >   LD      init/built-in.o
-> > init/version.o: In function `rcu_sysrq_start':
-> > include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> > init/main.o:include/linux/rcupdate.h:258: first defined here
-> > init/version.o: In function `rcu_sysrq_end':
-> > include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> > init/main.o:include/linux/rcupdate.h:261: first defined here
-> > init/mounts.o: In function `rcu_sysrq_start':
-> > include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> > init/main.o:include/linux/rcupdate.h:258: first defined here
-> > init/mounts.o: In function `rcu_sysrq_end':
-> > include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> > init/main.o:include/linux/rcupdate.h:261: first defined here
-> > init/noinitramfs.o: In function `rcu_sysrq_start':
-> > include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> > init/main.o:include/linux/rcupdate.h:258: first defined here
-> > init/noinitramfs.o: In function `rcu_sysrq_end':
-> > include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> > init/main.o:include/linux/rcupdate.h:261: first defined here
-> > init/init_task.o: In function `rcu_sysrq_start':
-> > include/linux/rcupdate.h:258: multiple definition of `rcu_sysrq_start'
-> > init/main.o:include/linux/rcupdate.h:258: first defined here
-> > init/init_task.o: In function `rcu_sysrq_end':
-> > include/linux/rcupdate.h:261: multiple definition of `rcu_sysrq_end'
-> > init/main.o:include/linux/rcupdate.h:261: first defined here
-> > make[2]: *** [init/built-in.o] Error 1
-> > 
-> > 
-> > 
-> >>
-> >> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> >> index a6f2664a1b77..3f53c96b3b77 100644
-> >> --- a/include/linux/rcupdate.h
-> >> +++ b/include/linux/rcupdate.h
-> >> @@ -248,6 +248,18 @@ void rcu_idle_exit(void);
-> >>  void rcu_irq_enter(void);
-> >>  void rcu_irq_exit(void);
-> >>  
-> >> +#ifdef CONFIG_RCU_STALL_COMMON
-> >> +void rcu_sysrq_start(void);
-> >> +void rcu_sysrq_end(void);
-> >> +#else /* #ifdef CONFIG_RCU_STALL_COMMON */
-> >> +void rcu_sysrq_start(void)
-> >> +{
-> >> +}
-> >> +void rcu_sysrq_end(void)
-> >> +{
-> >> +}
-> >> +#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
-> >> +
-> >>  #ifdef CONFIG_RCU_USER_QS
-> >>  void rcu_user_enter(void);
-> >>  void rcu_user_exit(void);
-> >> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> >> index ed7a0d72562c..a2aeb4df0f60 100644
-> >> --- a/kernel/rcu/update.c
-> >> +++ b/kernel/rcu/update.c
-> >> @@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
-> >>  	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
-> >>  }
-> >>  
-> >> +void rcu_sysrq_start(void)
-> >> +{
-> >> +	if (!rcu_cpu_stall_suppress)
-> >> +		rcu_cpu_stall_suppress = 2;
-> >> +}
-> >> +
-> >> +void rcu_sysrq_end(void)
-> >> +{
-> >> +	if (rcu_cpu_stall_suppress == 2)
-> >> +		rcu_cpu_stall_suppress = 0;
-> >> +}
-> >> +
-> >>  static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
-> >>  {
-> >>  	rcu_cpu_stall_suppress = 1;
-> >>
-> > 
-> > 
-> 
-> 
-> -- 
-> ~Randy
-> 
+diff --git a/arch/arm/mach-prima2/l2x0.c b/arch/arm/mach-prima2/l2x0.c
+index 09f68f0..1c2ed15 100644
+--- a/arch/arm/mach-prima2/l2x0.c
++++ b/arch/arm/mach-prima2/l2x0.c
+@@ -8,10 +8,24 @@
+ 
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/of.h>
+ #include <asm/hardware/cache-l2x0.h>
+ 
++static const struct of_device_id sirf_l2x0_ids[] __initconst = {
++	{ .compatible = "sirf,prima2-pl310-cache" },
++	{ .compatible = "sirf,marco-pl310-cache" },
++	{},
++};
++
+ static int __init sirfsoc_l2x0_init(void)
+ {
+-	return l2x0_of_init(0, ~0);
++	struct device_node *np;
++	int ret = -EINVAL;
++
++	np = of_find_matching_node(NULL, sirf_l2x0_ids);
++	if (np)
++		ret = l2x0_of_init(0, ~0);
++
++	return ret;
+ }
+ early_initcall(sirfsoc_l2x0_init);
+-- 
+1.8.3.2
 
