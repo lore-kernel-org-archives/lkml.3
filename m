@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962AbaD1U3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:29:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20727 "EHLO mx1.redhat.com"
+	id S1757039AbaD1Uag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:30:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16360 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754374AbaD1U3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:29:21 -0400
-Date: Mon, 28 Apr 2014 14:19:38 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Paris <eparis@redhat.com>
-Subject: Re: linux-next: manual merge of the net-next tree with the net tree
-Message-ID: <20140428181938.GA24111@madcap2.tricolour.ca>
-References: <20140428125759.47924ab500af7624f401d424@canb.auug.org.au>
+	id S1755591AbaD1Uad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 16:30:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
+   d="scan'208";a="502494902"
+Message-ID: <535EBA4B.5090305@intel.com>
+Date: Mon, 28 Apr 2014 22:30:03 +0200
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428125759.47924ab500af7624f401d424@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH v2 3/5] ACPICA: Add <asm/acenv.h> to remove mis-ordered
+ inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com> <522ac0c3a52f1697d75363cc808a213773dca295.1398232409.git.lv.zheng@intel.com> <1469560.3p9s15HIYZ@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E880255865E@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E880255865E@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/28, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the net-next tree got a conflict in
-> net/netlink/af_netlink.c between commit 5187cd055b6e ("netlink: Rename
-> netlink_capable netlink_allowed") from the net tree and commit
-> 4f520900522f ("netlink: have netlink per-protocol bind function return an
-> error code") from the net-next tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On 4/28/2014 5:02 AM, Zheng, Lv wrote:
+> Hi, Rafael
+>
+>> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+>> Sent: Monday, April 28, 2014 5:37 AM
+>> To: Zheng, Lv
+>>
+>> On Wednesday, April 23, 2014 02:54:06 PM Lv Zheng wrote:
+>>> There is a mis-order inclusion for <asm/acpi.h>.
+>>>
+>>> As we will enforce including <linux/acpi.h> for all Linux ACPI users, we
+>>> can find the inclusion order is as follows:
+>>>
+>>> <linux/acpi.h>
+>>>    <acpi/acpi.h>
+>>>     <acpi/platform/acenv.h>
+>>>      (acenv.h before including aclinux.h)
+>>>      <acpi/platform/aclinux.h>
+>>> ...........................................................................
+>>>       (aclinux.h before including asm/acpi.h)
+>>>       <asm/acpi.h>                             @Redundant@
+>>>        (ACPICA specific stuff)
+>>> ...........................................................................
+>>> ...........................................................................
+>>>        (Linux ACPI specific stuff) ? - - - - - - - - - - - - +
+>>>       (aclinux.h after including asm/acpi.h)   @Invisible@   |
+>>>      (acenv.h after including aclinux.h)       @Invisible@   |
+>>>     other ACPICA headers                       @Invisible@   |
+>>> ............................................................|..............
+>>>    <acpi/acpi_bus.h>                                         |
+>>>    <acpi/acpi_drivers.h>                                     |
+>>>    <asm/acpi.h> (Excluded)                                   |
+>>>     (Linux ACPI specific stuff) ! <- - - - - - - - - - - - - +
+>>>
+>>> NOTE that, in ACPICA, <acpi/platform/acenv.h> is more like Kconfig
+>>> generated <generated/autoconf.h> for Linux, it is meant to be included
+>>> before including any ACPICA code.
+>>>
+>>> In the above figure, there is a question mark for "Linux ACPI specific
+>>> stuff" in <asm/acpi.h> which should be included after including all other
+>>> ACPICA header files.  Thus they really need to be moved to the position
+>>> marked with exclaimation mark or the definitions in the blocks marked with
+>>> "@Invisible@" will be invisible to such architecture specific "Linux ACPI
+>>> specific stuff" header blocks.  This leaves 2 issues:
+>>> 1. All environmental definitions in these blocks should have a copy in the
+>>>     area marked with "@Redundant@" if they are required by the "Linux ACPI
+>>>     specific stuff".
+>>> 2. We cannot use any ACPICA defined types in <asm/acpi.h>.
+>>>
+>>> This patch splits architecture specific ACPICA stuff from <asm/acpi.h> to
+>>> fix this issue.
+>>>
+>>> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+>>> Cc: Tony Luck <tony.luck@intel.com>
+>>> Cc: Fenghua Yu <fenghua.yu@intel.com>
+>>> Cc: linux-ia64@vger.kernel.org
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>> Cc: Ingo Molnar <mingo@redhat.com>
+>>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>>> Cc: x86@kernel.org
+>>> ---
+>>>   arch/ia64/include/asm/acenv.h   |   71 +++++++++++++++++++++++++++++++++++++++
+>>>   arch/ia64/include/asm/acpi.h    |   50 ---------------------------
+>>>   arch/x86/include/asm/acenv.h    |   65 +++++++++++++++++++++++++++++++++++
+>>>   arch/x86/include/asm/acpi.h     |   45 -------------------------
+>>>   include/acpi/platform/aclinux.h |    2 +-
+>> Please rename the files first (in a separate patch) and then modify the
+>> renamed ones.  That will make changes much easier to follow.
+> This patch doesn't provide a rename.
+> Currently, <asm/acpi.h> includes:
+> 1. arch specific ACPI stuff
+> 2. arch specific ACPICA stuff
+> This patch moves "2" to a separate file <asm/acenv.h>, thus no renaming happens here.
 
-Works for me.  Thanks Stephen.
+Ah, I overlooked that, sorry.
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc net/netlink/af_netlink.c
-> index 81dca96d2be6,92f4b6915e89..000000000000
-> --- a/net/netlink/af_netlink.c
-> +++ b/net/netlink/af_netlink.c
-> @@@ -1492,8 -1445,8 +1510,8 @@@ static int netlink_bind(struct socket *
->   		return -EINVAL;
->   
->   	/* Only superuser is allowed to listen multicasts */
-> - 	if (nladdr->nl_groups) {
-> + 	if (groups) {
->  -		if (!netlink_capable(sock, NL_CFG_F_NONROOT_RECV))
->  +		if (!netlink_allowed(sock, NL_CFG_F_NONROOT_RECV))
->   			return -EPERM;
->   		err = netlink_realloc_groups(sk);
->   		if (err)
+Which I might not do if the changelog said what the patch was really doing.
 
-- RGB
+Thanks,
+Rafael
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
