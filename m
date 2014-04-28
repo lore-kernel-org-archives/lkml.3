@@ -1,131 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127AbaD1N5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:57:17 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:55695 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaD1N5M (ORCPT
+	id S1756133AbaD1N6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:58:14 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55524 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752090AbaD1N6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:57:12 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-d2-535e5e36d906
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v4 3/3] mfd: max8997: change irq names to upper case
-Date: Mon, 28 Apr 2014 15:55:58 +0200
-Message-id: <1398693358-28336-4-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
-References: <1398693358-28336-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t9jQV2zuLhgg7s7jC2WXLzKbvH6haHF
-	/a9HGS0u75rDZrH2yF12iweHd7Jb7O/sYLQ43c3qwOGxZ+JJNo871/awecw7GejRt2UVo8f0
-	eT+ZPD5vkgtgi+KySUnNySxLLdK3S+DKmLP/MWvBO4mKTefmsDcwzhftYuTkkBAwkbgwYR4j
-	hC0mceHeerYuRi4OIYHpjBJXHi9ngnDamSS2zpnBBlLFJqAjseX7BLAOEQF9iQ87rjKDFDEL
-	bGSUmDjzI5DDwSEs4CJxYr0MSA2LgKrE3P0/mEFsXgFXiTsrZrJCbJOTOHlsMpjNKeAmsf/I
-	M7D5QkA1hzo3skxg5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzjInkntYFzZYHGI
-	UYCDUYmH1yAqLliINbGsuDL3EKMEB7OSCO90V6AQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt
-	1oFCAumJJanZqakFqUUwWSYOTqkGxqXGCmb8NfcCFKzFNhg2Kz44Jpdzd97hpfWXxM3WcSz8
-	tcLe819+75LgK0eSGWdrVntIv/xzInHppZWO+0/ktew6s0J64ZlmM6Z1ge3B24pc+ZU9U5JW
-	C37Zf9LO7Ovd4DuZgmvjbBK631gf9CvlmJu0a2lPgkb7qSeaMlf3it9JODxT+MnJZiWW4oxE
-	Qy3mouJEAFNy40wuAgAA
+	Mon, 28 Apr 2014 09:58:10 -0400
+Message-ID: <1398693485.2419.7.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: two small scsi fixes for 3.15-rc3
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Date: Mon, 28 Apr 2014 06:58:05 -0700
+In-Reply-To: <20140428090309.GA6571@lst.de>
+References: <1398424190-21325-1-git-send-email-hch@lst.de>
+	 <1398438048.2159.5.camel@dabdike.int.hansenpartnership.com>
+	 <20140428090309.GA6571@lst.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes naming convention of MUIC interrupts form CamelCase
-to upper case. It makes names more readable and consistent with another
-interrupt names in max8997 driver.
+On Mon, 2014-04-28 at 11:03 +0200, Christoph Hellwig wrote:
+> On Fri, Apr 25, 2014 at 08:00:48AM -0700, James Bottomley wrote:
+> > You should have received my git tree emails that they were already in
+> > SCSI fixes ... didn't you?  I certainly got a copy.
+> 
+> I've not seen a single reply to the patches either in my inbox or on
+> linux-scsi.
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/extcon/extcon-max8997.c     | 32 ++++++++++++++++----------------
- include/linux/mfd/max8997-private.h | 16 ++++++++--------
- 2 files changed, 24 insertions(+), 24 deletions(-)
+Well, it might be a bit late to trace what went wrong, but these are the
+transfer logs with msgid and remote ack.
 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 5948061..15fc5c0 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -46,15 +46,15 @@ struct max8997_muic_irq {
- };
- 
- static struct max8997_muic_irq muic_irqs[] = {
--	{ MAX8997_MUICIRQ_ADCError,	"muic-ADCERROR" },
--	{ MAX8997_MUICIRQ_ADCLow,	"muic-ADCLOW" },
--	{ MAX8997_MUICIRQ_ADC,		"muic-ADC" },
--	{ MAX8997_MUICIRQ_VBVolt,	"muic-VBVOLT" },
--	{ MAX8997_MUICIRQ_DBChg,	"muic-DBCHG" },
--	{ MAX8997_MUICIRQ_DCDTmr,	"muic-DCDTMR" },
--	{ MAX8997_MUICIRQ_ChgDetRun,	"muic-CHGDETRUN" },
--	{ MAX8997_MUICIRQ_ChgTyp,	"muic-CHGTYP" },
--	{ MAX8997_MUICIRQ_OVP,		"muic-OVP" },
-+	{ MAX8997_MUICIRQ_ADCERROR,	"MUIC-ADCERROR" },
-+	{ MAX8997_MUICIRQ_ADCLOW,	"MUIC-ADCLOW" },
-+	{ MAX8997_MUICIRQ_ADC,		"MUIC-ADC" },
-+	{ MAX8997_MUICIRQ_VBVOLT,	"MUIC-VBVOLT" },
-+	{ MAX8997_MUICIRQ_DBCHG,	"MUIC-DBCHG" },
-+	{ MAX8997_MUICIRQ_DCDTMR,	"MUIC-DCDTMR" },
-+	{ MAX8997_MUICIRQ_CHGDETRUN,	"MUIC-CHGDETRUN" },
-+	{ MAX8997_MUICIRQ_CHGTYP,	"MUIC-CHGTYP" },
-+	{ MAX8997_MUICIRQ_OVP,		"MUIC-OVP" },
- };
- 
- /* Define supported cable type */
-@@ -553,17 +553,17 @@ static void max8997_muic_irq_work(struct work_struct *work)
- 	}
- 
- 	switch (irq_type) {
--	case MAX8997_MUICIRQ_ADCError:
--	case MAX8997_MUICIRQ_ADCLow:
-+	case MAX8997_MUICIRQ_ADCERROR:
-+	case MAX8997_MUICIRQ_ADCLOW:
- 	case MAX8997_MUICIRQ_ADC:
- 		/* Handle all of cable except for charger cable */
- 		ret = max8997_muic_adc_handler(info);
- 		break;
--	case MAX8997_MUICIRQ_VBVolt:
--	case MAX8997_MUICIRQ_DBChg:
--	case MAX8997_MUICIRQ_DCDTmr:
--	case MAX8997_MUICIRQ_ChgDetRun:
--	case MAX8997_MUICIRQ_ChgTyp:
-+	case MAX8997_MUICIRQ_VBVOLT:
-+	case MAX8997_MUICIRQ_DBCHG:
-+	case MAX8997_MUICIRQ_DCDTMR:
-+	case MAX8997_MUICIRQ_CHGDETRUN:
-+	case MAX8997_MUICIRQ_CHGTYP:
- 		/* Handle charger cable */
- 		ret = max8997_muic_chg_handler(info);
- 		break;
-diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
-index f42ea22..2817fa6 100644
---- a/include/linux/mfd/max8997-private.h
-+++ b/include/linux/mfd/max8997-private.h
-@@ -411,14 +411,14 @@ enum max8997_irq {
- 
- enum max8997_irq_muic {
- 	MAX8997_MUICIRQ_ADC,
--	MAX8997_MUICIRQ_ADCLow,
--	MAX8997_MUICIRQ_ADCError,
--
--	MAX8997_MUICIRQ_ChgTyp,
--	MAX8997_MUICIRQ_ChgDetRun,
--	MAX8997_MUICIRQ_DCDTmr,
--	MAX8997_MUICIRQ_DBChg,
--	MAX8997_MUICIRQ_VBVolt,
-+	MAX8997_MUICIRQ_ADCLOW,
-+	MAX8997_MUICIRQ_ADCERROR,
-+
-+	MAX8997_MUICIRQ_CHGTYP,
-+	MAX8997_MUICIRQ_CHGDETRUN,
-+	MAX8997_MUICIRQ_DCDTMR,
-+	MAX8997_MUICIRQ_DBCHG,
-+	MAX8997_MUICIRQ_VBVOLT,
- 
- 	MAX8997_MUICIRQ_OVP,
- 
--- 
-1.9.1
+Apr 19 13:59:31 bedivere amavis[17271]: (17271-15) Passed CLEAN {RelayedOpenRelay}, <jejb@bedivere.hansenpartnership.com> -> <hch@lst.de>,<JBottomley@Parallels.com>,<joe.lawrence@stratus.com>, Message-ID: <20140419205930.1DD598EE0C5@bedivere.hansenpartnership.com>, mail_id: ZmsodClKD9Uy, Hits: -, size: 1796, queued_as: BC8688EE1B6, 663 ms
+Apr 19 13:59:33 bedivere postfix/smtp[4861]: BC8688EE1B6: to=<hch@lst.de>, relay=verein.lst.de[213.95.11.211]:25, delay=2.6, delays=0.3/0.05/1.9/0.37, dsn=2.0.0, status=sent (250 2.0.0 Ok: queued as E31ED14564)
+Apr 19 13:59:31 bedivere amavis[19335]: (19335-15) Passed CLEAN {RelayedOpenRelay}, <jejb@bedivere.hansenpartnership.com> -> <linux@eikelenboom.it>,<hch@lst.de>,<JBottomley@Parallels.com>, Message-ID: <20140419205930.4C52A8EE0A9@bedivere.hansenpartnership.com>, mail_id: 1_YssH8P_WCo, Hits: -, size: 1796, queued_as: D5D558EE213, 473 ms
+Apr 19 13:59:33 bedivere postfix/smtp[4865]: D5D558EE213: to=<hch@lst.de>, relay=verein.lst.de[213.95.11.211]:25, delay=2.9, delays=0.28/0.14/2.1/0.36, dsn=2.0.0, status=sent (250 2.0.0 Ok: queued as 31924145CD)
+
+James
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
