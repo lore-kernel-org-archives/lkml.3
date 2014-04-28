@@ -1,124 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982AbaD1VEZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:04:25 -0400
-Received: from mout.gmx.net ([212.227.17.20]:58047 "EHLO mout.gmx.net"
+	id S1757081AbaD1VEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:04:31 -0400
+Received: from mout.gmx.net ([212.227.17.20]:57637 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756157AbaD1VEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:04:21 -0400
-Date: Mon, 28 Apr 2014 22:56:20 +0200
+	id S1757052AbaD1VE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 17:04:29 -0400
+Date: Mon, 28 Apr 2014 23:02:03 +0200
 From: Christian Engelmayer <cengelma@gmx.at>
 To: devel@driverdev.osuosl.org
 Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
         peter.p.waskiewicz.jr@intel.com, oat.elena@gmail.com,
         dan.carpenter@oracle.com, w-lkml@lebenslange-mailadresse.de,
         teobaluta@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] staging: rtl8188eu: fix potential leak in
- rtw_wx_read32()
-Message-ID: <20140428225620.611319cf@spike>
+Subject: [PATCH 5/5] staging: rtl8188eu: fix potential leak in
+ rtw_mp_pwrtrk()
+Message-ID: <20140428230203.20dd00c0@spike>
 In-Reply-To: <20140428225431.2ea55d58@spike>
 References: <20140428225431.2ea55d58@spike>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/qVc+mbKoupVG=7R9.f_n7Za"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:9GfLlUF/KHEGrnj7wM77SryBj7czxdQ1VVnogTrwN2TXLewJLRl
- Y/2qZydIy1UDKboCom3iCDNpQR3dwwHTR0rXuN2FC22Jbme+7cJRjFuuiQx142yx1hZh0HT
- 8AXSxwx6WMrjgaFzrt0pziQMOlxSu4sDGKmTRYsHm9wQUwilQBmcPqGCWytoOiyRDgNR4TZ
- w1dpbvEku9yJ0MD5MroTQ==
+ boundary="Sig_/VfGhBd1MAiX0aSBjcfd3O6F"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:oI1IwkuqMXK5eq7It13Ed9szkVB0POimo+uwlMEROzXhRPVmJEe
+ /a+D5HQfxcgexiM3/eJcaEej02JFWL6l3i8OWCC3Y8CMxD+alCB0Q2pVfiQ4ccDuv3a0n6O
+ j78fX7ZWN7w+8EqpYYEiho3KraC/eldCcmQybbUJGQdXkpe0rkaA4l4MC4OGI5enrMdT2u5
+ UdnxFzAkmxKwTWQoZHIVA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/qVc+mbKoupVG=7R9.f_n7Za
+--Sig_/VfGhBd1MAiX0aSBjcfd3O6F
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Function rtw_wx_read32() dynamically allocates a temporary buffer that is n=
-ot
-freed in all error paths. Use a centralized exit path and make sure that all
-memory is freed correctly. Detected by Coverity - CID 1077711.
+Function rtw_mp_pwrtrk() dynamically allocates a temporary buffer that
+is not freed in all error paths. Use a centralized exit path and make sure
+that all memory is freed correctly. Detected by Coverity - 1077715.
 
 Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 28 ++++++++++++++++------=
+----
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/stagi=
 ng/rtl8188eu/os_dep/ioctl_linux.c
-index cf30a08..45b47e2 100644
+index ea5e1f8..f04aaa3 100644
 --- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
 +++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -2154,6 +2154,7 @@ static int rtw_wx_read32(struct net_device *dev,
- 	u32 bytes;
- 	u8 *ptmp;
- 	int rv;
+@@ -7119,15 +7119,15 @@ static int rtw_mp_pwrtrk(struct net_device *dev,
+ {
+ 	u8 enable;
+ 	u32 thermal;
+-	s32 ret;
+ 	struct adapter *padapter =3D rtw_netdev_priv(dev);
+ 	char	*input =3D kmalloc(wrqu->length, GFP_KERNEL);
 +	int ret =3D 0;
 =20
- 	padapter =3D (struct adapter *)rtw_netdev_priv(dev);
- 	p =3D &wrqu->data;
-@@ -2163,16 +2164,16 @@ static int rtw_wx_read32(struct net_device *dev,
+ 	if (!input)
  		return -ENOMEM;
-=20
- 	if (copy_from_user(ptmp, p->pointer, len)) {
--		kfree(ptmp);
+ 	if (copy_from_user(input, wrqu->pointer, wrqu->length)) {
+-		kfree(input);
 -		return -EFAULT;
 +		ret =3D -EFAULT;
 +		goto exit;
  	}
+ 	_rtw_memset(extra, 0, wrqu->length);
 =20
- 	bytes =3D 0;
- 	addr =3D 0;
- 	rv =3D sscanf(ptmp, "%d,%x", &bytes, &addr);
- 	if (rv !=3D 2) {
--		kfree(ptmp);
--		return -EINVAL;
-+		ret =3D -EINVAL;
-+		goto exit;
+@@ -7138,22 +7138,28 @@ static int rtw_mp_pwrtrk(struct net_device *dev,
+ 			sprintf(extra, "mp tx power tracking stop");
+ 		} else if (sscanf(input, "ther =3D%d", &thermal)) {
+ 				ret =3D Hal_SetThermalMeter(padapter, (u8)thermal);
+-				if (ret =3D=3D _FAIL)
+-					return -EPERM;
++				if (ret =3D=3D _FAIL) {
++					ret =3D -EPERM;
++					goto exit;
++				}
+ 				sprintf(extra, "mp tx power tracking start, target value =3D%d ok ", t=
+hermal);
+ 		} else {
+-			kfree(input);
+-			return -EINVAL;
++			ret =3D -EINVAL;
++			goto exit;
+ 		}
  	}
 =20
- 	switch (bytes) {
-@@ -2190,12 +2191,14 @@ static int rtw_wx_read32(struct net_device *dev,
- 		break;
- 	default:
- 		DBG_88E(KERN_INFO "%s: usage> read [bytes],[address(hex)]\n", __func__);
--		return -EINVAL;
-+		ret =3D -EINVAL;
+-	kfree(input);
+ 	ret =3D Hal_SetPowerTracking(padapter, enable);
+-	if (ret =3D=3D _FAIL)
+-		return -EPERM;
++	if (ret =3D=3D _FAIL) {
++		ret =3D -EPERM;
 +		goto exit;
- 	}
- 	DBG_88E(KERN_INFO "%s: addr =3D 0x%08X data =3D%s\n", __func__, addr, ext=
-ra);
++	}
 =20
-+exit:
- 	kfree(ptmp);
+ 	wrqu->length =3D strlen(extra);
 -	return 0;
++
++exit:
++	kfree(input);
 +	return ret;
  }
 =20
- static int rtw_wx_write32(struct net_device *dev,
+ static int rtw_mp_psd(struct net_device *dev,
 --=20
 1.9.1
 
---Sig_/qVc+mbKoupVG=7R9.f_n7Za
+--Sig_/VfGhBd1MAiX0aSBjcfd3O6F
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTXsB0AAoJEKssnEpaPQKEwbQQAI1UTq8BhV46fs/lKUx8ymdH
-9bAflMramArTfL8N3Pm5aw0Gz9rakZY1qeFVrCBATkfiCivdBMzmU5QxqCjom6PT
-YeybtmyAjnTGiPRCrBvKqht0b4Jg3h6qBoIjOuIVxG9OejhU1b1thMikQf9MO2vi
-/K6POYJ/yZmNRR9rZbWE0EACVe+vAnEK+vWGzWacyJKbI/cfFbhE6pSIKcCuHWxW
-mBzC+0FwH4hZNTAqhmqrbpvtSKIuHG65lf1XWlOYL4UkWSmVVrqNM2KwNOJWx5JR
-D5+j1BgMVALql4aBeiq5FNuW9Mb+gQt96TfsbG7oKWy1hGpjejgzE6XAgFPBSZ9h
-jqfw+glxglyn/I+0Sd5aP1amH3+sod+fc7vviKLFuFaLIk2q6ir+w2dZ5tCAajVc
-8tQFV2eDXwIG7he5yTHxERH7ZjjN6rqFiA8F/gekK8QabCauEsC/wKvRN5wJQ5eV
-NJ3gfzsRh85OXBr6mQwd4bdVUowsjhpsAPxZontwBsYZ0t+nCBeZXZ9DNaMimzeT
-rwoAsKsATwpGVCADi8wGAYASjN3AVtBjRqHNNOaGuHniBUuVwhpsjvmfGdkCY6sC
-i7F7JrM0uXsML4/tMXiBXzDNh8XUlGTCTkGjVLpIw920DKMrnRESnRBWWnHTxRuo
-HQFS2CIx/HYvxHcw0Wrk
-=ru/o
+iQIcBAEBAgAGBQJTXsHLAAoJEKssnEpaPQKEGHQP/Re2axoLf4cYVHvsL5mLm1Ll
+k8d/0b4EbdJ+2cRucC7eCkAnim9ltAFd+XAoaAqUtQJJEDKHjuk6OssUu/ADfG9Y
+4hoyeUyHOZ2ipwkFLYG6ffhE0Qu381vuVIxsTMzK+IqvELJyGVcY5YC4owzMHVof
+YMf3550YcNxxLTsdVz5QbHoHszS/rsEcDfVIS0Cts5qt4ZyWzz0kK7dhZ0vTpiYh
+PQD/dmD7njpHLidYeIo8qx95cGO/dyLTuBc86QhzwvGY7/gVp3K9FOrC9qMhlVQI
+ZUlwYzeHpHusFMYU1VCL/v58B1240MDlKvorhA40ClHy3Ud4lde3hezr7Un0ILZ+
+ald3gbDmpS2vWfIS+njsRVqOSx+t3R9WuxiN19YUAmvZzIzC1UwrZmyF1doGlz2V
+i9QhAe08TFF8sRf01tKvzqHi15hRoEV+i3MgEkwbUEmdYP301Jo2n8DCUuTuMtnU
+BiI84I6O3pyKZzq3ipak2HrtihGUeXiXa9Ib5Gsk0iSRaDcxpenMCQKRKiNKqEgO
+mRNzg3tdeurH0+2QVbFuuKvZ19n0QnASG2tdImjs7W9HUzgquxbtA2O6FE++X8Jr
+boZ09iAEyqWCY8C3vSxh8FOZq6ZbTLoZR+6eb/nchha1fw7qo1pZPEnKSka9trWr
+ys3KH8iW3a854vleu2hb
+=iPLI
 -----END PGP SIGNATURE-----
 
---Sig_/qVc+mbKoupVG=7R9.f_n7Za--
+--Sig_/VfGhBd1MAiX0aSBjcfd3O6F--
