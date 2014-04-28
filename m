@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301AbaD1Oqh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:46:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49813 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613AbaD1Oqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:46:35 -0400
-Message-ID: <535E698F.7060104@ti.com>
-Date: Mon, 28 Apr 2014 20:15:35 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756136AbaD1Ovs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:51:48 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:51178 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaD1Ovq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:51:46 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
-        <richardcochran@gmail.com>, <jeffrey.t.kirsher@intel.com>,
-        <dborkman@redhat.com>, <ast@plumgrid.com>, <tklauser@distanz.ch>,
-        <mpa@pengutronix.de>, <bhutchings@solarflare.com>, <zonque@gmail.com>,
-        <mugunthanvnm@ti.com>, <t-kristo@ti.com>, <mturquette@linaro.org>,
-        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
-        <bcousson@baylibre.com>
-Subject: Re: [PATCH 1/6] drivers: net: cpts: Remove hardcoded clock name for
- CPTS
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com> <1398658225-25873-2-git-send-email-george.cherian@ti.com> <20140428143115.GC30292@saruman.home>
-In-Reply-To: <20140428143115.GC30292@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140415113223.11860.66322.stgit@dhcp-10-30-30-94.sw.ru>
+References: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
+	<20140415113223.11860.66322.stgit@dhcp-10-30-30-94.sw.ru>
+Date: Mon, 28 Apr 2014 16:51:45 +0200
+Message-ID: <CAJfpeguUjm3N3AZYW-iPKeCfyW4766N9LagfkWjf3Y+7qNdT7A@mail.gmail.com>
+Subject: Re: [PATCH 7/7] fuse: flush ctime in FUSE_FORGET requests
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/2014 8:01 PM, Felipe Balbi wrote:
-> On Mon, Apr 28, 2014 at 09:40:20AM +0530, George Cherian wrote:
->> CPTS refclk name is hardcoded, which makes it fail in case of DRA7x
->> Remove the hardcoded clock name for CPTS refclk and get the same from DT.
->>
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   drivers/net/ethernet/ti/cpts.c | 11 ++++-------
->>   1 file changed, 4 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpts.c
->> index 2435139..0b6f6f7 100644
->> --- a/drivers/net/ethernet/ti/cpts.c
->> +++ b/drivers/net/ethernet/ti/cpts.c
->> @@ -236,13 +236,11 @@ static void cpts_overflow_check(struct work_struct *work)
->>   	schedule_delayed_work(&cpts->overflow_work, CPTS_OVERFLOW_PERIOD);
->>   }
->>   
->> -#define CPTS_REF_CLOCK_NAME "cpsw_cpts_rft_clk"
->> -
->> -static void cpts_clk_init(struct cpts *cpts)
->> +static void cpts_clk_init(struct device *dev, struct cpts *cpts)
->>   {
->> -	cpts->refclk = clk_get(NULL, CPTS_REF_CLOCK_NAME);
->> +	cpts->refclk = devm_clk_get(dev, "cpts");
->>   	if (IS_ERR(cpts->refclk)) {
->> -		pr_err("Failed to clk_get %s\n", CPTS_REF_CLOCK_NAME);
->> +		pr_err("Failed to get cpts refclk\n");
-> now you have a dev pointer as argument, how about converting this to
-> dev_err() ?
-Yep will do.. in next version.
+Maxim,
 
+Thanks for the patches.
 
--- 
--George
+On Tue, Apr 15, 2014 at 1:33 PM, Maxim Patlasov <MPatlasov@parallels.com> wrote:
+> Some inode operations (e.g., rename) operate directly on inodes and dentries
+> without opened files involved. This means that even though fuse set
+> inode->i_ctime and FUSE_I_CTIME_DIRTY properly, a corresponding flush operation
+> will never happen (i.e. no fsync or close to call fuse_flush_cmtime()).
+>
+> The patch solves the problem by passing local ctime to the userspace server
+> inside forget requests.
 
+Hmm, I really don't like this.
+
+1) What has forget to do with ctime?  It feels like being forced into
+the interface
+2) Forget may not be called for a long time after the modification and
+it may not be called *at all*, which would result in the loss of the
+ctime change after umount.
+
+How about wiring up fuse_flush_cmtime() to be called from
+s_op->write_inode() instead?
+
+Updated patchset pushed to
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+
+Survives some basic testing, but it would be great if you could also
+take a look.
+
+Thanks,
+Miklos
