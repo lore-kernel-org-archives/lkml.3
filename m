@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755218AbaD1KY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:24:56 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:57748 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755161AbaD1KYv (ORCPT
+	id S1755233AbaD1K0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:26:12 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:60335 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754740AbaD1K0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:24:51 -0400
-Date: Mon, 28 Apr 2014 11:24:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, balbi@ti.com,
-        gg@slimlogic.co.uk, kishon@ti.com, ckeepax@opensource.wolfsonmicro.com,
-        broonie@kernel.org, k.kozlowski@samsung.com, kyungmin.park@samsung.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCHv4 9/9] extcon: palmas: Use devm_extcon_dev_allocate for
- extcon_dev
-Message-ID: <20140428102445.GE21279@lee--X1>
-References: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
- <1398386544-16295-10-git-send-email-cw00.choi@samsung.com>
+	Mon, 28 Apr 2014 06:26:10 -0400
+Date: Mon, 28 Apr 2014 18:25:58 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: tim.c.chen@linux.intel.com, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Cleanup ressource leaks in test_aead_speed()
+Message-ID: <20140428102558.GC17037@gondor.apana.org.au>
+References: <20140421204439.7999f1c6@spike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398386544-16295-10-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <20140421204439.7999f1c6@spike>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch use devm_extcon_dev_allocate() to simplify the memory control
-> of extcon device.
+On Mon, Apr 21, 2014 at 08:44:39PM +0200, Christian Engelmayer wrote:
+> This is a cleanup of Coverity ressource leak findings for the quick & dirty
+> crypto testing module crypto/tcrypt.c.
 > 
-> Cc: Graeme Gregory <gg@slimlogic.co.uk>
-> Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> Tested-by: Felipe Balbi <balbi@ti.com>
-> ---
->  drivers/extcon/extcon-palmas.c | 35 ++++++++++++++++++++---------------
->  include/linux/mfd/palmas.h     |  2 +-
+> All 3 changesets address function test_aead_speed() that was introduced in
+> 53f52d7a (crypto: tcrypt - Added speed tests for AEAD crypto alogrithms in
+> tcrypt test suite)
 
-For the MFD change(s):
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
+All applied.  Thanks!
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
