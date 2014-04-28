@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941AbaD1Fbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:31:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48395 "EHLO bear.ext.ti.com"
+	id S1752998AbaD1Fbs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 01:31:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48381 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753AbaD1FbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:31:09 -0400
+	id S1752606AbaD1FbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 01:31:04 -0400
 From: Keerthy <j-keerthy@ti.com>
 To: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
 CC: <sameo@linux.intel.com>, <lee.jones@linaro.org>, <grant.likely@linaro.org>,
         <robh+dt@kernel.org>, <lgirdwood@gmail.com>, <broonie@kernel.org>,
         Keerthy <j-keerthy@ti.com>
-Subject: [PATCH 2/2] Regulators: TPS65917: Add Regulator driver for TPS65917 PMIC
-Date: Mon, 28 Apr 2014 10:58:26 +0530
-Message-ID: <1398662906-4398-3-git-send-email-j-keerthy@ti.com>
+Subject: [PATCH 1/2] MFD: TPS65917: Add driver for the TPS65917 PMIC
+Date: Mon, 28 Apr 2014 10:58:25 +0530
+Message-ID: <1398662906-4398-2-git-send-email-j-keerthy@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398662906-4398-1-git-send-email-j-keerthy@ti.com>
 References: <1398662906-4398-1-git-send-email-j-keerthy@ti.com>
@@ -23,65 +23,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for TPS65917 PMIC regulators.
+The TPS65917 chip is a power management IC for Portable Navigation Systems
+and Tablet Computing devices. It contains the following components:
 
-The regulators set consists of 5 SMPSs and 5 LDOs. The output
-voltages are configurable and are meant to supply power to the
-main processor and other components.
+ - Regulators.
+ - Over Temperature warning and Shut down.
+
+This patch adds support for tps65917 mfd device. At this time only
+the regulator functionality is made available.
 
 Signed-off-by: Keerthy <j-keerthy@ti.com>
 ---
- drivers/regulator/Kconfig              |   12 +
- drivers/regulator/Makefile             |    1 +
- drivers/regulator/tps65917-regulator.c |  903 ++++++++++++++++++++++++++++++++
- 3 files changed, 916 insertions(+)
- create mode 100644 drivers/regulator/tps65917-regulator.c
+ drivers/mfd/Kconfig          |   10 +
+ drivers/mfd/Makefile         |    1 +
+ drivers/mfd/tps65917.c       |  542 +++++++++++++++
+ include/linux/mfd/tps65917.h | 1508 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 2061 insertions(+)
+ create mode 100644 drivers/mfd/tps65917.c
+ create mode 100644 include/linux/mfd/tps65917.h
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 6a79328..5ddb220 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -384,6 +384,18 @@ config REGULATOR_PALMAS
- 	  on the muxing. This is handled automatically in the driver by
- 	  reading the mux info from OTP.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 49bb445..ccc7dea 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -774,6 +774,16 @@ config MFD_PALMAS
+ 	  If you say yes here you get support for the Palmas
+ 	  series of PMIC chips from Texas Instruments.
  
-+config REGULATOR_TPS65917
-+	tristate "TI TPS65917 PMIC Regulators"
-+	depends on MFD_TPS65917
++config MFD_TPS65917
++	bool "TI TPS65917 series chips"
++	select MFD_CORE
++	select REGMAP_I2C
++	select REGMAP_IRQ
++	depends on I2C=y
 +	help
-+	  If you wish to control the regulators on the TPS65917 series of
-+	  chips say Y here. This will enable support for all the software
-+	  controllable SMPS/LDO regulators.
++	  If you say yes here you get support for the TPS65917
++	  PMIC chips from Texas Instruments.
 +
-+	  The regulators available on TPS65917 series chips vary depending
-+	  on the muxing. This is handled automatically in the driver by
-+	  reading the mux info from OTP.
-+
- config REGULATOR_PCAP
- 	tristate "Motorola PCAP2 regulator driver"
- 	depends on EZX_PCAP
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 979f9dd..381dfd3 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -52,6 +52,7 @@ obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
- obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
- obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
- obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
-+obj-$(CONFIG_REGULATOR_TPS65917) += tps65917-regulator.o
- obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
- obj-$(CONFIG_REGULATOR_TPS51632) += tps51632-regulator.o
- obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o
-diff --git a/drivers/regulator/tps65917-regulator.c b/drivers/regulator/tps65917-regulator.c
+ config MFD_TI_SSP
+ 	tristate "TI Sequencer Serial Port support"
+ 	depends on ARCH_DAVINCI_TNETV107X
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 5aea5ef..8384ab2 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -156,6 +156,7 @@ obj-$(CONFIG_MFD_TPS65090)	+= tps65090.o
+ obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
+ obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
+ obj-$(CONFIG_MFD_PALMAS)	+= palmas.o
++obj-$(CONFIG_MFD_TPS65917)	+= tps65917.o
+ obj-$(CONFIG_MFD_VIPERBOARD)    += viperboard.o
+ obj-$(CONFIG_MFD_RC5T583)	+= rc5t583.o rc5t583-irq.o
+ obj-$(CONFIG_MFD_SEC_CORE)	+= sec-core.o sec-irq.o
+diff --git a/drivers/mfd/tps65917.c b/drivers/mfd/tps65917.c
 new file mode 100644
-index 0000000..be94a7a
+index 0000000..a5d6e4b
 --- /dev/null
-+++ b/drivers/regulator/tps65917-regulator.c
-@@ -0,0 +1,903 @@
++++ b/drivers/mfd/tps65917.c
+@@ -0,0 +1,542 @@
 +/*
-+ * Driver for Regulator part of TPS65917 PMIC
++ * TI TPS65917 Integrated power management chipsets
 + *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version 2 as
@@ -93,894 +96,2047 @@ index 0000000..be94a7a
 + * GNU General Public License version 2 for more details.
 + */
 +
-+#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/moduleparam.h>
 +#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
 +#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
 +#include <linux/regmap.h>
++#include <linux/err.h>
++#include <linux/mfd/core.h>
 +#include <linux/mfd/tps65917.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/regulator/of_regulator.h>
++#include <linux/of_device.h>
 +
-+struct regs_info {
-+	char	*name;
-+	char	*sname;
-+	u8	vsel_addr;
-+	u8	ctrl_addr;
-+	int	sleep_id;
++#define TPS65917_EXT_REQ (TPS65917_EXT_CONTROL_ENABLE1 |	\
++			TPS65917_EXT_CONTROL_ENABLE2 |	\
++			TPS65917_EXT_CONTROL_NSLEEP)
++
++struct tps65917_sleep_requestor_info {
++	int id;
++	int reg_offset;
++	int bit_pos;
 +};
 +
-+static const struct regs_info tps65917_regs_info[] = {
++#define EXTERNAL_REQUESTOR(_id, _offset, _pos)		\
++		[TPS65917_EXTERNAL_REQSTR_ID_##_id] = {		\
++		.id = TPS65917_EXTERNAL_REQSTR_ID_##_id,	\
++		.reg_offset = _offset,			\
++		.bit_pos = _pos,			\
++	}
++
++static struct tps65917_sleep_requestor_info sleep_req_info[] = {
++	EXTERNAL_REQUESTOR(REGEN1, 0, 0),
++	EXTERNAL_REQUESTOR(REGEN2, 0, 1),
++	EXTERNAL_REQUESTOR(REGEN3, 0, 6),
++	EXTERNAL_REQUESTOR(SMPS1, 1, 0),
++	EXTERNAL_REQUESTOR(SMPS2, 1, 1),
++	EXTERNAL_REQUESTOR(SMPS3, 1, 2),
++	EXTERNAL_REQUESTOR(SMPS4, 1, 3),
++	EXTERNAL_REQUESTOR(SMPS5, 1, 4),
++	EXTERNAL_REQUESTOR(LDO1, 2, 0),
++	EXTERNAL_REQUESTOR(LDO2, 2, 1),
++	EXTERNAL_REQUESTOR(LDO3, 2, 2),
++	EXTERNAL_REQUESTOR(LDO4, 2, 3),
++	EXTERNAL_REQUESTOR(LDO5, 2, 4),
++};
++
++static const struct regmap_config tps65917_regmap_config[TPS65917_NUM_CLIENTS] = {
 +	{
-+		.name		= "SMPS1",
-+		.sname		= "smps1-in",
-+		.vsel_addr	= TPS65917_SMPS1_VOLTAGE,
-+		.ctrl_addr	= TPS65917_SMPS1_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_SMPS1,
++		.reg_bits = 8,
++		.val_bits = 8,
++		.cache_type = REGCACHE_RBTREE,
++		.max_register = TPS65917_BASE_TO_REG(TPS65917_PU_PD_OD_BASE,
++					TPS65917_PU_PD_INPUT_CTRL4),
 +	},
 +	{
-+		.name		= "SMPS2",
-+		.sname		= "smps2-in",
-+		.vsel_addr	= TPS65917_SMPS2_VOLTAGE,
-+		.ctrl_addr	= TPS65917_SMPS2_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_SMPS2,
++		.reg_bits = 8,
++		.val_bits = 8,
++		.cache_type = REGCACHE_RBTREE,
++		.max_register = TPS65917_BASE_TO_REG(TPS65917_GPADC_BASE,
++					TPS65917_GPADC_SMPS_VSEL_MONITORING),
 +	},
 +	{
-+		.name		= "SMPS3",
-+		.sname		= "smps3-in",
-+		.vsel_addr	= TPS65917_SMPS3_VOLTAGE,
-+		.ctrl_addr	= TPS65917_SMPS3_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_SMPS3,
-+	},
-+	{
-+		.name		= "SMPS4",
-+		.sname		= "smps4-in",
-+		.vsel_addr	= TPS65917_SMPS4_VOLTAGE,
-+		.ctrl_addr	= TPS65917_SMPS4_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_SMPS4,
-+	},
-+	{
-+		.name		= "SMPS5",
-+		.sname		= "smps5-in",
-+		.vsel_addr	= TPS65917_SMPS5_VOLTAGE,
-+		.ctrl_addr	= TPS65917_SMPS5_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_SMPS5,
-+	},
-+	{
-+		.name		= "LDO1",
-+		.sname		= "ldo1-in",
-+		.vsel_addr	= TPS65917_LDO1_VOLTAGE,
-+		.ctrl_addr	= TPS65917_LDO1_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_LDO1,
-+	},
-+	{
-+		.name		= "LDO2",
-+		.sname		= "ldo2-in",
-+		.vsel_addr	= TPS65917_LDO2_VOLTAGE,
-+		.ctrl_addr	= TPS65917_LDO2_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_LDO2,
-+	},
-+	{
-+		.name		= "LDO3",
-+		.sname		= "ldo3-in",
-+		.vsel_addr	= TPS65917_LDO3_VOLTAGE,
-+		.ctrl_addr	= TPS65917_LDO3_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_LDO3,
-+	},
-+	{
-+		.name		= "LDO4",
-+		.sname		= "ldo4-in",
-+		.vsel_addr	= TPS65917_LDO4_VOLTAGE,
-+		.ctrl_addr	= TPS65917_LDO4_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_LDO4,
-+	},
-+	{
-+		.name		= "LDO5",
-+		.sname		= "ldo5-in",
-+		.vsel_addr	= TPS65917_LDO5_VOLTAGE,
-+		.ctrl_addr	= TPS65917_LDO5_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_LDO5,
-+	},
-+	{
-+		.name		= "REGEN1",
-+		.ctrl_addr	= TPS65917_REGEN1_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_REGEN1,
-+	},
-+	{
-+		.name		= "REGEN2",
-+		.ctrl_addr	= TPS65917_REGEN2_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_REGEN2,
-+	},
-+	{
-+		.name		= "REGEN3",
-+		.ctrl_addr	= TPS65917_REGEN3_CTRL,
-+		.sleep_id	= TPS65917_EXTERNAL_REQSTR_ID_REGEN3,
++		.reg_bits = 8,
++		.val_bits = 8,
++		.cache_type = REGCACHE_RBTREE,
++		.max_register = TPS65917_BASE_TO_REG(TPS65917_TRIM_GPADC_BASE,
++					TPS65917_GPADC_TRIM16),
 +	},
 +};
 +
-+#define SMPS_CTRL_MODE_OFF		0x00
-+#define SMPS_CTRL_MODE_ON		0x01
-+#define SMPS_CTRL_MODE_ECO		0x02
-+#define SMPS_CTRL_MODE_PWM		0x03
++static const struct regmap_irq tps65917_irqs[] = {
++	/* INT1 IRQs */
++	[TPS65917_RESERVED1] = {
++		.mask = TPS65917_RESERVED,
++	},
++	[TPS65917_PWRON_IRQ] = {
++		.mask = TPS65917_INT1_STATUS_PWRON,
++	},
++	[TPS65917_LONG_PRESS_KEY_IRQ] = {
++		.mask = TPS65917_INT1_STATUS_LONG_PRESS_KEY,
++	},
++	[TPS65917_RESERVED2] = {
++		.mask = TPS65917_RESERVED,
++	},
++	[TPS65917_PWRDOWN_IRQ] = {
++		.mask = TPS65917_INT1_STATUS_PWRDOWN,
++	},
++	[TPS65917_HOTDIE_IRQ] = {
++		.mask = TPS65917_INT1_STATUS_HOTDIE,
++	},
++	[TPS65917_VSYS_MON_IRQ] = {
++		.mask = TPS65917_INT1_STATUS_VSYS_MON,
++	},
++	[TPS65917_RESERVED3] = {
++		.mask = TPS65917_RESERVED,
++	},
++	/* INT2 IRQs*/
++	[TPS65917_RESERVED4] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 1,
++	},
++	[TPS65917_OTP_ERROR_IRQ] = {
++		.mask = TPS65917_INT2_STATUS_OTP_ERROR,
++		.reg_offset = 1,
++	},
++	[TPS65917_WDT_IRQ] = {
++		.mask = TPS65917_INT2_STATUS_WDT,
++		.reg_offset = 1,
++	},
++	[TPS65917_RESERVED5] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 1,
++	},
++	[TPS65917_RESET_IN_IRQ] = {
++		.mask = TPS65917_INT2_STATUS_RESET_IN,
++		.reg_offset = 1,
++	},
++	[TPS65917_FSD_IRQ] = {
++		.mask = TPS65917_INT2_STATUS_FSD,
++		.reg_offset = 1,
++	},
++	[TPS65917_SHORT_IRQ] = {
++		.mask = TPS65917_INT2_STATUS_SHORT,
++		.reg_offset = 1,
++	},
++	[TPS65917_RESERVED6] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 1,
++	},
++	/* INT3 IRQs */
++	[TPS65917_GPADC_AUTO_0_IRQ] = {
++		.mask = TPS65917_INT3_STATUS_GPADC_AUTO_0,
++		.reg_offset = 2,
++	},
++	[TPS65917_GPADC_AUTO_1_IRQ] = {
++		.mask = TPS65917_INT3_STATUS_GPADC_AUTO_1,
++		.reg_offset = 2,
++	},
++	[TPS65917_GPADC_EOC_SW_IRQ] = {
++		.mask = TPS65917_INT3_STATUS_GPADC_EOC_SW,
++		.reg_offset = 2,
++	},
++	[TPS65917_RESREVED6] = {
++		.mask = TPS65917_RESERVED6,
++		.reg_offset = 2,
++	},
++	[TPS65917_RESERVED7] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 2,
++	},
++	[TPS65917_RESERVED8] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 2,
++	},
++	[TPS65917_RESERVED9] = {
++		.mask = TPS65917_RESERVED,
++		.reg_offset = 2,
++	},
++	[TPS65917_VBUS_IRQ] = {
++		.mask = TPS65917_INT3_STATUS_VBUS,
++		.reg_offset = 2,
++	},
++	/* INT4 IRQs */
++	[TPS65917_GPIO_0_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_0,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_1_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_1,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_2_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_2,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_3_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_3,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_4_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_4,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_5_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_5,
++		.reg_offset = 3,
++	},
++	[TPS65917_GPIO_6_IRQ] = {
++		.mask = TPS65917_INT4_STATUS_GPIO_6,
++		.reg_offset = 3,
++	},
++	[TPS65917_RESERVED10] = {
++		.mask = TPS65917_RESERVED10,
++		.reg_offset = 3,
++	},
++};
 +
-+#define TPS65917_SMPS_NUM_VOLTAGES	122
-+#define TPS65917_LDO_NUM_VOLTAGES		50
++static struct regmap_irq_chip tps65917_irq_chip = {
++	.name = "tps65917",
++	.irqs = tps65917_irqs,
++	.num_irqs = ARRAY_SIZE(tps65917_irqs),
 +
-+#define REGULATOR_SLAVE			0
++	.num_regs = 4,
++	.irq_reg_stride = 5,
++	.status_base = TPS65917_BASE_TO_REG(TPS65917_INTERRUPT_BASE,
++			TPS65917_INT1_STATUS),
++	.mask_base = TPS65917_BASE_TO_REG(TPS65917_INTERRUPT_BASE,
++			TPS65917_INT1_MASK),
++};
 +
-+static int tps65917_smps_read(struct tps65917 *tps65917, unsigned int reg,
-+		unsigned int *dest)
++int tps65917_ext_control_req_config(struct tps65917 *tps65917,
++	enum tps65917_external_requestor_id id,  int ext_ctrl, bool enable)
 +{
-+	unsigned int addr;
++	int preq_mask_bit = 0;
++	int reg_add = 0;
++	int bit_pos;
++	int ret;
 +
-+	addr = TPS65917_BASE_TO_REG(TPS65917_SMPS_BASE, reg);
-+
-+	return regmap_read(tps65917->regmap[REGULATOR_SLAVE], addr, dest);
-+}
-+
-+static int tps65917_smps_write(struct tps65917 *tps65917, unsigned int reg,
-+		unsigned int value)
-+{
-+	unsigned int addr;
-+
-+	addr = TPS65917_BASE_TO_REG(TPS65917_SMPS_BASE, reg);
-+
-+	return regmap_write(tps65917->regmap[REGULATOR_SLAVE], addr, value);
-+}
-+
-+static int tps65917_ldo_read(struct tps65917 *tps65917, unsigned int reg,
-+		unsigned int *dest)
-+{
-+	unsigned int addr;
-+
-+	addr = TPS65917_BASE_TO_REG(TPS65917_LDO_BASE, reg);
-+
-+	return regmap_read(tps65917->regmap[REGULATOR_SLAVE], addr, dest);
-+}
-+
-+static int tps65917_ldo_write(struct tps65917 *tps65917, unsigned int reg,
-+		unsigned int value)
-+{
-+	unsigned int addr;
-+
-+	addr = TPS65917_BASE_TO_REG(TPS65917_LDO_BASE, reg);
-+
-+	return regmap_write(tps65917->regmap[REGULATOR_SLAVE], addr, value);
-+}
-+
-+static int tps65917_is_enabled_smps(struct regulator_dev *dev)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+
-+	tps65917_smps_read(pmic->tps65917,
-+			   tps65917_regs_info[id].ctrl_addr, &reg);
-+
-+	reg &= TPS65917_SMPS1_CTRL_STATUS_MASK;
-+	reg >>= TPS65917_SMPS1_CTRL_STATUS_SHIFT;
-+
-+	return !!(reg);
-+}
-+
-+static int tps65917_enable_smps(struct regulator_dev *dev)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+
-+	tps65917_smps_read(pmic->tps65917,
-+			   tps65917_regs_info[id].ctrl_addr, &reg);
-+
-+	reg &= ~TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+	if (pmic->current_reg_mode[id])
-+		reg |= pmic->current_reg_mode[id];
-+	else
-+		reg |= SMPS_CTRL_MODE_ON;
-+
-+	tps65917_smps_write(pmic->tps65917, tps65917_regs_info[id].ctrl_addr,
-+			    reg);
-+
-+	return 0;
-+}
-+
-+static int tps65917_disable_smps(struct regulator_dev *dev)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+
-+	tps65917_smps_read(pmic->tps65917, tps65917_regs_info[id].ctrl_addr,
-+			   &reg);
-+
-+	reg &= ~TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+
-+	tps65917_smps_write(pmic->tps65917, tps65917_regs_info[id].ctrl_addr,
-+			    reg);
-+
-+	return 0;
-+}
-+
-+static int tps65917_set_mode_smps(struct regulator_dev *dev, unsigned int mode)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+	bool rail_enable = true;
-+
-+	tps65917_smps_read(pmic->tps65917, tps65917_regs_info[id].ctrl_addr,
-+			   &reg);
-+	reg &= ~TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+
-+	if (reg == SMPS_CTRL_MODE_OFF)
-+		rail_enable = false;
-+
-+	switch (mode) {
-+	case REGULATOR_MODE_NORMAL:
-+		reg |= SMPS_CTRL_MODE_ON;
-+		break;
-+	case REGULATOR_MODE_IDLE:
-+		reg |= SMPS_CTRL_MODE_ECO;
-+		break;
-+	case REGULATOR_MODE_FAST:
-+		reg |= SMPS_CTRL_MODE_PWM;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	pmic->current_reg_mode[id] = reg & TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+	if (rail_enable)
-+		tps65917_smps_write(pmic->tps65917,
-+				    tps65917_regs_info[id].ctrl_addr, reg);
-+	return 0;
-+}
-+
-+static unsigned int tps65917_get_mode_smps(struct regulator_dev *dev)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+
-+	reg = pmic->current_reg_mode[id] & TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+
-+	switch (reg) {
-+	case SMPS_CTRL_MODE_ON:
-+		return REGULATOR_MODE_NORMAL;
-+	case SMPS_CTRL_MODE_ECO:
-+		return REGULATOR_MODE_IDLE;
-+	case SMPS_CTRL_MODE_PWM:
-+		return REGULATOR_MODE_FAST;
-+	}
-+
-+	return 0;
-+}
-+
-+static int tps65917_list_voltage_smps(struct regulator_dev *dev,
-+					unsigned selector)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	int mult = 1;
-+
-+	/* Read the multiplier set in VSEL register to return
-+	 * the correct voltage.
-+	 */
-+	if (pmic->range[id])
-+		mult = 2;
-+
-+	if (selector == 0)
-+		return 0;
-+	else if (selector < 6)
-+		return 500000 * mult;
-+	else
-+		/* Voltage is linear mapping starting from selector 6,
-+		 * volt = (0.49V + ((selector - 5) * 0.01V)) * RANGE
-+		 * RANGE is either x1 or x2
-+		 */
-+		return (490000 + ((selector - 5) * 10000)) * mult;
-+}
-+
-+static int tps65917_map_voltage_smps(struct regulator_dev *rdev,
-+		int min_uV, int max_uV)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(rdev);
-+	int id = rdev_get_id(rdev);
-+	int ret, voltage;
-+
-+	if (min_uV == 0)
++	if (!(ext_ctrl & TPS65917_EXT_REQ))
 +		return 0;
 +
-+	if (pmic->range[id]) { /* RANGE is x2 */
-+		if (min_uV < 1000000)
-+			min_uV = 1000000;
-+		ret = DIV_ROUND_UP(min_uV - 1000000, 20000) + 6;
-+	} else {		/* RANGE is x1 */
-+		if (min_uV < 500000)
-+			min_uV = 500000;
-+		ret = DIV_ROUND_UP(min_uV - 500000, 10000) + 6;
++	if (id >= TPS65917_EXTERNAL_REQSTR_ID_MAX)
++		return 0;
++
++	if (ext_ctrl & TPS65917_EXT_CONTROL_NSLEEP) {
++		reg_add = TPS65917_NSLEEP_RES_ASSIGN;
++		preq_mask_bit = 0;
++	} else if (ext_ctrl & TPS65917_EXT_CONTROL_ENABLE1) {
++		reg_add = TPS65917_ENABLE1_RES_ASSIGN;
++		preq_mask_bit = 1;
++	} else if (ext_ctrl & TPS65917_EXT_CONTROL_ENABLE2) {
++		reg_add = TPS65917_ENABLE2_RES_ASSIGN;
++		preq_mask_bit = 2;
 +	}
 +
-+	/* Map back into a voltage to verify we're still in bounds */
-+	voltage = tps65917_list_voltage_smps(rdev, ret);
-+	if (voltage < min_uV || voltage > max_uV)
-+		return -EINVAL;
-+
-+	return ret;
-+}
-+
-+static struct regulator_ops tps65917_ops_smps = {
-+	.is_enabled		= tps65917_is_enabled_smps,
-+	.enable			= tps65917_enable_smps,
-+	.disable		= tps65917_disable_smps,
-+	.set_mode		= tps65917_set_mode_smps,
-+	.get_mode		= tps65917_get_mode_smps,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= tps65917_list_voltage_smps,
-+	.map_voltage		= tps65917_map_voltage_smps,
-+};
-+
-+static struct regulator_ops tps65917_ops_ext_control_smps = {
-+	.set_mode		= tps65917_set_mode_smps,
-+	.get_mode		= tps65917_get_mode_smps,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= tps65917_list_voltage_smps,
-+	.map_voltage		= tps65917_map_voltage_smps,
-+};
-+
-+static int tps65917_is_enabled_ldo(struct regulator_dev *dev)
-+{
-+	struct tps65917_pmic *pmic = rdev_get_drvdata(dev);
-+	int id = rdev_get_id(dev);
-+	unsigned int reg;
-+
-+	tps65917_ldo_read(pmic->tps65917, tps65917_regs_info[id].ctrl_addr,
-+			  &reg);
-+
-+	reg &= TPS65917_LDO1_CTRL_STATUS;
-+
-+	return !!(reg);
-+}
-+
-+static struct regulator_ops tps65917_ops_ldo = {
-+	.is_enabled		= tps65917_is_enabled_ldo,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+};
-+
-+static struct regulator_ops tps65917_ops_ext_control_ldo = {
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.list_voltage		= regulator_list_voltage_linear,
-+	.map_voltage		= regulator_map_voltage_linear,
-+};
-+
-+static struct regulator_ops tps65917_ops_extreg = {
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
-+};
-+
-+static struct regulator_ops tps65917_ops_ext_control_extreg = {
-+};
-+
-+static int tps65917_regulator_config_external(struct tps65917 *tps65917, int id,
-+		struct tps65917_reg_init *reg_init)
-+{
-+	int sleep_id = tps65917_regs_info[id].sleep_id;
-+	int ret;
-+
-+	ret = tps65917_ext_control_req_config(tps65917, sleep_id,
-+					reg_init->roof_floor, true);
-+	if (ret < 0)
-+		dev_err(tps65917->dev,
-+			"Ext control config for regulator %d failed %d\n",
-+			id, ret);
-+	return ret;
-+}
-+
-+/*
-+ * setup the hardware based sleep configuration of the SMPS/LDO regulators
-+ * from the platform data. This is different to the software based control
-+ * supported by the regulator framework as it is controlled by toggling
-+ * pins on the PMIC such as PREQ, SYSEN, ...
-+ */
-+static int tps65917_smps_init(struct tps65917 *tps65917, int id,
-+		struct tps65917_reg_init *reg_init)
-+{
-+	unsigned int reg;
-+	unsigned int addr;
-+	int ret;
-+
-+	addr = tps65917_regs_info[id].ctrl_addr;
-+
-+	ret = tps65917_smps_read(tps65917, addr, &reg);
-+	if (ret)
-+		return ret;
-+
-+	if (reg_init->warm_reset)
-+		reg |= TPS65917_SMPS1_CTRL_WR_S;
++	bit_pos = sleep_req_info[id].bit_pos;
++	reg_add += sleep_req_info[id].reg_offset;
++	if (enable)
++		ret = tps65917_update_bits(tps65917, TPS65917_RESOURCE_BASE,
++				reg_add, BIT(bit_pos), BIT(bit_pos));
 +	else
-+		reg &= ~TPS65917_SMPS1_CTRL_WR_S;
-+
-+	if (reg_init->roof_floor)
-+		reg |= TPS65917_SMPS1_CTRL_ROOF_FLOOR_EN;
-+	else
-+		reg &= ~TPS65917_SMPS1_CTRL_ROOF_FLOOR_EN;
-+
-+	reg &= ~TPS65917_SMPS1_CTRL_MODE_SLEEP_MASK;
-+	if (reg_init->mode_sleep)
-+		reg |= reg_init->mode_sleep <<
-+				TPS65917_SMPS1_CTRL_MODE_SLEEP_SHIFT;
-+
-+
-+	ret = tps65917_smps_write(tps65917, addr, reg);
-+	if (ret)
-+		return ret;
-+
-+	if (tps65917_regs_info[id].vsel_addr && reg_init->vsel) {
-+		addr = tps65917_regs_info[id].vsel_addr;
-+
-+		reg = reg_init->vsel;
-+
-+		ret = tps65917_smps_write(tps65917, addr, reg);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	if (reg_init->roof_floor) {
-+		/* Enable externally controlled regulator */
-+		addr = tps65917_regs_info[id].ctrl_addr;
-+		ret = tps65917_smps_read(tps65917, addr, &reg);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (!(reg & TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK)) {
-+			reg |= SMPS_CTRL_MODE_ON;
-+			ret = tps65917_smps_write(tps65917, addr, reg);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		return tps65917_regulator_config_external(tps65917, id,
-+							  reg_init);
-+	}
-+	return 0;
-+}
-+
-+static int tps65917_ldo_init(struct tps65917 *tps65917, int id,
-+		struct tps65917_reg_init *reg_init)
-+{
-+	unsigned int reg;
-+	unsigned int addr;
-+	int ret;
-+
-+	addr = tps65917_regs_info[id].ctrl_addr;
-+
-+	ret = tps65917_ldo_read(tps65917, addr, &reg);
-+	if (ret)
-+		return ret;
-+
-+	if (reg_init->warm_reset)
-+		reg |= TPS65917_LDO1_CTRL_WR_S;
-+	else
-+		reg &= ~TPS65917_LDO1_CTRL_WR_S;
-+
-+	if (reg_init->mode_sleep)
-+		reg |= TPS65917_LDO1_CTRL_MODE_SLEEP;
-+	else
-+		reg &= ~TPS65917_LDO1_CTRL_MODE_SLEEP;
-+
-+	ret = tps65917_ldo_write(tps65917, addr, reg);
-+	if (ret)
-+		return ret;
-+
-+	if (reg_init->roof_floor) {
-+		/* Enable externally controlled regulator */
-+		addr = tps65917_regs_info[id].ctrl_addr;
-+		ret = tps65917_update_bits(tps65917, TPS65917_LDO_BASE,
-+				addr, TPS65917_LDO1_CTRL_MODE_ACTIVE,
-+				TPS65917_LDO1_CTRL_MODE_ACTIVE);
-+		if (ret < 0) {
-+			dev_err(tps65917->dev,
-+				"LDO Register 0x%02x update failed %d\n",
-+				addr, ret);
-+			return ret;
-+		}
-+		return tps65917_regulator_config_external(tps65917, id,
-+							  reg_init);
-+	}
-+	return 0;
-+}
-+
-+static int tps65917_extreg_init(struct tps65917 *tps65917, int id,
-+		struct tps65917_reg_init *reg_init)
-+{
-+	unsigned int addr;
-+	int ret;
-+	unsigned int val = 0;
-+
-+	addr = tps65917_regs_info[id].ctrl_addr;
-+
-+	if (reg_init->mode_sleep)
-+		val = TPS65917_REGEN1_CTRL_MODE_SLEEP;
-+
-+	ret = tps65917_update_bits(tps65917, TPS65917_RESOURCE_BASE,
-+			addr, TPS65917_REGEN1_CTRL_MODE_SLEEP, val);
++		ret = tps65917_update_bits(tps65917, TPS65917_RESOURCE_BASE,
++				reg_add, BIT(bit_pos), 0);
 +	if (ret < 0) {
 +		dev_err(tps65917->dev, "Resource reg 0x%02x update failed %d\n",
-+			addr, ret);
++			reg_add, ret);
 +		return ret;
 +	}
 +
-+	if (reg_init->roof_floor) {
-+		/* Enable externally controlled regulator */
-+		addr = tps65917_regs_info[id].ctrl_addr;
-+		ret = tps65917_update_bits(tps65917, TPS65917_RESOURCE_BASE,
-+				addr, TPS65917_REGEN1_CTRL_MODE_ACTIVE,
-+				TPS65917_REGEN1_CTRL_MODE_ACTIVE);
-+		if (ret < 0) {
-+			dev_err(tps65917->dev,
-+				"Resource Register 0x%02x update failed %d\n",
-+				addr, ret);
-+			return ret;
-+		}
-+		return tps65917_regulator_config_external(tps65917, id,
-+							  reg_init);
++	/* Unmask the PREQ */
++	ret = tps65917_update_bits(tps65917, TPS65917_PMU_CONTROL_BASE,
++			TPS65917_POWER_CTRL, BIT(preq_mask_bit), 0);
++	if (ret < 0) {
++		dev_err(tps65917->dev, "POWER_CTRL register update failed %d\n",
++			ret);
++		return ret;
 +	}
++	return ret;
++}
++EXPORT_SYMBOL_GPL(tps65917_ext_control_req_config);
++
++static int tps65917_set_pdata_irq_flag(struct i2c_client *i2c,
++		struct tps65917_platform_data *pdata)
++{
++	struct irq_data *irq_data = irq_get_irq_data(i2c->irq);
++	if (!irq_data) {
++		dev_err(&i2c->dev, "Invalid IRQ: %d\n", i2c->irq);
++		return -EINVAL;
++	}
++
++	pdata->irq_flags = irqd_get_trigger_type(irq_data);
++	dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
 +	return 0;
 +}
 +
-+static struct of_regulator_match tps65917_matches[] = {
-+	{ .name = "smps12", },
-+	{ .name = "smps123", },
-+	{ .name = "smps3", },
-+	{ .name = "smps4", },
-+	{ .name = "smps5", },
-+	{ .name = "ldo1", },
-+	{ .name = "ldo2", },
-+	{ .name = "ldo3", },
-+	{ .name = "ldo4", },
-+	{ .name = "ldo5", },
-+	{ .name = "regen1", },
-+	{ .name = "regen2", },
-+	{ .name = "regen3", },
-+	{ .name = "sysen1", },
-+	{ .name = "sysen2", },
-+};
-+
-+static void tps65917_dt_to_pdata(struct device *dev,
-+		struct device_node *node,
-+		struct tps65917_pmic_platform_data *pdata)
++static void tps65917_dt_to_pdata(struct i2c_client *i2c,
++		struct tps65917_platform_data *pdata)
 +{
-+	struct device_node *regulators;
++	struct device_node *node = i2c->dev.of_node;
++	int ret;
 +	u32 prop;
-+	int idx, ret;
 +
-+	node = of_node_get(node);
-+	regulators = of_get_child_by_name(node, "regulators");
-+	if (!regulators) {
-+		dev_info(dev, "regulator node not found\n");
-+		return;
++	ret = of_property_read_u32(node, "ti,mux-pad1", &prop);
++	if (!ret) {
++		pdata->mux_from_pdata = 1;
++		pdata->pad1 = prop;
 +	}
 +
-+	ret = of_regulator_match(dev, regulators, tps65917_matches,
-+			TPS65917_NUM_REGS);
-+	of_node_put(regulators);
-+	if (ret < 0) {
-+		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-+		return;
++	ret = of_property_read_u32(node, "ti,mux-pad2", &prop);
++	if (!ret) {
++		pdata->mux_from_pdata = 1;
++		pdata->pad2 = prop;
 +	}
 +
-+	for (idx = 0; idx < TPS65917_NUM_REGS; idx++) {
-+		if (!tps65917_matches[idx].init_data ||
-+		    !tps65917_matches[idx].of_node)
-+			continue;
++	/* The default for this register is all masked */
++	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
++	if (!ret)
++		pdata->power_ctrl = prop;
++	else
++		pdata->power_ctrl = TPS65917_POWER_CTRL_NSLEEP_MASK |
++					TPS65917_POWER_CTRL_ENABLE1_MASK |
++					TPS65917_POWER_CTRL_ENABLE2_MASK;
++	if (i2c->irq)
++		tps65917_set_pdata_irq_flag(i2c, pdata);
 +
-+		pdata->reg_data[idx] = tps65917_matches[idx].init_data;
-+
-+		pdata->reg_init[idx] = devm_kzalloc(dev,
-+				sizeof(struct tps65917_reg_init), GFP_KERNEL);
-+
-+		pdata->reg_init[idx]->warm_reset =
-+			of_property_read_bool(tps65917_matches[idx].of_node,
-+					      "ti,warm-reset");
-+
-+		ret = of_property_read_u32(tps65917_matches[idx].of_node,
-+					   "ti,roof-floor", &prop);
-+		/* EINVAL: Property not found */
-+		if (ret != -EINVAL) {
-+			int econtrol;
-+
-+			/* use default value, when no value is specified */
-+			econtrol = TPS65917_EXT_CONTROL_NSLEEP;
-+			if (!ret) {
-+				switch (prop) {
-+				case 1:
-+					econtrol = TPS65917_EXT_CONTROL_ENABLE1;
-+					break;
-+				case 2:
-+					econtrol = TPS65917_EXT_CONTROL_ENABLE2;
-+					break;
-+				case 3:
-+					econtrol = TPS65917_EXT_CONTROL_NSLEEP;
-+					break;
-+				default:
-+					WARN_ON(1);
-+					dev_warn(dev,
-+						 "%s: Invalid roof-floor option: %u\n",
-+						 tps65917_matches[idx].name, prop);
-+					break;
-+				}
-+			}
-+			pdata->reg_init[idx]->roof_floor = econtrol;
-+		}
-+
-+		ret = of_property_read_u32(tps65917_matches[idx].of_node,
-+				"ti,mode-sleep", &prop);
-+		if (!ret)
-+			pdata->reg_init[idx]->mode_sleep = prop;
-+
-+		ret = of_property_read_bool(tps65917_matches[idx].of_node,
-+					    "ti,smps-range");
-+		if (ret)
-+			pdata->reg_init[idx]->vsel =
-+				TPS65917_SMPS1_VOLTAGE_RANGE;
-+	}
++	pdata->pm_off = of_property_read_bool(node,
++			"ti,system-power-controller");
 +}
 +
++static struct tps65917 *tps65917_dev;
 +
-+static int tps65917_regulators_probe(struct platform_device *pdev)
++static const struct of_device_id of_tps65917_match_tbl[] = {
++	{
++		.compatible = "ti,tps65917",
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_tps65917_match_tbl);
++
++static int tps65917_i2c_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
 +{
-+	struct tps65917 *tps65917 = dev_get_drvdata(pdev->dev.parent);
-+	struct tps65917_pmic_platform_data *pdata;
-+	struct device_node *node = pdev->dev.of_node;
-+	struct regulator_dev *rdev;
-+	struct regulator_config config = { };
-+	struct tps65917_pmic *pmic;
-+	struct tps65917_reg_init *reg_init;
-+	int id = 0, ret;
-+	unsigned int addr, reg;
++	struct tps65917 *tps65917;
++	struct tps65917_platform_data *pdata;
++	struct device_node *node = i2c->dev.of_node;
++	int ret = 0, i;
++	unsigned int reg, addr, *features;
++	int slave;
++	const struct of_device_id *match;
 +
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	pdata = dev_get_platdata(&i2c->dev);
++
++	if (node && !pdata) {
++		pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
++
++		if (!pdata)
++			return -ENOMEM;
++
++		tps65917_dt_to_pdata(i2c, pdata);
++	}
 +
 +	if (!pdata)
++		return -EINVAL;
++
++	tps65917 = devm_kzalloc(&i2c->dev, sizeof(struct tps65917), GFP_KERNEL);
++	if (tps65917 == NULL)
 +		return -ENOMEM;
 +
-+	tps65917_dt_to_pdata(&pdev->dev, node, pdata);
++	i2c_set_clientdata(i2c, tps65917);
++	tps65917->dev = &i2c->dev;
++	tps65917->irq = i2c->irq;
 +
-+	pmic = devm_kzalloc(&pdev->dev, sizeof(*pmic), GFP_KERNEL);
-+	if (!pmic)
-+		return -ENOMEM;
++	match = of_match_device(of_tps65917_match_tbl, &i2c->dev);
 +
-+	pmic->dev = &pdev->dev;
-+	pmic->tps65917 = tps65917;
-+	tps65917->pmic = pmic;
-+	platform_set_drvdata(pdev, pmic);
++	if (!match)
++		return -ENODATA;
 +
-+	ret = tps65917_smps_read(tps65917, TPS65917_SMPS_CTRL, &reg);
-+	if (ret)
-+		return ret;
++	features = (unsigned int *)match->data;
 +
-+	if (reg & TPS65917_SMPS_CTRL_SMPS1_SMPS12_EN)
-+		pmic->smps12 = 1;
-+
-+	config.regmap = tps65917->regmap[REGULATOR_SLAVE];
-+	config.dev = &pdev->dev;
-+	config.driver_data = pmic;
-+
-+	for (id = 0; id < TPS65917_REG_LDO1; id++) {
-+		/*
-+		 * Miss out regulators which are not available due
-+		 * to slaving configurations.
-+		 */
-+		if ((id == TPS65917_REG_SMPS2) && pmic->smps12)
-+			continue;
-+
-+		/* Initialise sleep/init values from platform data */
-+		if (pdata && pdata->reg_init[id]) {
-+			reg_init = pdata->reg_init[id];
-+			ret = tps65917_smps_init(tps65917, id, reg_init);
-+			if (ret)
-+				return ret;
++	for (i = 0; i < TPS65917_NUM_CLIENTS; i++) {
++		if (i == 0) {
++			tps65917->i2c_clients[i] = i2c;
 +		} else {
-+			reg_init = NULL;
-+		}
-+
-+		/* Register the regulators */
-+		pmic->desc[id].name = tps65917_regs_info[id].name;
-+		pmic->desc[id].id = id;
-+
-+		/*
-+		 * Read and store the RANGE bit for later use
-+		 * This must be done before regulator is probed,
-+		 * otherwise we error in probe with unsupportable
-+		 * ranges. Read the current smps mode for later use.
-+		 */
-+		addr = tps65917_regs_info[id].vsel_addr;
-+
-+		ret = tps65917_smps_read(pmic->tps65917, addr, &reg);
-+		if (ret)
-+			return ret;
-+		if (reg & TPS65917_SMPS1_VOLTAGE_RANGE)
-+			pmic->range[id] = 1;
-+
-+		if (reg_init && reg_init->roof_floor)
-+			pmic->desc[id].ops =
-+					&tps65917_ops_ext_control_smps;
-+		else
-+			pmic->desc[id].ops = &tps65917_ops_smps;
-+		pmic->desc[id].n_voltages = TPS65917_SMPS_NUM_VOLTAGES;
-+		pmic->desc[id].vsel_reg =
-+				TPS65917_BASE_TO_REG(TPS65917_SMPS_BASE,
-+						     tps65917_regs_info[id].vsel_addr);
-+		pmic->desc[id].vsel_mask =
-+				TPS65917_SMPS1_VOLTAGE_VSEL_MASK;
-+
-+		/* Read the smps mode for later use. */
-+		addr = tps65917_regs_info[id].ctrl_addr;
-+		ret = tps65917_smps_read(pmic->tps65917, addr, &reg);
-+		if (ret)
-+			return ret;
-+		pmic->current_reg_mode[id] = reg &
-+				TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK;
-+
-+		pmic->desc[id].type = REGULATOR_VOLTAGE;
-+		pmic->desc[id].owner = THIS_MODULE;
-+
-+		if (pdata)
-+			config.init_data = pdata->reg_data[id];
-+		else
-+			config.init_data = NULL;
-+
-+		pmic->desc[id].supply_name = tps65917_regs_info[id].sname;
-+		config.of_node = tps65917_matches[id].of_node;
-+
-+		rdev = devm_regulator_register(&pdev->dev, &pmic->desc[id],
-+					       &config);
-+		if (IS_ERR(rdev)) {
-+			dev_err(&pdev->dev,
-+				"failed to register %s regulator\n",
-+				pdev->name);
-+			return PTR_ERR(rdev);
-+		}
-+
-+		/* Save regulator for cleanup */
-+		pmic->rdev[id] = rdev;
-+	}
-+
-+	/* Start this loop from the id left from previous loop */
-+	for (; id < TPS65917_NUM_REGS; id++) {
-+		if (pdata && pdata->reg_init[id])
-+			reg_init = pdata->reg_init[id];
-+		else
-+			reg_init = NULL;
-+
-+		/* Miss out regulators which are not available due
-+		 * to alternate functions.
-+		 */
-+
-+		/* Register the regulators */
-+		pmic->desc[id].name = tps65917_regs_info[id].name;
-+		pmic->desc[id].id = id;
-+		pmic->desc[id].type = REGULATOR_VOLTAGE;
-+		pmic->desc[id].owner = THIS_MODULE;
-+
-+		if (id < TPS65917_REG_REGEN1) {
-+			pmic->desc[id].n_voltages = TPS65917_LDO_NUM_VOLTAGES;
-+			if (reg_init && reg_init->roof_floor)
-+				pmic->desc[id].ops =
-+					&tps65917_ops_ext_control_ldo;
-+			else
-+				pmic->desc[id].ops = &tps65917_ops_ldo;
-+			pmic->desc[id].min_uV = 900000;
-+			pmic->desc[id].uV_step = 50000;
-+			pmic->desc[id].linear_min_sel = 1;
-+			pmic->desc[id].enable_time = 500;
-+			pmic->desc[id].vsel_reg =
-+					TPS65917_BASE_TO_REG(TPS65917_LDO_BASE,
-+							     tps65917_regs_info[id].vsel_addr);
-+			pmic->desc[id].vsel_mask =
-+					TPS65917_LDO1_VOLTAGE_VSEL_MASK;
-+			pmic->desc[id].enable_reg =
-+					TPS65917_BASE_TO_REG(TPS65917_LDO_BASE,
-+							     tps65917_regs_info[id].ctrl_addr);
-+			pmic->desc[id].enable_mask =
-+					TPS65917_LDO1_CTRL_MODE_ACTIVE;
-+		} else {
-+			pmic->desc[id].n_voltages = 1;
-+			if (reg_init && reg_init->roof_floor)
-+				pmic->desc[id].ops =
-+					&tps65917_ops_ext_control_extreg;
-+			else
-+				pmic->desc[id].ops = &tps65917_ops_extreg;
-+			pmic->desc[id].enable_reg =
-+					TPS65917_BASE_TO_REG(TPS65917_RESOURCE_BASE,
-+							     tps65917_regs_info[id].ctrl_addr);
-+			pmic->desc[id].enable_mask =
-+					TPS65917_REGEN1_CTRL_MODE_ACTIVE;
-+		}
-+
-+		if (pdata)
-+			config.init_data = pdata->reg_data[id];
-+		else
-+			config.init_data = NULL;
-+
-+		pmic->desc[id].supply_name = tps65917_regs_info[id].sname;
-+		config.of_node = tps65917_matches[id].of_node;
-+
-+		rdev = devm_regulator_register(&pdev->dev, &pmic->desc[id],
-+					       &config);
-+		if (IS_ERR(rdev)) {
-+			dev_err(&pdev->dev,
-+				"failed to register %s regulator\n",
-+				pdev->name);
-+			return PTR_ERR(rdev);
-+		}
-+
-+		/* Save regulator for cleanup */
-+		pmic->rdev[id] = rdev;
-+
-+		/* Initialise sleep/init values from platform data */
-+		if (pdata) {
-+			reg_init = pdata->reg_init[id];
-+			if (reg_init) {
-+				if (id < TPS65917_REG_REGEN1)
-+					ret = tps65917_ldo_init(tps65917,
-+							id, reg_init);
-+				else
-+					ret = tps65917_extreg_init(tps65917,
-+							id, reg_init);
-+				if (ret)
-+					return ret;
++			tps65917->i2c_clients[i] =
++					i2c_new_dummy(i2c->adapter,
++						      i2c->addr + i);
++			if (!tps65917->i2c_clients[i]) {
++				dev_err(tps65917->dev,
++					"can't attach client %d\n", i);
++				ret = -ENOMEM;
++				goto err_i2c;
 +			}
++			tps65917->i2c_clients[i]->dev.of_node = of_node_get(node);
++		}
++		tps65917->regmap[i] = devm_regmap_init_i2c(tps65917->i2c_clients[i],
++							   &tps65917_regmap_config[i]);
++		if (IS_ERR(tps65917->regmap[i])) {
++			ret = PTR_ERR(tps65917->regmap[i]);
++			dev_err(tps65917->dev,
++				"Failed to allocate regmap %d, err: %d\n",
++				i, ret);
++			goto err_i2c;
 +		}
 +	}
 +
++	if (!tps65917->irq) {
++		dev_warn(tps65917->dev, "IRQ missing: skipping irq request\n");
++		goto no_irq;
++	}
++
++	/* Change interrupt line output polarity */
++	if (pdata->irq_flags & IRQ_TYPE_LEVEL_HIGH)
++		reg = TPS65917_POLARITY_CTRL_INT_POLARITY;
++	else
++		reg = 0;
++	ret = tps65917_update_bits(tps65917, TPS65917_PU_PD_OD_BASE,
++				   TPS65917_POLARITY_CTRL,
++				   TPS65917_POLARITY_CTRL_INT_POLARITY, reg);
++	if (ret < 0) {
++		dev_err(tps65917->dev, "POLARITY_CTRL updat failed: %d\n", ret);
++		goto err_i2c;
++	}
++
++	/* Change IRQ into clear on read mode for efficiency */
++	slave = TPS65917_BASE_TO_SLAVE(TPS65917_INTERRUPT_BASE);
++	addr = TPS65917_BASE_TO_REG(TPS65917_INTERRUPT_BASE, TPS65917_INT_CTRL);
++	reg = TPS65917_INT_CTRL_INT_CLEAR;
++
++	regmap_write(tps65917->regmap[slave], addr, reg);
++
++	ret = regmap_add_irq_chip(tps65917->regmap[slave], tps65917->irq,
++			IRQF_ONESHOT | pdata->irq_flags, 0, &tps65917_irq_chip,
++			&tps65917->irq_data);
++	if (ret < 0)
++		goto err_i2c;
++
++no_irq:
++	slave = TPS65917_BASE_TO_SLAVE(TPS65917_PU_PD_OD_BASE);
++	addr = TPS65917_BASE_TO_REG(TPS65917_PU_PD_OD_BASE,
++			TPS65917_PRIMARY_SECONDARY_PAD1);
++
++	if (pdata->mux_from_pdata) {
++		reg = pdata->pad1;
++		ret = regmap_write(tps65917->regmap[slave], addr, reg);
++		if (ret)
++			goto err_irq;
++	} else {
++		ret = regmap_read(tps65917->regmap[slave], addr, &reg);
++		if (ret)
++			goto err_irq;
++	}
++
++	addr = TPS65917_BASE_TO_REG(TPS65917_PU_PD_OD_BASE,
++			TPS65917_PRIMARY_SECONDARY_PAD2);
++
++	if (pdata->mux_from_pdata) {
++		reg = pdata->pad2;
++		ret = regmap_write(tps65917->regmap[slave], addr, reg);
++		if (ret)
++			goto err_irq;
++	} else {
++		ret = regmap_read(tps65917->regmap[slave], addr, &reg);
++		if (ret)
++			goto err_irq;
++	}
++
++	reg = pdata->power_ctrl;
++
++	slave = TPS65917_BASE_TO_SLAVE(TPS65917_PMU_CONTROL_BASE);
++	addr = TPS65917_BASE_TO_REG(TPS65917_PMU_CONTROL_BASE,
++		TPS65917_POWER_CTRL);
++
++	ret = regmap_write(tps65917->regmap[slave], addr, reg);
++	if (ret)
++		goto err_irq;
++
++	/*
++	 * If we are probing with DT do this the DT way and return here
++	 * otherwise continue and add devices using mfd helpers.
++	 */
++	if (node) {
++		ret = of_platform_populate(node, NULL, NULL, &i2c->dev);
++		if (ret < 0)
++			goto err_irq;
++		else if (pdata->pm_off && !pm_power_off)
++			tps65917_dev = tps65917;
++	}
++
++	return ret;
++
++err_irq:
++	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
++err_i2c:
++	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
++		if (tps65917->i2c_clients[i])
++			i2c_unregister_device(tps65917->i2c_clients[i]);
++	}
++	return ret;
++}
++
++static int tps65917_i2c_remove(struct i2c_client *i2c)
++{
++	struct tps65917 *tps65917 = i2c_get_clientdata(i2c);
++	int i;
++
++	regmap_del_irq_chip(tps65917->irq, tps65917->irq_data);
++
++	for (i = 1; i < TPS65917_NUM_CLIENTS; i++) {
++		if (tps65917->i2c_clients[i])
++			i2c_unregister_device(tps65917->i2c_clients[i]);
++	}
 +
 +	return 0;
 +}
 +
-+static struct of_device_id of_tps65917_match_tbl[] = {
-+	{ .compatible = "ti,tps65917-pmic", },
++static const struct i2c_device_id tps65917_i2c_id[] = {
++	{ "tps65917", },
 +};
++MODULE_DEVICE_TABLE(i2c, tps65917_i2c_id);
 +
-+static struct platform_driver tps65917_driver = {
++static struct i2c_driver tps65917_i2c_driver = {
 +	.driver = {
-+		.name = "tps65917-pmic",
-+		.of_match_table = of_tps65917_match_tbl,
-+		.owner = THIS_MODULE,
++		   .name = "tps65917",
++		   .of_match_table = of_tps65917_match_tbl,
++		   .owner = THIS_MODULE,
 +	},
-+	.probe = tps65917_regulators_probe,
++	.probe = tps65917_i2c_probe,
++	.remove = tps65917_i2c_remove,
++	.id_table = tps65917_i2c_id,
 +};
 +
-+static int __init tps65917_init(void)
++static int __init tps65917_i2c_init(void)
 +{
-+	return platform_driver_register(&tps65917_driver);
++	return i2c_add_driver(&tps65917_i2c_driver);
 +}
-+subsys_initcall(tps65917_init);
++/* init early so consumer devices can complete system boot */
++subsys_initcall(tps65917_i2c_init);
 +
-+static void __exit tps65917_exit(void)
++static void __exit tps65917_i2c_exit(void)
 +{
-+	platform_driver_unregister(&tps65917_driver);
++	i2c_del_driver(&tps65917_i2c_driver);
 +}
-+module_exit(tps65917_exit);
++module_exit(tps65917_i2c_exit);
 +
 +MODULE_AUTHOR("J Keerthy <j-keerthy@ti.com>");
-+MODULE_DESCRIPTION("TPS65917 voltage regulator driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:tps65917-pmic");
-+MODULE_DEVICE_TABLE(of, of_tps65917_match_tbl);
++MODULE_DESCRIPTION("TPS65917 chip family multi-function driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/tps65917.h b/include/linux/mfd/tps65917.h
+new file mode 100644
+index 0000000..e00e02d
+--- /dev/null
++++ b/include/linux/mfd/tps65917.h
+@@ -0,0 +1,1508 @@
++/*
++ * TI TPS65917
++ *
++ * Copyright (C) 2014 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether expressed or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License version 2 for more details.
++ */
++
++#ifndef __LINUX_MFD_TPS65917_H
++#define __LINUX_MFD_TPS65917_H
++
++#include <linux/regmap.h>
++#include <linux/regulator/driver.h>
++
++#define TPS65917_NUM_CLIENTS		3
++
++/* The ID_REVISION NUMBERS */
++#define TPS65917_CHIP_ID			0xC035
++#define TPS65917_RESERVED -1
++
++struct tps65917 {
++	struct device *dev;
++
++	struct i2c_client *i2c_clients[TPS65917_NUM_CLIENTS];
++	struct regmap *regmap[TPS65917_NUM_CLIENTS];
++
++	/* Stored chip id */
++	int id;
++
++	struct tps65917_pmic *pmic;
++
++	/* IRQ Data */
++	int irq;
++	u32 irq_mask;
++	/* mutext for irq */
++	struct mutex irq_lock;
++	struct regmap_irq_chip_data *irq_data;
++};
++
++struct tps65917_reg_init {
++	/* warm_rest controls the voltage levels after a warm reset
++	 *
++	 * 0: reload default values from OTP on warm reset
++	 * 1: maintain voltage from VSEL on warm reset
++	 */
++	int warm_reset;
++
++	/* roof_floor controls whether the regulator uses the i2c style
++	 * of DVS or uses the method where a GPIO or other control method is
++	 * attached to the NSLEEP/ENABLE1/ENABLE2 pins
++	 *
++	 * For SMPS
++	 *
++	 * 0: i2c selection of voltage
++	 * 1: pin selection of voltage.
++	 *
++	 * For LDO unused
++	 */
++	int roof_floor;
++
++	/* sleep_mode is the mode loaded to MODE_SLEEP bits as defined in
++	 * the data sheet.
++	 *
++	 * For SMPS
++	 *
++	 * 0: Off
++	 * 1: AUTO
++	 * 2: ECO
++	 * 3: Forced PWM
++	 *
++	 * For LDO
++	 *
++	 * 0: Off
++	 * 1: On
++	 */
++	int mode_sleep;
++
++	/* voltage_sel is the bitfield loaded onto the SMPSX_VOLTAGE
++	 * register. Set this is the default voltage set in OTP needs
++	 * to be overridden.
++	 */
++	u8 vsel;
++};
++
++enum tps65917_regulators {
++	/* SMPS regulators */
++	TPS65917_REG_SMPS1,
++	TPS65917_REG_SMPS2,
++	TPS65917_REG_SMPS3,
++	TPS65917_REG_SMPS4,
++	TPS65917_REG_SMPS5,
++	/* LDO regulators */
++	TPS65917_REG_LDO1,
++	TPS65917_REG_LDO2,
++	TPS65917_REG_LDO3,
++	TPS65917_REG_LDO4,
++	TPS65917_REG_LDO5,
++	TPS65917_REG_REGEN1,
++	TPS65917_REG_REGEN2,
++	TPS65917_REG_REGEN3,
++
++	/* Total number of regulators */
++	TPS65917_NUM_REGS,
++};
++
++struct tps65917_pmic_platform_data {
++	/* An array of pointers to regulator init data indexed by regulator
++	 * ID
++	 */
++	struct regulator_init_data *reg_data[TPS65917_NUM_REGS];
++
++	/* An array of pointers to structures containing sleep mode and DVS
++	 * configuration for regulators indexed by ID
++	 */
++	struct tps65917_reg_init *reg_init[TPS65917_NUM_REGS];
++};
++
++
++struct tps65917_platform_data {
++	int irq_flags;
++	int gpio_base;
++
++	/* bit value to be loaded to the POWER_CTRL register */
++	u8 power_ctrl;
++
++	/*
++	 * boolean to select if we want to configure muxing here
++	 * then the two value to load into the registers if true
++	 */
++	int mux_from_pdata;
++	u8 pad1, pad2;
++	bool pm_off;
++
++	struct tps65917_pmic_platform_data *pmic_pdata;
++};
++
++/* Define the tps65917 IRQ numbers */
++enum tps65917_irqs {
++	/* INT1 registers */
++	TPS65917_RESERVED1,
++	TPS65917_PWRON_IRQ,
++	TPS65917_LONG_PRESS_KEY_IRQ,
++	TPS65917_RESERVED2,
++	TPS65917_PWRDOWN_IRQ,
++	TPS65917_HOTDIE_IRQ,
++	TPS65917_VSYS_MON_IRQ,
++	TPS65917_RESERVED3,
++	/* INT2 registers */
++	TPS65917_RESERVED4,
++	TPS65917_OTP_ERROR_IRQ,
++	TPS65917_WDT_IRQ,
++	TPS65917_RESERVED5,
++	TPS65917_RESET_IN_IRQ,
++	TPS65917_FSD_IRQ,
++	TPS65917_SHORT_IRQ,
++	TPS65917_RESERVED6,
++	/* INT3 registers */
++	TPS65917_GPADC_AUTO_0_IRQ,
++	TPS65917_GPADC_AUTO_1_IRQ,
++	TPS65917_GPADC_EOC_SW_IRQ,
++	TPS65917_RESREVED6,
++	TPS65917_RESERVED7,
++	TPS65917_RESERVED8,
++	TPS65917_RESERVED9,
++	TPS65917_VBUS_IRQ,
++	/* INT4 registers */
++	TPS65917_GPIO_0_IRQ,
++	TPS65917_GPIO_1_IRQ,
++	TPS65917_GPIO_2_IRQ,
++	TPS65917_GPIO_3_IRQ,
++	TPS65917_GPIO_4_IRQ,
++	TPS65917_GPIO_5_IRQ,
++	TPS65917_GPIO_6_IRQ,
++	TPS65917_RESERVED10,
++	/* Total Number IRQs */
++	TPS65917_NUM_IRQ,
++};
++
++/* External controll signal name */
++enum {
++	TPS65917_EXT_CONTROL_ENABLE1      = 0x1,
++	TPS65917_EXT_CONTROL_ENABLE2      = 0x2,
++	TPS65917_EXT_CONTROL_NSLEEP       = 0x4,
++};
++
++/*
++ * TPS65917 device resources can be controlled externally for
++ * enabling/disabling it rather than register write through i2c.
++ * Add the external controlled requestor ID for different resources.
++ */
++enum tps65917_external_requestor_id {
++	TPS65917_EXTERNAL_REQSTR_ID_REGEN1,
++	TPS65917_EXTERNAL_REQSTR_ID_REGEN2,
++	TPS65917_EXTERNAL_REQSTR_ID_REGEN3,
++	TPS65917_EXTERNAL_REQSTR_ID_SMPS1,
++	TPS65917_EXTERNAL_REQSTR_ID_SMPS2,
++	TPS65917_EXTERNAL_REQSTR_ID_SMPS3,
++	TPS65917_EXTERNAL_REQSTR_ID_SMPS4,
++	TPS65917_EXTERNAL_REQSTR_ID_SMPS5,
++	TPS65917_EXTERNAL_REQSTR_ID_LDO1,
++	TPS65917_EXTERNAL_REQSTR_ID_LDO2,
++	TPS65917_EXTERNAL_REQSTR_ID_LDO3,
++	TPS65917_EXTERNAL_REQSTR_ID_LDO4,
++	TPS65917_EXTERNAL_REQSTR_ID_LDO5,
++	/* Last entry */
++	TPS65917_EXTERNAL_REQSTR_ID_MAX,
++};
++
++struct tps65917_pmic {
++	struct tps65917 *tps65917;
++	struct device *dev;
++	struct regulator_desc desc[TPS65917_NUM_REGS];
++	struct regulator_dev *rdev[TPS65917_NUM_REGS];
++	/* pmic mutex */
++	struct mutex mutex;
++	int smps12;
++	int range[TPS65917_REG_SMPS5];
++	unsigned int ramp_delay[TPS65917_REG_SMPS5];
++	unsigned int current_reg_mode[TPS65917_REG_SMPS5];
++};
++
++/* helper macro to get correct slave number */
++#define TPS65917_BASE_TO_SLAVE(x)		((x >> 8) - 1)
++#define TPS65917_BASE_TO_REG(x, y)	((x & 0xff) + y)
++
++/* Base addresses of IP blocks in TPS65917 */
++#define TPS65917_SMPS_DVS_BASE					0x20
++#define TPS65917_VALIDITY_BASE					0x118
++#define TPS65917_SMPS_BASE					0x120
++#define TPS65917_LDO_BASE						0x150
++#define TPS65917_DVFS_BASE					0x180
++#define TPS65917_PMU_CONTROL_BASE					0x1A0
++#define TPS65917_RESOURCE_BASE					0x1D4
++#define TPS65917_PU_PD_OD_BASE					0x1F0
++#define TPS65917_LED_BASE						0x200
++#define TPS65917_INTERRUPT_BASE					0x210
++#define TPS65917_GPIO_BASE					0x280
++#define TPS65917_GPADC_BASE					0x2C0
++#define TPS65917_TRIM_GPADC_BASE					0x3CD
++
++/* Registers for function BACKUP */
++#define TPS65917_BACKUP0						0x0
++#define TPS65917_BACKUP1						0x1
++#define TPS65917_BACKUP2						0x2
++#define TPS65917_BACKUP3						0x3
++#define TPS65917_BACKUP4						0x4
++#define TPS65917_BACKUP5						0x5
++#define TPS65917_BACKUP6						0x6
++#define TPS65917_BACKUP7						0x7
++
++/* Bit definitions for BACKUP0 */
++#define TPS65917_BACKUP0_BACKUP_MASK				0xff
++#define TPS65917_BACKUP0_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP1 */
++#define TPS65917_BACKUP1_BACKUP_MASK				0xff
++#define TPS65917_BACKUP1_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP2 */
++#define TPS65917_BACKUP2_BACKUP_MASK				0xff
++#define TPS65917_BACKUP2_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP3 */
++#define TPS65917_BACKUP3_BACKUP_MASK				0xff
++#define TPS65917_BACKUP3_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP4 */
++#define TPS65917_BACKUP4_BACKUP_MASK				0xff
++#define TPS65917_BACKUP4_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP5 */
++#define TPS65917_BACKUP5_BACKUP_MASK				0xff
++#define TPS65917_BACKUP5_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP6 */
++#define TPS65917_BACKUP6_BACKUP_MASK				0xff
++#define TPS65917_BACKUP6_BACKUP_SHIFT				0
++
++/* Bit definitions for BACKUP7 */
++#define TPS65917_BACKUP7_BACKUP_MASK				0xff
++#define TPS65917_BACKUP7_BACKUP_SHIFT				0
++
++/* Registers for function SMPS */
++#define TPS65917_SMPS1_CTRL					0x0
++#define TPS65917_SMPS1_FORCE					0x2
++#define TPS65917_SMPS1_VOLTAGE					0x3
++#define TPS65917_SMPS2_CTRL					0x4
++#define TPS65917_SMPS2_FORCE					0x6
++#define TPS65917_SMPS2_VOLTAGE					0x7
++#define TPS65917_SMPS3_CTRL					0xC
++#define TPS65917_SMPS3_FORCE					0xE
++#define TPS65917_SMPS3_VOLTAGE					0xF
++#define TPS65917_SMPS4_CTRL					0x10
++#define TPS65917_SMPS4_VOLTAGE					0x13
++#define TPS65917_SMPS5_CTRL					0x18
++#define TPS65917_SMPS5_VOLTAGE					0x1B
++#define TPS65917_SMPS_CTRL					0x24
++#define TPS65917_SMPS_PD_CTRL					0x25
++#define TPS65917_SMPS_THERMAL_EN				0x27
++#define TPS65917_SMPS_THERMAL_STATUS				0x28
++#define TPS65917_SMPS_SHORT_STATUS				0x29
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN			0x2A
++#define TPS65917_SMPS_POWERGOOD_MASK1				0x2B
++#define TPS65917_SMPS_POWERGOOD_MASK2				0x2C
++
++/* Bit definitions for SMPS1_CTRL */
++#define TPS65917_SMPS1_CTRL_WR_S				0x80
++#define TPS65917_SMPS1_CTRL_WR_S_SHIFT				7
++#define TPS65917_SMPS1_CTRL_ROOF_FLOOR_EN			0x40
++#define TPS65917_SMPS1_CTRL_ROOF_FLOOR_EN_SHIFT			6
++#define TPS65917_SMPS1_CTRL_STATUS_MASK				0x30
++#define TPS65917_SMPS1_CTRL_STATUS_SHIFT			4
++#define TPS65917_SMPS1_CTRL_MODE_SLEEP_MASK			0x0c
++#define TPS65917_SMPS1_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_SMPS1_CTRL_MODE_ACTIVE_MASK			0x03
++#define TPS65917_SMPS1_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for SMPS1_FORCE */
++#define TPS65917_SMPS1_FORCE_CMD					0x80
++#define TPS65917_SMPS1_FORCE_CMD_SHIFT				7
++#define TPS65917_SMPS1_FORCE_VSEL_MASK				0x7f
++#define TPS65917_SMPS1_FORCE_VSEL_SHIFT				0
++
++/* Bit definitions for SMPS1_VOLTAGE */
++#define TPS65917_SMPS1_VOLTAGE_RANGE				0x80
++#define TPS65917_SMPS1_VOLTAGE_RANGE_SHIFT			7
++#define TPS65917_SMPS1_VOLTAGE_VSEL_MASK				0x7f
++#define TPS65917_SMPS1_VOLTAGE_VSEL_SHIFT			0
++
++/* Bit definitions for SMPS2_CTRL */
++#define TPS65917_SMPS2_CTRL_WR_S				0x80
++#define TPS65917_SMPS2_CTRL_WR_S_SHIFT				7
++#define TPS65917_SMPS2_CTRL_ROOF_FLOOR_EN			0x40
++#define TPS65917_SMPS2_CTRL_ROOF_FLOOR_EN_SHIFT			6
++#define TPS65917_SMPS2_CTRL_STATUS_MASK				0x30
++#define TPS65917_SMPS2_CTRL_STATUS_SHIFT			4
++#define TPS65917_SMPS2_CTRL_MODE_SLEEP_MASK			0x0c
++#define TPS65917_SMPS2_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_SMPS2_CTRL_MODE_ACTIVE_MASK			0x03
++#define TPS65917_SMPS2_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for SMPS2_FORCE */
++#define TPS65917_SMPS2_FORCE_CMD					0x80
++#define TPS65917_SMPS2_FORCE_CMD_SHIFT				7
++#define TPS65917_SMPS2_FORCE_VSEL_MASK				0x7f
++#define TPS65917_SMPS2_FORCE_VSEL_SHIFT				0
++
++/* Bit definitions for SMPS2_VOLTAGE */
++#define TPS65917_SMPS2_VOLTAGE_RANGE				0x80
++#define TPS65917_SMPS2_VOLTAGE_RANGE_SHIFT			7
++#define TPS65917_SMPS2_VOLTAGE_VSEL_MASK				0x7f
++#define TPS65917_SMPS2_VOLTAGE_VSEL_SHIFT			0
++
++/* Bit definitions for SMPS3_CTRL */
++#define TPS65917_SMPS3_CTRL_WR_S				0x80
++#define TPS65917_SMPS3_CTRL_WR_S_SHIFT				7
++#define TPS65917_SMPS3_CTRL_ROOF_FLOOR_EN			0x40
++#define TPS65917_SMPS3_CTRL_ROOF_FLOOR_EN_SHIFT			6
++#define TPS65917_SMPS3_CTRL_STATUS_MASK				0x30
++#define TPS65917_SMPS3_CTRL_STATUS_SHIFT			4
++#define TPS65917_SMPS3_CTRL_MODE_SLEEP_MASK			0x0c
++#define TPS65917_SMPS3_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_SMPS3_CTRL_MODE_ACTIVE_MASK			0x03
++#define TPS65917_SMPS3_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for SMPS3_FORCE */
++#define TPS65917_SMPS3_FORCE_CMD					0x80
++#define TPS65917_SMPS3_FORCE_CMD_SHIFT				7
++#define TPS65917_SMPS3_FORCE_VSEL_MASK				0x7f
++#define TPS65917_SMPS3_FORCE_VSEL_SHIFT				0
++
++/* Bit definitions for SMPS3_VOLTAGE */
++#define TPS65917_SMPS3_VOLTAGE_RANGE				0x80
++#define TPS65917_SMPS3_VOLTAGE_RANGE_SHIFT			7
++#define TPS65917_SMPS3_VOLTAGE_VSEL_MASK				0x7f
++#define TPS65917_SMPS3_VOLTAGE_VSEL_SHIFT			0
++
++/* Bit definitions for SMPS4_CTRL */
++#define TPS65917_SMPS4_CTRL_WR_S				0x80
++#define TPS65917_SMPS4_CTRL_WR_S_SHIFT				7
++#define TPS65917_SMPS4_CTRL_ROOF_FLOOR_EN			0x40
++#define TPS65917_SMPS4_CTRL_ROOF_FLOOR_EN_SHIFT			6
++#define TPS65917_SMPS4_CTRL_STATUS_MASK				0x30
++#define TPS65917_SMPS4_CTRL_STATUS_SHIFT			4
++#define TPS65917_SMPS4_CTRL_MODE_SLEEP_MASK			0x0c
++#define TPS65917_SMPS4_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_SMPS4_CTRL_MODE_ACTIVE_MASK			0x03
++#define TPS65917_SMPS4_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for SMPS4_VOLTAGE */
++#define TPS65917_SMPS4_VOLTAGE_RANGE				0x80
++#define TPS65917_SMPS4_VOLTAGE_RANGE_SHIFT			7
++#define TPS65917_SMPS4_VOLTAGE_VSEL_MASK			0x7f
++#define TPS65917_SMPS4_VOLTAGE_VSEL_SHIFT			0
++
++/* Bit definitions for SMPS5_CTRL */
++#define TPS65917_SMPS5_CTRL_WR_S				0x80
++#define TPS65917_SMPS5_CTRL_WR_S_SHIFT				7
++#define TPS65917_SMPS5_CTRL_ROOF_FLOOR_EN			0x40
++#define TPS65917_SMPS5_CTRL_ROOF_FLOOR_EN_SHIFT			6
++#define TPS65917_SMPS5_CTRL_STATUS_MASK				0x30
++#define TPS65917_SMPS5_CTRL_STATUS_SHIFT			4
++#define TPS65917_SMPS5_CTRL_MODE_SLEEP_MASK			0x0c
++#define TPS65917_SMPS5_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_SMPS5_CTRL_MODE_ACTIVE_MASK			0x03
++#define TPS65917_SMPS5_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for SMPS5_VOLTAGE */
++#define TPS65917_SMPS5_VOLTAGE_RANGE				0x80
++#define TPS65917_SMPS5_VOLTAGE_RANGE_SHIFT			7
++#define TPS65917_SMPS5_VOLTAGE_VSEL_MASK			0x7f
++#define TPS65917_SMPS5_VOLTAGE_VSEL_SHIFT			0
++
++/* Bit definitions for SMPS_CTRL */
++#define TPS65917_SMPS_CTRL_SMPS1_SMPS12_EN			0x10
++#define TPS65917_SMPS_CTRL_SMPS1_SMPS12_EN_SHIFT		4
++#define TPS65917_SMPS_CTRL_SMPS12_PHASE_CTRL			0x3
++#define TPS65917_SMPS_CTRL_SMPS12_PHASE_CTRL_SHIFT			0
++
++/* Bit definitions for SMPS_PD_CTRL */
++#define TPS65917_SMPS_PD_CTRL_SMPS5				0x40
++#define TPS65917_SMPS_PD_CTRL_SMPS5_SHIFT				6
++#define TPS65917_SMPS_PD_CTRL_SMPS4				0x10
++#define TPS65917_SMPS_PD_CTRL_SMPS4_SHIFT				4
++#define TPS65917_SMPS_PD_CTRL_SMPS3				0x08
++#define TPS65917_SMPS_PD_CTRL_SMPS3_SHIFT				3
++#define TPS65917_SMPS_PD_CTRL_SMPS2				0x02
++#define TPS65917_SMPS_PD_CTRL_SMPS2_SHIFT				1
++#define TPS65917_SMPS_PD_CTRL_SMPS1				0x01
++#define TPS65917_SMPS_PD_CTRL_SMPS1_SHIFT			0
++
++/* Bit definitions for SMPS_THERMAL_EN */
++#define TPS65917_SMPS_THERMAL_EN_SMPS5				0x40
++#define TPS65917_SMPS_THERMAL_EN_SMPS5_SHIFT			6
++#define TPS65917_SMPS_THERMAL_EN_SMPS3				0x08
++#define TPS65917_SMPS_THERMAL_EN_SMPS3_SHIFT			3
++#define TPS65917_SMPS_THERMAL_EN_SMPS12				0x01
++#define TPS65917_SMPS_THERMAL_EN_SMPS12_SHIFT			0
++
++/* Bit definitions for SMPS_THERMAL_STATUS */
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS5				0x40
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS5_SHIFT			6
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS3				0x08
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS3_SHIFT			3
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS12				0x01
++#define TPS65917_SMPS_THERMAL_STATUS_SMPS12_SHIFT			0
++
++/* Bit definitions for SMPS_SHORT_STATUS */
++#define TPS65917_SMPS_SHORT_STATUS_SMPS5				0x40
++#define TPS65917_SMPS_SHORT_STATUS_SMPS5_SHIFT			6
++#define TPS65917_SMPS_SHORT_STATUS_SMPS4				0x10
++#define TPS65917_SMPS_SHORT_STATUS_SMPS4_SHIFT			4
++#define TPS65917_SMPS_SHORT_STATUS_SMPS3				0x08
++#define TPS65917_SMPS_SHORT_STATUS_SMPS3_SHIFT			3
++#define TPS65917_SMPS_SHORT_STATUS_SMPS2				0x02
++#define TPS65917_SMPS_SHORT_STATUS_SMPS2_SHIFT			1
++#define TPS65917_SMPS_SHORT_STATUS_SMPS1				0x01
++#define TPS65917_SMPS_SHORT_STATUS_SMPS1_SHIFT			0
++
++/* Bit definitions for SMPS_NEGATIVE_CURRENT_LIMIT_EN */
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS5		0x40
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS5_SHIFT	6
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS4		0x10
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS4_SHIFT	4
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS3		0x08
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS3_SHIFT	3
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS2		0x02
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS2_SHIFT	1
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS1		0x01
++#define TPS65917_SMPS_NEGATIVE_CURRENT_LIMIT_EN_SMPS1_SHIFT	0
++
++/* Bit definitions for SMPS_POWERGOOD_MASK1 */
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS5			0x40
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS5_SHIFT			6
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS4			0x10
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS4_SHIFT			4
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS3			0x08
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS3_SHIFT			3
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS2			0x02
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS2_SHIFT			1
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS1			0x01
++#define TPS65917_SMPS_POWERGOOD_MASK1_SMPS1_SHIFT		0
++
++/* Bit definitions for SMPS_POWERGOOD_MASK2 */
++#define TPS65917_SMPS_POWERGOOD_MASK2_POWERGOOD_TYPE_SELECT	0x80
++#define TPS65917_SMPS_POWERGOOD_MASK2_POWERGOOD_TYPE_SELECT_SHIFT	7
++#define TPS65917_SMPS_POWERGOOD_MASK2_OVC_ALARM_SHIFT		0x10
++#define TPS65917_SMPS_POWERGOOD_MASK2_OVC_ALARM			4
++
++/* Bit definitions for SMPS_PLL_CTRL */
++
++#define TPS65917_SMPS_PLL_CTRL_PLL_EN_PLL_BYPASS_SHIFT		0x8
++#define TPS65917_SMPS_PLL_CTRL_PLL_PLL_EN_BYPASS		3
++#define TPS65917_SMPS_PLL_CTRL_PLL_PLL_BYPASS_CLK_SHIFT		0x4
++#define TPS65917_SMPS_PLL_CTRL_PLL_PLL_BYPASS_CLK		2
++
++
++/* Registers for function LDO */
++#define TPS65917_LDO1_CTRL					0x0
++#define TPS65917_LDO1_VOLTAGE					0x1
++#define TPS65917_LDO2_CTRL					0x2
++#define TPS65917_LDO2_VOLTAGE					0x3
++#define TPS65917_LDO3_CTRL					0x4
++#define TPS65917_LDO3_VOLTAGE					0x5
++#define TPS65917_LDO4_CTRL					0xE
++#define TPS65917_LDO4_VOLTAGE					0xF
++#define TPS65917_LDO5_CTRL					0x12
++#define TPS65917_LDO5_VOLTAGE					0x13
++#define TPS65917_LDO_PD_CTRL1					0x1B
++#define TPS65917_LDO_PD_CTRL2					0x1C
++#define TPS65917_LDO_SHORT_STATUS1				0x1D
++#define TPS65917_LDO_SHORT_STATUS2				0x1E
++#define TPS65917_LDO_PD_CTRL3					0x2D
++#define TPS65917_LDO_SHORT_STATUS3				0x2E
++
++/* Bit definitions for LDO1_CTRL */
++#define TPS65917_LDO1_CTRL_WR_S					0x80
++#define TPS65917_LDO1_CTRL_WR_S_SHIFT				7
++#define TPS65917_LDO1_CTRL_BYPASS_EN				0x40
++#define TPS65917_LDO1_CTRL_BYPASS_EN_SHIFT				0x6
++#define TPS65917_LDO1_CTRL_STATUS					0x10
++#define TPS65917_LDO1_CTRL_STATUS_SHIFT				4
++#define TPS65917_LDO1_CTRL_MODE_SLEEP				0x04
++#define TPS65917_LDO1_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_LDO1_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_LDO1_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for LDO1_VOLTAGE */
++#define TPS65917_LDO1_VOLTAGE_VSEL_MASK				0x3f
++#define TPS65917_LDO1_VOLTAGE_VSEL_SHIFT				0
++
++/* Bit definitions for LDO2_CTRL */
++#define TPS65917_LDO2_CTRL_WR_S					0x80
++#define TPS65917_LDO2_CTRL_WR_S_SHIFT				7
++#define TPS65917_LDO2_CTRL_BYPASS_EN				0x40
++#define TPS65917_LDO2_CTRL_BYPASS_EN_SHIFT				0x6
++#define TPS65917_LDO2_CTRL_STATUS					0x10
++#define TPS65917_LDO2_CTRL_STATUS_SHIFT				4
++#define TPS65917_LDO2_CTRL_MODE_SLEEP				0x04
++#define TPS65917_LDO2_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_LDO2_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_LDO2_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for LDO2_VOLTAGE */
++#define TPS65917_LDO2_VOLTAGE_VSEL_MASK				0x3f
++#define TPS65917_LDO2_VOLTAGE_VSEL_SHIFT				0
++
++/* Bit definitions for LDO3_CTRL */
++#define TPS65917_LDO3_CTRL_WR_S					0x80
++#define TPS65917_LDO3_CTRL_WR_S_SHIFT				7
++#define TPS65917_LDO3_CTRL_STATUS					0x10
++#define TPS65917_LDO3_CTRL_STATUS_SHIFT				4
++#define TPS65917_LDO3_CTRL_MODE_SLEEP				0x04
++#define TPS65917_LDO3_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_LDO3_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_LDO3_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for LDO3_VOLTAGE */
++#define TPS65917_LDO3_VOLTAGE_VSEL_MASK				0x3f
++#define TPS65917_LDO3_VOLTAGE_VSEL_SHIFT				0
++
++/* Bit definitions for LDO4_CTRL */
++#define TPS65917_LDO4_CTRL_WR_S					0x80
++#define TPS65917_LDO4_CTRL_WR_S_SHIFT				7
++#define TPS65917_LDO4_CTRL_STATUS					0x10
++#define TPS65917_LDO4_CTRL_STATUS_SHIFT				4
++#define TPS65917_LDO4_CTRL_MODE_SLEEP				0x04
++#define TPS65917_LDO4_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_LDO4_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_LDO4_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for LDO4_VOLTAGE */
++#define TPS65917_LDO4_VOLTAGE_VSEL_MASK				0x3f
++#define TPS65917_LDO4_VOLTAGE_VSEL_SHIFT				0
++
++/* Bit definitions for LDO5_CTRL */
++#define TPS65917_LDO5_CTRL_WR_S					0x80
++#define TPS65917_LDO5_CTRL_WR_S_SHIFT				7
++#define TPS65917_LDO5_CTRL_STATUS					0x10
++#define TPS65917_LDO5_CTRL_STATUS_SHIFT				4
++#define TPS65917_LDO5_CTRL_MODE_SLEEP				0x04
++#define TPS65917_LDO5_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_LDO5_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_LDO5_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for LDO5_VOLTAGE */
++#define TPS65917_LDO5_VOLTAGE_VSEL_MASK				0x3f
++#define TPS65917_LDO5_VOLTAGE_VSEL_SHIFT				0
++
++/* Bit definitions for LDO_PD_CTRL1 */
++#define TPS65917_LDO_PD_CTRL1_LDO4				0x80
++#define TPS65917_LDO_PD_CTRL1_LDO4_SHIFT				7
++#define TPS65917_LDO_PD_CTRL1_LDO2				0x02
++#define TPS65917_LDO_PD_CTRL1_LDO2_SHIFT				1
++#define TPS65917_LDO_PD_CTRL1_LDO1				0x01
++#define TPS65917_LDO_PD_CTRL1_LDO1_SHIFT				0
++
++/* Bit definitions for LDO_PD_CTRL2 */
++#define TPS65917_LDO_PD_CTRL2_LDO3				0x04
++#define TPS65917_LDO_PD_CTRL2_LDO3_SHIFT			2
++#define TPS65917_LDO_PD_CTRL2_LDO5				0x02
++#define TPS65917_LDO_PD_CTRL2_LDO5_SHIFT				1
++
++/* Bit definitions for LDO_PD_CTRL3 */
++#define TPS65917_LDO_PD_CTRL2_LDOVANA				0x80
++#define TPS65917_LDO_PD_CTRL2_LDOVANA_SHIFT			7
++
++/* Bit definitions for LDO_SHORT_STATUS1 */
++#define TPS65917_LDO_SHORT_STATUS1_LDO4				0x80
++#define TPS65917_LDO_SHORT_STATUS1_LDO4_SHIFT			7
++#define TPS65917_LDO_SHORT_STATUS1_LDO2				0x02
++#define TPS65917_LDO_SHORT_STATUS1_LDO2_SHIFT			1
++#define TPS65917_LDO_SHORT_STATUS1_LDO1				0x01
++#define TPS65917_LDO_SHORT_STATUS1_LDO1_SHIFT			0
++
++/* Bit definitions for LDO_SHORT_STATUS2 */
++#define TPS65917_LDO_SHORT_STATUS2_LDO3				0x04
++#define TPS65917_LDO_SHORT_STATUS2_LDO3_SHIFT			2
++#define TPS65917_LDO_SHORT_STATUS2_LDO5				0x02
++#define TPS65917_LDO_SHORT_STATUS2_LDO5_SHIFT			1
++
++/* Bit definitions for LDO_SHORT_STATUS2 */
++#define TPS65917_LDO_SHORT_STATUS2_LDOVANA				0x80
++#define TPS65917_LDO_SHORT_STATUS2_LDOVANA_SHIFT			7
++
++/* Registers for function PMU_CONTROL */
++#define TPS65917_DEV_CTRL						0x0
++#define TPS65917_POWER_CTRL					0x1
++#define TPS65917_VSYS_LO						0x2
++#define TPS65917_VSYS_MON						0x3
++#define TPS65917_WATCHDOG						0x5
++#define TPS65917_VRTC_CTRL				0x8
++#define TPS65917_LONG_PRESS_KEY					0x9
++#define TPS65917_OSC_THERM_CTRL					0xA
++#define TPS65917_SWOFF_HWRST					0xF
++#define TPS65917_SWOFF_COLDRST					0x10
++#define TPS65917_SWOFF_STATUS					0x11
++#define TPS65917_PMU_CONFIG					0x12
++#define TPS65917_PMU_CTRL2					0x13
++#define TPS65917_PMU_SECONDARY_INT				0x15
++#define TPS65917_SW_REVISION					0x17
++#define TPS65917_PMU_SECONDARY_INT2				0x19
++
++/* Bit definitions for DEV_CTRL */
++#define TPS65917_DEV_CTRL_DEV_STATUS_MASK				0x0c
++#define TPS65917_DEV_CTRL_DEV_STATUS_SHIFT			2
++#define TPS65917_DEV_CTRL_SW_RST					0x02
++#define TPS65917_DEV_CTRL_SW_RST_SHIFT				1
++#define TPS65917_DEV_CTRL_DEV_ON					0x01
++#define TPS65917_DEV_CTRL_DEV_ON_SHIFT				0
++
++/* Bit definitions for POWER_CTRL */
++#define TPS65917_POWER_CTRL_ENABLE2_MASK				0x04
++#define TPS65917_POWER_CTRL_ENABLE2_MASK_SHIFT			2
++#define TPS65917_POWER_CTRL_ENABLE1_MASK				0x02
++#define TPS65917_POWER_CTRL_ENABLE1_MASK_SHIFT			1
++#define TPS65917_POWER_CTRL_NSLEEP_MASK				0x01
++#define TPS65917_POWER_CTRL_NSLEEP_MASK_SHIFT			0
++
++/* Bit definitions for VSYS_LO */
++#define TPS65917_VSYS_LO_THRESHOLD_MASK				0x1f
++#define TPS65917_VSYS_LO_THRESHOLD_SHIFT				0
++
++/* Bit definitions for VSYS_MON */
++#define TPS65917_VSYS_MON_ENABLE					0x80
++#define TPS65917_VSYS_MON_ENABLE_SHIFT				7
++#define TPS65917_VSYS_MON_THRESHOLD_MASK				0x3f
++#define TPS65917_VSYS_MON_THRESHOLD_SHIFT				0
++
++/* Bit definitions for WATCHDOG */
++#define TPS65917_WATCHDOG_LOCK					0x20
++#define TPS65917_WATCHDOG_LOCK_SHIFT				5
++#define TPS65917_WATCHDOG_ENABLE					0x10
++#define TPS65917_WATCHDOG_ENABLE_SHIFT				4
++#define TPS65917_WATCHDOG_MODE					0x08
++#define TPS65917_WATCHDOG_MODE_SHIFT				3
++#define TPS65917_WATCHDOG_TIMER_MASK				0x07
++#define TPS65917_WATCHDOG_TIMER_SHIFT				0
++
++/* Bit definitions for VRTC_CTRL */
++#define TPS65917_VRTC_CTRL_VRTC_18_15				0x80
++#define TPS65917_VRTC_CTRL_VRTC_18_15_SHIFT				7
++#define TPS65917_VRTC_CTRL_VRTC_EN_SLP				0x40
++#define TPS65917_VRTC_CTRL_VRTC_EN_SLP_SHIFT				6
++#define TPS65917_VRTC_CTRL_VRTC_EN_OFF				0x20
++#define TPS65917_VRTC_CTRL_VRTC_EN_OFF_SHIFT				5
++#define TPS65917_VRTC_CTRL_VRTC_PWEN				0x10
++#define TPS65917_VRTC_CTRL_SHIFT				4
++
++/* Bit definitions for LONG_PRESS_KEY */
++#define TPS65917_LONG_PRESS_KEY_LPK_LOCK				0x80
++#define TPS65917_LONG_PRESS_KEY_LPK_LOCK_SHIFT			7
++#define TPS65917_LONG_PRESS_KEY_LPK_TIME_MASK			0x0c
++#define TPS65917_LONG_PRESS_KEY_LPK_TIME_SHIFT			2
++
++/* Bit definitions for OSC_THERM_CTRL */
++#define TPS65917_OSC_THERM_CTRL_VANA_ON_IN_SLEEP			0x80
++#define TPS65917_OSC_THERM_CTRL_VANA_ON_IN_SLEEP_SHIFT		7
++#define TPS65917_OSC_THERM_CTRL_INT_MASK_IN_SLEEP			0x40
++#define TPS65917_OSC_THERM_CTRL_INT_MASK_IN_SLEEP_SHIFT		6
++#define TPS65917_OSC_THERM_CTRL_RC15MHZ_ON_IN_SLEEP		0x20
++#define TPS65917_OSC_THERM_CTRL_RC15MHZ_ON_IN_SLEEP_SHIFT		5
++#define TPS65917_OSC_THERM_CTRL_THERM_OFF_IN_SLEEP		0x10
++#define TPS65917_OSC_THERM_CTRL_THERM_OFF_IN_SLEEP_SHIFT		4
++#define TPS65917_OSC_THERM_CTRL_THERM_HD_SEL_MASK			0x0c
++#define TPS65917_OSC_THERM_CTRL_THERM_HD_SEL_SHIFT		2
++
++/* Bit definitions for SWOFF_HWRST */
++#define TPS65917_SWOFF_HWRST_PWRON_LPK				0x80
++#define TPS65917_SWOFF_HWRST_PWRON_LPK_SHIFT			7
++#define TPS65917_SWOFF_HWRST_PWRDOWN				0x40
++#define TPS65917_SWOFF_HWRST_PWRDOWN_SHIFT			6
++#define TPS65917_SWOFF_HWRST_WTD					0x20
++#define TPS65917_SWOFF_HWRST_WTD_SHIFT				5
++#define TPS65917_SWOFF_HWRST_TSHUT				0x10
++#define TPS65917_SWOFF_HWRST_TSHUT_SHIFT				4
++#define TPS65917_SWOFF_HWRST_RESET_IN				0x08
++#define TPS65917_SWOFF_HWRST_RESET_IN_SHIFT			3
++#define TPS65917_SWOFF_HWRST_SW_RST				0x04
++#define TPS65917_SWOFF_HWRST_SW_RST_SHIFT				2
++#define TPS65917_SWOFF_HWRST_VSYS_LO				0x02
++#define TPS65917_SWOFF_HWRST_VSYS_LO_SHIFT			1
++#define TPS65917_SWOFF_HWRST_GPADC_SHUTDOWN			0x01
++#define TPS65917_SWOFF_HWRST_GPADC_SHUTDOWN_SHIFT			0
++
++/* Bit definitions for SWOFF_COLDRST */
++#define TPS65917_SWOFF_COLDRST_PWRON_LPK				0x80
++#define TPS65917_SWOFF_COLDRST_PWRON_LPK_SHIFT			7
++#define TPS65917_SWOFF_COLDRST_PWRDOWN				0x40
++#define TPS65917_SWOFF_COLDRST_PWRDOWN_SHIFT			6
++#define TPS65917_SWOFF_COLDRST_WTD				0x20
++#define TPS65917_SWOFF_COLDRST_WTD_SHIFT				5
++#define TPS65917_SWOFF_COLDRST_TSHUT				0x10
++#define TPS65917_SWOFF_COLDRST_TSHUT_SHIFT			4
++#define TPS65917_SWOFF_COLDRST_RESET_IN				0x08
++#define TPS65917_SWOFF_COLDRST_RESET_IN_SHIFT			3
++#define TPS65917_SWOFF_COLDRST_SW_RST				0x04
++#define TPS65917_SWOFF_COLDRST_SW_RST_SHIFT			2
++#define TPS65917_SWOFF_COLDRST_VSYS_LO				0x02
++#define TPS65917_SWOFF_COLDRST_VSYS_LO_SHIFT			1
++#define TPS65917_SWOFF_COLDRST_GPADC_SHUTDOWN			0x01
++#define TPS65917_SWOFF_COLDRST_GPADC_SHUTDOWN_SHIFT		0
++
++/* Bit definitions for SWOFF_STATUS */
++#define TPS65917_SWOFF_STATUS_PWRON_LPK				0x80
++#define TPS65917_SWOFF_STATUS_PWRON_LPK_SHIFT			7
++#define TPS65917_SWOFF_STATUS_PWRDOWN				0x40
++#define TPS65917_SWOFF_STATUS_PWRDOWN_SHIFT			6
++#define TPS65917_SWOFF_STATUS_WTD					0x20
++#define TPS65917_SWOFF_STATUS_WTD_SHIFT				5
++#define TPS65917_SWOFF_STATUS_TSHUT				0x10
++#define TPS65917_SWOFF_STATUS_TSHUT_SHIFT				4
++#define TPS65917_SWOFF_STATUS_RESET_IN				0x08
++#define TPS65917_SWOFF_STATUS_RESET_IN_SHIFT			3
++#define TPS65917_SWOFF_STATUS_SW_RST				0x04
++#define TPS65917_SWOFF_STATUS_SW_RST_SHIFT			2
++#define TPS65917_SWOFF_STATUS_VSYS_LO				0x02
++#define TPS65917_SWOFF_STATUS_VSYS_LO_SHIFT			1
++#define TPS65917_SWOFF_STATUS_GPADC_SHUTDOWN			0x01
++#define TPS65917_SWOFF_STATUS_GPADC_SHUTDOWN_SHIFT		0
++
++/* Bit definitions for PMU_CONFIG */
++#define TPS65917_PMU_CONFIG_HIGH_VCC_SENSE				0x40
++#define TPS65917_PMU_CONFIG_HIGH_VCC_SENSE_SHIFT			6
++#define TPS65917_PMU_CONFIG_PLL_AUTO_CTRL_MASK				0x30
++#define TPS65917_PMU_CONFIG_PLL_AUTO_CTRL_SHIFT				4
++#define TPS65917_PMU_CONFIG_SWOFF_DLY_MASK			0x0c
++#define TPS65917_PMU_CONFIG_SWOFF_DLY_SHIFT			2
++#define TPS65917_PMU_CONFIG_AUTODEVON				0x01
++#define TPS65917_PMU_CONFIG_AUTODEVON_SHIFT			0
++
++/* Bit definitions for PMU_CTRL2 */
++#define TPS65917_PMU_CTRL2_INT_LINE_DIS				0x8
++#define TPS65917_PMU_CTRL2_INT_LINE_DIS_SHIFT			4
++#define TPS65917_PMU_CTRL2_WDT_HOLD_IN_SLEEP			0x4
++#define TPS65917_PMU_CTRL2_WDT_HOLD_IN_SLEEP_SHIFT			3
++#define TPS65917_PMU_CTRL2_PWRDOWN_FASTOFF			0x2
++#define TPS65917_PMU_CTRL2_PWRDOWN_FASTOFF_SHIFT			1
++#define TPS65917_PMU_CTRL2_TSHUT_FASTOFF			0x1
++#define TPS65917_PMU_CTRL2_TSHUT_FASTOFF_SHIFT			0
++
++/* Bit definitions for PMU_SECONDARY_INT */
++#define TPS65917_PMU_SECONDARY_INT_FSD_INT_SRC			0x10
++#define TPS65917_PMU_SECONDARY_INT_FSD_INT_SRC_SHIFT		4
++#define TPS65917_PMU_SECONDARY_INT_FSB_MASK			0x01
++#define TPS65917_PMU_SECONDARY_INT_FSB_MASK_SHIFT			0
++
++/* Bit definitions for SW_REVISION */
++#define TPS65917_SW_REVISION_SW_REVISION_MASK			0xff
++#define TPS65917_SW_REVISION_SW_REVISION_SHIFT			0
++
++/* Bit definitions for PMU_SECONDARY_INT2 */
++#define TPS65917_PMU_SECONDARY_INT2_DVFS_INT_SRC			0x10
++#define TPS65917_PMU_SECONDARY_INT2_DVFS_INT_SRC_SHIFT		4
++#define TPS65917_PMU_SECONDARY_INT2_DVFS_MASK			0x01
++#define TPS65917_PMU_SECONDARY_INT2_DVFS_MASK_SHIFT		0
++
++/* Registers for function RESOURCE */
++#define TPS65917_REGEN1_CTRL					0x2
++#define TPS65917_PLLEN_CTRL					0x3
++#define TPS65917_NSLEEP_RES_ASSIGN				0x6
++#define TPS65917_NSLEEP_SMPS_ASSIGN				0x7
++#define TPS65917_NSLEEP_LDO_ASSIGN1				0x8
++#define TPS65917_NSLEEP_LDO_ASSIGN2				0x9
++#define TPS65917_ENABLE1_RES_ASSIGN				0xA
++#define TPS65917_ENABLE1_SMPS_ASSIGN				0xB
++#define TPS65917_ENABLE1_LDO_ASSIGN1				0xC
++#define TPS65917_ENABLE1_LDO_ASSIGN2				0xD
++#define TPS65917_ENABLE2_RES_ASSIGN				0xE
++#define TPS65917_ENABLE2_SMPS_ASSIGN				0xF
++#define TPS65917_ENABLE2_LDO_ASSIGN1				0x10
++#define TPS65917_ENABLE2_LDO_ASSIGN2				0x11
++#define TPS65917_REGEN2_CTRL					0x12
++#define TPS65917_REGEN3_CTRL					0x13
++
++/* Bit definitions for REGEN1_CTRL */
++#define TPS65917_REGEN1_CTRL_STATUS				0x10
++#define TPS65917_REGEN1_CTRL_STATUS_SHIFT				4
++#define TPS65917_REGEN1_CTRL_MODE_SLEEP				0x04
++#define TPS65917_REGEN1_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_REGEN1_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_REGEN1_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for PLLEN_CTRL */
++#define TPS65917_PLLEN_CTRL_STATUS				0x10
++#define TPS65917_PLLEN_CTRL_STATUS_SHIFT				4
++#define TPS65917_PLLEN_CTRL_MODE_SLEEP				0x04
++#define TPS65917_PLLEN_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_PLLEN_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_PLLEN_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for REGEN2_CTRL */
++#define TPS65917_REGEN2_CTRL_STATUS				0x10
++#define TPS65917_REGEN2_CTRL_STATUS_SHIFT				4
++#define TPS65917_REGEN2_CTRL_MODE_SLEEP				0x04
++#define TPS65917_REGEN2_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_REGEN2_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_REGEN2_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Bit definitions for NSLEEP_RES_ASSIGN */
++#define TPS65917_NSLEEP_RES_ASSIGN_PLL_EN				0x08
++#define TPS65917_NSLEEP_RES_ASSIGN_PLL_EN_SHIFT			3
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN3				0x04
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN3_SHIFT			2
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN2				0x02
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN2_SHIFT			1
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN1				0x01
++#define TPS65917_NSLEEP_RES_ASSIGN_REGEN1_SHIFT			0
++
++/* Bit definitions for NSLEEP_SMPS_ASSIGN */
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS5				0x40
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS5_SHIFT			6
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS4				0x10
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS4_SHIFT			4
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS3				0x08
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS3_SHIFT			3
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS2				0x02
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS2_SHIFT			1
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS1			0x01
++#define TPS65917_NSLEEP_SMPS_ASSIGN_SMPS1_SHIFT			0
++
++/* Bit definitions for NSLEEP_LDO_ASSIGN1 */
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO4				0x80
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO4_SHIFT			7
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO2				0x02
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO2_SHIFT			1
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO1				0x01
++#define TPS65917_NSLEEP_LDO_ASSIGN1_LDO1_SHIFT			0
++
++/* Bit definitions for NSLEEP_LDO_ASSIGN2 */
++#define TPS65917_NSLEEP_LDO_ASSIGN2_LDO3			0x04
++#define TPS65917_NSLEEP_LDO_ASSIGN2_LDO3_SHIFT			2
++#define TPS65917_NSLEEP_LDO_ASSIGN2_LDO5				0x02
++#define TPS65917_NSLEEP_LDO_ASSIGN2_LDO5_SHIFT			1
++
++/* Bit definitions for ENABLE1_RES_ASSIGN */
++#define TPS65917_ENABLE1_RES_ASSIGN_PLLEN			0x8
++#define TPS65917_ENABLE1_RES_ASSIGN_PLLEN_SHIFT			3
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN3			0x04
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN3_SHIFT			2
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN2			0x02
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN2_SHIFT			1
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN1			0x01
++#define TPS65917_ENABLE1_RES_ASSIGN_REGEN1_SHIFT			0
++
++/* Bit definitions for ENABLE1_SMPS_ASSIGN */
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS5			0x40
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS5_SHIFT			6
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS4			0x10
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS4_SHIFT			4
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS3			0x08
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS3_SHIFT			3
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS2			0x02
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS2_SHIFT			1
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS1			0x01
++#define TPS65917_ENABLE1_SMPS_ASSIGN_SMPS1_SHIFT			0
++
++/* Bit definitions for ENABLE1_LDO_ASSIGN1 */
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO4				0x80
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO4_SHIFT			7
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO2				0x02
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO2_SHIFT			1
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO1				0x01
++#define TPS65917_ENABLE1_LDO_ASSIGN1_LDO1_SHIFT			0
++
++/* Bit definitions for ENABLE1_LDO_ASSIGN2 */
++#define TPS65917_ENABLE1_LDO_ASSIGN2_LDO3			0x04
++#define TPS65917_ENABLE1_LDO_ASSIGN2_LDO3_SHIFT			2
++#define TPS65917_ENABLE1_LDO_ASSIGN2_LDO5			0x02
++#define TPS65917_ENABLE1_LDO_ASSIGN2_LDO5_SHIFT			1
++
++/* Bit definitions for ENABLE2_RES_ASSIGN */
++#define TPS65917_ENABLE2_RES_ASSIGN_PLLEN			0x08
++#define TPS65917_ENABLE2_RES_ASSIGN_PLLEN_SHIFT			3
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN3			0x04
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN3_SHIFT			2
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN2			0x02
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN2_SHIFT			1
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN1			0x01
++#define TPS65917_ENABLE2_RES_ASSIGN_REGEN1_SHIFT			0
++
++/* Bit definitions for ENABLE2_SMPS_ASSIGN */
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS5			0x40
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS5_SHIFT			6
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS4			0x10
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS4_SHIFT			4
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS3			0x08
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS3_SHIFT			3
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS2			0x02
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS2_SHIFT			1
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS1			0x01
++#define TPS65917_ENABLE2_SMPS_ASSIGN_SMPS1_SHIFT			0
++
++/* Bit definitions for ENABLE2_LDO_ASSIGN1 */
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO4				0x80
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO4_SHIFT			7
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO2				0x02
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO2_SHIFT			1
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO1				0x01
++#define TPS65917_ENABLE2_LDO_ASSIGN1_LDO1_SHIFT			0
++
++/* Bit definitions for ENABLE2_LDO_ASSIGN2 */
++#define TPS65917_ENABLE2_LDO_ASSIGN2_LDO3			0x04
++#define TPS65917_ENABLE2_LDO_ASSIGN2_LDO3_SHIFT			2
++#define TPS65917_ENABLE2_LDO_ASSIGN2_LDO5			0x02
++#define TPS65917_ENABLE2_LDO_ASSIGN2_LDO5_SHIFT			1
++
++/* Bit definitions for REGEN3_CTRL */
++#define TPS65917_REGEN3_CTRL_STATUS				0x10
++#define TPS65917_REGEN3_CTRL_STATUS_SHIFT				4
++#define TPS65917_REGEN3_CTRL_MODE_SLEEP				0x04
++#define TPS65917_REGEN3_CTRL_MODE_SLEEP_SHIFT			2
++#define TPS65917_REGEN3_CTRL_MODE_ACTIVE				0x01
++#define TPS65917_REGEN3_CTRL_MODE_ACTIVE_SHIFT			0
++
++/* Registers for function PAD_CONTROL */
++#define TPS65917_OD_OUTPUT_CTRL2					0x2
++#define TPS65917_PU_PD_INPUT_CTRL1				0x4
++#define TPS65917_PU_PD_INPUT_CTRL2				0x5
++#define TPS65917_PU_PD_INPUT_CTRL3				0x6
++#define TPS65917_OD_OUTPUT_CTRL					0x8
++#define TPS65917_POLARITY_CTRL					0x9
++#define TPS65917_PRIMARY_SECONDARY_PAD1				0xA
++#define TPS65917_PRIMARY_SECONDARY_PAD2				0xB
++#define TPS65917_I2C_SPI						0xC
++#define TPS65917_PU_PD_INPUT_CTRL4				0xD
++
++/* Bit definitions for PU_PD_INPUT_CTRL1 */
++#define TPS65917_PU_PD_INPUT_CTRL1_RESET_IN_PD			0x40
++#define TPS65917_PU_PD_INPUT_CTRL1_RESET_IN_PD_SHIFT		6
++#define TPS65917_PU_PD_INPUT_CTRL1_PWRDOWN_PD			0x04
++#define TPS65917_PU_PD_INPUT_CTRL1_PWRDOWN_PD_SHIFT		2
++#define TPS65917_PU_PD_INPUT_CTRL1_NRESWARM_PD			0x1
++#define TPS65917_PU_PD_INPUT_CTRL1_NRESWARM_PD_SHIFT		0
++
++/* Bit definitions for PU_PD_INPUT_CTRL2 */
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE2_PD			0x10
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE2_PD_SHIFT		4
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE1_PU			0x08
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE1_PU_SHIFT		3
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE1_PD			0x04
++#define TPS65917_PU_PD_INPUT_CTRL2_ENABLE1_PD_SHIFT		2
++#define TPS65917_PU_PD_INPUT_CTRL2_NSLEEP_PU			0x02
++#define TPS65917_PU_PD_INPUT_CTRL2_NSLEEP_PU_SHIFT		1
++#define TPS65917_PU_PD_INPUT_CTRL2_NSLEEP_PD			0x01
++#define TPS65917_PU_PD_INPUT_CTRL2_NSLEEP_PD_SHIFT		0
++
++/* Bit definitions for PU_PD_INPUT_CTRL3 */
++#define TPS65917_PU_PD_INPUT_CTRL3_SYNCDCDC_PD			0x40
++#define TPS65917_PU_PD_INPUT_CTRL3_SYNCDCDC_PD_SHIFT			6
++#define TPS65917_PU_PD_INPUT_CTRL3_POWERHOLD_PD			0x04
++#define TPS65917_PU_PD_INPUT_CTRL3_POWERHOLD_PD_SHIFT		2
++
++/* Bit definitions for OD_OUTPUT_CTRL */
++#define TPS65917_OD_OUTPUT_CTRL_INT_OD				0x08
++#define TPS65917_OD_OUTPUT_CTRL_INT_OD_SHIFT			3
++
++/* Bit definitions for POLARITY_CTRL */
++#define TPS65917_POLARITY_CTRL_INT_POLARITY			0x80
++#define TPS65917_POLARITY_CTRL_INT_POLARITY_SHIFT			7
++#define TPS65917_POLARITY_CTRL_GPIO_6_POLARITY			0x40
++#define TPS65917_POLARITY_CTRL_GPIO_6_POLARITY_SHIFT		6
++#define TPS65917_POLARITY_CTRL_GPIO_5_POLARITY			0x20
++#define TPS65917_POLARITY_CTRL_GPIO_5_POLARITY_SHIFT		5
++#define TPS65917_POLARITY_CTRL_GPIO_4_POLARITY			0x10
++#define TPS65917_POLARITY_CTRL_GPIO_4_POLARITY_SHIFT		4
++#define TPS65917_POLARITY_CTRL_GPIO_3_POLARITY			0x08
++#define TPS65917_POLARITY_CTRL_GPIO_3_POLARITY_SHIFT		3
++#define TPS65917_POLARITY_CTRL_GPIO_2_POLARITY		0x04
++#define TPS65917_POLARITY_CTRL_GPIO_2_POLARITY_SHIFT	2
++#define TPS65917_POLARITY_CTRL_GPIO_1_POLARITY			0x02
++#define TPS65917_POLARITY_CTRL_GPIO_1_POLARITY_SHIFT	1
++#define TPS65917_POLARITY_CTRL_GPIO_0_POLARITY			0x01
++#define TPS65917_POLARITY_CTRL_GPIO_0_POLARITY_SHIFT		0
++
++/* Bit definitions for PRIMARY_SECONDARY_PAD1 */
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_3			0xC0
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_3_SHIFT		6
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_2			0x30
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_2_SHIFT		4
++#define TPS65917_PRIMARY_SECONDARY_GPIO_1			0xC
++#define TPS65917_PRIMARY_SECONDARY_GPIO_1_SHIFT			2
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_0			0x03
++#define TPS65917_PRIMARY_SECONDARY_PAD1_GPIO_0_SHIFT		0
++
++/* Bit definitions for PRIMARY_SECONDARY_PAD2 */
++#define TPS65917_PRIMARY_SECONDARY_PAD2_SYNCCLKOUT_MASK		0x40
++#define TPS65917_PRIMARY_SECONDARY_PAD2_SYNCCLKOUT_SHIFT		6
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_6			0x30
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_6_SHIFT		4
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_5			0xC
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_5_SHIFT		2
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_4			0x3
++#define TPS65917_PRIMARY_SECONDARY_PAD2_GPIO_4_SHIFT		0
++
++/* Bit definitions for I2C_SPI */
++#define TPS65917_I2C_SPI_I2C2OTP_EN				0x80
++#define TPS65917_I2C_SPI_I2C2OTP_EN_SHIFT				7
++#define TPS65917_I2C_SPI_I2C2OTP_PAGESEL				0x40
++#define TPS65917_I2C_SPI_I2C2OTP_PAGESEL_SHIFT			6
++#define TPS65917_I2C_SPI_ID_I2C2					0x20
++#define TPS65917_I2C_SPI_ID_I2C2_SHIFT				5
++#define TPS65917_I2C_SPI_I2C_SPI					0x10
++#define TPS65917_I2C_SPI_I2C_SPI_SHIFT				4
++#define TPS65917_I2C_SPI_ID_I2C1_MASK				0x0f
++#define TPS65917_I2C_SPI_ID_I2C1_SHIFT				0
++
++/* Bit definitions for PU_PD_INPUT_CTRL4 */
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS2_DAT_PD			0x40
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS2_DAT_PD_SHIFT		6
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS2_CLK_PD			0x10
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS2_CLK_PD_SHIFT		4
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS1_DAT_PD			0x04
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS1_DAT_PD_SHIFT		2
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS1_CLK_PD			0x01
++#define TPS65917_PU_PD_INPUT_CTRL4_DVFS1_CLK_PD_SHIFT		0
++
++/* Bit definitions for PRIMARY_SECONDARY_PAD3 */
++#define TPS65917_PRIMARY_SECONDARY_PAD3_DVFS2			0x02
++#define TPS65917_PRIMARY_SECONDARY_PAD3_DVFS2_SHIFT		1
++#define TPS65917_PRIMARY_SECONDARY_PAD3_DVFS1			0x01
++#define TPS65917_PRIMARY_SECONDARY_PAD3_DVFS1_SHIFT		0
++
++/* Registers for function INTERRUPT */
++#define TPS65917_INT1_STATUS					0x0
++#define TPS65917_INT1_MASK					0x1
++#define TPS65917_INT1_LINE_STATE					0x2
++#define TPS65917_INT2_STATUS					0x5
++#define TPS65917_INT2_MASK					0x6
++#define TPS65917_INT2_LINE_STATE					0x7
++#define TPS65917_INT3_STATUS					0xA
++#define TPS65917_INT3_MASK					0xB
++#define TPS65917_INT3_LINE_STATE					0xC
++#define TPS65917_INT4_STATUS					0xF
++#define TPS65917_INT4_MASK					0x10
++#define TPS65917_INT4_LINE_STATE					0x11
++#define TPS65917_INT4_EDGE_DETECT1				0x12
++#define TPS65917_INT4_EDGE_DETECT2				0x13
++#define TPS65917_INT_CTRL						0x14
++
++/* Bit definitions for INT1_STATUS */
++#define TPS65917_INT1_STATUS_VSYS_MON				0x40
++#define TPS65917_INT1_STATUS_VSYS_MON_SHIFT			6
++#define TPS65917_INT1_STATUS_HOTDIE				0x20
++#define TPS65917_INT1_STATUS_HOTDIE_SHIFT				5
++#define TPS65917_INT1_STATUS_PWRDOWN				0x10
++#define TPS65917_INT1_STATUS_PWRDOWN_SHIFT			4
++#define TPS65917_INT1_STATUS_LONG_PRESS_KEY			0x04
++#define TPS65917_INT1_STATUS_LONG_PRESS_KEY_SHIFT			2
++#define TPS65917_INT1_STATUS_PWRON				0x02
++#define TPS65917_INT1_STATUS_PWRON_SHIFT				1
++
++/* Bit definitions for INT1_MASK */
++#define TPS65917_INT1_MASK_VSYS_MON				0x40
++#define TPS65917_INT1_MASK_VSYS_MON_SHIFT				6
++#define TPS65917_INT1_MASK_HOTDIE					0x20
++#define TPS65917_INT1_MASK_HOTDIE_SHIFT				5
++#define TPS65917_INT1_MASK_PWRDOWN				0x10
++#define TPS65917_INT1_MASK_PWRDOWN_SHIFT				4
++#define TPS65917_INT1_MASK_LONG_PRESS_KEY				0x04
++#define TPS65917_INT1_MASK_LONG_PRESS_KEY_SHIFT			2
++#define TPS65917_INT1_MASK_PWRON					0x02
++#define TPS65917_INT1_MASK_PWRON_SHIFT				1
++
++/* Bit definitions for INT1_LINE_STATE */
++#define TPS65917_INT1_LINE_STATE_VSYS_MON				0x40
++#define TPS65917_INT1_LINE_STATE_VSYS_MON_SHIFT			6
++#define TPS65917_INT1_LINE_STATE_HOTDIE				0x20
++#define TPS65917_INT1_LINE_STATE_HOTDIE_SHIFT			5
++#define TPS65917_INT1_LINE_STATE_PWRDOWN				0x10
++#define TPS65917_INT1_LINE_STATE_PWRDOWN_SHIFT			4
++#define TPS65917_INT1_LINE_STATE_LONG_PRESS_KEY			0x04
++#define TPS65917_INT1_LINE_STATE_LONG_PRESS_KEY_SHIFT		2
++#define TPS65917_INT1_LINE_STATE_PWRON				0x02
++#define TPS65917_INT1_LINE_STATE_PWRON_SHIFT			1
++
++/* Bit definitions for INT2_STATUS */
++#define TPS65917_INT2_STATUS_SHORT				0x40
++#define TPS65917_INT2_STATUS_SHORT_SHIFT				6
++#define TPS65917_INT2_STATUS_FSD				0x20
++#define TPS65917_INT2_STATUS_FSD_SHIFT				5
++#define TPS65917_INT2_STATUS_RESET_IN				0x10
++#define TPS65917_INT2_STATUS_RESET_IN_SHIFT			4
++#define TPS65917_INT2_STATUS_WDT					0x04
++#define TPS65917_INT2_STATUS_WDT_SHIFT				2
++#define TPS65917_INT2_STATUS_OTP_ERROR				0x02
++#define TPS65917_INT2_STATUS_OTP_ERROR_SHIFT			1
++
++/* Bit definitions for INT2_MASK */
++#define TPS65917_INT2_MASK_SHORT					0x40
++#define TPS65917_INT2_MASK_SHORT_SHIFT				6
++#define TPS65917_INT2_MASK_FSD					0x20
++#define TPS65917_INT2_MASK_FSD_SHIFT				5
++#define TPS65917_INT2_MASK_RESET_IN				0x10
++#define TPS65917_INT2_MASK_RESET_IN_SHIFT				4
++#define TPS65917_INT2_MASK_WDT					0x04
++#define TPS65917_INT2_MASK_WDT_SHIFT				2
++#define TPS65917_INT2_MASK_OTP_ERROR_TIMER				0x02
++#define TPS65917_INT2_MASK_OTP_ERROR_SHIFT			1
++
++/* Bit definitions for INT2_LINE_STATE */
++#define TPS65917_INT2_LINE_STATE_SHORT				0x40
++#define TPS65917_INT2_LINE_STATE_SHORT_SHIFT			6
++#define TPS65917_INT2_LINE_STATE_FSD				0x20
++#define TPS65917_INT2_LINE_STATE_FSD_SHIFT			5
++#define TPS65917_INT2_LINE_STATE_RESET_IN				0x10
++#define TPS65917_INT2_LINE_STATE_RESET_IN_SHIFT			4
++#define TPS65917_INT2_LINE_STATE_WDT				0x04
++#define TPS65917_INT2_LINE_STATE_WDT_SHIFT			2
++#define TPS65917_INT2_LINE_STATE_OTP_ERROR			0x02
++#define TPS65917_INT2_LINE_STATE_OTP_ERROR_SHIFT			1
++
++/* Bit definitions for INT3_STATUS */
++#define TPS65917_INT3_STATUS_VBUS					0x80
++#define TPS65917_INT3_STATUS_VBUS_SHIFT				7
++#define TPS65917_INT3_STATUS_GPADC_EOC_SW				0x04
++#define TPS65917_INT3_STATUS_GPADC_EOC_SW_SHIFT			2
++#define TPS65917_INT3_STATUS_GPADC_AUTO_1				0x02
++#define TPS65917_INT3_STATUS_GPADC_AUTO_1_SHIFT			1
++#define TPS65917_INT3_STATUS_GPADC_AUTO_0				0x01
++#define TPS65917_INT3_STATUS_GPADC_AUTO_0_SHIFT			0
++
++/* Bit definitions for INT3_MASK */
++#define TPS65917_INT3_MASK_VBUS					0x80
++#define TPS65917_INT3_MASK_VBUS_SHIFT				7
++#define TPS65917_INT3_MASK_GPADC_EOC_SW				0x04
++#define TPS65917_INT3_MASK_GPADC_EOC_SW_SHIFT			2
++#define TPS65917_INT3_MASK_GPADC_AUTO_1				0x02
++#define TPS65917_INT3_MASK_GPADC_AUTO_1_SHIFT			1
++#define TPS65917_INT3_MASK_GPADC_AUTO_0				0x01
++#define TPS65917_INT3_MASK_GPADC_AUTO_0_SHIFT			0
++
++/* Bit definitions for INT3_LINE_STATE */
++#define TPS65917_INT3_LINE_STATE_VBUS				0x80
++#define TPS65917_INT3_LINE_STATE_VBUS_SHIFT			7
++#define TPS65917_INT3_LINE_STATE_GPADC_EOC_SW			0x04
++#define TPS65917_INT3_LINE_STATE_GPADC_EOC_SW_SHIFT		2
++#define TPS65917_INT3_LINE_STATE_GPADC_AUTO_1			0x02
++#define TPS65917_INT3_LINE_STATE_GPADC_AUTO_1_SHIFT		1
++#define TPS65917_INT3_LINE_STATE_GPADC_AUTO_0			0x01
++#define TPS65917_INT3_LINE_STATE_GPADC_AUTO_0_SHIFT		0
++
++/* Bit definitions for INT4_STATUS */
++#define TPS65917_INT4_STATUS_GPIO_6				0x40
++#define TPS65917_INT4_STATUS_GPIO_6_SHIFT				6
++#define TPS65917_INT4_STATUS_GPIO_5				0x20
++#define TPS65917_INT4_STATUS_GPIO_5_SHIFT				5
++#define TPS65917_INT4_STATUS_GPIO_4				0x10
++#define TPS65917_INT4_STATUS_GPIO_4_SHIFT				4
++#define TPS65917_INT4_STATUS_GPIO_3				0x08
++#define TPS65917_INT4_STATUS_GPIO_3_SHIFT				3
++#define TPS65917_INT4_STATUS_GPIO_2				0x04
++#define TPS65917_INT4_STATUS_GPIO_2_SHIFT				2
++#define TPS65917_INT4_STATUS_GPIO_1				0x02
++#define TPS65917_INT4_STATUS_GPIO_1_SHIFT				1
++#define TPS65917_INT4_STATUS_GPIO_0				0x01
++#define TPS65917_INT4_STATUS_GPIO_0_SHIFT				0
++
++/* Bit definitions for INT4_MASK */
++#define TPS65917_INT4_MASK_GPIO_6					0x40
++#define TPS65917_INT4_MASK_GPIO_6_SHIFT				6
++#define TPS65917_INT4_MASK_GPIO_5					0x20
++#define TPS65917_INT4_MASK_GPIO_5_SHIFT				5
++#define TPS65917_INT4_MASK_GPIO_4					0x10
++#define TPS65917_INT4_MASK_GPIO_4_SHIFT				4
++#define TPS65917_INT4_MASK_GPIO_3					0x08
++#define TPS65917_INT4_MASK_GPIO_3_SHIFT				3
++#define TPS65917_INT4_MASK_GPIO_2					0x04
++#define TPS65917_INT4_MASK_GPIO_2_SHIFT				2
++#define TPS65917_INT4_MASK_GPIO_1					0x02
++#define TPS65917_INT4_MASK_GPIO_1_SHIFT				1
++#define TPS65917_INT4_MASK_GPIO_0					0x01
++#define TPS65917_INT4_MASK_GPIO_0_SHIFT				0
++
++/* Bit definitions for INT4_LINE_STATE */
++#define TPS65917_INT4_LINE_STATE_GPIO_6				0x40
++#define TPS65917_INT4_LINE_STATE_GPIO_6_SHIFT			6
++#define TPS65917_INT4_LINE_STATE_GPIO_5				0x20
++#define TPS65917_INT4_LINE_STATE_GPIO_5_SHIFT			5
++#define TPS65917_INT4_LINE_STATE_GPIO_4				0x10
++#define TPS65917_INT4_LINE_STATE_GPIO_4_SHIFT			4
++#define TPS65917_INT4_LINE_STATE_GPIO_3				0x08
++#define TPS65917_INT4_LINE_STATE_GPIO_3_SHIFT			3
++#define TPS65917_INT4_LINE_STATE_GPIO_2				0x04
++#define TPS65917_INT4_LINE_STATE_GPIO_2_SHIFT			2
++#define TPS65917_INT4_LINE_STATE_GPIO_1				0x02
++#define TPS65917_INT4_LINE_STATE_GPIO_1_SHIFT			1
++#define TPS65917_INT4_LINE_STATE_GPIO_0				0x01
++#define TPS65917_INT4_LINE_STATE_GPIO_0_SHIFT			0
++
++/* Bit definitions for INT4_EDGE_DETECT1 */
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_3_RISING			0x80
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_3_RISING_SHIFT		7
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_3_FALLING			0x40
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_3_FALLING_SHIFT		6
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_2_RISING			0x20
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_2_RISING_SHIFT		5
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_2_FALLING			0x10
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_2_FALLING_SHIFT		4
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_1_RISING			0x08
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_1_RISING_SHIFT		3
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_1_FALLING			0x04
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_1_FALLING_SHIFT		2
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_0_RISING			0x02
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_0_RISING_SHIFT		1
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_0_FALLING			0x01
++#define TPS65917_INT4_EDGE_DETECT1_GPIO_0_FALLING_SHIFT		0
++
++/* Bit definitions for INT4_EDGE_DETECT2 */
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_6_RISING			0x20
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_6_RISING_SHIFT		5
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_6_FALLING			0x10
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_6_FALLING_SHIFT		4
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_5_RISING			0x08
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_5_RISING_SHIFT		3
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_5_FALLING			0x04
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_5_FALLING_SHIFT		2
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_4_RISING			0x02
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_4_RISING_SHIFT		1
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_4_FALLING			0x01
++#define TPS65917_INT4_EDGE_DETECT2_GPIO_4_FALLING_SHIFT		0
++
++/* Bit definitions for INT_CTRL */
++#define TPS65917_INT_CTRL_INT_PENDING				0x04
++#define TPS65917_INT_CTRL_INT_PENDING_SHIFT			2
++#define TPS65917_INT_CTRL_INT_CLEAR				0x01
++#define TPS65917_INT_CTRL_INT_CLEAR_SHIFT				0
++
++
++/* Registers for function GPIO */
++#define TPS65917_GPIO_DATA_IN					0x0
++#define TPS65917_GPIO_DATA_DIR					0x1
++#define TPS65917_GPIO_DATA_OUT					0x2
++#define TPS65917_GPIO_DEBOUNCE_EN					0x3
++#define TPS65917_GPIO_CLEAR_DATA_OUT				0x4
++#define TPS65917_GPIO_SET_DATA_OUT				0x5
++#define TPS65917_PU_PD_GPIO_CTRL1					0x6
++#define TPS65917_PU_PD_GPIO_CTRL2					0x7
++#define TPS65917_OD_OUTPUT_GPIO_CTRL				0x8
++
++/* Bit definitions for GPIO_DATA_IN */
++#define TPS65917_GPIO_DATA_IN_GPIO_6_IN				0x40
++#define TPS65917_GPIO_DATA_IN_GPIO_6_IN_SHIFT			6
++#define TPS65917_GPIO_DATA_IN_GPIO_5_IN				0x20
++#define TPS65917_GPIO_DATA_IN_GPIO_5_IN_SHIFT			5
++#define TPS65917_GPIO_DATA_IN_GPIO_4_IN				0x10
++#define TPS65917_GPIO_DATA_IN_GPIO_4_IN_SHIFT			4
++#define TPS65917_GPIO_DATA_IN_GPIO_3_IN				0x08
++#define TPS65917_GPIO_DATA_IN_GPIO_3_IN_SHIFT			3
++#define TPS65917_GPIO_DATA_IN_GPIO_2_IN				0x04
++#define TPS65917_GPIO_DATA_IN_GPIO_2_IN_SHIFT			2
++#define TPS65917_GPIO_DATA_IN_GPIO_1_IN				0x02
++#define TPS65917_GPIO_DATA_IN_GPIO_1_IN_SHIFT			1
++#define TPS65917_GPIO_DATA_IN_GPIO_0_IN				0x01
++#define TPS65917_GPIO_DATA_IN_GPIO_0_IN_SHIFT			0
++
++/* Bit definitions for GPIO_DATA_DIR */
++#define TPS65917_GPIO_DATA_DIR_GPIO_6_DIR				0x40
++#define TPS65917_GPIO_DATA_DIR_GPIO_6_DIR_SHIFT			6
++#define TPS65917_GPIO_DATA_DIR_GPIO_5_DIR				0x20
++#define TPS65917_GPIO_DATA_DIR_GPIO_5_DIR_SHIFT			5
++#define TPS65917_GPIO_DATA_DIR_GPIO_4_DIR				0x10
++#define TPS65917_GPIO_DATA_DIR_GPIO_4_DIR_SHIFT			4
++#define TPS65917_GPIO_DATA_DIR_GPIO_3_DIR				0x08
++#define TPS65917_GPIO_DATA_DIR_GPIO_3_DIR_SHIFT			3
++#define TPS65917_GPIO_DATA_DIR_GPIO_2_DIR				0x04
++#define TPS65917_GPIO_DATA_DIR_GPIO_2_DIR_SHIFT			2
++#define TPS65917_GPIO_DATA_DIR_GPIO_1_DIR				0x02
++#define TPS65917_GPIO_DATA_DIR_GPIO_1_DIR_SHIFT			1
++#define TPS65917_GPIO_DATA_DIR_GPIO_0_DIR				0x01
++#define TPS65917_GPIO_DATA_DIR_GPIO_0_DIR_SHIFT			0
++
++/* Bit definitions for GPIO_DATA_OUT */
++#define TPS65917_GPIO_DATA_OUT_GPIO_6_OUT				0x40
++#define TPS65917_GPIO_DATA_OUT_GPIO_6_OUT_SHIFT			6
++#define TPS65917_GPIO_DATA_OUT_GPIO_5_OUT				0x20
++#define TPS65917_GPIO_DATA_OUT_GPIO_5_OUT_SHIFT			5
++#define TPS65917_GPIO_DATA_OUT_GPIO_4_OUT				0x10
++#define TPS65917_GPIO_DATA_OUT_GPIO_4_OUT_SHIFT			4
++#define TPS65917_GPIO_DATA_OUT_GPIO_3_OUT				0x08
++#define TPS65917_GPIO_DATA_OUT_GPIO_3_OUT_SHIFT			3
++#define TPS65917_GPIO_DATA_OUT_GPIO_2_OUT				0x04
++#define TPS65917_GPIO_DATA_OUT_GPIO_2_OUT_SHIFT			2
++#define TPS65917_GPIO_DATA_OUT_GPIO_1_OUT				0x02
++#define TPS65917_GPIO_DATA_OUT_GPIO_1_OUT_SHIFT			1
++#define TPS65917_GPIO_DATA_OUT_GPIO_0_OUT				0x01
++#define TPS65917_GPIO_DATA_OUT_GPIO_0_OUT_SHIFT			0
++
++/* Bit definitions for GPIO_DEBOUNCE_EN */
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_6_DEBOUNCE_EN		0x40
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_6_DEBOUNCE_EN_SHIFT	6
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_5_DEBOUNCE_EN		0x20
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_5_DEBOUNCE_EN_SHIFT	5
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_4_DEBOUNCE_EN		0x10
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_4_DEBOUNCE_EN_SHIFT	4
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_3_DEBOUNCE_EN		0x08
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_3_DEBOUNCE_EN_SHIFT	3
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_2_DEBOUNCE_EN		0x04
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_2_DEBOUNCE_EN_SHIFT	2
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_1_DEBOUNCE_EN		0x02
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_1_DEBOUNCE_EN_SHIFT	1
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_0_DEBOUNCE_EN		0x01
++#define TPS65917_GPIO_DEBOUNCE_EN_GPIO_0_DEBOUNCE_EN_SHIFT	0
++
++/* Bit definitions for GPIO_CLEAR_DATA_OUT */
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_6_CLEAR_DATA_OUT	0x40
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_6_CLEAR_DATA_OUT_SHIFT	6
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_5_CLEAR_DATA_OUT	0x20
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_5_CLEAR_DATA_OUT_SHIFT	5
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_4_CLEAR_DATA_OUT	0x10
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_4_CLEAR_DATA_OUT_SHIFT	4
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_3_CLEAR_DATA_OUT	0x08
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_3_CLEAR_DATA_OUT_SHIFT	3
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_2_CLEAR_DATA_OUT	0x04
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_2_CLEAR_DATA_OUT_SHIFT	2
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_1_CLEAR_DATA_OUT	0x02
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_1_CLEAR_DATA_OUT_SHIFT	1
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_0_CLEAR_DATA_OUT	0x01
++#define TPS65917_GPIO_CLEAR_DATA_OUT_GPIO_0_CLEAR_DATA_OUT_SHIFT	0
++
++/* Bit definitions for GPIO_SET_DATA_OUT */
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_6_SET_DATA_OUT		0x40
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_6_SET_DATA_OUT_SHIFT	6
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_5_SET_DATA_OUT		0x20
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_5_SET_DATA_OUT_SHIFT	5
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_4_SET_DATA_OUT		0x10
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_4_SET_DATA_OUT_SHIFT	4
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_3_SET_DATA_OUT		0x08
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_3_SET_DATA_OUT_SHIFT	3
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_2_SET_DATA_OUT		0x04
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_2_SET_DATA_OUT_SHIFT	2
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_1_SET_DATA_OUT		0x02
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_1_SET_DATA_OUT_SHIFT	1
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_0_SET_DATA_OUT		0x01
++#define TPS65917_GPIO_SET_DATA_OUT_GPIO_0_SET_DATA_OUT_SHIFT	0
++
++/* Bit definitions for PU_PD_GPIO_CTRL1 */
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_3_PD			0x40
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_3_PD_SHIFT			6
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_2_PU			0x20
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_2_PU_SHIFT			5
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_2_PD			0x10
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_2_PD_SHIFT			4
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_1_PD			0x04
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_1_PD_SHIFT			2
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_0_PD			0x01
++#define TPS65917_PU_PD_GPIO_CTRL1_GPIO_0_PD_SHIFT			0
++
++/* Bit definitions for PU_PD_GPIO_CTRL2 */
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_6_PD			0x10
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_6_PD_SHIFT			4
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_5_PD			0x04
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_5_PD_SHIFT			2
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_4_PU			0x02
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_4_PU_SHIFT			1
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_4_PD			0x01
++#define TPS65917_PU_PD_GPIO_CTRL2_GPIO_4_PD_SHIFT			0
++
++/* Bit definitions for OD_OUTPUT_GPIO_CTRL */
++#define TPS65917_OD_OUTPUT_GPIO_CTRL_GPIO_4_OD			0x10
++#define TPS65917_OD_OUTPUT_GPIO_CTRL_GPIO_4_OD_SHIFT		4
++#define TPS65917_OD_OUTPUT_GPIO_CTRL_GPIO_2_OD			0x04
++#define TPS65917_OD_OUTPUT_GPIO_CTRL_GPIO_2_OD_SHIFT		2
++
++/* Registers for function GPADC */
++#define TPS65917_GPADC_CTRL1					0x0
++#define TPS65917_GPADC_AUTO_CTRL					0x3
++#define TPS65917_GPADC_STATUS					0x4
++#define TPS65917_GPADC_AUTO_SELECT				0x8
++#define TPS65917_GPADC_AUTO_CONV0_LSB				0x9
++#define TPS65917_GPADC_AUTO_CONV0_MSB				0xA
++#define TPS65917_GPADC_AUTO_CONV1_LSB				0xB
++#define TPS65917_GPADC_AUTO_CONV1_MSB				0xC
++#define TPS65917_GPADC_SW_SELECT					0xD
++#define TPS65917_GPADC_SW_CONV0_LSB				0xE
++#define TPS65917_GPADC_SW_CONV0_MSB				0xF
++#define TPS65917_GPADC_THRES_CONV0_LSB				0x10
++#define TPS65917_GPADC_THRES_CONV0_MSB				0x11
++#define TPS65917_GPADC_THRES_CONV1_LSB				0x12
++#define TPS65917_GPADC_THRES_CONV1_MSB				0x13
++#define TPS65917_GPADC_SMPS_ILMONITOR_EN				0x14
++#define TPS65917_GPADC_SMPS_VSEL_MONITORING			0x15
++
++#define TPS65917_GPADC_TRIM1					0x0
++#define TPS65917_GPADC_TRIM2					0x1
++#define TPS65917_GPADC_TRIM3					0x2
++#define TPS65917_GPADC_TRIM4					0x3
++#define TPS65917_GPADC_TRIM5					0x4
++#define TPS65917_GPADC_TRIM6					0x5
++#define TPS65917_GPADC_TRIM7					0x6
++#define TPS65917_GPADC_TRIM8					0x7
++#define TPS65917_GPADC_TRIM9					0x8
++#define TPS65917_GPADC_TRIM10					0x9
++#define TPS65917_GPADC_TRIM11					0xA
++#define TPS65917_GPADC_TRIM12					0xB
++#define TPS65917_GPADC_TRIM13					0xC
++#define TPS65917_GPADC_TRIM14					0xD
++#define TPS65917_GPADC_TRIM15					0xE
++#define TPS65917_GPADC_TRIM16					0xF
++
++static inline int tps65917_read(struct tps65917 *tps65917, unsigned int base,
++		unsigned int reg, unsigned int *val)
++{
++	unsigned int addr =  TPS65917_BASE_TO_REG(base, reg);
++	int slave_id = TPS65917_BASE_TO_SLAVE(base);
++
++	return regmap_read(tps65917->regmap[slave_id], addr, val);
++}
++
++static inline int tps65917_write(struct tps65917 *tps65917, unsigned int base,
++		unsigned int reg, unsigned int value)
++{
++	unsigned int addr = TPS65917_BASE_TO_REG(base, reg);
++	int slave_id = TPS65917_BASE_TO_SLAVE(base);
++
++	return regmap_write(tps65917->regmap[slave_id], addr, value);
++}
++
++static inline int tps65917_bulk_write(struct tps65917 *tps65917,
++				      unsigned int base,
++				      unsigned int reg, const void *val,
++				      size_t val_count)
++{
++	unsigned int addr = TPS65917_BASE_TO_REG(base, reg);
++	int slave_id = TPS65917_BASE_TO_SLAVE(base);
++
++	return regmap_bulk_write(tps65917->regmap[slave_id], addr,
++			val, val_count);
++}
++
++static inline int tps65917_bulk_read(struct tps65917 *tps65917,
++				     unsigned int base,
++				     unsigned int reg, void *val,
++				     size_t val_count)
++{
++	unsigned int addr = TPS65917_BASE_TO_REG(base, reg);
++	int slave_id = TPS65917_BASE_TO_SLAVE(base);
++
++	return regmap_bulk_read(tps65917->regmap[slave_id], addr,
++		val, val_count);
++}
++
++static inline int tps65917_update_bits(struct tps65917 *tps65917, unsigned int base,
++	unsigned int reg, unsigned int mask, unsigned int val)
++{
++	unsigned int addr = TPS65917_BASE_TO_REG(base, reg);
++	int slave_id = TPS65917_BASE_TO_SLAVE(base);
++
++	return regmap_update_bits(tps65917->regmap[slave_id], addr, mask, val);
++}
++
++static inline int tps65917_irq_get_virq(struct tps65917 *tps65917, int irq)
++{
++	return regmap_irq_get_virq(tps65917->irq_data, irq);
++}
++
++int tps65917_ext_control_req_config(struct tps65917 *tps65917,
++	enum tps65917_external_requestor_id ext_control_req_id,
++	int ext_ctrl, bool enable);
++
++#endif /*  __LINUX_MFD_TPS65917_H */
 -- 
 1.7.9.5
 
