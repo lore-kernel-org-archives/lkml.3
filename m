@@ -1,58 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932371AbaD1OJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:09:18 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:40651 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756115AbaD1OJP (ORCPT
+	id S932389AbaD1OJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:09:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:56479 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245AbaD1OJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:09:15 -0400
-Date: Mon, 28 Apr 2014 10:09:10 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/4] mfd: bcm590xx: add support for secondary I2C
- slave address
-Message-ID: <20140428140910.GB7719@beef>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
- <1398295293-11033-3-git-send-email-mporter@linaro.org>
- <20140428115627.GY21279@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428115627.GY21279@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 10:09:41 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-79-535e6123dbe1
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: sameo@linux.intel.com, lee.jones@linaro.org
+Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 1/2] mfd: max77693: remove unnecessary wrapper functions
+Date: Mon, 28 Apr 2014 16:08:22 +0200
+Message-id: <1398694103-29320-2-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1398694103-29320-1-git-send-email-r.baldyga@samsung.com>
+References: <1398694103-29320-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t9jQV2VxLhgg8UPWC2WXLzKbvH6haHF
+	/a9HGS0u75rDZrH2yF12iweHd7Jb7O/sYLQ43c3qwOGxZ+JJNo871/awecw7GejRt2UVo8f0
+	eT+ZPD5vkgtgi+KySUnNySxLLdK3S+DKOLnsGVPB+6SKGx1rGRsYJwR1MXJySAiYSBy+0cAM
+	YYtJXLi3ng3EFhKYziixYFVVFyMXkN3OJHHu6T6wIjYBHYkt3ycwgtgiAvoSH3ZcZQYpYhbY
+	yCgxceZHsCJhAQ+JrbsfgdksAqoSj+/vZQKxeQVcJdov/meD2CYncfLYZFYQm1PATaL7zGxW
+	iM2uEpv7WtgmMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcZM+kdzCuarA4xCjA
+	wajEw9sRExcsxJpYVlyZe4hRgoNZSYRXMA4oxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3Wg
+	kEB6YklqdmpqQWoRTJaJg1OqgXGGleffWOc5Ij6P/lUVFq08pbLH2KRmPuevRyXOWbkPjuwV
+	arO9Vsg976TqnpycApv+eu7FAU8WrS7zex8q2NP2JiOUJ+LhpfCNpnMWuJrlZho8THq0Q9yw
+	csK3B6bnmlk2XFh8Zu7BmYcMZA1dEzdxrxBJWTS7NWpaek+GutF39/lS7E5xuUosxRmJhlrM
+	RcWJAIyd9J8uAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 12:56:27PM +0100, Lee Jones wrote:
-> On Wed, 23 Apr 2014, Matt Porter wrote:
-> 
-> > BCM590xx utilizes a secondary I2C slave address to access additional
-> > register space. Add support for the secondary address space by
-> > instantiating a dummy I2C device with the appropriate secondary
-> > I2C slave address. Also expose a secondary regmap register space so
-> > that MFD drivers can access this secondary i2c slave address space.
-> > 
-> > Signed-off-by: Matt Porter <mporter@linaro.org>
-> > ---
-> >  drivers/mfd/bcm590xx.c       | 60 +++++++++++++++++++++++++++++++++-----------
-> >  include/linux/mfd/bcm590xx.h |  9 ++++---
-> >  2 files changed, 52 insertions(+), 17 deletions(-)
-> 
-> Nice, flows much better now.
-> 
-> Can I just apply the two MFD patches, or are there cross-deps?
+This patch removes wrapper functions used to access regmap, and
+make driver using regmap_*() functions instead.
 
-There's cross-deps so the regulator driver will need to go with it.
-Mark mentioned earlier in the thread that he wanted to merge through
-the regulator tree though.
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/extcon/extcon-max77693.c     | 30 +++++++++----------
+ drivers/mfd/max77693-irq.c           | 31 ++++++++++----------
+ drivers/mfd/max77693.c               | 56 ++----------------------------------
+ drivers/regulator/max77693.c         | 12 ++++----
+ include/linux/mfd/max77693-private.h |  8 ------
+ 5 files changed, 39 insertions(+), 98 deletions(-)
 
--Matt
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index da268fb..efa105f 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -255,10 +255,10 @@ static int max77693_muic_set_debounce_time(struct max77693_muic_info *info,
+ 	case ADC_DEBOUNCE_TIME_10MS:
+ 	case ADC_DEBOUNCE_TIME_25MS:
+ 	case ADC_DEBOUNCE_TIME_38_62MS:
+-		ret = max77693_update_reg(info->max77693->regmap_muic,
++		ret = regmap_update_bits(info->max77693->regmap_muic,
+ 					  MAX77693_MUIC_REG_CTRL3,
+-					  time << CONTROL3_ADCDBSET_SHIFT,
+-					  CONTROL3_ADCDBSET_MASK);
++					  CONTROL3_ADCDBSET_MASK,
++					  time << CONTROL3_ADCDBSET_SHIFT);
+ 		if (ret) {
+ 			dev_err(info->dev, "failed to set ADC debounce time\n");
+ 			return ret;
+@@ -293,8 +293,8 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 	else
+ 		ctrl1 = CONTROL1_SW_OPEN;
+ 
+-	ret = max77693_update_reg(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_CTRL1, ctrl1, COMP_SW_MASK);
++	ret = regmap_update_bits(info->max77693->regmap_muic,
++			MAX77693_MUIC_REG_CTRL1, COMP_SW_MASK, ctrl1);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+ 		return ret;
+@@ -305,9 +305,9 @@ static int max77693_muic_set_path(struct max77693_muic_info *info,
+ 	else
+ 		ctrl2 |= CONTROL2_LOWPWR_MASK;	/* LowPwr=1, CPEn=0 */
+ 
+-	ret = max77693_update_reg(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_CTRL2, ctrl2,
+-			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK);
++	ret = regmap_update_bits(info->max77693->regmap_muic,
++			MAX77693_MUIC_REG_CTRL2,
++			CONTROL2_LOWPWR_MASK | CONTROL2_CPEN_MASK, ctrl2);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "failed to update MUIC register\n");
+ 		return ret;
+@@ -969,8 +969,8 @@ static void max77693_muic_irq_work(struct work_struct *work)
+ 		if (info->irq == muic_irqs[i].virq)
+ 			irq_type = muic_irqs[i].irq;
+ 
+-	ret = max77693_bulk_read(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_STATUS1, 2, info->status);
++	ret = regmap_bulk_read(info->max77693->regmap_muic,
++			MAX77693_MUIC_REG_STATUS1, info->status, 2);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to read MUIC register\n");
+ 		mutex_unlock(&info->mutex);
+@@ -1042,8 +1042,8 @@ static int max77693_muic_detect_accessory(struct max77693_muic_info *info)
+ 	mutex_lock(&info->mutex);
+ 
+ 	/* Read STATUSx register to detect accessory */
+-	ret = max77693_bulk_read(info->max77693->regmap_muic,
+-			MAX77693_MUIC_REG_STATUS1, 2, info->status);
++	ret = regmap_bulk_read(info->max77693->regmap_muic,
++			MAX77693_MUIC_REG_STATUS1, info->status, 2);
+ 	if (ret) {
+ 		dev_err(info->dev, "failed to read MUIC register\n");
+ 		mutex_unlock(&info->mutex);
+@@ -1095,7 +1095,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 	int delay_jiffies;
+ 	int ret;
+ 	int i;
+-	u8 id;
++	unsigned int id;
+ 
+ 	info = devm_kzalloc(&pdev->dev, sizeof(struct max77693_muic_info),
+ 				   GFP_KERNEL);
+@@ -1205,7 +1205,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 		enum max77693_irq_source irq_src
+ 				= MAX77693_IRQ_GROUP_NR;
+ 
+-		max77693_write_reg(info->max77693->regmap_muic,
++		regmap_write(info->max77693->regmap_muic,
+ 				init_data[i].addr,
+ 				init_data[i].data);
+ 
+@@ -1263,7 +1263,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 	 max77693_muic_set_path(info, info->path_uart, true);
+ 
+ 	/* Check revision number of MUIC device*/
+-	ret = max77693_read_reg(info->max77693->regmap_muic,
++	ret = regmap_read(info->max77693->regmap_muic,
+ 			MAX77693_MUIC_REG_ID, &id);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to read revision number\n");
+diff --git a/drivers/mfd/max77693-irq.c b/drivers/mfd/max77693-irq.c
+index 66b58fe..1a89ec2 100644
+--- a/drivers/mfd/max77693-irq.c
++++ b/drivers/mfd/max77693-irq.c
+@@ -30,8 +30,9 @@
+ #include <linux/irqdomain.h>
+ #include <linux/mfd/max77693.h>
+ #include <linux/mfd/max77693-private.h>
++#include <linux/regmap.h>
+ 
+-static const u8 max77693_mask_reg[] = {
++static const unsigned int max77693_mask_reg[] = {
+ 	[LED_INT] = MAX77693_LED_REG_FLASH_INT_MASK,
+ 	[TOPSYS_INT] = MAX77693_PMIC_REG_TOPSYS_INT_MASK,
+ 	[CHG_INT] = MAX77693_CHG_REG_CHG_INT_MASK,
+@@ -118,7 +119,7 @@ static void max77693_irq_sync_unlock(struct irq_data *data)
+ 			continue;
+ 		max77693->irq_masks_cache[i] = max77693->irq_masks_cur[i];
+ 
+-		max77693_write_reg(map, max77693_mask_reg[i],
++		regmap_write(map, max77693_mask_reg[i],
+ 				max77693->irq_masks_cur[i]);
+ 	}
+ 
+@@ -177,12 +178,12 @@ static struct irq_chip max77693_irq_chip = {
+ static irqreturn_t max77693_irq_thread(int irq, void *data)
+ {
+ 	struct max77693_dev *max77693 = data;
+-	u8 irq_reg[MAX77693_IRQ_GROUP_NR] = {};
+-	u8 irq_src;
++	unsigned int irq_reg[MAX77693_IRQ_GROUP_NR] = {};
++	unsigned int irq_src;
+ 	int ret;
+ 	int i, cur_irq;
+ 
+-	ret = max77693_read_reg(max77693->regmap, MAX77693_PMIC_REG_INTSRC,
++	ret = regmap_read(max77693->regmap, MAX77693_PMIC_REG_INTSRC,
+ 				&irq_src);
+ 	if (ret < 0) {
+ 		dev_err(max77693->dev, "Failed to read interrupt source: %d\n",
+@@ -192,23 +193,23 @@ static irqreturn_t max77693_irq_thread(int irq, void *data)
+ 
+ 	if (irq_src & MAX77693_IRQSRC_CHG)
+ 		/* CHG_INT */
+-		ret = max77693_read_reg(max77693->regmap, MAX77693_CHG_REG_CHG_INT,
++		ret = regmap_read(max77693->regmap, MAX77693_CHG_REG_CHG_INT,
+ 				&irq_reg[CHG_INT]);
+ 
+ 	if (irq_src & MAX77693_IRQSRC_TOP)
+ 		/* TOPSYS_INT */
+-		ret = max77693_read_reg(max77693->regmap,
++		ret = regmap_read(max77693->regmap,
+ 			MAX77693_PMIC_REG_TOPSYS_INT, &irq_reg[TOPSYS_INT]);
+ 
+ 	if (irq_src & MAX77693_IRQSRC_FLASH)
+ 		/* LED_INT */
+-		ret = max77693_read_reg(max77693->regmap,
++		ret = regmap_read(max77693->regmap,
+ 			MAX77693_LED_REG_FLASH_INT, &irq_reg[LED_INT]);
+ 
+ 	if (irq_src & MAX77693_IRQSRC_MUIC)
+ 		/* MUIC INT1 ~ INT3 */
+-		max77693_bulk_read(max77693->regmap_muic, MAX77693_MUIC_REG_INT1,
+-			MAX77693_NUM_IRQ_MUIC_REGS, &irq_reg[MUIC_INT1]);
++		regmap_bulk_read(max77693->regmap_muic, MAX77693_MUIC_REG_INT1,
++			&irq_reg[MUIC_INT1], MAX77693_NUM_IRQ_MUIC_REGS);
+ 
+ 	/* Apply masking */
+ 	for (i = 0; i < MAX77693_IRQ_GROUP_NR; i++) {
+@@ -263,7 +264,7 @@ int max77693_irq_init(struct max77693_dev *max77693)
+ 	struct irq_domain *domain;
+ 	int i;
+ 	int ret = 0;
+-	u8 intsrc_mask;
++	unsigned int intsrc_mask;
+ 
+ 	mutex_init(&max77693->irqlock);
+ 
+@@ -286,9 +287,9 @@ int max77693_irq_init(struct max77693_dev *max77693)
+ 		if (max77693_mask_reg[i] == MAX77693_REG_INVALID)
+ 			continue;
+ 		if (i >= MUIC_INT1 && i <= MUIC_INT3)
+-			max77693_write_reg(map, max77693_mask_reg[i], 0x00);
++			regmap_write(map, max77693_mask_reg[i], 0x00);
+ 		else
+-			max77693_write_reg(map, max77693_mask_reg[i], 0xff);
++			regmap_write(map, max77693_mask_reg[i], 0xff);
+ 	}
+ 
+ 	domain = irq_domain_add_linear(NULL, MAX77693_IRQ_NR,
+@@ -301,7 +302,7 @@ int max77693_irq_init(struct max77693_dev *max77693)
+ 	max77693->irq_domain = domain;
+ 
+ 	/* Unmask max77693 interrupt */
+-	ret = max77693_read_reg(max77693->regmap,
++	ret = regmap_read(max77693->regmap,
+ 			MAX77693_PMIC_REG_INTSRC_MASK, &intsrc_mask);
+ 	if (ret < 0) {
+ 		dev_err(max77693->dev, "fail to read PMIC register\n");
+@@ -311,7 +312,7 @@ int max77693_irq_init(struct max77693_dev *max77693)
+ 	intsrc_mask &= ~(MAX77693_IRQSRC_CHG);
+ 	intsrc_mask &= ~(MAX77693_IRQSRC_FLASH);
+ 	intsrc_mask &= ~(MAX77693_IRQSRC_MUIC);
+-	ret = max77693_write_reg(max77693->regmap,
++	ret = regmap_write(max77693->regmap,
+ 			MAX77693_PMIC_REG_INTSRC_MASK, intsrc_mask);
+ 	if (ret < 0) {
+ 		dev_err(max77693->dev, "fail to write PMIC register\n");
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index c5535f0..6336251 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -49,58 +49,6 @@ static const struct mfd_cell max77693_devs[] = {
+ 	{ .name = "max77693-haptic", },
+ };
+ 
+-int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest)
+-{
+-	unsigned int val;
+-	int ret;
+-
+-	ret = regmap_read(map, reg, &val);
+-	*dest = val;
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(max77693_read_reg);
+-
+-int max77693_bulk_read(struct regmap *map, u8 reg, int count, u8 *buf)
+-{
+-	int ret;
+-
+-	ret = regmap_bulk_read(map, reg, buf, count);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(max77693_bulk_read);
+-
+-int max77693_write_reg(struct regmap *map, u8 reg, u8 value)
+-{
+-	int ret;
+-
+-	ret = regmap_write(map, reg, value);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(max77693_write_reg);
+-
+-int max77693_bulk_write(struct regmap *map, u8 reg, int count, u8 *buf)
+-{
+-	int ret;
+-
+-	ret = regmap_bulk_write(map, reg, buf, count);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(max77693_bulk_write);
+-
+-int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask)
+-{
+-	int ret;
+-
+-	ret = regmap_update_bits(map, reg, mask, val);
+-
+-	return ret;
+-}
+-EXPORT_SYMBOL_GPL(max77693_update_reg);
+-
+ static const struct regmap_config max77693_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+@@ -117,7 +65,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
+ {
+ 	struct max77693_dev *max77693;
+-	u8 reg_data;
++	unsigned int reg_data;
+ 	int ret = 0;
+ 
+ 	max77693 = devm_kzalloc(&i2c->dev,
+@@ -139,7 +87,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		return ret;
+ 	}
+ 
+-	ret = max77693_read_reg(max77693->regmap, MAX77693_PMIC_REG_PMIC_ID2,
++	ret = regmap_read(max77693->regmap, MAX77693_PMIC_REG_PMIC_ID2,
+ 				&reg_data);
+ 	if (ret < 0) {
+ 		dev_err(max77693->dev, "device not found on this channel\n");
+diff --git a/drivers/regulator/max77693.c b/drivers/regulator/max77693.c
+index 653a58b..c67ff05 100644
+--- a/drivers/regulator/max77693.c
++++ b/drivers/regulator/max77693.c
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/max77693.h>
+ #include <linux/mfd/max77693-private.h>
+ #include <linux/regulator/of_regulator.h>
++#include <linux/regmap.h>
+ 
+ #define CHGIN_ILIM_STEP_20mA			20000
+ 
+@@ -39,9 +40,9 @@
+ static int max77693_chg_is_enabled(struct regulator_dev *rdev)
+ {
+ 	int ret;
+-	u8 val;
++	unsigned int val;
+ 
+-	ret = max77693_read_reg(rdev->regmap, rdev->desc->enable_reg, &val);
++	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &val);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -57,12 +58,11 @@ static int max77693_chg_get_current_limit(struct regulator_dev *rdev)
+ {
+ 	unsigned int chg_min_uA = rdev->constraints->min_uA;
+ 	unsigned int chg_max_uA = rdev->constraints->max_uA;
+-	u8 reg, sel;
++	unsigned int reg, sel;
+ 	unsigned int val;
+ 	int ret;
+ 
+-	ret = max77693_read_reg(rdev->regmap,
+-				MAX77693_CHG_REG_CHG_CNFG_09, &reg);
++	ret = regmap_read(rdev->regmap, MAX77693_CHG_REG_CHG_CNFG_09, &reg);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -96,7 +96,7 @@ static int max77693_chg_set_current_limit(struct regulator_dev *rdev,
+ 	/* the first four codes for charger current are all 60mA */
+ 	sel += 3;
+ 
+-	return max77693_write_reg(rdev->regmap,
++	return regmap_write(rdev->regmap,
+ 				MAX77693_CHG_REG_CHG_CNFG_09, sel);
+ }
+ /* end of CHARGER regulator ops */
+diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+index 3e050b9..80ec31d 100644
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -332,14 +332,6 @@ enum max77693_types {
+ 	TYPE_MAX77693,
+ };
+ 
+-extern int max77693_read_reg(struct regmap *map, u8 reg, u8 *dest);
+-extern int max77693_bulk_read(struct regmap *map, u8 reg, int count,
+-				u8 *buf);
+-extern int max77693_write_reg(struct regmap *map, u8 reg, u8 value);
+-extern int max77693_bulk_write(struct regmap *map, u8 reg, int count,
+-				u8 *buf);
+-extern int max77693_update_reg(struct regmap *map, u8 reg, u8 val, u8 mask);
+-
+ extern int max77693_irq_init(struct max77693_dev *max77686);
+ extern void max77693_irq_exit(struct max77693_dev *max77686);
+ extern int max77693_irq_resume(struct max77693_dev *max77686);
+-- 
+1.9.1
+
