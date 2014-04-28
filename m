@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022AbaD1NYi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:24:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755346AbaD1NYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:24:36 -0400
-Date: Mon, 28 Apr 2014 15:24:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 1/3] perf tools: Cache register accesses for unwind
- processing
-Message-ID: <20140428132420.GD18628@krava.brq.redhat.com>
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
- <1397756352-26694-2-git-send-email-jolsa@redhat.com>
- <1398608961.1689.9.camel@leonhard>
- <20140428094826.GD1109@krava.brq.redhat.com>
- <1398690175.1724.5.camel@leonhard>
+	id S1756038AbaD1N0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:26:08 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:37027 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481AbaD1N0G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:26:06 -0400
+Message-ID: <535E56E3.6070004@linaro.org>
+Date: Mon, 28 Apr 2014 21:25:55 +0800
+From: Alex Shi <alex.shi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398690175.1724.5.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>,
+        "naresh.kamboju@linaro.org Kamboju" <naresh.kamboju@linaro.org>,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        Mark Brown <broonie@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: deadlock in ipv6?
+References: <535A0950.9090302@linaro.org> <20140425073325.GA7050@order.stressinduktion.org>
+In-Reply-To: <20140425073325.GA7050@order.stressinduktion.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 10:02:55PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
+On 04/25/2014 03:33 PM, Hannes Frederic Sowa wrote:
+> On Fri, Apr 25, 2014 at 03:05:52PM +0800, Alex Shi wrote:
+>> [   18.624755]        CPU0
+>>
+>> [   18.627349]        ----
+>>
+>> [   18.629943]   lock(&addrconf_stats->syncp.seq);
+>>
+>> [   18.634735]   <Interrupt>
+>>
+>> [   18.637512]     lock(&addrconf_stats->syncp.seq);
+>>
 > 
-> 2014-04-28 (월), 11:48 +0200, Jiri Olsa:
-> > On Sun, Apr 27, 2014 at 11:29:21PM +0900, Namhyung Kim wrote:
-> > > Hi Jiri,
-> > > 
-> > > 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
-> > > > Caching registers value into an array. Got about 4% speed up
-> > > > of perf_reg_value function for report command processing
-> > > > dwarf unwind stacks.
-> > > 
-> > > I'm not familiar with the code base, so probably silly questions:  Where
-> > > does the speed up come from?  IOW I don't know what's the difference
-> > > between the regs->regs and regs->cached_regs.  And does the cached_regs
-> > > contain correct values of registers for each frame?
-> > 
-> > the current way register's value is accessed is to get its
-> > index in the sample's regs array.. based on register's id
-> > and the registers mask
-> > 
-> > so each time you want register value you traverse the registers
-> > mask and count reg's index for the sample regs array
-> > 
-> > this patch does this only once for each register (at the time it's
-> > first accessed) and cache its value in the array (cache_regs). The
-> > cache_mask is used to identify which regs are already cached.
+> Stable kernel should already carry a fix for this, 43a43b6040165f7
+> ("ipv6: some ipv6 statistic counters failed to disable bh"). Could you give it
+> a try?
 > 
-> That means it'll get the same value everytime it accesses a register in
-> frames in a sample?
 
-right..
+It seems a right fix. Thanks a lot for notification!
 
-jirka
+> Bye,
+> 
+>   Hannes
+> 
+
+
+-- 
+Thanks
+    Alex
