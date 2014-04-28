@@ -1,127 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952AbaD1J17 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:27:59 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:39688 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753AbaD1JZv (ORCPT
+	id S1754999AbaD1J2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:28:34 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:62872 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501AbaD1J2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:25:51 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        k.debski@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 1/4] usb: ohci-exynos: Use struct device instead of platform_device
-Date: Mon, 28 Apr 2014 14:55:29 +0530
-Message-Id: <1398677132-30600-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398677132-30600-1-git-send-email-gautam.vivek@samsung.com>
-References: <1398677132-30600-1-git-send-email-gautam.vivek@samsung.com>
+	Mon, 28 Apr 2014 05:28:31 -0400
+Date: Mon, 28 Apr 2014 10:28:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
+Subject: Re: [PATCH 3/6 v3] mfd: stmpe: probe properly from the device tree
+Message-ID: <20140428092825.GM6264@lee--X1>
+References: <1398288958-4723-1-git-send-email-linus.walleij@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398288958-4723-1-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change to use struct device instead of struct platform_device
-for some static functions.
+> The current STMPE I2C probing code does not really match the
+> compatible strings - it matches node names happening to give
+> the right device name. Instead, let's introduce some real
+> compatible matching, more complex, more accurate. Make the
+> driver depend on OF since all platforms using it are DT-only.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+> ChangeLog v2->v3:
+> - Fix a stupid error where I left a dangling return statement
+>   in the probe path.
+> - Fix up subject prope->probe
+> ChangeLog v1->v2:
+> - Make driver depend on OF and remove some ifdeffery that way.
+> - Squash OF match table to single lines.
+> - Merge of-specific probe function into probe().
+> - Print a small nag if DT is using the node name trick to make
+>   the driver probe.
+> ---
+>  drivers/mfd/Kconfig     |  1 +
+>  drivers/mfd/stmpe-i2c.c | 30 +++++++++++++++++++++++++++++-
+>  2 files changed, 30 insertions(+), 1 deletion(-)
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/ohci-exynos.c |   20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index 9cf80cb..05f00e3 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -39,18 +39,18 @@ struct exynos_ohci_hcd {
- 	struct usb_otg *otg;
- };
- 
--static void exynos_ohci_phy_enable(struct platform_device *pdev)
-+static void exynos_ohci_phy_enable(struct device *dev)
- {
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 
- 	if (exynos_ohci->phy)
- 		usb_phy_init(exynos_ohci->phy);
- }
- 
--static void exynos_ohci_phy_disable(struct platform_device *pdev)
-+static void exynos_ohci_phy_disable(struct device *dev)
- {
--	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+	struct usb_hcd *hcd = dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
- 
- 	if (exynos_ohci->phy)
-@@ -139,7 +139,7 @@ skip_phy:
- 
- 	platform_set_drvdata(pdev, hcd);
- 
--	exynos_ohci_phy_enable(pdev);
-+	exynos_ohci_phy_enable(&pdev->dev);
- 
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (err) {
-@@ -150,7 +150,7 @@ skip_phy:
- 	return 0;
- 
- fail_add_hcd:
--	exynos_ohci_phy_disable(pdev);
-+	exynos_ohci_phy_disable(&pdev->dev);
- fail_io:
- 	clk_disable_unprepare(exynos_ohci->clk);
- fail_clk:
-@@ -168,7 +168,7 @@ static int exynos_ohci_remove(struct platform_device *pdev)
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
- 
--	exynos_ohci_phy_disable(pdev);
-+	exynos_ohci_phy_disable(&pdev->dev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
-@@ -190,7 +190,6 @@ static int exynos_ohci_suspend(struct device *dev)
- {
- 	struct usb_hcd *hcd = dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
--	struct platform_device *pdev = to_platform_device(dev);
- 	bool do_wakeup = device_may_wakeup(dev);
- 	int rc = ohci_suspend(hcd, do_wakeup);
- 
-@@ -200,7 +199,7 @@ static int exynos_ohci_suspend(struct device *dev)
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
- 
--	exynos_ohci_phy_disable(pdev);
-+	exynos_ohci_phy_disable(dev);
- 
- 	clk_disable_unprepare(exynos_ohci->clk);
- 
-@@ -211,14 +210,13 @@ static int exynos_ohci_resume(struct device *dev)
- {
- 	struct usb_hcd *hcd			= dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
--	struct platform_device *pdev		= to_platform_device(dev);
- 
- 	clk_prepare_enable(exynos_ohci->clk);
- 
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
- 
--	exynos_ohci_phy_enable(pdev);
-+	exynos_ohci_phy_enable(dev);
- 
- 	ohci_resume(hcd, false);
- 
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
