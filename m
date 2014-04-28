@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903AbaD1PRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:17:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50734 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756439AbaD1PP6 (ORCPT
+	id S1756916AbaD1PRd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:17:33 -0400
+Received: from ip-78-45-166-173.net.upcbroadband.cz ([78.45.166.173]:51763
+	"EHLO moskyto.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396AbaD1PR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:15:58 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nm@ti.com>
-Subject: [PATCH V3 04/20] bus: omap_l3_noc: populate l3->dev and use it
-Date: Mon, 28 Apr 2014 10:14:44 -0500
-Message-ID: <1398698101-25513-5-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1398698101-25513-1-git-send-email-nm@ti.com>
+	Mon, 28 Apr 2014 11:17:28 -0400
+Date: Mon, 28 Apr 2014 17:17:21 +0200
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: Updated asmlinkage patch v2
+Message-ID: <20140428151721.GE2641@moskyto.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LKTjZJSUETSlgu2t"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwYRGV65DsK4kBcdt-6PP1EY-3dOE=WUOhG=G5hcXYnVg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-l3->dev is not populated, so populate it and use it to print information
-relevant to the device instead of using a generic pr_*.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Darren Etheridge <detheridge@ti.com>
----
-change in V3: none
- drivers/bus/omap_l3_noc.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+--LKTjZJSUETSlgu2t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 800486c..37d71b7 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -131,6 +131,7 @@ static int omap_l3_probe(struct platform_device *pdev)
- 	if (!l3)
- 		return -ENOMEM;
- 
-+	l3->dev = &pdev->dev;
- 	platform_set_drvdata(pdev, l3);
- 
- 	/* Get mem resources */
-@@ -140,7 +141,7 @@ static int omap_l3_probe(struct platform_device *pdev)
- 
- 		l3->l3_base[i] = devm_ioremap_resource(&pdev->dev, res);
- 		if (IS_ERR(l3->l3_base[i])) {
--			dev_err(&pdev->dev, "ioremap %d failed\n", i);
-+			dev_err(l3->dev, "ioremap %d failed\n", i);
- 			return PTR_ERR(l3->l3_base[i]);
- 		}
- 	}
-@@ -149,19 +150,19 @@ static int omap_l3_probe(struct platform_device *pdev)
- 	 * Setup interrupt Handlers
- 	 */
- 	l3->debug_irq = platform_get_irq(pdev, 0);
--	ret = devm_request_irq(&pdev->dev, l3->debug_irq, l3_interrupt_handler,
-+	ret = devm_request_irq(l3->dev, l3->debug_irq, l3_interrupt_handler,
- 			       IRQF_DISABLED, "l3-dbg-irq", l3);
- 	if (ret) {
--		dev_err(&pdev->dev, "request_irq failed for %d\n",
-+		dev_err(l3->dev, "request_irq failed for %d\n",
- 			l3->debug_irq);
- 		return ret;
- 	}
- 
- 	l3->app_irq = platform_get_irq(pdev, 1);
--	ret = devm_request_irq(&pdev->dev, l3->app_irq, l3_interrupt_handler,
-+	ret = devm_request_irq(l3->dev, l3->app_irq, l3_interrupt_handler,
- 			       IRQF_DISABLED, "l3-app-irq", l3);
- 	if (ret)
--		dev_err(&pdev->dev, "request_irq failed for %d\n", l3->app_irq);
-+		dev_err(l3->dev, "request_irq failed for %d\n", l3->app_irq);
- 
- 	return ret;
- }
--- 
-1.7.9.5
+> On Tue, Apr 1, 2014 at 2:40 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> > Did some basic sanity checks with LTO and everything
+> > works (still need the three other LTO patches to build)
+>=20
+> Ok, this series looks much better. Thanks,
 
+It seems this series hasn't made it to the torvalds tree yet so the
+compiler still issues complaints about __visible static functions.
+Should I bring a patch removing the "static" from asmlinkage-annotated
+functions, or is this patch the better way? Or have I missed something?
+
+BTW some of the functions have already lost their asmlinkage, see
+commit 8783dd3a37a5853689e1a8fa728827a50905b912 ("irqchip: Remove
+asmlinkage from static functions") in torvalds tree and also recent
+thread https://lkml.org/lkml/2014/4/16/453 ("[PATCH] crypto:
+sha{256,512}_ssse3 - remove asmlinkage from static functions"), both of
+them because "it issues warnings".
+
+MQ
+
+--LKTjZJSUETSlgu2t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIbBAEBAgAGBQJTXnEBAAoJEDFERKcRJ1apkBQP+JpaPZiTIhqoxX2vgKQvT8+6
+s+LgFI4pZSVunu6qp9zbxJHBYO/qqjMx0EcbOkxJcT94U4QEkdi3d+5N/q7hlXXr
+1LfocAE5zHdtuYQY6BT8AxgS+Y9zL+GnQNF1byQOMLIHkBIA+A2bpeuM6dXX8R2M
+KIn6hx6JUKHoGOlmnjfYbYB8iue26VSfRvTrhbUC5WocGspB6boq7UvKb7C6ZL/y
+Ndc/hU2x4UmzwCIP3w1luxP0I9ZYhTSDWMBYb/jEfcFBzqvVsB5x1MKbr8TbzURP
+UE1IQBeKoAE5I9V6o8J7WWW+FKBWpDK+yfyfwxbQyGbyCSnVB585OVQWOGoS4VRf
+pD84a0wf1HaAblwItvGtJpftxP0bZqxiUl2RvWxZvODNAE2ACONlOjGpKT/rtLfs
+QcAJAutiS6mE9TZICrdUIZH+7LAcoXeJ6wM3rVx2sWQ48sshr8IT54p480T7lB5t
+DDGOIy4hxxCnK3sQCk4nIxgLZDf3NRgGyKFykMDcOmAhHf/oQuA0eY31NDb/QkX9
+lnkXFNbCbiRt213GiWkse9hqsRkywVcUkwEakkhACNBl7iQejpY6o294IrUHhoNs
+2WOLMTUNx6xj4X0Ebvqn0ntXXyMd0x38prr8OQTMuWgXsHtIg0KdvKOVKcrg/nTd
+68l7JPizKqFIVvdhskE=
+=xcgr
+-----END PGP SIGNATURE-----
+
+--LKTjZJSUETSlgu2t--
