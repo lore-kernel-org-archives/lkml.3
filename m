@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525AbaD1VK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:10:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50281 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbaD1VK1 (ORCPT
+	id S932546AbaD1VKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:10:39 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:13486 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932415AbaD1VKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:10:27 -0400
-Date: Mon, 28 Apr 2014 14:10:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [PATCH 1/1] MM: make vmpressure_win dynamic
-Message-Id: <20140428141025.e8f7604535b4d840a6eeacea@linux-foundation.org>
-In-Reply-To: <20140428222521.29a711c33e720ff5e2c00e2d@skynet.be>
-References: <20140428222521.29a711c33e720ff5e2c00e2d@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Mon, 28 Apr 2014 17:10:37 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvgTAP/CXlNXQw00/2dsb2JhbABZgwasDQUBAQEFmXICAoEaF3SCUxMcIxiBAiQTiEUByHWFWoh/hEABA458ig8Bkl6DMzs
+Date: Mon, 28 Apr 2014 23:12:39 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
+        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH V3 1/2] FS: Add generic data flush to fsync
+Message-Id: <20140428231239.dbae4da4297c0b9230d9db4d@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,73 +26,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Apr 2014 22:25:21 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+This patch issues a flush in generic_file_fsync.
+(Modern filesystems already do it)
 
-> Initialize vmpressure_win in vmstat using
-> calculate_normal_threshold() based on each zone/cpu * SWAP_CLUSTER_SIZE
-> 
-> Value refreshed through cpu notifier
+-Behaviour can be reversed using /sys/devices/.../cache_type
+-Filesystems can also call __generic_file_fsync with bool flush false
 
-Anton wrote vmpressure so please let's cc him.  `git blame' is useful
-for working out who to cc.
+Suggested-by: Jan Kara <jack@suse.cz>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+V3: __generic_file_fsync = no flush
+V2: No flag
+V1: First version with MS_BARRIER flag
 
-What were the reasons for this change?  Any testing results?
+ fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
+ include/linux/fs.h |  1 +
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -23,6 +23,23 @@
->  
->  #include "internal.h"
->  
-> +/*
-> + * The window size (vmpressure_win) is the number of scanned pages before
-> + * we try to analyze scanned/reclaimed ratio. So the window is used as a
-> + * rate-limit tunable for the "low" level notification, and also for
-> + * averaging the ratio for medium/critical levels. Using small window
-> + * sizes can cause lot of false positives, but too big window size will
-> + * delay the notifications.
-> + *
-> + * As the vmscan reclaimer logic works with chunks which are multiple of
-> + * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
-> + *
-> + */
-> +#ifdef CONFIG_MEMCG
-> +static DEFINE_SPINLOCK(vmpressure_win_lock);
-> +unsigned long vmpressure_win __read_mostly = SWAP_CLUSTER_MAX * 16;
-> +#endif
-> +
->  #ifdef CONFIG_VM_EVENT_COUNTERS
->  DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
->  EXPORT_PER_CPU_SYMBOL(vm_event_states);
-> @@ -163,11 +180,13 @@ void refresh_zone_stat_thresholds(void)
->  	struct zone *zone;
->  	int cpu;
->  	int threshold;
-> +	unsigned long new_vmpressure_win = 0;
->  
->  	for_each_populated_zone(zone) {
->  		unsigned long max_drift, tolerate_drift;
->  
->  		threshold = calculate_normal_threshold(zone);
-> +		new_vmpressure_win += threshold;
->  
->  		for_each_online_cpu(cpu)
->  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
-> @@ -184,6 +203,11 @@ void refresh_zone_stat_thresholds(void)
->  			zone->percpu_drift_mark = high_wmark_pages(zone) +
->  					max_drift;
->  	}
-> +#ifdef CONFIG_MEMCG
-> +	spin_lock(&vmpressure_win_lock);
-> +	vmpressure_win = new_vmpressure_win * SWAP_CLUSTER_MAX;
-> +	spin_unlock(&vmpressure_win_lock);
-> +#endif
->  }
-
-I don't think we need the spinlock really.  It's a ulong - concurrent
-readers will see either the old value or the new one whether or not the
-writer took that lock.
-
-If we're going to modify this thing on the fly then we probably should
-expose the current value to userspace in some fashion.
-
+diff --git a/fs/libfs.c b/fs/libfs.c
+index a184424..4877906 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -3,6 +3,7 @@
+  *	Library for filesystems writers.
+  */
+ 
++#include <linux/blkdev.h>
+ #include <linux/export.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+@@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
+ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
+ 
+ /**
+- * generic_file_fsync - generic fsync implementation for simple filesystems
++ * __generic_file_fsync - generic fsync implementation for simple filesystems
++ *
+  * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
+  * @datasync:	only synchronize essential metadata if true
+  *
+  * This is a generic implementation of the fsync method for simple
+  * filesystems which track all non-inode metadata in the buffers list
+  * hanging off the address_space structure.
+  */
+-int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+-		       int datasync)
++int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
++				 int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 	int err;
+@@ -952,10 +956,36 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+ 	err = sync_inode_metadata(inode, 1);
+ 	if (ret == 0)
+ 		ret = err;
++
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return ret;
+ }
++EXPORT_SYMBOL(__generic_file_fsync);
++
++/**
++ * generic_file_fsync - generic fsync implementation for simple filesystems
++ *			with flush
++ * @file:	file to synchronize
++ * @start:	start offset in bytes
++ * @end:	end offset in bytes (inclusive)
++ * @datasync:	only synchronize essential metadata if true
++ *
++ */
++
++int generic_file_fsync(struct file *file, loff_t start, loff_t end,
++		       int datasync)
++{
++	struct inode *inode = file->f_mapping->host;
++	int err;
++
++	err = __generic_file_fsync(file, start, end, datasync);
++	if (err)
++		return err;
++
++	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
++
++}
+ EXPORT_SYMBOL(generic_file_fsync);
+ 
+ /**
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8780312..c3f46e4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
+ extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
+ 		const void __user *from, size_t count);
+ 
++extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
+ extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
+ 
+ extern int generic_check_addressable(unsigned, u64);
+-- 
+1.8.4.5
