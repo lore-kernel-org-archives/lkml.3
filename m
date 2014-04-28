@@ -1,31 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaD1BcS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43006 "EHLO
+	id S1755094AbaD1BcQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42865 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752782AbaD1B3W (ORCPT
+	by vger.kernel.org with ESMTP id S1752486AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:22 -0400
+	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Joonsoo Kim" <iamjoonsoo.kim@lge.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>,
-        "Michal Hocko" <mhocko@suse.cz>,
-        "Aneesh Kumar" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
-        "Naoya Horiguchi" <n-horiguchi@ah.jp.nec.com>
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "=?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?=" <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.692955072@decadent.org.uk>
+Message-ID: <lsq.1398647482.519086654@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 81/94] mm: hugetlb: fix softlockup when a large number
- of hugepages are freed.
+Subject: [PATCH 3.2 85/94] b43: Fix machine check error due to improper
+ access of B43_MMIO_PSM_PHY_HDR
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,87 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 55f67141a8927b2be3e51840da37b8a2320143ed upstream.
+commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
 
-When I decrease the value of nr_hugepage in procfs a lot, softlockup
-happens.  It is because there is no chance of context switch during this
-process.
+Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
+functions isn't safe. On my machine it causes delayed (!) CPU exception:
 
-On the other hand, when I allocate a large number of hugepages, there is
-some chance of context switch.  Hence softlockup doesn't happen during
-this process.  So it's necessary to add the context switch in the
-freeing process as same as allocating process to avoid softlockup.
+Disabling lock debugging due to kernel taint
+mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
+mce: [Hardware Error]: TSC 164083803dc
+mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
+mce: [Hardware Error]: Run the above through 'mcelog --ascii'
+mce: [Hardware Error]: Machine check: Processor context corrupt
+Kernel panic - not syncing: Fatal machine check on current CPU
+Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
 
-When I freed 12 TB hugapages with kernel-2.6.32-358.el6, the freeing
-process occupied a CPU over 150 seconds and following softlockup message
-appeared twice or more.
-
-$ echo 6000000 > /proc/sys/vm/nr_hugepages
-$ cat /proc/sys/vm/nr_hugepages
-6000000
-$ grep ^Huge /proc/meminfo
-HugePages_Total:   6000000
-HugePages_Free:    6000000
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:       2048 kB
-$ echo 0 > /proc/sys/vm/nr_hugepages
-
-BUG: soft lockup - CPU#16 stuck for 67s! [sh:12883] ...
-Pid: 12883, comm: sh Not tainted 2.6.32-358.el6.x86_64 #1
-Call Trace:
-  free_pool_huge_page+0xb8/0xd0
-  set_max_huge_pages+0x128/0x190
-  hugetlb_sysctl_handler_common+0x113/0x140
-  hugetlb_sysctl_handler+0x1e/0x20
-  proc_sys_call_handler+0x97/0xd0
-  proc_sys_write+0x14/0x20
-  vfs_write+0xb8/0x1a0
-  sys_write+0x51/0x90
-  __audit_syscall_exit+0x265/0x290
-  system_call_fastpath+0x16/0x1b
-
-I have not confirmed this problem with upstream kernels because I am not
-able to prepare the machine equipped with 12TB memory now.  However I
-confirmed that the amount of decreasing hugepages was directly
-proportional to the amount of required time.
-
-I measured required times on a smaller machine.  It showed 130-145
-hugepages decreased in a millisecond.
-
-  Amount of decreasing     Required time      Decreasing rate
-  hugepages                     (msec)         (pages/msec)
-  ------------------------------------------------------------
-  10,000 pages == 20GB         70 -  74          135-142
-  30,000 pages == 60GB        208 - 229          131-144
-
-It means decrement of 6TB hugepages will trigger softlockup with the
-default threshold 20sec, in this decreasing rate.
-
-Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/b43/phy_n.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1447,6 +1447,7 @@ static unsigned long set_max_huge_pages(
- 	while (min_count < persistent_huge_pages(h)) {
- 		if (!free_pool_huge_page(h, nodes_allowed, 0))
- 			break;
-+		cond_resched_lock(&hugetlb_lock);
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -3937,22 +3937,22 @@ static void b43_nphy_channel_setup(struc
+ 	struct b43_phy_n *nphy = dev->phy.n;
+ 
+ 	u16 old_band_5ghz;
+-	u32 tmp32;
++	u16 tmp16;
+ 
+ 	old_band_5ghz =
+ 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
+ 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
+ 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
+ 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
+ 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
  	}
- 	while (count < persistent_huge_pages(h)) {
- 		if (!adjust_pool_surplus(h, nodes_allowed, 1))
+ 
+ 	b43_chantab_phy_upload(dev, e);
 
