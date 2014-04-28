@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaD1MBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:01:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5935 "EHLO mx1.redhat.com"
+	id S1755668AbaD1MBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:01:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108AbaD1MBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:01:31 -0400
+	id S1755604AbaD1MBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:01:40 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -18,21 +18,17 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/7] perf tests: Add thread maps lookup automated tests
-Date: Mon, 28 Apr 2014 14:00:01 +0200
-Message-Id: <1398686405-31951-4-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 7/7] perf tests: Add map groups sharing with thread object test
+Date: Mon, 28 Apr 2014 14:00:05 +0200
+Message-Id: <1398686405-31951-8-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
 References: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding automated test for memory maps lookup within multiple machines
-threads.
-
-The test creates 4 threads and separated memory maps. It checks that we
-could use thread__find_addr_map function with thread object based on TID
-to find memory maps.
+This test create 2 processes abstractions, with several threads
+and checks they properly share and maintain map groups info.
 
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -47,319 +43,151 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1397490723-1992-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1397490723-1992-6-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf              |   1 +
- tools/perf/perf.h                     |   6 +
- tools/perf/tests/builtin-test.c       |   4 +
- tools/perf/tests/mmap-thread-lookup.c | 233 ++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h              |   1 +
- 5 files changed, 245 insertions(+)
- create mode 100644 tools/perf/tests/mmap-thread-lookup.c
+ tools/perf/Makefile.perf           |  1 +
+ tools/perf/tests/builtin-test.c    |  4 ++
+ tools/perf/tests/tests.h           |  1 +
+ tools/perf/tests/thread-mg-share.c | 90 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 96 insertions(+)
+ create mode 100644 tools/perf/tests/thread-mg-share.c
 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 0807e4c..16d4f4e 100644
+index 16d4f4e..46e0c32 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -416,6 +416,7 @@ ifeq ($(ARCH),x86)
- LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+@@ -417,6 +417,7 @@ LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
  endif
  endif
-+LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
+ LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
++LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
  
  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 5c11eca..ebdad33 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -15,6 +15,9 @@
- #ifndef __NR_futex
- # define __NR_futex 240
- #endif
-+#ifndef __NR_gettid
-+# define __NR_gettid 224
-+#endif
- #endif
- 
- #if defined(__x86_64__)
-@@ -29,6 +32,9 @@
- #ifndef __NR_futex
- # define __NR_futex 202
- #endif
-+#ifndef __NR_gettid
-+# define __NR_gettid 186
-+#endif
- #endif
- 
- #ifdef __powerpc__
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index ceb9dae..bb60792 100644
+index bb60792..0d5afaf 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -128,6 +128,10 @@ static struct test {
- 		.func = test__hists_filter,
+@@ -132,6 +132,10 @@ static struct test {
+ 		.func = test__mmap_thread_lookup,
  	},
  	{
-+		.desc = "Test mmap thread lookup",
-+		.func = test__mmap_thread_lookup,
++		.desc = "Test thread mg sharing",
++		.func = test__thread_mg_share,
 +	},
 +	{
  		.func = NULL,
  	},
  };
-diff --git a/tools/perf/tests/mmap-thread-lookup.c b/tools/perf/tests/mmap-thread-lookup.c
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 82e8061..a9d7cb0 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -43,6 +43,7 @@ int test__parse_no_sample_id_all(void);
+ int test__dwarf_unwind(void);
+ int test__hists_filter(void);
+ int test__mmap_thread_lookup(void);
++int test__thread_mg_share(void);
+ 
+ #if defined(__x86_64__) || defined(__i386__)
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+diff --git a/tools/perf/tests/thread-mg-share.c b/tools/perf/tests/thread-mg-share.c
 new file mode 100644
-index 0000000..4a456fe
+index 0000000..2b2e0db
 --- /dev/null
-+++ b/tools/perf/tests/mmap-thread-lookup.c
-@@ -0,0 +1,233 @@
-+#include <unistd.h>
-+#include <sys/syscall.h>
-+#include <sys/types.h>
-+#include <sys/mman.h>
-+#include <pthread.h>
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include "debug.h"
++++ b/tools/perf/tests/thread-mg-share.c
+@@ -0,0 +1,90 @@
 +#include "tests.h"
 +#include "machine.h"
-+#include "thread_map.h"
-+#include "symbol.h"
 +#include "thread.h"
++#include "map.h"
 +
-+#define THREADS 4
-+
-+static int go_away;
-+
-+struct thread_data {
-+	pthread_t	pt;
-+	pid_t		tid;
-+	void		*map;
-+	int		ready[2];
-+};
-+
-+static struct thread_data threads[THREADS];
-+
-+static int thread_init(struct thread_data *td)
-+{
-+	void *map;
-+
-+	map = mmap(NULL, page_size,
-+		   PROT_READ|PROT_WRITE|PROT_EXEC,
-+		   MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-+
-+	if (map == MAP_FAILED) {
-+		perror("mmap failed");
-+		return -1;
-+	}
-+
-+	td->map = map;
-+	td->tid = syscall(SYS_gettid);
-+
-+	pr_debug("tid = %d, map = %p\n", td->tid, map);
-+	return 0;
-+}
-+
-+static void *thread_fn(void *arg)
-+{
-+	struct thread_data *td = arg;
-+	ssize_t ret;
-+	int go;
-+
-+	if (thread_init(td))
-+		return NULL;
-+
-+	/* Signal thread_create thread is initialized. */
-+	ret = write(td->ready[1], &go, sizeof(int));
-+	if (ret != sizeof(int)) {
-+		pr_err("failed to notify\n");
-+		return NULL;
-+	}
-+
-+	while (!go_away) {
-+		/* Waiting for main thread to kill us. */
-+		usleep(100);
-+	}
-+
-+	munmap(td->map, page_size);
-+	return NULL;
-+}
-+
-+static int thread_create(int i)
-+{
-+	struct thread_data *td = &threads[i];
-+	int err, go;
-+
-+	if (pipe(td->ready))
-+		return -1;
-+
-+	err = pthread_create(&td->pt, NULL, thread_fn, td);
-+	if (!err) {
-+		/* Wait for thread initialization. */
-+		ssize_t ret = read(td->ready[0], &go, sizeof(int));
-+		err = ret != sizeof(int);
-+	}
-+
-+	close(td->ready[0]);
-+	close(td->ready[1]);
-+	return err;
-+}
-+
-+static int threads_create(void)
-+{
-+	struct thread_data *td0 = &threads[0];
-+	int i, err = 0;
-+
-+	go_away = 0;
-+
-+	/* 0 is main thread */
-+	if (thread_init(td0))
-+		return -1;
-+
-+	for (i = 1; !err && i < THREADS; i++)
-+		err = thread_create(i);
-+
-+	return err;
-+}
-+
-+static int threads_destroy(void)
-+{
-+	struct thread_data *td0 = &threads[0];
-+	int i, err = 0;
-+
-+	/* cleanup the main thread */
-+	munmap(td0->map, page_size);
-+
-+	go_away = 1;
-+
-+	for (i = 1; !err && i < THREADS; i++)
-+		err = pthread_join(threads[i].pt, NULL);
-+
-+	return err;
-+}
-+
-+typedef int (*synth_cb)(struct machine *machine);
-+
-+static int synth_all(struct machine *machine)
-+{
-+	return perf_event__synthesize_threads(NULL,
-+					      perf_event__process,
-+					      machine, 0);
-+}
-+
-+static int synth_process(struct machine *machine)
-+{
-+	struct thread_map *map;
-+	int err;
-+
-+	map = thread_map__new_by_pid(getpid());
-+
-+	err = perf_event__synthesize_thread_map(NULL, map,
-+						perf_event__process,
-+						machine, 0);
-+
-+	thread_map__delete(map);
-+	return err;
-+}
-+
-+static int mmap_events(synth_cb synth)
++int test__thread_mg_share(void)
 +{
 +	struct machines machines;
 +	struct machine *machine;
-+	int err, i;
++
++	/* thread group */
++	struct thread *leader;
++	struct thread *t1, *t2, *t3;
++	struct map_groups *mg;
++
++	/* other process */
++	struct thread *other, *other_leader;
++	struct map_groups *other_mg;
 +
 +	/*
-+	 * The threads_create will not return before all threads
-+	 * are spawned and all created memory map.
++	 * This test create 2 processes abstractions (struct thread)
++	 * with several threads and checks they properly share and
++	 * maintain map groups info (struct map_groups).
 +	 *
-+	 * They will loop until threads_destroy is called, so we
-+	 * can safely run synthesizing function.
-+	 */
-+	TEST_ASSERT_VAL("failed to create threads", !threads_create());
++	 * thread group (pid: 0, tids: 0, 1, 2, 3)
++	 * other  group (pid: 4, tids: 4, 5)
++	*/
 +
 +	machines__init(&machines);
 +	machine = &machines.host;
 +
-+	dump_trace = verbose > 1 ? 1 : 0;
++	/* create process with 4 threads */
++	leader = machine__findnew_thread(machine, 0, 0);
++	t1     = machine__findnew_thread(machine, 0, 1);
++	t2     = machine__findnew_thread(machine, 0, 2);
++	t3     = machine__findnew_thread(machine, 0, 3);
 +
-+	err = synth(machine);
++	/* and create 1 separated process, without thread leader */
++	other  = machine__findnew_thread(machine, 4, 5);
 +
-+	dump_trace = 0;
++	TEST_ASSERT_VAL("failed to create threads",
++			leader && t1 && t2 && t3 && other);
 +
-+	TEST_ASSERT_VAL("failed to destroy threads", !threads_destroy());
-+	TEST_ASSERT_VAL("failed to synthesize maps", !err);
++	mg = leader->mg;
++	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 4);
++
++	/* test the map groups pointer is shared */
++	TEST_ASSERT_VAL("map groups don't match", mg == t1->mg);
++	TEST_ASSERT_VAL("map groups don't match", mg == t2->mg);
++	TEST_ASSERT_VAL("map groups don't match", mg == t3->mg);
 +
 +	/*
-+	 * All data is synthesized, try to find map for each
-+	 * thread object.
++	 * Verify the other leader was created by previous call.
++	 * It should have shared map groups with no change in
++	 * refcnt.
 +	 */
-+	for (i = 0; i < THREADS; i++) {
-+		struct thread_data *td = &threads[i];
-+		struct addr_location al;
-+		struct thread *thread;
++	other_leader = machine__find_thread(machine, 4, 4);
++	TEST_ASSERT_VAL("failed to find other leader", other_leader);
 +
-+		thread = machine__findnew_thread(machine, getpid(), td->tid);
++	other_mg = other->mg;
++	TEST_ASSERT_VAL("wrong refcnt", other_mg->refcnt == 2);
 +
-+		pr_debug("looking for map %p\n", td->map);
++	TEST_ASSERT_VAL("map groups don't match", other_mg == other_leader->mg);
 +
-+		thread__find_addr_map(thread, machine,
-+				      PERF_RECORD_MISC_USER, MAP__FUNCTION,
-+				      (unsigned long) (td->map + 1), &al);
++	/* release thread group */
++	thread__delete(leader);
++	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 3);
 +
-+		if (!al.map) {
-+			pr_debug("failed, couldn't find map\n");
-+			err = -1;
-+			break;
-+		}
++	thread__delete(t1);
++	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 2);
 +
-+		pr_debug("map %p, addr %" PRIx64 "\n", al.map, al.map->start);
-+	}
++	thread__delete(t2);
++	TEST_ASSERT_VAL("wrong refcnt", mg->refcnt == 1);
 +
-+	machine__delete_threads(machine);
++	thread__delete(t3);
++
++	/* release other group  */
++	thread__delete(other_leader);
++	TEST_ASSERT_VAL("wrong refcnt", other_mg->refcnt == 1);
++
++	thread__delete(other);
++
++	/*
++	 * Cannot call machine__delete_threads(machine) now,
++	 * because we've already released all the threads.
++	 */
++
 +	machines__exit(&machines);
-+	return err;
-+}
-+
-+/*
-+ * This test creates 'THREADS' number of threads (including
-+ * main thread) and each thread creates memory map.
-+ *
-+ * When threads are created, we synthesize them with both
-+ * (separate tests):
-+ *   perf_event__synthesize_thread_map (process based)
-+ *   perf_event__synthesize_threads    (global)
-+ *
-+ * We test we can find all memory maps via:
-+ *   thread__find_addr_map
-+ *
-+ * by using all thread objects.
-+ */
-+int test__mmap_thread_lookup(void)
-+{
-+	/* perf_event__synthesize_threads synthesize */
-+	TEST_ASSERT_VAL("failed with sythesizing all",
-+			!mmap_events(synth_all));
-+
-+	/* perf_event__synthesize_thread_map synthesize */
-+	TEST_ASSERT_VAL("failed with sythesizing process",
-+			!mmap_events(synth_process));
-+
 +	return 0;
 +}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index fe39163..82e8061 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -42,6 +42,7 @@ int test__keep_tracking(void);
- int test__parse_no_sample_id_all(void);
- int test__dwarf_unwind(void);
- int test__hists_filter(void);
-+int test__mmap_thread_lookup(void);
- 
- #if defined(__x86_64__) || defined(__i386__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
 -- 
 1.8.3.1
 
