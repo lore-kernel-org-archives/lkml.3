@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805AbaD1VwR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:52:17 -0400
-Received: from sea.nor-consult.com ([173.160.193.117]:45870 "EHLO
-	mail.nor-consult.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769AbaD1VwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756897AbaD1VwP (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 28 Apr 2014 17:52:15 -0400
-X-Greylist: delayed 1328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 17:52:15 EDT
-From: "Michael Evans" <michael.evans@nor-consult.com>
-To: <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Apr 2014 14:30:03 -0700
-Organization: Nor Consult, LLC
-Message-ID: <023501cf6329$047a8120$0d6f8360$@nor-consult.com>
+Received: from mail-out.m-online.net ([212.18.0.10]:58214 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078AbaD1VwM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 17:52:12 -0400
+X-Auth-Info: BGy7gc7LmSClWmd/ZpcSv6eY72KqnpwlhLcDezUL5TA=
+From: Marek Vasut <marex@denx.de>
+To: Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH] staging: crypto: skein: depend upon CRYPTO
+Date: Mon, 28 Apr 2014 23:38:19 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, kbuild-all@01.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140425151554.GB31117@localhost> <1398444309-24672-1-git-send-email-jason@lakedaemon.net>
+In-Reply-To: <1398444309-24672-1-git-send-email-jason@lakedaemon.net>
 MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac9jKIkatPI0SvzxSRaI3MOs2z7A1Q==
-Content-Language: en-us
-X-SA-Exim-Connect-IP: 10.2.4.24
-X-SA-Exim-Mail-From: michael.evans@nor-consult.com
-Subject: umount -f Device or resource busy; already tried: mount, lsof, fuser, exportfs, ps axf, dmsetup table, losetup -a
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Version: 4.2.1 (built Sun, 16 May 2010 01:51:57 +0000)
-X-SA-Exim-Scanned: Yes (on mail.nor-consult.com)
+Message-Id: <201404282338.19758.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am posting with hope to improve the reliability and usability of
-unmounting 'busy' filesystems (for which umount -f doesn't work and no
-remedy is known).
+On Friday, April 25, 2014 at 06:45:09 PM, Jason Cooper wrote:
+> Fengguang's randconfig kernel build tester discovered the following
+> warnings:
+> 
+> warning: (CRYPTO_THREEFISH) selects CRYPTO_ALGAPI which has unmet direct
+> dependencies (CRYPTO) warning: (DM_VERITY && CRYPTO_SKEIN) selects
+> CRYPTO_HASH which has unmet direct dependencies (CRYPTO)
+> 
+> Fix this in the Kconfig by depending on CRYPTO.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 
-There are no apparent resource holders but the device is still 'busy'. (
-http://serverfault.com/questions/591406/umount-device-or-resource-busy-alrea
-dy-tried-mount-lsof-fuser-exportfs-ps ), including:
+Reviewed-by: Marek Vasut <marex@denx.de>
 
-* mount | grep /tmp/
-* lsof | grep /tmp/
-* fuser -m /tmp/...
-* exportfs -rv | grep /tmp/
-* Restarting the daemon which runs the creation scripts anyway...
-* ps axf | grep /tmp/
-* dmsetup table
-* losetup -a
-* fuser -vm /tmp/tmp.random-chars/ (yields two lines)
-##                        USER PID    ACCESS COMMAND
-## /tmp/tmp.random-chars: root kernel mount  /tmp/tmp.random-chars
-
-Is there /any other/ test which might reveal what is keeping the device busy
-(so I can end their existence)?
-Is there anything more forceful than 'umount -f' to really just sync what's
-possible to a specific device and invalidate all remaining file handles,
-buffers, etc?
-
-Failure is always be an option.  However in this case failing to allow
-failure would require an entire VM host reboot during the next maintenance
-window.
-
-
-Thank you in advance for your time and ideas.  Please either reply to my
-work email address <michael.evans@nor-consult.com> or at the above
-serverfault link; optionally CC the list for the archives.  I'll also update
-the main post on the serverfault page with any additional tests and
-highlight any that yield useful information for future search engine users.
-
-PS: Even if your reply is after our next maintenance window, I'll continue
-updating the serverfault post with test for future users (more quickly if
-directly emailed as well).
-
+Best regards,
+Marek Vasut
