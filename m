@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819AbaD1PPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:15:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50699 "EHLO
+	id S932772AbaD1P3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:29:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50725 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590AbaD1PP1 (ORCPT
+	with ESMTP id S1755698AbaD1PPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:15:27 -0400
+	Mon, 28 Apr 2014 11:15:50 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -15,105 +15,296 @@ To: Tony Lindgren <tony@atomide.com>,
 CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <nm@ti.com>
-Subject: [PATCH V3 00/20] bus: omap_l3_noc: driver cleanups and support for DRA7/AM4372 
-Date: Mon, 28 Apr 2014 10:14:40 -0500
-Message-ID: <1398698101-25513-1-git-send-email-nm@ti.com>
+Subject: [PATCH V3 14/20] bus: omap_l3_noc: improve readability by using helper for slave event parsing
+Date: Mon, 28 Apr 2014 10:14:54 -0500
+Message-ID: <1398698101-25513-15-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
 References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following V3 of the series is based on v3.15-rc1 + peter's patch series:
-	patch #1: https://patchwork.kernel.org/patch/3923141/
-	(drivers: bus: omap_l3: Convert to use devm_kzalloc)
+Current interrupt handler does the first level parse to identify the
+slave and then handles the slave even identification, reporting and
+clearing of event as well. It is hence logical to split the handler
+into two where the primary handler just parses the flagmux till it
+identifies a slave and the slave handling, reporting and clearing is
+done in a helper function.
 
-	patch #2: https://patchwork.kernel.org/patch/3923061/
-	(drivers: bus: omap_l3: Convert to use devm_ioremap_resource() )
+While at it update the documentation in kerneldoc style.
 
-	patch #3: https://patchwork.kernel.org/patch/3923101/
-	(drivers: bus: omap_l3: Convert to use devm_request_irq())
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+---
+V3: no change
+ drivers/bus/omap_l3_noc.c |  211 ++++++++++++++++++++++++---------------------
+ 1 file changed, 113 insertions(+), 98 deletions(-)
 
-	patch #4: https://patchwork.kernel.org/patch/3923081/
-	(drivers: bus: omap_l3: Remove the platform driver's remove function)
-
-	patch #5: https://patchwork.kernel.org/patch/3923121/
-	(drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request
-	fails)
-
-V1 was originally posted here: http://marc.info/?l=linux-omap&m=139749383932575&w=2
-V2 was originally posted here: http://marc.info/?l=linux-kernel&m=139776814925544&w=2
-
-V3: has the following changes (w.r.t v2):
-	- fixed relaxed commit message and usage.
-	- AM437x internal documents showed that:
-		- new master information updated into the data
-		- masterid register definition is different from OMAP4-DRA7 - some
-		  additional parsing is done in hardware to "avoid s/w parsing"
-	- Additional testing information showed logic fail for masking "unclearable"
-		new patch added to series - patch #15
-	- Picked up previous acks and tested by - minor changes verified
-
-This series cleansup omap_l3_noc driver and adds data to support DRA7
-and AM437x SoCs.
-
-Patches(including Peter's) is available here:(based on v3.15-rc1):
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes-v3
-
-DTS patches (once this series is integrated and related DRA7 memory map fixes are done):
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/dts-fixes
-	(posted here: http://marc.info/?l=linux-omap&m=139750288003978&w=2)
-		- no change in dts.
-
-Testing branch: everything integrated:
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/testing-v3
-
-Test log (omap2plus_defconfig + CONFIG_CRYPTO_DEV_OMAP_DES=y):
-	am43xx-epos: http://slexy.org/raw/s28LkG186D
-	dra7xx-evm: http://slexy.org/raw/s2UV0v7fwn
-	pandaboard-es: http://slexy.org/raw/s213lc55PY
-	pandaboard-vanilla: http://slexy.org/raw/s20AvyGNrA
-	   sdp4430: http://slexy.org/raw/s2E0exblmN
-	OMAP5432uEVM: http://slexy.org/raw/s20TRRtKzf
-
-Afzal Mohammed (2):
-  bus: omap_l3_noc: ignore masked out unclearable targets
-  bus: omap_l3_noc: Add AM4372 interconnect error data
-
-Nishanth Menon (14):
-  bus: omap_l3_noc: Fix copyright information
-  bus: omap_l3_noc: remove iclk from omap_l3 struct
-  bus: omap_l3_noc: populate l3->dev and use it
-  bus: omap_l3_noc: switch over to relaxed variants of readl/writel
-  bus: omap_l3_noc: un-obfuscate l3_targ address computation
-  bus: omap_l3_noc: move L3 master data structure out
-  bus: omap_l3_noc: convert target information into a structure
-  bus: omap_l3_noc: convert flagmux information into a structure
-  bus: omap_l3_noc: fix masterid detection
-  bus: omap_l3_noc: make error reporting and handling common
-  bus: omap_l3_noc: improve readability by using helper for slave event
-    parsing
-  bus: omap_l3_noc: add information about the type of operation
-  bus: omap_l3_noc: Add information about the context of operation
-  bus: omap_l3_noc: introduce concept of submodule
-
-Rajendra Nayak (2):
-  bus: omap_l3_noc: Add support for discountinous flag mux input
-    numbers
-  bus: omap_l3_noc: Add DRA7 interconnect error data
-
-Sricharan R (2):
-  bus: omap_l3_noc: rename functions and data to omap_l3
-  bus: omap_l3_noc: use of_match_data to pick up SoC information
-
- .../devicetree/bindings/arm/omap/l3-noc.txt        |    2 +
- drivers/bus/omap_l3_noc.c                          |  322 ++++++++----
- drivers/bus/omap_l3_noc.h                          |  545 +++++++++++++++-----
- 3 files changed, 642 insertions(+), 227 deletions(-)
-
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 42e4114..0691e6d 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -26,14 +26,20 @@
+ 
+ #include "omap_l3_noc.h"
+ 
+-/*
+- * Interrupt Handler for L3 error detection.
+- *	1) Identify the L3 clockdomain partition to which the error belongs to.
+- *	2) Identify the slave where the error information is logged
+- *	3) Print the logged information.
+- *	4) Add dump stack to provide kernel trace.
++/**
++ * l3_handle_target() - Handle Target specific parse and reporting
++ * @l3:		pointer to l3 struct
++ * @base:	base address of clkdm
++ * @flag_mux:	flagmux corresponding to the event
++ * @err_src:	error source index of the slave (target)
+  *
+- * Two Types of errors :
++ * This does the second part of the error interrupt handling:
++ *	3) Parse in the slave information
++ *	4) Print the logged information.
++ *	5) Add dump stack to provide kernel trace.
++ *	6) Clear the source if known.
++ *
++ * This handles two types of errors:
+  *	1) Custom errors in L3 :
+  *		Target like DMM/FW/EMIF generates SRESP=ERR error
+  *	2) Standard L3 error:
+@@ -49,22 +55,107 @@
+  *	can be trapped as well. But the trapping is implemented as part
+  *	secure software and hence need not be implemented here.
+  */
+-static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
++static int l3_handle_target(struct omap_l3 *l3, void __iomem *base,
++			    struct l3_flagmux_data *flag_mux, int err_src)
+ {
+-
+-	struct omap_l3 *l3 = _l3;
+-	int inttype, i, k;
+-	int err_src = 0;
+-	u32 std_err_main, err_reg, clear, masterid;
+-	void __iomem *base, *l3_targ_base;
++	int k;
++	u32 std_err_main, clear, masterid;
++	void __iomem *l3_targ_base;
+ 	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+-	char *target_name, *master_name = "UN IDENTIFIED";
+ 	struct l3_target_data *l3_targ_inst;
+-	struct l3_flagmux_data *flag_mux;
+ 	struct l3_masters_data *master;
++	char *target_name, *master_name = "UN IDENTIFIED";
+ 	char *err_description;
+ 	char err_string[30] = { 0 };
+ 
++	/* We DONOT expect err_src to go out of bounds */
++	BUG_ON(err_src > MAX_CLKDM_TARGETS);
++
++	if (err_src < flag_mux->num_targ_data) {
++		l3_targ_inst = &flag_mux->l3_targ[err_src];
++		target_name = l3_targ_inst->name;
++		l3_targ_base = base + l3_targ_inst->offset;
++	} else {
++		target_name = L3_TARGET_NOT_SUPPORTED;
++	}
++
++	if (target_name == L3_TARGET_NOT_SUPPORTED)
++		return -ENODEV;
++
++	/* Read the stderrlog_main_source from clk domain */
++	l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
++	l3_targ_slvofslsb = l3_targ_base + L3_TARG_STDERRLOG_SLVOFSLSB;
++
++	std_err_main = readl_relaxed(l3_targ_stderr);
++
++	switch (std_err_main & CUSTOM_ERROR) {
++	case STANDARD_ERROR:
++		err_description = "Standard";
++		snprintf(err_string, sizeof(err_string),
++			 ": At Address: 0x%08X ",
++			 readl_relaxed(l3_targ_slvofslsb));
++
++		l3_targ_mstaddr = l3_targ_base + L3_TARG_STDERRLOG_MSTADDR;
++		break;
++
++	case CUSTOM_ERROR:
++		err_description = "Custom";
++
++		l3_targ_mstaddr = l3_targ_base +
++				  L3_TARG_STDERRLOG_CINFO_MSTADDR;
++		break;
++
++	default:
++		/* Nothing to be handled here as of now */
++		return 0;
++	}
++
++	/* STDERRLOG_MSTADDR Stores the NTTP master address. */
++	masterid = (readl_relaxed(l3_targ_mstaddr) &
++		    l3->mst_addr_mask) >> __ffs(l3->mst_addr_mask);
++
++	for (k = 0, master = l3->l3_masters; k < l3->num_masters;
++	     k++, master++) {
++		if (masterid == master->id) {
++			master_name = master->name;
++			break;
++		}
++	}
++
++	WARN(true,
++	     "%s:L3 %s Error: MASTER %s TARGET %s%s\n",
++	     dev_name(l3->dev),
++	     err_description,
++	     master_name, target_name,
++	     err_string);
++
++	/* clear the std error log*/
++	clear = std_err_main | CLEAR_STDERR_LOG;
++	writel_relaxed(clear, l3_targ_stderr);
++
++	return 0;
++}
++
++/**
++ * l3_interrupt_handler() - interrupt handler for l3 events
++ * @irq:	irq number
++ * @_l3:	pointer to l3 structure
++ *
++ * Interrupt Handler for L3 error detection.
++ *	1) Identify the L3 clockdomain partition to which the error belongs to.
++ *	2) Identify the slave where the error information is logged
++ *	... handle the slave event..
++ *	7) if the slave is unknown, mask out the slave.
++ */
++static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
++{
++	struct omap_l3 *l3 = _l3;
++	int inttype, i, ret;
++	int err_src = 0;
++	u32 err_reg, mask_val;
++	void __iomem *base, *mask_reg;
++	struct l3_flagmux_data *flag_mux;
++
+ 	/* Get the Type of interrupt */
+ 	inttype = irq == l3->app_irq ? L3_APPLICATION_ERROR : L3_DEBUG_ERROR;
+ 
+@@ -80,35 +171,18 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 
+ 		/* Get the corresponding error and analyse */
+ 		if (err_reg) {
+-			bool std_err = true;
+-
+ 			/* Identify the source from control status register */
+ 			err_src = __ffs(err_reg);
+ 
+-			/* We DONOT expect err_src to go out of bounds */
+-			BUG_ON(err_src > MAX_CLKDM_TARGETS);
+-
+-			if (err_src < flag_mux->num_targ_data) {
+-				l3_targ_inst = &flag_mux->l3_targ[err_src];
+-				target_name = l3_targ_inst->name;
+-				l3_targ_base = base + l3_targ_inst->offset;
+-			} else {
+-				target_name = L3_TARGET_NOT_SUPPORTED;
+-			}
++			ret = l3_handle_target(l3, base, flag_mux, err_src);
+ 
+ 			/*
+-			 * If we do not know of a register offset to decode
+-			 * and clear, then mask.
++			 * Certain plaforms may have "undocumented" status
++			 * pending on boot. So dont generate a severe warning
++			 * here. Just mask it off to prevent the error from
++			 * reoccuring and locking up the system.
+ 			 */
+-			if (target_name == L3_TARGET_NOT_SUPPORTED) {
+-				u32 mask_val;
+-				void __iomem *mask_reg;
+-
+-				/*
+-				 * Certain plaforms may have "undocumented"
+-				 * status pending on boot.. So dont generate
+-				 * a severe warning here.
+-				 */
++			if (ret) {
+ 				dev_err(l3->dev,
+ 					"L3 %s error: target %d mod:%d %s\n",
+ 					inttype ? "debug" : "application",
+@@ -119,67 +193,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 				mask_val = readl_relaxed(mask_reg);
+ 				mask_val &= ~(1 << err_src);
+ 				writel_relaxed(mask_val, mask_reg);
+-
+-				break;
+ 			}
+ 
+-			/* Read the stderrlog_main_source from clk domain */
+-			l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
+-			l3_targ_slvofslsb = l3_targ_base +
+-					    L3_TARG_STDERRLOG_SLVOFSLSB;
+-
+-			std_err_main = readl_relaxed(l3_targ_stderr);
+-
+-			switch (std_err_main & CUSTOM_ERROR) {
+-			case STANDARD_ERROR:
+-				err_description = "Standard";
+-				snprintf(err_string, sizeof(err_string),
+-					 ": At Address: 0x%08X ",
+-					 readl_relaxed(l3_targ_slvofslsb));
+-
+-				l3_targ_mstaddr = l3_targ_base +
+-						L3_TARG_STDERRLOG_MSTADDR;
+-				break;
+-
+-			case CUSTOM_ERROR:
+-				err_description = "Custom";
+-
+-				l3_targ_mstaddr = l3_targ_base +
+-						L3_TARG_STDERRLOG_CINFO_MSTADDR;
+-				break;
+-
+-			default:
+-				std_err = false;
+-				/* Nothing to be handled here as of now */
+-				break;
+-			}
+-
+-			if (!std_err)
+-				break;
+-
+-			/* STDERRLOG_MSTADDR Stores the NTTP master address. */
+-			masterid = (readl_relaxed(l3_targ_mstaddr) &
+-				    l3->mst_addr_mask) >>
+-					__ffs(l3->mst_addr_mask);
+-
+-			for (k = 0, master = l3->l3_masters;
+-			     k < l3->num_masters; k++, master++) {
+-				if (masterid == master->id) {
+-					master_name = master->name;
+-					break;
+-				}
+-			}
+-
+-			WARN(true,
+-			     "%s:L3 %s Error: MASTER %s TARGET %s%s\n",
+-			     dev_name(l3->dev),
+-			     err_description,
+-			     master_name, target_name,
+-			     err_string);
+-			/* clear the std error log*/
+-			clear = std_err_main | CLEAR_STDERR_LOG;
+-			writel_relaxed(clear, l3_targ_stderr);
+-
+ 			/* Error found so break the for loop */
+ 			break;
+ 		}
 -- 
 1.7.9.5
 
