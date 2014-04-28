@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaD1TTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:19:07 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40176 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755913AbaD1TTE (ORCPT
+	id S1755980AbaD1TSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:18:52 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55204 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913AbaD1TSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:19:04 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH] rcutorture: don't mark torture_init_{begin,end} with __init
-Date: Mon, 28 Apr 2014 20:03:35 +0100
-Message-Id: <1398711815-22153-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.9.2
+	Mon, 28 Apr 2014 15:18:49 -0400
+Message-ID: <535EA250.5060700@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 00:17:44 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Meelis Roos <mroos@linux.ee>
+CC: rjw@rjwysocki.net, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Cpufreq frequency serialization fixes
+References: <20140425081728.10258.63980.stgit@srivatsabhat.in.ibm.com> <alpine.SOC.1.00.1404252028410.11626@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1404252028410.11626@math.ut.ee>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042818-1618-0000-0000-00000026801A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the time rcutorture is initialised via its module_init callback, the
-.init.text section of torture.ko has already been freed, so the calls to
-torture_init{begin,end} end up branching to junk.
+On 04/25/2014 10:59 PM, Meelis Roos wrote:
+>> Meelis Roos reported hangs during boot in the longhaul cpufreq driver, after
+>> commit 12478cf0c55 (cpufreq: Make sure frequency transitions are serialized).
+>> The root-cause of this issue is the extra invocation of the
+>> cpufreq_freq_transition_begin() and cpufreq_freq_transition_end() APIs in the
+>> longhaul driver. I found similar issues in the powernow-k6 and powernow-k7
+>> drivers as well. This patchset fixes the issue in all the 3 drivers.
+>>
+>>  Srivatsa S. Bhat (3):
+>>       cpufreq, powernow-k7: Fix double invocation of cpufreq_freq_transition_begin/end
+>>       cpufreq, powernow-k6: Fix double invocation of cpufreq_freq_transition_begin/end
+>>       cpufreq, longhaul: Fix double invocation of cpufreq_freq_transition_begin/end
+> 
+> This set fixes it for me on VIA EPIA with longhaul.
+> 
 
-This patch removes the __init annotations from torture_init_{begin,end}
-to make sure the code is there when we want to call it.
+Thanks a lot for testing this Meelis! I'll send out the v2
+soon.
 
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
-
-Just lost a day to this -- I was sure my static relocation handling must
-be to blame!
-
- kernel/torture.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/torture.c b/kernel/torture.c
-index acc9afc2f26e..d5ef30ce6eb5 100644
---- a/kernel/torture.c
-+++ b/kernel/torture.c
-@@ -596,7 +596,7 @@ static void torture_stutter_cleanup(void)
-  * The runnable parameter points to a flag that controls whether or not
-  * the test is currently runnable.  If there is no such flag, pass in NULL.
-  */
--void __init torture_init_begin(char *ttype, bool v, int *runnable)
-+void torture_init_begin(char *ttype, bool v, int *runnable)
- {
- 	mutex_lock(&fullstop_mutex);
- 	torture_type = ttype;
-@@ -610,7 +610,7 @@ EXPORT_SYMBOL_GPL(torture_init_begin);
- /*
-  * Tell the torture module that initialization is complete.
-  */
--void __init torture_init_end(void)
-+void torture_init_end(void)
- {
- 	mutex_unlock(&fullstop_mutex);
- 	register_reboot_notifier(&torture_shutdown_nb);
--- 
-1.9.2
+Regards,
+Srivatsa S. Bhat
 
