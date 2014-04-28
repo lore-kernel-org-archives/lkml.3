@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaD1Bc6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42942 "EHLO
+	id S1755438AbaD1Bc5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42876 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752608AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752501AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wengang Wang" <wen.gang.wang@oracle.com>,
-        "Joel Becker" <jlbec@evilplan.org>, "Mark Fasheh" <mfasheh@suse.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Srinivas Eeda" <srinivas.eeda@oracle.com>,
-        "Junxiao Bi" <junxiao.bi@oracle.com>
+CC: akpm@linux-foundation.org, "Zach Brown" <zab@redhat.com>,
+        "Chris Mason" <clm@fb.com>, "Josef Bacik" <jbacik@fb.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.698747859@decadent.org.uk>
+Message-ID: <lsq.1398647482.779918325@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 77/94] ocfs2: dlm: fix recovery hung
+Subject: [PATCH 3.2 58/94] Btrfs: fix deadlock with nested trans handles
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,101 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
+commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
 
-There is a race window in dlm_do_recovery() between dlm_remaster_locks()
-and dlm_reset_recovery() when the recovery master nearly finish the
-recovery process for a dead node.  After the master sends FINALIZE_RECO
-message in dlm_remaster_locks(), another node may become the recovery
-master for another dead node, and then send the BEGIN_RECO message to
-all the nodes included the old master, in the handler of this message
-dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
-dlm->reco.new_master will be set to the second dead node and the new
-master, then in dlm_reset_recovery(), these two variables will be reset
-to default value.  This will cause new recovery master can not finish
-the recovery process and hung, at last the whole cluster will hung for
-recovery.
+Zach found this deadlock that would happen like this
 
-old recovery master:                                 new recovery master:
-dlm_remaster_locks()
-                                                  become recovery master for
-                                                  another dead node.
-                                                  dlm_send_begin_reco_message()
-dlm_begin_reco_handler()
-{
- if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
-  return -EAGAIN;
- }
- dlm_set_reco_master(dlm, br->node_idx);
- dlm_set_reco_dead_node(dlm, br->dead_node);
-}
-dlm_reset_recovery()
-{
- dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
- dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
-}
-                                                  will hang in dlm_remaster_locks() for
-                                                  request dlm locks info
+btrfs_end_transaction <- reduce trans->use_count to 0
+  btrfs_run_delayed_refs
+    btrfs_cow_block
+      find_free_extent
+	btrfs_start_transaction <- increase trans->use_count to 1
+          allocate chunk
+	btrfs_end_transaction <- decrease trans->use_count to 0
+	  btrfs_run_delayed_refs
+	    lock tree block we are cowing above ^^
 
-Before send FINALIZE_RECO message, recovery master should set
-DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
-this can break the race windows as the BEGIN_RECO messages will not be
-handled before DLM_RECO_STATE_FINALIZE flag is cleared.
+We need to only decrease trans->use_count if it is above 1, otherwise leave it
+alone.  This will make nested trans be the only ones who decrease their added
+ref, and will let us get rid of the trans->use_count++ hack if we have to commit
+the transaction.  Thanks,
 
-A similar race may happen between new recovery master and normal node
-which is in dlm_finalize_reco_handler(), also fix it.
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Tested-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ fs/btrfs/transaction.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -540,7 +540,10 @@ master_here:
- 		/* success!  see if any other nodes need recovery */
- 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
- 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
--		dlm_reset_recovery(dlm);
-+		spin_lock(&dlm->spinlock);
-+		__dlm_reset_recovery(dlm);
-+		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+		spin_unlock(&dlm->spinlock);
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -460,7 +460,8 @@ static int __btrfs_end_transaction(struc
+ 	struct btrfs_fs_info *info = root->fs_info;
+ 	int count = 0;
+ 
+-	if (--trans->use_count) {
++	if (trans->use_count > 1) {
++		trans->use_count--;
+ 		trans->block_rsv = trans->orig_rsv;
+ 		return 0;
  	}
- 	dlm_end_recovery(dlm);
+@@ -494,17 +495,10 @@ static int __btrfs_end_transaction(struc
+ 	}
  
-@@ -698,6 +701,14 @@ static int dlm_remaster_locks(struct dlm
- 		if (all_nodes_done) {
- 			int ret;
+ 	if (lock && cur_trans->blocked && !cur_trans->in_commit) {
+-		if (throttle) {
+-			/*
+-			 * We may race with somebody else here so end up having
+-			 * to call end_transaction on ourselves again, so inc
+-			 * our use_count.
+-			 */
+-			trans->use_count++;
++		if (throttle)
+ 			return btrfs_commit_transaction(trans, root);
+-		} else {
++		else
+ 			wake_up_process(info->transaction_kthread);
+-		}
+ 	}
  
-+			/* Set this flag on recovery master to avoid
-+			 * a new recovery for another dead node start
-+			 * before the recovery is not done. That may
-+			 * cause recovery hung.*/
-+			spin_lock(&dlm->spinlock);
-+			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
-+			spin_unlock(&dlm->spinlock);
-+
- 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
- 	 		 * just send a finalize message to everyone and
- 	 		 * clean up */
-@@ -2872,8 +2883,8 @@ int dlm_finalize_reco_handler(struct o2n
- 				BUG();
- 			}
- 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+			__dlm_reset_recovery(dlm);
- 			spin_unlock(&dlm->spinlock);
--			dlm_reset_recovery(dlm);
- 			dlm_kick_recovery_thread(dlm);
- 			break;
- 		default:
+ 	WARN_ON(cur_trans != info->running_transaction);
 
