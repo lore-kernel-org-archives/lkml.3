@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaD1MQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:16:56 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24394 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874AbaD1MQz (ORCPT
+	id S1755676AbaD1MRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:17:15 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:34067 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755495AbaD1MRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:16:55 -0400
-Date: Mon, 28 Apr 2014 15:16:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: micky <micky_ching@realsil.com.cn>
-Cc: chris@printf.net, sameo@linux.intel.com, gregkh@linuxfoundation.org,
-        ulf.hansson@linaro.org, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2 1/2] mmc: rtsx: add R1-no-CRC mmc command type handle
-Message-ID: <20140428121627.GL4963@mwanda>
-References: <cover.1395824147.git.micky_ching@realsil.com.cn>
- <afbc1328fb8a89fda3da23f1e9c755311450e1f6.1395824147.git.micky_ching@realsil.com.cn>
- <535E3BEC.9040100@realsil.com.cn>
+	Mon, 28 Apr 2014 08:17:11 -0400
+Date: Mon, 28 Apr 2014 13:17:04 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, t.figa@samsung.com, chow.kim@samsung.com,
+        yg1004.jang@samsung.com, vikas.sajjan@samsung.com,
+        b.zolnierkie@samsung.com, Sangbeom Kim <sbkim73@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RESUBMIT RFC PATCH v2 2/3] ARM: EXYNOS: Move pmu specific
+ header files under "linux/mfd/samsung"
+Message-ID: <20140428121704.GD21279@lee--X1>
+References: <1398687607-4554-1-git-send-email-pankaj.dubey@samsung.com>
+ <1398687607-4554-3-git-send-email-pankaj.dubey@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <535E3BEC.9040100@realsil.com.cn>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398687607-4554-3-git-send-email-pankaj.dubey@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 07:30:52PM +0800, micky wrote:
-> Hi Chris and Ulf,
+> Moving Exynos PMU specific header file into "include/linux/mfd/samsung"
+> thus updated affected files under "mach-exynos" to use new location of
+> these header files.
 > 
-> This patch should be applied to 3.15(rc), 3.14, 3.13.
-> without this patch the MMC card can not identified.
-> 
+> CC: Sangbeom Kim <sbkim73@samsung.com>
+> CC: Samuel Ortiz <sameo@linux.intel.com>
+> CC: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/mach-exynos/cpuidle.c                                    |    4 ++--
+>  arch/arm/mach-exynos/exynos.c                                     |    2 +-
+>  arch/arm/mach-exynos/hotplug.c                                    |    2 +-
+>  arch/arm/mach-exynos/platsmp.c                                    |    2 +-
+>  arch/arm/mach-exynos/pm.c                                         |    4 ++--
+>  arch/arm/mach-exynos/pmu.c                                        |    5 ++---
+>  {arch/arm/mach-exynos => include/linux/mfd/samsung}/exynos-pmu.h  |    0
+>  .../regs-pmu.h => include/linux/mfd/samsung/exynos-regs-pmu.h     |    0
+>  8 files changed, 9 insertions(+), 10 deletions(-)
+>  rename {arch/arm/mach-exynos => include/linux/mfd/samsung}/exynos-pmu.h (100%)
+>  rename arch/arm/mach-exynos/regs-pmu.h => include/linux/mfd/samsung/exynos-regs-pmu.h (100%)
 
-Top posting is annoying.
+Patch looks okay to me.
 
-If Chris and Ulf don't mind then you could actually deal with this by
-yourself.  Read Documentation/stable_kernel_rules.txt
+With an Exynos Ack I'd like to take it through the MFD tree.
 
-regards,
-dan carpenter
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
