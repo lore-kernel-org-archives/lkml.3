@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbaD1Bco (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42927 "EHLO
+	id S1755314AbaD1Bcn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42970 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752577AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752661AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
-        "Lee Jones" <lee.jones@linaro.org>
+CC: akpm@linux-foundation.org, "Huang Rui" <ray.huang@amd.com>,
+        "Felipe Balbi" <balbi@ti.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.423127291@decadent.org.uk>
+Message-ID: <lsq.1398647482.394483812@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 53/94] mfd: max8998: Fix possible NULL pointer
- dereference on i2c_new_dummy error
+Subject: [PATCH 3.2 32/94] usb: dwc3: fix wrong bit mask in dwc3_event_devt
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,37 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
+commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
 
-During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
+Around DWC USB3 2.30a release another bit has been added to the
+Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
+Because of that, what used to be 8 bits long, has become 9 bits long.
 
-If i2c_new_dummy() fails for RTC device, fail also the probe for
-main MFD driver.
+Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
+Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
+not 8 bits. And the following reserved field uses [31:25] bits not
+[31:24] bits, and it has 7 bits.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+So in dwc3_event_devt, the bit mask should be:
+event_info	[24:16]		9 bits
+reserved31_25	[31:25]		7 bits
+
+This patch makes sure that newer core releases will work fine with
+Linux and that we will decode the event information properly on new
+core releases.
+
+[ balbi@ti.com : improve commit log a bit ]
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mfd/max8998.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/dwc3/core.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -152,6 +152,10 @@ static int max8998_i2c_probe(struct i2c_
- 	mutex_init(&max8998->iolock);
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -716,15 +716,15 @@ struct dwc3_event_depevt {
+  *	12	- VndrDevTstRcved
+  * @reserved15_12: Reserved, not used
+  * @event_info: Information about this event
+- * @reserved31_24: Reserved, not used
++ * @reserved31_25: Reserved, not used
+  */
+ struct dwc3_event_devt {
+ 	u32	one_bit:1;
+ 	u32	device_event:7;
+ 	u32	type:4;
+ 	u32	reserved15_12:4;
+-	u32	event_info:8;
+-	u32	reserved31_24:8;
++	u32	event_info:9;
++	u32	reserved31_25:7;
+ } __packed;
  
- 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!max8998->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max8998->rtc, max8998);
- 
- 	max8998_irq_init(max8998);
+ /**
 
