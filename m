@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873AbaD1T6r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:58:47 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:54861 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184AbaD1T6p convert rfc822-to-8bit (ORCPT
+	id S932473AbaD1UEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:04:46 -0400
+Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:22231
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752119AbaD1UEn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:58:45 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>, Zhuang Jin Can <jin.can.zhuang@intel.com>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: dwc3: debugfs: add snapshot to dump requests trbs
- events
-Thread-Topic: [PATCH] usb: dwc3: debugfs: add snapshot to dump requests trbs
- events
-Thread-Index: AQHPYvpyHrCwing+skK9OYDDStPITZsncA1w
-Date: Mon, 28 Apr 2014 19:58:43 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E03046D192103@US01WEMBX2.internal.synopsys.com>
-References: <20140428204923.GC12185@intel.com>
- <20140428155536.GE30292@saruman.home>
-In-Reply-To: <20140428155536.GE30292@saruman.home>
+	Mon, 28 Apr 2014 16:04:43 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: RE: [PATCH V1 net-next 1/1] hyperv: Properly handle checksum offload
+Thread-Topic: [PATCH V1 net-next 1/1] hyperv: Properly handle checksum
+ offload
+Thread-Index: AQHPYPuaDU0Q/0xe0UqEf9595APZYJsnS0KAgAAH/nA=
+Date: Mon, 28 Apr 2014 18:31:56 +0000
+Message-ID: <6a4748198dba455588493c4e95845330@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1398484523-27596-1-git-send-email-kys@microsoft.com>
+ <20140428.132347.778081265367223580.davem@davemloft.net>
+In-Reply-To: <20140428.132347.778081265367223580.davem@davemloft.net>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
+x-originating-ip: [50.135.110.52]
+x-forefront-prvs: 01952C6E96
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(13464003)(51704005)(199002)(189002)(377454003)(76576001)(92566001)(99396002)(80976001)(31966008)(101416001)(19580405001)(86612001)(4396001)(83322001)(74316001)(76482001)(99286001)(80022001)(74502001)(86362001)(74662001)(79102001)(20776003)(46102001)(77096999)(87936001)(81342001)(50986999)(2656002)(33646001)(77982001)(66066001)(19580395003)(76176999)(54356999)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:FEDDCE3E.9CAA9E2A.79F061A7.E5FBA9.2027B;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Felipe Balbi
-> Sent: Monday, April 28, 2014 8:56 AM
+
+
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, April 28, 2014 10:24 AM
+> To: KY Srinivasan
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; stable@kernel.org
+> Subject: Re: [PATCH V1 net-next 1/1] hyperv: Properly handle checksum
+> offload
 > 
-> On Mon, Apr 28, 2014 at 04:49:23PM -0400, Zhuang Jin Can wrote:
-> > Adds a debugfs file "snapshot" to dump dwc3 requests, trbs and events.
-
-< snip > 
-
-> > +	for (i = 0; i < evt->length; i += 4) {
-> > +		event.raw = *(u32 *) (evt->buf + i);
-> > +		if (i == evt->lpos) {
-> > +			seq_puts(s, "lpos-------|\n");
-> > +			seq_puts(s, "           \\\n");
-> > +		}
-> > +		seq_printf(s, "event[%d]: %08x ", i, event.raw);
+> From: "K. Y. Srinivasan" <kys@microsoft.com>
+> Date: Fri, 25 Apr 2014 20:55:23 -0700
+> 
+> > @@ -467,6 +467,9 @@ static int netvsc_start_xmit(struct sk_buff *skb,
+> struct net_device *net)
+> >  	if (skb_is_gso(skb))
+> >  		goto do_lso;
+> >
+> > +	if (skb->ip_summed != CHECKSUM_PARTIAL)
+> > +		goto do_send;
 > > +
-> > +		if (event.type.is_devspec)
-> > +			dwc3_dump_dev_event(s, &event.devt);
-> > +		else
-> > +			dwc3_dump_ep_event(s, &event.depevt);
-> > +		seq_puts(s, "\n");
-> > +	}
 > 
-> how well have you tested this ? I'm not entirely sure you should be
-> reading the event buffer at any time you want, though I might be wrong.
+> There are many possible values of ip_summed, why would you go to
+> do_send if for example it was set to CHECKSUM_COMPLETE?
+> 
+> I think you are just rushing this change, take your time and implement the fix
+> properly.
+> 
+> For example, if you only expect two possible values here
+> (CHECKSUM_PARTIAL and something else), design your test so that it only
+> allows those two values and therefore you'll be documenting this invariant.
 
-Just FYI, it is fine to read from the event buffer memory at any time.
-But of course, if you happen to read from a location at the same time
-the core is writing to it, you may read either the old value or the new,
-depending on the timing. So the results might not be 100% reliable.
+David,
 
--- 
-Paul
+I based this check on the check I see in tcp_v4_send_check() (and tcp_v6_send_check).
+Looking at the code some more, it looks like if ip_summed is set to  CHECKSUM_NONE, the
+software has computed the checksum and we can bypass the code for offloading the checksum.
 
+Regards,
+
+K. Y
