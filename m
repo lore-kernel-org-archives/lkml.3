@@ -1,169 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaD1NBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:01:46 -0400
-Received: from mail.aswsp.com ([193.34.35.150]:42377 "EHLO mail.aswsp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400AbaD1NBo convert rfc822-to-8bit (ORCPT
+	id S1755903AbaD1NCG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:02:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43284 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851AbaD1NCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:01:44 -0400
-Date: Mon, 28 Apr 2014 15:01:39 +0200
-From: Matthieu CASTET <matthieu.castet@parrot.com>
-To: <linux-scsi@vger.kernel.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: Buffer I/O error after s2ram with usb storage
-Message-ID: <20140428150139.0e10dfd9@parrot.com>
-In-Reply-To: <20140422160115.46d8d2bf@parrot.com>
-References: <20140422160115.46d8d2bf@parrot.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	Mon, 28 Apr 2014 09:02:03 -0400
+Message-ID: <535E4FDC.70306@ti.com>
+Date: Mon, 28 Apr 2014 18:25:56 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [46.218.109.88]
+To: Richard Cochran <richardcochran@gmail.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
+        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
+        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
+        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
+        <mugunthanvnm@ti.com>, <t-kristo@ti.com>, <mturquette@linaro.org>,
+        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH 5/6] ARM: AM43xx: clk: Change the cpts ref clock source
+ to dpll_core_m5 clk
+References: <1398658225-25873-1-git-send-email-george.cherian@ti.com> <1398658225-25873-6-git-send-email-george.cherian@ti.com> <20140428071034.GB4380@netboy>
+In-Reply-To: <20140428071034.GB4380@netboy>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 4/28/2014 12:40 PM, Richard Cochran wrote:
+> On Mon, Apr 28, 2014 at 09:40:24AM +0530, George Cherian wrote:
+>> cpsw_cpts_rft_clk has got the choice of 3 clocksources
+>>   -dpll_core_m4_ck
+>>   -dpll_core_m5_ck
+>>   -dpll_disp_m2_ck
+>>
+>> By default dpll_core_m4_ck is selected, witn this as clock
+>> source the CPTS doesnot work properly. It gives clockcheck errors
+>> while running PTP.
+>>
+>>   clockcheck: clock jumped backward or running slower than expected!
+> It is strange that I have never seen this error, since I have often
+> tested linuxptp on a beagle bone white.
+In beagle bone white (AM335x)  CPTS has a choice of 2 clocksource
+-dpll_core_m5_ck
+-dpll_core_m4_ck
+and by default  dpll_core_m5_ck is used. Where as in AM437x the default 
+clocksource used is dpll_core_m4_ck .
 
-any news on this.
+You can change the clocksource in beagle bone white by writing  1 to 
+0x44e00520 (By default its 0).
+>
+> Can you please explain why this clock doesn't work correctly?
+>
+>> By selecting dpll_core_m5_ck as the clocksource fixes this issue.
+>> In AM335x dpll_core_m5_ck is the default clocksource.
+> The choice of clock source in the CPTS driver originally came from
+> TI. It would be nice to know why that was the wrong choice.
+>
+> Thanks,
+> Richard
 
-Matthieu CASTET
 
-Le Tue, 22 Apr 2014 16:01:15 +0200,
-Matthieu CASTET <matthieu.castet@parrot.com> a écrit :
-
-> Hi,
-> 
-> while playing with suspend to ram I found a strange behavior with usb
-> key.
-> 
-> This can be easily reproduced by doing :
-> - plug a usb key
-> - start to read the usb key : "cat /dev/sdx > /dev/null"
-> - go to suspend : "echo mem > /sys/power/state"
-> - while in suspend, unplug and replug the usb key (simulate usb power
-> loss for computer that keep power)
-> - exit suspend
-> - there is read error on the usb key
-> 
-> 
-> Because the power was cut during s2ram, the usb stack reset the device
-> <1>.
-> When new data transfer are done, we got a UNIT_ATTENTION from the
-> device <2> and IO error are returned to user space application.
-> 
-> After some investigation it seems some (all on the 3 I tested) usb key
-> report as removable, and scsi layer abort the transfer in case of
-> UNIT_ATTENTION <3>.
-> 
-> The usb storage driver call scsi_report_bus_reset after device reset,
-> but because of commit dfcf7775 <4>, we don't ignore unit attention if
-> "sshdr.asc == 0x28 && sshdr.ascq == 0x00" ("Not-ready to ready").
-> 
-> If dfcf7775 is reverted there is no more Buffer I/O error.
-> 
-> Is that possible to find a way to restore the behavior before dfcf7775
-> commit (no Buffer I/O error after device reset) after a suspend to ram ?
-> 
-> 
-> Matthieu CASTET
-> 
-> PS : the same error happen if sg_reset -b /dev/sdx is used on the
-> device.
-> 
-> 
-> <1>
-> [  117.070255] usb 2-1.4: reset high-speed USB device number 3 using
-> ehci-pci [...]
-> [  117.543922] Restarting tasks ... done.
-> [  117.548390] video LNXVIDEO:01: Restoring backlight state
-> <2>
-> [  117.549179] sd 6:0:0:0: [sdb] Media Changed
-> [  117.549184] sd 6:0:0:0: [sdb]  
-> [  117.549187] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-> [  117.549189] sd 6:0:0:0: [sdb]  
-> [  117.549191] Sense Key : Unit Attention [current] 
-> [  117.549195] Info fld=0x0
-> [  117.549197] sd 6:0:0:0: [sdb]  
-> [  117.549201] Add. Sense: Not ready to ready change, medium may have
-> changed [  117.549203] sd 6:0:0:0: [sdb] CDB: 
-> [  117.549205] Read(10): 28 00 00 02 c9 00 00 00 f0 00
-> [  117.549212] end_request: I/O error, dev sdb, sector 182528
-> [  117.549218] Buffer I/O error on device sdb1, logical block 22560
-> [  117.549225] Buffer I/O error on device sdb1, logical block 22561
-> [  117.549228] Buffer I/O error on device sdb1, logical block 22562
-> [  117.549231] Buffer I/O error on device sdb1, logical block 22563
-> [  117.549233] Buffer I/O error on device sdb1, logical block 22564
-> [  117.549235] Buffer I/O error on device sdb1, logical block 22565
-> [  117.549238] Buffer I/O error on device sdb1, logical block 22566
-> [  117.549240] Buffer I/O error on device sdb1, logical block 22567
-> [  117.549243] Buffer I/O error on device sdb1, logical block 22568
-> [  117.549245] Buffer I/O error on device sdb1, logical block 22569
-> [  117.809462] sd 6:0:0:0: [sdb] No Caching mode page found
-> [  117.809470] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> [  117.812696] sd 6:0:0:0: [sdb] No Caching mode page found
-> [  117.812703] sd 6:0:0:0: [sdb] Assuming drive cache: write through
-> [  117.813688]  sdb: sdb1
-> 
-> 
-> <3>
->         case UNIT_ATTENTION:
->             if (cmd->device->removable) {
->                 /* Detected disc change.  Set a bit
->                  * and quietly refuse further access.
->                  */
->                 cmd->device->changed = 1;
->                 description = "Media Changed";
->                 action = ACTION_FAIL;
->             } else {
->                 /* Must have been a power glitch, or a
->                  * bus reset.  Could not have been a
->                  * media change, so we just retry the
->                  * command and see what happens.
->                  */
->                 action = ACTION_RETRY;
->             }
-> 
-> <4>
-> commit dfcf7775815504d13a1d273073810058caf84b9d
-> Author: TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>
-> Date:   Thu Aug 11 20:25:20 2011 +0900
-> 
->     [SCSI] Fix out of spec CD-ROM problem with media change
->     
->     Some CD-ROMs fail to report a media change correctly.  The specific
->     one for this patch simply fails to respond to commands, then gives a
->     UNIT ATTENTION after being reset which returns ASC/ASCQ 28/00.  This
->     is out of spec behaviour, but add a check in the eat CC/UA on reset
->     path to catch this case so the CD-ROM will function somewhat properly.
->     
->     [jejb: fixed up white space and accepted without signoff]
->     Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> 
-> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> index a4b9cdb..dc6131e 100644
-> --- a/drivers/scsi/scsi_error.c
-> +++ b/drivers/scsi/scsi_error.c
-> @@ -293,8 +293,16 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
->                  * so that we can deal with it there.
->                  */
->                 if (scmd->device->expecting_cc_ua) {
-> -                       scmd->device->expecting_cc_ua = 0;
-> -                       return NEEDS_RETRY;
-> +                       /*
-> +                        * Because some device does not queue unit
-> +                        * attentions correctly, we carefully check
-> +                        * additional sense code and qualifier so as
-> +                        * not to squash media change unit attention.
-> +                        */
-> +                       if (sshdr.asc != 0x28 || sshdr.ascq != 0x00) {
-> +                               scmd->device->expecting_cc_ua = 0;
-> +                               return NEEDS_RETRY;
-> +                       }
->                 }
->                 /*
->                  * if the device is in the process of becoming ready, we
+-- 
+-George
 
