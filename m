@@ -1,90 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaD1OkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:40:17 -0400
-Received: from mail.eperm.de ([89.247.134.16]:43295 "EHLO mail.eperm.de"
+	id S1756213AbaD1Om1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:42:27 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:47367 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587AbaD1OkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:40:15 -0400
-X-AuthUser: sm@eperm.de
-From: Stephan Mueller <smueller@chronox.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org
-Subject: Re: [RFC] /dev/random for in-kernel use
-Date: Mon, 28 Apr 2014 16:39:49 +0200
-Message-ID: <4858823.gusYfQIdAn@myon.chronox.de>
-User-Agent: KMail/4.12.4 (Linux/3.13.10-200.fc20.x86_64; KDE/4.12.4; x86_64; ; )
-In-Reply-To: <20140428142350.GB4534@thunk.org>
-References: <2174751.G4Kehsg85c@myon.chronox.de> <1692538.agAioWpnT4@myon.chronox.de> <20140428142350.GB4534@thunk.org>
+	id S1751460AbaD1OmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:42:23 -0400
+Message-ID: <535E689D.7010204@ti.com>
+Date: Mon, 28 Apr 2014 20:11:33 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: =?UTF-8?B?R3VpZG8gTWFydMOtbmV6?= <guido@vanguardiasur.com.ar>,
+        LKML <linux-kernel@vger.kernel.org>, <bcousson@baylibre.com>,
+        <tony@atomide.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?B?RXplcXVpZWwgR2FyY8OtYQ==?= 
+	<ezequiel@vanguardiasur.com.ar>
+Subject: Re: [PATCH 1/4] ARM: dts: am335x-bone-common: use phandles for USB
+ and DMA refs
+References: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
+In-Reply-To: <1398693512-5355-1-git-send-email-guido@vanguardiasur.com.ar>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 28. April 2014, 10:23:50 schrieb Theodore Ts'o:
+On 4/28/2014 7:28 PM, Guido Martínez wrote:
+> Use phandles instead of unit adresses to reference usb and dma nodes.
+> This makes the DT more robust and readable.
+The series will give dtb build errors
+Error: arch/arm/boot/dts/am335x-bone-common.dtsi:186.2-15 syntax error
+FATAL ERROR: Unable to parse input tree
+Error: arch/arm/boot/dts/am335x-evmsk.dts:367.2-15 syntax error
+FATAL ERROR: Unable to parse input tree
+make[1]: *** [arch/arm/boot/dts/am335x-bone.dtb] Error 1
+make[1]: *** Waiting for unfinished jobs....
+Error: arch/arm/boot/dts/am335x-evm.dts:334.2-15 syntax error
+FATAL ERROR: Unable to parse input tree
+make[1]: *** [arch/arm/boot/dts/am335x-evmsk.dtb] Error 1
+make[1]: *** [arch/arm/boot/dts/am335x-evm.dtb] Error 1
+Error: arch/arm/boot/dts/am335x-igep0033.dtsi:204.2-15 syntax error
+FATAL ERROR: Unable to parse input tree
+make[1]: *** [arch/arm/boot/dts/am335x-base0033.dtb] Error 1
+Error: arch/arm/boot/dts/am335x-bone-common.dtsi:186.2-15 syntax error
+FATAL ERROR: Unable to parse input tree
+make[1]: *** [arch/arm/boot/dts/am335x-boneblack.dtb] Error 1
+make: *** [dtbs] Error 2
 
-Hi Theodore,
+>
+> Signed-off-by: Guido Martínez <guido@vanguardiasur.com.ar>
+> ---
+>   arch/arm/boot/dts/am335x-bone-common.dtsi | 12 ++++++------
+>   1 file changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> index 2e7d932..b95bc9a 100644
+> --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+> +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+> @@ -183,28 +183,28 @@
+>   &usb {
+>   	status = "okay";
+>   
+> -	control@44e10620 {
+> +	&usb_ctrl_mod {
+>   		status = "okay";
+>   	};
+>   
+> -	usb-phy@47401300 {
+> +	&usb0_phy {
+>   		status = "okay";
+>   	};
+>   
+> -	usb-phy@47401b00 {
+> +	&usb1_phy {
+>   		status = "okay";
+>   	};
+>   
+> -	usb@47401000 {
+> +	&usb0 {
+>   		status = "okay";
+>   	};
+>   
+> -	usb@47401800 {
+> +	&usb1 {
+>   		status = "okay";
+>   		dr_mode = "host";
+>   	};
+>   
+> -	dma-controller@47402000  {
+> +	&cppi41dma  {
+>   		status = "okay";
+>   	};
+>   };
+Instead the patch should be
 
-> > I am not too convinced of RDRAND due to the lack of usable source code
-> > (i.e. source code that I can build myself). But that is my personal taste
-> > :-)
-> The problem is the FIPS validation would presumably require obeying
-> the SP-800A requirement for an approved entropy source, and while we
-> can't audit RDRAND to satisfy ourselves that the US government hasn't
-> introduced a back door, if the only purpose of the FIPS validation is
-> so that people can sell into the US government market, presuambly the
-> US government is OK with a potential NSA-introduced back door.  :-)
+      diff --git a/arch/arm/boot/dts/am335x-bone-common.dtsi 
+b/arch/arm/boot/dts/am335x-bone-common.dtsi
+      index 2e7d932..06be20a 100644
+      --- a/arch/arm/boot/dts/am335x-bone-common.dtsi
+      +++ b/arch/arm/boot/dts/am335x-bone-common.dtsi
+      @@ -182,31 +182,30 @@
 
->From a US centric view, you may be right. But there are some FIPS 140-2 
-aspects which are helpful in general (albeit just a minority). And for those, 
-auditible code is key. Not everybody is delighted to have NSA watching. :-)
-> 
-> That being said, there is some FIPS compliance code in
-> drivers/char/random.c, which was introduced while Matt Mackall was
-> maintaining the driver, and it mystifies me, since I never thought
-> /dev/random could be an approved FIPS compliant generator --- not that
-> I care, since I'm not trying to sell into the US government market,
-> but the FIPS compliance code is largely harmless, so I've never
-> bothered to remove it.
+       &usb {
+              status = "okay";
+      +};
+      +&usb_ctrl_mod {
+      +       status = "okay";
+      +};
 
-Ok, let me demystify it, because I was the initial trigger of the code 
-changes. Albeit random.c is outside of any FIPS module, NIST requires that 
-even seed sources that are outside the module boundary have a so-called 
-"continuous selftest" as defined in FIPS specification section 4.9.2. If the 
-self test fails, the seed source must become unavailable.
-> 
-> > Thanks for these suggestions. Shall I take these suggestions and turn them
-> > into a full patch?
-> 
-> Sure, go for it.
-> 
-> > Moreover, I read that even for in-kernel users we should use the blocking
-> > pool. Or shall we conceive of a third output pool, say, a kernel pool that
-> > is independent of the output pools to user space? Adding such a pool more
-> > or less only requires to define a new struct entropy_pool instance.
-> 
-> I've audited most of the in-kernel users, and most of them aren't even
-> using them for a session key; they're using it for something less
-> critical (e.g. ASLR, stack magic, etc.).  CIFS is perhaps the only
-> place where it is generating a session key, and session key generation
-> is just fine with the /dev/urandom pool.
-> 
-> So making all of the in-kernel users deal with a blocking interface is
-> not worth it, IMHO.
+      -       control@44e10620 {
+      -               status = "okay";
+      -       };
+      -
+      -       usb-phy@47401300 {
+      -               status = "okay";
+      -       };
+      +&usb0_phy {
+      +       status = "okay";
+      +};
 
-Sorry, I did not make myself clear: for the purpose of the blocking behavior, 
-shall we draw from blocking_pool or define a new pool used completely for this 
-in-kernel blocking usage? Note, if we use the blocking_pool, any non-root user 
-can stall the in-kernel operation indefinitely by simply reading /dev/random. 
-As the in-kernel use for blocking random numbers would be limited, I was 
-thinking about a new entropy pool that has no user space access.
+      -       usb-phy@47401b00 {
+      -               status = "okay";
+      -       };
+      +&usb1_phy {
+      +       status = "okay";
+      +};
 
-I do not want to convert any existing in-kernel users of random data to use 
-the new entropy pool.
+      -       usb@47401000 {
+      -               status = "okay";
+      -       };
+      +&usb {
+      +       status = "okay";
+      +};
 
-Ciao
-Stephan
+      -       usb@47401800 {
+      -               status = "okay";
+      -               dr_mode = "host";
+      -       };
+      +&usb1 {
+      +       status = "okay";
+      +       dr_mode = "host";
+      +};
+
+      -       dma-controller@47402000  {
+      -               status = "okay";
+      -       };
+      +&cppi41dma  {
+      +       status = "okay";
+       };
+
+
+
 -- 
-| Cui bono? |
+-George
+
