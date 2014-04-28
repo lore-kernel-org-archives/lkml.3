@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944AbaD1Kx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:53:58 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:60893 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaD1Kx4 (ORCPT
+	id S932148AbaD1K47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:56:59 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:56048 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaD1K4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:53:56 -0400
-Date: Mon, 28 Apr 2014 11:53:50 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: chris@printf.net, ulf.hansson@linaro.org, sameo@linux.intel.com,
-        gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH] mmc: rtsx: Revert "mmc: rtsx: add support for pre_req
- and post_req"
-Message-ID: <20140428105350.GM21279@lee--X1>
-References: <1398670584-26687-1-git-send-email-micky_ching@realsil.com.cn>
+	Mon, 28 Apr 2014 06:56:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        kgene.kim@samsung.com, Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        prathyush.k@samsung.com, grundler@chromium.org, joro@8bytes.org,
+        supash.ramaswamy@linaro.org, linux-kernel@vger.kernel.org,
+        pullip.cho@samsung.com, tomasz.figa@gmail.com, sachin.kamat@linaro.org,
+        iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        s.nawrocki@samsung.com, a.motakis@virtualopensystems.com,
+        Varun.Sethi@freescale.com, joshi@samsung.com, t.figa@samsung.com,
+        rahul.sharma@samsung.com, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH v12 11/31] documentation: iommu: add binding document of Exynos System MMU
+Date: Mon, 28 Apr 2014 12:56:03 +0200
+Message-ID: <6544270.ddFBoY6LMm@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140428103919.GF19455@ulmo>
+References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <4447051.OnJtcFSqFV@wuerfel> <20140428103919.GF19455@ulmo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398670584-26687-1-git-send-email-micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qFTflV221idwNLBUOP2dQQAIZHC36PsGsyI6C8P2Kux
+ 0Vy6X2MEZurVd9W6qfg/kIAtMAKfJuEzl+3uW2zaLd1cb7TS13
+ jAE1F5MQaGrZ64Nz3KePocSvu/Ripp7uw7sQ0Wk77yThfv6D7i
+ FPCFsXKftmJJ0LqiezY//3BVwojQdnO6KorqqRXw4ou1O7/h5R
+ kayBTVH5KkMt8oKN/bhmrmah9J6LuX5lY7Zv1JU4+jo78p5IFm
+ 28v/5XxWBA7CO9ptdmXQ1I9OgFgwSMWAgE9THEpTW8tRk9QmDe
+ JkRj7ObOAhfnpIhCqrLKCmP71zxtshxgK2Vo65jXjb4OzxsXKn
+ KWUngO8dM+mR4pewHP7w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
+On Monday 28 April 2014 12:39:20 Thierry Reding wrote:
+> On Sun, Apr 27, 2014 at 08:23:06PM +0200, Arnd Bergmann wrote:
+> > On Sunday 27 April 2014 13:07:43 Shaik Ameer Basha wrote:
+> > > +- mmu-masters: A phandle to device nodes representing the master for which
+> > > +               the System MMU can provide a translation. Any additional values
+> > > +              after the phandle will be ignored because a System MMU never
+> > > +              have two or more masters. "#stream-id-cells" specified in the
+> > > +              master's node will be also ignored.
+> > > +              If more than one phandle is specified, only the first phandle
+> > > +              will be treated.
+> > 
+> > This seems completely backwards: Why would you list the masters for an IOMMU
+> > in the IOMMU node?
+> > 
+> > The master should have a standard property pointing to the IOMMU instead.
+> > 
+> > We don't have a generic binding for IOMMUs yet it seems, but the time is
+> > overdue to make one.
+> > 
+> > Consider this NAKed until there is a generic binding for IOMMUs that all
+> > relevant developers have agreed to.
 > 
-> This reverts commit c42deffd5b53c9e583d83c7964854ede2f12410d.
-
-Why was this patch even merged without an MFD Ack?
-
-> commit <mmc: rtsx: add support for pre_req and post_req> did use
-> mutex_unlock() in tasklet, but mutex_unlock() can't used in
-> tasklet(atomic context). The driver need use mutex to avoid concurrency,
-> so we can't use tasklet here, the patch need to be removed.
+> I'd like to take this opportunity and revive one of the hibernating
+> patch sets that we have for Tegra. The last effort to get things merged
+> was back in January I think. I haven't bothered to look up the reference
+> since it's probably good to start from scratch anyway.
 > 
-> The spinlock host->lock and pcr->lock may deadlock, one way to solve the
-> deadlock is remove host->lock in sd_isr_done_transfer(), but if using
-> workqueue the we can avoid using the spinlock and also avoid the problem.
+> The latest version of the binding that was under discussion back then I
+> think looked something like this:
 > 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/rtsx_pcr.c            |  132 ++++--------
->  drivers/mmc/host/rtsx_pci_sdmmc.c |  418 ++++++-------------------------------
->  include/linux/mfd/rtsx_common.h   |    1 -
->  include/linux/mfd/rtsx_pci.h      |    6 -
->  4 files changed, 109 insertions(+), 448 deletions(-)
+> 	device@... {
+> 		iommus = <&iommu [spec]>[, <&other_iommu [other_spec]>...];
+> 	};
+> 
+> And possibly with a iommu-names property to go along with that. The idea
+> being that a device can be a master on possibly multiple IOMMUs. Using
+> the above it would also be possible to have one device be multiple
+> masters on the same IOMMU.
 
-This patch should be sent to the -rcs as soon as possible:
+Yes, that seems reasonable. Just one question: How would you represent a
+device that has multiple masters, with at least one connected to an IOMMU
+and another one connected to memory directly, without going to the IOMMU?
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> On Tegra the specifier would be used to encode a memory controller's
+> client ID. One discussion point back at the time was to encode the ID as
+> a bitmask to allow more than a single master per entry. Another solution
+> which I think is a little cleaner and more generic, would be to use one
+> entry per master and use a single cell to encode the client ID. Devices
+> with multiple clients to the same IOMMU could then use multiple entries
+> referencing the same IOMMU.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I'm not completely following here. Are you talking about the generic
+binding, or the part that is tegra specific for the specifier?
+
+My first impression is that the generic binding should just allow an
+arbitrary specifier with a variable #iommu-cells, and leave the format
+up to the IOMMU driver. A lot of drivers probably only support one
+master, so they can just set #iommu-cells=<0>, others might require
+IDs that do not fit into one cell.
+
+	Arnd
+
