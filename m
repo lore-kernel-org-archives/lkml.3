@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbaD1Tp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:45:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755330AbaD1Tp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:45:26 -0400
-Message-ID: <1398714297.3010.79.camel@deneb.redhat.com>
-Subject: Re: [PATCH] arm64: fixmap: fix missing sub-page offset for
- earlyprintk
-From: Mark Salter <msalter@redhat.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Date: Mon, 28 Apr 2014 15:44:57 -0400
-In-Reply-To: <1398711006-14943-1-git-send-email-marc.zyngier@arm.com>
-References: <1398711006-14943-1-git-send-email-marc.zyngier@arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756903AbaD1Tpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:45:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48873 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaD1Tpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:45:50 -0400
+Date: Mon, 28 Apr 2014 12:45:30 -0700
+From: tip-bot for Dan Carpenter <tipbot@zytor.com>
+Message-ID: <tip-3894e9e82dfdc87fa35dc7976e0472d220228826@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, robh+dt@kernel.org, r.sricharan@ti.com,
+        tglx@linutronix.de, dan.carpenter@oracle.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, r.sricharan@ti.com,
+        tglx@linutronix.de, dan.carpenter@oracle.com
+In-Reply-To: <20140403072134.GA14286@mwanda>
+References: <20140403072134.GA14286@mwanda>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] irqchip: irq-crossbar:
+  Not allocating enough memory
+Git-Commit-ID: 3894e9e82dfdc87fa35dc7976e0472d220228826
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 19:50 +0100, Marc Zyngier wrote:
-> Commit d57c33c5daa4 (add generic fixmap.h) added (among other
-> similar things) set_fixmap_io to deal with early ioremap of devices.
-> 
-> More recently, commit bf4b558eba92 (arm64: add early_ioremap support)
-> converted the arm64 earlyprintk to use set_fixmap_io. A side effect of
-> this conversion is that my virtual machines have stopped booting when
-> I pass "earlyprintk=uart8250-8bit,0x3f8" to the guest kernel.
-> 
-> Turns out that the new earlyprintk code doesn't care at all about
-> sub-page offsets, and just assumes that the earlyprintk device will
-> be page-aligned. Obviously, that doesn't play well with the above example.
-> 
-> Further investigation shows that set_fixmap_io uses __set_fixmap instead
-> of __set_fixmap_offset. A fix is to introduce a set_fixmap_offset_io that
-> uses the latter, and to remove the superflous call to fix_to_virt
-> (which only returns the value that set_fixmap_io has already given us).
-> 
-> With this applied, my VMs are back in business. Tested on a Cortex-A57
-> platform with kvmtool as platform emulation.
-> 
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> ---
+Commit-ID:  3894e9e82dfdc87fa35dc7976e0472d220228826
+Gitweb:     http://git.kernel.org/tip/3894e9e82dfdc87fa35dc7976e0472d220228826
+Author:     Dan Carpenter <dan.carpenter@oracle.com>
+AuthorDate: Thu, 3 Apr 2014 10:21:34 +0300
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 28 Apr 2014 21:43:24 +0200
 
-Acked-by: Mark Salter <msalter@redhat.com>
+irqchip: irq-crossbar: Not allocating enough memory
 
+We are allocating the size of a pointer and not the size of the data.
+This will lead to memory corruption.
 
+There isn't actually a "cb_device" struct, btw.  The code is only able
+to compile because GCC knows that all pointers are the same size.
+
+Fixes: 96ca848ef7ea ('DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP')
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Sricharan R <r.sricharan@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Link: http://lkml.kernel.org/r/20140403072134.GA14286@mwanda
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ drivers/irqchip/irq-crossbar.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
+index fc817d2..3d15d16 100644
+--- a/drivers/irqchip/irq-crossbar.c
++++ b/drivers/irqchip/irq-crossbar.c
+@@ -107,7 +107,7 @@ static int __init crossbar_of_init(struct device_node *node)
+ 	int i, size, max, reserved = 0, entry;
+ 	const __be32 *irqsr;
+ 
+-	cb = kzalloc(sizeof(struct cb_device *), GFP_KERNEL);
++	cb = kzalloc(sizeof(*cb), GFP_KERNEL);
+ 
+ 	if (!cb)
+ 		return -ENOMEM;
