@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaD1Nk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:40:58 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:47189 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433AbaD1Nkw (ORCPT
+	id S932643AbaD1NkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:40:11 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:63625 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932115AbaD1NkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:40:52 -0400
-Date: Mon, 28 Apr 2014 09:40:47 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Barry Song <baohua@kernel.org>, Kevin Hilman <khilman@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
- nodes
-Message-ID: <20140428134047.GA7719@beef>
-References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
- <20140428091532.GG26756@n2100.arm.linux.org.uk>
+	Mon, 28 Apr 2014 09:40:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rcu: fix build error for sysrq workaround
+Date: Mon, 28 Apr 2014 15:40 +0200
+Message-ID: <8486148.XCakAkJiju@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428091532.GG26756@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:F4HNNJJwRHr+MANEvMe80iFsRGdQ0k0xCrg0gMl+ji3
+ Fh2xS9VJkUKh9EG3wb4tNWtm0mJ+TzKpW03hwoT6cyr05DPYgS
+ a3CtCUm7j3FcmEI26DrDfeQ8sX3rztV9Vs+Xz97QJu6PqLupGx
+ HsQ5OzbptqbKrqHHRDyryWGhMkPU2zPR0p97jW0kHQNlv/L5Yl
+ QECfD8eTiC0LN+NeaJxNP+1CWQnF08ZAMEsYir2DLy4QU148Om
+ Mf9uIoKN3YLTWjeaT/5NVL8QIwucTnNC4ajBzQSAMjnFHdm58c
+ 9KXVmavF96+X0svG4Nkaz1Fi7tAhZbsh8bgK41U46H/83laO8O
+ Q4Bk2DF1FBy9YpbvX1W0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 10:15:33AM +0100, Russell King wrote:
-> On Sun, Apr 27, 2014 at 08:27:40PM -0400, Matt Porter wrote:
-> > l2x0_of_init() is executed unconditionally within the sirfsoc_l2x0_init()
-> > early initcall. In a multi v7 kernel this causes bcm281xx and bcm21664
-> > platform to fail boot since they have their own pre l2x0 init sequence
-> > that is required. Fix this by checking that a matching OF ID is present
-> > before calling l2x0_of_init().
-> > 
-> > Reported-by: Kevin Hilman <khilman@linaro.org>
-> > Signed-off-by: Matt Porter <mporter@linaro.org>
-> > ---
-> > Applies against next-20140424 to fix the issue introduced in
-> > 50655e6 ARM: l2c: prima2: remove cache size override
-> 
-> Err, this only "fixes" it because it effectively disables the L2 cache
-> _entirely_ - in the above commit, I kill your private compatible strings.
->
-> This doesn't make sense.  If the cache is already enabled, then the L2C
-> code won't try to enable it again.
+I got a build error in linux-next today, coming from:
+http://ozlabs.org/~akpm/mmots/broken-out/sysrqrcu-suppress-rcu-stall-warnings-while-sysrq-runs.patch
 
-Ok, please suggest an alternative. You merged this commit..it looks like
-it had no ack from the platform maintainer..and I don't have hardware.
-The commit is wrong, we can't have every platform executing sirfsoc's
-l2x0_of_init() call/parameters by having this stuff in an early initcall
-like that.
+I saw the problem has already been reported by other people, but couldn't find
+a fix. This is what I used locally to avoid the build error. Not sure if it's
+correct to do nothing though.
 
-It would be pretty straightforward to add those private compatibles
-back so the approach works. If not, we need to move this to
-.init_machine where it's guaranteed to only run on sirfsoc.
+Please just ignore if the problem has already been solved independently.
 
--Matt
+	Arnd
+
+(re-sent with mailing list on Cc)
+
+9<-----------
+From: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] rcu: fix build error for sysrq workaround
+
+Patch "sysrq,rcu: suppress RCU stall warnings while sysrq runs"
+introduced two new functions, but they are unavailable if
+CONFIG_RCU_STALL_COMMON is not set, so we have to provide
+an alternative implementation, doing nothing.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index e9cc71c..26e1771 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -247,8 +247,15 @@ void rcu_idle_enter(void);
+ void rcu_idle_exit(void);
+ void rcu_irq_enter(void);
+ void rcu_irq_exit(void);
++
++#ifdef CONFIG_RCU_STALL_COMMON
+ void rcu_sysrq_start(void);
+ void rcu_sysrq_end(void);
++#else
++static inline void rcu_sysrq_start(void) { }
++static inline void rcu_sysrq_end(void) { }
++
++#endif
+ 
+ #ifdef CONFIG_RCU_USER_QS
+ void rcu_user_enter(void);
