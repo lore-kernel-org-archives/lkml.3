@@ -1,360 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979AbaD1QoY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:44:24 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16809 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756953AbaD1QoI (ORCPT
+	id S1757010AbaD1Qoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:44:46 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53048 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756986AbaD1Qol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:44:08 -0400
-Message-ID: <535E8549.6070106@oracle.com>
-Date: Mon, 28 Apr 2014 10:43:53 -0600
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 28 Apr 2014 12:44:41 -0400
+Date: Mon, 28 Apr 2014 17:43:54 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Nishanth Menon <nm@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary
+ CPU
+Message-ID: <20140428164348.GA14354@e103592.cambridge.arm.com>
+References: <1398191506-3741-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-To: Jianyu Zhan <nasa4836@gmail.com>, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, riel@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/2] mm/swap.c: split put_compound_page function
-References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
-In-Reply-To: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398191506-3741-1-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2014 07:35 AM, Jianyu Zhan wrote:
-> Currently, put_compound_page should carefully handle tricky case
-> to avoid racing with compound page releasing or spliting, which
-> makes it growing quite lenthy(about 200+ lines) and need deep
-> tab indention, which makes it quite hard to follow and maintain.
->
-> This patch tries to refactor this function, by extracting out the
-> fundamental logics into helper functions, making the main code path
-> more compact, thus easy to read and maintain. Two helper funcitons
-> are introduced, and are marked __always_inline, thus this patch
-> has no functional change(actually, the output object file is the
-> same size with the original one).
-
-We recently went through a clean up of this code and it was made more 
-readable. I do not particularly see any strong need to refactor at this 
-point, but I am not opposed to it either.
-
-Some comments inline below.
-
---
-Khalid
-
->
-> Besides, this patch rearranges/rewrites some comments(hope I don't
-> do it wrong).
->
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+On Tue, Apr 22, 2014 at 01:31:46PM -0500, Joel Fernandes wrote:
+> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
+> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
+> seems to be because the CPU is in ARM mode once the ROM hands over control to
+> the kernel.  Switch to THUMB mode if required once the kernel is control of
+> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
+> entry so this is not required and SMP boot works as is.
+> 
+> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Nishanth Menon <nm@ti.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
 > ---
->   mm/swap.c | 227 ++++++++++++++++++++++++++++++++++++--------------------------
->   1 file changed, 131 insertions(+), 96 deletions(-)
->
-> diff --git a/mm/swap.c b/mm/swap.c
-> index c0cd7d0..0d8d891 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -79,106 +79,100 @@ static void __put_compound_page(struct page *page)
->   	(*dtor)(page);
->   }
->
-> -static void put_compound_page(struct page *page)
-> -{
-> -	struct page *page_head;
-> -
-> -	if (likely(!PageTail(page))) {
-> -		if (put_page_testzero(page)) {
-> -			/*
-> -			 * By the time all refcounts have been released
-> -			 * split_huge_page cannot run anymore from under us.
-> -			 */
-> -			if (PageHead(page))
-> -				__put_compound_page(page);
-> -			else
-> -				__put_single_page(page);
-> -		}
-> -		return;
-> -	}
-> -
-> -	/* __split_huge_page_refcount can run under us */
-> -	page_head = compound_head(page);
->
-> +/**
-> + * Two special cases here: we could avoid taking compound_lock_irqsave
-> + * and could skip the tail refcounting(in _mapcount).
-> + *
-> + * 1. Hugetlbfs page:
-> + *
-> + *    PageHeadHuge will remain true until the compound page
-> + *    is released and enters the buddy allocator, and it could
-> + *    not be split by __split_huge_page_refcount().
-> + *
-> + *    So if we see PageHeadHuge set, and we have the tail page pin,
-> + *    then we could safely put head page.
-> + *
-> + * 2. Slab THP page:
-> + *
-> + *    PG_slab is cleared before the slab frees the head page, and
-> + *    tail pin cannot be the last reference left on the head page,
-> + *    because the slab code is free to reuse the compound page
-> + *    after a kfree/kmem_cache_free without having to check if
-> + *    there's any tail pin left.  In turn all tail pinsmust be always
-> + *    released while the head is still pinned by the slab code
-> + *    and so we know PG_slab will be still set too.
-> + *
-> + *    So if we see PageSlab set, and we have the tail page pin,
-> + *    then we could safely put head page.
-> + */
-> +static __always_inline void put_unrefcounted_compound_page(struct page *head_page,
-> +						struct page *page)
-> +{
->   	/*
-> -	 * THP can not break up slab pages so avoid taking
-> -	 * compound_lock() and skip the tail page refcounting (in
-> -	 * _mapcount) too. Slab performs non-atomic bit ops on
-> -	 * page->flags for better performance. In particular
-> -	 * slab_unlock() in slub used to be a hot path. It is still
-> -	 * hot on arches that do not support
-> -	 * this_cpu_cmpxchg_double().
-> -	 *
-> -	 * If "page" is part of a slab or hugetlbfs page it cannot be
-> -	 * splitted and the head page cannot change from under us. And
-> -	 * if "page" is part of a THP page under splitting, if the
-> -	 * head page pointed by the THP tail isn't a THP head anymore,
-> -	 * we'll find PageTail clear after smp_rmb() and we'll treat
-> -	 * it as a single page.
-> +	 * If @page is a THP tail, we must read the tail page
-> +	 * flags after the head page flags. The
-> +	 * __split_huge_page_refcount side enforces write memory barriers
-> +	 * between clearing PageTail and before the head page
-> +	 * can be freed and reallocated.
->   	 */
-> -	if (!__compound_tail_refcounted(page_head)) {
-> +	smp_rmb();
-> +	if (likely(PageTail(page))) {
->   		/*
-> -		 * If "page" is a THP tail, we must read the tail page
-> -		 * flags after the head page flags. The
-> -		 * split_huge_page side enforces write memory barriers
-> -		 * between clearing PageTail and before the head page
-> -		 * can be freed and reallocated.
-> +		 * __split_huge_page_refcount cannot race
-> +		 * here, see the comment above this function.
->   		 */
-> -		smp_rmb();
-> -		if (likely(PageTail(page))) {
-> -			/*
-> -			 * __split_huge_page_refcount cannot race
-> -			 * here.
-> -			 */
-> -			VM_BUG_ON_PAGE(!PageHead(page_head), page_head);
-> -			VM_BUG_ON_PAGE(page_mapcount(page) != 0, page);
-> -			if (put_page_testzero(page_head)) {
-> -				/*
-> -				 * If this is the tail of a slab
-> -				 * compound page, the tail pin must
-> -				 * not be the last reference held on
-> -				 * the page, because the PG_slab
-> -				 * cannot be cleared before all tail
-> -				 * pins (which skips the _mapcount
-> -				 * tail refcounting) have been
-> -				 * released. For hugetlbfs the tail
-> -				 * pin may be the last reference on
-> -				 * the page instead, because
-> -				 * PageHeadHuge will not go away until
-> -				 * the compound page enters the buddy
-> -				 * allocator.
-> -				 */
-> -				VM_BUG_ON_PAGE(PageSlab(page_head), page_head);
-> -				__put_compound_page(page_head);
-> -			}
-> -			return;
-> -		} else
-> +		VM_BUG_ON_PAGE(!PageHead(head_page), head_page);
+>  arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+> index 75e9295..1809dce 100644
+> --- a/arch/arm/mach-omap2/omap-headsmp.S
+> +++ b/arch/arm/mach-omap2/omap-headsmp.S
+> @@ -1,7 +1,7 @@
+>  /*
+>   * Secondary CPU startup routine source file.
+>   *
+> - * Copyright (C) 2009 Texas Instruments, Inc.
+> + * Copyright (C) 2014 Texas Instruments, Inc.
+>   *
+>   * Author:
+>   *      Santosh Shilimkar <santosh.shilimkar@ti.com>
+> @@ -28,9 +28,13 @@
+>   * code.  This routine also provides a holding flag into which
+>   * secondary core is held until we're ready for it to initialise.
+>   * The primary core will update this flag using a hardware
+> -+ * register AuxCoreBoot0.
+> + * register AuxCoreBoot0.
+>   */
+>  ENTRY(omap5_secondary_startup)
 
-Any reason to rename page_head to head_page? page_head makes perfect 
-sense. This change just causes patch to be longer.
+Are you sure this problem is not caused by the missing ENDPROC() for
+omap5_secondary_startup?
 
-> +		VM_BUG_ON_PAGE(page_mapcount(page) != 0, page);
-> +		if (put_page_testzero(head_page)) {
->   			/*
-> -			 * __split_huge_page_refcount run before us,
-> -			 * "page" was a THP tail. The split page_head
-> -			 * has been freed and reallocated as slab or
-> -			 * hugetlbfs page of smaller order (only
-> -			 * possible if reallocated as slab on x86).
-> +			 * If this is the tail of a slab THP page,
-> +			 * the tail pin must not be the last reference
-> +			 * held on the page, because the PG_slab cannot
-> +			 * be cleared before all tail pins (which skips
-> +			 * the _mapcount tail refcounting) have been
-> +			 * released.
-> +			 *
-> +			 * If this is the tail of a hugetlbfs page,
-> +			 * the tail pin may be the last reference on
-> +			 * the page instead, because PageHeadHuge will
-> +			 * not go away until the compound page enters
-> +			 * the buddy allocator.
->   			 */
-> -			goto out_put_single;
-> -	}
-> +			VM_BUG_ON_PAGE(PageSlab(head_page), head_page);
-> +			__put_compound_page(head_page);
-> +		}
-> +	} else
-> +		/*
-> +		 * __split_huge_page_refcount run before us,
-> +		 * @page was a THP tail. The split @head_page
-> +		 * has been freed and reallocated as slab or
-> +		 * hugetlbfs page of smaller order (only
-> +		 * possible if reallocated as slab on x86).
-> +		 */
-> +		if (put_page_testzero(page))
-> +			__put_single_page(page);
-> +}
->
-> -	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-> +static __always_inline void put_refcounted_compound_page(struct page *head_page,
-> +						struct page *page)
-> +{
-> +	if (likely(page != head_page && get_page_unless_zero(head_page))) {
->   		unsigned long flags;
->
->   		/*
-> -		 * page_head wasn't a dangling pointer but it may not
-> +		 * @page_head wasn't a dangling pointer but it may not
-                    ^^^^^^^^^^
-Your patch renames this to head_page.
+You have END() instead (which may have been accidental).
 
->   		 * be a head page anymore by the time we obtain the
->   		 * lock. That is ok as long as it can't be freed from
->   		 * under us.
->   		 */
-> -		flags = compound_lock_irqsave(page_head);
-> +		flags = compound_lock_irqsave(head_page);
->   		if (unlikely(!PageTail(page))) {
->   			/* __split_huge_page_refcount run before us */
-> -			compound_unlock_irqrestore(page_head, flags);
-> -			if (put_page_testzero(page_head)) {
-> +			compound_unlock_irqrestore(head_page, flags);
-> +			if (put_page_testzero(head_page)) {
->   				/*
-> -				 * The head page may have been freed
-> +				 * The @head_page may have been freed
->   				 * and reallocated as a compound page
->   				 * of smaller order and then freed
->   				 * again.  All we know is that it
-> @@ -186,48 +180,89 @@ static void put_compound_page(struct page *page)
->   				 * compound page of higher order, a
->   				 * tail page.  That is because we
->   				 * still hold the refcount of the
-> -				 * split THP tail and page_head was
-> +				 * split THP tail and head_page was
->   				 * the THP head before the split.
->   				 */
-> -				if (PageHead(page_head))
-> -					__put_compound_page(page_head);
-> +				if (PageHead(head_page))
-> +					__put_compound_page(head_page);
->   				else
-> -					__put_single_page(page_head);
-> +					__put_single_page(head_page);
->   			}
->   out_put_single:
->   			if (put_page_testzero(page))
->   				__put_single_page(page);
->   			return;
->   		}
-> -		VM_BUG_ON_PAGE(page_head != page->first_page, page);
-> +		VM_BUG_ON_PAGE(head_page != page->first_page, page);
->   		/*
->   		 * We can release the refcount taken by
->   		 * get_page_unless_zero() now that
->   		 * __split_huge_page_refcount() is blocked on the
->   		 * compound_lock.
->   		 */
-> -		if (put_page_testzero(page_head))
-> -			VM_BUG_ON_PAGE(1, page_head);
-> +		if (put_page_testzero(head_page))
-> +			VM_BUG_ON_PAGE(1, head_page);
->   		/* __split_huge_page_refcount will wait now */
->   		VM_BUG_ON_PAGE(page_mapcount(page) <= 0, page);
->   		atomic_dec(&page->_mapcount);
-> -		VM_BUG_ON_PAGE(atomic_read(&page_head->_count) <= 0, page_head);
-> +		VM_BUG_ON_PAGE(atomic_read(&head_page->_count) <= 0, head_page);
->   		VM_BUG_ON_PAGE(atomic_read(&page->_count) != 0, page);
-> -		compound_unlock_irqrestore(page_head, flags);
-> +		compound_unlock_irqrestore(head_page, flags);
->
-> -		if (put_page_testzero(page_head)) {
-> -			if (PageHead(page_head))
-> -				__put_compound_page(page_head);
-> +		if (put_page_testzero(head_page)) {
-> +			if (PageHead(head_page))
-> +				__put_compound_page(head_page);
->   			else
-> -				__put_single_page(page_head);
-> +				__put_single_page(head_page);
->   		}
->   	} else {
-> -		/* page_head is a dangling pointer */
-> +		/* @head_page is a dangling pointer */
->   		VM_BUG_ON_PAGE(PageTail(page), page);
->   		goto out_put_single;
->   	}
->   }
->
-> +
-> +static void put_compound_page(struct page *page)
-> +{
-> +	struct page *head_page;
-> +
-> +	/*
-> +	 * We see the PageCompound set and PageTail not set, so @page maybe:
-> +	 *  1. hugetlbfs head page, or
-> +	 *  2. THP head page, or
-> +	 */
-> +	if (likely(!PageTail(page))) {
-> +		if (put_page_testzero(page)) {
-> +			/*
-> +			 * By the time all refcounts have been released
-> +			 * __split_huge_page_refcount cannot run anymore
-> +			 * from under us.
-> +			 */
-> +			if (PageHead(page))
-> +				__put_compound_page(page);
-> +			else
-> +				__put_single_page(page);
-> +		}
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * We see the PageCompound set and PageTail set, so @page maybe:
-> +	 *  1. a tail hugetlbfs page, or
-> +	 *  2. a tail THP page, or
-> +	 *  3. a split THP page.
-> +	 *
-> +	 *  Case 3 is possible, as we may race with
-> +	 *  __split_huge_page_refcount tearing down a THP page.
-> +	 */
-> +	head_page = compound_head(page);
-> +	if (!__compound_tail_refcounted(head_page))
-> +		put_unrefcounted_compound_page(head_page, page);
-> +	else
-> +		put_refcounted_compound_page(head_page, page);
-> +}
-> +
->   void put_page(struct page *page)
->   {
->   	if (unlikely(PageCompound(page)))
->
+Without ENDPROC(), the symbol is not marked as a function and so
+the Thumb bit won't be set when taking a pointer -- so the kernel
+is actually telling the firmware to enter in ARM state.
 
+
+Try changing END() to ENDPROC() without this patch, and see if it
+makes a difference.
+
+If it still doesn't work, then the firmware either doesn't support
+entering in ARM, or is buggy.
+
+Cheers
+---Dave
+
+> +.arm
+> +THUMB( adr     r9, BSYM(wait)  )       @ CPU may be entered in ARM mode.
+> +THUMB( bx      r9              )       @ If this is a Thumb-2 kernel,
+> +THUMB( .thumb                  )       @ switch to Thumb now.
+>  wait:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
+>  	ldr	r0, [r2]
+>  	mov	r0, r0, lsr #5
+> -- 
+> 1.7.9.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
