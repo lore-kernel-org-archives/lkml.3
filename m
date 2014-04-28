@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaD1Bbq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42823 "EHLO
+	id S1754769AbaD1Bbo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42834 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752215AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752385AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.325037660@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Qiang Huang" <h.huangqiang@huawei.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.487492871@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 09/94] vhost: validate vhost_get_vq_desc return value
+Subject: [PATCH 3.2 88/94] drivers: hv: additional switch to use mb()
+ instead of smp_mb()
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +31,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Qiang Huang <h.huangqiang@huawei.com>
 
-[ Upstream commit a39ee449f96a2cd44ce056d8a0a112211a9b1a1f ]
+commit e4af376d04b0(drivers: hv: switch to use mb() instead of smp_mb()),
+the adjustment mistakenly dropped the change in hv_ringbuffer_read,
+so add it.
 
-vhost fails to validate negative error code
-from vhost_get_vq_desc causing
-a crash: we are using -EFAULT which is 0xfffffff2
-as vector size, which exceeds the allocated size.
-
-The code in question was introduced in commit
-8dd014adfea6f173c1ef6378f7e5e7924866c923
-    vhost-net: mergeable buffers support
-
-CVE-2014-0055
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/vhost/net.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/hv/ring_buffer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -319,9 +319,13 @@ static int get_rx_bufs(struct vhost_virt
- 			r = -ENOBUFS;
- 			goto err;
- 		}
--		d = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
-+		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
- 				      ARRAY_SIZE(vq->iov) - seg, &out,
- 				      &in, log, log_num);
-+		if (unlikely(r < 0))
-+			goto err;
-+
-+		d = r;
- 		if (d == vq->num) {
- 			r = 0;
- 			goto err;
+--- a/drivers/hv/ring_buffer.c
++++ b/drivers/hv/ring_buffer.c
+@@ -485,7 +485,7 @@ int hv_ringbuffer_read(struct hv_ring_bu
+ 	/* Make sure all reads are done before we update the read index since */
+ 	/* the writer may start writing to the read area once the read index */
+ 	/*is updated */
+-	smp_mb();
++	mb();
+ 
+ 	/* Update the read index */
+ 	hv_set_next_read_location(inring_info, next_read_location);
 
