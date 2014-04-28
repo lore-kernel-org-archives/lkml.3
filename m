@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110AbaD1VlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:41:17 -0400
-Received: from imap.thunk.org ([74.207.234.97]:38206 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933040AbaD1VlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:41:15 -0400
-Date: Mon, 28 Apr 2014 17:41:12 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Florian Weimer <fweimer@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-Message-ID: <20140428214112.GC7857@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
+	id S932805AbaD1VwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:52:17 -0400
+Received: from sea.nor-consult.com ([173.160.193.117]:45870 "EHLO
+	mail.nor-consult.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756769AbaD1VwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 17:52:15 -0400
+X-Greylist: delayed 1328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 17:52:15 EDT
+From: "Michael Evans" <michael.evans@nor-consult.com>
+To: <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Apr 2014 14:30:03 -0700
+Organization: Nor Consult, LLC
+Message-ID: <023501cf6329$047a8120$0d6f8360$@nor-consult.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac9jKIkatPI0SvzxSRaI3MOs2z7A1Q==
+Content-Language: en-us
+X-SA-Exim-Connect-IP: 10.2.4.24
+X-SA-Exim-Mail-From: michael.evans@nor-consult.com
+Subject: umount -f Device or resource busy; already tried: mount, lsof, fuser, exportfs, ps axf, dmsetup table, losetup -a
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Version: 4.2.1 (built Sun, 16 May 2010 01:51:57 +0000)
+X-SA-Exim-Scanned: Yes (on mail.nor-consult.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 09:52:11PM +0200, Florian Weimer wrote:
-> Before this change, you had to check kernel log messages to see if the
-> non-blocking pool had been properly initialized.  With this change, you
-> can consult the file /proc/sys/kernel/random/intialized instead.
-> 
-> Signed-off-by: Florian Weimer <fweimer@redhat.com>
+I am posting with hope to improve the reliability and usability of
+unmounting 'busy' filesystems (for which umount -f doesn't work and no
+remedy is known).
 
-The main reason why I hadn't added a facility like this was because
-the main goal was to make knowledge of when the /dev/urandom entropy
-pool had been fully initialized could be made clear.  In fact, at
-least on my laptop, this happened at 2.5 seconds after boot, which is
-after the hard drives had been probed, and before all of the various
-laptop devices have been fully probed.
+There are no apparent resource holders but the device is still 'busy'. (
+http://serverfault.com/questions/591406/umount-device-or-resource-busy-alrea
+dy-tried-mount-lsof-fuser-exportfs-ps ), including:
 
-My goal was to see if we could make it be more or less guaranteed that
-by the time userspace daemons started coming up, in practice
-/dev/urandom would be initialized, so we wouldn't have to change
-userspace.  And for the most part, this isn't a problem.
+* mount | grep /tmp/
+* lsof | grep /tmp/
+* fuser -m /tmp/...
+* exportfs -rv | grep /tmp/
+* Restarting the daemon which runs the creation scripts anyway...
+* ps axf | grep /tmp/
+* dmsetup table
+* losetup -a
+* fuser -vm /tmp/tmp.random-chars/ (yields two lines)
+##                        USER PID    ACCESS COMMAND
+## /tmp/tmp.random-chars: root kernel mount  /tmp/tmp.random-chars
 
-Now there may be systems where the device probe can happen much more
-quickly. in which case it does make sense for really paranoid crypto
-libraries to check if the urandom pool has been fully initialized.
-But in that case, instead of (or perhaps in addition to) providing a
-file which a library daemon could poll on, to provide an ioctl
-interface which allows userspace to block until /dev/urandom has been
-initialized.
+Is there /any other/ test which might reveal what is keeping the device busy
+(so I can end their existence)?
+Is there anything more forceful than 'umount -f' to really just sync what's
+possible to a specific device and invalidate all remaining file handles,
+buffers, etc?
 
-						- Ted
+Failure is always be an option.  However in this case failing to allow
+failure would require an entire VM host reboot during the next maintenance
+window.
+
+
+Thank you in advance for your time and ideas.  Please either reply to my
+work email address <michael.evans@nor-consult.com> or at the above
+serverfault link; optionally CC the list for the archives.  I'll also update
+the main post on the serverfault page with any additional tests and
+highlight any that yield useful information for future search engine users.
+
+PS: Even if your reply is after our next maintenance window, I'll continue
+updating the serverfault post with test for future users (more quickly if
+directly emailed as well).
+
