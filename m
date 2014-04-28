@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225AbaD1FVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:21:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:60194 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752924AbaD1FUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:20:51 -0400
-Date: Mon, 28 Apr 2014 15:20:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: linux-next: manual merge of the usb-gadget tree with the usb tree
-Message-Id: <20140428152044.5b5dd87a9e3d885129bb2485@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q"
+	id S1752420AbaD1FZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 01:25:08 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36833 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaD1FZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 01:25:05 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <20140427222019.GF15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140427222019.GF15995@dastard>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 28 Apr 2014 10:54:52 +0530
+Message-ID: <87zjj6auvv.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042805-6102-0000-0000-000005750904
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dave Chinner <david@fromorbit.com> writes:
 
-Hi Felipe,
+> On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
+>> Hi
+>> 
+>> As per LSF/MM summit discussion I am reposting the richacl patchset for
+>> upstream inclusion. The patchset includes minimal changes required to implement
+>> a new acl model similar to NFSv4 ACL. The acl model selection is based on
+>> file system feature flag. 
+>> 
+>> The following set of patches implements VFS and ext4 changes needed to implement
+>> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+>> extended by file masks to fit into the standard POSIX file permission model.
+>> They are designed to work seamlessly locally as well as across the NFSv4 and
+>> CIFS/SMB2 network file system protocols.
+>> 
+>> A user-space utility for displaying and changing richacls is available at [1]
+>> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+>> 
+>> [1] git://github.com/kvaneesh/richacl-tools.git master
+>> 
+>> To test richacl on ext4, create the file sytem with richacl feature flag
+>> (mkfs.ext4 -O richacl or  tune2fs -O richacl). With richacl feature enabled
+>> using mount option "acl" will switch to using richacl instead of posixacl.
+>
+> No mount options, please. The ACL configuration needs to be
+> determined solely by the superblock feature bit - we cannot support
+> filesystems with mixed ACL types, and that's what this mount option
+> does.
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/phy/phy-mv-u3d-usb.c between commit 543cab640279 ("usb: phy:
-mv_u3d: Remove usb phy driver for mv_u3d") from the usb tree and commit
-041832565e40 ("usb: phy: mv-u3d: switch over to writel/readl") from the
-usb-gadget tree.
+For ext4 since acls are enabled by default we really don't need to
+speciy -o acl in mount. What i meant by above is that using "acl/noacl" mount
+option will now enabe/disable POSIX or RICHacl based on the superblock
+feature bit. 
 
-I fixed it up (the former removes the file, so I did that) and can carry
-the fix as necessary (no action is required).
+>
+>> More details regarding richacl can be found at
+>> http://acl.bestbits.at/richacl/
+>> 
+>> Previous posting of the patchset can be found at:
+>> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
+>> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
+>> 
+>> The complete patchset can also be found at:
+>> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
+>
+> Where are the tests? We need comprehensive coverage in xfstests so
+> we can validate that it works the way it is supposed to and that we
+> don't break it in future, and that all filesystems behave the same
+> way....
+>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+https://github.com/kvaneesh/richacl-tools/tree/master/test
 
---Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+-aneesh
 
-iQIcBAEBCAAGBQJTXeUwAAoJEMDTa8Ir7ZwVA3AQAInCV0eQm730HjBo0S97wOcw
-HUjHf2M6Eg1sQt0Bc24nal/Ew48AyF/FlgDL5uvpRiZu+EzqSCA6VOuRkMfj9jxW
-dt8F9x4LdZZO4WCAvRsrV50pQtJ1WuPRbs6mL5EnC5bvUGEqgFUEai5LbtSxNNC4
-jpUdopTNmx/pMCrqn/bYRKOVf0rC6DNszazfXgmj7RVYbfzIMDsWAIyfDllFlOpc
-QwfJ/Y8V1DekiQGx2MeydrbK3FBiw1nPpvP3rIZOBegF9u/0fGRSKeUxt+pDS+UV
-gCUQBjz5omvOY1xG6MdefZ0tXOI5jWWvROx5H9yAjzbsP+YKWCaqiGdaRzvrsf8b
-F1Y63K+/hZtDOQvNvKd9RWw5ExJCN9cwhrWeTvZ++d1vbCp7mNum+H86rSyzssAq
-GE6AdIDecnDoFsz1XBmSTyLo1+LJsQpNImuWD/V98FlAnpiOxBVvwggTIZJ0dqBI
-gMNgtrFHU/gHiTJUQEbiD3pO/Gpv596orSLksrN1/VpLfeUesvf+v1PWHMcyZ9Uf
-j541XBn+k1N94ifYu/LtOSF5O9Prmq4uziMBJjW9iGxTCpYxW81mK7/bv4vMD4pn
-wP8teeUTy+M++gd6+KfpRMMHybJ6qZ4F2EroBdoiH7WVDMmiR0IoA7N4RlFmzxfu
-Y1HvhynyoKPytkcuptlv
-=PAEV
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Apr_2014_15_20_44_+1000_jNupv9ytjWobH=6q--
