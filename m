@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaD1Avs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 20:51:48 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:41846 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaD1Avq (ORCPT
+	id S1752276AbaD1BQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:16:39 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:55000 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751847AbaD1BQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 20:51:46 -0400
-Message-ID: <1398646295.3046.30.camel@ThinkPad-T5421>
-Subject: Re: [RFC PATCH v5 1/2] Use lock_device_hotplug() in
- cpu_probe_store() and cpu_release_store()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Date: Mon, 28 Apr 2014 08:51:35 +0800
-In-Reply-To: <20140425122822.GA20460@htj.dyndns.org>
-References: <20140417151728.GK15326@htj.dyndns.org>
-	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140421223804.GD22730@htj.dyndns.org>
-	 <1398133777.2805.7.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140422204006.GA3615@mtj.dyndns.org>
-	 <1398218426.2805.42.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140423143940.GD4781@htj.dyndns.org>
-	 <1398328643.2805.102.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140424143208.GB14460@htj.dyndns.org>
-	 <1398390970.2805.136.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140425122822.GA20460@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042800-4966-0000-0000-0000093479B0
+	Sun, 27 Apr 2014 21:16:38 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [PROBLEM] perf report --gtk doesn't work
+References: <CAOJsxLG-S2qske+o+hXKHMRLJu6McNFRi=tDQ8iraq=w_4oonA@mail.gmail.com>
+Date: Mon, 28 Apr 2014 10:16:35 +0900
+In-Reply-To: <CAOJsxLG-S2qske+o+hXKHMRLJu6McNFRi=tDQ8iraq=w_4oonA@mail.gmail.com>
+	(Pekka Enberg's message of "Fri, 25 Apr 2014 14:09:45 +0300")
+Message-ID: <87ppk2p824.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 08:28 -0400, Tejun Heo wrote:
-> On Fri, Apr 25, 2014 at 09:56:10AM +0800, Li Zhong wrote:
-> > > A nests cpu subsys mutex under s_active of the online node.  B nests
-> > > s_active of the online node under the cpu subsys mutex.  What am I
-> > > missing?
-> > 
-> > From the above two chain, I think the problem is cpu_subsys_mutex and
-> > s_active(online), which is the deadlock we are trying to solve in patch
-> 
-> Yeap, that one was what I was thinking about.
-> 
-> > #2. I seems to me s_active(release) here doesn't have lock issues? 
-> 
-> And your patch doesn't change the situation for online.  
+Hi Pekka,
 
-I'm a little confused here...
+On Fri, 25 Apr 2014 14:09:45 +0300, Pekka Enberg wrote:
+> Hello,
+>
+> I'm seeing the following with v3.15-rc2:
+>
+> $ ~/bin/perf report --gtk
+> GTK browser requested but could not find libperf-gtk.so
+>
+> The library file is in $HOME/lib64 and perf attempts to look it up.
+> However, printing out dlerror() output shows the following:
+>
+> [penberg@localhost hornet]$ ~/bin/perf report --gtk
+> /home/penberg/lib64/libperf-gtk.so: undefined symbol: sort_sym
+> GTK browser requested but could not find libperf-gtk.so
 
-To clarify for this patch(#1): 
+Hmm.. strange.  On my system, it works perfectly..
 
-Currently(before patch#2), the s_active(online) and cpu subsys mutex
-deadlock is solved by lock_device_hotplug_sysfs(). (lockdep warnings are
-still there, so we want to change the implementation of
-lock_device_hotplug_sysfs() in patch #2 to take out of s_active_online,
-instead of device_hotplug_lock, which is grabbed before cpu subsys
-mutex). 
+>
+> I'm not sure how this is supposed to work. sort_sym() is defined in
+> the 'perf' executable so how is libperf-gtk.so going to see it?
 
-But here, for the probe/release, I think we really don't need to use
-this _sysfs() version. 
+I'm also not sure.. maybe linker finds the symbol in the executable in
+case of dlopen()?
 
-So it is replaced with lock_device_hotplug() directly to avoid two
-unnecessary conversions of lock_device_hotplug_sysfs(), that otherwise
-need to be done in patch #2.
-
-Thanks, Zhong
-
-> Alright,
-> thanks a lot for the explanation.
-> 
-
-
+Thanks,
+Namhyung
