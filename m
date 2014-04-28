@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363AbaD2ABV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:01:21 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:56570 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513AbaD1X4n (ORCPT
+	id S1757411AbaD2ACQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:02:16 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:55898 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314AbaD1X4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 19:56:43 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -14,79 +14,50 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu, Iulia Manda <iulia.manda21@gmail.com>,
+        oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/19] rcu: Protect uses of jiffies_stall field with ACCESS_ONCE()
-Date: Mon, 28 Apr 2014 16:56:19 -0700
-Message-Id: <1398729392-15087-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 16/19] rcu: Make large and small sysidle systems use same state machine
+Date: Mon, 28 Apr 2014 16:56:29 -0700
+Message-Id: <1398729392-15087-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140428235600.GA12200@linux.vnet.ibm.com>
  <1398729392-15087-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042823-0928-0000-0000-000001808037
+x-cbid: 14042823-7164-0000-0000-0000015FB500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Iulia Manda <iulia.manda21@gmail.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Some of the uses of the rcu_state structure's ->jiffies_stall field
-do not use ACCESS_ONCE(), despite there being unprotected accesses.
-This commit therefore uses the ACCESS_ONCE() macro to protect this field.
+Currently, small systems move back into RCU_SYSIDLE_NOT from
+RCU_SYSIDLE_SHORT and large systems do not.  This works because moving
+aggressively to RCU_SYSIDLE_NOT affects only performance, not correctness,
+and on small systems, the performance impact should be negligible.  That
+said, this difference does make RCU a bit more complex, and RCU does not
+seem to be suffering from any lack of complexity.  This commit therefore
+adjusts small-system operation to match that of large systems, so that
+the state never moves back to RCU_SYSIDLE_NOT from RCU_SYSIDLE_SHORT.
 
-Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcu/tree.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ kernel/rcu/tree_plugin.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 2cc39c781085..c624415f8386 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -865,7 +865,7 @@ static void record_gp_stall_check_time(struct rcu_state *rsp)
- 	rsp->gp_start = j;
- 	smp_wmb(); /* Record start time before stall time. */
- 	j1 = rcu_jiffies_till_stall_check();
--	rsp->jiffies_stall = j + j1;
-+	ACCESS_ONCE(rsp->jiffies_stall) = j + j1;
- 	rsp->jiffies_resched = j + j1 / 2;
- }
- 
-@@ -904,12 +904,12 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 	/* Only let one CPU complain about others per time interval. */
- 
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
--	delta = jiffies - rsp->jiffies_stall;
-+	delta = jiffies - ACCESS_ONCE(rsp->jiffies_stall);
- 	if (delta < RCU_STALL_RAT_DELAY || !rcu_gp_in_progress(rsp)) {
- 		raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 		return;
- 	}
--	rsp->jiffies_stall = jiffies + 3 * rcu_jiffies_till_stall_check() + 3;
-+	ACCESS_ONCE(rsp->jiffies_stall) = jiffies + 3 * rcu_jiffies_till_stall_check() + 3;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
- 	/*
-@@ -992,8 +992,8 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 		dump_stack();
- 
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
--	if (ULONG_CMP_GE(jiffies, rsp->jiffies_stall))
--		rsp->jiffies_stall = jiffies +
-+	if (ULONG_CMP_GE(jiffies, ACCESS_ONCE(rsp->jiffies_stall)))
-+		ACCESS_ONCE(rsp->jiffies_stall) = jiffies +
- 				     3 * rcu_jiffies_till_stall_check() + 3;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
- 
-@@ -1077,7 +1077,7 @@ void rcu_cpu_stall_reset(void)
- 	struct rcu_state *rsp;
- 
- 	for_each_rcu_flavor(rsp)
--		rsp->jiffies_stall = jiffies + ULONG_MAX / 2;
-+		ACCESS_ONCE(rsp->jiffies_stall) = jiffies + ULONG_MAX / 2;
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 045c6d04ed3f..f7593c2536b0 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2659,7 +2659,8 @@ static void rcu_sysidle(unsigned long j)
+ static void rcu_sysidle_cancel(void)
+ {
+ 	smp_mb();
+-	ACCESS_ONCE(full_sysidle_state) = RCU_SYSIDLE_NOT;
++	if (full_sysidle_state > RCU_SYSIDLE_SHORT)
++		ACCESS_ONCE(full_sysidle_state) = RCU_SYSIDLE_NOT;
  }
  
  /*
