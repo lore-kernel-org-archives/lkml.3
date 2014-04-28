@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaD1C0h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:26:37 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:51629 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286AbaD1C0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:26:36 -0400
-From: Oleg Drokin <green@linuxhacker.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Cc: Dmitry Eremin <dmitry.eremin@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>
-Subject: [PATCH v3 2/4] staging/lustre/lnet: remove unused variable in lnet_destroy_remote_nets_table
-Date: Sun, 27 Apr 2014 22:25:56 -0400
-Message-Id: <1398651958-5103-3-git-send-email-green@linuxhacker.ru>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398651958-5103-1-git-send-email-green@linuxhacker.ru>
-References: <1398651958-5103-1-git-send-email-green@linuxhacker.ru>
+	id S1753876AbaD1CdF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 22:33:05 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:36642 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533AbaD1CdD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 22:33:03 -0400
+Message-ID: <535DBDA4.6070607@huawei.com>
+Date: Mon, 28 Apr 2014 10:32:04 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Will Deacon <Will.Deacon@arm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Robert Richter <rric@kernel.org>,
+        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>
+Subject: Re: [PATCH] arm64: add OProfile support
+References: <535B707F.7020802@huawei.com> <58ED971B-CC04-4BE1-916C-386D219874A8@arm.com> <535B88C9.6000908@huawei.com>
+In-Reply-To: <535B88C9.6000908@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Eremin <dmitry.eremin@intel.com>
+On 2014/4/26 18:22, Ding Tianhong wrote:
+> On 2014/4/26 17:23, Catalin Marinas wrote:
+>> On 26 Apr 2014, at 09:38, Ding Tianhong <dingtianhong@huawei.com> wrote:
+>>> Add OProfile support for arm64,  using the perf backend, and failing back
+>>> to generic timer based sampling if PMU interrupt is not supported.
+>>>
+>>> I have test this patch on Cortex-A53 and Cortex-A57 motherboard, the OProfile
+>>> could work well by PMU irq or arch timer irq.
+>>
+>> This came up before a few times and we also had an implementation but
+>> decided not to merge it. We should rather get the user space oprofile to
+>> use the perf kernel API.
+>>
+>> That’s an old thread, it may have even made it into mainline oprofile
+>> but I haven’t followed the development:
+>>
+>> http://marc.info/?l=oprofile-list&m=133002515616302&w=2
+>>
+>> Catalin
+>>
 
-Local variable 'hash' is never used
-found by Klocwork Insight tool
+Hi Cadtalin:
 
-Signed-off-by: Dmitry Eremin <dmitry.eremin@intel.com>
-Reviewed-on: http://review.whamcloud.com/9386
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-4629
-Reviewed-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Isaac Huang <he.huang@intel.com>
-Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
----
- drivers/staging/lustre/lnet/lnet/api-ni.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Sorry I could not find the implementation that not to merge the orpfile support for aarch64 till now, and
+I still have questions that the existing code only support oprofile by arch timer event, but not
+PMU event, this patch only add HW PMU support for oprofile, it is more accurate and stable, can you
+give me more advise and appreciate for your help.
 
-diff --git a/drivers/staging/lustre/lnet/lnet/api-ni.c b/drivers/staging/lustre/lnet/lnet/api-ni.c
-index 85b8d81..3f1fdaa 100644
---- a/drivers/staging/lustre/lnet/lnet/api-ni.c
-+++ b/drivers/staging/lustre/lnet/lnet/api-ni.c
-@@ -127,8 +127,7 @@ lnet_create_remote_nets_table(void)
- static void
- lnet_destroy_remote_nets_table(void)
- {
--	int		i;
--	struct list_head	*hash;
-+	int i;
- 
- 	if (the_lnet.ln_remote_nets_hash == NULL)
- 		return;
-@@ -137,7 +136,8 @@ lnet_destroy_remote_nets_table(void)
- 		LASSERT(list_empty(&the_lnet.ln_remote_nets_hash[i]));
- 
- 	LIBCFS_FREE(the_lnet.ln_remote_nets_hash,
--		    LNET_REMOTE_NETS_HASH_SIZE * sizeof(*hash));
-+		    LNET_REMOTE_NETS_HASH_SIZE *
-+		    sizeof(the_lnet.ln_remote_nets_hash[0]));
- 	the_lnet.ln_remote_nets_hash = NULL;
- }
- 
--- 
-1.9.0
+Regards
+Ding
+
+> Ok, I will check it and then decide the next step, thanks for your feedback.
+> 
+> Regards
+> Ding
+> 
+
 
