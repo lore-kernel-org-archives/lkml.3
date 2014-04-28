@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903AbaD1QSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:18:49 -0400
-Received: from mail.tpi.com ([74.45.170.26]:44385 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932875AbaD1QSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:18:34 -0400
-From: Tim Gardner <tim.gardner@canonical.com>
-To: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Zhuoyu Zhang <Zhuoyu.Zhang@freescale.com>
-Subject: [PATCH 3.15-rc3] cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost error
-Date: Mon, 28 Apr 2014 10:18:18 -0600
-Message-Id: <1398701898-68201-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756734AbaD1QY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:24:28 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:52021 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405AbaD1QYY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 12:24:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140428155540.GJ27561@twins.programming.kicks-ass.net>
+References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
+ <2c87e00d633153ba7b710bab12710cc3a58704dd.1398605516.git.nasa4836@gmail.com>
+ <20140428145440.GB7839@dhcp22.suse.cz> <CAHz2CGUueeXR2UdLXBRihVN3R8qEUR8wWhpxYjA6pu3ONO0cJA@mail.gmail.com>
+ <20140428155540.GJ27561@twins.programming.kicks-ass.net>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 29 Apr 2014 00:23:41 +0800
+Message-ID: <CAHz2CGWJjU5U=pDuyzX=L+gev4cpNxkjCnVAvRpY=vO35tBDLg@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/2] mm: introdule compound_head_by_tail()
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        kirill.shutemov@linux.intel.com, Rik van Riel <riel@redhat.com>,
+        Jiang Liu <liuj97@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        sasha.levin@oracle.com, liwanp@linux.vnet.ibm.com,
+        khalid.aziz@oracle.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bfa709bc823fc32ee8dd5220d1711b46078235d8 (cpufreq: powerpc: add cpufreq
-transition latency for FSL e500mc SoCs) introduced a modpost error:
+On Mon, Apr 28, 2014 at 11:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> What version,
 
-ERROR: "__udivdi3" [drivers/cpufreq/ppc-corenet-cpufreq.ko] undefined!
-make[1]: *** [__modpost] Error 1
+the code snipt in question is extracted from v3.15-rc3.
 
-Fix this by avoiding 64 bit integer division.
 
-gcc version 4.8.2
+for the (1) check in previous email, its assembled code looks like:
 
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Zhuoyu Zhang <Zhuoyu.Zhang@freescale.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/cpufreq/ppc-corenet-cpufreq.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+       --- (1) snipt ---
+       mov    (%rdi),%rax                               (a)
+       test   $0x80,%ah                                  (b)
+       jne    754 <put_compound_page+0x74> (c)
+       --- (1) snipt ---
 
-diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-index a1ca3dd..0af618a 100644
---- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-+++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-@@ -138,6 +138,7 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	struct cpufreq_frequency_table *table;
- 	struct cpu_data *data;
- 	unsigned int cpu = policy->cpu;
-+	u64 transition_latency_hz;
- 
- 	np = of_get_cpu_node(cpu, NULL);
- 	if (!np)
-@@ -205,8 +206,10 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	for_each_cpu(i, per_cpu(cpu_mask, cpu))
- 		per_cpu(cpu_data, i) = data;
- 
-+	transition_latency_hz = 12ULL * NSEC_PER_SEC;
- 	policy->cpuinfo.transition_latency =
--				(12ULL * NSEC_PER_SEC) / fsl_get_sys_freq();
-+		do_div(transition_latency_hz, fsl_get_sys_freq());
-+
- 	of_node_put(np);
- 
- 	return 0;
--- 
-1.7.9.5
+      (a) %rdi is the struct page pointer
+      (b) check if PG_tail(0x80) set(likely not set, we tell the compiler)
+      (c) if set, jump; not set, fall through (good, credit to  our hint)
 
+===================================================
+
+for the (3) check in previous email, its assembled code looks like:
+
+        --- (3) snipt ---
+        mov    (%rdi),%rax                                    (A)
+        mov    %rdi,%r12
+        test   $0x80,%ah                                      (B)
+        jne    8f8 <put_compound_page+0x218>     (C)
+        --- (3) snipt ---
+
+      (A) %rdi is the struct page pointer
+      (B) check if PG_tail(0x80) set(likely set in this case, but we
+tell compiler unlikely)
+      (C) if set, jump; not set, fall through (god! it would better
+not jump if set,  but we
+           tell compiler unlikely, so it happily did as we told it)
+
+
+# all code are compiled by gcc (GCC) 4.8.2
+
+> and why didn't your changelog include this useful information?
+
+Sorry, I would have done so.  I will resend the patch.
+
+Thanks,
+Jianyu Zhan
