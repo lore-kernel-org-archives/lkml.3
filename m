@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaD1CKh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 22:10:37 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:43632 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaD1CK2 (ORCPT
+	id S1753191AbaD1BaY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42821 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752145AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 22:10:28 -0400
+	Sun, 27 Apr 2014 21:29:20 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <1398410396-23338-7-git-send-email-acourbot@nvidia.com>
-References: <1398410396-23338-1-git-send-email-acourbot@nvidia.com>
-	<1398410396-23338-7-git-send-email-acourbot@nvidia.com>
-Date: Mon, 28 Apr 2014 12:10:27 +1000
-Message-ID: <CACAvsv51Ju_ZqJfNU5GzzEmDzf2Fr6Xr_5yGRtfqOQRVTgvDPg@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v3 6/9] drm/nouveau/graph: enable when using
- external firmware
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.372556947@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 08/94] vhost: fix total length when packets are too short
+In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 5:19 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> nvc0_graph_ctor() would only let the graphics engine be enabled if its
-> oclass has a proper microcode linked to it. This prevents GR from being
-> enabled at all on chips that rely exclusively on external firmware, even
-> though such a use-case is valid.
->
-> Relax the conditions enabling the GR engine to also include the case
-> where an external firmware has also been loaded.
-I'm happy to take this patch as-is.  I do wonder if we should do
-something like this though:
+3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
 
-if (nouveau_boolopt(device->cfgopt, "NvGrUseFW", oclass->fecs.ucode == NULL))
+------------------
 
-Which will automatically switch to external firmware if there's no
-internal implementation available.
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-Thoughts?  This could be a separate patch even, if preferred.
+[ Upstream commit d8316f3991d207fe32881a9ac20241be8fa2bad0 ]
 
-Thanks,
-Ben.
+When mergeable buffers are disabled, and the
+incoming packet is too large for the rx buffer,
+get_rx_bufs returns success.
 
->
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
-> index f3c7329da0a0..e5b75f189988 100644
-> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
-> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
-> @@ -1259,10 +1259,13 @@ nvc0_graph_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
->         struct nvc0_graph_oclass *oclass = (void *)bclass;
->         struct nouveau_device *device = nv_device(parent);
->         struct nvc0_graph_priv *priv;
-> +       bool use_ext_fw, enable;
->         int ret, i;
->
-> -       ret = nouveau_graph_create(parent, engine, bclass,
-> -                                  (oclass->fecs.ucode != NULL), &priv);
-> +       use_ext_fw = nouveau_boolopt(device->cfgopt, "NvGrUseFW", false);
-> +       enable = use_ext_fw || oclass->fecs.ucode != NULL;
-> +
-> +       ret = nouveau_graph_create(parent, engine, bclass, enable, &priv);
->         *pobject = nv_object(priv);
->         if (ret)
->                 return ret;
-> @@ -1272,7 +1275,7 @@ nvc0_graph_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
->
->         priv->base.units = nvc0_graph_units;
->
-> -       if (nouveau_boolopt(device->cfgopt, "NvGrUseFW", false)) {
-> +       if (use_ext_fw) {
->                 nv_info(priv, "using external firmware\n");
->                 if (nvc0_graph_ctor_fw(priv, "fuc409c", &priv->fuc409c) ||
->                     nvc0_graph_ctor_fw(priv, "fuc409d", &priv->fuc409d) ||
-> --
-> 1.9.2
->
-> _______________________________________________
-> Nouveau mailing list
-> Nouveau@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/nouveau
+This was intentional in order for make recvmsg
+truncate the packet and then handle_rx would
+detect err != sock_len and drop it.
+
+Unfortunately we pass the original sock_len to
+recvmsg - which means we use parts of iov not fully
+validated.
+
+Fix this up by detecting this overrun and doing packet drop
+immediately.
+
+CVE-2014-0077
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/vhost/net.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -346,6 +346,12 @@ static int get_rx_bufs(struct vhost_virt
+ 	*iovcount = seg;
+ 	if (unlikely(log))
+ 		*log_num = nlogs;
++
++	/* Detect overrun */
++	if (unlikely(datalen > 0)) {
++		r = UIO_MAXIOV + 1;
++		goto err;
++	}
+ 	return headcount;
+ err:
+ 	vhost_discard_vq_desc(vq, headcount);
+@@ -400,6 +406,14 @@ static void handle_rx(struct vhost_net *
+ 		/* On error, stop handling until the next kick. */
+ 		if (unlikely(headcount < 0))
+ 			break;
++		/* On overrun, truncate and discard */
++		if (unlikely(headcount > UIO_MAXIOV)) {
++			msg.msg_iovlen = 1;
++			err = sock->ops->recvmsg(NULL, sock, &msg,
++						 1, MSG_DONTWAIT | MSG_TRUNC);
++			pr_debug("Discarded rx packet: len %zd\n", sock_len);
++			continue;
++		}
+ 		/* OK, now we need to know about added descriptors. */
+ 		if (!headcount) {
+ 			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+
