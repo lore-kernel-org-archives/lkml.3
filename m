@@ -1,188 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaD1VId (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:08:33 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:59119 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaD1VIb (ORCPT
+	id S1756525AbaD1VK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:10:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbaD1VK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:08:31 -0400
-Message-ID: <535EC34A.50605@redhat.com>
-Date: Mon, 28 Apr 2014 23:08:26 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] SCSI fixes for 3.15-rc3
-References: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Mon, 28 Apr 2014 17:10:27 -0400
+Date: Mon, 28 Apr 2014 14:10:25 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 1/1] MM: make vmpressure_win dynamic
+Message-Id: <20140428141025.e8f7604535b4d840a6eeacea@linux-foundation.org>
+In-Reply-To: <20140428222521.29a711c33e720ff5e2c00e2d@skynet.be>
+References: <20140428222521.29a711c33e720ff5e2c00e2d@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/04/2014 16:59, James Bottomley ha scritto:
-> This is a set of seven fixes, three (hpsa) and free'd command references
-> correcting bugs in the last round of updates and the remaining four
-> correcting problems within the SCSI error handler that was causing a
-> deadlock within USB.
->
-> The patch is available here:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
->
-> The short changelog is:
->
-> Alan Stern (1):
->       Fix command result state propagation
->
-> Christoph Hellwig (2):
->       don't reference freed command in scsi_prep_return
->       don't reference freed command in scsi_init_sgtable
->
-> Hannes Reinecke (1):
->       Fix USB deadlock caused by SCSI error handling
->
-> James Bottomley (2):
->       More USB deadlock fixes
->       Fix spurious request sense in error handling
->
-> scameron@beardog.cce.hp.com (1):
->       hpsa: fix NULL dereference in hpsa_put_ctlr_into_performant_mode()
->
-> And the diffstat:
->
->  drivers/scsi/hpsa.c       |  8 ++++----
->  drivers/scsi/scsi_error.c | 12 ++++++++++++
->  drivers/scsi/scsi_lib.c   |  6 ++++--
->  3 files changed, 20 insertions(+), 6 deletions(-)
->
-> With full diffs below.
+On Mon, 28 Apr 2014 22:25:21 +0200 Fabian Frederick <fabf@skynet.be> wrote:
 
-James,
+> Initialize vmpressure_win in vmstat using
+> calculate_normal_threshold() based on each zone/cpu * SWAP_CLUSTER_SIZE
+> 
+> Value refreshed through cpu notifier
 
-can you queue http://article.gmane.org/gmane.linux.kernel/1682301/raw 
-please?
+Anton wrote vmpressure so please let's cc him.  `git blame' is useful
+for working out who to cc.
 
-Thanks,
+What were the reasons for this change?  Any testing results?
 
-Paolo
-
-> James
->
-> ---
->
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 8cf4a0c..9a6e4a2 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
->  	if (hpsa_simple_mode)
->  		return;
->
-> +	trans_support = readl(&(h->cfgtable->TransportSupport));
-> +	if (!(trans_support & PERFORMANT_MODE))
-> +		return;
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -23,6 +23,23 @@
+>  
+>  #include "internal.h"
+>  
+> +/*
+> + * The window size (vmpressure_win) is the number of scanned pages before
+> + * we try to analyze scanned/reclaimed ratio. So the window is used as a
+> + * rate-limit tunable for the "low" level notification, and also for
+> + * averaging the ratio for medium/critical levels. Using small window
+> + * sizes can cause lot of false positives, but too big window size will
+> + * delay the notifications.
+> + *
+> + * As the vmscan reclaimer logic works with chunks which are multiple of
+> + * SWAP_CLUSTER_MAX, it makes sense to use it for the window size as well.
+> + *
+> + */
+> +#ifdef CONFIG_MEMCG
+> +static DEFINE_SPINLOCK(vmpressure_win_lock);
+> +unsigned long vmpressure_win __read_mostly = SWAP_CLUSTER_MAX * 16;
+> +#endif
 > +
->  	/* Check for I/O accelerator mode support */
->  	if (trans_support & CFGTBL_Trans_io_accel1) {
->  		transMethod |= CFGTBL_Trans_io_accel1 |
-> @@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+>  #ifdef CONFIG_VM_EVENT_COUNTERS
+>  DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
+>  EXPORT_PER_CPU_SYMBOL(vm_event_states);
+> @@ -163,11 +180,13 @@ void refresh_zone_stat_thresholds(void)
+>  	struct zone *zone;
+>  	int cpu;
+>  	int threshold;
+> +	unsigned long new_vmpressure_win = 0;
+>  
+>  	for_each_populated_zone(zone) {
+>  		unsigned long max_drift, tolerate_drift;
+>  
+>  		threshold = calculate_normal_threshold(zone);
+> +		new_vmpressure_win += threshold;
+>  
+>  		for_each_online_cpu(cpu)
+>  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+> @@ -184,6 +203,11 @@ void refresh_zone_stat_thresholds(void)
+>  			zone->percpu_drift_mark = high_wmark_pages(zone) +
+>  					max_drift;
 >  	}
->
->  	/* TODO, check that this next line h->nreply_queues is correct */
-> -	trans_support = readl(&(h->cfgtable->TransportSupport));
-> -	if (!(trans_support & PERFORMANT_MODE))
-> -		return;
-> -
->  	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
->  	hpsa_get_max_perf_mode_cmds(h);
->  	/* Performant mode ring buffer and supporting data structures */
-> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> index 771c16b..f17aa7a 100644
-> --- a/drivers/scsi/scsi_error.c
-> +++ b/drivers/scsi/scsi_error.c
-> @@ -189,6 +189,7 @@ scsi_abort_command(struct scsi_cmnd *scmd)
->  		/*
->  		 * Retry after abort failed, escalate to next level.
->  		 */
-> +		scmd->eh_eflags &= ~SCSI_EH_ABORT_SCHEDULED;
->  		SCSI_LOG_ERROR_RECOVERY(3,
->  			scmd_printk(KERN_INFO, scmd,
->  				    "scmd %p previous abort failed\n", scmd));
-> @@ -920,10 +921,12 @@ void scsi_eh_prep_cmnd(struct scsi_cmnd *scmd, struct scsi_eh_save *ses,
->  	ses->prot_op = scmd->prot_op;
->
->  	scmd->prot_op = SCSI_PROT_NORMAL;
-> +	scmd->eh_eflags = 0;
->  	scmd->cmnd = ses->eh_cmnd;
->  	memset(scmd->cmnd, 0, BLK_MAX_CDB);
->  	memset(&scmd->sdb, 0, sizeof(scmd->sdb));
->  	scmd->request->next_rq = NULL;
-> +	scmd->result = 0;
->
->  	if (sense_bytes) {
->  		scmd->sdb.length = min_t(unsigned, SCSI_SENSE_BUFFERSIZE,
-> @@ -1157,6 +1160,15 @@ int scsi_eh_get_sense(struct list_head *work_q,
->  					     __func__));
->  			break;
->  		}
-> +		if (status_byte(scmd->result) != CHECK_CONDITION)
-> +			/*
-> +			 * don't request sense if there's no check condition
-> +			 * status because the error we're processing isn't one
-> +			 * that has a sense code (and some devices get
-> +			 * confused by sense requests out of the blue)
-> +			 */
-> +			continue;
-> +
->  		SCSI_LOG_ERROR_RECOVERY(2, scmd_printk(KERN_INFO, scmd,
->  						  "%s: requesting sense\n",
->  						  current->comm));
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 65a123d..9db097a 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -137,6 +137,7 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
->  	 * lock such that the kblockd_schedule_work() call happens
->  	 * before blk_cleanup_queue() finishes.
->  	 */
-> +	cmd->result = 0;
->  	spin_lock_irqsave(q->queue_lock, flags);
->  	blk_requeue_request(q, cmd->request);
->  	kblockd_schedule_work(q, &device->requeue_work);
-> @@ -1044,6 +1045,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
->   */
->  int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
->  {
-> +	struct scsi_device *sdev = cmd->device;
->  	struct request *rq = cmd->request;
->
->  	int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
-> @@ -1091,7 +1093,7 @@ err_exit:
->  	scsi_release_buffers(cmd);
->  	cmd->request->special = NULL;
->  	scsi_put_command(cmd);
-> -	put_device(&cmd->device->sdev_gendev);
-> +	put_device(&sdev->sdev_gendev);
->  	return error;
+> +#ifdef CONFIG_MEMCG
+> +	spin_lock(&vmpressure_win_lock);
+> +	vmpressure_win = new_vmpressure_win * SWAP_CLUSTER_MAX;
+> +	spin_unlock(&vmpressure_win_lock);
+> +#endif
 >  }
->  EXPORT_SYMBOL(scsi_init_io);
-> @@ -1273,7 +1275,7 @@ int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
->  			struct scsi_cmnd *cmd = req->special;
->  			scsi_release_buffers(cmd);
->  			scsi_put_command(cmd);
-> -			put_device(&cmd->device->sdev_gendev);
-> +			put_device(&sdev->sdev_gendev);
->  			req->special = NULL;
->  		}
->  		break;
->
->
+
+I don't think we need the spinlock really.  It's a ulong - concurrent
+readers will see either the old value or the new one whether or not the
+writer took that lock.
+
+If we're going to modify this thing on the fly then we probably should
+expose the current value to userspace in some fashion.
 
