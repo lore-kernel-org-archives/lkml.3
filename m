@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165AbaD1BbA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43112 "EHLO
+	id S1754106AbaD1Ba6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43107 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752931AbaD1B3Z (ORCPT
+	by vger.kernel.org with ESMTP id S1752930AbaD1B3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:25 -0400
+	Sun, 27 Apr 2014 21:29:24 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,14 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
-        "Brian Norris" <computersforpeace@gmail.com>,
-        "Li Zefan" <lizefan@huawei.com>,
-        "David Woodhouse" <dwmw2@infradead.org>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.256984422@decadent.org.uk>
+        "=?UTF-8?q?YOSHIFUJI=20Hideaki=20/=20=E5=90=89=E8=97=A4=E8=8B=B1?= 
+	=?UTF-8?q?=E6=98=8E?=" <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.720184235@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 41/94] jffs2: remove from wait queue after schedule()
+Subject: [PATCH 3.2 13/94] isdnloop: Validate NUL-terminated strings from
+ user.
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,33 +34,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: YOSHIFUJI Hideaki / 吉藤英明 <yoshfuji@linux-ipv6.org>
 
-commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
+[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
 
-@wait is a local variable, so if we don't remove it from the wait queue
-list, later wake_up() may end up accessing invalid memory.
+Return -EINVAL unless all of user-given strings are correctly
+NUL-terminated.
 
-This was spotted by eyes.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/jffs2/nodemgmt.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/isdn/isdnloop/isdnloop.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -128,6 +128,7 @@ int jffs2_reserve_space(struct jffs2_sb_
- 					spin_unlock(&c->erase_completion_lock);
- 
- 					schedule();
-+					remove_wait_queue(&c->erase_wait, &wait);
- 				} else
- 					spin_unlock(&c->erase_completion_lock);
- 			} else if (ret)
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card * card, isd
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	for (i = 0; i < 3; i++) {
++		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
++			return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 		case ISDN_PTYPE_EURO:
 
