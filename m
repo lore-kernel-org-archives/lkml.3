@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaD1JZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:25:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22349 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251AbaD1JZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:25:18 -0400
-Date: Mon, 28 Apr 2014 11:24:15 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
-Message-ID: <20140428092415.GA1109@krava.brq.redhat.com>
-References: <1392311193-21214-1-git-send-email-jean.pihet@linaro.org>
- <CAFrcx1=ZBWt1mak_6+=KbCFZEsaD3T_xZ8up4WBLSr6_JTkP1A@mail.gmail.com>
- <20140312174520.GB17308@arm.com>
- <20140313101202.GB11365@mudshark.cambridge.arm.com>
- <20140313102203.GC30339@arm.com>
- <CAFrcx1mZg-kdBG2d4bwWdqJByYXLG2SJ5+GD7cSteqJj=A6Sxw@mail.gmail.com>
- <CAFrcx1mvSMFea999FZCEVxMZsmyFw+b_fugdGSEsAJkqwzkXQw@mail.gmail.com>
+	id S1754745AbaD1JZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:25:44 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20108 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251AbaD1JZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 05:25:40 -0400
+Date: Mon, 28 Apr 2014 12:25:23 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: navin patidar <navin.patidar@gmail.com>
+Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8188eu: Use USB subsystem functions to check
+ endpoint type
+Message-ID: <20140428092523.GS26890@mwanda>
+References: <1398530635-3813-1-git-send-email-navin.patidar@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFrcx1mvSMFea999FZCEVxMZsmyFw+b_fugdGSEsAJkqwzkXQw@mail.gmail.com>
+In-Reply-To: <1398530635-3813-1-git-send-email-navin.patidar@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 11:15:43AM +0200, Jean Pihet wrote:
-> Arnaldo,
+On Sat, Apr 26, 2014 at 10:13:55PM +0530, navin patidar wrote:
+> Use inline functions provided by USB subsystem to check endpoint type,
+> instead of macros implemented by driver to do the same.
 > 
-> > This patch hooks in the perf_regs and libunwind code for ARM64.
-> > The tools/perf/arch/arm64 is created; it contains the arch specific
-> > code for DWARF unwinding.
-> >
-> > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> > Acked-by: Will Deacon <will.deacon@arm.com>
+> Unnecessary debugging messages are also removed.
 > 
-> Ping on this patch. Can you take this patch in your tree?
-> Please let me know if you need a rebased version of this one.
 
-I'll check this one
+I like both these changes but they would have been so much easier to
+review if you deleted the debugging messagese in [patch 1/2] and then
+changed the endpoint functions in [patch 2/2].
 
-jirka
+> @@ -183,60 +143,36 @@ static struct dvobj_priv *usb_dvobj_init(struct usb_interface *usb_intf)
+>  	pdvobjpriv->nr_endpoint = piface_desc->bNumEndpoints;
+>  
+>  	for (i = 0; i < pdvobjpriv->nr_endpoint; i++) {
+> +
+
+Don't put a blank line here, btw.
+
+> +		int ep_num;
+>  		phost_endp = phost_iface->endpoint + i;
+
+Anyway, please resend because it needs to be broken into two patches.
+
+regards,
+dan carpenter
+
