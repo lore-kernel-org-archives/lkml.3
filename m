@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaD1TYx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:24:53 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:44987 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697AbaD1TYv (ORCPT
+	id S1756782AbaD1TZA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:25:00 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:35733 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756750AbaD1TY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:24:51 -0400
+	Mon, 28 Apr 2014 15:24:57 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/5] Cpufreq frequency serialization fixes
+To: rjw@rjwysocki.net, mroos@linux.ee, viresh.kumar@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Tue, 29 Apr 2014 00:23:54 +0530
+Message-ID: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <53555C56.1040900@infradead.org>
-References: <1397415946.1555.16.camel@vger.seibold.net>
-	<53555C56.1040900@infradead.org>
-Date: Mon, 28 Apr 2014 11:16:37 -0700
-Message-ID: <CALAqxLVVGM2nON71BbhuD-7eXnqbKGomfL63COaT7nePuQQ=zg@mail.gmail.com>
-Subject: Re: X86: Impossible select Enhanced Real Time Clock Support (legacy
- PC RTC driver)
-From: John Stultz <john.stultz@linaro.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stefani Seibold <stefani@seibold.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Prarit Bhargava <prarit@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042818-1396-0000-0000-000004C0BC3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 10:58 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> [adding more patch committers]
->
-> On 04/13/2014 12:05 PM, Stefani Seibold wrote:
->> Since some kernel version it is impossible to select the Enhanced Real
->> Time Clock Support (legacy PC RTC driver) because RTC_LIB is set by
->> default in arch/x86/Kconfig, but the rule for selecting CONFIG_RTC is
->> RTC_LIB=n. So the code of driver/char/rtc is still useless.
->>
->> This breaks the API since there is no more misc device /dev/rtc
->> available without a udev rule or a link to /dev/rtc0.
 
-So yea.. I feel like that /dev/rtcN renaming (and API) break (which
-was a huge and annoying pain) was back in the 2.6.18-ish era?
+Hi,
 
-But it sounds like the driver/char/rtc bit is dead code, and needs a
-cleanup? Or is there some use of that code that you need that the
-generic RTC layer doesn't have?
+Meelis Roos reported hangs during boot in the longhaul cpufreq driver, after
+commit 12478cf0c55 (cpufreq: Make sure frequency transitions are serialized).
+The root-cause of this issue is the extra invocation of the
+cpufreq_freq_transition_begin() and cpufreq_freq_transition_end() APIs in the
+longhaul driver. I found similar issues in the powernow-k6 and powernow-k7
+drivers as well. This patchset fixes the issue in all the 3 drivers and also
+adds a debug infrastructure to catch such issues easily.
 
-thanks
--john
+Patches 1-4 fix the regression in longhaul, powernow-k6 and powernow-k7
+drivers. (Patch 2 fixes a different bug in powernow-k6, and it is kept as a
+separate patch instead of merging it with patch 3, because I felt that it was
+a bit subtle and needed attention in a separate patch).
+
+Patch 5 adds a debug infrastructure to the cpufreq core to catch such problems
+more easily in the future.
+
+
+Changes in v2:
+--------------
+
+* Modified patch 1 to take error returns into account, as pointed out by
+  Viresh.
+* Added patch 2 to fix the existing issue in the powernow-k6 driver, pointed
+  out by Viresh.
+* Added patch 5 to introduce a debug infrastructure to catch such issues
+  easily.
+
+
+ Srivatsa S. Bhat (5):
+      cpufreq, longhaul: Fix double invocation of cpufreq_freq_transition_begin/end
+      cpufreq, powernow-k6: Fix incorrect comparison with max_multipler
+      cpufreq, powernow-k6: Fix double invocation of cpufreq_freq_transition_begin/end
+      cpufreq, powernow-k7: Fix double invocation of cpufreq_freq_transition_begin/end
+      cpufreq: Catch double invocations of cpufreq_freq_transition_begin/end
+
+
+ drivers/cpufreq/cpufreq.c     |   12 ++++++++++++
+ drivers/cpufreq/longhaul.c    |   36 ++++++++++++++++++++++++------------
+ drivers/cpufreq/powernow-k6.c |   23 +++++++++++++----------
+ drivers/cpufreq/powernow-k7.c |    4 ----
+ include/linux/cpufreq.h       |    1 +
+ 5 files changed, 50 insertions(+), 26 deletions(-)
+
+
+Thanks,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
