@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933365AbaD1WMz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:12:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50681 "EHLO mga03.intel.com"
+	id S964779AbaD1WNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:13:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:42236 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755880AbaD1WMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:12:52 -0400
+	id S1755410AbaD1WMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:12:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
-   d="scan'208";a="425089704"
+   d="scan'208";a="530089475"
 From: Andi Kleen <andi@firstfloor.org>
 To: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 5/7] x86: Make old K8 swapgs workaround conditional
-Date: Mon, 28 Apr 2014 15:12:39 -0700
-Message-Id: <1398723161-21968-6-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 2/7] x86: Naturally align the debug IST stack
+Date: Mon, 28 Apr 2014 15:12:36 -0700
+Message-Id: <1398723161-21968-3-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
 References: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
@@ -24,71 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Every gs selector/index reload always paid an extra MFENCE
-between the two SWAPGS. This was to work around an old
-bug in early K8 steppings.  All other CPUs don't need the extra
-mfence. Patch the extra MFENCE only in for K8.
+The followon patch for RD*BASE requires the IST stacks to be naturally
+aligned because it uses and to access the bottom of the stack.
+This was true for everyone except for the debug ist stack.
+Make the debug ist stack naturally aligned too.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/cpufeature.h |  1 +
- arch/x86/kernel/cpu/amd.c         |  3 +++
- arch/x86/kernel/entry_64.S        | 10 +++++++++-
- 3 files changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/page_64_types.h | 4 ++--
+ arch/x86/kernel/cpu/common.c         | 8 +++++++-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 89270b4..eb4bb46 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -102,6 +102,7 @@
- #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
- #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
- #define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
-+#define X86_FEATURE_SWAPGS_MFENCE (3*32+31) /* SWAPGS may need MFENCE */
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 43dcd80..76564b6 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -17,8 +17,8 @@
+ #define STACKFAULT_STACK 1
+ #define DOUBLEFAULT_STACK 2
+ #define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
++#define MCE_STACK 4
++#define DEBUG_STACK 5 /* Must be always last */
+ #define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
  
- /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
- #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index d3153e2..65125d3 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -560,6 +560,9 @@ static void init_amd(struct cpuinfo_x86 *c)
- 		if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
- 			set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 24b6fd1..79ba4b9 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1114,8 +1114,12 @@ static const unsigned int exception_stack_sizes[N_EXCEPTION_STACKS] = {
+ 	  [DEBUG_STACK - 1]			= DEBUG_STKSZ
+ };
  
-+		if (c->x86 == 0xf)
-+			set_cpu_cap(c, X86_FEATURE_SWAPGS_MFENCE);
++/* The IST stacks must be naturally aligned */
 +
- 		/*
- 		 * Some BIOSes incorrectly force this feature, but only K8
- 		 * revision D (model = 0x14) and later actually support it.
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 7c77b2b..810f010 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1369,13 +1369,21 @@ ENTRY(native_load_gs_index)
- 	SWAPGS
- gs_change:
- 	movl %edi,%gs
--2:	mfence		/* workaround */
-+2:	ASM_NOP3	/* may be replaced with mfence */
- 	SWAPGS
- 	popfq_cfi
- 	ret
- 	CFI_ENDPROC
- END(native_load_gs_index)
+ static DEFINE_PER_CPU_PAGE_ALIGNED(char, exception_stacks
+-	[(N_EXCEPTION_STACKS - 1) * EXCEPTION_STKSZ + DEBUG_STKSZ]);
++	[(N_EXCEPTION_STACKS - 1) * EXCEPTION_STKSZ]);
++static DEFINE_PER_CPU_2PAGE_ALIGNED(char, debug_stack
++	[DEBUG_STKSZ]);
  
-+	/* Early K8 systems needed an mfence after swapgs to workaround a bug */
-+	.section .altinstr_replacement,"ax"
-+3:	mfence
-+	.previous
-+	.section .altinstructions,"a"
-+	altinstruction_entry 2b,3b,X86_FEATURE_SWAPGS_MFENCE,3,3
-+	.previous
-+
- 	_ASM_EXTABLE(gs_change,bad_gs)
- 	.section .fixup,"ax"
- 	/* running with kernelgs */
+ /* May not be marked __init: used by software suspend */
+ void syscall_init(void)
+@@ -1285,6 +1289,8 @@ void cpu_init(void)
+ 		char *estacks = per_cpu(exception_stacks, cpu);
+ 
+ 		for (v = 0; v < N_EXCEPTION_STACKS; v++) {
++			if (v == DEBUG_STACK - 1)
++				estacks = per_cpu(debug_stack, cpu);
+ 			estacks += exception_stack_sizes[v];
+ 			oist->ist[v] = t->x86_tss.ist[v] =
+ 					(unsigned long)estacks;
 -- 
 1.9.0
 
