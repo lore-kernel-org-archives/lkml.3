@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993AbaD1UVZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 16:21:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33775 "EHLO mx1.redhat.com"
+	id S1757028AbaD1UVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 16:21:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16634 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418AbaD1UVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 16:21:23 -0400
-Date: Mon, 28 Apr 2014 21:30:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Hugh Dickins <hughd@google.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uprobes: Refuse to insert a probe into MAP_SHARED vma
-Message-ID: <20140428193029.GA9773@redhat.com>
-References: <20140428191622.GA9234@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428191622.GA9234@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755666AbaD1UVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 16:21:31 -0400
+Message-ID: <1398716440.24318.330.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v5 02/11] ARM SMMU: Add capability IOMMU_CAP_DMA_EXEC
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        Joerg Roedel <joro@8bytes.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        "Upinder Malhi (umalhi)" <umalhi@cisco.com>,
+        "moderated list:ARM SMMU DRIVER" 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Apr 2014 14:20:40 -0600
+In-Reply-To: <20140428193709.GE22135@arm.com>
+References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
+	 <1398700371-20096-3-git-send-email-a.motakis@virtualopensystems.com>
+	 <20140428193709.GE22135@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And of course, I forgot to add Hugh ;) Fix that.
+On Mon, 2014-04-28 at 20:37 +0100, Will Deacon wrote:
+> On Mon, Apr 28, 2014 at 04:52:42PM +0100, Antonios Motakis wrote:
+> > The ARM SMMU can take an IOMMU_EXEC protection flag in addition to
+> > IOMMU_READ and IOMMU_WRITE. Expose this as an IOMMU capability.
+> 
+> The other way of handling this would be to negate the capability and
+> advertise a NOEXEC cap instead. That would need the IOMMU_EXEC flag to
+> become IOMMU_NOEXEC and the ARM SMMU driver updating accordingly, but it
+> might make more sense if people don't object to mixing positive and negative
+> logic in the IOMMU_* flags.
+> 
+> Any thoughts?
 
-On 04/28, Oleg Nesterov wrote:
->
-> valid_vma() rejects the VM_SHARED vmas, but this still allows to insert
-> a probe into the MAP_SHARED but not VM_MAYWRITE vma.
-> 
-> Currently this is fine, such a mapping doesn't really differ from the
-> private read-only mmap except mprotect(PROT_WRITE) won't work. However,
-> get_user_pages(FOLL_WRITE | FOLL_FORCE) doesn't allow to COW in this
-> case, and it would be safer to follow the same conventions as mm even
-> if currently this happens to work.
-> 
-> After the recent cda540ace6a1 "mm: get_user_pages(write,force) refuse
-> to COW in shared areas" only uprobes can insert an anon page into the
-> shared file-backed area, lets stop this and change valid_vma() to check
-> VM_MAYSHARE instead.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index d1edc5e..7716c40 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -127,7 +127,7 @@ struct xol_area {
->   */
->  static bool valid_vma(struct vm_area_struct *vma, bool is_register)
->  {
-> -	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
-> +	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_MAYSHARE;
->  
->  	if (is_register)
->  		flags |= VM_WRITE;
-> -- 
-> 1.5.5.1
-> 
+A benefit of doing that would be that the flag becomes enforceable.  As
+written in this draft, if a user does not specify EXEC, the mapping may
+or may not be executable, depending on the IOMMU capability (assuming
+that if EXEC is not supported that it follows READ).  If the flag
+changes to NOEXEC, then all the domains in the container should support
+it or else the mapping should fail.  We could also avoid the test in
+vfio code when doing a mapping and just let the IOMMU driver fail the
+map if NOEXEC is unsupported.  Thanks,
+
+Alex
 
