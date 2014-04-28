@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167AbaD1Bbc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42935 "EHLO
+	id S932146AbaD1Bbb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42899 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752637AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752622AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com>,
-        "Josef Bacik" <jbacik@fb.com>
+CC: akpm@linux-foundation.org, "Richard Guy Briggs" <rgb@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.937284052@decadent.org.uk>
+Message-ID: <lsq.1398647482.97166684@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 40/94] Btrfs: skip submitting barrier for missing device
+Subject: [PATCH 3.2 56/94] pid: get pid_t ppid of task in init_pid_ns
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,51 +31,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit f88ba6a2a44ee98e8d59654463dc157bb6d13c43 upstream.
+commit ad36d28293936b03d6b7996e9d6aadfd73c0eb08 upstream.
 
-I got an error on v3.13:
- BTRFS error (device sdf1) in write_all_supers:3378: errno=-5 IO failure (errors while submitting device barriers.)
+Added the functions task_ppid_nr_ns() and task_ppid_nr() to abstract the lookup
+of the PPID (real_parent's pid_t) of a process, including rcu locking, in the
+arbitrary and init_pid_ns.
+This provides an alternative to sys_getppid(), which is relative to the child
+process' pid namespace.
 
-how to reproduce:
-  > mkfs.btrfs -f -d raid1 /dev/sdf1 /dev/sdf2
-  > wipefs -a /dev/sdf2
-  > mount -o degraded /dev/sdf1 /mnt
-  > btrfs balance start -f -sconvert=single -mconvert=single -dconvert=single /mnt
-
-The reason of the error is that barrier_all_devices() failed to submit
-barrier to the missing device.  However it is clear that we cannot do
-anything on missing device, and also it is not necessary to care chunks
-on the missing device.
-
-This patch stops sending/waiting barrier if device is missing.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
+(informed by ebiederman's 6c621b7e)
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/btrfs/disk-io.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/sched.h | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -2731,6 +2731,8 @@ static int barrier_all_devices(struct bt
- 	/* send down all the barriers */
- 	head = &info->fs_devices->devices;
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors++;
- 			continue;
-@@ -2745,6 +2747,8 @@ static int barrier_all_devices(struct bt
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1690,6 +1690,24 @@ static inline pid_t task_tgid_vnr(struct
+ }
  
- 	/* wait for all the barriers */
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors++;
- 			continue;
+ 
++static int pid_alive(const struct task_struct *p);
++static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
++{
++	pid_t pid = 0;
++
++	rcu_read_lock();
++	if (pid_alive(tsk))
++		pid = task_tgid_nr_ns(rcu_dereference(tsk->real_parent), ns);
++	rcu_read_unlock();
++
++	return pid;
++}
++
++static inline pid_t task_ppid_nr(const struct task_struct *tsk)
++{
++	return task_ppid_nr_ns(tsk, &init_pid_ns);
++}
++
+ static inline pid_t task_pgrp_nr_ns(struct task_struct *tsk,
+ 					struct pid_namespace *ns)
+ {
+@@ -1727,7 +1745,7 @@ static inline pid_t task_pgrp_nr(struct
+  * If pid_alive fails, then pointers within the task structure
+  * can be stale and must not be dereferenced.
+  */
+-static inline int pid_alive(struct task_struct *p)
++static inline int pid_alive(const struct task_struct *p)
+ {
+ 	return p->pids[PIDTYPE_PID].pid != NULL;
+ }
 
