@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaD1EGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 00:06:16 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:37082 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaD1EGN (ORCPT
+	id S1752930AbaD1EIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 00:08:50 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:57558 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaD1EIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 00:06:13 -0400
+	Mon, 28 Apr 2014 00:08:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1404251031260.1140-100000@iolanthe.rowland.org>
-References: <1398424683-20168-2-git-send-email-gautam.vivek@samsung.com>
-	<Pine.LNX.4.44L0.1404251031260.1140-100000@iolanthe.rowland.org>
-Date: Mon, 28 Apr 2014 09:36:12 +0530
-X-Google-Sender-Auth: e7fw8-6rl1oTskNwEkDq-4VWK2Q
-Message-ID: <CAFp+6iG2s5Ddj2F2Xfy3fm9VyW7_G-+YDpeL3iVhur3gng7KvA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] usb: ohci-exynos: Add facility to use phy provided
- by the generic phy framework
+In-Reply-To: <Pine.LNX.4.44L0.1404251039210.1140-100000@iolanthe.rowland.org>
+References: <1398424873-20257-1-git-send-email-gautam.vivek@samsung.com>
+	<Pine.LNX.4.44L0.1404251039210.1140-100000@iolanthe.rowland.org>
+Date: Mon, 28 Apr 2014 09:38:47 +0530
+X-Google-Sender-Auth: j5Te8Y92IQqgwe6ygDvfOBAaBos
+Message-ID: <CAFp+6iH_HyMk8Y53kUPcySDJHhCNdSfXfp1h9F-398spnQwp4A@mail.gmail.com>
+Subject: Re: [PATCH v8 2/2] usb: ehci-exynos: Change to use phy provided by
+ the generic phy framework
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
@@ -37,38 +37,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi,
 
 
-On Fri, Apr 25, 2014 at 8:06 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+On Fri, Apr 25, 2014 at 8:11 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 > On Fri, 25 Apr 2014, Vivek Gautam wrote:
 >
->> Add support to consume phy provided by Generic phy framework.
->> Keeping the support for older usb-phy intact right now, in order
+>> From: Kamil Debski <k.debski@samsung.com>
+>>
+>> Add the phy provider, supplied by new Exynos-usb2phy using
+>> Generic phy framework.
+>> Keeping the support for older USB phy intact right now, in order
 >> to prevent any functionality break in absence of relevant
->> device tree side change for ohci-exynos.
->> Once we move to new phy in the device nodes for ohci, we can
+>> device tree side change for ehci-exynos.
+>> Once we move to new phy in the device nodes for ehci, we can
 >> remove the support for older phys.
 >>
+>> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+>> [gautam.vivek@samsung.com: Addressed review comments from mailing list]
+>> [gautam.vivek@samsung.com: Kept the code for old usb-phy, and just
+>> added support for new exynos5-usb2phy in generic phy framework]
+>> [gautam.vivek@samsung.com: Edited the commit message]
 >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Cc: Jingoo Han <jg1.han@samsung.com>
->> Cc: Alan Stern <stern@rowland.harvard.edu>
 >
->
->> +static int exynos_ohci_phyg_on(struct phy *phy[])
->> +{
->> +     int i;
->> +     int ret = 0;
->> +
->> +     for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
->> +             if (phy[i])
->> +                     ret = phy_power_on(phy[i]);
->> +     if (ret)
->> +             for (i--; i >= 0; i--)
->> +                     if (phy[i])
->> +                             phy_power_off(phy[i]);
->> +
->> +     return ret;
->> +}
->> +
->> +static int exynos_ohci_phyg_off(struct phy *phy[])
+>> +static int exynos_ehci_phyg_off(struct phy *phy[])
 >> +{
 >> +     int i;
 >> +     int ret = 0;
@@ -80,30 +69,35 @@ On Fri, Apr 25, 2014 at 8:06 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
 >> +     return ret;
 >> +}
 >
-> You probably shouldn't break out of this loop if ret is nonzero; you
-> should continue to power off the remaining phys.
+> Same comment as in the OHCI driver about ret.
 
-ok, will remove the 'ret' check in for loop.
-
->
-> I'd be inclined to put these two routines directly into
-> exynos_ohci_phy_enable() and exynos_ohci_phy_disable(), since they
-> aren't used anywhere else.
-
-Sure, will make these routines as a part of exynos_ohci_phy_enable()
-and exynos_ohci_phy_disable().
+Ok, will change this.
 
 >
->> @@ -151,6 +253,7 @@ skip_phy:
->>
+>> @@ -175,6 +269,7 @@ skip_phy:
 >>  fail_add_hcd:
->>       exynos_ohci_phy_disable(pdev);
->> +     exynos_ohci_phyg_off(exynos_ohci->phy_g);
+>>       if (exynos_ehci->phy)
+>>               usb_phy_shutdown(exynos_ehci->phy);
+>> +     exynos_ehci_phyg_off(exynos_ehci->phy_g);
+>>  fail_io:
+>>       clk_disable_unprepare(exynos_ehci->clk);
+>>  fail_clk:
+>> @@ -195,6 +290,8 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+>>       if (exynos_ehci->phy)
+>>               usb_phy_shutdown(exynos_ehci->phy);
+>>
+>> +     exynos_ehci_phyg_off(exynos_ehci->phy_g);
+>> +
 >
-> Why did you add this line?  It doesn't do anything useful, because
-> exynos_ohci_phy_disable() already calls exynos_ohci_phyg_off().
+> In both these places, you need to test exynos_ehci->phyg before calling
+> exynos_ehci_phyg_off().
+>
+> Maybe it would help to add exynos_ehci_phy_enable/disable routines,
+> like in the OHCI driver.
 
-Ah ! my bad, will remove this.
+Will move these statements as a part of enable()/disable() routines,
+put necessary check there.
+
 
 
 -- 
