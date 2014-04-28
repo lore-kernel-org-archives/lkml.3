@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639AbaD1TSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:18:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753289AbaD1TSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:18:06 -0400
-Date: Mon, 28 Apr 2014 21:16:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        David Long <dave.long@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] uprobes: Refuse to insert a probe into MAP_SHARED vma
-Message-ID: <20140428191622.GA9234@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756034AbaD1TTH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:19:07 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40176 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755913AbaD1TTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:19:04 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Will Deacon <will.deacon@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH] rcutorture: don't mark torture_init_{begin,end} with __init
+Date: Mon, 28 Apr 2014 20:03:35 +0100
+Message-Id: <1398711815-22153-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-valid_vma() rejects the VM_SHARED vmas, but this still allows to insert
-a probe into the MAP_SHARED but not VM_MAYWRITE vma.
+By the time rcutorture is initialised via its module_init callback, the
+.init.text section of torture.ko has already been freed, so the calls to
+torture_init{begin,end} end up branching to junk.
 
-Currently this is fine, such a mapping doesn't really differ from the
-private read-only mmap except mprotect(PROT_WRITE) won't work. However,
-get_user_pages(FOLL_WRITE | FOLL_FORCE) doesn't allow to COW in this
-case, and it would be safer to follow the same conventions as mm even
-if currently this happens to work.
+This patch removes the __init annotations from torture_init_{begin,end}
+to make sure the code is there when we want to call it.
 
-After the recent cda540ace6a1 "mm: get_user_pages(write,force) refuse
-to COW in shared areas" only uprobes can insert an anon page into the
-shared file-backed area, lets stop this and change valid_vma() to check
-VM_MAYSHARE instead.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 ---
- kernel/events/uprobes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index d1edc5e..7716c40 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -127,7 +127,7 @@ struct xol_area {
+Just lost a day to this -- I was sure my static relocation handling must
+be to blame!
+
+ kernel/torture.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/torture.c b/kernel/torture.c
+index acc9afc2f26e..d5ef30ce6eb5 100644
+--- a/kernel/torture.c
++++ b/kernel/torture.c
+@@ -596,7 +596,7 @@ static void torture_stutter_cleanup(void)
+  * The runnable parameter points to a flag that controls whether or not
+  * the test is currently runnable.  If there is no such flag, pass in NULL.
   */
- static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+-void __init torture_init_begin(char *ttype, bool v, int *runnable)
++void torture_init_begin(char *ttype, bool v, int *runnable)
  {
--	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
-+	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_MAYSHARE;
- 
- 	if (is_register)
- 		flags |= VM_WRITE;
+ 	mutex_lock(&fullstop_mutex);
+ 	torture_type = ttype;
+@@ -610,7 +610,7 @@ EXPORT_SYMBOL_GPL(torture_init_begin);
+ /*
+  * Tell the torture module that initialization is complete.
+  */
+-void __init torture_init_end(void)
++void torture_init_end(void)
+ {
+ 	mutex_unlock(&fullstop_mutex);
+ 	register_reboot_notifier(&torture_shutdown_nb);
 -- 
-1.5.5.1
-
+1.9.2
 
