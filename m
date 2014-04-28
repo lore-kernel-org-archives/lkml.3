@@ -1,95 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270AbaD1VFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:05:36 -0400
-Received: from mout.gmx.net ([212.227.15.15]:64936 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756852AbaD1VEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:04:23 -0400
-Date: Mon, 28 Apr 2014 22:57:10 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: devel@driverdev.osuosl.org
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        peter.p.waskiewicz.jr@intel.com, oat.elena@gmail.com,
-        dan.carpenter@oracle.com, w-lkml@lebenslange-mailadresse.de,
-        teobaluta@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] staging: rtl8188eu: fix potential leak in
- rtw_wx_set_enc_ext()
-Message-ID: <20140428225710.6ec535ea@spike>
-In-Reply-To: <20140428225431.2ea55d58@spike>
-References: <20140428225431.2ea55d58@spike>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S932407AbaD1VId (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:08:33 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:59119 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaD1VIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 17:08:31 -0400
+Message-ID: <535EC34A.50605@redhat.com>
+Date: Mon, 28 Apr 2014 23:08:26 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/14esK9IjGybD1=ZDaGCrLtr"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:jn+LeG+LREJPkjwGnCAqlVNusfXrvkgbdaimEKl5F+SZbCD5UL7
- B0Q2f0rMLIPa/3aPTC5j92B0Z2uib4kYy6TZ7eiU/cM6bbzi7Mbb6WbhKPgPTOiNaN5Scwa
- kPyeCuKtDAL9LVCn1fzGYVVY2guZSgESeu5tzEB2MeYLHuN9a7oTUwMbWpuSRoeMKqxmdH+
- GERx4uGaiaFlr9sZ9EkEg==
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] SCSI fixes for 3.15-rc3
+References: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/14esK9IjGybD1=ZDaGCrLtr
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Il 25/04/2014 16:59, James Bottomley ha scritto:
+> This is a set of seven fixes, three (hpsa) and free'd command references
+> correcting bugs in the last round of updates and the remaining four
+> correcting problems within the SCSI error handler that was causing a
+> deadlock within USB.
+>
+> The patch is available here:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+>
+> The short changelog is:
+>
+> Alan Stern (1):
+>       Fix command result state propagation
+>
+> Christoph Hellwig (2):
+>       don't reference freed command in scsi_prep_return
+>       don't reference freed command in scsi_init_sgtable
+>
+> Hannes Reinecke (1):
+>       Fix USB deadlock caused by SCSI error handling
+>
+> James Bottomley (2):
+>       More USB deadlock fixes
+>       Fix spurious request sense in error handling
+>
+> scameron@beardog.cce.hp.com (1):
+>       hpsa: fix NULL dereference in hpsa_put_ctlr_into_performant_mode()
+>
+> And the diffstat:
+>
+>  drivers/scsi/hpsa.c       |  8 ++++----
+>  drivers/scsi/scsi_error.c | 12 ++++++++++++
+>  drivers/scsi/scsi_lib.c   |  6 ++++--
+>  3 files changed, 20 insertions(+), 6 deletions(-)
+>
+> With full diffs below.
 
-Function rtw_wx_set_enc_ext() dynamically allocates a temporary buffer that
-is not freed in all error paths. Use a centralized exit path and make sure
-that all memory is freed correctly. Detected by Coverity - CID 1077712.
+James,
 
-Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
----
- drivers/staging/rtl8188eu/os_dep/ioctl_linux.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+can you queue http://article.gmane.org/gmane.linux.kernel/1682301/raw 
+please?
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c b/drivers/stagi=
-ng/rtl8188eu/os_dep/ioctl_linux.c
-index 45b47e2..1bd476d 100644
---- a/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-+++ b/drivers/staging/rtl8188eu/os_dep/ioctl_linux.c
-@@ -2097,7 +2097,8 @@ static int rtw_wx_set_enc_ext(struct net_device *dev,
- 		alg_name =3D "CCMP";
- 		break;
- 	default:
--		return -1;
-+		ret =3D -1;
-+		goto exit;
- 	}
-=20
- 	strncpy((char *)param->u.crypt.alg, alg_name, IEEE_CRYPT_ALG_NAME_LEN);
-@@ -2124,6 +2125,7 @@ static int rtw_wx_set_enc_ext(struct net_device *dev,
-=20
- 	ret =3D  wpa_set_encryption(dev, param, param_len);
-=20
-+exit:
- 	kfree(param);
- 	return ret;
- }
---=20
-1.9.1
+Thanks,
 
+Paolo
 
---Sig_/14esK9IjGybD1=ZDaGCrLtr
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> James
+>
+> ---
+>
+> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> index 8cf4a0c..9a6e4a2 100644
+> --- a/drivers/scsi/hpsa.c
+> +++ b/drivers/scsi/hpsa.c
+> @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+>  	if (hpsa_simple_mode)
+>  		return;
+>
+> +	trans_support = readl(&(h->cfgtable->TransportSupport));
+> +	if (!(trans_support & PERFORMANT_MODE))
+> +		return;
+> +
+>  	/* Check for I/O accelerator mode support */
+>  	if (trans_support & CFGTBL_Trans_io_accel1) {
+>  		transMethod |= CFGTBL_Trans_io_accel1 |
+> @@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+>  	}
+>
+>  	/* TODO, check that this next line h->nreply_queues is correct */
+> -	trans_support = readl(&(h->cfgtable->TransportSupport));
+> -	if (!(trans_support & PERFORMANT_MODE))
+> -		return;
+> -
+>  	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
+>  	hpsa_get_max_perf_mode_cmds(h);
+>  	/* Performant mode ring buffer and supporting data structures */
+> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> index 771c16b..f17aa7a 100644
+> --- a/drivers/scsi/scsi_error.c
+> +++ b/drivers/scsi/scsi_error.c
+> @@ -189,6 +189,7 @@ scsi_abort_command(struct scsi_cmnd *scmd)
+>  		/*
+>  		 * Retry after abort failed, escalate to next level.
+>  		 */
+> +		scmd->eh_eflags &= ~SCSI_EH_ABORT_SCHEDULED;
+>  		SCSI_LOG_ERROR_RECOVERY(3,
+>  			scmd_printk(KERN_INFO, scmd,
+>  				    "scmd %p previous abort failed\n", scmd));
+> @@ -920,10 +921,12 @@ void scsi_eh_prep_cmnd(struct scsi_cmnd *scmd, struct scsi_eh_save *ses,
+>  	ses->prot_op = scmd->prot_op;
+>
+>  	scmd->prot_op = SCSI_PROT_NORMAL;
+> +	scmd->eh_eflags = 0;
+>  	scmd->cmnd = ses->eh_cmnd;
+>  	memset(scmd->cmnd, 0, BLK_MAX_CDB);
+>  	memset(&scmd->sdb, 0, sizeof(scmd->sdb));
+>  	scmd->request->next_rq = NULL;
+> +	scmd->result = 0;
+>
+>  	if (sense_bytes) {
+>  		scmd->sdb.length = min_t(unsigned, SCSI_SENSE_BUFFERSIZE,
+> @@ -1157,6 +1160,15 @@ int scsi_eh_get_sense(struct list_head *work_q,
+>  					     __func__));
+>  			break;
+>  		}
+> +		if (status_byte(scmd->result) != CHECK_CONDITION)
+> +			/*
+> +			 * don't request sense if there's no check condition
+> +			 * status because the error we're processing isn't one
+> +			 * that has a sense code (and some devices get
+> +			 * confused by sense requests out of the blue)
+> +			 */
+> +			continue;
+> +
+>  		SCSI_LOG_ERROR_RECOVERY(2, scmd_printk(KERN_INFO, scmd,
+>  						  "%s: requesting sense\n",
+>  						  current->comm));
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 65a123d..9db097a 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -137,6 +137,7 @@ static void __scsi_queue_insert(struct scsi_cmnd *cmd, int reason, int unbusy)
+>  	 * lock such that the kblockd_schedule_work() call happens
+>  	 * before blk_cleanup_queue() finishes.
+>  	 */
+> +	cmd->result = 0;
+>  	spin_lock_irqsave(q->queue_lock, flags);
+>  	blk_requeue_request(q, cmd->request);
+>  	kblockd_schedule_work(q, &device->requeue_work);
+> @@ -1044,6 +1045,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
+>   */
+>  int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
+>  {
+> +	struct scsi_device *sdev = cmd->device;
+>  	struct request *rq = cmd->request;
+>
+>  	int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
+> @@ -1091,7 +1093,7 @@ err_exit:
+>  	scsi_release_buffers(cmd);
+>  	cmd->request->special = NULL;
+>  	scsi_put_command(cmd);
+> -	put_device(&cmd->device->sdev_gendev);
+> +	put_device(&sdev->sdev_gendev);
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(scsi_init_io);
+> @@ -1273,7 +1275,7 @@ int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
+>  			struct scsi_cmnd *cmd = req->special;
+>  			scsi_release_buffers(cmd);
+>  			scsi_put_command(cmd);
+> -			put_device(&cmd->device->sdev_gendev);
+> +			put_device(&sdev->sdev_gendev);
+>  			req->special = NULL;
+>  		}
+>  		break;
+>
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTXsCmAAoJEKssnEpaPQKEhtoP+wVgqY36PhLkLgCUw7+3h3IP
-9m+ZIER6390oEWGk0rJU7HdFre0iNBh/nlO/iNeigl2fxmKXibF6n+ldfZ4y7yR0
-tXFPuxb9CKRDWX2o6Za3xofaw/l6o26esx7mPKISQriVvYvtCczGGTEZAh9fJVxy
-r1XxVpm1w8L7SMhBoC8ZFpHsHp2+0q7a/D5MxJdD4KFIbHQkfe4SWqA34AtOx2PM
-vjviHXN6MzerPXK2/Z0C4cKvwltpuVJSq4htvrAhhT4GxzhI8V6T0hk755WHmM8d
-8MsO3RsE5BtBveCCEKG1jazyrJyFaumRt3ZjEuZ6jPvJZEd1hlih7zdP8xbNQ1Yt
-myZLuFBgYeQietnn1u9nwNvXXL6KgNZOH3rK+8mCWenDKm1LXfQky20yR6+VZHzU
-OM3hvfHv4Z3yRpq3btgfZhYLAQTS4z4ZhtVG7isIDEfwHLTmUy6XuNZlEV/lztog
-lAZhcQx/IrvS2XZ5jEOmWSSqG7RastmyLVLg6nRsRaGDL9cTN/RxTh+G2qkQJad3
-FOqBds0U0hxFxbmbkC7wDoPBRay97wKe+wi/+08+XhQyQ4bjtWOHirIDckm/4YVp
-7p8LZz43cHLru/9XEQwV6p//eU9O5PKyJSa7Z8JaPy0jiUHrS0Glr0TpuMdDOcav
-z5UpGqwBKdP0qoKY+ow7
-=XTJC
------END PGP SIGNATURE-----
-
---Sig_/14esK9IjGybD1=ZDaGCrLtr--
