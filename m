@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaD1KlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:41:16 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:40114 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500AbaD1KlO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:41:14 -0400
-Message-ID: <535E3040.7090402@linaro.org>
-Date: Mon, 28 Apr 2014 19:41:04 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755364AbaD1Kl4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:41:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754252AbaD1Kly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 06:41:54 -0400
+Message-ID: <535E3061.2030402@redhat.com>
+Date: Mon, 28 Apr 2014 12:41:37 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 6/7] arm64: ftrace: Add CALLER_ADDRx macros
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org> <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org> <20140416135217.GF1001@arm.com>
-In-Reply-To: <20140416135217.GF1001@arm.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix page-tables reserved bits
+References: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il> <20140416190329.GB8773@amt.cnet> <534EF354.3090204@zytor.com> <20140416220409.GB15155@amt.cnet>
+In-Reply-To: <20140416220409.GB15155@amt.cnet>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+Il 17/04/2014 00:04, Marcelo Tosatti ha scritto:
+>>>> > >> @@ -3550,9 +3550,9 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
+>>>> > >>  		break;
+>>>> > >>  	case PT64_ROOT_LEVEL:
+>>>> > >>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+>>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>>>> > >>  		context->rsvd_bits_mask[0][2] = exb_bit_rsvd |
+>>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>>> > >
+>>> > > Bit 7 is not reserved either, for the PDPTE (its PageSize bit).
+>>> > >
+>> >
+>> > In long mode (IA-32e), bit 7 is definitely reserved.
 
-On 04/16/2014 10:52 PM, Will Deacon wrote:
-> On Sat, Mar 15, 2014 at 05:45:52AM +0000, AKASHI Takahiro wrote:
->> CALLER_ADDRx returns caller's address at specified level in call stacks.
->> They are used for several tracers like irqsoff and preemptoff.
->> Strange to say, however, they are refered even without FTRACE.
->>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>   arch/arm64/include/asm/ftrace.h    | 13 ++++++++-
->>   arch/arm64/kernel/Makefile         |  3 ++-
->>   arch/arm64/kernel/return_address.c | 55 ++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 69 insertions(+), 2 deletions(-)
->>   create mode 100644 arch/arm64/kernel/return_address.c
->>
->> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
->> index ed5c448..c44c4b1 100644
->> --- a/arch/arm64/include/asm/ftrace.h
->> +++ b/arch/arm64/include/asm/ftrace.h
->> @@ -18,6 +18,7 @@
->>
->>   #ifndef __ASSEMBLY__
->>   extern void _mcount(unsigned long);
->> +extern void *return_address(unsigned int);
->>
->>   struct dyn_arch_ftrace {
->>   	/* No extra data needed for arm64 */
->> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
->>   	 */
->>   	return addr;
->>   }
->> -#endif /* __ASSEMBLY__ */
->> +
->> +#define HAVE_ARCH_CALLER_ADDR
->> +
->> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
->> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
->> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
->> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
->> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
->> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
->> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
->> +#endif /* ifndef __ASSEMBLY__ */
+It's always reserved for PML4E (rsvd_bits_mask[x][3]), while for PDPTEs 
+it is not reserved if you have 1GB pages.
+
+> There is a separate reserved mask for PS=1, nevermind.
 >
-> Hmm, I thought you were going to take a look at reworking the core code for
-> this, as Steve and I suggested?
->
->    http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/240239.html
 
-Sorry that I've forgot to submit a new revision with this change.
-I will post it soon.
+Yeah, but the situation for IA32e rsvd_bits_mask[0][2] is exactly the 
+same as for PAE rsvd_bits_mask[0][1], and we're not marking the bit as 
+reserved there.
 
-Thanks,
--Takahiro AKASHI
+The right thing to do is to add rsvd_bits(7, 7) to both 
+rsvd_bits_mask[0][2] and rsvd_bits_mask[1][2], if 1GB pages are not 
+supported.
 
-> Will
->
+As written, the patch has no effect on PDPTEs because 
+rsvd_bits_mask[0][2] is only accessed if bit 7 is zero.
+
+Nadav, would you mind preparing a follow-up?  Also, how did you find 
+these issues and test the fixes?
+
+Paolo
