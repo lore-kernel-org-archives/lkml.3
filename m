@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497AbaD1POg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:14:36 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:41273
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756345AbaD1POf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:14:35 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
-Thread-Topic: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
-Thread-Index: AQHPRMexf1UHG9X2okmKzOPqm4shaJsnW1uAgAADhio=
-Date: Mon, 28 Apr 2014 15:14:30 +0000
-Message-ID: <74580957bdd04894aa303b86f4fb536a@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
- <1395377590-23537-3-git-send-email-Li.Xiubo@freescale.com>,<20140428145930.GC28443@ulmo>
-In-Reply-To: <20140428145930.GC28443@ulmo>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.48.101.7]
-x-forefront-prvs: 01952C6E96
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(164054003)(92566001)(81542001)(20776003)(81342001)(2656002)(80022001)(74662001)(85852003)(76482001)(79102001)(83072002)(76576001)(74316001)(31966008)(86362001)(4396001)(83322001)(80976001)(66066001)(54356999)(76176999)(77982001)(87936001)(46102001)(50986999)(99286001)(99396002)(33646001)(77096999)(101416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:FC15FF65.2D30802A.71D24B8C.4CE4CCED.2016C;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756875AbaD1PQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:16:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49236 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756583AbaD1PP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:15:26 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nm@ti.com>
+Subject: [PATCH V3 18/20] bus: omap_l3_noc: introduce concept of submodule
+Date: Mon, 28 Apr 2014 10:14:58 -0500
+Message-ID: <1398698101-25513-19-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While OMAP4 and OMAP5 had 3 separate clock domains, DRA7 has only 2
+and the first one then is internally divided into 2 sub clock domains.
 
-> >  drivers/pwm/pwm-fsl-ftm.c | 83 +++++++++++++++++++++++++----------------------
-> >  1 file changed, 44 insertions(+), 39 deletions(-)
-> 
-> This could explain the advantages of converting to regmap. Looking at
-> this diffstat above, it's not immediately obvious that there's an
-> advantage because you end up adding 5 lines.
-> 
-> Again I'm guessing this is in preparation to add endianess support, and
-> it will be really easy to add that using regmap, so the gains will only
-> become obvious later on.
-> 
-> That's the kind of thing I'd like to see in the patch description. It
-> tells me why this patch makes sense.
-> 
+To better represent this in the driver, we use the concept of submodule.
 
-Yes, That`s why converting to use the regmap.
+The address defintions in the devicetree is as per the high level
+clock domain(module) base, the sub clockdomain/subdomain which shares
+the same register space of a clockdomain is marked in the SoC data as
+L3_BASE_IS_SUBMODULE.
 
-I`ll update this as you have mentioned.
+L3_BASE_IS_SUBMODULE is used as an indication that it's base address is
+the same as the parent module and offsets are considered from the same
+base address as they are usually intermingled.
 
-Thanks,
-BRs
-Xiubo
+Other than the base address, the submodule is same as a module as it is
+functionally so.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Tested-by: Darren Etheridge <detheridge@ti.com>
+---
+V3: no change
+ drivers/bus/omap_l3_noc.c |   17 ++++++++++++-----
+ drivers/bus/omap_l3_noc.h |    6 +++++-
+ 2 files changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 08344b0..0eba07a 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -238,7 +238,7 @@ static int omap_l3_probe(struct platform_device *pdev)
+ {
+ 	const struct of_device_id *of_id;
+ 	static struct omap_l3 *l3;
+-	int ret, i;
++	int ret, i, res_idx;
+ 
+ 	of_id = of_match_device(l3_noc_match, &pdev->dev);
+ 	if (!of_id) {
+@@ -255,15 +255,22 @@ static int omap_l3_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, l3);
+ 
+ 	/* Get mem resources */
+-	for (i = 0; i < l3->num_modules; i++) {
+-		struct resource	*res = platform_get_resource(pdev,
+-							     IORESOURCE_MEM, i);
+-
++	for (i = 0, res_idx = 0; i < l3->num_modules; i++) {
++		struct resource	*res;
++
++		if (l3->l3_base[i] == L3_BASE_IS_SUBMODULE) {
++			/* First entry cannot be submodule */
++			BUG_ON(i == 0);
++			l3->l3_base[i] = l3->l3_base[i - 1];
++			continue;
++		}
++		res = platform_get_resource(pdev, IORESOURCE_MEM, res_idx);
+ 		l3->l3_base[i] = devm_ioremap_resource(&pdev->dev, res);
+ 		if (IS_ERR(l3->l3_base[i])) {
+ 			dev_err(l3->dev, "ioremap %d failed\n", i);
+ 			return PTR_ERR(l3->l3_base[i]);
+ 		}
++		res_idx++;
+ 	}
+ 
+ 	/*
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 36dc48b..aced4c5 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -41,6 +41,8 @@
+ 
+ #define L3_TARGET_NOT_SUPPORTED		NULL
+ 
++#define L3_BASE_IS_SUBMODULE		((void __iomem *)(1 << 0))
++
+ static const char * const l3_transaction_type[] = {
+ 	/* 0 0 0 */ "Idle",
+ 	/* 0 0 1 */ "Write",
+@@ -96,7 +98,9 @@ struct l3_flagmux_data {
+ /**
+  * struct omap_l3 - Description of data relevant for L3 bus.
+  * @dev:	device representing the bus (populated runtime)
+- * @l3_base:	base addresses of modules (populated runtime)
++ * @l3_base:	base addresses of modules (populated runtime if 0)
++ *		if set to L3_BASE_IS_SUBMODULE, then uses previous
++ *		module index as the base address
+  * @l3_flag_mux: array containing flag mux data per module
+  *		 offset from corresponding module base indexed per
+  *		 module.
+-- 
+1.7.9.5
+
