@@ -1,128 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372AbaD1PNL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:13:11 -0400
-Received: from ppsw-40.csi.cam.ac.uk ([131.111.8.140]:55286 "EHLO
-	ppsw-40.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557AbaD1PNJ convert rfc822-to-8bit (ORCPT
+	id S1756497AbaD1POg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:14:36 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:41273
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756345AbaD1POf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:13:09 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Subject: Re: [PATCH 1/1] fs/ntfs/mft.c: fix 2 sparse warnings
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Content-Type: text/plain; charset=us-ascii
-From: Anton Altaparmakov <anton@tuxera.com>
-In-Reply-To: <20140427121219.02069e58cd40f1b78e8b5971@skynet.be>
-Date: Mon, 28 Apr 2014 16:13:06 +0100
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
+	Mon, 28 Apr 2014 11:14:35 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
+Thread-Topic: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
+Thread-Index: AQHPRMexf1UHG9X2okmKzOPqm4shaJsnW1uAgAADhio=
+Date: Mon, 28 Apr 2014 15:14:30 +0000
+Message-ID: <74580957bdd04894aa303b86f4fb536a@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+ <1395377590-23537-3-git-send-email-Li.Xiubo@freescale.com>,<20140428145930.GC28443@ulmo>
+In-Reply-To: <20140428145930.GC28443@ulmo>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [182.48.101.7]
+x-forefront-prvs: 01952C6E96
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(164054003)(92566001)(81542001)(20776003)(81342001)(2656002)(80022001)(74662001)(85852003)(76482001)(79102001)(83072002)(76576001)(74316001)(31966008)(86362001)(4396001)(83322001)(80976001)(66066001)(54356999)(76176999)(77982001)(87936001)(46102001)(50986999)(99286001)(99396002)(33646001)(77096999)(101416001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:FC15FF65.2D30802A.71D24B8C.4CE4CCED.2016C;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <6E770B36-E0D6-4B98-B1AB-DE92E456BD72@tuxera.com>
-References: <20140427121219.02069e58cd40f1b78e8b5971@skynet.be>
-To: Fabian Frederick <fabf@skynet.be>
-X-Mailer: Apple Mail (2.1874)
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK.
 
-I do not see why this is needed.  Not all sparse warnings need fixing.
-
-What is so bad about a variable length array that we need to incur kmalloc overhead on each call?  I would have thought the CPU overhead of the kmalloc is a lot larger than any CPU overhead of a variable length array...
-
-The array size is tiny - basically on all volumes mft_record_size is 1024 and blocksize is either 512 or 1024 thus the array size is either 1 or 2 pointers.  The reason it is dynamic is just in case Microsoft change their mind and increase the mft_record_size in a future NTFS/Windows version to something bigger than 1024 bytes, the current code would still cope fine.
-
-Note mft_record_size is the "on disk inode size" thus it will never be much bigger and unlikely to ever change from the 1024 really.  A very long time ago when NTFS was being developed Microsoft used 2048 bytes but quickly changed it to 1024 as most inodes do not need anywhere near that much space for an inode.
-
-Best regards,
-
-	Anton
-
-On 27 Apr 2014, at 11:12, Fabian Frederick <fabf@skynet.be> wrote:
-
-> fs/ntfs/mft.c:471:33: warning: Variable length array is used.
-> fs/ntfs/mft.c:676:33: warning: Variable length array is used.
+> >  drivers/pwm/pwm-fsl-ftm.c | 83 +++++++++++++++++++++++++----------------------
+> >  1 file changed, 44 insertions(+), 39 deletions(-)
 > 
-> This is untested.
+> This could explain the advantages of converting to regmap. Looking at
+> this diffstat above, it's not immediately obvious that there's an
+> advantage because you end up adding 5 lines.
 > 
-> Cc: Anton Altaparmakov <anton@tuxera.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
-> fs/ntfs/mft.c | 17 ++++++++++++-----
-> 1 file changed, 12 insertions(+), 5 deletions(-)
+> Again I'm guessing this is in preparation to add endianess support, and
+> it will be really easy to add that using regmap, so the gains will only
+> become obvious later on.
 > 
-> diff --git a/fs/ntfs/mft.c b/fs/ntfs/mft.c
-> index 3014a36..eddb739 100644
-> --- a/fs/ntfs/mft.c
-> +++ b/fs/ntfs/mft.c
-> @@ -468,7 +468,7 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
-> 	struct page *page;
-> 	unsigned int blocksize = vol->sb->s_blocksize;
-> 	int max_bhs = vol->mft_record_size / blocksize;
-> -	struct buffer_head *bhs[max_bhs];
-> +	struct buffer_head **bhs;
-> 	struct buffer_head *bh, *head;
-> 	u8 *kmirr;
-> 	runlist_element *rl;
-> @@ -478,11 +478,14 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
+> That's the kind of thing I'd like to see in the patch description. It
+> tells me why this patch makes sense.
 > 
-> 	ntfs_debug("Entering for inode 0x%lx.", mft_no);
-> 	BUG_ON(!max_bhs);
-> -	if (unlikely(!vol->mftmirr_ino)) {
-> +	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
-> +	if (unlikely(!bhs || !vol->mftmirr_ino)) {
-> 		/* This could happen during umount... */
-> 		err = ntfs_sync_mft_mirror_umount(vol, mft_no, m);
-> -		if (likely(!err))
-> +		if (likely(!err)) {
-> +			kfree(bhs);
-> 			return err;
-> +		}
-> 		goto err_out;
-> 	}
-> 	/* Get the page containing the mirror copy of the mft record @m. */
-> @@ -632,6 +635,7 @@ err_out:
-> 				"after umounting to correct this.", -err);
-> 		NVolSetErrors(vol);
-> 	}
-> +	kfree(bhs);
-> 	return err;
-> }
-> 
-> @@ -673,7 +677,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
-> 	unsigned int blocksize = vol->sb->s_blocksize;
-> 	unsigned char blocksize_bits = vol->sb->s_blocksize_bits;
-> 	int max_bhs = vol->mft_record_size / blocksize;
-> -	struct buffer_head *bhs[max_bhs];
-> +	struct buffer_head **bhs;
-> 	struct buffer_head *bh, *head;
-> 	runlist_element *rl;
-> 	unsigned int block_start, block_end, m_start, m_end;
-> @@ -689,7 +693,8 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
-> 	 * There is no danger of races since the caller is holding the locks
-> 	 * for the mft record @m and the page it is in.
-> 	 */
-> -	if (!NInoTestClearDirty(ni))
-> +	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
-> +	if (!bhs || !NInoTestClearDirty(ni))
-> 		goto done;
-> 	bh = head = page_buffers(page);
-> 	BUG_ON(!bh);
-> @@ -820,6 +825,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
-> 		goto err_out;
-> 	}
-> done:
-> +	kfree(bhs);
-> 	ntfs_debug("Done.");
-> 	return 0;
-> cleanup_out:
-> @@ -840,6 +846,7 @@ err_out:
-> 		err = 0;
-> 	} else
-> 		NVolSetErrors(vol);
-> +	kfree(bhs);
-> 	return err;
-> }
+
+Yes, That`s why converting to use the regmap.
+
+I`ll update this as you have mentioned.
+
+Thanks,
+BRs
+Xiubo
