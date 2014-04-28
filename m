@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404AbaD1Bcw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42959 "EHLO
+	id S1755384AbaD1Bcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42968 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752638AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752659AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Alexandre Belloni" <alexandre.belloni@free-electrons.com>,
-        "Felipe Balbi" <balbi@ti.com>,
-        "Gregory CLEMENT" <gregory.clement@free-electrons.com>
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        "Oleksij Rempel" <linux@rempel-privat.de>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.981605371@decadent.org.uk>
+Message-ID: <lsq.1398647482.427428393@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 36/94] usb: gadget: atmel_usba: fix crashed during
- stopping when DEBUG is enabled
+Subject: [PATCH 3.2 35/94] [media] uvcvideo: Do not use usb_set_interface
+ on bulk EP
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,44 +34,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
+commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
 
-commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
-unbinding) introduced a crash when DEBUG is enabled.
+The UVC specification uses alternate setting selection to notify devices
+of stream start/stop. This breaks when using bulk-based devices, as the
+video streaming interface has a single alternate setting in that case,
+making video stream start and video stream stop events to appear
+identical to the device. Bulk-based devices are thus not well supported
+by UVC.
 
-The debug trace in the atmel_usba_stop function made the assumption that the
-driver pointer passed in parameter was not NULL, but since the commit above,
-such assumption was no longer always true.
+The webcam built in the Asus Zenbook UX302LA ignores the set interface
+request and will keep the video stream enabled when the driver tries to
+stop it. If USB autosuspend is enabled the device will then be suspended
+and will crash, requiring a cold reboot.
 
-This commit now uses the driver pointer stored in udc which fixes this
-issue.
+USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
+request to the bulk endpoint when stopping the stream instead of
+selecting alternate setting 0. The camera then behaves correctly, and
+thus seems to require that behaviour.
 
-[ balbi@ti.com : improved commit log a bit ]
+Replace selection of alternate setting 0 with clearing of the endpoint
+halt feature at video stream stop for bulk-based devices. Let's refrain
+from blaming Microsoft this time, as it's not clear whether this
+Windows-specific but USB-compliant behaviour was specifically developed
+to handle bulkd-based UVC devices, or if the camera just took advantage
+of it.
 
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -1875,12 +1875,13 @@ static int atmel_usba_stop(struct usb_ga
+ drivers/media/video/uvc/uvc_video.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -1267,7 +1267,25 @@ int uvc_video_enable(struct uvc_streamin
  
- 	driver->unbind(&udc->gadget);
- 	udc->gadget.dev.driver = NULL;
--	udc->driver = NULL;
- 
- 	clk_disable(udc->hclk);
- 	clk_disable(udc->pclk);
- 
--	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
-+	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
+ 	if (!enable) {
+ 		uvc_uninit_video(stream, 1);
+-		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++		if (stream->intf->num_altsetting > 1) {
++			usb_set_interface(stream->dev->udev,
++					  stream->intfnum, 0);
++		} else {
++			/* UVC doesn't specify how to inform a bulk-based device
++			 * when the video stream is stopped. Windows sends a
++			 * CLEAR_FEATURE(HALT) request to the video streaming
++			 * bulk endpoint, mimic the same behaviour.
++			 */
++			unsigned int epnum = stream->header.bEndpointAddress
++					   & USB_ENDPOINT_NUMBER_MASK;
++			unsigned int dir = stream->header.bEndpointAddress
++					 & USB_ENDPOINT_DIR_MASK;
++			unsigned int pipe;
 +
-+	udc->driver = NULL;
- 
- 	return 0;
- }
++			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
++			usb_clear_halt(stream->dev->udev, pipe);
++		}
++
+ 		uvc_queue_enable(&stream->queue, 0);
+ 		return 0;
+ 	}
 
