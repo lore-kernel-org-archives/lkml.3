@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963AbaD1Bb7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42855 "EHLO
+	id S1754944AbaD1Bb6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42825 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752172AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.767838183@decadent.org.uk>
+Message-ID: <lsq.1398647482.19677313@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 62/94] nfsd4: session needs room for following op to
- error out
+Subject: [PATCH 3.2 92/94] powernow-k6: correctly initialize default
+ parameters
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,29 +33,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 4c69d5855a16f7378648c5733632628fa10431db upstream.
+commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+The powernow-k6 driver used to read the initial multiplier from the
+powernow register. However, there is a problem with this:
+
+* If there was a frequency transition before, the multiplier read from the
+  register corresponds to the current multiplier.
+* If there was no frequency transition since reset, the field in the
+  register always reads as zero, regardless of the current multiplier that
+  is set using switches on the mainboard and that the CPU is running at.
+
+The zero value corresponds to multiplier 4.5, so as a consequence, the
+powernow-k6 driver always assumes multiplier 4.5.
+
+For example, if we have 550MHz CPU with bus frequency 100MHz and
+multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
+and bus frequency is 122MHz. The powernow-k6 driver then sets the
+multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
+current frequency as 550MHz.
+
+There is no reliable way how to read the initial multiplier. I modified
+the driver so that it contains a table of known frequencies (based on
+parameters of existing CPUs and some common overclocking schemes) and sets
+the multiplier according to the frequency. If the frequency is unknown
+(because of unusual overclocking or underclocking), the user must supply
+the bus speed and maximum multiplier as module parameters.
+
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4proc.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/cpufreq/powernow-k6.c | 76 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 72 insertions(+), 4 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1224,6 +1224,12 @@ nfsd4_proc_compound(struct svc_rqst *rqs
- 		/* If op is non-idempotent */
- 		if (opdesc->op_flags & OP_MODIFIES_SOMETHING) {
- 			plen = opdesc->op_rsize_bop(rqstp, op);
-+			/*
-+			 * If there's still another operation, make sure
-+			 * we'll have space to at least encode an error:
-+			 */
-+			if (resp->opcnt < args->opcnt)
-+				plen += COMPOUND_ERR_SLACK_SPACE;
- 			op->status = nfsd4_check_resp_size(resp, plen);
- 		}
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -25,6 +25,14 @@
+ static unsigned int                     busfreq;   /* FSB, in 10 kHz */
+ static unsigned int                     max_multiplier;
  
++static unsigned int			param_busfreq = 0;
++static unsigned int			param_max_multiplier = 0;
++
++module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
++MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
++
++module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
++MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+ 
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+@@ -39,6 +47,27 @@ static struct cpufreq_frequency_table cl
+ 	{0, CPUFREQ_TABLE_END}
+ };
+ 
++static const struct {
++	unsigned freq;
++	unsigned mult;
++} usual_frequency_table[] = {
++	{ 400000, 40 },	// 100   * 4
++	{ 450000, 45 }, // 100   * 4.5
++	{ 475000, 50 }, //  95   * 5
++	{ 500000, 50 }, // 100   * 5
++	{ 506250, 45 }, // 112.5 * 4.5
++	{ 533500, 55 }, //  97   * 5.5
++	{ 550000, 55 }, // 100   * 5.5
++	{ 562500, 50 }, // 112.5 * 5
++	{ 570000, 60 }, //  95   * 6
++	{ 600000, 60 }, // 100   * 6
++	{ 618750, 55 }, // 112.5 * 5.5
++	{ 660000, 55 }, // 120   * 5.5
++	{ 675000, 60 }, // 112.5 * 6
++	{ 720000, 60 }, // 120   * 6
++};
++
++#define FREQ_RANGE		3000
+ 
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+@@ -162,18 +191,57 @@ static int powernow_k6_target(struct cpu
+ 	return 0;
+ }
+ 
+-
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+ 	int result;
++	unsigned khz;
+ 
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
+ 
+-	/* get frequencies */
+-	max_multiplier = powernow_k6_get_cpu_multiplier();
+-	busfreq = cpu_khz / max_multiplier;
++	max_multiplier = 0;
++	khz = cpu_khz;
++	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
++		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
++		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
++			khz = usual_frequency_table[i].freq;
++			max_multiplier = usual_frequency_table[i].mult;
++			break;
++		}
++	}
++	if (param_max_multiplier) {
++		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
++			if (clock_ratio[i].driver_data == param_max_multiplier) {
++				max_multiplier = param_max_multiplier;
++				goto have_max_multiplier;
++			}
++		}
++		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
++		return -EINVAL;
++	}
++
++	if (!max_multiplier) {
++		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
++		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
++		return -EOPNOTSUPP;
++	}
++
++have_max_multiplier:
++	param_max_multiplier = max_multiplier;
++
++	if (param_busfreq) {
++		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
++			busfreq = param_busfreq / 10;
++			goto have_busfreq;
++		}
++		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
++		return -EINVAL;
++	}
++
++	busfreq = khz / max_multiplier;
++have_busfreq:
++	param_busfreq = busfreq * 10;
+ 
+ 	/* table init */
+ 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
 
