@@ -1,66 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384AbaD1PAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:00:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49178 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932317AbaD1PAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:00:12 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 6/7] clk: sunxi: document PRCM clock compatible strings
-Date: Mon, 28 Apr 2014 16:58:49 +0200
-Message-Id: <1398697130-8338-7-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S932515AbaD1PG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:06:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48350 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619AbaD1PGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:06:55 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH v2] uprobes: simplify rip-relative handling
+Date: Mon, 28 Apr 2014 17:06:45 +0200
+Message-Id: <1398697605-7519-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document new compatible strings for clock provided by the PRCM
-(Power/Reset/Clock Management) unit.
+It is possible to replace rip-relative addressing mode
+with addressing mode of the same length: (reg+disp32).
+This eliminates the need to fix up immediate
+and instruction length.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+v2: Rebased on top of Oleg's latest changes and run-tested.
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Jim Keniston <jkenisto@us.ibm.com>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 ---
- Documentation/devicetree/bindings/clock/sunxi.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/include/asm/uprobes.h |  3 ---
+ arch/x86/kernel/uprobes.c      | 51 ++++++++++++++++--------------------------
+ 2 files changed, 19 insertions(+), 35 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/sunxi.txt b/Documentation/devicetree/bindings/clock/sunxi.txt
-index a5160d8..0c9dd6a 100644
---- a/Documentation/devicetree/bindings/clock/sunxi.txt
-+++ b/Documentation/devicetree/bindings/clock/sunxi.txt
-@@ -20,12 +20,18 @@ Required properties:
- 	"allwinner,sun5i-a13-ahb-gates-clk" - for the AHB gates on A13
- 	"allwinner,sun5i-a10s-ahb-gates-clk" - for the AHB gates on A10s
- 	"allwinner,sun7i-a20-ahb-gates-clk" - for the AHB gates on A20
-+	"allwinner,sun6i-a31-ar100-mux-clk" - for the AR100 multiplexer on A31
-+	"allwinner,sun6i-a31-ar100-clk" - for the AR100 on A31
-+	"allwinner,sun6i-a31-ar100-div-clk" - for the AR100 divided output clk on A31
-+	"allwinner,sun6i-a31-ahb0-clk" - for the AHB0 multiplexer on A31
- 	"allwinner,sun6i-a31-ahb1-mux-clk" - for the AHB1 multiplexer on A31
- 	"allwinner,sun6i-a31-ahb1-gates-clk" - for the AHB1 gates on A31
- 	"allwinner,sun4i-a10-apb0-clk" - for the APB0 clock
-+	"allwinner,sun6i-a31-apb0-clk" - for the APB0 clock on A31
- 	"allwinner,sun4i-a10-apb0-gates-clk" - for the APB0 gates on A10
- 	"allwinner,sun5i-a13-apb0-gates-clk" - for the APB0 gates on A13
- 	"allwinner,sun5i-a10s-apb0-gates-clk" - for the APB0 gates on A10s
-+	"allwinner,sun6i-a31-apb0-gates-clk" - for the APB0 gates on A31
- 	"allwinner,sun7i-a20-apb0-gates-clk" - for the APB0 gates on A20
- 	"allwinner,sun4i-a10-apb1-clk" - for the APB1 clock
- 	"allwinner,sun4i-a10-apb1-mux-clk" - for the APB1 clock muxing
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index a040d49..7be3c07 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -50,9 +50,6 @@ struct arch_uprobe {
+ 			u8	opc1;
+ 		}			branch;
+ 		struct {
+-#ifdef CONFIG_X86_64
+-			long	riprel_target;
+-#endif
+ 			u8	fixups;
+ 			u8	ilen;
+ 		} 			def;
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index c229b5f..7887912 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -251,7 +251,7 @@ static inline bool is_64bit_mm(struct mm_struct *mm)
+  * If arch_uprobe->insn doesn't use rip-relative addressing, return
+  * immediately.  Otherwise, rewrite the instruction so that it accesses
+  * its memory operand indirectly through a scratch register.  Set
+- * def->fixups and def->riprel_target accordingly. (The contents of the
++ * def->fixups accordingly. (The contents of the
+  * scratch register will be saved before we single-step the modified
+  * instruction, and restored afterward).
+  *
+@@ -264,9 +264,12 @@ static inline bool is_64bit_mm(struct mm_struct *mm)
+  *
+  * Some useful facts about rip-relative instructions:
+  *
+- *  - There's always a modrm byte.
++ *  - There's always a modrm byte with bit layout "00 reg 101".
+  *  - There's never a SIB byte.
+  *  - The displacement is always 4 bytes.
++ *  - REX.B=1 bit in REX prefix, which normally extends r/m field,
++ *    has no effect on rip-relative mode. It doesn't make modrm byte
++ *    with r/m=101 refer to register 1101 = R13.
+  */
+ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+ {
+@@ -293,9 +296,12 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+ 	 */
+ 	cursor = auprobe->insn + insn_offset_modrm(insn);
+ 	/*
+-	 * Convert from rip-relative addressing to indirect addressing
++	 * Convert from rip-relative addressing to register-relative addressing
+ 	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
+-	 * to 0x0 (%rax) or 0x1 (%rcx), and squeeze out the offset field.
++	 * to 0x0 (%rax) or 0x1 (%rcx), change mode field
++	 * from 00 to 10 (reg+disp32). Example:
++	 * 89 05 disp32  mov %eax,disp32(%rip) becomes
++	 * 89 81 disp32  mov %eax,disp32(%rcx)
+ 	 */
+ 	reg = MODRM_REG(insn);
+ 	if (reg == 0) {
+@@ -307,22 +313,13 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+ 		 * #1) for the scratch register.
+ 		 */
+ 		auprobe->def.fixups |= UPROBE_FIX_RIP_CX;
+-		/* Change modrm from 00 000 101 to 00 000 001. */
+-		*cursor = 0x1;
++		/* Change modrm from 00 000 101 to 10 000 001. */
++		*cursor = 0x81;
+ 	} else {
+ 		/* Use %rax (register #0) for the scratch register. */
+ 		auprobe->def.fixups |= UPROBE_FIX_RIP_AX;
+-		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
+-		*cursor = (reg << 3);
+-	}
+-
+-	/* Target address = address of next instruction + (signed) offset */
+-	auprobe->def.riprel_target = (long)insn->length + insn->displacement.value;
+-
+-	/* Displacement field is gone; slide immediate field (if any) over. */
+-	if (insn->immediate.nbytes) {
+-		cursor++;
+-		memmove(cursor, cursor + insn->displacement.nbytes, insn->immediate.nbytes);
++		/* Change modrm from 00 xxx 101 to 10 xxx 000 */
++		*cursor = (reg << 3) | 0x80;
+ 	}
+ }
+ 
+@@ -343,26 +340,17 @@ static void riprel_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		unsigned long *sr = scratch_reg(auprobe, regs);
+ 
+ 		utask->autask.saved_scratch_register = *sr;
+-		*sr = utask->vaddr + auprobe->def.riprel_target;
++		*sr = utask->vaddr + (int)auprobe->def.ilen;
+ 	}
+ }
+ 
+-static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs,
+-				long *correction)
++static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ 	if (auprobe->def.fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) {
+ 		struct uprobe_task *utask = current->utask;
+ 		unsigned long *sr = scratch_reg(auprobe, regs);
+ 
+ 		*sr = utask->autask.saved_scratch_register;
+-		/*
+-		 * The original instruction includes a displacement, and so
+-		 * is 4 bytes longer than what we've just single-stepped.
+-		 * Caller may need to apply other fixups to handle stuff
+-		 * like "jmpq *...(%rip)" and "callq *...(%rip)".
+-		 */
+-		if (correction)
+-			*correction += 4;
+ 	}
+ }
+ #else /* 32-bit: */
+@@ -379,8 +367,7 @@ static void riprel_analyze(struct arch_uprobe *auprobe, struct insn *insn)
+ static void riprel_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ }
+-static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs,
+-					long *correction)
++static void riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ }
+ #endif /* CONFIG_X86_64 */
+@@ -419,7 +406,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ 	struct uprobe_task *utask = current->utask;
+ 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
+ 
+-	riprel_post_xol(auprobe, regs, &correction);
++	riprel_post_xol(auprobe, regs);
+ 	if (auprobe->def.fixups & UPROBE_FIX_IP) {
+ 		regs->ip += correction;
+ 	} else if (auprobe->def.fixups & UPROBE_FIX_CALL) {
+@@ -436,7 +423,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ 
+ static void default_abort_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+-	riprel_post_xol(auprobe, regs, NULL);
++	riprel_post_xol(auprobe, regs);
+ }
+ 
+ static struct uprobe_xol_ops default_xol_ops = {
 -- 
-1.8.3.2
+1.8.1.4
 
