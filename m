@@ -1,151 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193AbaD1WZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:25:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662AbaD1WZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:25:49 -0400
-Message-ID: <535ED548.7000400@redhat.com>
-Date: Mon, 28 Apr 2014 18:25:12 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1757233AbaD1WZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:25:58 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50518 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757207AbaD1WZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:25:55 -0400
 MIME-Version: 1.0
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linaro-kernel@lists.linaro.org, arndb@arndb.de,
-        linux-kernel@vger.kernel.org, dsaxena@linaro.org,
-        linux-audit@redhat.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH_v8 0/2] arm64: Add audit support
-References: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org> <1394862548-29060-1-git-send-email-takahiro.akashi@linaro.org> <53486087.9060304@redhat.com> <535E249F.2080606@linaro.org>
-In-Reply-To: <535E249F.2080606@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398723290.25549.20.camel@buesod1.americas.hpqcorp.net>
+References: <535EA976.1080402@linux.vnet.ibm.com>
+	<CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com>
+	<CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+	<alpine.LSU.2.11.1404281500180.2861@eggly.anvils>
+	<1398723290.25549.20.camel@buesod1.americas.hpqcorp.net>
+Date: Mon, 28 Apr 2014 15:25:55 -0700
+X-Google-Sender-Auth: YzI98GkeJUzHITZE4NY8KZGCsRs
+Message-ID: <CA+55aFwGjYS7PqsD6A-q+Yp9YZmiM6mB4MUYmfR7ro02poxxCQ@mail.gmail.com>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 05:51 AM, AKASHI Takahiro wrote:
-> Hi Don,
+On Mon, Apr 28, 2014 at 3:14 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
 >
-> Sorry for not responding to you soon:
->
-been there, done that! .. no problem..
+> I think that returning some stale/bogus vma is causing those segfaults
+> in udev. It shouldn't occur in a normal scenario. What puzzles me is
+> that it's not always reproducible. This makes me wonder what else is
+> going on...
 
-> On 04/12/2014 06:37 AM, Don Dutile wrote:
->> On 03/15/2014 01:49 AM, AKASHI Takahiro wrote:
->>> (Please apply this patch after my ftrace patch to resolve some conflict
->>> on arm64/kernel/ptrace.c, functionally it doesn't depend on ftrace though)
->>>
->>> This patchset adds system call audit support on arm64.
->>> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
->>> are supported. Since arm64 has the exact same set of system calls
->>> on LE and BE, we don't care about endianness (or more specifically
->>> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
->>>
->>> There are some prerequisites for this patch to work correctly:
->>> * "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
->>> * "audit: generic compat system call audit support" patch
->>> * "arm64: __NR_* definitions for compat syscalls" patch from Catalin
->>> * "arm64: make a single hook to syscall_trace() for all syscall features" patch
->>> * "arm64: split syscall_trace() into separate functions for enter/exit" patch
->>> * "arm64: Add regs_return_value() in syscall.h" patch
->>> * "arm64: is_compat_task is defined both in asm/compat.h and
->>>     linux/compat.h" patch
->>> * userspace audit tool (v2.3.2 + my patch for arm64)
->>>
->> and the 2/2 patch won't apply to arch/arm64/kernel/ptrace.c
->> without the patch from  [PATCH v7 7/7] arm64: ftrace: Add system call tracepoint;
->> My question: do you need all 7 patches from arm64: Add ftrace support
->> as well for this audit patch to work, or just this 7/7 patch ?
->
-> Functionally, my audit patch should work without ftrace patchset, but as described
-> in ftrace's [0/7] and audit's [0/2], audit's [2/2] assumes that ftrace patchset, especially
-> [7/7], has been applied in order to avoid any conflict when making changes on the same
-> line of ptrace.c.
->
-> Thanks,
-> -Takahiro AKASHI
->
-just a nit for others to see/know if they were having the same fun of
-backporting these patches to work on an existing kernel w/o ftrace patch set.
+I've replaced the BUG_ON() with a WARN_ON_ONCE(), and made it be
+unconditional (so you don't have to trigger the range check).
 
->>
->>> Please review them as well for better understandings.
->>>
->>> This code was tested on both 32-bit and 64-bit LE userland
->>> in the following two ways:
->>> 1) basic operations with auditctl/autrace
->>>    # auditctl -a exit,always -S openat -F path=/etc/inittab
->>>    # auditctl -a exit,always -F dir=/tmp -F perm=rw
->>>    # auditctl -a task,always
->>>    # autrace /bin/ls
->>>      by comparing output from autrace with one from strace
->>>
->>> 2) audit-test-code (+ my workarounds for arm/arm64)
->>>    by running "audit-tool", "filter" and "syscalls" test categories.
->>>
->>> Changes v7 -> v8:
->>> * aligned with the change in "audit: generic compat system call audit
->>>    support" v5 [1/2]
->>> * aligned with the change in "arm64: split syscall_trace() into separate
->>>    functions for enter/exit" v5 [2/2]
->>>
->>> Changes v6 -> v7:
->>> * changed an include file in syscall.h from <linux/audit.h> to
->>>    <uapi/linux/audit.h> [1/2]
->>> * aligned with the patch, "arm64: split syscall_trace() into separate
->>>    functions for enter/exit" [2/2]
->>>
->>> Changes v5 -> v6:
->>> * removed and put "arm64: Add regs_return_value() in syscall.h" patch into
->>>    a separate set
->>> * aligned with the change in "arm64: make a single hook to syscall_trace()
->>>    for all syscall features" v3 [1/2]
->>>
->>> Changes v4 -> v5:
->>> * rebased to 3.14-rcX
->>> * added a guard against TIF_SYSCALL_AUDIT [3/3]
->>> * aligned with the change in "arm64: make a single hook to syscall_trace()
->>>    for all syscall features" v2 [3/3]
->>>
->>> Changes v3 -> v4:
->>> * Modified to sync with the patch, "make a single hook to syscall_trace()
->>>    for all syscall features"
->>> * aligned with "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
->>>
->>> Changes v2 -> v3:
->>> * Remove asm/audit.h.
->>>    See "generic compat syscall audit support" patch v4
->>> * Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
->>> * Remove kernel/syscalls/Makefile which was used to create unistd32.h.
->>>    See Catalin's "Add __NR_* definitions for compat syscalls" patch
->>>
->>> Changes v1 -> v2:
->>> * Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
->>>    Please note that a required header, unistd_32.h, is automatically
->>>    generated from unistd32.h.
->>> * Refer to regs->orig_x0 instead of regs->x0 as the first argument of
->>>    system call in audit_syscall_entry() [6/6]
->>> * Include "Add regs_return_value() in syscall.h" patch [2/6],
->>>    which was not intentionally included in v1 because it could be added
->>>    by "kprobes support".
->>>
->>> AKASHI Takahiro (2):
->>>    arm64: Add audit support
->>>    arm64: audit: Add audit hook in syscall_trace_enter/exit()
->>>
->>>   arch/arm64/Kconfig               |  2 ++
->>>   arch/arm64/include/asm/syscall.h | 15 +++++++++++++++
->>>   arch/arm64/kernel/ptrace.c       |  7 +++++++
->>>   include/uapi/linux/audit.h       |  1 +
->>>   4 files changed, 25 insertions(+)
->>>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That might make it show up earlier and easier (and hopefully closer to
+the place that causes it). Maybe that makes it easier for Srivatsa to
+reproduce this. It doesn't make *my* machine do anything different,
+though.
 
+Srivatsa? It's in current -git.
+
+            Linus
