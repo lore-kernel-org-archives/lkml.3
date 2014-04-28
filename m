@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625AbaD1L4f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:56:35 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39781 "EHLO
+	id S1755646AbaD1L5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:57:53 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57842 "EHLO
 	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267AbaD1L4d (ORCPT
+	with ESMTP id S1755272AbaD1L5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:56:33 -0400
-Date: Mon, 28 Apr 2014 12:56:27 +0100
+	Mon, 28 Apr 2014 07:57:51 -0400
+Date: Mon, 28 Apr 2014 12:57:45 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
+To: Doug Anderson <dianders@chromium.org>
+Cc: Mark Brown <broonie@kernel.org>, Anton Vorontsov <anton@enomsg.org>,
+        Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/4] mfd: bcm590xx: add support for secondary I2C
- slave address
-Message-ID: <20140428115627.GY21279@lee--X1>
-References: <1398295293-11033-1-git-send-email-mporter@linaro.org>
- <1398295293-11033-3-git-send-email-mporter@linaro.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND PATCH v3 3/5] mfd: tps65090: Stop caching most registers
+Message-ID: <20140428115745.GZ21279@lee--X1>
+References: <1398180298-2018-4-git-send-email-dianders@chromium.org>
+ <20140422190754.GF12304@sirena.org.uk>
+ <20140423105540.GJ21613@lee--X1>
+ <CAD=FV=V0uWMGTt68CST5i30Xf4pTNMt50-D7XeRmtSdfbPwwLQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398295293-11033-3-git-send-email-mporter@linaro.org>
+In-Reply-To: <CAD=FV=V0uWMGTt68CST5i30Xf4pTNMt50-D7XeRmtSdfbPwwLQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Matt Porter wrote:
-
-> BCM590xx utilizes a secondary I2C slave address to access additional
-> register space. Add support for the secondary address space by
-> instantiating a dummy I2C device with the appropriate secondary
-> I2C slave address. Also expose a secondary regmap register space so
-> that MFD drivers can access this secondary i2c slave address space.
+> >> > Nearly all of the registers in tps65090 combine control bits and
+> >> > status bits.  Turn off caching of all registers except the select few
+> >> > that can be cached.
+> >>
+> >> Lee, I don't mind if I apply this and send a pull request to you or I
+> >> pull a tag from you with this in - what's easiest for you?
+> >
+> > I'm happy to do it.
+> >
+> > Doug,
+> >   Can you send the patch-set again with all of the *-bys and ensure
+> >   I'm on TO or CC please?
 > 
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> ---
->  drivers/mfd/bcm590xx.c       | 60 +++++++++++++++++++++++++++++++++-----------
->  include/linux/mfd/bcm590xx.h |  9 ++++---
->  2 files changed, 52 insertions(+), 17 deletions(-)
+> It looks as if you've already applied 1, 3, and 4.  I've sent up 2 and
+> 5 again with collected tags.
+> 
+> https://patchwork.kernel.org/patch/4042761/
+> https://patchwork.kernel.org/patch/4042751/
 
-Nice, flows much better now.
-
-Can I just apply the two MFD patches, or are there cross-deps?
+I think we have this sorted now. I sent a pull-request to Mark this
+morning.
 
 -- 
 Lee Jones
