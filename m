@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658AbaD1NkM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:40:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:53964 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932096AbaD1NkF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:40:05 -0400
-Date: Mon, 28 Apr 2014 09:39:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: pavel@pavlinux.ru
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH RT 0/3] Linux 3.2.57-rt84-rc1
-Message-ID: <20140428093956.78d0f3ea@gandalf.local.home>
-In-Reply-To: <535D8180.1020607@pavlinux.ru>
-References: <20140427143925.177486597@goodmis.org>
-	<535D8180.1020607@pavlinux.ru>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1755692AbaD1Nk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:40:58 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:47189 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932433AbaD1Nkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:40:52 -0400
+Date: Mon, 28 Apr 2014 09:40:47 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Barry Song <baohua@kernel.org>, Kevin Hilman <khilman@linaro.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
+ nodes
+Message-ID: <20140428134047.GA7719@beef>
+References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
+ <20140428091532.GG26756@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428091532.GG26756@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Apr 2014 02:15:28 +0400
-Pavel Vasilyev <pavel@pavlinux.ru> wrote:
-
-> 27.04.2014 18:39, Steven Rostedt пишет:
-> > Dear RT Folks,
-> >
-> > This is the RT stable review cycle of patch 3.2.57-rt84-rc1.
-> >
-> > Please scream at me if I messed something up. Please test the patches too.
+On Mon, Apr 28, 2014 at 10:15:33AM +0100, Russell King wrote:
+> On Sun, Apr 27, 2014 at 08:27:40PM -0400, Matt Porter wrote:
+> > l2x0_of_init() is executed unconditionally within the sirfsoc_l2x0_init()
+> > early initcall. In a multi v7 kernel this causes bcm281xx and bcm21664
+> > platform to fail boot since they have their own pre l2x0 init sequence
+> > that is required. Fix this by checking that a matching OF ID is present
+> > before calling l2x0_of_init().
+> > 
+> > Reported-by: Kevin Hilman <khilman@linaro.org>
+> > Signed-off-by: Matt Porter <mporter@linaro.org>
+> > ---
+> > Applies against next-20140424 to fix the issue introduced in
+> > 50655e6 ARM: l2c: prima2: remove cache size override
 > 
-> 
-> More than two years our thin clients (about 5000 machines, Intel Atom, x86_32) 
-> work with RCU_BOOST.
-> 
-> CONFIG_RCU_BOOST=y
-> CONFIG_RCU_BOOST_PRIO=80
-> CONFIG_RCU_BOOST_DELAY=400
-> 
+> Err, this only "fixes" it because it effectively disables the L2 cache
+> _entirely_ - in the above commit, I kill your private compatible strings.
+>
+> This doesn't make sense.  If the cache is already enabled, then the L2C
+> code won't try to enable it again.
 
-Is this just a confirmation of having RCU_BOOST default y for
-PREEMPT_RT is a good thing?
+Ok, please suggest an alternative. You merged this commit..it looks like
+it had no ack from the platform maintainer..and I don't have hardware.
+The commit is wrong, we can't have every platform executing sirfsoc's
+l2x0_of_init() call/parameters by having this stuff in an early initcall
+like that.
 
-Thanks,
+It would be pretty straightforward to add those private compatibles
+back so the approach works. If not, we need to move this to
+.init_machine where it's guaranteed to only run on sirfsoc.
 
--- Steve
+-Matt
