@@ -1,251 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbaD1O7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:59:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49137 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756405AbaD1O7q (ORCPT
+	id S1756508AbaD1PKB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:10:01 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:46079 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171AbaD1PJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:59:46 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Hans de Goede <hdegoede@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 3/7] mfd: add support for sun6i PRCM (Power/Reset/Clock Management) unit
-Date: Mon, 28 Apr 2014 16:58:46 +0200
-Message-Id: <1398697130-8338-4-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 28 Apr 2014 11:09:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <5358432F.8040202@gmail.com>
+References: <53571685.5060403@gmail.com> <20140423032044.GA26233@kroah.com>
+ <20140423115418.A8C0EC40969@trevor.secretlab.ca> <5358432F.8040202@gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 28 Apr 2014 16:09:33 +0100
+X-Google-Sender-Auth: N9vr0DsfeJR9JvDH00fkh2jLPxQ
+Message-ID: <CACxGe6ub+10pcoOLEPhdxq=gJpA+JygW+CDFGoXmx+bO=d7KCw@mail.gmail.com>
+Subject: Re: [PATCH] sysfs, device-tree: aid for debugging device tree boot problems
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PRCM (Power/Reset/Clock Management) block exposes several subdevices
-in different subsystems (clk, reset ...)
+On Wed, Apr 23, 2014 at 11:48 PM, Frank Rowand <frowand.list@gmail.com> wrote:
+> On 4/23/2014 4:54 AM, Grant Likely wrote:
+>> On Tue, 22 Apr 2014 20:20:44 -0700, Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+>>> On Tue, Apr 22, 2014 at 06:25:25PM -0700, Frank Rowand wrote:
+>>>> Create some infrastructure to aid trouble shooting device tree related
+>>>> boot issues.
+>>>>
+>>>> Add a %driver_name file to each device tree node sysfs directory which has had
+>>>> a driver bound to it.  This allows detecting device tree nodes which failed
+>>>> to be bound to any driver.
+>>>
+>>> Why is this needed, shouldn't there already be a "driver" symlink in
+>>> sysfs for these devices when a driver binds to them?  The rest of the
+>>> driver model works that way, why is of devices any different?
+>>>
+>>
+>> Because it hasn't been added yet! I only just committed the change to
+>> convert device_nodes into kobjects in v3.14. The next step is to add
+>> driver symlinks.
+>
+> No need to add a "driver" symlink.  The device directories in sysfs already
+> have a driver symlink.
 
-Add basic support for the PRCM unit with clk (AR100, AHB0, and APB0 clks)
-and reset controller subdevices.
+Sorry, I meant of_node symlink. That is the bit I've been planning to add.
 
-Other subdevices might be added later (if needed).
-
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/mfd/Kconfig      |   8 +++
- drivers/mfd/Makefile     |   1 +
- drivers/mfd/sun6i-prcm.c | 163 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 172 insertions(+)
- create mode 100644 drivers/mfd/sun6i-prcm.c
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 2d347c9..0a9220d 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -731,6 +731,14 @@ config MFD_STA2X11
- 	select MFD_CORE
- 	select REGMAP_MMIO
- 
-+config MFD_SUN6I_PRCM
-+	bool "Allwinner PRCM controller"
-+	depends on ARCH_SUNXI
-+	select MFD_CORE
-+	help
-+	  Support for the PRCM (Power/Reset/Clock Management) unit available
-+	  in A31 SoC.
-+
- config MFD_SYSCON
- 	bool "System Controller Register R/W Based on Regmap"
- 	select REGMAP_MMIO
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 1efecf2..df7823c 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_MFD_STA2X11)	+= sta2x11-mfd.o
- obj-$(CONFIG_MFD_STMPE)		+= stmpe.o
- obj-$(CONFIG_STMPE_I2C)		+= stmpe-i2c.o
- obj-$(CONFIG_STMPE_SPI)		+= stmpe-spi.o
-+obj-$(CONFIG_MFD_SUN6I_PRCM)	+= sun6i-prcm.o
- obj-$(CONFIG_MFD_TC3589X)	+= tc3589x.o
- obj-$(CONFIG_MFD_T7L66XB)	+= t7l66xb.o tmio_core.o
- obj-$(CONFIG_MFD_TC6387XB)	+= tc6387xb.o tmio_core.o
-diff --git a/drivers/mfd/sun6i-prcm.c b/drivers/mfd/sun6i-prcm.c
-new file mode 100644
-index 0000000..e05d92d
---- /dev/null
-+++ b/drivers/mfd/sun6i-prcm.c
-@@ -0,0 +1,163 @@
-+/*
-+ * Copyright (C) 2014 Free Electrons
-+ *
-+ * License Terms: GNU General Public License v2
-+ * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-+ *
-+ * Allwinner PRCM (Power/Reset/Clock Management) driver
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/spinlock.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/completion.h>
-+#include <linux/irq.h>
-+#include <linux/jiffies.h>
-+#include <linux/bitops.h>
-+#include <linux/fs.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
-+#include <linux/platform_device.h>
-+#include <linux/uaccess.h>
-+#include <linux/mfd/core.h>
-+
-+struct prcm_data {
-+	int nsubdevs;
-+	const struct mfd_cell *subdevs;
-+};
-+
-+static const struct resource sun6i_a31_ar100_clk_res[] = {
-+	{
-+		.start = 0x0,
-+		.end = 0x3,
-+		.flags = IORESOURCE_MEM,
-+	},
-+};
-+
-+static const struct resource sun6i_a31_apb0_clk_res[] = {
-+	{
-+		.start = 0xc,
-+		.end = 0xf,
-+		.flags = IORESOURCE_MEM,
-+	},
-+};
-+
-+static const struct resource sun6i_a31_apb0_gates_clk_res[] = {
-+	{
-+		.start = 0x28,
-+		.end = 0x2b,
-+		.flags = IORESOURCE_MEM,
-+	},
-+};
-+
-+static const struct resource sun6i_a31_apb0_rstc_res[] = {
-+	{
-+		.start = 0xb0,
-+		.end = 0xb3,
-+		.flags = IORESOURCE_MEM,
-+	},
-+};
-+
-+static const struct mfd_cell sun6i_a31_prcm_subdevs[] = {
-+	{
-+		.name = "sun6i-a31-ar100-mux-clk",
-+		.of_compatible = "allwinner,sun6i-a31-ar100-mux-clk",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_ar100_clk_res),
-+		.resources = sun6i_a31_ar100_clk_res,
-+	},
-+	{
-+		.name = "sun6i-a31-ar100-clk",
-+		.of_compatible = "allwinner,sun6i-a31-ar100-clk",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_ar100_clk_res),
-+		.resources = sun6i_a31_ar100_clk_res,
-+	},
-+	{
-+		.name = "sun6i-a31-ar100-div-clk",
-+		.of_compatible = "allwinner,sun6i-a31-ar100-div-clk",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_ar100_clk_res),
-+		.resources = sun6i_a31_ar100_clk_res,
-+	},
-+	{
-+		.name = "sun6i-a31-apb0-clk",
-+		.of_compatible = "allwinner,sun6i-a31-apb0-clk",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_apb0_clk_res),
-+		.resources = sun6i_a31_apb0_clk_res,
-+	},
-+	{
-+		.name = "sun6i-a31-apb0-gates-clk",
-+		.of_compatible = "allwinner,sun6i-a31-apb0-gates-clk",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_apb0_gates_clk_res),
-+		.resources = sun6i_a31_apb0_gates_clk_res,
-+	},
-+	{
-+		.name = "sun6i-a31-apb0-clock-reset",
-+		.of_compatible = "allwinner,sun6i-a31-clock-reset",
-+		.num_resources = ARRAY_SIZE(sun6i_a31_apb0_rstc_res),
-+		.resources = sun6i_a31_apb0_rstc_res,
-+	},
-+};
-+
-+static const struct prcm_data sun6i_a31_prcm_data = {
-+	.nsubdevs = ARRAY_SIZE(sun6i_a31_prcm_subdevs),
-+	.subdevs = sun6i_a31_prcm_subdevs,
-+};
-+
-+static const struct of_device_id sun6i_prcm_dt_ids[] = {
-+	{
-+		.compatible = "allwinner,sun6i-a31-prcm",
-+		.data = &sun6i_a31_prcm_data,
-+	},
-+	{ /* sentinel */ },
-+};
-+
-+static int sun6i_prcm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	const struct of_device_id *match;
-+	const struct prcm_data *data;
-+	struct resource *res;
-+	int ret;
-+
-+	match = of_match_node(sun6i_prcm_dt_ids, np);
-+	if (!match)
-+		return -EINVAL;
-+
-+	data = match->data;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "no prcm memory region provided\n");
-+		return -ENOENT;
-+	}
-+
-+	ret = mfd_add_devices(&pdev->dev, 0, data->subdevs, data->nsubdevs,
-+			      res, -1, NULL);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to add subdevices\n");
-+		return ret;
-+	}
-+
-+	dev_info(&pdev->dev, "PRCM initialized\n");
-+
-+	return 0;
-+}
-+
-+static struct platform_driver sun6i_prcm_driver = {
-+	.driver = {
-+		.name = "sun6i-prcm",
-+		.owner = THIS_MODULE,
-+		.of_match_table = sun6i_prcm_dt_ids,
-+	},
-+	.probe = sun6i_prcm_probe,
-+};
-+module_platform_driver(sun6i_prcm_driver);
-+
-+MODULE_AUTHOR("Boris BREZILLON <boris.brezillon@free-electrons.com>");
-+MODULE_DESCRIPTION("Allwinner sun6i PRCM driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.8.3.2
-
+g.
