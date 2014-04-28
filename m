@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384AbaD1Bcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42968 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752659AbaD1B3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:21 -0400
+	id S1754353AbaD1BlG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:41:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47019 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838AbaD1BlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 21:41:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,940,1389772800"; 
+   d="scan'208";a="530650452"
+Message-ID: <1398649251.2443.2.camel@rzhang1-mobl4>
+Subject: Re: [PATCH V5 02/12] PNPACPI: use whilte list for pnpacpi device
+ enumeration
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Date: Mon, 28 Apr 2014 09:40:51 +0800
+In-Reply-To: <34978551.c1lKBcQLqc@vostro.rjw.lan>
+References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
+	 <1396886819-2637-3-git-send-email-rui.zhang@intel.com>
+	 <34978551.c1lKBcQLqc@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        "Oleksij Rempel" <linux@rempel-privat.de>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.427428393@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 35/94] [media] uvcvideo: Do not use usb_set_interface
- on bulk EP
-In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-04-28 at 00:01 +0200, Rafael J. Wysocki wrote:
+> On Tuesday, April 08, 2014 12:06:49 AM Zhang Rui wrote:
+> 
+> [...]
+> 
+> > +
+> > +static int acpi_pnp_scan_handler_attach(struct acpi_device *adev,
+> > +					const struct acpi_device_id *id)
+> > +{
+> > +	return 1;
+> > +}
+> > +
+> > +static int acpi_pnp_scan_handler_match(char *devid, char *handlerid)
+> > +{
+> > +	int i;
+> > +
+> > +	if (memcmp(devid, handlerid, 3))
+> > +		return 0;
+> > +
+> > +	for (i = 3; i < 7; i++) {
+> > +		/* Not a HEX value */
+> > +		if (!((devid[i] >= '0' && devid[i] <= '9') ||
+> > +		      (devid[i] > 'A' && devid[i] <= 'F')))
+> > +			return 0;
+> > +
+> > +		if ((handlerid[i] != 'X') &&
+> 
+> Hmm.  What exactly is the above check for?
+> 
+PNP bus supports wildcard in the drivers' id list.
+say, drivers/tty/serial/8250/8250_pnp.c
+      {"WACFXXX"},            /* Wacom tablets */
+means the driver wants to try to probe all the PNP devices start with
+"WACF".
 
-------------------
+thanks,
+rui
+> > +		    toupper(devid[i]) != toupper(handlerid[i]))
+> > +			return 0;
+> > +	}
+> > +	return 1;
+> > +}
+> > +
+> > +static struct acpi_scan_handler acpi_pnp_handler = {
+> > +	.ids = acpi_pnp_device_ids,
+> > +	.match = acpi_pnp_scan_handler_match,
+> > +	.attach = acpi_pnp_scan_handler_attach,
+> > +};
+> > +
+> > +bool acpi_is_pnp_device(struct acpi_device *device)
+> > +{
+> > +	return device->handler == &acpi_pnp_handler;
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_is_pnp_device);
+> > +
+> > +void __init acpi_pnp_init(void)
+> > +{
+> > +	acpi_scan_add_handler(&acpi_pnp_handler);
+> > +}
+> > diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> 
+> 
 
-From: Oleksij Rempel <linux@rempel-privat.de>
-
-commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
-
-The UVC specification uses alternate setting selection to notify devices
-of stream start/stop. This breaks when using bulk-based devices, as the
-video streaming interface has a single alternate setting in that case,
-making video stream start and video stream stop events to appear
-identical to the device. Bulk-based devices are thus not well supported
-by UVC.
-
-The webcam built in the Asus Zenbook UX302LA ignores the set interface
-request and will keep the video stream enabled when the driver tries to
-stop it. If USB autosuspend is enabled the device will then be suspended
-and will crash, requiring a cold reboot.
-
-USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
-request to the bulk endpoint when stopping the stream instead of
-selecting alternate setting 0. The camera then behaves correctly, and
-thus seems to require that behaviour.
-
-Replace selection of alternate setting 0 with clearing of the endpoint
-halt feature at video stream stop for bulk-based devices. Let's refrain
-from blaming Microsoft this time, as it's not clear whether this
-Windows-specific but USB-compliant behaviour was specifically developed
-to handle bulkd-based UVC devices, or if the camera just took advantage
-of it.
-
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-[bwh: Backported to 3.2: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/media/video/uvc/uvc_video.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
-
---- a/drivers/media/video/uvc/uvc_video.c
-+++ b/drivers/media/video/uvc/uvc_video.c
-@@ -1267,7 +1267,25 @@ int uvc_video_enable(struct uvc_streamin
- 
- 	if (!enable) {
- 		uvc_uninit_video(stream, 1);
--		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
-+		if (stream->intf->num_altsetting > 1) {
-+			usb_set_interface(stream->dev->udev,
-+					  stream->intfnum, 0);
-+		} else {
-+			/* UVC doesn't specify how to inform a bulk-based device
-+			 * when the video stream is stopped. Windows sends a
-+			 * CLEAR_FEATURE(HALT) request to the video streaming
-+			 * bulk endpoint, mimic the same behaviour.
-+			 */
-+			unsigned int epnum = stream->header.bEndpointAddress
-+					   & USB_ENDPOINT_NUMBER_MASK;
-+			unsigned int dir = stream->header.bEndpointAddress
-+					 & USB_ENDPOINT_DIR_MASK;
-+			unsigned int pipe;
-+
-+			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
-+			usb_clear_halt(stream->dev->udev, pipe);
-+		}
-+
- 		uvc_queue_enable(&stream->queue, 0);
- 		return 0;
- 	}
 
