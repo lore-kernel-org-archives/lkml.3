@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100AbaD1Tdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:33:33 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:58784 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433AbaD1Tdb (ORCPT
+	id S933068AbaD1TdZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:33:25 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24162 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932401AbaD1TdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:33:31 -0400
-Message-ID: <1398708274.2009.19.camel@j-VirtualBox>
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-From: Jason Low <jason.low2@hp.com>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Alex Shi <alex.shi@linaro.org>, Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>
-Date: Mon, 28 Apr 2014 11:04:34 -0700
-In-Reply-To: <CAM4v1pMj8KqPG3gebA6ykU92fzWhDVCAzw6fUpVGgGNcruDd0A@mail.gmail.com>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-2-git-send-email-jason.low2@hp.com>
-	 <5358E417.8090503@linux.vnet.ibm.com>
-	 <20140424120415.GS11096@twins.programming.kicks-ass.net>
-	 <20140424124438.GT13658@twins.programming.kicks-ass.net>
-	 <1398358417.3509.11.camel@j-VirtualBox>
-	 <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-	 <5359EDDB.4060409@linux.vnet.ibm.com>
-	 <20140425094331.GF26782@laptop.programming.kicks-ass.net>
-	 <1398455654.2102.29.camel@j-VirtualBox>
-	 <CAM4v1pMj8KqPG3gebA6ykU92fzWhDVCAzw6fUpVGgGNcruDd0A@mail.gmail.com>
+	Mon, 28 Apr 2014 15:33:22 -0400
+Message-ID: <1398706660.20390.5.camel@hornet>
+Subject: Re: [PATCH 1/3] driver core & of: Mark of_nodes of added device as
+ populated
+From: Pawel Moll <pawel.moll@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Rob Herring <robh+dt@kernel.org>,
+        Jean Delvare <jdelvare@suse.de>, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Mon, 28 Apr 2014 18:37:40 +0100
+In-Reply-To: <CAL_JsqJQy7ob87=wPOLxn3X0fTrt2QhAEJ2nPTAmCMZqNZp+sw@mail.gmail.com>
+References: <1392137610-27842-1-git-send-email-pawel.moll@arm.com>
+	 <1392137610-27842-2-git-send-email-pawel.moll@arm.com>
+	 <CAL_JsqJQy7ob87=wPOLxn3X0fTrt2QhAEJ2nPTAmCMZqNZp+sw@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-27 at 14:01 +0530, Preeti Murthy wrote:
-> Hi Jason, Peter,
-> 
-> The below patch looks good to me except for one point.
-> 
-> In idle_balance() the below code snippet does not look right:
-> 
-> - if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
-> - /*
-> - * We are going idle. next_balance may be set based on
-> - * a busy processor. So reset next_balance.
-> - */
-> +out:
-> + /* Move the next balance forward */
-> + if (time_after(this_rq->next_balance, next_balance))
->   this_rq->next_balance = next_balance;
-> - }
-> 
-> By not checking this_rq->next_balance against jiffies,
-> we might end up not updating this parameter when it
-> has expired.
-> 
-> So shouldn't it be:
-> 
-> if (time_after(jiffies, this_rq->next_balance) ||
->            time_after(this_rq->next_balance, next_balance))
->     this_rq->next_balance = next_balance;
+On Thu, 2014-02-13 at 13:15 -0600, Rob Herring wrote:
+> On Tue, Feb 11, 2014 at 10:53 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > In "Device Tree powered" systems, platform devices are usually
+> > massively populated with of_platform_populate() call, executed
+> > at some level of initcalls, either by generic architecture
+> > or by platform-specific code.
+>
+> Go read Grant's and my comments from your last posting.
 
-Hi Preeti,
+Right, I can't explain why I missed those. Will do right now.
 
-If jiffies is after this_rq->next_balance, doesn't that mean that it's
-actually due for a periodic balance and we wouldn't need to modify it?
-In rebalance_domains(), we do load_balance if time_after_eq(jiffies,
-sd->last_balance + interval).
-
-> 
-> Besides this:
-> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-
-Thanks for the review.
+Pawel
 
