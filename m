@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590AbaD1Nge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:34 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58347 "EHLO extserv.mm-sol.com"
+	id S932574AbaD1Ngd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:33 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58335 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756051AbaD1NfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:35:23 -0400
+	id S1756045AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:22 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tim Bird <tbird20d@gmail.com>,
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: [PATCH v8 17/20] usb: phy: msm: Select secondary PHY via TCSR
-Date: Mon, 28 Apr 2014 16:34:20 +0300
-Message-Id: <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
+        David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Manu Gautam <mgautam@codeaurora.org>
+Subject: [PATCH v8 14/20] usb: phy: msm: Add support for secondary PHY control
+Date: Mon, 28 Apr 2014 16:34:17 +0300
+Message-Id: <1398692063-11372-15-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
@@ -22,72 +28,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Bird <tbird20d@gmail.com>
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Select the secondary PHY using the TCSR register, if phy-num=1
-in the DTS (or phy_number is set in the platform data).  The
-SOC has 2 PHYs which can be used with the OTG port, and this
-code allows configuring the correct one.
+Allow support to use 2nd HSPHY with USB2 Core.
+Some platforms may have configuration to allow USB controller
+work with any of the two HSPHYs present. By default driver
+configures USB core to use primary HSPHY. Add support to allow
+user select 2nd HSPHY using DT parameter.
 
-Note: This resolves the problem I was seeing where I couldn't
-get the USB driver working at all on a dragonboard, from cold
-boot.  This patch depends on patch 5/14 from Ivan's msm USB
-patch set.  It does not use DT for the register address, as
-there's no evidence that this address changes between SoC
-versions.
-
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Cc: Manu Gautam <mgautam@codeaurora.org>
 ---
- drivers/usb/phy/phy-msm-usb.c    | 14 ++++++++++++++
- include/linux/usb/msm_hsusb_hw.h |  3 +++
- 2 files changed, 17 insertions(+)
+ .../devicetree/bindings/usb/msm-hsusb.txt          |  6 ++++++
+ drivers/usb/phy/phy-msm-usb.c                      | 24 ++++++++++++++++++++--
+ include/linux/usb/msm_hsusb.h                      |  1 +
+ include/linux/usb/msm_hsusb_hw.h                   |  1 +
+ 4 files changed, 30 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+index ee4123d..0669667 100644
+--- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
++++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
+@@ -59,6 +59,12 @@ Optional properties:
+                 For example: qcom,phy-init-sequence = < -1 0x63 >;
+                 Will update only value at address ULPI_EXT_VENDOR_SPECIFIC + 1.
+
++- qcom,phy-num: Select number of pyco-phy to use, can be one of
++                0 - PHY one, default
++                1 - Second PHY
++                Some platforms may have configuration to allow USB
++                controller work with any of the two HSPHYs present.
++
+ Example HSUSB OTG controller device node:
+
+     usb@f9a55000 {
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index db8d963..9437bcf 100644
+index a6abb1b..8d57045 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -1489,6 +1489,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct msm_otg *motg;
- 	struct usb_phy *phy;
-+	void __iomem *phy_select;
+@@ -314,6 +314,9 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
+ 	if (!retries)
+ 		return -ETIMEDOUT;
 
- 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
- 	if (!motg) {
-@@ -1553,6 +1554,19 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	if (IS_ERR(motg->regs))
- 		return PTR_ERR(motg->regs);
-
-+	/*
-+	 * NOTE: The PHYs can be multiplexed between the chipidea controller
-+	 * and the dwc3 controller, using a single bit. It is important that
-+	 * the dwc3 driver does not set this bit in an incompatible way.
-+	 */
-+	if (motg->phy_number) {
-+		phy_select = devm_ioremap_nocache(&pdev->dev, USB2_PHY_SEL, 4);
-+		if (IS_ERR(phy_select))
-+			return PTR_ERR(phy_select);
-+		/* Enable second PHY with the OTG port */
-+		writel_relaxed(0x1, phy_select);
-+	}
++	if (motg->phy_number)
++		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
 +
- 	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
+ 	dev_info(motg->phy.dev, "phy_reset: success\n");
+ 	return 0;
+ }
+@@ -368,6 +371,9 @@ static int msm_otg_reset(struct usb_phy *phy)
+ 		ulpi_write(phy, ulpi_val, ULPI_USB_INT_EN_FALL);
+ 	}
 
- 	motg->irq = platform_get_irq(pdev, 0);
++	if (motg->phy_number)
++		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
++
+ 	return 0;
+ }
+
+@@ -404,6 +410,7 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	struct usb_phy *phy = &motg->phy;
+ 	struct usb_bus *bus = phy->otg->host;
+ 	struct msm_otg_platform_data *pdata = motg->pdata;
++	void __iomem *addr;
+ 	int cnt = 0;
+
+ 	if (atomic_read(&motg->in_lpm))
+@@ -463,9 +470,13 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	 */
+ 	writel(readl(USB_USBCMD) | ASYNC_INTR_CTRL | ULPI_STP_CTRL, USB_USBCMD);
+
++	addr = USB_PHY_CTRL;
++	if (motg->phy_number)
++		addr = USB_PHY_CTRL2;
++
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL)
+-		writel(readl(USB_PHY_CTRL) | PHY_RETEN, USB_PHY_CTRL);
++		writel(readl(addr) | PHY_RETEN, addr);
+
+ 	clk_disable_unprepare(motg->pclk);
+ 	clk_disable_unprepare(motg->clk);
+@@ -495,6 +506,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+ {
+ 	struct usb_phy *phy = &motg->phy;
+ 	struct usb_bus *bus = phy->otg->host;
++	void __iomem *addr;
+ 	int cnt = 0;
+ 	unsigned temp;
+
+@@ -508,9 +520,14 @@ static int msm_otg_resume(struct msm_otg *motg)
+
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
++
++		addr = USB_PHY_CTRL;
++		if (motg->phy_number)
++			addr = USB_PHY_CTRL2;
++
+ 		msm_hsusb_ldo_set_mode(motg, 1);
+ 		msm_hsusb_config_vddcx(motg, 1);
+-		writel(readl(USB_PHY_CTRL) & ~PHY_RETEN, USB_PHY_CTRL);
++		writel(readl(addr) & ~PHY_RETEN, addr);
+ 	}
+
+ 	temp = readl(USB_USBCMD);
+@@ -1399,6 +1416,9 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
+ 		if (val == OTG_PMIC_CONTROL)
+ 			pdata->otg_control = val;
+
++	if (!of_property_read_u32(node, "qcom,phy-num", &val) && val < 2)
++		motg->phy_number = val;
++
+ 	prop = of_find_property(node, "qcom,phy-init-sequence", &len);
+ 	if (!prop || !len)
+ 		return 0;
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 4e5d916..4628f1a 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -158,6 +158,7 @@ struct msm_otg {
+ 	atomic_t in_lpm;
+ 	int async_int;
+ 	unsigned cur_power;
++	int phy_number;
+ 	struct delayed_work chg_work;
+ 	enum usb_chg_state chg_state;
+ 	enum usb_chg_type chg_type;
 diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
-index 98d3dd8..a29f603 100644
+index 6e97a2d..e6d7035 100644
 --- a/include/linux/usb/msm_hsusb_hw.h
 +++ b/include/linux/usb/msm_hsusb_hw.h
-@@ -16,6 +16,9 @@
- #ifndef __LINUX_USB_GADGET_MSM72K_UDC_H__
- #define __LINUX_USB_GADGET_MSM72K_UDC_H__
+@@ -25,6 +25,7 @@
+ #define USB_OTGSC            (MSM_USB_BASE + 0x01A4)
+ #define USB_USBMODE          (MSM_USB_BASE + 0x01A8)
+ #define USB_PHY_CTRL         (MSM_USB_BASE + 0x0240)
++#define USB_PHY_CTRL2        (MSM_USB_BASE + 0x0278)
 
-+/* USB phy selector - in TCSR address range */
-+#define USB2_PHY_SEL         0xfd4ab000
-+
- #define USB_AHBBURST         (MSM_USB_BASE + 0x0090)
- #define USB_AHBMODE          (MSM_USB_BASE + 0x0098)
- #define USB_CAPLENGTH        (MSM_USB_BASE + 0x0100) /* 8 bit */
+ #define USBCMD_RESET   2
+ #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
 --
 1.8.3.2
 
