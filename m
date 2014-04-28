@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984AbaD1XW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:22:27 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:42294 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaD1XWZ (ORCPT
+	id S1755707AbaD1XYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:24:10 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:52185 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090AbaD1XYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:22:25 -0400
+	Mon, 28 Apr 2014 19:24:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140426060130.GA1698@gmail.com>
-References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140426060130.GA1698@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 28 Apr 2014 17:22:04 -0600
-Message-ID: <CAErSpo4ttY-423De+4=TCsK0kXeZRanoEL2yUjp=GVAoZGaOLw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] x86/gart: Tidy messages and add bridge device info
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, Bodo Eggert <7eggert@gmx.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
+Date: Mon, 28 Apr 2014 18:24:07 -0500
+Message-ID: <CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Rob Herring <robherring2@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 12:01 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Bjorn Helgaas <bhelgaas@google.com> wrote:
->
->> Print the AGP bridge info the same way as the rest of the kernel, e.g.,
->> "0000:00:04.0" instead of "00:04:00".
+On Sat, Apr 26, 2014 at 1:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Apr 18, 2014 at 3:19 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <robh@kernel.org>
 >>
->> Also print the AGP aperture address range the same way we print resources,
->> and label it explicitly as a bus address range.
+>> With the generic earlycon infrastructure in place, convert the 8250
+>> early console to use it.
 >>
->> No functional change.
->>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+>> Signed-off-by: Rob Herring <robh@kernel.org>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Jiri Slaby <jslaby@suse.cz>
 >> ---
->>  arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
->>  1 file changed, 12 insertions(+), 8 deletions(-)
+>>  drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
+>>  drivers/tty/serial/8250/Kconfig      |   1 +
+>>  2 files changed, 16 insertions(+), 123 deletions(-)
 >>
->> diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
->> index 9fa8aa051f54..4dd76d3df056 100644
->> --- a/arch/x86/kernel/aperture_64.c
->> +++ b/arch/x86/kernel/aperture_64.c
->> @@ -126,10 +126,12 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
->>       u64 aper;
->>       u32 old_order;
->>
->> -     printk(KERN_INFO "AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
->> +     printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP bridge\n", bus, slot,
->> +            func);
->
-> Please leave it on a single line - checkpatch warning nonwithstanding.
-> pr_info() is also useful.
+>> diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
+>> index c100d63..e83c9db 100644
+>> --- a/drivers/tty/serial/8250/8250_early.c
+>> +++ b/drivers/tty/serial/8250/8250_early.c
+>> @@ -35,18 +35,8 @@
 > ...
-
-> Also, you could add:
+>> -
+>> -int __init setup_early_serial8250_console(char *cmdline)
 >
-> #define PREFIX "PCI/gart: "
+> You removed global function, but still left declaration and calling...
 >
-> or something like that, to define a standard prefix for these
-> messages.
+> arch/mips/mti-malta/malta-init.c:
+> setup_early_serial8250_console(console_string);
+> drivers/firmware/pcdp.c:        return setup_early_serial8250_console(options);
+> include/linux/serial_8250.h:extern int
+> setup_early_serial8250_console(char *cmdline);
 
-I converted to pr_info(), etc. and added pr_fmt for an "AGP: " prefix.
+Thanks for finding these. I missed them in my build tests. This should fix them:
 
-> Btw., this file could be moved to arch/x86/pci/?
+diff --git a/drivers/tty/serial/8250/8250_early.c
+b/drivers/tty/serial/8250/8250_early.c
+index e83c9db..2094c3b 100644
+--- a/drivers/tty/serial/8250/8250_early.c
++++ b/drivers/tty/serial/8250/8250_early.c
+@@ -156,6 +156,11 @@ static int __init early_serial8250_setup(struct
+earlycon_device *device,
+ EARLYCON_DECLARE(uart8250, early_serial8250_setup);
+ EARLYCON_DECLARE(uart, early_serial8250_setup);
 
-Yes, I'd be glad to do this.  It looks like all the following files
-might be candidates:
-
-  amd_gart_64.c  (CONFIG_GART_IOMMU)
-  aperture_64.c  (CONFIG_GART_IOMMU)
-  pci-calgary_64.c  (CONFIG_CALGARY_IOMMU)
-  tce_64.c  (CONFIG_CALGARY_IOMMU)
-  mmconf-fam10h_64.c  (CONFIG_PCI_MMCONFIG)
-
-What do you think?  Move all, move none, move only aperture_64.c?
-
-Thanks for your comments!
-
-Bjorn
++int __init setup_early_serial8250_console(char *cmdline)
++{
++       return setup_earlycon(cmdline, "uart8250", early_serial8250_setup);
++}
++
+ int serial8250_find_port_for_earlycon(void)
+ {
+        struct earlycon_device *device = early_device;
