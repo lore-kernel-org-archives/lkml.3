@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756266AbaD1OhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:37:17 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:53991 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756172AbaD1OhO (ORCPT
+	id S932311AbaD1Oh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:37:56 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:58107 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756175AbaD1OhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:37:14 -0400
-Date: Mon, 28 Apr 2014 10:37:09 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Barry Song <baohua@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
- nodes
-Message-ID: <20140428143709.GC7719@beef>
-References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
- <20140428142950.GB30292@saruman.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <20140428142950.GB30292@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 10:37:16 -0400
+Message-ID: <1398695832.14475.10.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Date: Mon, 28 Apr 2014 16:37:12 +0200
+In-Reply-To: <20140428101805.75032f45@gandalf.local.home>
+References: <20140411185739.GA6644@linutronix.de>
+	 <1397918766.5436.16.camel@marge.simpson.net>
+	 <1398411635.11930.45.camel@marge.simpson.net>
+	 <1398501491.12941.5.camel@marge.simpson.net>
+	 <1398520699.28726.22.camel@marge.simpson.net>
+	 <1398661784.30930.33.camel@marge.simpson.net>
+	 <1398676186.30930.49.camel@marge.simpson.net>
+	 <20140428101805.75032f45@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-04-28 at 10:18 -0400, Steven Rostedt wrote: 
+> On Mon, 28 Apr 2014 11:09:46 +0200
+> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+>  
+> > migrate_disable-pushd-down-in-atomic_dec_and_spin_lo.patch
+> > 
+> > bug: migrate_disable() after blocking is too late.
+> > 
+> > @@ -1028,12 +1028,12 @@ int atomic_dec_and_spin_lock(atomic_t *a
+> >         /* Subtract 1 from counter unless that drops it to 0 (ie. it was 1) */
+> >         if (atomic_add_unless(atomic, -1, 1))
+> >                 return 0;
+> > -       migrate_disable();
+> >         rt_spin_lock(lock);
+> > -       if (atomic_dec_and_test(atomic))
+> > +       if (atomic_dec_and_test(atomic)){
+> > +               migrate_disable();
+> 
+> Makes sense, as the CPU can go offline right after the lock is grabbed
+> and before the migrate_disable() is called.
+> 
+> Seems that migrate_disable() must be called before taking the lock as
+> it is done in every other location.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+And for tasklist_lock, seems you also MUST do that prior to trylock as
+well, else you'll run afoul of the hotplug beast.
 
-On Mon, Apr 28, 2014 at 09:29:51AM -0500, Felipe Balbi wrote:
-> On Sun, Apr 27, 2014 at 08:27:40PM -0400, Matt Porter wrote:
-> > l2x0_of_init() is executed unconditionally within the sirfsoc_l2x0_init=
-()
-> > early initcall. In a multi v7 kernel this causes bcm281xx and bcm21664
-> > platform to fail boot since they have their own pre l2x0 init sequence
-> > that is required. Fix this by checking that a matching OF ID is present
-> > before calling l2x0_of_init().
-> >=20
-> > Reported-by: Kevin Hilman <khilman@linaro.org>
-> > Signed-off-by: Matt Porter <mporter@linaro.org>
-> > ---
-> > Applies against next-20140424 to fix the issue introduced in
-> > 50655e6 ARM: l2c: prima2: remove cache size override
-> >=20
-> >  arch/arm/mach-prima2/l2x0.c | 16 +++++++++++++++-
-> >  1 file changed, 15 insertions(+), 1 deletion(-)
-> >=20
-> > diff --git a/arch/arm/mach-prima2/l2x0.c b/arch/arm/mach-prima2/l2x0.c
-> > index 09f68f0..1c2ed15 100644
-> > --- a/arch/arm/mach-prima2/l2x0.c
-> > +++ b/arch/arm/mach-prima2/l2x0.c
-> > @@ -8,10 +8,24 @@
-> > =20
-> >  #include <linux/init.h>
-> >  #include <linux/kernel.h>
-> > +#include <linux/of.h>
-> >  #include <asm/hardware/cache-l2x0.h>
-> > =20
-> > +static const struct of_device_id sirf_l2x0_ids[] __initconst =3D {
-> > +	{ .compatible =3D "sirf,prima2-pl310-cache" },
-> > +	{ .compatible =3D "sirf,marco-pl310-cache" },
->=20
-> that same commit removed these two from DTS, did you test with old DTS,
-> btw any chance ?
+-Mike
 
-The "fix" is tested against bcm281xx and bcm21664 as that is what the
-l2c cleanup breaks in -next. As mentioned, I don't have the sirfsoc h/w
-so this first attempt at a fix also breaks their platform. It can be
-addressed by adding those platform specific compatibles back to the dts,
-of course.
 
-I'd much prefer that the sirfsoc folks fix this...it's going to break
-other platforms in a multi v7 build.
-
--Matt
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTXmeVAAoJEOfTILNwq7R4Al4QANF2bjSoFYe/uWFAn8tK7ZFP
-4LP4iStFgETDGOJjOq6uZPCX4QfDGRY4+rAtGtM5C15lxkDurLWfFAZ+zKv597lp
-v2J4cjRLw3emRNgPXKJ1361qSvd1WFWLbRa5xD3lV3x4669rFpByTXiibUg2ezbB
-J4IP4yf6FdU+000NDqwmkZjoPwpgGbGVhuviZZHWvCUJWXiat1xmLF2ij2nXQlOA
-DqJvHUwi2fVygVfGrST7caiCsAw71S3KIVjScKSkUDRUfxJ1WYgH/R26MvzcbG2z
-aoX7AB9sbxeXC+f0fcWYMDSWnIanVnB/JXF7CjKHTXstLGoZioX9PiB4BLzl88fW
-hI74XZ2mhOKWw5hynzvCsZY8HvAnbAVPHja9OqJ9ucgTHd1UqoRxaR4YVG2o779y
-SbwPp6NuzkJKPesnTOtTwuhKHgZTP7LEgQexNjGMZ9xMMBXYL8TvjmtuEskZVty3
-l8Hi+cmsKq4T2yzS0uecrYoi8fFTvXSugjMnVIyD7R3BJhy4D+e5uJu2PcmdqNS6
-3BrZoc6kPRjm6fWDx7gnzoUQF6ozhSwS0kgcMTBQoFKWXW3F7r4F+HoISfkfLl33
-rCIVjtzDsN0w2vJKGfk8LeORGPMn52MIp1zrvMnCWaGCp1dU9B4oaclV3TVAMpe/
-7+BT8+hjQ8s2emIM7VmC
-=Z4+D
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
