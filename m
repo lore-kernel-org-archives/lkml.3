@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaD1Kqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:46:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55204 "EHLO mx2.suse.de"
+	id S932173AbaD1KrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:47:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39117 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754260AbaD1Kqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:46:32 -0400
-Date: Mon, 28 Apr 2014 20:46:20 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Rich Felker <dalias@libc.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] locks: rename file-private locks to file-description
- locks
-Message-ID: <20140428204620.01c102c2@notabene.brown>
-In-Reply-To: <20140428062321.7442881d@tlielax.poochiereds.net>
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
-	<20140421140246.GB26358@brightrain.aerifal.cx>
-	<535529FA.8070709@gmail.com>
-	<20140421161004.GC26358@brightrain.aerifal.cx>
-	<5355644C.7000801@gmail.com>
-	<20140421184640.GD26358@brightrain.aerifal.cx>
-	<535573E0.9080106@gmail.com>
-	<20140421155520.3b33fbef@ipyr.poochiereds.net>
-	<53558A73.3010602@samba.org>
-	<5355F60C.8010004@gmail.com>
-	<20140427145125.21e7e6c6@notabene.brown>
-	<20140428062321.7442881d@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/2hVPHcY4=ri0v8__7d5_HK="; protocol="application/pgp-signature"
+	id S932084AbaD1Kq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 06:46:57 -0400
+Message-ID: <535E319A.9050104@ti.com>
+Date: Mon, 28 Apr 2014 13:46:50 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: twl6040: Optional clk32k clock handling
+References: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com> <20140428103629.GI21279@lee--X1>
+In-Reply-To: <20140428103629.GI21279@lee--X1>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2hVPHcY4=ri0v8__7d5_HK=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 04/28/2014 01:36 PM, Lee Jones wrote:
+>> In certain boards the source for the clk32k clock can be gated. In these
+>> boards the clk32k clock can be provided to the driver and it is going to be
+>> enabled/disabled when it is needed.
+>> If the clk32k clock is not provided the driver will assume that it is always
+>> running.
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  Documentation/devicetree/bindings/mfd/twl6040.txt |  2 ++
+>>  drivers/mfd/twl6040.c                             | 10 ++++++++++
+>>  include/linux/mfd/twl6040.h                       |  2 ++
+>>  3 files changed, 14 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
+>> index 0f5dd709d752..a41157b5d930 100644
+>> --- a/Documentation/devicetree/bindings/mfd/twl6040.txt
+>> +++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
+>> @@ -19,6 +19,8 @@ Required properties:
+>>  
+>>  Optional properties, nodes:
+>>  - enable-active-high: To power on the twl6040 during boot.
+>> +- clocks: phandle to the clk32k clock provider
+>> +- clock-names: Must be "clk32k"
+>>  
+>>  Vibra functionality
+>>  Required properties:
+>> diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
+>> index 2e6504a8e1e3..12b314ea48dc 100644
+>> --- a/drivers/mfd/twl6040.c
+>> +++ b/drivers/mfd/twl6040.c
+>> @@ -291,6 +291,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
+>>  		if (twl6040->power_count++)
+>>  			goto out;
+>>  
+>> +		clk_prepare_enable(twl6040->clk32k);
+>> +
+>>  		/* Allow writes to the chip */
+>>  		regcache_cache_only(twl6040->regmap, false);
+>>  
+>> @@ -346,6 +348,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
+>>  
+>>  		twl6040->sysclk = 0;
+>>  		twl6040->mclk = 0;
+>> +
+>> +		clk_disable_unprepare(twl6040->clk32k);
+>>  	}
+>>  
+>>  out:
+>> @@ -644,6 +648,12 @@ static int twl6040_probe(struct i2c_client *client,
+>>  
+>>  	i2c_set_clientdata(client, twl6040);
+>>  
+>> +	twl6040->clk32k = devm_clk_get(&client->dev, "clk32k");
+>> +	if (IS_ERR(twl6040->clk32k)) {
+>> +		dev_info(&client->dev, "clk32k is not handled\n");
+>> +		twl6040->clk32k = NULL;
+> 
+> So what happens if you pass a NULL clk reference to clk_prepare_enable()?
 
-On Mon, 28 Apr 2014 06:23:21 -0400 Jeff Layton <jlayton@redhat.com> wrote:
+We have checks for !clk in all cases within the clk_* API. If we pass NULL,
+nothing will happen and from the calling driver point of view it will look
+like a success.
+AFAIK this is the way to handle non esential/optional clocks without if()s in
+the driver code around the clock handling.
 
-
-> I sent a pull request to Linus last week and he merged the patches over
-> the weekend. So yes, this ship has sailed unless someone feels strongly
-> enough about it to roll up the patches to change it.
->=20
-> I think we'll probably come to know these as "O.F.D. locks" over the long
-> run. Not a wonderful name, but I can live with it.
-
-I've managed to train my brain that "of_" means "device tree".  Coping with
-"ofd" meaning "per-open" should be too hard.
-
-:-)
-
-NeilBrown
-
---Sig_/2hVPHcY4=ri0v8__7d5_HK=
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU14xfDnsnt1WYoG5AQL8GBAAkCoPlKKP5vGtTtOy25ehAZof58HOkcGO
-Oaqs5Osfb2mRxTz8d7jW30nUMxlTfc/UypPFPEzIMjo1ZCCZ9c3/ZsH0APFaom6m
-N8J12vEzySiTVWBstYxv1j1QhlA4ch+KYH0Ty9cBOBNgf9agwr+MYy2lJecW7ZtF
-o+4DXYU4sgSU7ZGAD/2nSSnln3MoGDJjtlMKsdYyPSNbI7Ls+NNI45UW0GmPa/+/
-lai+BitfucStOg/xGu9yI4WOblwrtAoC6/JmF4PJ+q1TvDuVhJZv6BUH8MfkrGon
-QIzTG1mqK6z/mAdZQ4XW93mn3u0wIbKSXummWYDzopeTnW+duYQahCItuSV1cT5X
-TbHxcSifzAewF40DTXwt9XWy/RTumoiOttbgPYs3l6GamlONtoDdEuRvJwue9ERB
-Tkd2TMs1QMgXvg6tbFc57n66K7CuWg4LX5qxm5cWVbXHrvZ2DW2PN+jPBbQxXFoC
-wsB8x6i7HdEngpvgMUSif+gTmU2sFBC8NrFGrgH/2vqVjrcIasz8EnotlFuyhUqw
-EQ9lcZEVxPyqR7zE389nJuYl3rhPczmjnYpU/IWNBScCyRA1WvWQutuuNRgW3tgj
-XGPri1IjCSWodZ3fiwqTQbIu9Wu/XIwboLvuPcqNtjH1qYPObReSItSqaeCudt3I
-7xrpACLEDH0=
-=sWxo
------END PGP SIGNATURE-----
-
---Sig_/2hVPHcY4=ri0v8__7d5_HK=--
+-- 
+Péter
