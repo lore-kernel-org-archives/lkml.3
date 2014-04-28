@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaD1DYD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 23:24:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9980 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223AbaD1DYA convert rfc822-to-8bit (ORCPT
+	id S1753040AbaD1DdE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 23:33:04 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:36293 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626AbaD1DdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 23:24:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,940,1389772800"; 
-   d="scan'208";a="522146720"
-From: Andi Kleen <andi@firstfloor.org>
-To: Geyslan =?utf-8?Q?Greg=C3=B3rio?= Bem <geyslan@gmail.com>
-Cc: kernel-br <kernel-br@googlegroups.com>,
-        "open list\:FILESYSTEMS \(VFS...\)\, linux-kernel\@vger.kernel.org
-	\(open list\)" <linux-fsdevel@vger.kernel.org>,
-        kernelnewbies <Kernelnewbies@kernelnewbies.org>,
-        LKML <linux-kernel@vger.kernel.org>, jikos@jikos.cz,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [Kernel-BR] Re: [RFC] Only a.out QMAGIC format is working
-References: <CAGG-pURwpGGFyCp-htffegnVhf1VwAke1XPrC+GirXKy-HhqJA@mail.gmail.com>
-	<20140419161552.GB27776@amd.pavel.ucw.cz>
-	<CAGG-pUQ5+dv566KZK2hbQENXSEPaY5k5fapgnLUE0jTv1ihPMg@mail.gmail.com>
-	<20140420114501.GA12135@amd.pavel.ucw.cz>
-	<CAGG-pUSyxxa=vyNBDABf8J1BNuzY8UTA9g3r35g2O4=XK1OYXA@mail.gmail.com>
-Date: Sun, 27 Apr 2014 20:23:58 -0700
-In-Reply-To: <CAGG-pUSyxxa=vyNBDABf8J1BNuzY8UTA9g3r35g2O4=XK1OYXA@mail.gmail.com>
-	("Geyslan =?utf-8?Q?Greg=C3=B3rio?= Bem"'s message of "Sun, 20 Apr 2014
- 09:13:35
-	-0300")
-Message-ID: <8738gym90x.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 27 Apr 2014 23:33:02 -0400
+Date: Sun, 27 Apr 2014 23:33:00 -0400 (EDT)
+Message-Id: <20140427.233300.1841871634019126565.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: sparclinux@vger.kernel.org, aaro.koskinen@iki.fi, hughd@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Fix several sparc64 THP bugs.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.SOC.1.00.1404262308350.3958@math.ut.ee>
+References: <20140425.154337.1159533755150765063.davem@davemloft.net>
+	<alpine.SOC.1.00.1404262308350.3958@math.ut.ee>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 27 Apr 2014 20:33:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geyslan Gregório Bem <geyslan@gmail.com> writes:
->     
->     There should be chance to fix it.
->     
-> I think it too.
+From: mroos@linux.ee
+Date: Sat, 26 Apr 2014 23:14:59 +0300 (EEST)
 
-If it's randomization the following could help:
+>> Meelis and Aaro, I've found and fixed several THP bugs for sparc64
+>> over the last week or so.
+>> 
+>> I cannot %100 account for the exit_mmap() WARN_ON that you two have
+>> been able to trigger, however I'd like you both to test the changes
+>> nonetheless.
+>> 
+>> They are against 3.15 but they should apply cleanly all the way back
+>> to 3.13
+>> 
+>> Thanks in advance for testing.
+> 
+> Tried it on Netra X1, Ultra 2 and V100 that were online (applied the 
+> patches and enabled THP with defaulting to always).
+> 
+> Ultra 2 did not boot up (will see on Monday).
+> 
+> Netra X1 performed a simple dist-upgrade fine with this kernel.
+> 
+> V100 boots up fine but as soon as I start aptitude, it just hangs with 
+> nothing on console (tried it twice).
 
-echo 0 > /proc/sys/kernel/randomize_va_space
-
-Does it?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Sigh, thanks for testing...
