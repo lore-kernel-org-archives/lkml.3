@@ -1,50 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaD1Lbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:31:42 -0400
-Received: from david.siemens.de ([192.35.17.14]:51784 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462AbaD1Lbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:31:35 -0400
-Message-ID: <535E3C10.9020403@siemens.com>
-Date: Mon, 28 Apr 2014 13:31:28 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755151AbaD1LeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:34:12 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55428 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaD1LeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 07:34:08 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3SBXf2o012236, This message is accepted by code: ctloc85258
+Message-ID: <535E3D8D.3000309@realsil.com.cn>
+Date: Mon, 28 Apr 2014 19:37:49 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] Emulate VMXON region correctly
-References: <1398661204-4822-1-git-send-email-bsd@redhat.com>
-In-Reply-To: <1398661204-4822-1-git-send-email-bsd@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
+To: <chris@printf.net>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH v2 2/2] mmc: rtsx: modify error handle and remove smatchwarnings
+References: <cover.1395824147.git.micky_ching@realsil.com.cn> <2f71c814a30f26a0550f1132bd53a682338c44d3.1395824147.git.micky_ching@realsil.com.cn>
+In-Reply-To: <2f71c814a30f26a0550f1132bd53a682338c44d3.1395824147.git.micky_ching@realsil.com.cn>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-28 07:00, Bandan Das wrote:
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=54521
-> 
-> The vmxon region is unused by nvmx, but adding these checks
-> are probably harmless and may detect buggy L1 hypervisors in 
-> the future!
+Hi Chris and Ulf,
 
-Nice and welcome! Will you provide unit tests for these cases as well?
+This patch is denpend on commit c42deffd5b53c9e583d83c7964854ede2f12410d.
+<mmc: rtsx: add support for pre_req and post_req>, and we discard the 
+previous commit.
+we want discard this patch also(it it now in linux-next), need I send 
+another patch to
+revert or it will be discard automatically?
 
-Jan
+Best Regards.
+micky.
+On 03/27/2014 01:35 PM, micky_ching@realsil.com.cn wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
+>
+> Using non-DMA dump-regs, which would be more exactly for DMA transfer failed.
+>
+> More careful handle when cmd/data timeout, add stop(CMD12) cmd before go to
+> finish request when multi-rw timeout.
+>
+> Remove some static checher warings.
+> on commit: <mmc: rtsx: add support for pre_req and post_req>
+> drivers/mmc/host/rtsx_pci_sdmmc.c:194 sd_finish_request()
+> error: we previously assumed 'mrq' could be null (see line 158)
+> drivers/mmc/host/rtsx_pci_sdmmc.c:504 sd_get_rsp()
+> error: we previously assumed 'cmd' could be null (see line 434)
+> drivers/mmc/host/rtsx_pci_sdmmc.c:525 sd_pre_dma_transfer()
+> warn: we tested 'next' before and it was 'false'
+>
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>   drivers/mmc/host/rtsx_pci_sdmmc.c |  119 ++++++++++++++++++++-----------------
+>   1 file changed, 65 insertions(+), 54 deletions(-)
+>
+> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> index 0d8904a..453e1d4 100644
+> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> @@ -81,25 +81,24 @@ static inline void sd_clear_error(struct realtek_pci_sdmmc *host)
+>   }
+>   
+>   #ifdef DEBUG
+> +static inline void sd_print_reg(struct realtek_pci_sdmmc *host, u16 reg)
+> +{
+> +	u8 val = 0;
+> +
+> +	if (rtsx_pci_read_register(host->pcr, reg, &val) < 0)
+> +		dev_dbg(sdmmc_dev(host), "read 0x%04x failed\n", reg);
+> +	else
+> +		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", reg, val);
+> +}
+> +
+>   static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
+>   {
+> -	struct rtsx_pcr *pcr = host->pcr;
+>   	u16 i;
+> -	u8 *ptr;
+> -
+> -	/* Print SD host internal registers */
+> -	rtsx_pci_init_cmd(pcr);
+> -	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+> -	rtsx_pci_send_cmd(pcr, 100);
+>   
+> -	ptr = rtsx_pci_get_cmd_data(pcr);
+>   	for (i = 0xFDA0; i <= 0xFDAE; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> +		sd_print_reg(host, i);
+>   	for (i = 0xFD52; i <= 0xFD69; i++)
+> -		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
+> +		sd_print_reg(host, i);
+>   }
+>   #else
+>   #define sd_print_debug_regs(host)
+> @@ -125,19 +124,27 @@ static void sd_request_timeout(unsigned long host_addr)
+>   	spin_lock_irqsave(&host->lock, flags);
+>   
+>   	if (!host->mrq) {
+> -		dev_err(sdmmc_dev(host), "error: no request exist\n");
+> -		goto out;
+> +		dev_err(sdmmc_dev(host), "error: request not exist\n");
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> +		return;
+>   	}
+>   
+> -	if (host->cmd)
+> +	if (host->cmd && host->data)
+> +		dev_err(sdmmc_dev(host), "error: cmd and data conflict\n");
+> +
+> +	if (host->cmd) {
+>   		host->cmd->error = -ETIMEDOUT;
+> -	if (host->data)
+> -		host->data->error = -ETIMEDOUT;
+> +		dev_dbg(sdmmc_dev(host), "timeout for cmd %d\n",
+> +			host->cmd->opcode);
+> +		tasklet_schedule(&host->cmd_tasklet);
+> +	}
+>   
+> -	dev_dbg(sdmmc_dev(host), "timeout for request\n");
+> +	if (host->data) {
+> +		host->data->error = -ETIMEDOUT;
+> +		dev_dbg(sdmmc_dev(host), "timeout for data transfer\n");
+> +		tasklet_schedule(&host->data_tasklet);
+> +	}
+>   
+> -out:
+> -	tasklet_schedule(&host->finish_tasklet);
+>   	spin_unlock_irqrestore(&host->lock, flags);
+>   }
+>   
+> @@ -157,7 +164,8 @@ static void sd_finish_request(unsigned long host_addr)
+>   	mrq = host->mrq;
+>   	if (!mrq) {
+>   		dev_err(sdmmc_dev(host), "error: no request need finish\n");
+> -		goto out;
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> +		return;
+>   	}
+>   
+>   	cmd = mrq->cmd;
+> @@ -167,11 +175,6 @@ static void sd_finish_request(unsigned long host_addr)
+>   		(mrq->stop && mrq->stop->error) ||
+>   		(cmd && cmd->error) || (data && data->error);
+>   
+> -	if (any_error) {
+> -		rtsx_pci_stop_cmd(pcr);
+> -		sd_clear_error(host);
+> -	}
+> -
+>   	if (data) {
+>   		if (any_error)
+>   			data->bytes_xfered = 0;
+> @@ -188,7 +191,6 @@ static void sd_finish_request(unsigned long host_addr)
+>   	host->cmd = NULL;
+>   	host->data = NULL;
+>   
+> -out:
+>   	spin_unlock_irqrestore(&host->lock, flags);
+>   	mutex_unlock(&pcr->pcr_mutex);
+>   	mmc_request_done(host->mmc, mrq);
+> @@ -373,8 +375,11 @@ static void sd_send_cmd(struct realtek_pci_sdmmc *host, struct mmc_command *cmd)
+>   	if (cmd->opcode == SD_SWITCH_VOLTAGE) {
+>   		err = rtsx_pci_write_register(pcr, SD_BUS_STAT,
+>   				0xFF, SD_CLK_TOGGLE_EN);
+> -		if (err < 0)
+> +		if (err < 0) {
+> +			rtsx_pci_write_register(pcr, SD_BUS_STAT,
+> +				SD_CLK_TOGGLE_EN | SD_CLK_FORCE_STOP, 0);
+>   			goto out;
+> +		}
+>   	}
+>   
+>   	rtsx_pci_init_cmd(pcr);
+> @@ -436,7 +441,8 @@ static void sd_get_rsp(unsigned long host_addr)
+>   
+>   	if (!cmd) {
+>   		dev_err(sdmmc_dev(host), "error: cmd not exist\n");
+> -		goto out;
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> +		return;
+>   	}
+>   
+>   	spin_lock(&pcr->lock);
+> @@ -446,16 +452,18 @@ static void sd_get_rsp(unsigned long host_addr)
+>   		err = -EINVAL;
+>   	spin_unlock(&pcr->lock);
+>   
+> -	if (err < 0)
+> +	if (err < 0) {
+> +		rtsx_pci_stop_cmd(host->pcr);
+> +		sd_print_debug_regs(host);
+> +		sd_clear_error(host);
+>   		goto out;
+> +	}
+>   
+>   	rsp_type = host->rsp_type;
+>   	stat_idx = host->rsp_len;
+>   
+> -	if (rsp_type == SD_RSP_TYPE_R0) {
+> -		err = 0;
+> +	if (rsp_type == SD_RSP_TYPE_R0)
+>   		goto out;
+> -	}
+>   
+>   	/* Eliminate returned value of CHECK_REG_CMD */
+>   	ptr = rtsx_pci_get_cmd_data(pcr) + 1;
+> @@ -498,14 +506,19 @@ static void sd_get_rsp(unsigned long host_addr)
+>   		goto out;
+>   
+>   	if (cmd->data) {
+> -		sd_start_multi_rw(host, host->mrq);
+> +		err = sd_start_multi_rw(host, host->mrq);
+> +		if (err) {
+> +			cmd->data->error = err;
+> +			dev_err(sdmmc_dev(host),
+> +				"error: start data transfer failed\n");
+> +			tasklet_schedule(&host->data_tasklet);
+> +		}
+>   		spin_unlock_irqrestore(&host->lock, flags);
+>   		return;
+>   	}
+>   
+>   out:
+>   	cmd->error = err;
+> -
+>   	tasklet_schedule(&host->finish_tasklet);
+>   	spin_unlock_irqrestore(&host->lock, flags);
+>   }
+> @@ -525,7 +538,7 @@ static int sd_pre_dma_transfer(struct realtek_pci_sdmmc *host,
+>   		data->host_cookie = 0;
+>   	}
+>   
+> -	if (next || (!next && data->host_cookie != host->next_data.cookie))
+> +	if (next || data->host_cookie != host->next_data.cookie)
+>   		sg_count = rtsx_pci_dma_map_sg(pcr,
+>   				data->sg, data->sg_len, read);
+>   	else
+> @@ -580,7 +593,6 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
+>   	int uhs = mmc_card_uhs(card);
+>   	int read = data->flags & MMC_DATA_READ;
+>   	u8 cfg2, trans_mode;
+> -	int err;
+>   	size_t data_len = data->blksz * data->blocks;
+>   
+>   	if (host->data)
+> @@ -641,12 +653,7 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
+>   	mod_timer(&host->timer, jiffies + 10 * HZ);
+>   	rtsx_pci_send_cmd_no_wait(pcr);
+>   
+> -	err = rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
+> -	if (err < 0) {
+> -		data->error = err;
+> -		tasklet_schedule(&host->finish_tasklet);
+> -	}
+> -	return 0;
+> +	return rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
+>   }
+>   
+>   static void sd_finish_multi_rw(unsigned long host_addr)
+> @@ -660,8 +667,9 @@ static void sd_finish_multi_rw(unsigned long host_addr)
+>   	spin_lock_irqsave(&host->lock, flags);
+>   
+>   	if (!host->data) {
+> -		dev_err(sdmmc_dev(host), "error: no data exist\n");
+> -		goto out;
+> +		dev_err(sdmmc_dev(host), "error: data not exist\n");
+> +		spin_unlock_irqrestore(&host->lock, flags);
+> +		return;
+>   	}
+>   
+>   	data = host->data;
+> @@ -672,19 +680,22 @@ static void sd_finish_multi_rw(unsigned long host_addr)
+>   	else if (pcr->trans_result != TRANS_RESULT_OK)
+>   		err = -EINVAL;
+>   
+> -	if (err < 0) {
+> +	if (err < 0)
+>   		data->error = err;
+> -		goto out;
+> +
+> +	if (data->error) {
+> +		rtsx_pci_stop_cmd(host->pcr);
+> +		sd_print_debug_regs(host);
+> +		sd_clear_error(host);
+> +		dev_dbg(sdmmc_dev(host), "data transfer failed %d\n",
+> +			data->error);
+>   	}
+>   
+> -	if (!host->mrq->sbc && data->stop) {
+> +	if (!host->mrq->sbc && data->stop)
+>   		sd_send_cmd(host, data->stop);
+> -		spin_unlock_irqrestore(&host->lock, flags);
+> -		return;
+> -	}
+> +	else
+> +		tasklet_schedule(&host->finish_tasklet);
+>   
+> -out:
+> -	tasklet_schedule(&host->finish_tasklet);
+>   	spin_unlock_irqrestore(&host->lock, flags);
+>   }
+>   
 
-> 
-> Bandan Das (3):
->   KVM: nVMX: rearrange get_vmx_mem_address
->   KVM: nVMX: additional checks on vmxon region
->   KVM: nVMX: fail on invalid vmclear/vmptrld pointer
-> 
->  arch/x86/kvm/vmx.c | 171 ++++++++++++++++++++++++++++++++++++-----------------
->  1 file changed, 118 insertions(+), 53 deletions(-)
-> 
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
