@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659AbaD1Bdb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42846 "EHLO
+	id S932293AbaD1Bd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42868 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752193AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752490AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "lucien" <lucien.xin@gmail.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.405090313@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Arshad Hussain" <arshad.hussain@calsoftinc.com>,
+        "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "santosh kulkarni" <santosh.kulkarni@calsoftinc.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.845538709@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 07/94] ipv6: ip6_append_data_mtu do not handle the mtu
- of the  second fragment properly
+Subject: [PATCH 3.2 79/94] iscsi-target: Fix ERL=2 ASYNC_EVENT connection
+ pointer bug
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,95 +34,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: lucien <lucien.xin@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit e367c2d03dba4c9bcafad24688fadb79dd95b218 ]
+commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
 
-In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
-transport),the ipsec header need to be added in the first fragment, so the mtu
-will decrease to reserve space for it, then the second fragment come, the mtu
-should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
-said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
-*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
-equal with the first fragment's. and cannot turn back.
+This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
+where during ERL=2 connection recovery, a bogus conn_p pointer could
+end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
+notifying the initiator that cmd->logout_cid has failed.
 
-when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
-...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
-...frag (1232|1216)
-...frag (2448|1216)
-...frag (3664|1216)
-...frag (4880|164)
+The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
+a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
 
-which should be:
-...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
-...frag (1232|1232)
-...frag (2464|1232)
-...frag (3696|1232)
-...frag (4928|116)
-
-so delete the min() when change back the mtu.
-
-Signed-off-by: Xin Long <lucien.xin@gmail.com>
-Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ip6_output.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/target/iscsi/iscsi_target.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1191,21 +1191,19 @@ static void ip6_append_data_mtu(unsigned
- 				unsigned int fragheaderlen,
- 				struct sk_buff *skb,
- 				struct rt6_info *rt,
--				bool pmtuprobe)
-+				unsigned int orig_mtu)
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -2358,6 +2358,7 @@ static void iscsit_build_conn_drop_async
  {
- 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
- 		if (skb == NULL) {
- 			/* first fragment, reserve header_len */
--			*mtu = *mtu - rt->dst.header_len;
-+			*mtu = orig_mtu - rt->dst.header_len;
+ 	struct iscsi_cmd *cmd;
+ 	struct iscsi_conn *conn_p;
++	bool found = false;
  
- 		} else {
- 			/*
- 			 * this fragment is not first, the headers
- 			 * space is regarded as data space.
- 			 */
--			*mtu = min(*mtu, pmtuprobe ?
--				   rt->dst.dev->mtu :
--				   dst_mtu(rt->dst.path));
-+			*mtu = orig_mtu;
+ 	/*
+ 	 * Only send a Asynchronous Message on connections whos network
+@@ -2366,11 +2367,12 @@ static void iscsit_build_conn_drop_async
+ 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
+ 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
+ 			iscsit_inc_conn_usage_count(conn_p);
++			found = true;
+ 			break;
  		}
- 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
- 			      + fragheaderlen - sizeof(struct frag_hdr);
-@@ -1222,7 +1220,7 @@ int ip6_append_data(struct sock *sk, int
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
- 	struct sk_buff *skb, *skb_prev = NULL;
--	unsigned int maxfraglen, fragheaderlen, mtu;
-+	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
- 	int exthdrlen;
- 	int dst_exthdrlen;
- 	int hh_len;
-@@ -1307,6 +1305,7 @@ int ip6_append_data(struct sock *sk, int
- 		dst_exthdrlen = 0;
- 		mtu = cork->fragsize;
  	}
-+	orig_mtu = mtu;
  
- 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
+-	if (!conn_p)
++	if (!found)
+ 		return;
  
-@@ -1389,8 +1388,7 @@ alloc_new_skb:
- 			if (skb == NULL || skb_prev == NULL)
- 				ip6_append_data_mtu(&mtu, &maxfraglen,
- 						    fragheaderlen, skb, rt,
--						    np->pmtudisc ==
--						    IPV6_PMTUDISC_PROBE);
-+						    orig_mtu);
- 
- 			skb_prev = skb;
- 
+ 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
 
