@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357AbaD1XbK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:31:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54887 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756284AbaD1XbG (ORCPT
+	id S932597AbaD1Xbl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:31:41 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34555 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757086AbaD1Xar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:31:06 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: mroos@linux.ee, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Cpufreq frequency serialization fixes
-Date: Tue, 29 Apr 2014 01:47:33 +0200
-Message-ID: <9665161.ytKRFCMQPA@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Mon, 28 Apr 2014 19:30:47 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/3] documentation: Update sysfs path for rcu_cpu_stall_suppress
+Date: Mon, 28 Apr 2014 16:30:38 -0700
+Message-Id: <1398727840-11521-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20140428233013.GA10816@linux.vnet.ibm.com>
+References: <20140428233013.GA10816@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042823-6688-0000-0000-0000016C68B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 12:23:54 AM Srivatsa S. Bhat wrote:
-> 
-> Hi,
-> 
-> Meelis Roos reported hangs during boot in the longhaul cpufreq driver, after
-> commit 12478cf0c55 (cpufreq: Make sure frequency transitions are serialized).
-> The root-cause of this issue is the extra invocation of the
-> cpufreq_freq_transition_begin() and cpufreq_freq_transition_end() APIs in the
-> longhaul driver. I found similar issues in the powernow-k6 and powernow-k7
-> drivers as well. This patchset fixes the issue in all the 3 drivers and also
-> adds a debug infrastructure to catch such issues easily.
-> 
-> Patches 1-4 fix the regression in longhaul, powernow-k6 and powernow-k7
-> drivers. (Patch 2 fixes a different bug in powernow-k6, and it is kept as a
-> separate patch instead of merging it with patch 3, because I felt that it was
-> a bit subtle and needed attention in a separate patch).
-> 
-> Patch 5 adds a debug infrastructure to the cpufreq core to catch such problems
-> more easily in the future.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-I've queued up patches [1-4/5] for 3.15, the last one I need to have another
-look at tomorrow.
+Commit 6bfc09e2327d (rcu: Provide RCU CPU stall warnings for tiny RCU)
+moved the rcu_cpu_stall_suppress module parameter from rcutree.c to
+rcupdate.c, but failed to update Documentation/RCU/stallwarn.txt.  This
+commit therefore repairs this omission.
 
-BTW, when you fix regressions, please always add a Fixes: tag to the changelog.
+Reported-by: Kirill Tkhai <tkhai@yandex.ru>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ Documentation/RCU/stallwarn.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks!
-
-
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index 6f3a0057548e..68fe3ad27015 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -24,7 +24,7 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
+ 	timing of the next warning for the current stall.
+ 
+ 	Stall-warning messages may be enabled and disabled completely via
+-	/sys/module/rcutree/parameters/rcu_cpu_stall_suppress.
++	/sys/module/rcupdate/parameters/rcu_cpu_stall_suppress.
+ 
+ CONFIG_RCU_CPU_STALL_VERBOSE
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.5
+
