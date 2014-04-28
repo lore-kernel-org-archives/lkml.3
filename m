@@ -1,94 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505AbaD1Xjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:39:32 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:47794 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173AbaD1Xja (ORCPT
+	id S932281AbaD1Xlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:41:39 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43246 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367AbaD1Xli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:39:30 -0400
-Date: Mon, 28 Apr 2014 17:39:26 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Bandan Das <bsd@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: rework new_id interface for known vendor/device
- values
-Message-ID: <20140428233926.GB30008@google.com>
-References: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
- <20140424224555.GK29593@google.com>
- <jpgtx9h9u15.fsf@nelium.bos.redhat.com>
+	Mon, 28 Apr 2014 19:41:38 -0400
+Date: Mon, 28 Apr 2014 19:40:39 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140428234039.GC6358@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <jpgtx9h9u15.fsf@nelium.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424194024.GA25446@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 01:51:50PM -0400, Bandan Das wrote:
-> Bjorn Helgaas <bhelgaas@google.com> writes:
+On Thu, 24 April 2014 15:40:24 -0400, Jörn Engel wrote:
+> On Wed, 23 April 2014 20:52:47 -0400, Jörn Engel wrote:
+> > 
+> > I use the patch below for some time now.  While it doesn't avoid the
+> > log pollution in the first place, it lessens the impact somewhat.
 > 
-> > On Tue, Apr 01, 2014 at 09:32:59PM -0400, Bandan Das wrote:
-> >> 
-> >> While using the new_id interface, the user can unintentionally feed
-> >> incorrect values if the driver static table has a matching entry.
-> >> This is possible since only the device and vendor fields are
-> >> mandatory and the rest are optional. As a result, store_new_id
-> >> will fill in default values that are then passed on to the driver
-> >> and can have unintended consequences.
-> >> 
-> >> As an example, consider the ixgbe driver and the 82599EB network card :
-> >> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
-> >> 
-> >> This will pass a driver_data value of 0 to the driver whereas
-> >> the index 0 in ixgbe actually points to a different set of card
-> >> operations.
-> >> 
-> >> This change returns an error if the user attempts to add a dynid for
-> >> a vendor/device combination for which a static entry already exists.
-> >> However, if the user intentionally wants a different set of values,
-> >> she must provide all the 7 fields and that will be accepted.
-> >> 
-> >> In KVM/device assignment scenario, the user might want 
-> >> to bind a device back to the host driver by writing to new_id
-> >> and trip on a possible null pointer dereference.
-> >
-> > I don't understand this last KVM comment.  If this patch fixes a null
-> > pointer dereference, it must be because we return -EEXIST instead of
-> > calling the driver's probe method.
-> 
-> A null pointer dereference in the ixgbe driver's struct ixgbe_info
-> that points to operations for a card model. In this case, when the user 
-> uses the new_id interface (without specifying driver_data), it defaults
-> to 0. So, ixgbe_info points to ixgbe_82598_info with mac_ops set to 
-> mac_ops_82598 while the card in question is a 82599.
-> 
-> > Can you outline the sequence of events and the drivers involved?  Did we
-> 
-> Something like this is enough to trigger this -
-> echo "b:f:d" > /sys/bus/.../driver/unbind
-> echo "b:f:d" > /sys/bus/pci/drives/ixgbe/new_id
-> echo 16 > /sys/bus/pci/devices/b:f:d/sriov_numvfs
-> 
-> > start with a device that was claimed by vfio, and now we're trying to get
-> > ixgbe to claim it by writing to /sys/bus/pci/drivers/ixgbe/new_id?  If so,
-> > does that mean the user has to know what driver_data value to supply?
-> 
-> Yes, but isn't it better than defaulting to 0 ?
-> 
-> > I know you didn't add the new_id mechanism, and this patch makes it safer
-> > than it was before, but I'm uneasy about it in general.  Most drivers do
-> > not validate the driver_data value.  They assume it came out of the
-> > id_table supplied by the driver and is therefore trustworthy.  But new_id
-> > is a loophole that allows a user (hopefully only root) to pass arbitrary
-> > junk to the driver.
-> 
-> I think this is what this patch does. If the user intends to, let her
-> pass arbitrary junk, let's not assume values on behalf of the user.
+> Added a config option and ported it to current -linus.  Andrew, would
+> you take this patch?
 
-Yep, I agree, I was just trying to figure out if there was something
-specific to KVM here.  But I don't think there is.
+Andrew?  Did you dislike this patch for some reason or just miss it in
+the thread?
 
-Bjorn
+> ---
+> 
+> Sometimes the printk log is heavily interleaving between different cpus.
+> This is particularly bad when you have two backtraces at the same time,
+> but can be annoying in other cases as well.  With an explicit cpu
+> number, a simple grep can disentangle the mess for you.
+> 
+> Signed-off-by: Joern Engel <joern@logfs.org>
+> ---
+>  kernel/printk/printk.c | 19 ++++++++++++++++---
+>  lib/Kconfig.debug      |  9 +++++++++
+>  2 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index a45b50962295..b9e464924825 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -200,6 +200,7 @@ struct printk_log {
+>  	u16 len;		/* length of entire record */
+>  	u16 text_len;		/* length of text buffer */
+>  	u16 dict_len;		/* length of dictionary buffer */
+> +	u16 cpu;		/* cpu the message was generated on */
+>  	u8 facility;		/* syslog facility */
+>  	u8 flags:5;		/* internal record flags */
+>  	u8 level:3;		/* syslog level */
+> @@ -346,6 +347,7 @@ static void log_store(int facility, int level,
+>  	msg->facility = facility;
+>  	msg->level = level & 7;
+>  	msg->flags = flags & 0x1f;
+> +	msg->cpu = smp_processor_id();
+>  	if (ts_nsec > 0)
+>  		msg->ts_nsec = ts_nsec;
+>  	else
+> @@ -859,7 +861,7 @@ static bool printk_time;
+>  #endif
+>  module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+>  
+> -static size_t print_time(u64 ts, char *buf)
+> +static size_t print_time(u64 ts, u16 cpu, char *buf)
+>  {
+>  	unsigned long rem_nsec;
+>  
+> @@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
+>  
+>  	rem_nsec = do_div(ts, 1000000000);
+>  
+> +#ifdef CONFIG_PRINTK_CPU
+> +	if (!buf)
+> +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
+> +				(unsigned long)ts, cpu);
+> +
+> +	return sprintf(buf, "[%5lu.%06lu,%02x] ",
+> +			(unsigned long)ts, rem_nsec / 1000, cpu);
+> +#else
+>  	if (!buf)
+>  		return snprintf(NULL, 0, "[%5lu.000000] ", (unsigned long)ts);
+>  
+>  	return sprintf(buf, "[%5lu.%06lu] ",
+>  		       (unsigned long)ts, rem_nsec / 1000);
+> +#endif
+>  }
+>  
+>  static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
+> @@ -894,7 +905,7 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
+>  		}
+>  	}
+>  
+> -	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+> +	len += print_time(msg->ts_nsec, msg->cpu, buf ? buf + len : NULL);
+>  	return len;
+>  }
+>  
+> @@ -1391,6 +1402,7 @@ static struct cont {
+>  	size_t cons;			/* bytes written to console */
+>  	struct task_struct *owner;	/* task of first print*/
+>  	u64 ts_nsec;			/* time of first print */
+> +	u16 cpu;			/* cpu the message was generated on */
+>  	u8 level;			/* log level of first message */
+>  	u8 facility;			/* log level of first message */
+>  	enum log_flags flags;		/* prefix, newline flags */
+> @@ -1440,6 +1452,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+>  		cont.facility = facility;
+>  		cont.level = level;
+>  		cont.owner = current;
+> +		cont.cpu = smp_processor_id();
+>  		cont.ts_nsec = local_clock();
+>  		cont.flags = 0;
+>  		cont.cons = 0;
+> @@ -1461,7 +1474,7 @@ static size_t cont_print_text(char *text, size_t size)
+>  	size_t len;
+>  
+>  	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+> -		textlen += print_time(cont.ts_nsec, text);
+> +		textlen += print_time(cont.ts_nsec, cont.cpu, text);
+>  		size -= textlen;
+>  	}
+>  
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index 819ac51202c0..bdec67eca521 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -15,6 +15,15 @@ config PRINTK_TIME
+>  	  The behavior is also controlled by the kernel command line
+>  	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+>  
+> +config PRINTK_CPU
+> +	bool "Show CPU number along with timing information"
+> +	depends on PRINTK_TIME
+> +	help
+> +	  Selecting this option adds the CPU number to be added to
+> +	  timestamps of printk() messages.  This can be useful when
+> +	  messages from several CPUs are interleaved, in particular
+> +	  for stack traces.
+> +
+>  config DEFAULT_MESSAGE_LOGLEVEL
+>  	int "Default message log level (1-7)"
+>  	range 1 7
+> -- 
+> 2.0.0.rc0.1.g7b2ba98
+> 
+
+Jörn
+
+--
+The grand essentials of happiness are: something to do, something to
+love, and something to hope for.
+-- Allan K. Chalmers
