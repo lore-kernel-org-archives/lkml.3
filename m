@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718AbaD1MTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:19:01 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:51176 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384AbaD1MS6 (ORCPT
+	id S1755764AbaD1MUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:20:41 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:44958 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465AbaD1MUj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:18:58 -0400
-Date: Mon, 28 Apr 2014 13:18:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, t.figa@samsung.com, chow.kim@samsung.com,
-        yg1004.jang@samsung.com, vikas.sajjan@samsung.com,
-        b.zolnierkie@samsung.com, Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RESUBMIT RFC PATCH v2 3/3] drivers: mfd: Add support for Exynos
- PMU driver
-Message-ID: <20140428121853.GE21279@lee--X1>
-References: <1398687607-4554-1-git-send-email-pankaj.dubey@samsung.com>
- <1398687607-4554-4-git-send-email-pankaj.dubey@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398687607-4554-4-git-send-email-pankaj.dubey@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 08:20:39 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH] KVM: x86: Fix page-tables reserved bits
+From: Nadav Amit <nadav.amit@gmail.com>
+In-Reply-To: <535E3061.2030402@redhat.com>
+Date: Mon, 28 Apr 2014 15:20:33 +0300
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <7B24A2A6-1C06-4BC7-8C11-9D013E7F338A@gmail.com>
+References: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il> <20140416190329.GB8773@amt.cnet> <534EF354.3090204@zytor.com> <20140416220409.GB15155@amt.cnet> <535E3061.2030402@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch moves Exynos PMU driver implementation from
-> "arm/mach-exynos" to "drivers/mfd".
-> This driver is mainly used for setting misc bits of register from PMU IP
-> of Exynos SoC which will be required to configure before Suspend/Resume.
-> Currently all these settings are done in "arch/arm/mach-exynos/pmu.c" but
-> moving ahead for ARM64 based SoC support, there is a need of DT based
-> implementation of PMU driver.
-> This driver uses already existing DT binding information.
+
+On Apr 28, 2014, at 1:41 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+
+> Il 17/04/2014 00:04, Marcelo Tosatti ha scritto:
+>>>>> > >> @@ -3550,9 +3550,9 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
+>>>>> > >>  		break;
+>>>>> > >>  	case PT64_ROOT_LEVEL:
+>>>>> > >>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+>>>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>>>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>>>>> > >>  		context->rsvd_bits_mask[0][2] = exb_bit_rsvd |
+>>>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>>>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>>>> > >
+>>>> > > Bit 7 is not reserved either, for the PDPTE (its PageSize bit).
+>>>> > >
+>>> >
+>>> > In long mode (IA-32e), bit 7 is definitely reserved.
 > 
-> CC: Sangbeom Kim <sbkim73@samsung.com>
-> CC: Samuel Ortiz <sameo@linux.intel.com>
-> CC: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->  arch/arm/mach-exynos/Kconfig                           |    2 ++
->  arch/arm/mach-exynos/Makefile                          |    2 --
->  drivers/mfd/Kconfig                                    |    9 +++++++++
->  drivers/mfd/Makefile                                   |    1 +
->  arch/arm/mach-exynos/pmu.c => drivers/mfd/exynos-pmu.c |    0
->  5 files changed, 12 insertions(+), 2 deletions(-)
->  rename arch/arm/mach-exynos/pmu.c => drivers/mfd/exynos-pmu.c (100%)
+> It's always reserved for PML4E (rsvd_bits_mask[x][3]), while for PDPTEs it is not reserved if you have 1GB pages.
+> 
+>> There is a separate reserved mask for PS=1, nevermind.
+>> 
+> 
+> Yeah, but the situation for IA32e rsvd_bits_mask[0][2] is exactly the same as for PAE rsvd_bits_mask[0][1], and we're not marking the bit as reserved there.
+> 
+> The right thing to do is to add rsvd_bits(7, 7) to both rsvd_bits_mask[0][2] and rsvd_bits_mask[1][2], if 1GB pages are not supported.
+> 
+> As written, the patch has no effect on PDPTEs because rsvd_bits_mask[0][2] is only accessed if bit 7 is zero.
+> 
+> Nadav, would you mind preparing a follow-up?  Also, how did you find these issues and test the fixes?
+I will create a follow-up as soon as possible. We encountered the issues in a custom testing environment.
+The fixes were validated using the failing tests, but they cover additional cases which might not have been tested.
 
-[...]
-
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 3383412..fd48870 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -1203,6 +1203,15 @@ config MFD_STW481X
->  	  in various ST Microelectronics and ST-Ericsson embedded
->  	  Nomadik series.
->  
-> +config MFD_EXYNOS_PMU
-> +	tristate "Support Exynos Power Managment Unit"
-> +	depends on ARM || ARM64
-> +	help
-> +	Exynos SoC have Power Management Unit (PMU) which controls power and
-> +	operation state of Exynos SoC in two different ways. This driver
-> +	provides impmentation of PMU driver and provides basic functionality
-> +	required during these operation state.
-> +
-
-The help should be indented. Take a look at the other entries.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+Nadav
