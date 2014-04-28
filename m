@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886AbaD1PQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:16:20 -0400
-Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:2412
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756501AbaD1PQP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:16:15 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] pwm: ftm-pwm: Clean up the code.
-Thread-Topic: [PATCH 1/3] pwm: ftm-pwm: Clean up the code.
-Thread-Index: AQHPRMevwrNlKVU6O0Sh14GZPdLzgJsnWroAgAAE9EQ=
-Date: Mon, 28 Apr 2014 15:16:07 +0000
-Message-ID: <6604daa9d83542d9af0fac727b761102@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
- <1395377590-23537-2-git-send-email-Li.Xiubo@freescale.com>,<20140428145703.GB28443@ulmo>
-In-Reply-To: <20140428145703.GB28443@ulmo>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.48.101.7]
-x-forefront-prvs: 01952C6E96
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(51704005)(189002)(199002)(33646001)(87936001)(81342001)(77096999)(83072002)(81542001)(76576001)(79102001)(76482001)(4396001)(50986999)(46102001)(2656002)(54356999)(99396002)(76176999)(19580405001)(80022001)(66066001)(74316001)(92566001)(19580395003)(77982001)(99286001)(74662001)(85852003)(80976001)(86362001)(20776003)(31966008)(101416001)(83322001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:9C05E727.E120101A.45E6B8CF.C4AD88A5.200B7;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756863AbaD1PQA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:16:00 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58609 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756654AbaD1PP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:15:29 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nm@ti.com>
+Subject: [PATCH V3 15/20] bus: omap_l3_noc: ignore masked out unclearable targets
+Date: Mon, 28 Apr 2014 10:14:55 -0500
+Message-ID: <1398698101-25513-16-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Afzal Mohammed <afzal@ti.com>
 
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
-> >  drivers/pwm/pwm-fsl-ftm.c | 13 ++++++-------
-> >  1 file changed, 6 insertions(+), 7 deletions(-)
-> 
-> The patch description here could explain that this is in preparation for
-> the conversion to regmap (which I assume it is).
->
+Errors that cannot be cleared (determined by reading REGERR register)
+are currently handled by masking it. Documentation states that REGERR
+"Checks which application/debug error sources are active" - it does not
+indicate that this is "interrupt status" - masked out status represented
+eventually in the irq line to MPU.
+For example:
 
-Please see the next version, I`ll explain it.
+Lets say module 0 bit 8(0x100) was unclearable, we do the mask it from
+generating further errors. However in the following cases:
+a) bit 9 of Module 0
+OR
+b) any bit of Module 1+
+occur, the interrupt handler wrongly assumes that the raw interrupt
+status of module 0 bit 8 is the root cause of the interrupt, and
+returns. This causes unhandled interrupt and resultant infinite
+interrupts.
 
-Thanks,
+Fix this scenario by storing the events we masked out and masking raw
+status with masked ones before identifying and handling the error.
 
-BRs
-Xiubo
+Reported-by: Vaibhav Hiremath <hvaibhav@ti.com>
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Tested-by: Vaibhav Hiremath <hvaibhav@gmail.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+V3: new patch
+
+ drivers/bus/omap_l3_noc.c |    9 +++++++++
+ drivers/bus/omap_l3_noc.h |    4 ++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 0691e6d..00e4fed 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -169,6 +169,9 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 		err_reg = readl_relaxed(base + flag_mux->offset +
+ 					L3_FLAGMUX_REGERR0 + (inttype << 3));
+ 
++		err_reg &= ~(inttype ? flag_mux->mask_app_bits :
++				flag_mux->mask_dbg_bits);
++
+ 		/* Get the corresponding error and analyse */
+ 		if (err_reg) {
+ 			/* Identify the source from control status register */
+@@ -193,6 +196,12 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 				mask_val = readl_relaxed(mask_reg);
+ 				mask_val &= ~(1 << err_src);
+ 				writel_relaxed(mask_val, mask_reg);
++
++				/* Mark these bits as to be ignored */
++				if (inttype)
++					flag_mux->mask_app_bits |= 1 << err_src;
++				else
++					flag_mux->mask_dbg_bits |= 1 << err_src;
+ 			}
+ 
+ 			/* Error found so break the for loop */
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index ea2f51c..4e18307 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -66,11 +66,15 @@ struct l3_target_data {
+  *		target data. unsupported ones are marked with
+  *		L3_TARGET_NOT_SUPPORTED
+  * @num_targ_data: number of entries in target data
++ * @mask_app_bits: ignore these from raw application irq status
++ * @mask_dbg_bits: ignore these from raw debug irq status
+  */
+ struct l3_flagmux_data {
+ 	u32 offset;
+ 	struct l3_target_data *l3_targ;
+ 	u8 num_targ_data;
++	u32 mask_app_bits;
++	u32 mask_dbg_bits;
+ };
+ 
+ 
+-- 
+1.7.9.5
+
