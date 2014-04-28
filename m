@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271AbaD1Tyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:54:46 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28259 "EHLO
+	id S933286AbaD1Tys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:54:48 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28260 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933161AbaD1Txc (ORCPT
+	by vger.kernel.org with ESMTP id S933155AbaD1Txc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 15:53:32 -0400
 From: Pawel Moll <pawel.moll@arm.com>
@@ -15,10 +15,11 @@ To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         arm@kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 05/10] clk: versatile: Split config options for sp810 and vexpress_osc
-Date: Mon, 28 Apr 2014 18:57:52 +0100
-Message-Id: <1398707877-22596-6-git-send-email-pawel.moll@arm.com>
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        lm-sensors@lm-sensors.org
+Subject: [PATCH 10/10] hwmon: vexpress: Use devm helper for hwmon device registration
+Date: Mon, 28 Apr 2014 18:57:57 +0100
+Message-Id: <1398707877-22596-11-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
 References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
@@ -26,85 +27,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the Kconfig entry for Versatile (& Express) clock drivers
-into a separate file and add individual options for sp810
-and vexpress_osc drivers, as they are optional in some
-configurations and may have separate dependencies.
+Use devm_hwmon_device_register_with_groups instead of
+the old-style manual attributes and hwmon device registration.
 
-Cc: Mike Turquette <mturquette@linaro.org> 
+Also, unwind the attribute group macros for better code
+readability.
+
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
- drivers/clk/Kconfig            |  9 +--------
- drivers/clk/versatile/Kconfig  | 26 ++++++++++++++++++++++++++
- drivers/clk/versatile/Makefile |  5 +++--
- 3 files changed, 30 insertions(+), 10 deletions(-)
- create mode 100644 drivers/clk/versatile/Kconfig
+ drivers/hwmon/vexpress.c | 91 ++++++++++++++++--------------------------------
+ 1 file changed, 30 insertions(+), 61 deletions(-)
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 6f56d3a..4fdfd6c 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -30,14 +30,7 @@ config COMMON_CLK_WM831X
-           Supports the clocking subsystem of the WM831x/2x series of
- 	  PMICs from Wolfson Microlectronics.
+diff --git a/drivers/hwmon/vexpress.c b/drivers/hwmon/vexpress.c
+index d853332..ed6bf0e 100644
+--- a/drivers/hwmon/vexpress.c
++++ b/drivers/hwmon/vexpress.c
+@@ -27,17 +27,8 @@
+ struct vexpress_hwmon_data {
+ 	struct device *hwmon_dev;
+ 	struct regmap *reg;
+-	const char *name;
+ };
  
--config COMMON_CLK_VERSATILE
--	bool "Clock driver for ARM Reference designs"
--	depends on ARCH_INTEGRATOR || ARCH_REALVIEW || ARCH_VEXPRESS || ARM64
--	---help---
--          Supports clocking on ARM Reference designs:
--	  - Integrator/AP and Integrator/CP
--	  - RealView PB1176, EB, PB11MP and PBX
--	  - Versatile Express
-+source "drivers/clk/versatile/Kconfig"
+-static ssize_t vexpress_hwmon_name_show(struct device *dev,
+-		struct device_attribute *dev_attr, char *buffer)
+-{
+-	struct vexpress_hwmon_data *data = dev_get_drvdata(dev);
+-
+-	return sprintf(buffer, "%s\n", data->name);
+-}
+-
+ static ssize_t vexpress_hwmon_label_show(struct device *dev,
+ 		struct device_attribute *dev_attr, char *buffer)
+ {
+@@ -95,16 +86,6 @@ static umode_t vexpress_hwmon_attr_is_visible(struct kobject *kobj,
+ 	return attr->mode;
+ }
  
- config COMMON_CLK_MAX77686
- 	tristate "Clock driver for Maxim 77686 MFD"
-diff --git a/drivers/clk/versatile/Kconfig b/drivers/clk/versatile/Kconfig
-new file mode 100644
-index 0000000..1530c93
---- /dev/null
-+++ b/drivers/clk/versatile/Kconfig
-@@ -0,0 +1,26 @@
-+config COMMON_CLK_VERSATILE
-+	bool "Clock driver for ARM Reference designs"
-+	depends on ARCH_INTEGRATOR || ARCH_REALVIEW || ARCH_VEXPRESS || ARM64
-+	---help---
-+          Supports clocking on ARM Reference designs:
-+	  - Integrator/AP and Integrator/CP
-+	  - RealView PB1176, EB, PB11MP and PBX
-+	  - Versatile Express
-+
-+config CLK_SP810
-+	bool "Clock driver for ARM SP810 System Controller"
-+	depends on COMMON_CLK_VERSATILE
-+	default y if ARCH_VEXPRESS
-+	---help---
-+	  Supports clock muxing (REFCLK/TIMCLK to TIMERCLKEN0-3) capabilities
-+	  of the ARM SP810 System Controller cell.
-+
-+config CLK_VEXPRESS_OSC
-+	bool "Clock driver for Versatile Express OSC clock generators"
-+	depends on COMMON_CLK_VERSATILE
-+	depends on VEXPRESS_CONFIG
-+	default y if ARCH_VEXPRESS
-+	---help---
-+	  Simple regmap-based driver driving clock generators on Versatile
-+	  Express platforms hidden behind its configuration infrastructure,
-+	  commonly known as OSCs.
-diff --git a/drivers/clk/versatile/Makefile b/drivers/clk/versatile/Makefile
-index c16ca78..fd449f9 100644
---- a/drivers/clk/versatile/Makefile
-+++ b/drivers/clk/versatile/Makefile
-@@ -3,5 +3,6 @@ obj-$(CONFIG_ICST)		+= clk-icst.o
- obj-$(CONFIG_ARCH_INTEGRATOR)	+= clk-integrator.o
- obj-$(CONFIG_INTEGRATOR_IMPD1)	+= clk-impd1.o
- obj-$(CONFIG_ARCH_REALVIEW)	+= clk-realview.o
--obj-$(CONFIG_ARCH_VEXPRESS)	+= clk-vexpress.o clk-sp810.o
--obj-$(CONFIG_VEXPRESS_CONFIG)	+= clk-vexpress-osc.o
-+obj-$(CONFIG_ARCH_VEXPRESS)	+= clk-vexpress.o
-+obj-$(CONFIG_CLK_SP810)		+= clk-sp810.o
-+obj-$(CONFIG_CLK_VEXPRESS_OSC)	+= clk-vexpress-osc.o
+-static DEVICE_ATTR(name, S_IRUGO, vexpress_hwmon_name_show, NULL);
+-
+-#define VEXPRESS_HWMON_ATTRS(_name, _label_attr, _input_attr)	\
+-struct attribute *vexpress_hwmon_attrs_##_name[] = {		\
+-	&dev_attr_name.attr,					\
+-	&dev_attr_##_label_attr.attr,				\
+-	&sensor_dev_attr_##_input_attr.dev_attr.attr,		\
+-	NULL							\
+-}
+-
+ struct vexpress_hwmon_type {
+ 	const char *name;
+ 	const struct attribute_group **attr_groups;
+@@ -114,10 +95,13 @@ struct vexpress_hwmon_type {
+ static DEVICE_ATTR(in1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
+ static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, vexpress_hwmon_u32_show,
+ 		NULL, 1000);
+-static VEXPRESS_HWMON_ATTRS(volt, in1_label, in1_input);
+ static struct attribute_group vexpress_hwmon_group_volt = {
+ 	.is_visible = vexpress_hwmon_attr_is_visible,
+-	.attrs = vexpress_hwmon_attrs_volt,
++	.attrs = (struct attribute *[]) {
++		&dev_attr_in1_label.attr,
++		&sensor_dev_attr_in1_input.dev_attr.attr,
++		NULL
++	},
+ };
+ static struct vexpress_hwmon_type vexpress_hwmon_volt = {
+ 	.name = "vexpress_volt",
+@@ -131,10 +115,13 @@ static struct vexpress_hwmon_type vexpress_hwmon_volt = {
+ static DEVICE_ATTR(curr1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
+ static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, vexpress_hwmon_u32_show,
+ 		NULL, 1000);
+-static VEXPRESS_HWMON_ATTRS(amp, curr1_label, curr1_input);
+ static struct attribute_group vexpress_hwmon_group_amp = {
+ 	.is_visible = vexpress_hwmon_attr_is_visible,
+-	.attrs = vexpress_hwmon_attrs_amp,
++	.attrs = (struct attribute *[]) {
++		&dev_attr_curr1_label.attr,
++		&sensor_dev_attr_curr1_input.dev_attr.attr,
++		NULL
++	},
+ };
+ static struct vexpress_hwmon_type vexpress_hwmon_amp = {
+ 	.name = "vexpress_amp",
+@@ -147,10 +134,13 @@ static struct vexpress_hwmon_type vexpress_hwmon_amp = {
+ static DEVICE_ATTR(temp1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
+ static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, vexpress_hwmon_u32_show,
+ 		NULL, 1000);
+-static VEXPRESS_HWMON_ATTRS(temp, temp1_label, temp1_input);
+ static struct attribute_group vexpress_hwmon_group_temp = {
+ 	.is_visible = vexpress_hwmon_attr_is_visible,
+-	.attrs = vexpress_hwmon_attrs_temp,
++	.attrs = (struct attribute *[]) {
++		&dev_attr_temp1_label.attr,
++		&sensor_dev_attr_temp1_input.dev_attr.attr,
++		NULL
++	},
+ };
+ static struct vexpress_hwmon_type vexpress_hwmon_temp = {
+ 	.name = "vexpress_temp",
+@@ -163,10 +153,13 @@ static struct vexpress_hwmon_type vexpress_hwmon_temp = {
+ static DEVICE_ATTR(power1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
+ static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, vexpress_hwmon_u32_show,
+ 		NULL, 1);
+-static VEXPRESS_HWMON_ATTRS(power, power1_label, power1_input);
+ static struct attribute_group vexpress_hwmon_group_power = {
+ 	.is_visible = vexpress_hwmon_attr_is_visible,
+-	.attrs = vexpress_hwmon_attrs_power,
++	.attrs = (struct attribute *[]) {
++		&dev_attr_power1_label.attr,
++		&sensor_dev_attr_power1_input.dev_attr.attr,
++		NULL
++	},
+ };
+ static struct vexpress_hwmon_type vexpress_hwmon_power = {
+ 	.name = "vexpress_power",
+@@ -179,10 +172,13 @@ static struct vexpress_hwmon_type vexpress_hwmon_power = {
+ static DEVICE_ATTR(energy1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
+ static SENSOR_DEVICE_ATTR(energy1_input, S_IRUGO, vexpress_hwmon_u64_show,
+ 		NULL, 1);
+-static VEXPRESS_HWMON_ATTRS(energy, energy1_label, energy1_input);
+ static struct attribute_group vexpress_hwmon_group_energy = {
+ 	.is_visible = vexpress_hwmon_attr_is_visible,
+-	.attrs = vexpress_hwmon_attrs_energy,
++	.attrs = (struct attribute *[]) {
++		&dev_attr_energy1_label.attr,
++		&sensor_dev_attr_energy1_input.dev_attr.attr,
++		NULL
++	},
+ };
+ static struct vexpress_hwmon_type vexpress_hwmon_energy = {
+ 	.name = "vexpress_energy",
+@@ -218,7 +214,6 @@ MODULE_DEVICE_TABLE(of, vexpress_hwmon_of_match);
+ 
+ static int vexpress_hwmon_probe(struct platform_device *pdev)
+ {
+-	int err;
+ 	const struct of_device_id *match;
+ 	struct vexpress_hwmon_data *data;
+ 	const struct vexpress_hwmon_type *type;
+@@ -232,45 +227,19 @@ static int vexpress_hwmon_probe(struct platform_device *pdev)
+ 	if (!match)
+ 		return -ENODEV;
+ 	type = match->data;
+-	data->name = type->name;
+ 
+ 	data->reg = devm_regmap_init_vexpress_config(&pdev->dev);
+-	if (!data->reg)
+-		return -ENODEV;
+-
+-	err = sysfs_create_groups(&pdev->dev.kobj, type->attr_groups);
+-	if (err)
+-		goto error;
+-
+-	data->hwmon_dev = hwmon_device_register(&pdev->dev);
+-	if (IS_ERR(data->hwmon_dev)) {
+-		err = PTR_ERR(data->hwmon_dev);
+-		goto error;
+-	}
++	if (IS_ERR(data->reg))
++		return PTR_ERR(data->reg);
+ 
+-	return 0;
+-
+-error:
+-	sysfs_remove_group(&pdev->dev.kobj, match->data);
+-	return err;
+-}
+-
+-static int vexpress_hwmon_remove(struct platform_device *pdev)
+-{
+-	struct vexpress_hwmon_data *data = platform_get_drvdata(pdev);
+-	const struct of_device_id *match;
+-
+-	hwmon_device_unregister(data->hwmon_dev);
+-
+-	match = of_match_device(vexpress_hwmon_of_match, &pdev->dev);
+-	sysfs_remove_group(&pdev->dev.kobj, match->data);
++	data->hwmon_dev = devm_hwmon_device_register_with_groups(&pdev->dev,
++			type->name, data, type->attr_groups);
+ 
+-	return 0;
++	return PTR_ERR_OR_ZERO(data->hwmon_dev);
+ }
+ 
+ static struct platform_driver vexpress_hwmon_driver = {
+ 	.probe = vexpress_hwmon_probe,
+-	.remove = vexpress_hwmon_remove,
+ 	.driver	= {
+ 		.name = DRVNAME,
+ 		.owner = THIS_MODULE,
 -- 
 1.9.1
 
