@@ -1,243 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913AbaD1Piq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:38:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49233 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756581AbaD1PP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:15:26 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nm@ti.com>
-Subject: [PATCH V3 19/20] bus: omap_l3_noc: Add DRA7 interconnect error data
-Date: Mon, 28 Apr 2014 10:14:59 -0500
-Message-ID: <1398698101-25513-20-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1398698101-25513-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756700AbaD1Plc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:41:32 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43831 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587AbaD1Pl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:41:29 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: netdev@vger.kernel.org, j.vosburgh@gmail.com, vfalico@gmail.com,
+        andy@greyhouse.net, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] net: bonding: Fix format string mismatch in bond_sysfs.c
+Date: Tue, 29 Apr 2014 00:41:21 +0900
+Message-Id: <1398699681-27339-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rajendra Nayak <rnayak@ti.com>
+Fix format string mismatch in bonding_show_min_links().
 
-DRA7 is distinctly different from OMAP4 in terms of masters and clock
-domain organization. There two main clock domains which is divided as
-follows:
-     <0x44000000 0x1000000> is clk1 and clk2 is the sub clock domain
-     <0x45000000 0x1000> is clk3
-
-Add all the data needed to handle L3 error handling on DRA7 devices
-and mark clk2 as subdomain and provide a compatible flag for
-functionality. Other than the data difference the hardware blocks
-involved are essentially the same.
-
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-[nm@ti.com: bugfixes and generic improvements, documentation]
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
-V3: update based on masterID register information
+ drivers/net/bonding/bond_sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- .../devicetree/bindings/arm/omap/l3-noc.txt        |    1 +
- drivers/bus/omap_l3_noc.c                          |    1 +
- drivers/bus/omap_l3_noc.h                          |  151 ++++++++++++++++++++
- 3 files changed, 153 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-index c0105de..45d0fc2 100644
---- a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-@@ -6,6 +6,7 @@ provided by Arteris.
- Required properties:
- - compatible : Should be "ti,omap3-l3-smx" for OMAP3 family
-                Should be "ti,omap4-l3-noc" for OMAP4 family
-+	       Should be "ti,dra7-l3-noc" for DRA7 family
- - reg:	Contains L3 register address range for each noc domain.
- - ti,hwmods: "l3_main_1", ... One hwmod for each noc domain.
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index 431892f..cb95ee4 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -534,7 +534,7 @@ static ssize_t bonding_show_min_links(struct device *d,
+ {
+ 	struct bonding *bond = to_bond(d);
  
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 0eba07a..6cdd02e 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -230,6 +230,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+-	return sprintf(buf, "%d\n", bond->params.min_links);
++	return sprintf(buf, "%u\n", bond->params.min_links);
+ }
  
- static const struct of_device_id l3_noc_match[] = {
- 	{.compatible = "ti,omap4-l3-noc", .data = &omap_l3_data},
-+	{.compatible = "ti,dra7-l3-noc", .data = &dra_l3_data},
- 	{},
- };
- MODULE_DEVICE_TABLE(of, l3_noc_match);
-diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index aced4c5..9562a75 100644
---- a/drivers/bus/omap_l3_noc.h
-+++ b/drivers/bus/omap_l3_noc.h
-@@ -230,4 +230,155 @@ static const struct omap_l3 omap_l3_data = {
- 	.mst_addr_mask = 0xFC,
- };
- 
-+/* DRA7 data */
-+static struct l3_target_data dra_l3_target_data_clk1[] = {
-+	{0x2a00, "AES1",},
-+	{0x0200, "DMM_P1",},
-+	{0x0600, "DSP2_SDMA",},
-+	{0x0b00, "EVE2",},
-+	{0x1300, "DMM_P2",},
-+	{0x2c00, "AES2",},
-+	{0x0300, "DSP1_SDMA",},
-+	{0x0a00, "EVE1",},
-+	{0x0c00, "EVE3",},
-+	{0x0d00, "EVE4",},
-+	{0x2900, "DSS",},
-+	{0x0100, "GPMC",},
-+	{0x3700, "PCIE1",},
-+	{0x1600, "IVA_CONFIG",},
-+	{0x1800, "IVA_SL2IF",},
-+	{0x0500, "L4_CFG",},
-+	{0x1d00, "L4_WKUP",},
-+	{0x3800, "PCIE2",},
-+	{0x3300, "SHA2_1",},
-+	{0x1200, "GPU",},
-+	{0x1000, "IPU1",},
-+	{0x1100, "IPU2",},
-+	{0x2000, "TPCC_EDMA",},
-+	{0x2e00, "TPTC1_EDMA",},
-+	{0x2b00, "TPTC2_EDMA",},
-+	{0x0700, "VCP1",},
-+	{0x2500, "L4_PER2_P3",},
-+	{0x0e00, "L4_PER3_P3",},
-+	{0x2200, "MMU1",},
-+	{0x1400, "PRUSS1",},
-+	{0x1500, "PRUSS2"},
-+	{0x0800, "VCP1",},
-+};
-+
-+static struct l3_flagmux_data dra_l3_flagmux_clk1 = {
-+	.offset = 0x803500,
-+	.l3_targ = dra_l3_target_data_clk1,
-+	.num_targ_data = ARRAY_SIZE(dra_l3_target_data_clk1),
-+};
-+
-+static struct l3_target_data dra_l3_target_data_clk2[] = {
-+	{0x0,	"HOST CLK1",},
-+	{0x0,	"HOST CLK2",},
-+	{0xdead, L3_TARGET_NOT_SUPPORTED,},
-+	{0x3400, "SHA2_2",},
-+	{0x0900, "BB2D",},
-+	{0xdead, L3_TARGET_NOT_SUPPORTED,},
-+	{0x2100, "L4_PER1_P3",},
-+	{0x1c00, "L4_PER1_P1",},
-+	{0x1f00, "L4_PER1_P2",},
-+	{0x2300, "L4_PER2_P1",},
-+	{0x2400, "L4_PER2_P2",},
-+	{0x2600, "L4_PER3_P1",},
-+	{0x2700, "L4_PER3_P2",},
-+	{0x2f00, "MCASP1",},
-+	{0x3000, "MCASP2",},
-+	{0x3100, "MCASP3",},
-+	{0x2800, "MMU2",},
-+	{0x0f00, "OCMC_RAM1",},
-+	{0x1700, "OCMC_RAM2",},
-+	{0x1900, "OCMC_RAM3",},
-+	{0x1e00, "OCMC_ROM",},
-+	{0x3900, "QSPI",},
-+};
-+
-+static struct l3_flagmux_data dra_l3_flagmux_clk2 = {
-+	.offset = 0x803600,
-+	.l3_targ = dra_l3_target_data_clk2,
-+	.num_targ_data = ARRAY_SIZE(dra_l3_target_data_clk2),
-+};
-+
-+static struct l3_target_data dra_l3_target_data_clk3[] = {
-+	{0x0100, "L3_INSTR"},
-+	{0x0300, "DEBUGSS_CT_TBR"},
-+	{0x0,	 "HOST CLK3"},
-+};
-+
-+static struct l3_flagmux_data dra_l3_flagmux_clk3 = {
-+	.offset = 0x200,
-+	.l3_targ = dra_l3_target_data_clk3,
-+	.num_targ_data = ARRAY_SIZE(dra_l3_target_data_clk3),
-+};
-+
-+static struct l3_masters_data dra_l3_masters[] = {
-+	{ 0x0, "MPU" },
-+	{ 0x4, "CS_DAP" },
-+	{ 0x5, "IEEE1500_2_OCP" },
-+	{ 0x8, "DSP1_MDMA" },
-+	{ 0x9, "DSP1_CFG" },
-+	{ 0xA, "DSP1_DMA" },
-+	{ 0xB, "DSP2_MDMA" },
-+	{ 0xC, "DSP2_CFG" },
-+	{ 0xD, "DSP2_DMA" },
-+	{ 0xE, "IVA" },
-+	{ 0x10, "EVE1_P1" },
-+	{ 0x11, "EVE2_P1" },
-+	{ 0x12, "EVE3_P1" },
-+	{ 0x13, "EVE4_P1" },
-+	{ 0x14, "PRUSS1 PRU1" },
-+	{ 0x15, "PRUSS1 PRU2" },
-+	{ 0x16, "PRUSS2 PRU1" },
-+	{ 0x17, "PRUSS2 PRU2" },
-+	{ 0x18, "IPU1" },
-+	{ 0x19, "IPU2" },
-+	{ 0x1A, "SDMA" },
-+	{ 0x1B, "CDMA" },
-+	{ 0x1C, "TC1_EDMA" },
-+	{ 0x1D, "TC2_EDMA" },
-+	{ 0x20, "DSS" },
-+	{ 0x21, "MMU1" },
-+	{ 0x22, "PCIE1" },
-+	{ 0x23, "MMU2" },
-+	{ 0x24, "VIP1" },
-+	{ 0x25, "VIP2" },
-+	{ 0x26, "VIP3" },
-+	{ 0x27, "VPE" },
-+	{ 0x28, "GPU_P1" },
-+	{ 0x29, "BB2D" },
-+	{ 0x29, "GPU_P2" },
-+	{ 0x2B, "GMAC_SW" },
-+	{ 0x2C, "USB3" },
-+	{ 0x2D, "USB2_SS" },
-+	{ 0x2E, "USB2_ULPI_SS1" },
-+	{ 0x2F, "USB2_ULPI_SS2" },
-+	{ 0x30, "CSI2_1" },
-+	{ 0x31, "CSI2_2" },
-+	{ 0x33, "SATA" },
-+	{ 0x34, "EVE1_P2" },
-+	{ 0x35, "EVE2_P2" },
-+	{ 0x36, "EVE3_P2" },
-+	{ 0x37, "EVE4_P2" }
-+};
-+
-+static struct l3_flagmux_data *dra_l3_flagmux[] = {
-+	&dra_l3_flagmux_clk1,
-+	&dra_l3_flagmux_clk2,
-+	&dra_l3_flagmux_clk3,
-+};
-+
-+static const struct omap_l3 dra_l3_data = {
-+	.l3_base = { [1] = L3_BASE_IS_SUBMODULE },
-+	.l3_flagmux = dra_l3_flagmux,
-+	.num_modules = ARRAY_SIZE(dra_l3_flagmux),
-+	.l3_masters = dra_l3_masters,
-+	.num_masters = ARRAY_SIZE(dra_l3_masters),
-+	/* The 6 MSBs of register field used to distinguish initiator */
-+	.mst_addr_mask = 0xFC,
-+};
-+
- #endif	/* __OMAP_L3_NOC_H */
+ static ssize_t bonding_store_min_links(struct device *d,
 -- 
-1.7.9.5
+2.0.0.rc1
 
