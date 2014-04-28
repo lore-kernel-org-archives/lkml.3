@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354AbaD1O2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:28:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48370 "EHLO mga09.intel.com"
+	id S1756247AbaD1O2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:28:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:9190 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756063AbaD1O2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:28:50 -0400
+	id S1756186AbaD1O2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:28:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,944,1389772800"; 
-   d="scan'208";a="530960182"
+   d="scan'208";a="530959973"
 From: Lan Tianyu <tianyu.lan@intel.com>
 To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
         awilliam@redhat.com, lenb@kernel.org
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, tianyu.lan@intel.com
-Subject: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
-Date: Mon, 28 Apr 2014 22:27:48 +0800
-Message-Id: <1398695268-28645-10-git-send-email-tianyu.lan@intel.com>
+Subject: [Patch V2 4/9] ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private data
+Date: Mon, 28 Apr 2014 22:27:43 +0800
+Message-Id: <1398695268-28645-5-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
 References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
@@ -25,82 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to add CONFIG_I2C_ACPI. Current there is a race between
-removing I2C ACPI operation region and ACPI AML code accessing.
-So make i2c core built-in if CONFIG_I2C_ACPI is set.
+Use acpi_bus_attach_private_data() to attach private data
+instead of acpi_attach_data().
 
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- drivers/i2c/Kconfig  | 17 ++++++++++++++++-
- drivers/i2c/Makefile |  2 +-
- include/linux/i2c.h  |  2 +-
- 3 files changed, 18 insertions(+), 3 deletions(-)
+ drivers/acpi/thermal.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-index 7b7ea32..c670d49 100644
---- a/drivers/i2c/Kconfig
-+++ b/drivers/i2c/Kconfig
-@@ -2,7 +2,9 @@
- # I2C subsystem configuration
- #
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index c1e31a4..7ab9392 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -925,13 +925,10 @@ static int acpi_thermal_register_thermal_zone(struct acpi_thermal *tz)
+ 	if (result)
+ 		return result;
  
--menuconfig I2C
-+menu "I2C support"
-+
-+config I2C
- 	tristate "I2C support"
- 	select RT_MUTEXES
- 	---help---
-@@ -21,6 +23,17 @@ menuconfig I2C
- 	  This I2C support can also be built as a module.  If so, the module
- 	  will be called i2c-core.
+-	status = acpi_attach_data(tz->device->handle,
+-				  acpi_bus_private_data_handler,
+-				  tz->thermal_zone);
+-	if (ACPI_FAILURE(status)) {
+-		pr_err(PREFIX "Error attaching device data\n");
++	status =  acpi_bus_attach_private_data(tz->device->handle,
++					       tz->thermal_zone);
++	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+-	}
  
-+config I2C_ACPI
-+	bool "I2C ACPI support"
-+	select I2C
-+	depends on ACPI
-+	default y
-+	help
-+	  Say Y here if you want to enable I2C ACPI function. ACPI table
-+	  provides I2C slave devices' information to enumerate these devices.
-+	  This option also allows ACPI AML code to access I2C slave devices
-+	  via I2C ACPI operation region to fulfill ACPI method.
-+
- if I2C
+ 	tz->tz_enabled = 1;
  
- config I2C_BOARDINFO
-@@ -124,3 +137,5 @@ config I2C_DEBUG_BUS
- 	  on.
- 
- endif # I2C
-+
-+endmenu
-diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-index 80db307..37464ee 100644
---- a/drivers/i2c/Makefile
-+++ b/drivers/i2c/Makefile
-@@ -3,7 +3,7 @@
- #
- 
- i2ccore-y := i2c-core.o
--i2ccore-$(CONFIG_ACPI)		+= i2c-acpi.o
-+i2ccore-$(CONFIG_I2C_ACPI)		+= i2c-acpi.o
- 
- obj-$(CONFIG_I2C_BOARDINFO)	+= i2c-boardinfo.o
- obj-$(CONFIG_I2C)		+= i2ccore.o
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 4b6fcdb..8c2d9b5 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -583,7 +583,7 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
- }
- #endif /* CONFIG_OF */
- 
--#ifdef CONFIG_ACPI
-+#ifdef CONFIG_I2C_ACPI
- int acpi_i2c_install_space_handler(struct i2c_adapter *adapter);
- void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter);
- void acpi_i2c_register_devices(struct i2c_adapter *adap);
 -- 
 1.8.3.1
 
