@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017AbaD1OGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:06:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44596 "EHLO mx1.redhat.com"
+	id S1756084AbaD1OHl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:07:41 -0400
+Received: from ring0.de ([5.45.105.125]:51741 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311AbaD1OGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:06:10 -0400
-Date: Mon, 28 Apr 2014 16:06:02 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: async_pf: kill the unnecessary use_mm/unuse_mm
- async_pf_execute()
-Message-ID: <20140428140602.GC10488@redhat.com>
-References: <20140421132558.GA13608@redhat.com>
- <5356CDDF.5000203@de.ibm.com>
- <5356DA2F.8080606@de.ibm.com>
- <20140423193228.GA3441@redhat.com>
+	id S1752090AbaD1OHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:07:38 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@kernel.org>
+To: Sebastian Reichel <sre@ring0.de>, Mark Brown <broonie@kernel.org>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org, Sebastian Reichel <sre@kernel.org>
+Subject: [PATCHv2 0/9] DT support for N900 soundcard (rx51-audio)
+Date: Mon, 28 Apr 2014 16:07:18 +0200
+Message-Id: <1398694047-28596-1-git-send-email-sre@kernel.org>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423193228.GA3441@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Wed, Apr 23, 2014 at 09:32:28PM +0200, Oleg Nesterov wrote:
-> On 04/22, Christian Borntraeger wrote:
-> >
-> > On 22/04/14 22:15, Christian Borntraeger wrote:
-> > > On 21/04/14 15:25, Oleg Nesterov wrote:
-> > >> async_pf_execute() has no reasons to adopt apf->mm, gup(current, mm)
-> > >> should work just fine even if current has another or NULL ->mm.
-> > >>
-> > >> Recently kvm_async_page_present_sync() was added insedie the "use_mm"
-> > >> section, but it seems that it doesn't need current->mm too.
-> > >>
-> > >> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> > >
-> > > Indeed, use/unuse_mm should only be necessary for copy_to/from_user etc.
-> > > This is fine for s390, but it seems that x86 kvm_arch_async_page_not_present
-> > > might call apf_put_user which might call copy_to_user, so this is not ok, I guess.
-> >
-> > wanted to say kvm_arch_async_page_not_present, but I have to correct myself.
-> > x86 does the "page is there" in the cpu loop, not in the worker. The cpu look
-> > d oes have a valid mm. So this patch should be also ok.
-> 
-> Thanks ;)
-> 
-> Btw, I forgot to mention this in the changelog, but
-> 
-> > >> @@ -80,12 +80,10 @@ static void async_pf_execute(struct work_struct *work)
-> > >>
-> > >>  	might_sleep();
-> > >>
-> > >> -	use_mm(mm);
-> > >>  	down_read(&mm->mmap_sem);
-> > >>  	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
-> > >>  	up_read(&mm->mmap_sem);
-> > >>  	kvm_async_page_present_sync(vcpu, apf);
-> > >> -	unuse_mm(mm);
-> 
-> it can actually do
-> 
-> 	get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
-> 
-> "task" is only used to increment task_struct->xxx_flt. I don't think
-> async_pf_execute() actually needs this (current is PF_WQ_WORKER after
-> all), but I didn't dare to do another change in the code I can hardly
-> understand.
+This patchset adds DT support in rx51-audio. I tested it on my
+Nokia N900 and was able to play a wav file using aplay. I have
+not tested the whole functionality, but output via speakers,
+headphones and the related enable controls seem to work.
 
-Considering the faults would be randomly distributed among the kworker
-threads my preference would also be for NULL instead of current.
+Changes since PATCHv1 [0]:
+ * drop "ASoC: tlv320aic3x: fix shared reset pin for DT"
+   (already applied)
+ * drop "ASoC: RX-51: Convert to table based DAPM setup"
+   (similar patch was applied to -next)
+ * remove useless "card->dev = NULL;" from first patch
+ * split patches from into smaller chunks
+ * introduce new patch, which fixes a checkpatch warning
+ * use gpiod API, which reduces the DT specific bits of
+   the driver
+ * rebase to newer -next checkout
 
-ptrace and uprobes tends to be the only two places that look into
-other mm with gup, ptrace knows the exact pid that it is triggering
-the fault into, so it also can specify the correct task so the fault
-goes in the right task struct. uprobes uses NULL.
+[0] https://lkml.org/lkml/2014/4/5/92
+
+-- Sebastian
+
+Sebastian Reichel (9):
+  ASoC: omap: rx51: Use static const char * const arrays
+  ASoC: omap: rx51: Add module alias
+  ASoC: omap: rx51: Use devm_snd_soc_register_card
+  ASoC: Allow Aux Codecs to be specified using DT
+  ASoC: omap: rx51: omap_mcbsp_st_add_controls: add id parameter
+  ASoC: omap: rx51: get GPIO numbers via gpiod API
+  ASoC: omap: rx51: Add some error messages
+  ASoC: omap: rx51: Add DT support
+  DTS: OMAP3-N900: Add sound support
+
+ .../devicetree/bindings/sound/nokia,rx51.txt       |  27 +++
+ arch/arm/boot/dts/omap3-n900.dts                   |  17 ++
+ include/sound/soc.h                                |  13 +-
+ sound/soc/omap/omap-mcbsp.c                        |   5 +-
+ sound/soc/omap/omap-mcbsp.h                        |   2 +-
+ sound/soc/omap/rx51.c                              | 226 +++++++++++++++------
+ sound/soc/soc-core.c                               |  68 ++++---
+ 7 files changed, 271 insertions(+), 87 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/nokia,rx51.txt
+
+-- 
+1.9.2
+
