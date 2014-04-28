@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbaD1JNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:13:25 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57775 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754500AbaD1JNY (ORCPT
+	id S1754635AbaD1JNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:13:34 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:51437 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559AbaD1JN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:13:24 -0400
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org,
-        dave.hansen@intel.com, Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Subject: [PATCH V3 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
-Date: Mon, 28 Apr 2014 14:31:28 +0530
-Message-Id: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042809-1618-0000-0000-00000025FE14
+	Mon, 28 Apr 2014 05:13:29 -0400
+Message-ID: <535E1BB4.2070904@redhat.com>
+Date: Mon, 28 Apr 2014 11:13:24 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Alexander Gordeev <agordeev@redhat.com>
+CC: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2] kvm: Use pci_enable_msix_exact() instead of pci_enable_msix()
+References: <1392804931-30671-11-git-send-email-agordeev@redhat.com> <5304B09D.7010900@redhat.com> <20140221170414.GM17353@dhcp-26-207.brq.redhat.com> <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20140221170504.GN17353@dhcp-26-207.brq.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill A. Shutemov with 8c6e50b029 commit introduced
-vm_ops->map_pages() for mapping easy accessible pages around
-fault address in hope to reduce number of minor page faults.
+Il 21/02/2014 18:05, Alexander Gordeev ha scritto:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+>
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Gleb Natapov <gleb@kernel.org>
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  virt/kvm/assigned-dev.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+> index 8db4370..bf06577 100644
+> --- a/virt/kvm/assigned-dev.c
+> +++ b/virt/kvm/assigned-dev.c
+> @@ -395,7 +395,8 @@ static int assigned_device_enable_host_msix(struct kvm *kvm,
+>  	if (dev->entries_nr == 0)
+>  		return r;
+>
+> -	r = pci_enable_msix(dev->dev, dev->host_msix_entries, dev->entries_nr);
+> +	r = pci_enable_msix_exact(dev->dev,
+> +				  dev->host_msix_entries, dev->entries_nr);
+>  	if (r)
+>  		return r;
+>
+>
 
-This patch creates infrastructure to modify the FAULT_AROUND_ORDER
-value using mm/Kconfig. This will enable architecture maintainers
-to decide on suitable FAULT_AROUND_ORDER value based on
-performance data for that architecture. First patch also defaults
-FAULT_AROUND_ORDER Kconfig element to 4. Second patch list
-out the performance numbers for powerpc (platform pseries) and
-initialize the fault around order variable for pseries platform of
-powerpc.
+Applying this to kvm/master (i.e. for 3.15), thanks.
 
-V3 Changes:
-  Replaced FAULT_AROUND_ORDER macro to a variable to support arch's that
-   supports sub platforms.
-  Made changes in commit messages.
-
-V2 Changes:
-  Created Kconfig parameter for FAULT_AROUND_ORDER
-  Added check in do_read_fault to handle FAULT_AROUND_ORDER value of 0
-  Made changes in commit messages.
-
-Madhavan Srinivasan (2):
-  mm: move FAULT_AROUND_ORDER to arch/
-  powerpc/pseries: init fault_around_order for pseries
-
- arch/powerpc/platforms/pseries/setup.c |    5 +++++
- mm/Kconfig                             |    8 ++++++++
- mm/memory.c                            |   11 ++++-------
- 3 files changed, 17 insertions(+), 7 deletions(-)
-
--- 
-1.7.10.4
-
+Paolo
