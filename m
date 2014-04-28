@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbaD1Hzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 03:55:52 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:61909 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaD1Hzs (ORCPT
+	id S1753403AbaD1IAV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 04:00:21 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:45871 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaD1IAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 03:55:48 -0400
-Date: Mon, 28 Apr 2014 09:55:31 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, dborkman@redhat.com, ast@plumgrid.com,
-        tklauser@distanz.ch, mpa@pengutronix.de, bhutchings@solarflare.com,
-        zonque@gmail.com, balbi@ti.com, mugunthanvnm@ti.com, t-kristo@ti.com,
-        mturquette@linaro.org, linux@arm.linux.org.uk, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, tony@atomide.com,
-        bcousson@baylibre.com
-Subject: Re: [PATCH 4/6] drivers: net: cpsw: Enable Annexe F Time sync
-Message-ID: <20140428075530.GA8371@netboy>
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
- <1398658225-25873-5-git-send-email-george.cherian@ti.com>
+	Mon, 28 Apr 2014 04:00:19 -0400
+Date: Mon, 28 Apr 2014 16:00:06 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Stanimir Varbanov <svarbanov@mm-sol.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-arm-msm@vger.kernel.org,
+        Mona Hossain <mhossain@codeaurora.org>,
+        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
+        Zhen Kong <zkong@codeaurora.org>,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [RFC PATCH v2 4/9] crypto: qce: Add ablkcipher algorithms
+Message-ID: <20140428080006.GA14510@gondor.apana.org.au>
+References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
+ <1397479725-20954-5-git-send-email-svarbanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398658225-25873-5-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1397479725-20954-5-git-send-email-svarbanov@mm-sol.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 09:40:23AM +0530, George Cherian wrote:
-> Enable the Annex F Time Sync explicitly for DRA7x and AM4372.
-> With this enabled the L2 PTP is working.
+On Mon, Apr 14, 2014 at 03:48:40PM +0300, Stanimir Varbanov wrote:
+>
+> +	if (IS_AES(flags)) {
+> +		switch (keylen) {
+> +		case AES_KEYSIZE_128:
+> +		case AES_KEYSIZE_256:
+> +			break;
+> +		default:
+> +			goto badkey;
 
-L2 works fine without this bit. If this is needed for V3 hardware,
-then it should have its own code variant.
- 
-> while at that rename TS_BIT8 to TS_TTL_NONZERO
+You need to support 192 here.  If the hardware doesn't do that
+you can work around it by using a software fallback.
 
-Is this bit finally documented for am335x?
+In general you need to provide everything that is supported by
+the generic software implementation.
 
-Thanks,
-Richard
-
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
