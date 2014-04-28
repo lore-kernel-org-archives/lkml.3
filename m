@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625AbaD1Mki (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:40:38 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:21992 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518AbaD1Mkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:40:36 -0400
-Date: Mon, 28 Apr 2014 15:40:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: micky <micky_ching@realsil.com.cn>
-Cc: chris@printf.net, sameo@linux.intel.com, ulf.hansson@linaro.org,
-        gregkh@linuxfoundation.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wei_wang@realsil.com.cn,
-        rogerable@realtek.com, devel@linuxdriverproject.org
-Subject: Re: [PATCH v2 2/2] mmc: rtsx: modify error handle and remove
- smatchwarnings
-Message-ID: <20140428124001.GV26890@mwanda>
-References: <cover.1395824147.git.micky_ching@realsil.com.cn>
- <2f71c814a30f26a0550f1132bd53a682338c44d3.1395824147.git.micky_ching@realsil.com.cn>
- <535E3D8D.3000309@realsil.com.cn>
+	id S1755722AbaD1MmA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:42:00 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:57798 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752357AbaD1Ml6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:41:58 -0400
+Date: Mon, 28 Apr 2014 15:41:55 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org, aaro.koskinen@iki.fi, hughd@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Fix several sparc64 THP bugs.
+In-Reply-To: <20140427.233300.1841871634019126565.davem@davemloft.net>
+Message-ID: <alpine.SOC.1.00.1404281526190.1407@math.ut.ee>
+References: <20140425.154337.1159533755150765063.davem@davemloft.net> <alpine.SOC.1.00.1404262308350.3958@math.ut.ee> <20140427.233300.1841871634019126565.davem@davemloft.net>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535E3D8D.3000309@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 07:37:49PM +0800, micky wrote:
-> Hi Chris and Ulf,
-> 
-> This patch is denpend on commit c42deffd5b53c9e583d83c7964854ede2f12410d.
-> <mmc: rtsx: add support for pre_req and post_req>, and we discard
-> the previous commit.
-> we want discard this patch also(it it now in linux-next), need I
-> send another patch to
-> revert or it will be discard automatically?
+> >> Meelis and Aaro, I've found and fixed several THP bugs for sparc64
+> >> over the last week or so.
+> >> 
+> >> I cannot %100 account for the exit_mmap() WARN_ON that you two have
+> >> been able to trigger, however I'd like you both to test the changes
+> >> nonetheless.
+> >> 
+> >> They are against 3.15 but they should apply cleanly all the way back
+> >> to 3.13
+> >> 
+> >> Thanks in advance for testing.
+> > 
+> > Tried it on Netra X1, Ultra 2 and V100 that were online (applied the 
+> > patches and enabled THP with defaulting to always).
+> > 
+> > Ultra 2 did not boot up (will see on Monday).
 
-Send a patch to revert this patch as well.  You should have sent both
-at the same time so it didn't cause breakage...
+When I rebooted it, the hang is not reproducible - Debian dist-upgrade 
+went well. However, it is still strange.
 
-regards,
-dan carpenter
-
+-- 
+Meelis Roos (mroos@linux.ee)
