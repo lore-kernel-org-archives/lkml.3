@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248AbaD1Bcf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42987 "EHLO
+	id S1755252AbaD1Bcd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42966 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752700AbaD1B3W (ORCPT
+	by vger.kernel.org with ESMTP id S1752640AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tomi Valkeinen" <tomi.valkeinen@ti.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>
+CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
+        "Roman Pen" <r.peniaev@gmail.com>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Jens Axboe" <axboe@fb.com>, "Ingo Molnar" <mingo@redhat.com>
 Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.708033729@decadent.org.uk>
+Message-ID: <lsq.1398647482.669398225@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 28/94] mach64: use unaligned access
+Subject: [PATCH 3.2 37/94] blktrace: fix accounting of partially completed
+ requests
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +34,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Roman Pen <r.peniaev@gmail.com>
 
-commit c29dd8696dc5dbd50b3ac441b8a26751277ba520 upstream.
+commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
 
-This patch fixes mach64 to use unaligned access to the font bitmap.
+trace_block_rq_complete does not take into account that request can
+be partially completed, so we can get the following incorrect output
+of blkparser:
 
-This fixes unaligned access warning on sparc64 when 14x8 font is loaded.
+  C   R 232 + 240 [0]
+  C   R 240 + 232 [0]
+  C   R 248 + 224 [0]
+  C   R 256 + 216 [0]
 
-On x86(64), unaligned access is handled in hardware, so both functions
-le32_to_cpup and get_unaligned_le32 perform the same operation.
+but should be:
 
-On RISC machines, unaligned access is not handled in hardware, so we
-better use get_unaligned_le32 to avoid the unaligned trap and warning.
+  C   R 232 + 8 [0]
+  C   R 240 + 8 [0]
+  C   R 248 + 8 [0]
+  C   R 256 + 8 [0]
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Also, the whole output summary statistics of completed requests and
+final throughput will be incorrect.
+
+This patch takes into account real completion size of the request and
+fixes wrong completion accounting.
+
+Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Signed-off-by: Jens Axboe <axboe@fb.com>
+[bwh: Backported to 3.2: drop change in blk-mq.c]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/aty/mach64_accel.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/video/aty/mach64_accel.c
-+++ b/drivers/video/aty/mach64_accel.c
-@@ -4,6 +4,7 @@
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -2077,7 +2077,7 @@ bool blk_update_request(struct request *
+ 	if (!req->bio)
+ 		return false;
+ 
+-	trace_block_rq_complete(req->q, req);
++	trace_block_rq_complete(req->q, req, nr_bytes);
+ 
+ 	/*
+ 	 * For fs requests, rq is just carrier of independent bio's
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -81,6 +81,7 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * block_rq_complete - block IO operation completed by device driver
+  * @q: queue containing the block operation request
+  * @rq: block operations request
++ * @nr_bytes: number of completed bytes
+  *
+  * The block_rq_complete tracepoint event indicates that some portion
+  * of operation request has been completed by the device driver.  If
+@@ -88,11 +89,37 @@ DEFINE_EVENT(block_rq_with_error, block_
+  * do for the request. If @rq->bio is non-NULL then there is
+  * additional work required to complete the request.
   */
+-DEFINE_EVENT(block_rq_with_error, block_rq_complete,
++TRACE_EVENT(block_rq_complete,
  
- #include <linux/delay.h>
-+#include <asm/unaligned.h>
- #include <linux/fb.h>
- #include <video/mach64.h>
- #include "atyfb.h"
-@@ -419,7 +420,7 @@ void atyfb_imageblit(struct fb_info *inf
- 		u32 *pbitmap, dwords = (src_bytes + 3) / 4;
- 		for (pbitmap = (u32*)(image->data); dwords; dwords--, pbitmap++) {
- 			wait_for_fifo(1, par);
--			aty_st_le32(HOST_DATA0, le32_to_cpup(pbitmap), par);
-+			aty_st_le32(HOST_DATA0, get_unaligned_le32(pbitmap), par);
- 		}
+-	TP_PROTO(struct request_queue *q, struct request *rq),
++	TP_PROTO(struct request_queue *q, struct request *rq,
++		 unsigned int nr_bytes),
+ 
+-	TP_ARGS(q, rq)
++	TP_ARGS(q, rq, nr_bytes),
++
++	TP_STRUCT__entry(
++		__field(  dev_t,	dev			)
++		__field(  sector_t,	sector			)
++		__field(  unsigned int,	nr_sector		)
++		__field(  int,		errors			)
++		__array(  char,		rwbs,	RWBS_LEN	)
++		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
++	),
++
++	TP_fast_assign(
++		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
++		__entry->sector    = blk_rq_pos(rq);
++		__entry->nr_sector = nr_bytes >> 9;
++		__entry->errors    = rq->errors;
++
++		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
++		blk_dump_cmd(__get_str(cmd), rq);
++	),
++
++	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->rwbs, __get_str(cmd),
++		  (unsigned long long)__entry->sector,
++		  __entry->nr_sector, __entry->errors)
+ );
+ 
+ DECLARE_EVENT_CLASS(block_rq,
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -699,6 +699,7 @@ void blk_trace_shutdown(struct request_q
+  * blk_add_trace_rq - Add a trace for a request oriented action
+  * @q:		queue the io is for
+  * @rq:		the source request
++ * @nr_bytes:	number of completed bytes
+  * @what:	the action
+  *
+  * Description:
+@@ -706,7 +707,7 @@ void blk_trace_shutdown(struct request_q
+  *
+  **/
+ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
+-			     u32 what)
++			     unsigned int nr_bytes, u32 what)
+ {
+ 	struct blk_trace *bt = q->blk_trace;
+ 
+@@ -715,11 +716,11 @@ static void blk_add_trace_rq(struct requ
+ 
+ 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+ 		what |= BLK_TC_ACT(BLK_TC_PC);
+-		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
++		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
+ 				what, rq->errors, rq->cmd_len, rq->cmd);
+ 	} else  {
+ 		what |= BLK_TC_ACT(BLK_TC_FS);
+-		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
++		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
+ 				rq->cmd_flags, what, rq->errors, 0, NULL);
  	}
+ }
+@@ -727,33 +728,34 @@ static void blk_add_trace_rq(struct requ
+ static void blk_add_trace_rq_abort(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
+ }
  
+ static void blk_add_trace_rq_insert(void *ignore,
+ 				    struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
+ }
+ 
+ static void blk_add_trace_rq_issue(void *ignore,
+ 				   struct request_queue *q, struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
+ }
+ 
+ static void blk_add_trace_rq_requeue(void *ignore,
+ 				     struct request_queue *q,
+ 				     struct request *rq)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
++	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
+ }
+ 
+ static void blk_add_trace_rq_complete(void *ignore,
+ 				      struct request_queue *q,
+-				      struct request *rq)
++				      struct request *rq,
++				      unsigned int nr_bytes)
+ {
+-	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
++	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
+ }
+ 
+ /**
 
