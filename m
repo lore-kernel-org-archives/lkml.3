@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941AbaD1HHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 03:07:31 -0400
-Received: from ar-005-i206.relay.mailchannels.net ([162.253.144.88]:19038 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751771AbaD1HGu (ORCPT
+	id S1753577AbaD1HKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 03:10:07 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46305 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850AbaD1HKF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 03:06:50 -0400
-X-Greylist: delayed 86926 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 03:06:50 EDT
-X-Sender-Id: totalchoicehosting|x-authuser|oren%2bscalemp.com
-X-Sender-Id: totalchoicehosting|x-authuser|oren%2bscalemp.com
-X-MC-Relay: Neutral
-X-MailChannels-SenderId: totalchoicehosting%7Cx-authuser%7Coren%252bscalemp.com
-X-MailChannels-Auth-Id: totalchoicehosting
-Message-ID: <535DFDFF.5070106@scalemp.com>
-Date: Mon, 28 Apr 2014 10:06:39 +0300
-From: Oren Twaig <oren@scalemp.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 28 Apr 2014 03:10:05 -0400
+Date: Mon, 28 Apr 2014 09:09:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Bugfix v2] sched: fix possible invalid memory access caused by
+ CPU hot-addition
+Message-ID: <20140428070954.GM11096@twins.programming.kicks-ass.net>
+References: <1398653293-12483-1-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Shai Fultheim <shai@scalemp.com>
-Subject: Re: [PATCH v2] X86: Hook apic vector allocation domain only when
- interrupt routing are set to ignore
-References: <1398376326-3055-1-git-send-email-oren@scalemp.com> <20140425142248.GL8874@tassilo.jf.intel.com> <535CAA77.4000405@scalemp.com> <20140427183401.GB19657@tassilo.jf.intel.com>
-In-Reply-To: <20140427183401.GB19657@tassilo.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AuthUser: oren+scalemp.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398653293-12483-1-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
-On 04/27/2014 09:34 PM, Andi Kleen wrote:
-> Again, what lock protects it?
->
-> If you cannot answer that question you likely shouldn't use static.
+On Mon, Apr 28, 2014 at 10:48:13AM +0800, Jiang Liu wrote:
+> Intel platforms with Nehalem/Westmere/IvyBridge CPUs may support socket
+> hotplug/online at runtime. The CPU hot-addition flow is:
+> 1) handle CPU hot-addition event
+> 	1.a) gather platform specific information
+> 	1.b) associate hot-added CPU with NUMA node
+> 	1.c) create CPU device
+> 2) online hot-added CPU through sysfs:
+> 	2.a)	cpu_up()
+> 	2.b)		->try_online_node()
+> 	2.c)			->hotadd_new_pgdat()
+> 	2.d)			->node_set_online()
+> 
+> Between 1.b and 2.c, hot-added CPUs are associated with NUMA nodes
+> but those NUMA nodes may still be in offlined state. So we should
+> check node_online(nid) before calling kmalloc_node(nid) and friends,
+> otherwise it may cause invalid memory access as below.
 
-The only function which touches this variable is vsmp_init() which is an
-"_init" function which is guarantee to run by a single cpu - this means, no race.
+So complete and full NAK on this. This is a workaround for a fucked in
+the head BIOS. If you're going to do a work around for that they should
+live in arch/ space, not in core code.
 
-Thanks,
-  Oren
->
-> -Andi
-
-
+The code in question is nearly 7 years old (2.6.24), which leads me to
+believe it works just fine for (regular) memory less nodes as I've not
+had complaints about it before.
