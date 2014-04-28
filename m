@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298AbaD1T4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:56:46 -0400
+	id S933333AbaD1T5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:57:10 -0400
 Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28072 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933062AbaD1Tx3 (ORCPT
+	by vger.kernel.org with ESMTP id S933058AbaD1Tx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:53:29 -0400
+	Mon, 28 Apr 2014 15:53:28 -0400
 From: Pawel Moll <pawel.moll@arm.com>
 To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
@@ -14,10 +14,11 @@ To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH 09/10] ARM: vexpress: move HBI check to sysreg driver
-Date: Mon, 28 Apr 2014 18:57:56 +0100
-Message-Id: <1398707877-22596-10-git-send-email-pawel.moll@arm.com>
+        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 01/10] of: Keep track of populated platform devices
+Date: Mon, 28 Apr 2014 18:57:48 +0100
+Message-Id: <1398707877-22596-2-git-send-email-pawel.moll@arm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
 References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
@@ -25,159 +26,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last reason for static memory mapping is the HBI (board
-identification number) check early in the machine code.
+In "Device Tree powered" systems, platform devices are usually
+massively populated with of_platform_populate() call, executed
+at some level of initcalls, either by generic architecture
+or by platform-specific code.
 
-Moving the check to the sysreg driver makes it possible to
-completely remove the early mapping and init functions.
+There are situations though where certain devices must be
+created (and bound with drivers) before all the others.
+This presents a challenge, as devices created explicitly
+would be created again by of_platform_populate().
 
+This patch tries to solve that issue in a generic way,
+adding a "populated" flag for a DT node description.
+Once set, this device will never be created again via
+of_* API, so of_platform_populate() will skip such nodes
+(and its children) in a similar way to the non-available
+ones.
+
+Cc: devicetree@vger.kernel.org
 Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 ---
- arch/arm/mach-vexpress/v2m.c  | 49 -------------------------------------------
- drivers/mfd/vexpress-sysreg.c | 30 ++++++++++----------------
- include/linux/vexpress.h      |  1 -
- 3 files changed, 11 insertions(+), 69 deletions(-)
+ drivers/of/platform.c | 10 ++++++++--
+ include/linux/of.h    |  1 +
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index d8b419b..38f4f6f 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -370,53 +370,6 @@ MACHINE_START(VEXPRESS, "ARM-Versatile Express")
- 	.init_machine	= v2m_init,
- MACHINE_END
- 
--static struct map_desc v2m_rs1_io_desc __initdata = {
--	.virtual	= V2M_PERIPH,
--	.pfn		= __phys_to_pfn(0x1c000000),
--	.length		= SZ_2M,
--	.type		= MT_DEVICE,
--};
--
--static int __init v2m_dt_scan_memory_map(unsigned long node, const char *uname,
--		int depth, void *data)
--{
--	const char **map = data;
--
--	if (strcmp(uname, "motherboard") != 0)
--		return 0;
--
--	*map = of_get_flat_dt_prop(node, "arm,v2m-memory-map", NULL);
--
--	return 1;
--}
--
--void __init v2m_dt_map_io(void)
--{
--	const char *map = NULL;
--
--	of_scan_flat_dt(v2m_dt_scan_memory_map, &map);
--
--	if (map && strcmp(map, "rs1") == 0)
--		iotable_init(&v2m_rs1_io_desc, 1);
--	else
--		iotable_init(v2m_io_desc, ARRAY_SIZE(v2m_io_desc));
--}
--
--void __init v2m_dt_init_early(void)
--{
--	u32 dt_hbi;
--
--	/* Confirm board type against DT property, if available */
--	if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
--		u32 hbi = vexpress_get_hbi(VEXPRESS_SITE_MASTER);
--
--		if (WARN_ON(dt_hbi != hbi))
--			pr_warning("vexpress: DT HBI (%x) is not matching "
--					"hardware (%x)!\n", dt_hbi, hbi);
--	}
--}
--
--
- static void __init v2m_dt_init(void)
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 404d1da..0ae757a 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -204,7 +204,8 @@ static struct platform_device *of_platform_device_create_pdata(
  {
- 	l2x0_of_init(0x00400000, 0xfe0fffff);
-@@ -432,7 +385,5 @@ DT_MACHINE_START(VEXPRESS_DT, "ARM-Versatile Express")
- 	.dt_compat	= v2m_dt_match,
- 	.smp		= smp_ops(vexpress_smp_dt_ops),
- 	.smp_init	= smp_init_ops(vexpress_smp_init_ops),
--	.map_io		= v2m_dt_map_io,
--	.init_early	= v2m_dt_init_early,
- 	.init_machine	= v2m_dt_init,
- MACHINE_END
-diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
-index 952df84..9e21e4f 100644
---- a/drivers/mfd/vexpress-sysreg.c
-+++ b/drivers/mfd/vexpress-sysreg.c
-@@ -45,7 +45,6 @@
- #define SYS_CFGSTAT		0x0a8
+ 	struct platform_device *dev;
  
- #define SYS_HBI_MASK		0xfff
--#define SYS_ID_HBI_SHIFT	16
- #define SYS_PROCIDx_HBI_SHIFT	0
+-	if (!of_device_is_available(np))
++	if (!of_device_is_available(np) ||
++			of_node_check_flag(np, OF_POPULATED))
+ 		return NULL;
  
- #define SYS_MCI_CARDIN		(1 << 0)
-@@ -99,24 +98,6 @@ u32 vexpress_get_procid(int site)
- 			SYS_PROCID0 : SYS_PROCID1));
+ 	dev = of_device_alloc(np, bus_id, parent);
+@@ -230,6 +231,8 @@ static struct platform_device *of_platform_device_create_pdata(
+ 		return NULL;
+ 	}
+ 
++	of_node_set_flag(np, OF_POPULATED);
++
+ 	return dev;
  }
  
--u32 vexpress_get_hbi(int site)
--{
--	u32 id;
--
--	switch (site) {
--	case VEXPRESS_SITE_MB:
--		id = readl(vexpress_sysreg_base() + SYS_ID);
--		return (id >> SYS_ID_HBI_SHIFT) & SYS_HBI_MASK;
--	case VEXPRESS_SITE_MASTER:
--	case VEXPRESS_SITE_DB1:
--	case VEXPRESS_SITE_DB2:
--		id = vexpress_get_procid(site);
--		return (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
--	}
--
--	return ~0;
--}
--
- void __iomem *vexpress_get_24mhz_clock_base(void)
- {
- 	return vexpress_sysreg_base() + SYS_24MHZ;
-@@ -229,6 +210,7 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
- 	struct resource *mem;
- 	void __iomem *base;
- 	struct bgpio_chip *mmc_gpio_chip;
-+	u32 dt_hbi;
+@@ -262,7 +265,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!mem)
-@@ -240,6 +222,16 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+ 	pr_debug("Creating amba device %s\n", node->full_name);
  
- 	vexpress_config_set_master(vexpress_sysreg_get_master());
+-	if (!of_device_is_available(node))
++	if (!of_device_is_available(node) ||
++			of_node_check_flag(node, OF_POPULATED))
+ 		return NULL;
  
-+	/* Confirm board type against DT property, if available */
-+	if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
-+		u32 id = vexpress_get_procid(VEXPRESS_SITE_MASTER);
-+		u32 hbi = (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
+ 	dev = amba_device_alloc(NULL, 0, 0);
+@@ -305,6 +309,8 @@ static struct amba_device *of_amba_device_create(struct device_node *node,
+ 		goto err_free;
+ 	}
+ 
++	of_node_set_flag(node, OF_POPULATED);
 +
-+		if (WARN_ON(dt_hbi != hbi))
-+			dev_warn(&pdev->dev, "DT HBI (%x) is not matching hardware (%x)!\n",
-+					dt_hbi, hbi);
-+	}
-+
- 	/*
- 	 * Duplicated SYS_MCI pseudo-GPIO controller for compatibility with
- 	 * older trees using sysreg node for MMC control lines.
-diff --git a/include/linux/vexpress.h b/include/linux/vexpress.h
-index 46636e3..a4c9547 100644
---- a/include/linux/vexpress.h
-+++ b/include/linux/vexpress.h
-@@ -60,7 +60,6 @@ struct regmap *devm_regmap_init_vexpress_config(struct device *dev);
+ 	return dev;
  
- unsigned int vexpress_get_mci_cardin(struct device *dev);
- u32 vexpress_get_procid(int site);
--u32 vexpress_get_hbi(int site);
- void *vexpress_get_24mhz_clock_base(void);
- void vexpress_flags_set(u32 data);
+ err_free:
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 3bad8d1..fd3aaee 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -197,6 +197,7 @@ static inline unsigned long of_read_ulong(const __be32 *cell, int size)
+ /* flag descriptions */
+ #define OF_DYNAMIC	1 /* node and properties were allocated via kmalloc */
+ #define OF_DETACHED	2 /* node has been detached from the device tree */
++#define OF_POPULATED	3 /* device already created for the node */
  
+ #define OF_IS_DYNAMIC(x) test_bit(OF_DYNAMIC, &x->_flags)
+ #define OF_MARK_DYNAMIC(x) set_bit(OF_DYNAMIC, &x->_flags)
 -- 
 1.9.1
 
