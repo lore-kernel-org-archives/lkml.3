@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232AbaD1Bbn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:31:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42818 "EHLO
+	id S1754750AbaD1Bbl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42881 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752508AbaD1B3U (ORCPT
+	by vger.kernel.org with ESMTP id S1752513AbaD1B3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:20 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Vlad Yasevich" <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Daniel Borkmann" <dborkman@redhat.com>,
-        "Neil Horman" <nhorman@tuxdriver.com>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.190954618@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Yann Droneaud" <ydroneaud@opteya.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.72384035@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 01/94] net: sctp: fix skb leakage in COOKIE ECHO path
- of  chunk->auth_chunk
+Subject: [PATCH 3.2 50/94] IB/nes: Return an error on ib_copy_from_udata()
+ failure instead of NULL
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,119 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-[ Upstream commit c485658bae87faccd7aed540fd2ca3ab37992310 ]
+commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
 
-While working on ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to
-verify if we/peer is AUTH capable"), we noticed that there's a skb
-memory leakage in the error path.
+In case of error while accessing to userspace memory, function
+nes_create_qp() returns NULL instead of an error code wrapped through
+ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
+check for error with IS_ERR().
 
-Running the same reproducer as in ec0223ec48a9 and by unconditionally
-jumping to the error label (to simulate an error condition) in
-sctp_sf_do_5_1D_ce() receive path lets kmemleak detector bark about
-the unfreed chunk->auth_chunk skb clone:
+As page 0 is likely not mapped, it is going to trigger an Oops when
+the kernel will try to dereference NULL pointer to access to struct
+ib_qp's fields.
 
-Unreferenced object 0xffff8800b8f3a000 (size 256):
-  comm "softirq", pid 0, jiffies 4294769856 (age 110.757s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    89 ab 75 5e d4 01 58 13 00 00 00 00 00 00 00 00  ..u^..X.........
-  backtrace:
-    [<ffffffff816660be>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff8119f328>] kmem_cache_alloc+0xc8/0x210
-    [<ffffffff81566929>] skb_clone+0x49/0xb0
-    [<ffffffffa0467459>] sctp_endpoint_bh_rcv+0x1d9/0x230 [sctp]
-    [<ffffffffa046fdbc>] sctp_inq_push+0x4c/0x70 [sctp]
-    [<ffffffffa047e8de>] sctp_rcv+0x82e/0x9a0 [sctp]
-    [<ffffffff815abd38>] ip_local_deliver_finish+0xa8/0x210
-    [<ffffffff815a64af>] nf_reinject+0xbf/0x180
-    [<ffffffffa04b4762>] nfqnl_recv_verdict+0x1d2/0x2b0 [nfnetlink_queue]
-    [<ffffffffa04aa40b>] nfnetlink_rcv_msg+0x14b/0x250 [nfnetlink]
-    [<ffffffff815a3269>] netlink_rcv_skb+0xa9/0xc0
-    [<ffffffffa04aa7cf>] nfnetlink_rcv+0x23f/0x408 [nfnetlink]
-    [<ffffffff815a2bd8>] netlink_unicast+0x168/0x250
-    [<ffffffff815a2fa1>] netlink_sendmsg+0x2e1/0x3f0
-    [<ffffffff8155cc6b>] sock_sendmsg+0x8b/0xc0
-    [<ffffffff8155d449>] ___sys_sendmsg+0x369/0x380
+In some rare cases, page 0 could be mapped by userspace, which could
+turn this bug to a vulnerability that could be exploited: the function
+pointers in struct ib_device will be under userspace total control.
 
-What happens is that commit bbd0d59809f9 clones the skb containing
-the AUTH chunk in sctp_endpoint_bh_rcv() when having the edge case
-that an endpoint requires COOKIE-ECHO chunks to be authenticated:
+This was caught when using spatch (aka. coccinelle)
+to rewrite calls to ib_copy_{from,to}_udata().
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  ------------------ AUTH; COOKIE-ECHO ---------------->
-  <-------------------- COOKIE-ACK ---------------------
-
-When we enter sctp_sf_do_5_1D_ce() and before we actually get to
-the point where we process (and subsequently free) a non-NULL
-chunk->auth_chunk, we could hit the "goto nomem_init" path from
-an error condition and thus leave the cloned skb around w/o
-freeing it.
-
-The fix is to centrally free such clones in sctp_chunk_destroy()
-handler that is invoked from sctp_chunk_free() after all refs have
-dropped; and also move both kfree_skb(chunk->auth_chunk) there,
-so that chunk->auth_chunk is either NULL (since sctp_chunkify()
-allocs new chunks through kmem_cache_zalloc()) or non-NULL with
-a valid skb pointer. chunk->skb and chunk->auth_chunk are the
-only skbs in the sctp_chunk structure that need to be handeled.
-
-While at it, we should use consume_skb() for both. It is the same
-as dev_kfree_skb() but more appropriately named as we are not
-a device but a protocol. Also, this effectively replaces the
-kfree_skb() from both invocations into consume_skb(). Functions
-are the same only that kfree_skb() assumes that the frame was
-being dropped after a failure (e.g. for tools like drop monitor),
-usage of consume_skb() seems more appropriate in function
-sctp_chunk_destroy() though.
-
-Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <yasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sctp/sm_make_chunk.c | 4 ++--
- net/sctp/sm_statefuns.c  | 5 -----
- 2 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/infiniband/hw/nes/nes_verbs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -1366,8 +1366,8 @@ static void sctp_chunk_destroy(struct sc
- 	BUG_ON(!list_empty(&chunk->list));
- 	list_del_init(&chunk->transmitted_list);
- 
--	/* Free the chunk skb data and the SCTP_chunk stub itself. */
--	dev_kfree_skb(chunk->skb);
-+	consume_skb(chunk->skb);
-+	consume_skb(chunk->auth_chunk);
- 
- 	SCTP_DBG_OBJCNT_DEC(chunk);
- 	kmem_cache_free(sctp_chunk_cachep, chunk);
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -749,7 +749,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(co
- 
- 		/* Make sure that we and the peer are AUTH capable */
- 		if (!sctp_auth_enable || !new_asoc->peer.auth_capable) {
--			kfree_skb(chunk->auth_chunk);
- 			sctp_association_free(new_asoc);
- 			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
- 		}
-@@ -764,10 +763,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(co
- 		auth.transport = chunk->transport;
- 
- 		ret = sctp_sf_authenticate(ep, new_asoc, type, &auth);
--
--		/* We can now safely free the auth_chunk clone */
--		kfree_skb(chunk->auth_chunk);
--
- 		if (ret != SCTP_IERROR_NO_ERROR) {
- 			sctp_association_free(new_asoc);
- 			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -1183,7 +1183,7 @@ static struct ib_qp *nes_create_qp(struc
+ 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
+ 					kfree(nesqp->allocated_buffer);
+ 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
+-					return NULL;
++					return ERR_PTR(-EFAULT);
+ 				}
+ 				if (req.user_wqe_buffers) {
+ 					virt_wqs = 1;
 
