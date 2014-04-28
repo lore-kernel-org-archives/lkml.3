@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaD1TZM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:25:12 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:42589 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756788AbaD1TZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:25:04 -0400
-From: Nix <nix@esperi.org.uk>
-To: NFS list <linux-nfs@vger.kernel.org>
-Cc: Linux-Netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Unix-domain sockets hanging on 3.14.x (was Re: possible 3.14.1 lockd problem (?) causing nfsd hangs)
-References: <87oazpp2m7.fsf@spindle.srvr.nix>
-	<87ppk1sbzp.fsf@spindle.srvr.nix>
-	<20140428154648.GA31788@order.stressinduktion.org>
-Emacs: it's all fun and games, until somebody tries to edit a file.
-Date: Mon, 28 Apr 2014 19:55:51 +0100
-In-Reply-To: <20140428154648.GA31788@order.stressinduktion.org> (Hannes
-	Frederic Sowa's message of "Mon, 28 Apr 2014 17:46:48 +0200")
-Message-ID: <87ha5dp9l4.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-dcc1-Metrics: spindle 1182; Body=3 Fuz1=3 Fuz2=3
+	id S932586AbaD1TZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:25:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48565 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932521AbaD1TZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:25:14 -0400
+Message-ID: <1398708505.2843.17.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [Patch V2 1/9] ACPICA: Executer: Fix buffer allocation issue
+ for generic_serial_bus region field accesses.
+From: Adam Williamson <awilliam@redhat.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        lenb@kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Lv Zheng <lv.zheng@intel.com>
+Date: Mon, 28 Apr 2014 11:08:25 -0700
+In-Reply-To: <1398707520.2843.16.camel@adam.happyassassin.net>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+	 <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+	 <1398695268-28645-2-git-send-email-tianyu.lan@intel.com>
+	 <1398707520.2843.16.camel@adam.happyassassin.net>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 Apr 2014, Hannes Frederic Sowa uttered the following:
+On Mon, 2014-04-28 at 10:52 -0700, Adam Williamson wrote:
+> On Mon, 2014-04-28 at 22:27 +0800, Lan Tianyu wrote:
+> > From: Lv Zheng <lv.zheng@intel.com>
+> > 
+> > The size of the buffer allocated for generic_serial_bus region access
+> > is not correct.  This patch introduces acpi_ex_get_serial_access_length()
+> > to be invoked to obtain correct data buffer length.  Reported by
+> > Lan Tianyu, Fixed by Lv Zheng.
+> > 
+> > Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> 
+> Very superficial issue, and sorry I forgot to mention it for v1, but the
+> summary line for this patch (1/9) ends with a period - "...region field
+> accesses." - which I think is not the correct style?
 
-> On Mon, Apr 28, 2014 at 04:35:38PM +0100, Nix wrote:
->> /proc/$pid/stack of the two communicating ssh daemons was instructive:
->> 
->> [<ffffffff814e3512>] unix_wait_for_peer+0x9f/0xbc
->> [<ffffffff814e5d48>] unix_dgram_sendmsg+0x41b/0x534
->
-> This one is a dgram socket...
->
->> [<ffffffff8146618f>] sock_sendmsg+0x84/0x9e
->> [<ffffffff81467f3d>] SyS_sendto+0x10e/0x13f
->> [<ffffffff815770e2>] system_call_fastpath+0x16/0x1b
->> [<ffffffffffffffff>] 0xffffffffffffffff
->> spindle:/var/log.real/by-facility# cat /proc/5941/stack
->> [<ffffffff814e493a>] unix_stream_recvmsg+0x289/0x6d5
->
-> ...and that's a stream receiver.
->
->> [<ffffffff814673e0>] sock_aio_read.part.12+0xf0/0xff
->> [<ffffffff8146740b>] sock_aio_read+0x1c/0x28
->> [<ffffffff811388fd>] do_sync_read+0x59/0x78
->> [<ffffffff81138d8b>] vfs_read+0xa2/0x13f
->> [<ffffffff81139699>] SyS_read+0x47/0x8b
->> [<ffffffff81577259>] tracesys+0xd0/0xd5
->> [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Are you sure those are the communicating tasks?
+In fact, it seems this patch already got merged into Linus' tree
+somehow:
 
-Normally I'd say yes. This time I'd say probably not. I am very much not
-at my best right now.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/acpi/acpica/exfield.c?id=6273f00e6ecbd60494a979033b7e5271a29a0436
 
-I'll wait for it to implode and try the same thing again. On past form I
-won't have to wait very many days...
+the others do not seem to have been merged yet.
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-(this time, there was a six-hour interval between boot and
-misbehaviour. Whatever the misbehaviour *is*.)
-
-One more instance I didn't share because I only have one end of it:
-starting up ISC dhcpd 4.2.4 also hung unexpectedly (which it did not
-after rebooting):
-
-[<ffffffff814e3512>] unix_wait_for_peer+0x9f/0xbc
-[<ffffffff814e5d48>] unix_dgram_sendmsg+0x41b/0x534
-[<ffffffff8146618f>] sock_sendmsg+0x84/0x9e
-[<ffffffff81467f3d>] SyS_sendto+0x10e/0x13f
-[<ffffffff815770e2>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-The common factor in these hangs is definitely unix_wait_for_peer. The
-question is, what are they talking to? (In theory this could be a
-userspace bug... but what common userspace factor is there between the
-NFS server, OpenSSH, and ISC dhcpd? If it helps, named pipes may well be
-suffering from the same malaise: /sbin/shutdown from sysvinit also hangs
-and I have to /sbin/reboot -f instead. I'll check next time it hits, but
-I'll bet it's trying to talk over /dev/initctl and getting nowhere.)
