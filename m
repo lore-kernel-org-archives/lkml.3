@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaD1BdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42895 "EHLO
+	id S1755517AbaD1BdF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:33:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42816 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752534AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752387AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
-        "Yann Droneaud" <ydroneaud@opteya.com>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.573278347@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "oftedal" <oftedal@gmail.com>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.239748191@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 70/94] IB/mthca: Return an error on ib_copy_to_udata()
- failure
+Subject: [PATCH 3.2 16/94] sparc: PCI: Fix incorrect address calculation
+ of PCI  Bridge windows on Simba-bridges
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,35 +32,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: oftedal <oftedal@gmail.com>
 
-commit 08e74c4b00c30c232d535ff368554959403d0432 upstream.
+[ Upstream commit 557fc5873ef178c4b3e1e36a42db547ecdc43f9b ]
 
-In case of error when writing to userspace, the function mthca_create_cq()
-does not set an error code before following its error path.
+The SIMBA APB Bridges lacks the 'ranges' of-property describing the
+PCI I/O and memory areas located beneath the bridge. Faking this
+information has been performed by reading range registers in the
+APB bridge, and calculating the corresponding areas.
 
-This patch sets the error code to -EFAULT when ib_copy_to_udata() fails.
+In commit 01f94c4a6ced476ce69b895426fc29bfc48c69bd
+("Fix sabre pci controllers with new probing scheme.") a bug was
+introduced into this calculation, causing the PCI memory areas
+to be calculated incorrectly: The shift size was set to be
+identical for I/O and MEM ranges, which is incorrect.
 
-This was caught when using spatch (aka. coccinelle)
-to rewrite call to ib_copy_{from,to}_udata().
+This patch set the shift size of the MEM range back to the
+value used before 01f94c4a6ced476ce69b895426fc29bfc48c69bd.
 
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Kjetil Oftedal <oftedal@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/mthca/mthca_provider.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/kernel/pci.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/mthca/mthca_provider.c
-+++ b/drivers/infiniband/hw/mthca/mthca_provider.c
-@@ -695,6 +695,7 @@ static struct ib_cq *mthca_create_cq(str
- 
- 	if (context && ib_copy_to_udata(udata, &cq->cqn, sizeof (__u32))) {
- 		mthca_free_cq(to_mdev(ibdev), cq);
-+		err = -EFAULT;
- 		goto err_free;
- 	}
- 
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 31111e3..656b5b6 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -487,8 +487,8 @@ static void __devinit apb_fake_ranges(struct pci_dev *dev,
+ 	pci_read_config_byte(dev, APB_MEM_ADDRESS_MAP, &map);
+ 	apb_calc_first_last(map, &first, &last);
+ 	res = bus->resource[1];
+-	res->start = (first << 21);
+-	res->end = (last << 21) + ((1 << 21) - 1);
++	res->start = (first << 29);
++	res->end = (last << 29) + ((1 << 29) - 1);
+ 	res->flags = IORESOURCE_MEM;
+ 	pci_resource_adjust(res, &pbm->mem_space);
+ }
 
