@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836AbaD1PPy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:15:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58610 "EHLO arroyo.ext.ti.com"
+	id S932335AbaD1PTu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:19:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49262 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756609AbaD1PP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:15:29 -0400
+	id S1756829AbaD1PPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:15:54 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -14,9 +14,9 @@ To: Tony Lindgren <tony@atomide.com>,
 CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <nm@ti.com>
-Subject: [PATCH V3 01/20] bus: omap_l3_noc: Fix copyright information
-Date: Mon, 28 Apr 2014 10:14:41 -0500
-Message-ID: <1398698101-25513-2-git-send-email-nm@ti.com>
+Subject: [PATCH V3 05/20] bus: omap_l3_noc: switch over to relaxed variants of readl/writel
+Date: Mon, 28 Apr 2014 10:14:45 -0500
+Message-ID: <1398698101-25513-6-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
 References: <1397492726-17203-1-git-send-email-nm@ti.com>
@@ -27,97 +27,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an embarrassing patch :(.
+Currently we use __raw_readl and writel in this driver. Considering
+there is no specific need for a memory barrier, replacing writel
+with endian-neutral writel_relaxed and replacing __raw_readls with
+the corresponding endian-neutral readl_relaxed allows us to have a
+standard set of register operations for the driver.
 
-Texas Corporation does not make OMAP. Texas Instruments Inc does.
-
-For that matter I dont seem to be able to find a Texas Corporation on
-the internet either.
-
-While at it, update coverage to the current year and update the template
-to remove redundant information and use the standard boiler plate
-licensing.
+While at it, simplify address computation using variables for
+register.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 Tested-by: Darren Etheridge <detheridge@ti.com>
 ---
-change in V3: none
- drivers/bus/omap_l3_noc.c |   18 ++++++------------
- drivers/bus/omap_l3_noc.h |   18 ++++++------------
- 2 files changed, 12 insertions(+), 24 deletions(-)
+
+change in V3: commit message improvement based on Felipe's feedback.
+no change since V2 repost.
+
+ drivers/bus/omap_l3_noc.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 972691a..1eb6d85 100644
+index 37d71b7..c8facb0 100644
 --- a/drivers/bus/omap_l3_noc.c
 +++ b/drivers/bus/omap_l3_noc.c
-@@ -1,24 +1,18 @@
- /*
-  * OMAP4XXX L3 Interconnect error handling driver
-  *
-- * Copyright (C) 2011 Texas Corporation
-+ * Copyright (C) 2011-2014 Texas Instruments Incorporated - http://www.ti.com/
-  *	Santosh Shilimkar <santosh.shilimkar@ti.com>
-  *	Sricharan <r.sricharan@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-  *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-- * USA
-  */
- #include <linux/module.h>
- #include <linux/init.h>
-diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index a6ce34d..cc4b1b1 100644
---- a/drivers/bus/omap_l3_noc.h
-+++ b/drivers/bus/omap_l3_noc.h
-@@ -1,24 +1,18 @@
- /*
-  * OMAP4XXX L3 Interconnect  error handling driver header
-  *
-- * Copyright (C) 2011 Texas Corporation
-+ * Copyright (C) 2011-2014 Texas Instruments Incorporated - http://www.ti.com/
-  *	Santosh Shilimkar <santosh.shilimkar@ti.com>
-  *	sricharan <r.sricharan@ti.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-  *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-- * USA
-  */
- #ifndef __ARCH_ARM_MACH_OMAP2_L3_INTERCONNECT_3XXX_H
- #define __ARCH_ARM_MACH_OMAP2_L3_INTERCONNECT_3XXX_H
+@@ -55,6 +55,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 	int err_src = 0;
+ 	u32 std_err_main, err_reg, clear, masterid;
+ 	void __iomem *base, *l3_targ_base;
++	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+ 	char *target_name, *master_name = "UN IDENTIFIED";
+ 
+ 	/* Get the Type of interrupt */
+@@ -66,8 +67,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 		 * to determine the source
+ 		 */
+ 		base = l3->l3_base[i];
+-		err_reg = __raw_readl(base + l3_flagmux[i] +
+-					+ L3_FLAGMUX_REGERR0 + (inttype << 3));
++		err_reg = readl_relaxed(base + l3_flagmux[i] +
++					L3_FLAGMUX_REGERR0 + (inttype << 3));
+ 
+ 		/* Get the corresponding error and analyse */
+ 		if (err_reg) {
+@@ -76,10 +77,14 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 
+ 			/* Read the stderrlog_main_source from clk domain */
+ 			l3_targ_base = base + *(l3_targ[i] + err_src);
+-			std_err_main =  __raw_readl(l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
+-			masterid = __raw_readl(l3_targ_base +
+-					L3_TARG_STDERRLOG_MSTADDR);
++			l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
++			l3_targ_slvofslsb = l3_targ_base +
++					    L3_TARG_STDERRLOG_SLVOFSLSB;
++			l3_targ_mstaddr = l3_targ_base +
++					  L3_TARG_STDERRLOG_MSTADDR;
++
++			std_err_main = readl_relaxed(l3_targ_stderr);
++			masterid = readl_relaxed(l3_targ_mstaddr);
+ 
+ 			switch (std_err_main & CUSTOM_ERROR) {
+ 			case STANDARD_ERROR:
+@@ -87,12 +92,10 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 					l3_targ_inst_name[i][err_src];
+ 				WARN(true, "L3 standard error: TARGET:%s at address 0x%x\n",
+ 					target_name,
+-					__raw_readl(l3_targ_base +
+-						L3_TARG_STDERRLOG_SLVOFSLSB));
++					readl_relaxed(l3_targ_slvofslsb));
+ 				/* clear the std error log*/
+ 				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel(clear, l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
++				writel_relaxed(clear, l3_targ_stderr);
+ 				break;
+ 
+ 			case CUSTOM_ERROR:
+@@ -107,8 +110,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 					master_name, target_name);
+ 				/* clear the std error log*/
+ 				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel(clear, l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
++				writel_relaxed(clear, l3_targ_stderr);
+ 				break;
+ 
+ 			default:
 -- 
 1.7.9.5
 
