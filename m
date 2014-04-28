@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377AbaD1LDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:03:24 -0400
-Received: from gateway.yasar.edu.tr ([82.222.172.68]:56183 "EHLO
-	mgateway.yasar.edu.tr" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754820AbaD1LDW convert rfc822-to-8bit (ORCPT
+	id S1755454AbaD1LDy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:03:54 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:38435 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820AbaD1LDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:03:22 -0400
-X-Greylist: delayed 1239 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 07:03:22 EDT
-Date: Mon, 28 Apr 2014 13:41:56 +0300 (EEST)
-From: Mert Paldrak <mert.paldrak@yasar.edu.tr>
-Subject: Avis!!!
-Message-ID: <7ddc4e70-02c9-4c7a-aebc-20c8c7b63adb@webmail>
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Apr 2014 07:03:52 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Intel SCU Linux support <intel-linux-scu@intel.com>
+Subject: 3.2.57 regression: isci driver broken: Unable to reset I T nexus?
+Date: Mon, 28 Apr 2014 13:03:24 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-X-Originating-IP: [41.203.69.5]
-X-Mailer: Zimbra 7.1.3_GA_3346 (zclient/7.1.3_GA_3346)
-To: undisclosed-recipients:;
-X-TM-AS-MML: disable
-X-TM-AS-Product-Ver: IMSVA-8.5.0.1165-7.5.0.1017-20660.006
-X-TM-AS-Result: No-2.066-5.0-31-10
-X-imss-scan-details: No-2.066-5.0-31-10
-X-TMASE-Version: IMSVA-8.5.0.1165-7.5.1017-20660.006
-X-TMASE-Result: 10-2.065600-5.000000
-X-TMASE-MatchedRID: qTK2/yuzXy2BeQAB95QvC3XKrrExVAT67Asy0XNU2A5nzkfvXPnYLugI
-	9wpBAxutuhH51pcEWLCJIG0pP8yLBr9ZdlL8eonarHEFvjQmpqJIxh/NsvArEVBIVsvVu9ABWBd
-	6ltyXuvvGw6Wkcdv7sEhVebrBvqZo6LpJMwhm0gPdH59pcPyx7d8usozaZ+R8pDy+D4h9cOkJtY
-	pPtQlVscfpKEHhbqPyno/jvUCiBgFYyYxOdCdbPVCmu7GmZALdvQ/TIYViaP9PtZTJ60aIhMml/
-	8TeVGswftwZ3X11IV0=
-X-IMSS-DKIM-White-List: No
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201404281303.24977.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Votre boîte de réception a presque dépassé sa limite de stockage. Il ne sera pas en mesure d'envoyer et de recevoir des e-mails si elle dépassait la limite, et votre compte de messagerie est supprimée de notre serveur de base de données. Pour éviter ce problème, vous devez mettre à jour votre quota de boîte mail en cliquant sur le lien ci-dessous.
+Hello,
+just upgraded a server running 3.2.54-2 to 3.2.57-3 (Debian Wheezy) and it
+does not boot anymore because of isci driver breakage.
 
-http://accountupgrade13.yolasite.com
+A (partial) log transcription:
+sas: DOING DISCOVERY on port 0, pid:5
+sas: Enter sas_scsi_recover_host
+ata1: sas eh calling libata port error handler
+sas: sas_ata_hard_reset: Unable to reset I T nexus?
+sas: sas_ata_hard_reset: Found ATA device.
+sas: sas_ata_hard_reset: Unable to soft reset
+sas: sas_ata_hard_reset: Found ATA device.
+ata1: reset failed (errno=-11), retrying in 10 secs
+sas: sas_ata_hard_reset: Unable to reset I T nexus?
+sas: sas_ata_hard_reset: Found ATA device.
+sas: sas_ata_hard_reset: Unable to soft reset
+sas: sas_ata_hard_reset: Found ATA device.
+ata1: reset failed (errno=-11), retrying in 35 secs
+ata1: reset failed, giving up
+sas: --- Exit sas_scsi_recover_host
+sas: DONE DISCOVERY on port 0, pid: 5, result:0
+sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
+sas: DOING DISCOVERY on port 1, pid:5
+sas: Enter sas_scsi_recover_host
+ata1: sas eh calling libata port error handler
+sas: sas_ata_hard_reset: Unable to reset I T nexus?
+sas: sas_ata_hard_reset: Found ATA device.
+sas: sas_ata_hard_reset: Unable to soft reset
+sas: sas_ata_hard_reset: Found ATA device.
+ata2: reset failed (errno=-11), retrying in 10 secs
+sas: sas_ata_hard_reset: Unable to reset I T nexus?
+sas: sas_ata_hard_reset: Found ATA device.
+sas: sas_ata_hard_reset: Unable to soft reset
+sas: sas_ata_hard_reset: Found ATA device.
+ata2: reset failed (errno=-11), retrying in 35 secs
+ata2: reset failed, giving up
 
 
-Remarque : Votre compte sera suspendu si ne pas se conformer.
+It should look like this (v3.2.54-2):
+isci: Intel(R) C600 SAS Controller Driver - version 1.0.0
+isci 0000:03:00.0: driver configured for rev: 6 silicon
+isci 0000:03:00.0: firmware: agent loaded isci/isci_firmware.bin into memory
+isci 0000:03:00.0: OEM SAS parameters (version: 1.3) loaded (firmware)
+isci 0000:03:00.0: setting latency timer to 64
+scsi0 : isci
+scsi1 : isci
+isci 0000:03:00.0: irq 81 for MSI/MSI-X
+isci 0000:03:00.0: irq 82 for MSI/MSI-X
+isci 0000:03:00.0: irq 83 for MSI/MSI-X
+isci 0000:03:00.0: irq 84 for MSI/MSI-X
+sas: phy-0:0 added to port-0:0, phy_mask:0x1 (5fcfffff00000001)
+sas: DOING DISCOVERY on port 0, pid:5
+sas: Enter sas_scsi_recover_host
+ata1: sas eh calling libata port error handler
+sas: sas_ata_hard_reset: Found ATA device.
+ata1.00: ATA-8: ST9500620NS, CC02, max UDMA/133
+ata1.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata1.00: configured for UDMA/133
+sas: --- Exit sas_scsi_recover_host
+scsi 0:0:0:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0 ANSI: 5
+sas: DONE DISCOVERY on port 0, pid:5, result:0
+sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
+sas: DOING DISCOVERY on port 1, pid:5
+sas: Enter sas_scsi_recover_host
+ata1: sas eh calling libata port error handler
+ata2: sas eh calling libata port error handler
+sas: sas_ata_hard_reset: Found ATA device.
+ata2.00: ATA-8: ST9500620NS, CC02, max UDMA/133
+ata2.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+ata2.00: configured for UDMA/133
+sas: --- Exit sas_scsi_recover_host
+scsi 0:0:1:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0 ANSI: 5
+sas: DONE DISCOVERY on port 1, pid:5, result:0
 
-Merci.
-Aider l'administrateur du bureau.
-
-
-Bu elektronik postada bulunan tum fikir ve gorusler ve ekindeki dosyalar sadece adres sahip/sahiplerine ait olup,
-Yasar Universitesi bu mesajin icerigi ile ilgili olarak hic bir hukuksal sorumlulugu kabul etmez. Eger gonderilmesi
-dusunulen kisi veya kurulus degilseniz, lutfen gonderen kisiyi derhal haberdar ediniz ve mesaji sisteminizden siliniz.<br><br>
-The information contained in this e-mail and any files transmitted with it are intended solely for the use of the
-individual or entity to whom they are addressed Yasar University does not accept legal responsibility for the 
-contents. If you are not the intended recipient, please immediately notify the sender and delete the message from your system.
-
+-- 
+Ondrej Zary
