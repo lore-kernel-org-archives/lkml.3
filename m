@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395AbaD1Wzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:55:31 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59412 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932166AbaD1WzX (ORCPT
+	id S1756504AbaD1W6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:58:05 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:50334 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755242AbaD1W6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:55:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
-Date: Tue, 29 Apr 2014 01:11:47 +0200
-Message-ID: <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <535E3673.8020606@linaro.org>
-References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <20140428102819.GG27561@twins.programming.kicks-ass.net> <535E3673.8020606@linaro.org>
+	Mon, 28 Apr 2014 18:58:04 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
+References: <535EA976.1080402@linux.vnet.ibm.com>
+	<CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com>
+	<CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+	<1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
+Date: Mon, 28 Apr 2014 15:58:02 -0700
+X-Google-Sender-Auth: sEhHNgLXQBlhmC5LA9wRuLBT7HY
+Message-ID: <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 28, 2014 01:07:31 PM Daniel Lezcano wrote:
-> On 04/28/2014 12:28 PM, Peter Zijlstra wrote:
-> > On Mon, Apr 28, 2014 at 12:09:20PM +0200, Daniel Lezcano wrote:
-> >> I agree a numerical value is not flexible. But it sounds weird to put a
-> >> scheduler option in the sysfs and maybe more options will follow.
-> >>
-> >> I am wondering if we shouldn't create a new cgroup for 'energy' and put
-> >> everything in there. So we will have more flexibility for extension and we
-> >> will be able to create a group of tasks for performance and a group of tasks
-> >> for energy saving.
-> >>
-> >> Does it make sense ?
-> >
-> > The old knobs used to live here:
-> >
-> > -What:          /sys/devices/system/cpu/sched_mc_power_savings
-> > -               /sys/devices/system/cpu/sched_smt_power_savings
-> 
-> Ah right.
-> 
-> > Not entirely sure that's a fine place, but it has precedent.
-> 
-> I share your doubts about the right place.
-> 
-> I'm really wondering if the cgroup couldn't be a good solution:
-> 
-> Amit pointed the conflict about the power vs performance with some 
-> applications. We want to have for example a game to run fast performance 
-> and some other application to save power.
+On Mon, Apr 28, 2014 at 3:39 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>
+> Is this perhaps a KVM guest? fwiw I see CONFIG_KVM_ASYNC_PF=y which is a
+> user of use_mm().
 
-You can't save power.
+So I tried to look through these guys, and that was one of the ones I looked at.
 
-Power is the energy flow *rate*.  It's like speed, so how can you save it?
+It's using use_mm(), but it's only called through schedule_work().
+Which *should* mean that it's in a kernel thread and
+vmacache_valid_mm() will not be true.
 
-If you talk about saving in this context, please always talk about energy as
-well, because that's what we want to save.
+HOWEVER.
 
-This means that positioning power against performance doesn't make any sense
-whatsoever.  You could try to position energy efficiency (that is, the relative
-cost of doing work in terms of energy) against performance, but even that is
-questionable, because, as I said in one of the previous messages, what is good
-for performance is often good for energy efficiency too (think about race to
-idle for example).
+The whole "we don't use the vma cache on kernel threads" does seem to
+be a pretty fragile approach to the whole workqueue etc issue. I think
+we always use a kernel thread for workqueue entries, but at the same
+time I'm not 100% convinced that we should *rely* on that kind of
+behavior. I don't think that it's necessarily fundamentally guaranteed
+conceptually - I could see, for example, some user of "flush_work()"
+deciding to run the work *synchronously* within the context of the
+process that does the flushing.
 
-In other words, you want to have a knob whose both ends may happen to mean
-the same thing.  Wouldn't that be a little odd?
+Now, I don't think we actually do that, but my point is that I think
+it's a bit dangerous to just say "only kernel threads do use_mm(), and
+work entries are always done by kernel threads, so let's disable vma
+caching for kernel threads". It may be *true*, but it's a very
+indirect kind of true.
 
-In my opinion it would be much better to have a knob representing the current
-relative value of energy to the user (which may depend on things like whether
-or not the system is on battery etc) and meaning how far we need to go with
-energy saving efforts.
+That's why I think we might be better off saying "let's just
+invalidate the vmacache in use_mm(), and not care about who does it".
+No subtle indirect logic about why the caching is safe in one context
+but not another.
 
-So if that knob is 0, we'll do things that are known-good for performance.
-If it is 1, we'll do some extra effort to save enery as well possibly at
-a small expense of performance if that's necessary.  If it is 100, we'll do
-all we can to save as much energy as possible without caring about performance
-at all.
+But quite frankly, I grepped for things that set "tsk->mm", and apart
+from clearing it on exit, the only uses I found was copy_mm() (which
+does that vmacache_flush()) and use_mm(). And all the use_mm() cases
+_seem_ to be in kernel threads, and that first BUG_ON() didn't have a
+very complex call chain at all, just a regular page fault from udevd.
 
-And it doesn't even have to be scheduler-specific, it very well may be global.
+So it might just be some really nasty corruption totally unrelated to
+the vmacache, and those preceding odd udevd-work and kdump faults
+could be related.
 
-Thanks!
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+             Linus
