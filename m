@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605AbaD1Nin (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:38:43 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:62401 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755233AbaD1Nij (ORCPT
+	id S932624AbaD1NjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:39:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44103 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609AbaD1NjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:38:39 -0400
-Date: Mon, 28 Apr 2014 15:38:30 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jan Moskyto Matejka <mq@suse.cz>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH][linux-next] Revert "drm/i915: fix build warning
- on 32-bit (v2)"
-Message-ID: <20140428133743.GA32404@phenom.ffwll.local>
-Mail-Followup-To: Jan Moskyto Matejka <mq@suse.cz>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <1396868876-7372-1-git-send-email-mq@suse.cz>
- <20140428130323.GC2641@moskyto.dyndns.org>
+	Mon, 28 Apr 2014 09:39:13 -0400
+Date: Mon, 28 Apr 2014 13:39:08 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: pid ns feature request
+Message-ID: <20140428133908.GE24913@ubuntumail>
+References: <CALCETrVSaboa0Y2v_sTbSz3xOxOZ-6jSq_D7DyQXMRB9VXJB8w@mail.gmail.com>
+ <87ha5h42va.fsf@x220.int.ebiederm.org>
+ <CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140428130323.GC2641@moskyto.dyndns.org>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 03:03:23PM +0200, Jan Moskyto Matejka wrote:
-> This reverts commit 60f2b4af1258c05e6b037af866be81abc24438f7.
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Fri, Apr 25, 2014 at 12:37 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+> > Andy Lutomirski <luto@amacapital.net> writes:
+> >
+> >> Unless I'm missing some trick, it's currently rather painful to mount
+> >> a namespace /proc.  You have to actually be in the pid namespace to
+> >> mount the correct /proc instance, and you can't unmount the old /proc
+> >> until you've mounted the new /proc.  This means that you have to fork
+> >> into the new pid namespace before you can finish setting it up.
+> >
+> > Yes.  You have to be inside just about all namespaces before you can
+> > finish setting them up.
+> >
+> > I don't know the context in which needed to be inside the pid namespace
+> > is a burden.
 > 
-> The same warning has been fixed in e5081a538a565284fec5f30a937d98e460d5e780 and
-> these two commits got merged in 74e99a84de2d0980320612db8015ba606af42114 which
-> caused another warning. Simply, the reverted commit casted the pointer
-> difference to unsigned long and the other commit changed the output type from
-> long to ptrdiff_t.
+> I'm trying to sandbox myself.  I unshare everything, setup up new
+> mounts, pivot_root, umount the old stuff, fork, and wait around for
+> the child to finish.
 > 
-> The other commit fixes the original warning the better way so I'm reverting
-> this commit now.
-> 
-> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+> This doesn't work: the parent can't mount the new /proc, and the child
+> can't either because it's too late.
 
-My apologies for missing this the first time around. Queued for -next,
-thanks for the patch.
--Daniel
-> ---
->  drivers/gpu/drm/i915/i915_cmd_parser.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_cmd_parser.c b/drivers/gpu/drm/i915/i915_cmd_parser.c
-> index 4cf6d02..0eaed44 100644
-> --- a/drivers/gpu/drm/i915/i915_cmd_parser.c
-> +++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
-> @@ -405,7 +405,7 @@ int i915_parse_cmds(struct intel_ring_buffer *ring,
->  			DRM_DEBUG_DRIVER("CMD: Command length exceeds batch length: 0x%08X length=%d batchlen=%td\n",
->  					 *cmd,
->  					 length,
-> -					 (unsigned long)(batch_end - cmd));
-> +					 batch_end - cmd);
->  			ret = -EINVAL;
->  			break;
->  		}
-> -- 
-> 1.8.4.5
+I'm probably not thinking it through enough...  But can't the parent, before
+forking, do
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+	mkdir -p /childproc/proc
+	mount --bind /childproc /childproc
+	mount --make-rshared /childproc
+
+then the child mounts its proc under /childproc/proc and have that show
+up in the parent's tree?
