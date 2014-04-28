@@ -1,70 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535AbaD1Noc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:44:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45418 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514AbaD1NoY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:44:24 -0400
-Message-ID: <535E5AF5.2020203@ti.com>
-Date: Mon, 28 Apr 2014 09:43:17 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>,
-        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>,
-        Warner Losh <imp@bsdimp.com>
-Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for keystone-nand
-References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com> <532B4C36.8060405@ti.com> <5343F0D6.2010804@ti.com> <20140416070833.GA5512@norris-Latitude-E6410> <534E51BF.9050508@ti.com>
-In-Reply-To: <534E51BF.9050508@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S932403AbaD1NgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:14 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58319 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756031AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:22 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v8 07/20] usb: phy: msm: Fix checkpatch.pl warnings
+Date: Mon, 28 Apr 2014 16:34:10 +0300
+Message-Id: <1398692063-11372-8-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
+References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brian,
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-On Wednesday 16 April 2014 05:47 AM, Ivan Khoronzhuk wrote:
-> 
-> On 04/16/2014 10:08 AM, Brian Norris wrote:
->> On Tue, Apr 08, 2014 at 03:51:34PM +0300, Ivan Khoronzhuk wrote:
->>> On 03/20/2014 10:14 PM, Santosh Shilimkar wrote:
->>>> On Thursday 20 March 2014 04:08 PM, Ivan Khoronzhuk wrote:
->>>>> From: Murali Karicheri <m-karicheri2@ti.com>
->>>>> Sub page write doesn't work because of hw issue in controller found on
->>>>> Keystone SOCs. AEMIF controller is also used on DaVinci SOCs which
->>>>> don't seems to have any issue. So add "ti,keysone-nand" compatible
->>>>> to nand driver in order to set NAND_NO_SUBPAGE_WRITE option.
->>>>>
->>>>> Cc: Brian Norris <computersforpeace@gmail.com>
->>>>> Cc: Warner Losh <imp@bsdimp.com>
->>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>>
->>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>> ---
->>>>>
->>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Brian,
->>> Could you pick up subj patch?
->> Pushed to l2-mtd.git. Is it critical this goes in for 3.15? It's
->> currently queued for -next (3.16).
->>
+This fixes following:
 
-[..]
+WARNING: quoted string split across lines
+WARNING: Prefer seq_puts to seq_printf
 
-> 
-> This is a critical fix and it should be for 3.15.
-Ping. 3.15-rc3 is already out and I still see this fix merged
-yet.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c | 39 ++++++++++++++-------------------------
+ 1 file changed, 14 insertions(+), 25 deletions(-)
 
-Regards,
-Santosh
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index d7b8360..874c51a 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -67,8 +67,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 			return ret;
+ 		}
+
+@@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 		ret = regulator_set_voltage(motg->vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret)
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 		ret = regulator_disable(motg->vddcx);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
+@@ -97,8 +95,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 3p3\n");
++			dev_err(motg->phy.dev, "Cannot set v3p3 voltage\n");
+ 			goto exit;
+ 		}
+ 		rc = regulator_enable(motg->v3p3);
+@@ -109,8 +106,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 1p8\n");
++			dev_err(motg->phy.dev, "Cannot set v1p8 voltage\n");
+ 			goto disable_3p3;
+ 		}
+ 		rc = regulator_enable(motg->v1p8);
+@@ -137,15 +133,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set HPM for v1p8\n");
+ 			return ret;
+ 		}
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set HPM for v3p3\n");
+ 			regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 			return ret;
+@@ -154,13 +148,11 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set LPM for v1p8\n");
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set LPM for v3p3\n");
+ 	}
+
+ 	pr_debug("reg (%s)\n", on ? "HPM" : "LPM");
+@@ -390,8 +382,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
+
+ 	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
+ 	if (ret) {
+-		pr_err("%s: unable to set the voltage for regulator "
+-			"HSUSB_VDDCX\n", __func__);
++		pr_err("Cannot set vddcx voltage\n");
+ 		return ret;
+ 	}
+
+@@ -546,8 +537,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 		 * PHY. USB state can not be restored. Re-insertion
+ 		 * of USB cable is the only way to get USB working.
+ 		 */
+-		dev_err(phy->dev, "Unable to resume USB."
+-				"Re-plugin the cable\n");
++		dev_err(phy->dev, "Unable to resume USB. Re-plugin the cable\n");
+ 		msm_otg_reset(phy);
+ 	}
+
+@@ -1242,13 +1232,13 @@ static int msm_otg_mode_show(struct seq_file *s, void *unused)
+
+ 	switch (otg->phy->state) {
+ 	case OTG_STATE_A_HOST:
+-		seq_printf(s, "host\n");
++		seq_puts(s, "host\n");
+ 		break;
+ 	case OTG_STATE_B_PERIPHERAL:
+-		seq_printf(s, "peripheral\n");
++		seq_puts(s, "peripheral\n");
+ 		break;
+ 	default:
+-		seq_printf(s, "none\n");
++		seq_puts(s, "none\n");
+ 		break;
+ 	}
+
+@@ -1525,8 +1515,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 			motg->pdata->otg_control == OTG_USER_CONTROL) {
+ 		ret = msm_otg_debugfs_init(motg);
+ 		if (ret)
+-			dev_dbg(&pdev->dev, "mode debugfs file is"
+-					"not available\n");
++			dev_dbg(&pdev->dev, "Can not create mode change file\n");
+ 	}
+
+ 	pm_runtime_set_active(&pdev->dev);
+--
+1.8.3.2
+
