@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526AbaD1Ng2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:28 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58341 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756049AbaD1NfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:35:23 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: [PATCH v8 16/20] usb: phy: msm: Fix PTS definitions for MSM USB controller
-Date: Mon, 28 Apr 2014 16:34:19 +0300
-Message-Id: <1398692063-11372-17-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
-References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
+	id S932605AbaD1Nin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:38:43 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62401 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233AbaD1Nij (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:38:39 -0400
+Date: Mon, 28 Apr 2014 15:38:30 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jan Moskyto Matejka <mq@suse.cz>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH][linux-next] Revert "drm/i915: fix build warning
+ on 32-bit (v2)"
+Message-ID: <20140428133743.GA32404@phenom.ffwll.local>
+Mail-Followup-To: Jan Moskyto Matejka <mq@suse.cz>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <1396868876-7372-1-git-send-email-mq@suse.cz>
+ <20140428130323.GC2641@moskyto.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428130323.GC2641@moskyto.dyndns.org>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Bird <tbird20d@gmail.com>
+On Mon, Apr 28, 2014 at 03:03:23PM +0200, Jan Moskyto Matejka wrote:
+> This reverts commit 60f2b4af1258c05e6b037af866be81abc24438f7.
+> 
+> The same warning has been fixed in e5081a538a565284fec5f30a937d98e460d5e780 and
+> these two commits got merged in 74e99a84de2d0980320612db8015ba606af42114 which
+> caused another warning. Simply, the reverted commit casted the pointer
+> difference to unsigned long and the other commit changed the output type from
+> long to ptrdiff_t.
+> 
+> The other commit fixes the original warning the better way so I'm reverting
+> this commit now.
+> 
+> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
 
-Fix the value used for Parallel Transceiver Select (PTS) for the MSM USB
-controller.  This is a standard chipidea PORTSC definition, where
-a PHY_TYPE of 10b (<<30) is ULPI and 11b (<<30) is SERIAL.
-Fix the definitions and use them correctly in the driver code.
+My apologies for missing this the first time around. Queued for -next,
+thanks for the patch.
+-Daniel
+> ---
+>  drivers/gpu/drm/i915/i915_cmd_parser.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/i915/i915_cmd_parser.c b/drivers/gpu/drm/i915/i915_cmd_parser.c
+> index 4cf6d02..0eaed44 100644
+> --- a/drivers/gpu/drm/i915/i915_cmd_parser.c
+> +++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
+> @@ -405,7 +405,7 @@ int i915_parse_cmds(struct intel_ring_buffer *ring,
+>  			DRM_DEBUG_DRIVER("CMD: Command length exceeds batch length: 0x%08X length=%d batchlen=%td\n",
+>  					 *cmd,
+>  					 length,
+> -					 (unsigned long)(batch_end - cmd));
+> +					 batch_end - cmd);
+>  			ret = -EINVAL;
+>  			break;
+>  		}
+> -- 
+> 1.8.4.5
 
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
----
- drivers/usb/phy/phy-msm-usb.c    | 8 +++++---
- include/linux/usb/msm_hsusb_hw.h | 5 +++--
- 2 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index bb33996..db8d963 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -287,8 +287,9 @@ static int msm_link_reset(struct msm_otg *motg)
- 	if (motg->phy_number)
- 		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
-
-+	/* put transceiver in serial mode as part of reset */
- 	val = readl(USB_PORTSC) & ~PORTSC_PTS_MASK;
--	writel(val | PORTSC_PTS_ULPI, USB_PORTSC);
-+	writel(val | PORTSC_PTS_SERIAL, USB_PORTSC);
-
- 	return 0;
- }
-@@ -308,8 +309,9 @@ static int msm_otg_reset(struct usb_phy *phy)
- 	if (cnt >= LINK_RESET_TIMEOUT_USEC)
- 		return -ETIMEDOUT;
-
--	/* select ULPI phy */
--	writel(0x80000000, USB_PORTSC);
-+	/* select ULPI phy and clear other status/control bits in PORTSC */
-+	writel(PORTSC_PTS_ULPI, USB_PORTSC);
-+
- 	writel(0x0, USB_AHBBURST);
- 	writel(0x08, USB_AHBMODE);
-
-diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
-index 575c743..98d3dd8 100644
---- a/include/linux/usb/msm_hsusb_hw.h
-+++ b/include/linux/usb/msm_hsusb_hw.h
-@@ -31,8 +31,9 @@
- #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
-
- #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
--#define PORTSC_PTS_MASK         (3 << 30)
--#define PORTSC_PTS_ULPI         (3 << 30)
-+#define PORTSC_PTS_MASK        (3 << 30)
-+#define PORTSC_PTS_ULPI        (2 << 30)
-+#define PORTSC_PTS_SERIAL      (3 << 30)
-
- #define USB_ULPI_VIEWPORT    (MSM_USB_BASE + 0x0170)
- #define ULPI_RUN              (1 << 30)
---
-1.8.3.2
-
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
