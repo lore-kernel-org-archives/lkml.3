@@ -1,144 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932665AbaD1Nmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:42:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45290 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932173AbaD1Nmn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:42:43 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <bcousson@baylibre.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <balbi@ti.com>, <tony@atomide.com>
-CC: Sourav Poddar <sourav.poddar@ti.com>
-Subject: [Resend/PATCH] arm: dts: am43x-epos: Add qspi device.
-Date: Mon, 28 Apr 2014 19:12:30 +0530
-Message-ID: <1398692550-31758-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932461AbaD1NgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:20 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58336 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756047AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:22 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v8 13/20] usb: phy: msm: Use reset framework for LINK and PHY resets
+Date: Mon, 28 Apr 2014 16:34:16 +0300
+Message-Id: <1398692063-11372-14-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
+References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds qspi nodes for am43xx SOC devices.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+Using reset framework eliminate need of platform specific
+callbacks and enable reset lines to be specified in DT files.
+
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
-Note,
-checpatch gives 1 warning on flash compatible string
-"mx66l51235l". This flash is supported in m25p80 driver and
-the driver is used for other flash devices also. Hence, each
-flash compatible is not described in[1], but a genric example 
-is shown using spansion flash device. 
-[1]:
-Documentation/devicetree/bindings/mtd/m25p80.txt
+ drivers/usb/phy/phy-msm-usb.c | 29 +++++++++++++++++++++--------
+ include/linux/usb/msm_hsusb.h |  3 +++
+ 2 files changed, 24 insertions(+), 8 deletions(-)
 
- arch/arm/boot/dts/am4372.dtsi        |   11 ++++++
- arch/arm/boot/dts/am43x-epos-evm.dts |   63 ++++++++++++++++++++++++++++++++++
- 2 files changed, 74 insertions(+)
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 1bf2d4e..a6abb1b 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -32,6 +32,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/reset.h>
 
-diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-index 36d523a..49633ff 100644
---- a/arch/arm/boot/dts/am4372.dtsi
-+++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -735,6 +735,17 @@
- 			#size-cells = <1>;
- 			status = "disabled";
- 		};
+ #include <linux/usb.h>
+ #include <linux/usb/otg.h>
+@@ -235,12 +236,15 @@ static void ulpi_init(struct msm_otg *motg)
+
+ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+ {
+-	int ret = 0;
++	int ret;
+
+-	if (!motg->pdata->link_clk_reset)
+-		return ret;
++	if (motg->pdata->link_clk_reset)
++		ret = motg->pdata->link_clk_reset(motg->clk, assert);
++	else if (assert)
++		ret = reset_control_assert(motg->link_rst);
++	else
++		ret = reset_control_deassert(motg->link_rst);
+
+-	ret = motg->pdata->link_clk_reset(motg->clk, assert);
+ 	if (ret)
+ 		dev_err(motg->phy.dev, "usb link clk reset %s failed\n",
+ 			assert ? "assert" : "deassert");
+@@ -250,12 +254,13 @@ static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
+
+ static int msm_otg_phy_clk_reset(struct msm_otg *motg)
+ {
+-	int ret = 0;
++	int ret;
+
+-	if (!motg->pdata->phy_clk_reset)
+-		return ret;
++	if (motg->pdata->phy_clk_reset)
++		ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
++	else
++		ret = reset_control_reset(motg->phy_rst);
+
+-	ret = motg->pdata->phy_clk_reset(motg->phy_reset_clk);
+ 	if (ret)
+ 		dev_err(motg->phy.dev, "usb phy clk reset failed\n");
+
+@@ -1377,6 +1382,14 @@ static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
+ 	id = of_match_device(msm_otg_dt_match, &pdev->dev);
+ 	pdata->phy_type = (int) id->data;
+
++	motg->link_rst = devm_reset_control_get(&pdev->dev, "link");
++	if (IS_ERR(motg->link_rst))
++		return PTR_ERR(motg->link_rst);
 +
-+		qspi: qspi@47900000 {
-+			compatible = "ti,am4372-qspi";
-+			reg = <0x47900000 0x100>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			ti,hwmods = "qspi";
-+			interrupts = <0 138 0x4>;
-+			num-cs = <4>;
-+			status = "disabled";
-+		};
- 	};
++	motg->phy_rst = devm_reset_control_get(&pdev->dev, "phy");
++	if (IS_ERR(motg->phy_rst))
++		return PTR_ERR(motg->phy_rst);
++
+ 	pdata->mode = of_usb_get_dr_mode(node);
+ 	if (pdata->mode == USB_DR_MODE_UNKNOWN)
+ 		pdata->mode = USB_DR_MODE_OTG;
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index bd68299..4e5d916 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -165,6 +165,9 @@ struct msm_otg {
+ 	struct regulator *v3p3;
+ 	struct regulator *v1p8;
+ 	struct regulator *vddcx;
++
++	struct reset_control *phy_rst;
++	struct reset_control *link_rst;
  };
- 
-diff --git a/arch/arm/boot/dts/am43x-epos-evm.dts b/arch/arm/boot/dts/am43x-epos-evm.dts
-index 167dbc8..25cd07c 100644
---- a/arch/arm/boot/dts/am43x-epos-evm.dts
-+++ b/arch/arm/boot/dts/am43x-epos-evm.dts
-@@ -138,6 +138,17 @@
- 				0x160 (PIN_INPUT | MUX_MODE7) /* spi0_cs1.gpio0_6 */
- 			>;
- 		};
-+
-+		qspi1_default: qspi1_default {
-+			pinctrl-single,pins = <
-+				0x7c (PIN_INPUT_PULLUP | MUX_MODE3)
-+				0x88 (PIN_INPUT_PULLUP | MUX_MODE2)
-+				0x90 (PIN_INPUT_PULLUP | MUX_MODE3)
-+				0x94 (PIN_INPUT_PULLUP | MUX_MODE3)
-+				0x98 (PIN_INPUT_PULLUP | MUX_MODE3)
-+				0x9c (PIN_INPUT_PULLUP | MUX_MODE3)
-+			>;
-+		};
- 	};
- 
- 	matrix_keypad: matrix_keypad@0 {
-@@ -367,3 +378,55 @@
- 	pinctrl-0 = <&spi1_pins>;
- 	status = "okay";
- };
-+
-+&qspi {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&qspi1_default>;
-+
-+	spi-max-frequency = <48000000>;
-+	m25p80@0 {
-+		compatible = "mx66l51235l";
-+		spi-max-frequency = <48000000>;
-+		reg = <0>;
-+		spi-cpol;
-+		spi-cpha;
-+		spi-tx-bus-width = <1>;
-+		spi-rx-bus-width = <4>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		/* MTD partition table.
-+		 * The ROM checks the first 512KiB
-+		 * for a valid file to boot(XIP).
-+		 */
-+		partition@0 {
-+			label = "QSPI.U_BOOT";
-+			reg = <0x00000000 0x000080000>;
-+		};
-+		partition@1 {
-+			label = "QSPI.U_BOOT.backup";
-+			reg = <0x00080000 0x00080000>;
-+		};
-+		partition@2 {
-+			label = "QSPI.U-BOOT-SPL_OS";
-+			reg = <0x00100000 0x00010000>;
-+		};
-+		partition@3 {
-+			label = "QSPI.U_BOOT_ENV";
-+			reg = <0x00110000 0x00010000>;
-+		};
-+		partition@4 {
-+			label = "QSPI.U-BOOT-ENV.backup";
-+			reg = <0x00120000 0x00010000>;
-+		};
-+		partition@5 {
-+			label = "QSPI.KERNEL";
-+			reg = <0x00130000 0x0800000>;
-+		};
-+		partition@6 {
-+			label = "QSPI.FILESYSTEM";
-+			reg = <0x00930000 0x36D0000>;
-+		};
-+	};
-+};
--- 
-1.7.9.5
+
+ #endif
+--
+1.8.3.2
 
