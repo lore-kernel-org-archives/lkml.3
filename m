@@ -1,128 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756441AbaD1Oyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:54:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33286 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756243AbaD1Oyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:54:43 -0400
-Date: Mon, 28 Apr 2014 16:54:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        riel@redhat.com, liuj97@gmail.com, peterz@infradead.org,
-        hannes@cmpxchg.org, mgorman@suse.de, aarcange@redhat.com,
-        sasha.levin@oracle.com, liwanp@linux.vnet.ibm.com,
-        khalid.aziz@oracle.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] mm: introdule compound_head_by_tail()
-Message-ID: <20140428145440.GB7839@dhcp22.suse.cz>
-References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
- <2c87e00d633153ba7b710bab12710cc3a58704dd.1398605516.git.nasa4836@gmail.com>
+	id S1756334AbaD1O5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:57:49 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:42203 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127AbaD1O5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:57:47 -0400
+Date: Mon, 28 Apr 2014 16:56:16 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] FTM PWM adds regmap and endianness support.
+Message-ID: <20140428145615.GA28443@ulmo>
+References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140428131034.GA15946@ulmo>
+ <e5e350afaa7b42cfbd93f52130560064@BY2PR03MB505.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
 Content-Disposition: inline
-In-Reply-To: <2c87e00d633153ba7b710bab12710cc3a58704dd.1398605516.git.nasa4836@gmail.com>
+In-Reply-To: <e5e350afaa7b42cfbd93f52130560064@BY2PR03MB505.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 27-04-14 21:36:24, Jianyu Zhan wrote:
-> In put_comound_page(), we call compound_head() after !PageTail
-> check fails, so in compound_head() PageTail is quite likely to
-> be true, but instead it is checked with:
-> 
->    if (unlikely(PageTail(page)))
-> 
-> in this case, this unlikely macro is a negative hint for compiler.
-> 
-> So this patch introduce compound_head_by_tail() which deal with
-> a possible tail page(though it could be spilt by a racy thread),
-> and make compound_head() a wrapper on it.
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 
-I really fail to see how that helps. compound_head is inlined and the
-compiler should be clever enough to optimize the code properly. I
-haven't tried that to be honest but this looks like it only adds a code
-without any good reason. And I really hate the new name as well. What
-does it suppose to mean?
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> ---
->  include/linux/mm.h | 34 ++++++++++++++++++++++------------
->  mm/swap.c          |  2 +-
->  2 files changed, 23 insertions(+), 13 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index bf9811e..1bc7baf 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -405,20 +405,30 @@ static inline void compound_unlock_irqrestore(struct page *page,
->  #endif
->  }
->  
-> +/**
-> + * Note: this function must be called on a possible tail page,
-> + * this tail page may not be tail anymore upon we calling this funciton,
-> + * because we may race with __split_huge_page_refcount tearing down it.
-> + */
-> +static inline struct page *compound_head_by_tail(struct page *page)
-> +{
-> +	struct page *head = page->first_page;
-> +
-> +	/*
-> +	 * page->first_page may be a dangling pointer to an old
-> +	 * compound page, so recheck that it is still a tail
-> +	 * page before returning.
-> +	 */
-> +	smp_rmb();
-> +	if (likely(PageTail(page)))
-> +		return head;
-> +	return page;
-> +}
-> +
->  static inline struct page *compound_head(struct page *page)
->  {
-> -	if (unlikely(PageTail(page))) {
-> -		struct page *head = page->first_page;
-> -
-> -		/*
-> -		 * page->first_page may be a dangling pointer to an old
-> -		 * compound page, so recheck that it is still a tail
-> -		 * page before returning.
-> -		 */
-> -		smp_rmb();
-> -		if (likely(PageTail(page)))
-> -			return head;
-> -	}
-> +	if (unlikely(PageTail(page)))
-> +		return compound_head_by_tail(page);
->  	return page;
->  }
->  
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 0d8d891..0b05355 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -256,7 +256,7 @@ static void put_compound_page(struct page *page)
->  	 *  Case 3 is possible, as we may race with
->  	 *  __split_huge_page_refcount tearing down a THP page.
->  	 */
-> -	head_page = compound_head(page);
-> +	head_page = compound_head_by_tail(page);
->  	if (!__compound_tail_refcounted(head_page))
->  		put_unrefcounted_compound_page(head_page, page);
->  	else
-> -- 
-> 2.0.0-rc1
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Mon, Apr 28, 2014 at 02:26:57PM +0000, Li.Xiubo@freescale.com wrote:
+>=20
+>=20
+>=20
+> > > Xiubo Li (3):
+> > >   pwm: ftm-pwm: Clean up the code.
+> > >   pwm: ftm-pwm: Convert to direct regmap API usage.
+> > >   pwm: ftm-pwm: Add big-endian support
+> > >
+> > >  drivers/pwm/pwm-fsl-ftm.c | 96 ++++++++++++++++++++++++++-----------=
+----------
+> > >  1 file changed, 53 insertions(+), 43 deletions(-)
+> >
+> > This leaves me with only very vague idea of why this is necessary and
+> > why it should be merged.
+> >
+> > Please describe in more detail (in both the cover-letter and each
+> > individual patch) why you want me to apply these patches.
+> >
+>=20
+> Thanks very much for your reply.
+>=20
+> Should I resend this patch series? If so, I will add some thing like the =
+following:
+>=20
+> The FTM PWM driver will be used in our Vybrid, LS1 and LS2+ SoCs, and on =
+Vybrid
+> and LS2 SoCs, the FTM devices are in LE mode, while on LS1 SoCs it in BE =
+mode.
+>=20
+> So this patch series add endianness support based on the regmap core, whi=
+ch has
+> already support the rich endiannesses for the same device.
 
--- 
-Michal Hocko
-SUSE Labs
+Yes, please resend with that description added where appropriate. I'd
+like to see something like that in the cover letter and, more
+importantly, in the individual patches.
+
+Thierry
+
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTXmwPAAoJEN0jrNd/PrOhGdwP/2X4/hvStBXCxfeTUAjpnqQ0
+ZYDiw7B6sQfsCoJ9VQsVYUdpocWvHmMQXjkqzdiE+sm+qh24lMk3ycapFytzjA1W
+hZJ9gT7cJuze0OE/n0QTxwaZ3g8213q1bCK0wgX/YbKCkw/w0dJtgAErq9KzXlpX
+kF75t7Mraq73q9U6QVb8z5k4vzMpXFopSoAD4BfS3KhOP5AX6LHzxaZBtRUeWwgf
+dFfv/CAJzEL+y1NYeos7OiVhbbk+FQ0PcERXsGM5XPEu+4rpgxmb1kXfJ5h6vIqy
+hAE8NUGOX9ckPgkaPFJxvmq4BYw7xD6//UOkFF9n5+CsUcJ0cPMeShAWV99LtYLp
+nrT9BREl7p+ODZodLSs89Bo6bmDPGKkewXQqBCjHGKTRQVvfLWk26o5uULF/N4Bb
+yH8jd7NRZzdotuCADDAkremPQ/M1U5RZD6Rm9rfsTMGw3pcBgm0XzMwQvSkKHLGa
+w01NbRE6LC2QokwkcMjE6CRpZfUsodgJDXM/ukIYrwiQTrog+pq/Mk8H+KX5lUy6
+rH0cZ3K26rBGVM3iV7vXwY9MkMEV+f9lb4J2uvOReVNWXHtNascy0mjIusQKxfM3
+ICeP+/olCxwe6SQtpxjd4g6CuQ0Hh7Gr8Gh2EnxpB7DrsjHRcLAWXne9urPQCYOJ
+XFspTn5+2qJNm2AoFIds
+=S9hs
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
