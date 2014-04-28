@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaD1BdA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:33:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42884 "EHLO
+	id S1755454AbaD1Bc6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42942 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752550AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752608AbaD1B3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wei Liu" <wei.liu2@citrix.com>,
-        "Paul Durrant" <paul.durrant@citrix.com>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Sander Eikelenboom" <linux@eikelenboom.it>
-Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.479968699@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Wengang Wang" <wen.gang.wang@oracle.com>,
+        "Joel Becker" <jlbec@evilplan.org>, "Mark Fasheh" <mfasheh@suse.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Srinivas Eeda" <srinivas.eeda@oracle.com>,
+        "Junxiao Bi" <junxiao.bi@oracle.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.698747859@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 10/94] xen-netback: remove pointless clause from if
- statement
+Subject: [PATCH 3.2 77/94] ocfs2: dlm: fix recovery hung
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,38 +34,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Durrant <Paul.Durrant@citrix.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-[ Upstream commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 ]
+commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
 
-This patch removes a test in start_new_rx_buffer() that checks whether
-a copy operation is less than MAX_BUFFER_OFFSET in length, since
-MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
-start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
+There is a race window in dlm_do_recovery() between dlm_remaster_locks()
+and dlm_reset_recovery() when the recovery master nearly finish the
+recovery process for a dead node.  After the master sends FINALIZE_RECO
+message in dlm_remaster_locks(), another node may become the recovery
+master for another dead node, and then send the BEGIN_RECO message to
+all the nodes included the old master, in the handler of this message
+dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
+dlm->reco.new_master will be set to the second dead node and the new
+master, then in dlm_reset_recovery(), these two variables will be reset
+to default value.  This will cause new recovery master can not finish
+the recovery process and hung, at last the whole cluster will hung for
+recovery.
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+old recovery master:                                 new recovery master:
+dlm_remaster_locks()
+                                                  become recovery master for
+                                                  another dead node.
+                                                  dlm_send_begin_reco_message()
+dlm_begin_reco_handler()
+{
+ if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
+  return -EAGAIN;
+ }
+ dlm_set_reco_master(dlm, br->node_idx);
+ dlm_set_reco_dead_node(dlm, br->dead_node);
+}
+dlm_reset_recovery()
+{
+ dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
+ dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
+}
+                                                  will hang in dlm_remaster_locks() for
+                                                  request dlm locks info
+
+Before send FINALIZE_RECO message, recovery master should set
+DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
+this can break the race windows as the BEGIN_RECO messages will not be
+handled before DLM_RECO_STATE_FINALIZE flag is cleared.
+
+A similar race may happen between new recovery master and normal node
+which is in dlm_finalize_reco_handler(), also fix it.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/xen-netback/netback.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -346,8 +346,8 @@ static bool start_new_rx_buffer(int offs
- 	 * into multiple copies tend to give large frags their
- 	 * own buffers as before.
- 	 */
--	if ((offset + size > MAX_BUFFER_OFFSET) &&
--	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
-+	BUG_ON(size > MAX_BUFFER_OFFSET);
-+	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
- 		return true;
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -540,7 +540,10 @@ master_here:
+ 		/* success!  see if any other nodes need recovery */
+ 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
+ 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
+-		dlm_reset_recovery(dlm);
++		spin_lock(&dlm->spinlock);
++		__dlm_reset_recovery(dlm);
++		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++		spin_unlock(&dlm->spinlock);
+ 	}
+ 	dlm_end_recovery(dlm);
  
- 	return false;
+@@ -698,6 +701,14 @@ static int dlm_remaster_locks(struct dlm
+ 		if (all_nodes_done) {
+ 			int ret;
+ 
++			/* Set this flag on recovery master to avoid
++			 * a new recovery for another dead node start
++			 * before the recovery is not done. That may
++			 * cause recovery hung.*/
++			spin_lock(&dlm->spinlock);
++			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
++			spin_unlock(&dlm->spinlock);
++
+ 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
+ 	 		 * just send a finalize message to everyone and
+ 	 		 * clean up */
+@@ -2872,8 +2883,8 @@ int dlm_finalize_reco_handler(struct o2n
+ 				BUG();
+ 			}
+ 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++			__dlm_reset_recovery(dlm);
+ 			spin_unlock(&dlm->spinlock);
+-			dlm_reset_recovery(dlm);
+ 			dlm_kick_recovery_thread(dlm);
+ 			break;
+ 		default:
 
