@@ -1,125 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686AbaD1Q2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:28:44 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:36901 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755903AbaD1Q2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:28:40 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Jiang, Dave" <dave.jiang@intel.com>
-Subject: Re: 3.2.57 regression: isci driver broken: Unable to reset I T nexus?
-Date: Mon, 28 Apr 2014 18:28:01 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        "intel-linux-scu" <intel-linux-scu@intel.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201404281303.24977.linux@rainbow-software.org> <1398700228.97992.2.camel@djiang5-desk1.amr.corp.intel.com>
-In-Reply-To: <1398700228.97992.2.camel@djiang5-desk1.amr.corp.intel.com>
-X-KMail-QuotePrefix: > 
+	id S932789AbaD1Qfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:35:53 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31256 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755903AbaD1Qfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 12:35:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,945,1389772800"; 
+   d="scan'208";a="529928156"
+From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>
+Subject: lockdep warning after recent cleanup in console code
+Thread-Topic: lockdep warning after recent cleanup in console code
+Thread-Index: AQHPYv/bwdBQHvpujU+9YJZBYRAh9g==
+Date: Mon, 28 Apr 2014 16:35:26 +0000
+Message-ID: <1398702925.11914.292.camel@smile.fi.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.73]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <66DBDD546D622449882483A1A6E51D56@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201404281828.02179.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3SGaTeZ025240
 
-On Monday 28 April 2014 17:50:29 Jiang, Dave wrote:
-> On Mon, 2014-04-28 at 13:03 +0200, Ondrej Zary wrote:
-> > Hello,
-> > just upgraded a server running 3.2.54-2 to 3.2.57-3 (Debian Wheezy) and
-> > it does not boot anymore because of isci driver breakage.
->
-> I would not run anything less than 3.8 for the isci controller. 3.2 is
-> VERY old for that particular driver and likely very unstable. The
-> product version of that driver plus libsas started with 3.8. Also I'm
-> concerned that you aren't using the platform OEM parameters. You need to
-> turn your OROM or EFI driver on for the SAS controller.
+Hei!
 
-It's a Cisco UCS C22 M3 server with a crappy LSI fakeraid that cannot even be 
-disabled. It was a pain to make it boot properly - had to use dmraid. But it 
-has been working fine since then (2012). Until now.
+During weekend the linux-next was being broken by introducing a lockdep
+warning in the console code
 
-I guess that it could be caused by the following commit but haven't tested it:
-commit 584ec12265192bf49dfa270d517380f6723a6956
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Thu Feb 6 12:23:01 2014 -0800
+[    0.000000] BIOS-e820: [mem 0x00000000e0000000-0x00000000ffffffff]
+reserved
+[    0.000000]
+[    0.000000] =============================================
+[    0.000000] [ INFO: possible recursive locking detected ]
+[    0.000000] 3.15.0-rc2-next-20140428-00030-gd3550d8 #38 Not tainted
+[    0.000000] ---------------------------------------------
+[    0.000000] swapper/0 is trying to acquire lock:
+[    0.000000]  (console_lock){......}, at: [<c10728cc>]
+register_console+0x15e/0x295
+[    0.000000]
+[    0.000000] but task is already holding lock:
+[    0.000000]  (console_lock){......}, at: [<c1071e7a>] vprintk_emit
++0x381/0x3ea
+[    0.000000]
+[    0.000000] other info that might help us debug this:
+[    0.000000]  Possible unsafe locking scenario:
+[    0.000000]
+[    0.000000]        CPU0
+[    0.000000]        ----
+[    0.000000]   lock(console_lock);
+[    0.000000]   lock(console_lock);
+[    0.000000]
+[    0.000000]  *** DEADLOCK ***
+[    0.000000]
+[    0.000000]  May be due to missing lock nesting notation
+[    0.000000]
+[    0.000000] 3 locks held by swapper/0:
+[    0.000000]  #0:  (console_lock){......}, at: [<c1071e7a>]
+vprintk_emit+0x381/0x3ea
+[    0.000000]  #1:  (console_lock){......}, at: [<c1071e7a>]
+vprintk_emit+0x381/0x3ea
+[    0.000000]  #2:  (console_lock){......}, at: [<c1071e7a>]
+vprintk_emit+0x381/0x3ea
+[    0.000000]
+[    0.000000] stack backtrace:
+[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
+3.15.0-rc2-next-20140428-00030-gd3550d8 #38
+[    0.000000]  00000000 00000000 c186de1c c15878ae c1daf840 c186de88
+c106c154 c1794d9d
+[    0.000000]  c17958f7 c1794c9c 0000002a 00000000 00000000 c1daf840
+c1983700 00000080
+[    0.000000]  04002001 c187a0b0 00000000 c1879ba0 c1879b40 c1879b40
+00200046 00000000
+[    0.000000] Call Trace:
+[    0.000000]  [<c15878ae>] dump_stack+0x49/0x73
+[    0.000000]  [<c106c154>] __lock_acquire+0xb31/0xc7c
+[    0.000000]  [<c106c33b>] lock_acquire+0x9c/0x111
+[    0.000000]  [<c10728cc>] ? register_console+0x15e/0x295
+[    0.000000]  [<c10707dd>] console_lock+0x41/0x46
+[    0.000000]  [<c10728cc>] ? register_console+0x15e/0x295
+[    0.000000]  [<c10728cc>] register_console+0x15e/0x295
+[    0.000000]  [<c1582f80>] early_console_register+0x33/0x35
+[    0.000000]  [<c1910411>] setup_early_printk+0x144/0x151
+[    0.000000]  [<c19013f6>] do_early_param+0x41/0x73
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c104c766>] parse_args+0x24f/0x307
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c190169d>] parse_early_options+0x1c/0x21
+[    0.000000]  [<c190169d>] ? parse_early_options+0x1c/0x21
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c19016cc>] parse_early_param+0x2a/0x36
+[    0.000000]  [<c19042c0>] setup_arch+0x3c9/0xc55
+[    0.000000]  [<c1071ebe>] ? vprintk_emit+0x3c5/0x3ea
+[    0.000000]  [<c1584869>] ? printk+0x28/0x2d
+[    0.000000]  [<c1901754>] start_kernel+0x72/0x305
+[    0.000000]  [<c19012b4>] i386_start_kernel+0x82/0x86
+[    0.000000] bootconsole [earlyhsu0] enabled
 
+Bisecting shows the culprit (which I guessed before), namely commit
+5dc90cb49691755faaad2a395d297d0162075eca ("printk: enable interrupts 
+before calling console_trylock_for_printk()").
 
-> > A (partial) log transcription:
-> > sas: DOING DISCOVERY on port 0, pid:5
-> > sas: Enter sas_scsi_recover_host
-> > ata1: sas eh calling libata port error handler
-> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > sas: sas_ata_hard_reset: Unable to soft reset
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata1: reset failed (errno=-11), retrying in 10 secs
-> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > sas: sas_ata_hard_reset: Unable to soft reset
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata1: reset failed (errno=-11), retrying in 35 secs
-> > ata1: reset failed, giving up
-> > sas: --- Exit sas_scsi_recover_host
-> > sas: DONE DISCOVERY on port 0, pid: 5, result:0
-> > sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
-> > sas: DOING DISCOVERY on port 1, pid:5
-> > sas: Enter sas_scsi_recover_host
-> > ata1: sas eh calling libata port error handler
-> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > sas: sas_ata_hard_reset: Unable to soft reset
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata2: reset failed (errno=-11), retrying in 10 secs
-> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > sas: sas_ata_hard_reset: Unable to soft reset
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata2: reset failed (errno=-11), retrying in 35 secs
-> > ata2: reset failed, giving up
-> >
-> >
-> > It should look like this (v3.2.54-2):
-> > isci: Intel(R) C600 SAS Controller Driver - version 1.0.0
-> > isci 0000:03:00.0: driver configured for rev: 6 silicon
-> > isci 0000:03:00.0: firmware: agent loaded isci/isci_firmware.bin into
-> > memory isci 0000:03:00.0: OEM SAS parameters (version: 1.3) loaded
-> > (firmware) isci 0000:03:00.0: setting latency timer to 64
-> > scsi0 : isci
-> > scsi1 : isci
-> > isci 0000:03:00.0: irq 81 for MSI/MSI-X
-> > isci 0000:03:00.0: irq 82 for MSI/MSI-X
-> > isci 0000:03:00.0: irq 83 for MSI/MSI-X
-> > isci 0000:03:00.0: irq 84 for MSI/MSI-X
-> > sas: phy-0:0 added to port-0:0, phy_mask:0x1 (5fcfffff00000001)
-> > sas: DOING DISCOVERY on port 0, pid:5
-> > sas: Enter sas_scsi_recover_host
-> > ata1: sas eh calling libata port error handler
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata1.00: ATA-8: ST9500620NS, CC02, max UDMA/133
-> > ata1.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-> > ata1.00: configured for UDMA/133
-> > sas: --- Exit sas_scsi_recover_host
-> > scsi 0:0:0:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0
-> > ANSI: 5 sas: DONE DISCOVERY on port 0, pid:5, result:0
-> > sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
-> > sas: DOING DISCOVERY on port 1, pid:5
-> > sas: Enter sas_scsi_recover_host
-> > ata1: sas eh calling libata port error handler
-> > ata2: sas eh calling libata port error handler
-> > sas: sas_ata_hard_reset: Found ATA device.
-> > ata2.00: ATA-8: ST9500620NS, CC02, max UDMA/133
-> > ata2.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-> > ata2.00: configured for UDMA/133
-> > sas: --- Exit sas_scsi_recover_host
-> > scsi 0:0:1:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0
-> > ANSI: 5 sas: DONE DISCOVERY on port 1, pid:5, result:0
+Following patch helps me, but I'm not familiar with console locking
+scheme, I believe there is a better solution.
+
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1700,8 +1700,10 @@ asmlinkage int vprintk_emit(int facility, int
+level,
+         * The release will print out buffers and wake up /dev/kmsg and
+syslog()
+         * users.
+         */
++       lockdep_off();
+        if (console_trylock_for_printk())
+                console_unlock();
++       lockdep_on();
+        preempt_enable();
+ 
+        return printed_len;
 
 
 -- 
-Ondrej Zary
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
+---------------------------------------------------------------------
+Intel Finland Oy
+Registered Address: PL 281, 00181 Helsinki 
+Business Identity Code: 0357606 - 4 
+Domiciled in Helsinki 
+
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
