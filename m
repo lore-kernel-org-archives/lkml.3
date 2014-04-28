@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaD1FGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 01:06:30 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:60789 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaD1FG2 (ORCPT
+	id S1753431AbaD1FJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 01:09:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60074 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaD1FJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 01:06:28 -0400
-X-Auth-Info: QYhMsmobO+Z+3XLFFOkg8aPcJ+/bma+KCwLdZkjeCk4=
-From: Marek Vasut <marex@denx.de>
-To: Huang Shijie <shijie8@gmail.com>
-Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
-Date: Mon, 28 Apr 2014 07:06:17 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: Huang Shijie <b32955@freescale.com>, Graham Moore <grmoore@altera.com>,
-        ggrahammoore@gmail.com,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        linux-mtd@lists.infradead.org, Insop Song <insop.song@gainspeed.com>,
-        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-References: <1398175396-7560-1-git-send-email-grmoore@altera.com> <201404260012.24311.marex@denx.de> <20140426031011.GA4811@localhost.localdomain>
-In-Reply-To: <20140426031011.GA4811@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Mon, 28 Apr 2014 01:09:48 -0400
+Message-ID: <1398661784.30930.33.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 28 Apr 2014 07:09:44 +0200
+In-Reply-To: <1398520699.28726.22.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	 <1397918766.5436.16.camel@marge.simpson.net>
+	 <1398411635.11930.45.camel@marge.simpson.net>
+	 <1398501491.12941.5.camel@marge.simpson.net>
+	 <1398520699.28726.22.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201404280706.18068.marex@denx.de>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, April 26, 2014 at 05:10:13 AM, Huang Shijie wrote:
-> On Sat, Apr 26, 2014 at 12:12:24AM +0200, Marek Vasut wrote:
-> > > > > the drivers may fills this hook itself, so the code should like this:
-> > > > >    --------------------------------------------------
-> > > > > 	
-> > > > > 	if ((info->flags & USE_FSR) &&
-> > > > > 	
-> > > > > 	       	nor->wait_till_ready == spi_nor_wait_till_fsr_ready)
-> > > > > 		
-> > > > > 		nor->wait_till_ready = spi_nor_wait_till_fsr_ready;
-> > > > > 		
-> > > > >    --------------------------------------------------
-> > > > 
-> > > > I sense a misdesign of the SPI NOR subsystem here. The subsystem and
-> > > > the driver compete for a function pointer here ? I guess one should
-> > > > have precedence in some way then ... and also, they should be two
-> > > > different pointers, where the subsystem decides which to use.
-> > > 
-> > > the subsystem do not decides which one to use, the driver decides which
-> > > one to use.
-> > > 
-> > > If driver has its own @wait_till_ready , it means the driver knows the
-> > > feature, and has implemented it in its own @wait_till_ready.
-> > > 
-> > > If the driver does not fill any wait_till_ready, it means the driver
-> > > will use the default @wait_till_ready. We can treat the
-> > > spi_nor_wait_till_fsr_ready as a default hook too.
+Hi Nicholas,
+
+On Sat, 2014-04-26 at 15:58 +0200, Mike Galbraith wrote: 
+> On Sat, 2014-04-26 at 10:38 +0200, Mike Galbraith wrote: 
+> > On Fri, 2014-04-25 at 09:40 +0200, Mike Galbraith wrote:
 > > 
-> > I see the driver overwriting a hook previously set by the subsystem. This
+> > > Hotplug can still deadlock in rt trees too, and will if you beat it
+> > > hard.
+> > 
+> > Box actually deadlocks like so.
 > 
-> not sure ;)
+> ...
 > 
-> The driver set the hooks before the subsystem set these hooks.
+> 3.12-rt looks a bit busted migrate_disable/enable() wise.
 > 
-> If the driver has already set the @wait_till_ready hook before it calls
-> the spi_nor_scan, the subsystem will not set the hook anymore.
-> 
-> Please see the spi_nor_check().
+> /me eyeballs 3.10-rt (looks better), confirms 3.10-rt hotplug works,
+> swipes working code, confirms 3.12-rt now works.  Yup, that was it.
 
-Two things competing over the same pointer looks misdesigned to me. I will need 
-to dig into this one more time ...
+My boxen, including 64 core DL980 that ran hotplug stress for 3 hours
+yesterday with pre-pushdown rwlocks, say the migrate_disable/enable
+pushdown patches are very definitely busted.
 
-Best regards,
-Marek Vasut
+Instead of whacking selective bits, as I did to verify that the rwlock
+changes were indeed causing hotplug stress deadlock woes, I'm eyeballing
+the lot, twiddling primitives to look like I think they should, after
+which I'll let my boxen express their opinions of the result.
+
+-Mike
+
+
