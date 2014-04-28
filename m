@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465AbaD1Lyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:54:47 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:45323 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaD1Lyo (ORCPT
+	id S1755591AbaD1Lze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:55:34 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:55839 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310AbaD1Lzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:54:44 -0400
-MIME-Version: 1.0
-X-Originating-IP: [60.245.65.194]
-In-Reply-To: <alpine.DEB.2.02.1404281207510.6261@ionos.tec.linutronix.de>
-References: <1398656117.19333.1.camel@phoenix>
-	<alpine.DEB.2.02.1404281207510.6261@ionos.tec.linutronix.de>
-Date: Mon, 28 Apr 2014 19:54:43 +0800
-Message-ID: <CAFRkauASQa5xgm49p5tyBQ0oj29Zxt0x90E0qZoAjMVhsp6gDA@mail.gmail.com>
-Subject: Re: [PATCH v2] irqchip: vt8500: Switch to a simple write clear for
- Interrupt Status Register
+	Mon, 28 Apr 2014 07:55:32 -0400
+Message-ID: <1398686127.6472.1.camel@phoenix>
+Subject: [PATCH] irqchip: vt8500: Properly mask the interrupt in irq_mask()
 From: Axel Lin <axel.lin@ingics.com>
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Tony Prisk <linux@prisktech.co.nz>, linux-kernel@vger.kernel.org
+Date: Mon, 28 Apr 2014 19:55:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-28 18:08 GMT+08:00 Thomas Gleixner <tglx@linutronix.de>:
-> On Mon, 28 Apr 2014, Axel Lin wrote:
->
->> According to the datasheet, the attribute of Interrupt Status Register is RW0S,
->> which means:
->>       Software can read the register.
->>       Software can also "write 1 to clear". "write 0" has no effect.
->>
->> So the read/modify/write cycle is no necessary, switch to a simple write clear
->> instead.
->
-> Again, what's the point of this?
->
-> There is still nothing which masks the interrupt at the controller
-> level which is the purpose of the irq_mask() callback.
->
-Ah, stupid me.
-Let me try again to fix this.
+Current code sets both irq_ack and irq_mask callbacks to vt8500_irq_mask().
+However, vt8500_irq_mask does not clear interrupt enable bit when the interrupt
+trigger mode is edge trigger.
 
-Thanks,
-Axel
+This patch moves the code clearing Interrupt Status Register bit to irq_ack().
+Make irq_mask() always clear interrupt enable bit for all interrupt trigger mode.
+
+According to the datasheet, the Interrupt Status Register is written one to
+clear(Write 0 has no effect). So we don't need a read-modify-write operation
+for clearing a bit in interrupt status register.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/irqchip/irq-vt8500.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+index d970595..eb6d05a 100644
+--- a/drivers/irqchip/irq-vt8500.c
++++ b/drivers/irqchip/irq-vt8500.c
+@@ -81,25 +81,24 @@ struct vt8500_irq_data {
+ static struct vt8500_irq_data intc[VT8500_INTC_MAX];
+ static u32 active_cnt = 0;
+ 
+-static void vt8500_irq_mask(struct irq_data *d)
++static void vt8500_irq_ack(struct irq_data *d)
+ {
+ 	struct vt8500_irq_data *priv = d->domain->host_data;
+ 	void __iomem *base = priv->base;
+ 	void __iomem *stat_reg = base + VT8500_ICIS + (d->hwirq < 32 ? 0 : 4);
+-	u8 edge, dctr;
+-	u32 status;
+-
+-	edge = readb(base + VT8500_ICDC + d->hwirq) & VT8500_EDGE;
+-	if (edge) {
+-		status = readl(stat_reg);
+-
+-		status |= (1 << (d->hwirq & 0x1f));
+-		writel(status, stat_reg);
+-	} else {
+-		dctr = readb(base + VT8500_ICDC + d->hwirq);
+-		dctr &= ~VT8500_INT_ENABLE;
+-		writeb(dctr, base + VT8500_ICDC + d->hwirq);
+-	}
++
++	writel(1 << (d->hwirq & 0x1f), stat_reg);
++}
++
++static void vt8500_irq_mask(struct irq_data *d)
++{
++	struct vt8500_irq_data *priv = d->domain->host_data;
++	void __iomem *base = priv->base;
++	u8 dctr;
++
++	dctr = readb(base + VT8500_ICDC + d->hwirq);
++	dctr &= ~VT8500_INT_ENABLE;
++	writeb(dctr, base + VT8500_ICDC + d->hwirq);
+ }
+ 
+ static void vt8500_irq_unmask(struct irq_data *d)
+@@ -145,7 +144,7 @@ static int vt8500_irq_set_type(struct irq_data *d, unsigned int flow_type)
+ 
+ static struct irq_chip vt8500_irq_chip = {
+ 	.name = "vt8500",
+-	.irq_ack = vt8500_irq_mask,
++	.irq_ack = vt8500_irq_ack,
+ 	.irq_mask = vt8500_irq_mask,
+ 	.irq_unmask = vt8500_irq_unmask,
+ 	.irq_set_type = vt8500_irq_set_type,
+-- 
+1.8.1.2
+
+
+
