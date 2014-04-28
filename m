@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaD1QY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:24:28 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:52021 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405AbaD1QYY (ORCPT
+	id S932686AbaD1Q2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:28:44 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:36901 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755903AbaD1Q2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:24:24 -0400
+	Mon, 28 Apr 2014 12:28:40 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Jiang, Dave" <dave.jiang@intel.com>
+Subject: Re: 3.2.57 regression: isci driver broken: Unable to reset I T nexus?
+Date: Mon, 28 Apr 2014 18:28:01 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        "intel-linux-scu" <intel-linux-scu@intel.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201404281303.24977.linux@rainbow-software.org> <1398700228.97992.2.camel@djiang5-desk1.amr.corp.intel.com>
+In-Reply-To: <1398700228.97992.2.camel@djiang5-desk1.amr.corp.intel.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-In-Reply-To: <20140428155540.GJ27561@twins.programming.kicks-ass.net>
-References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
- <2c87e00d633153ba7b710bab12710cc3a58704dd.1398605516.git.nasa4836@gmail.com>
- <20140428145440.GB7839@dhcp22.suse.cz> <CAHz2CGUueeXR2UdLXBRihVN3R8qEUR8wWhpxYjA6pu3ONO0cJA@mail.gmail.com>
- <20140428155540.GJ27561@twins.programming.kicks-ass.net>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Tue, 29 Apr 2014 00:23:41 +0800
-Message-ID: <CAHz2CGWJjU5U=pDuyzX=L+gev4cpNxkjCnVAvRpY=vO35tBDLg@mail.gmail.com>
-Subject: Re: [PATCH RFC 2/2] mm: introdule compound_head_by_tail()
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        kirill.shutemov@linux.intel.com, Rik van Riel <riel@redhat.com>,
-        Jiang Liu <liuj97@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        sasha.levin@oracle.com, liwanp@linux.vnet.ibm.com,
-        khalid.aziz@oracle.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201404281828.02179.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 11:55 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> What version,
+On Monday 28 April 2014 17:50:29 Jiang, Dave wrote:
+> On Mon, 2014-04-28 at 13:03 +0200, Ondrej Zary wrote:
+> > Hello,
+> > just upgraded a server running 3.2.54-2 to 3.2.57-3 (Debian Wheezy) and
+> > it does not boot anymore because of isci driver breakage.
+>
+> I would not run anything less than 3.8 for the isci controller. 3.2 is
+> VERY old for that particular driver and likely very unstable. The
+> product version of that driver plus libsas started with 3.8. Also I'm
+> concerned that you aren't using the platform OEM parameters. You need to
+> turn your OROM or EFI driver on for the SAS controller.
 
-the code snipt in question is extracted from v3.15-rc3.
+It's a Cisco UCS C22 M3 server with a crappy LSI fakeraid that cannot even be 
+disabled. It was a pain to make it boot properly - had to use dmraid. But it 
+has been working fine since then (2012). Until now.
 
-
-for the (1) check in previous email, its assembled code looks like:
-
-       --- (1) snipt ---
-       mov    (%rdi),%rax                               (a)
-       test   $0x80,%ah                                  (b)
-       jne    754 <put_compound_page+0x74> (c)
-       --- (1) snipt ---
-
-      (a) %rdi is the struct page pointer
-      (b) check if PG_tail(0x80) set(likely not set, we tell the compiler)
-      (c) if set, jump; not set, fall through (good, credit to  our hint)
-
-===================================================
-
-for the (3) check in previous email, its assembled code looks like:
-
-        --- (3) snipt ---
-        mov    (%rdi),%rax                                    (A)
-        mov    %rdi,%r12
-        test   $0x80,%ah                                      (B)
-        jne    8f8 <put_compound_page+0x218>     (C)
-        --- (3) snipt ---
-
-      (A) %rdi is the struct page pointer
-      (B) check if PG_tail(0x80) set(likely set in this case, but we
-tell compiler unlikely)
-      (C) if set, jump; not set, fall through (god! it would better
-not jump if set,  but we
-           tell compiler unlikely, so it happily did as we told it)
+I guess that it could be caused by the following commit but haven't tested it:
+commit 584ec12265192bf49dfa270d517380f6723a6956
+Author: Dan Williams <dan.j.williams@intel.com>
+Date:   Thu Feb 6 12:23:01 2014 -0800
 
 
-# all code are compiled by gcc (GCC) 4.8.2
+> > A (partial) log transcription:
+> > sas: DOING DISCOVERY on port 0, pid:5
+> > sas: Enter sas_scsi_recover_host
+> > ata1: sas eh calling libata port error handler
+> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > sas: sas_ata_hard_reset: Unable to soft reset
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata1: reset failed (errno=-11), retrying in 10 secs
+> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > sas: sas_ata_hard_reset: Unable to soft reset
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata1: reset failed (errno=-11), retrying in 35 secs
+> > ata1: reset failed, giving up
+> > sas: --- Exit sas_scsi_recover_host
+> > sas: DONE DISCOVERY on port 0, pid: 5, result:0
+> > sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
+> > sas: DOING DISCOVERY on port 1, pid:5
+> > sas: Enter sas_scsi_recover_host
+> > ata1: sas eh calling libata port error handler
+> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > sas: sas_ata_hard_reset: Unable to soft reset
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata2: reset failed (errno=-11), retrying in 10 secs
+> > sas: sas_ata_hard_reset: Unable to reset I T nexus?
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > sas: sas_ata_hard_reset: Unable to soft reset
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata2: reset failed (errno=-11), retrying in 35 secs
+> > ata2: reset failed, giving up
+> >
+> >
+> > It should look like this (v3.2.54-2):
+> > isci: Intel(R) C600 SAS Controller Driver - version 1.0.0
+> > isci 0000:03:00.0: driver configured for rev: 6 silicon
+> > isci 0000:03:00.0: firmware: agent loaded isci/isci_firmware.bin into
+> > memory isci 0000:03:00.0: OEM SAS parameters (version: 1.3) loaded
+> > (firmware) isci 0000:03:00.0: setting latency timer to 64
+> > scsi0 : isci
+> > scsi1 : isci
+> > isci 0000:03:00.0: irq 81 for MSI/MSI-X
+> > isci 0000:03:00.0: irq 82 for MSI/MSI-X
+> > isci 0000:03:00.0: irq 83 for MSI/MSI-X
+> > isci 0000:03:00.0: irq 84 for MSI/MSI-X
+> > sas: phy-0:0 added to port-0:0, phy_mask:0x1 (5fcfffff00000001)
+> > sas: DOING DISCOVERY on port 0, pid:5
+> > sas: Enter sas_scsi_recover_host
+> > ata1: sas eh calling libata port error handler
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata1.00: ATA-8: ST9500620NS, CC02, max UDMA/133
+> > ata1.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+> > ata1.00: configured for UDMA/133
+> > sas: --- Exit sas_scsi_recover_host
+> > scsi 0:0:0:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0
+> > ANSI: 5 sas: DONE DISCOVERY on port 0, pid:5, result:0
+> > sas: phy-0:1 added to port-0:1, phy_mask:0x2 (5fcfffff00000002)
+> > sas: DOING DISCOVERY on port 1, pid:5
+> > sas: Enter sas_scsi_recover_host
+> > ata1: sas eh calling libata port error handler
+> > ata2: sas eh calling libata port error handler
+> > sas: sas_ata_hard_reset: Found ATA device.
+> > ata2.00: ATA-8: ST9500620NS, CC02, max UDMA/133
+> > ata2.00: 976773168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+> > ata2.00: configured for UDMA/133
+> > sas: --- Exit sas_scsi_recover_host
+> > scsi 0:0:1:0: Direct-Access     ATA      ST9500620NS      CC02 PQ: 0
+> > ANSI: 5 sas: DONE DISCOVERY on port 1, pid:5, result:0
 
-> and why didn't your changelog include this useful information?
 
-Sorry, I would have done so.  I will resend the patch.
-
-Thanks,
-Jianyu Zhan
+-- 
+Ondrej Zary
