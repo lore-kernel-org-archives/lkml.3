@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546AbaD1PHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:07:38 -0400
-Received: from minas.ics.muni.cz ([147.251.4.46]:45578 "EHLO minas.ics.muni.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932518AbaD1PHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:07:32 -0400
-X-Greylist: delayed 842 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Apr 2014 11:07:32 EDT
-Date: Mon, 28 Apr 2014 16:52:01 +0200
-From: Jan Kasprzak <kas@fi.muni.cz>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yuxiangl@marvell.com
-Subject: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
-Message-ID: <20140428145201.GG29712@fi.muni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Muni-Envelope-From: kas@fi.muni.cz
-X-Muni-Spam-TestIP: 147.251.48.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (minas.ics.muni.cz [147.251.4.35]); Mon, 28 Apr 2014 16:52:04 +0200 (CEST)
+	id S932570AbaD1PIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:08:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49152 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752665AbaD1O7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:59:52 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Hans de Goede <hdegoede@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 4/7] mfd: sun6i-prcm: document DT bindings
+Date: Mon, 28 Apr 2014 16:58:47 +0200
+Message-Id: <1398697130-8338-5-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1398697130-8338-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the AOC-SAS2LP-MV8 SAS-2 controller from SuperMicro.
-This controller has subdevice id 0x9485 instead of 0x9480, and apparently
-this simple patch is the only thing needed to make it work.
+Document DT bindings of the PRCM (Power/Reset/Clock Management) unit.
 
-# lspci -vn
-[...]
-03:00.0 0104: 1b4b:9485 (rev 03)
-	Subsystem: 1b4b:9485
-	Flags: bus master, fast devsel, latency 0, IRQ 24
-	Memory at feba0000 (64-bit, non-prefetchable) [size=128K]
-	Memory at febc0000 (64-bit, non-prefetchable) [size=256K]
-	Expansion ROM at feb90000 [disabled] [size=64K]
-	Capabilities: [40] Power Management version 3
-	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-	Capabilities: [70] Express Endpoint, MSI 00
-	Capabilities: [100] Advanced Error Reporting
-	Capabilities: [140] Virtual Channel
-	Kernel driver in use: mvsas
-	Kernel modules: mvsas
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../devicetree/bindings/mfd/sun6i-prcm.txt         | 71 ++++++++++++++++++++++
+ 1 file changed, 71 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
 
-Signed-off-by: Jan Kasprzak <kas@fi.muni.cz>
-
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 5ff978b..eacee48 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -728,6 +728,15 @@ static struct pci_device_id mvs_pci_table[] = {
- 		.class_mask	= 0,
- 		.driver_data	= chip_9485,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_MARVELL_EXT,
-+		.device		= 0x9485,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= 0x9485,
-+		.class		= 0,
-+		.class_mask	= 0,
-+		.driver_data	= chip_9485,
-+	},
- 	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3 */
- 	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact model unknown) */
- 	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact model unknown) */
-
+diff --git a/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+new file mode 100644
+index 0000000..de92429
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/sun6i-prcm.txt
+@@ -0,0 +1,71 @@
++* Allwinner PRCM (Power/Reset/Clock Management) Multi-Functional Device
++
++PRCM is an MFD device exposing several Power Management related devices
++(like clks and reset controllers).
++
++Required properties:
++ - compatible: "allwinner,sun6i-a31-prcm"
++ - reg: The PRCM registers range
++
++The prcm node may contain several subdevices definitions:
++ - see Documentation/devicetree/clk/sunxi.txt for clock devices
++ - see Documentation/devicetree/reset/allwinner,sunxi-clock-reset.txt for reset
++   controller devices
++
++
++Example:
++
++	prcm: prcm@01f01400 {
++		compatible = "allwinner,sun6i-a31-prcm";
++		reg = <0x01f01400>;
++
++		/* Put subdevices here */
++		ar100_mux: ar100_mux {
++			compatible = "allwinner,sun6i-a31-ar100-mux-clk";
++			#clock-cells = <0>;
++			clocks = <&osc32k>, <&osc24M>, <&pll6>, <&pll6>;
++		};
++
++		ar100: ar100 {
++			compatible = "allwinner,sun6i-a31-ar100-clk";
++			#clock-cells = <0>;
++			clocks = <&ar100_mux>;
++		};
++
++		ar100_div: ar100_div {
++			compatible = "allwinner,sun6i-a31-ar100-div-clk";
++			#clock-cells = <0>;
++			clocks = <&ar100>;
++		};
++
++		ahb0: ahb0 {
++			compatible = "fixed-factor-clock";
++			#clock-cells = <0>;
++			clock-div = <1>;
++			clock-mult = <1>;
++			clocks = <&ar100_div>;
++			clock-output-names = "ahb0";
++		};
++
++		apb0: apb0 {
++			compatible = "allwinner,sun6i-a31-apb0-clk";
++			#clock-cells = <0>;
++			clocks = <&ahb0>;
++			clock-output-names = "apb0";
++		};
++
++		apb0_gates: apb0_gates {
++			compatible = "allwinner,sun6i-a31-apb0-gates-clk";
++			#clock-cells = <1>;
++			clocks = <&apb0>;
++			clock-output-names = "apb0_pio", "apb0_ir",
++					"apb0_timer01", "apb0_p2wi",
++					"apb0_uart", "apb0_1wire",
++					"apb0_i2c";
++		};
++
++		apb0_rst: apb0_rst {
++			compatible = "allwinner,sun6i-a31-clock-reset";
++			#reset-cells = <1>;
++		};
++	};
 -- 
-| Jan "Yenya" Kasprzak  <kas at {fi.muni.cz - work | yenya.net - private}> |
-| New GPG 4096R/A45477D5 - see http://www.fi.muni.cz/~kas/pgp-rollover.txt |
-| http://www.fi.muni.cz/~kas/    Journal: http://www.fi.muni.cz/~kas/blog/ |
-  There's clearly a balance between "octopus merges are fine" and "Christ,
-  that's not an octopus, that's a Cthulhu merge".         --Linus Torvalds
+1.8.3.2
+
