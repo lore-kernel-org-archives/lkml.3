@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542AbaD1Ng3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58235 "EHLO extserv.mm-sol.com"
+	id S932526AbaD1Ng2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:28 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58341 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756018AbaD1NfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:35:20 -0400
+	id S1756049AbaD1NfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:23 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+Cc: Tim Bird <tbird20d@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v8 02/20] usb: phy: msm: Remove __init macro from driver probe method
-Date: Mon, 28 Apr 2014 16:34:05 +0300
-Message-Id: <1398692063-11372-3-git-send-email-iivanov@mm-sol.com>
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Subject: [PATCH v8 16/20] usb: phy: msm: Fix PTS definitions for MSM USB controller
+Date: Mon, 28 Apr 2014 16:34:19 +0300
+Message-Id: <1398692063-11372-17-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
@@ -22,32 +22,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+From: Tim Bird <tbird20d@gmail.com>
 
-This fixes following:
+Fix the value used for Parallel Transceiver Select (PTS) for the MSM USB
+controller.  This is a standard chipidea PORTSC definition, where
+a PHY_TYPE of 10b (<<30) is ULPI and 11b (<<30) is SERIAL.
+Fix the definitions and use them correctly in the driver code.
 
-WARNING: drivers/usb/phy/built-in.o(.data+0x68): Section mismatch in reference from the variable msm_otg_driver to the function .init.text:msm_otg_probe()
-The variable msm_otg_driver references
-the function __init msm_otg_probe()
-
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 ---
- drivers/usb/phy/phy-msm-usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/phy/phy-msm-usb.c    | 8 +++++---
+ include/linux/usb/msm_hsusb_hw.h | 5 +++--
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 5b37b81..6ae4d2f 100644
+index bb33996..db8d963 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -1406,7 +1406,7 @@ static void msm_otg_debugfs_cleanup(void)
- 	debugfs_remove(msm_otg_dbg_root);
- }
+@@ -287,8 +287,9 @@ static int msm_link_reset(struct msm_otg *motg)
+ 	if (motg->phy_number)
+ 		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
 
--static int __init msm_otg_probe(struct platform_device *pdev)
-+static int msm_otg_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
- 	struct resource *res;
++	/* put transceiver in serial mode as part of reset */
+ 	val = readl(USB_PORTSC) & ~PORTSC_PTS_MASK;
+-	writel(val | PORTSC_PTS_ULPI, USB_PORTSC);
++	writel(val | PORTSC_PTS_SERIAL, USB_PORTSC);
+
+ 	return 0;
+ }
+@@ -308,8 +309,9 @@ static int msm_otg_reset(struct usb_phy *phy)
+ 	if (cnt >= LINK_RESET_TIMEOUT_USEC)
+ 		return -ETIMEDOUT;
+
+-	/* select ULPI phy */
+-	writel(0x80000000, USB_PORTSC);
++	/* select ULPI phy and clear other status/control bits in PORTSC */
++	writel(PORTSC_PTS_ULPI, USB_PORTSC);
++
+ 	writel(0x0, USB_AHBBURST);
+ 	writel(0x08, USB_AHBMODE);
+
+diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
+index 575c743..98d3dd8 100644
+--- a/include/linux/usb/msm_hsusb_hw.h
++++ b/include/linux/usb/msm_hsusb_hw.h
+@@ -31,8 +31,9 @@
+ #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
+
+ #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
+-#define PORTSC_PTS_MASK         (3 << 30)
+-#define PORTSC_PTS_ULPI         (3 << 30)
++#define PORTSC_PTS_MASK        (3 << 30)
++#define PORTSC_PTS_ULPI        (2 << 30)
++#define PORTSC_PTS_SERIAL      (3 << 30)
+
+ #define USB_ULPI_VIEWPORT    (MSM_USB_BASE + 0x0170)
+ #define ULPI_RUN              (1 << 30)
 --
 1.8.3.2
 
