@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586AbaD1TZV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:25:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48565 "EHLO mx1.redhat.com"
+	id S932917AbaD1T2C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:28:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14159 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932521AbaD1TZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:25:14 -0400
-Message-ID: <1398708505.2843.17.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [Patch V2 1/9] ACPICA: Executer: Fix buffer allocation issue
- for generic_serial_bus region field accesses.
-From: Adam Williamson <awilliam@redhat.com>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
-        lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>
-Date: Mon, 28 Apr 2014 11:08:25 -0700
-In-Reply-To: <1398707520.2843.16.camel@adam.happyassassin.net>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
-	 <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
-	 <1398695268-28645-2-git-send-email-tianyu.lan@intel.com>
-	 <1398707520.2843.16.camel@adam.happyassassin.net>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1753499AbaD1T17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:27:59 -0400
+Message-ID: <535EA6C3.3030903@redhat.com>
+Date: Mon, 28 Apr 2014 21:06:43 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] uprobes: use BX register for rip-relative fixups, not
+ AX
+References: <1398704774-25173-1-git-send-email-dvlasenk@redhat.com> <1398704774-25173-2-git-send-email-dvlasenk@redhat.com> <20140428173432.GA27363@redhat.com>
+In-Reply-To: <20140428173432.GA27363@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 10:52 -0700, Adam Williamson wrote:
-> On Mon, 2014-04-28 at 22:27 +0800, Lan Tianyu wrote:
-> > From: Lv Zheng <lv.zheng@intel.com>
-> > 
-> > The size of the buffer allocated for generic_serial_bus region access
-> > is not correct.  This patch introduces acpi_ex_get_serial_access_length()
-> > to be invoked to obtain correct data buffer length.  Reported by
-> > Lan Tianyu, Fixed by Lv Zheng.
-> > 
-> > Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+On 04/28/2014 07:34 PM, Oleg Nesterov wrote:
+> Thanks...
 > 
-> Very superficial issue, and sorry I forgot to mention it for v1, but the
-> summary line for this patch (1/9) ends with a period - "...region field
-> accesses." - which I think is not the correct style?
+> Again, the change in riprel_analyze() needs the review from someone
+> who understands the instruction decoding/encoding.
+> 
+> On 04/28, Denys Vlasenko wrote:
+>>
+>> Otherwise, instructions such as cmpxchg and div will be mishandled.
+> 
+> It seems that you are right. But it would be really great if you also
+> provide the test-case which proves the fix ;)
 
-In fact, it seems this patch already got merged into Linus' tree
-somehow:
+Working on a testcase for this. So far covered div (test1)
+and cmpxchg (test2).
 
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/acpi/acpica/exfield.c?id=6273f00e6ecbd60494a979033b7e5271a29a0436
+Reproduced failure on a fairly old 3.10.11 kernel:
 
-the others do not seem to have been merged yet.
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
+# gcc -Os -Wall test_riprel.c -o test_riprel
+# ./test_riprel
+test1: pass
+test2: pass
+# perf probe -x ./test_riprel probe1
+# perf record -e probe_test:probe1 ./test_riprel
+test1: FAIL
+test2: pass
+# perf probe -x ./test_riprel probe2
+# perf record -e probe_test:probe2 ./test_riprel
+test1: pass
+test2: FAIL
+
+Source:
+
+test_riprel.c
+==================
+#include <stdio.h>
+
+static const char *const fail_pass[] = { "FAIL", "pass" };
+
+long two = 2;
+long test1()
+{
+	long ax=0, dx=0;
+	asm volatile("\n"
+"			xor	%%edx,%%edx\n"
+"			lea	2(%%edx),%%eax\n"
+// We divide 2 by 2. Result (in eax) should be 1:
+"	probe1:		.globl	probe1\n"
+"			divl	two(%%rip)\n"
+// If we have a bug (eax mangled on entry) the result will be 2,
+// because eax gets restored by probe machinery.
+	: "=a" (ax), "=d" (dx) /*out*/
+	: "0" (ax), "1" (dx) /*in*/
+	: "memory" /*clobber*/
+	);
+	dprintf(2, "%s: %s\n", __func__, fail_pass[ax == 1]);
+	return ax;
+}
+
+long val2 = 0;
+long test2()
+{
+	long old_val2 = val2;
+	long ax=0, dx=0;
+	asm volatile("\n"
+"			mov	val2,%%eax\n"     // eax := val2
+"			lea	1(%%eax),%%edx\n" // edx := eax+1
+// eax is equal to val2. cmpxchg should store edx to val2:
+"	probe2:		.globl  probe2\n"
+"			cmpxchg %%edx,val2(%%rip)\n"
+// If we have a bug (eax mangled on entry), val2 will stay unchanged
+	: "=a" (ax), "=d" (dx) /*out*/
+	: "0" (ax), "1" (dx) /*in*/
+	: "memory" /*clobber*/
+	);
+	dprintf(2, "%s: %s\n", __func__, fail_pass[val2 == old_val2 + 1]);
+	return ax == dx;
+}
+
+int main()
+{
+	test1();
+	test2();
+	return 0;
+}
 
