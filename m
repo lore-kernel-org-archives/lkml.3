@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923AbaD1Bav (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43095 "EHLO
+	id S1753867AbaD1Bas (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:48 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43091 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904AbaD1B3Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752908AbaD1B3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Rainer Weikusat" <rweikusat@mobileactivedefense.com>,
-        "Eric Dumazet" <edumazet@google.com>
+CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.450551410@decadent.org.uk>
+Message-ID: <lsq.1398647481.141574225@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 03/94] net: unix: non blocking recvmsg() should not
- return  -EINTR
+Subject: [PATCH 3.2 15/94] rds: prevent dereference of a NULL device in 
+ rds_iw_laddr_check
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,72 +32,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
+[ Upstream commit bf39b4247b8799935ea91d90db250ab608a58e50 ]
 
-Some applications didn't expect recvmsg() on a non blocking socket
-could return -EINTR. This possibility was added as a side effect
-of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
-unix recv routines").
+Binding might result in a NULL device which is later dereferenced
+without checking.
 
-To hit this bug, you need to be a bit unlucky, as the u->readlock
-mutex is usually held for very small periods.
-
-Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/unix/af_unix.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ net/rds/iw.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1771,8 +1771,11 @@ static int unix_dgram_recvmsg(struct kio
- 		goto out;
+--- a/net/rds/iw.c
++++ b/net/rds/iw.c
+@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 add
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support IB devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_RNIC)
+ 		ret = -EADDRNOTAVAIL;
  
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
-@@ -1887,6 +1890,7 @@ static int unix_stream_recvmsg(struct ki
- 	struct unix_sock *u = unix_sk(sk);
- 	struct sockaddr_un *sunaddr = msg->msg_name;
- 	int copied = 0;
-+	int noblock = flags & MSG_DONTWAIT;
- 	int check_creds = 0;
- 	int target;
- 	int err = 0;
-@@ -1901,7 +1905,7 @@ static int unix_stream_recvmsg(struct ki
- 		goto out;
- 
- 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
--	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
-+	timeo = sock_rcvtimeo(sk, noblock);
- 
- 	/* Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
-@@ -1913,8 +1917,11 @@ static int unix_stream_recvmsg(struct ki
- 	}
- 
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(timeo);
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 
