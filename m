@@ -1,77 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903AbaD1Tpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:45:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48873 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaD1Tpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:45:50 -0400
-Date: Mon, 28 Apr 2014 12:45:30 -0700
-From: tip-bot for Dan Carpenter <tipbot@zytor.com>
-Message-ID: <tip-3894e9e82dfdc87fa35dc7976e0472d220228826@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
-        mingo@kernel.org, robh+dt@kernel.org, r.sricharan@ti.com,
-        tglx@linutronix.de, dan.carpenter@oracle.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org, r.sricharan@ti.com,
-        tglx@linutronix.de, dan.carpenter@oracle.com
-In-Reply-To: <20140403072134.GA14286@mwanda>
-References: <20140403072134.GA14286@mwanda>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irqchip: irq-crossbar:
-  Not allocating enough memory
-Git-Commit-ID: 3894e9e82dfdc87fa35dc7976e0472d220228826
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756916AbaD1TrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:47:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745AbaD1TrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 15:47:09 -0400
+Date: Mon, 28 Apr 2014 15:46:42 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140428194642.GQ5328@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+ <20140422211647.GO8488@redhat.com>
+ <87lhuwr2pk.fsf@sejong.aot.lge.com>
+ <20140423125828.GL5328@redhat.com>
+ <1398346899.1681.18.camel@leonhard>
+ <20140424210015.GJ8488@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424210015.GJ8488@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3894e9e82dfdc87fa35dc7976e0472d220228826
-Gitweb:     http://git.kernel.org/tip/3894e9e82dfdc87fa35dc7976e0472d220228826
-Author:     Dan Carpenter <dan.carpenter@oracle.com>
-AuthorDate: Thu, 3 Apr 2014 10:21:34 +0300
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 28 Apr 2014 21:43:24 +0200
+On Thu, Apr 24, 2014 at 05:00:15PM -0400, Don Zickus wrote:
+> On Thu, Apr 24, 2014 at 10:41:39PM +0900, Namhyung Kim wrote:
+> > Hi Don,
+> > 
+> > 2014-04-23 (수), 08:58 -0400, Don Zickus:
+> > > On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
+> > > > On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
+> > > > > ./perf mem record -a grep -r foo /* > /dev/null
+> > > > > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
+> > > > >
+> > > > > I was thinking I could sort everything based on the symbol_daddr and pid.
+> > > > > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
+> > > > > But it didn't seem to work that way.  Instead it seems like I get the
+> > > > > original sort just displayed in the -F format.
+> > > > 
+> > > > Could you please show me the output of your example?
+> > > 
+> > > 
+> > > # To display the perf.data header info, please use --header/--header-only
+> > > # options.
+> > > #
+> > > # Samples: 96K of event 'cpu/mem-loads/pp'
+> > > # Total weight : 1102938
+> > > # Sort order   : symbol_daddr,pid
+> > > #
+> > > # Overhead Data Symbol          Command:  Pid
+> > > # ........ ......................................................................
+> > > #
+> > >      0.00%  [k] 0xffff8807a8c1cf80 grep:116437
+> > >      0.00%  [k] 0xffff8807a8c8cee0 grep:116437
+> > >      0.00%  [k] 0xffff8807a8dceea0 grep:116437
+> > >      0.01%  [k] 0xffff8807a9298dc0 grep:116437
+> > >      0.01%  [k] 0xffff8807a934be40 grep:116437
+> > >      0.00%  [k] 0xffff8807a9416ec0 grep:116437
+> > >      0.02%  [k] 0xffff8807a9735700 grep:116437
+> > >      0.00%  [k] 0xffff8807a98e9460 grep:116437
+> > >      0.02%  [k] 0xffff8807a9afc890 grep:116437
+> > >      0.00%  [k] 0xffff8807aa64feb0 grep:116437
+> > >      0.02%  [k] 0xffff8807aa6b0030 grep:116437
+> > 
+> > Hmm.. it seems that it's exactly sorted by the data symbol addresses, so
+> > I don't see any problem here.  What did you expect?  If you want to see
+> > those symbol_daddr,pid pair to be sorted by overhead, you can use the
+> > one of -F or -s option only.
+> 
+> Good question.  I guess I was hoping to see things sorted by overhead, but
+> as you said removing all the -F options gives me that.  I have been
+> distracted with other fires this week, I lost focus at what I was trying
+> to accomplish.
+> 
+> Let me figure that out again and try to come up with a more clear email
+> explaining what I was looking for (for myself at least :-) ).
 
-irqchip: irq-crossbar: Not allocating enough memory
+Ok.  I think I figured out what I need.  This might be quite long..
 
-We are allocating the size of a pointer and not the size of the data.
-This will lead to memory corruption.
 
-There isn't actually a "cb_device" struct, btw.  The code is only able
-to compile because GCC knows that all pointers are the same size.
+Our orignal concept for the c2c tool was to sort hist entries into
+cachelines, filter in only the HITMs and stores and re-sort based on
+cachelines with the most weight.
 
-Fixes: 96ca848ef7ea ('DRIVERS: IRQCHIP: CROSSBAR: Add support for Crossbar IP')
+So using today's perf with a new search called 'cacheline' to achieve
+this (copy-n-pasted):
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Sricharan R <r.sricharan@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Link: http://lkml.kernel.org/r/20140403072134.GA14286@mwanda
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+----
+#define CACHE_LINESIZE       64
+#define CLINE_OFFSET_MSK     (CACHE_LINESIZE - 1)
+#define CLADRS(a)            ((a) & ~(CLINE_OFFSET_MSK))
+#define CLOFFSET(a)          (int)((a) &  (CLINE_OFFSET_MSK))
 
----
- drivers/irqchip/irq-crossbar.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+static int64_t
+sort__cacheline_cmp(struct hist_entry *left, struct hist_entry *right)
+{
+       u64 l, r;
+       struct map *l_map, *r_map;
 
-diff --git a/drivers/irqchip/irq-crossbar.c b/drivers/irqchip/irq-crossbar.c
-index fc817d2..3d15d16 100644
---- a/drivers/irqchip/irq-crossbar.c
-+++ b/drivers/irqchip/irq-crossbar.c
-@@ -107,7 +107,7 @@ static int __init crossbar_of_init(struct device_node *node)
- 	int i, size, max, reserved = 0, entry;
- 	const __be32 *irqsr;
- 
--	cb = kzalloc(sizeof(struct cb_device *), GFP_KERNEL);
-+	cb = kzalloc(sizeof(*cb), GFP_KERNEL);
- 
- 	if (!cb)
- 		return -ENOMEM;
+       if (!left->mem_info)  return -1;
+       if (!right->mem_info) return 1;
+
+       /* group event types together */
+       if (left->cpumode > right->cpumode) return -1;
+       if (left->cpumode < right->cpumode) return 1;
+
+       l_map = left->mem_info->daddr.map;
+       r_map = right->mem_info->daddr.map;
+
+       /* properly sort NULL maps to help combine them */
+       if (!l_map && !r_map)
+               goto addr;
+
+       if (!l_map) return -1;
+       if (!r_map) return 1;
+
+       if (l_map->maj > r_map->maj) return -1;
+       if (l_map->maj < r_map->maj) return 1;
+
+       if (l_map->min > r_map->min) return -1;
+       if (l_map->min < r_map->min) return 1;
+
+       if (l_map->ino > r_map->ino) return -1;
+       if (l_map->ino < r_map->ino) return 1;
+
+       if (l_map->ino_generation > r_map->ino_generation) return -1;
+       if (l_map->ino_generation < r_map->ino_generation) return 1;
+
+       /*
+        * Addresses with no major/minor numbers are assumed to be
+        * anonymous in userspace.  Sort those on pid then address.
+        *
+        * The kernel and non-zero major/minor mapped areas are
+        * assumed to be unity mapped.  Sort those on address.
+        */
+
+       if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
+           !l_map->maj && !l_map->min && !l_map->ino &&
+           !l_map->ino_generation) {
+               /* userspace anonymous */
+
+               if (left->thread->pid_ > right->thread->pid_) return -1;
+               if (left->thread->pid_ < right->thread->pid_) return 1;
+       }
+
+addr:
+       /* al_addr does all the right addr - start + offset calculations */
+       l = CLADRS(left->mem_info->daddr.al_addr);
+       r = CLADRS(right->mem_info->daddr.al_addr);
+
+       if (l > r) return -1;
+       if (l < r) return 1;
+
+       return 0;
+}
+
+----
+
+I can get the following 'perf mem report' outputs
+
+I used a special program called hitm_test3 which purposely generates
+HITMs either locally or remotely based on cpu input.  It does this by
+having processA grab lockX from cacheline1, release lockY from cacheline2,
+then processB grabs lockY from cacheline2 and releases lockX from
+cacheline1 (IOW ping pong two locks across two cachelines), found here
+
+http://people.redhat.com/dzickus/hitm_test/
+
+[ perf mem record -a hitm_test -s1,19 -c1000000 -t]
+
+(where -s is the cpus to bind to, -c is loop count, -t disables internal
+perf tracking)
+
+(using 'perf mem' to auto generate correct record/report options for
+cachelines)
+(the hitm counts should be higher, but sampling is a crapshoot.  Using
+ld_lat=30 would probably filter most of the L1 hits)
+
+Table 1: normal perf
+#perf mem report --stdio -s cacheline,pid
+
+
+# Overhead       Samples  Cacheline                       Command:  Pid
+# ........  ............  .......................  ....................
+#
+    47.61%         42257  [.] 0x0000000000000080      hitm_test3:146344
+    46.14%         42596  [.] 0000000000000000        hitm_test3:146343
+     2.16%          2074  [.] 0x0000000000003340      hitm_test3:146344
+     1.88%          1796  [.] 0x0000000000003340      hitm_test3:146343
+     0.20%           140  [.] 0x00007ffff291ce00      hitm_test3:146344
+     0.18%           126  [.] 0x00007ffff291ce00      hitm_test3:146343
+     0.10%             1  [k] 0xffff88042f071500         swapper:     0
+     0.07%             1  [k] 0xffff88042ef747c0     watchdog/11:    62
+...
+
+Ok, now I know the hottest cachelines. Not to bad.  However, in order to
+determine cacheline contention, it would be nice to know the offsets into
+the cacheline to see if there is contention or not. Unfortunately, the way
+the sorting works here, all the hist_entry data was combined into each
+cacheline, so I lose my granularity...
+
+I can do:
+
+Table 2: normal perf
+#perf mem report --stdio -s cacheline,pid,dso_daddr,mem
+
+
+# Overhead       Samples  Cacheline                       Command:  Pid
+# Data Object             Memory access
+# ........  ............  .......................  ....................
+# ..............................  ........................
+#
+    45.24%         42581  [.] 0000000000000000        hitm_test3:146343 SYSV00000000 (deleted)          L1 hit
+    44.43%         42231  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          L1 hit
+     2.19%            13  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          Local RAM hit
+     2.16%          2074  [.] 0x0000000000003340      hitm_test3:146344 hitm_test3                      L1 hit
+     1.88%          1796  [.] 0x0000000000003340      hitm_test3:146343 hitm_test3                      L1 hit
+     1.00%            13  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          Remote Cache (1 hop) hit
+     0.91%            15  [.] 0000000000000000        hitm_test3:146343 SYSV00000000 (deleted)          Remote Cache (1 hop) hit
+     0.20%           140  [.] 0x00007ffff291ce00      hitm_test3:146344 [stack]                         L1 hit
+     0.18%           126  [.] 0x00007ffff291ce00      hitm_test3:146343 [stack]                         L1 hit
+
+Now I have some granularity (though the program keeps hitting the same
+offset in the cacheline) and some different levels of memory operations.
+Seems like a step forward.  However, the cacheline is broken up a little
+bit (see 0x0000000000000080 is split up three ways).
+
+I can now see where the cache contention is but I don't know how prevalent
+it is (what percentage of the cacheline is under contention).  No need to
+waste time with cachelines that have little or no contention.
+
+Hmm, what if I used the -F option to group all the cachelines and their
+offsets together.
+
+Table 3: perf with -F
+#perf mem report --stdio -s cacheline,pid,dso_daddr,mem  -i don.data -F cacheline,pid,dso_daddr,mem,overhead,sample|grep 0000000000000
+  [k] 0000000000000000           swapper:     0  [kernel.kallsyms] Uncached hit                 0.00%             1
+  [k] 0000000000000000            kipmi0:  1500  [kernel.kallsyms] Uncached hit                 0.02%             1
+  [.] 0000000000000000        hitm_test3:146343  SYSV00000000 (deleted) L1 hit                      45.24%         42581
+  [.] 0000000000000000        hitm_test3:146343  SYSV00000000 (deleted) Remote Cache (1 hop) hit     0.91%            15
+  [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) L1 hit                      44.43%         42231
+  [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) Local RAM hit                2.19%            13
+  [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) Remote Cache (1 hop) hit     1.00%            13
+
+Now I have the ability to see the whole cacheline easily and can probably
+roughly calculate the contention in my head.  Of course there was some
+pre-determined knowledge that was needed to get this info (like which
+cacheline is interesting from Table 1).
+
+Of course, our c2c tool was trying to make the output more readable and
+more obvious such that the user didn't have to know what to look for.
+
+Internally our tool sorts similar to Table2, but then resorts onto a new
+rbtree with a struct c2c_hit based on the hottest cachelines.  Based on
+this new rbtree we can print our analysis easily.
+
+This new rbtree is slightly different than the -F output in that we
+'group' cacheline entries together and re-sort that group.  The -F option
+just resorts the sorted hist_entry and has no concept of grouping.
+
+
+
+
+We would prefer to have a 'group' sorting concept as we believe that is
+the easiest way to organize the data.  But I don't know if that can be
+incorporated into the 'perf' tool itself, or just keep that concept local
+to our flavor of the perf subcommand.
+
+I am hoping this semi-concocted example gives a better picture of the
+problem I am trying to wrestle with.
+
+Help? Thoughts?
+
+Cheers,
+Don
