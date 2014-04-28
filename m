@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbaD1O55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:57:57 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:55642 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374AbaD1O5w (ORCPT
+	id S1756519AbaD1O6s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:58:48 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:48896 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498AbaD1O6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:57:52 -0400
-Message-ID: <535E6C6D.7080901@gmail.com>
-Date: Mon, 28 Apr 2014 08:57:49 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 28 Apr 2014 10:58:46 -0400
+Date: Mon, 28 Apr 2014 16:57:16 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: linux-pwm@vger.kernel.org, broonie@kernel.org, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] pwm: ftm-pwm: Clean up the code.
+Message-ID: <20140428145703.GB28443@ulmo>
+References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+ <1395377590-23537-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 2/3] perf tools: Cache dso data file descriptor
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>	 <1397756352-26694-3-git-send-email-jolsa@redhat.com>	 <1398609395.1689.17.camel@leonhard>	 <20140428100133.GE1109@krava.brq.redhat.com> <1398690994.1724.13.camel@leonhard>
-In-Reply-To: <1398690994.1724.13.camel@leonhard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bAmEntskrkuBymla"
+Content-Disposition: inline
+In-Reply-To: <1395377590-23537-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/28/14, 7:16 AM, Namhyung Kim wrote:
-> 2014-04-28 (월), 12:01 +0200, Jiri Olsa:
->> On Sun, Apr 27, 2014 at 11:36:35PM +0900, Namhyung Kim wrote:
->>> 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
->>>> Keeping the data file description open for the whole life
->>>> of the dso object.
->>>
->>> I suspect there might be an issue for reporting very large data file
->>> with this approach - like open file limit?
->>
->> I've got as high as ~200 openned file descriptors for
->> ~2GB data of system wide monitoring
->>
->> but right that could be an issue.. I wonder we could
->> workaround this somehow, because the speed up is quite
->> noticable
->>
->> how about we monitor number of openned dso file descriptor
->> and once we cross this we close some portion of them
->>
->> or something along those lines ;-)
->
-> Yeah, we'll need some way to control those eventually.
 
-Handle EMFILE failures. Find an "old" one and close it to let the new 
-one succeed.
+--bAmEntskrkuBymla
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-David
+On Fri, Mar 21, 2014 at 12:53:08PM +0800, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  drivers/pwm/pwm-fsl-ftm.c | 13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
 
+The patch description here could explain that this is in preparation for
+the conversion to regmap (which I assume it is).
+
+Thierry
+
+--bAmEntskrkuBymla
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTXmxLAAoJEN0jrNd/PrOhPBoP/RV8RIpUjRikN7hOwTRVtjSe
+9B14S8Op4idy0Y9bvSCCeB/HUnVJSoLDGeZCnjxckSdo4gmh+QoOiMqRIIWhYQwO
+SxnRUTjYS6ULjZJVqinTe5u0CJvJb1dWcotY90nSUCEyduVMh2YcltUFzkrsX21j
+OPD1vsOrDOKPIgw6ANAI+vHWPar9NdcvhLIIAbZKauLbR5/6IbkzU2OWuK9WYLIH
+TZkz4itHytJwYrkXDT8RBAev3rdioG4JJob1Zi4FiVU4fs1z7x7CmEdVTiLOFVSS
+XuuECvKnOjrrCWFTY8MmAb/le8ZukFiDBcvsRF3k/6DBf1DeJ9Rj3V981HqqUAZE
+v+BaaZTBJoAJhRax9BMqfLLIX3S4H5A94iUQgY5NXOjV5bZ+37xLF58CgBxL2zvt
+OBl4xX7YXPktiPrsSYLGqdvGVyVW5pWEjz7/fJF7inGzLC0iWX+gKqh/vmMFn9jS
+gom2/fp42u+LG3gXjBrsgappHSVpVk6fhMrRIKIMQwGThQIx+p2KkI/nvo86MQhP
+K3I4J2sncEbTVX6uMtZ8Exlkb5v/fAWKOShwjAwD/T/imasK+/ENKtGgwgt0mPqo
+poned8t/WfpUVZ6rPfXReBfv+asEIMlhb5AaqlYwAExRNGL8L0GDGLCgF1G8YeZT
+eMog+7xHxZDuo88ydkds
+=ISXF
+-----END PGP SIGNATURE-----
+
+--bAmEntskrkuBymla--
