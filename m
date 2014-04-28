@@ -1,65 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109AbaD1OXC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:23:02 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:46666 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaD1OXA (ORCPT
+	id S1756197AbaD1OXr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:23:47 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:37528 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635AbaD1OXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:23:00 -0400
+	Mon, 28 Apr 2014 10:23:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140428070602.GA29525@localhost>
-References: <1398175396-7560-1-git-send-email-grmoore@altera.com>
-	<201404260012.24311.marex@denx.de>
-	<20140426031011.GA4811@localhost.localdomain>
-	<201404280706.18068.marex@denx.de>
-	<20140428070602.GA29525@localhost>
-Date: Mon, 28 Apr 2014 09:22:58 -0500
-Message-ID: <CA+iBjpS9gstvippLHzm_Tpgxx19VxnRzWEwi_tJV5d7+snnfWg@mail.gmail.com>
-Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
-From: Graham Moore <ggrahammoore@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Marek Vasut <marex@denx.de>, Huang Shijie <shijie8@gmail.com>,
-        Graham Moore <grmoore@altera.com>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        linux-mtd@lists.infradead.org, Insop Song <insop.song@gainspeed.com>,
-        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dinh Nguyen <dinguyen@altera.com>
+In-Reply-To: <1398414854-30649-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396010535-2654-1-git-send-email-daniel.thompson@linaro.org>
+	<1398414854-30649-1-git-send-email-daniel.thompson@linaro.org>
+Date: Mon, 28 Apr 2014 10:23:43 -0400
+Message-ID: <CADnq5_NV6bv2asd0qv8x_+ZKHwsS+JWqa=tbFUJ-5UTQLPVjTQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH] drm: Add 800x600 (SVGA) screen resolution to the
+ built-in EDIDs
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Maling list - DRI developers <dri-devel@lists.freedesktop.org>,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 2:06 AM, Huang Shijie <b32955@freescale.com> wrote:
-> On Mon, Apr 28, 2014 at 07:06:17AM +0200, Marek Vasut wrote:
->>
->> Two things competing over the same pointer looks misdesigned to me. I will need
->> to dig into this one more time ...
-> Please refer to the code for NAND chip, the nand_get_flash_type() :
+On Fri, Apr 25, 2014 at 4:34 AM, Daniel Thompson
+<daniel.thompson@linaro.org> wrote:
+> The 800x600 (SVGA) screen resolution was lacking in the set of
+> built-in selectable EDID screen resolutions that can be used to
+> repair misbehaving monitor firmware.
 >
-> -----------------------------------------------------------
->         /* Do not replace user supplied command function! */
->         if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
->                 chip->cmdfunc = nand_command_lp;
-> -----------------------------------------------------------
+> This patch adds the related data set and expands the documentation.
+> Note that the SVGA bit occupies a different byte to all the existing
+> users of the established timing bits forcing a rework of the
+> ESTABLISHED_TIMINGS_BITS macro.
 >
-> It uses the same logic:
->         " Do not replace user supplied command function!"
+> Tested new EDID on an aged (and misbehaving) industrial LCD panel;
+> existing EDIDs still pass edid-decode's checksum checks.
 >
-> thanks
-> Huang Shijie
+> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 
-I would like to set the @wait_till_ready in m25p80.c, because the
-USE_FSR flag is only for Micron chips.  But the m25p80 driver doesn't
-have access to the flags, they are contained in spi-nor.c.  It seems
-to me that the driver_data should be accessible by the driver.  So
-maybe there is room for improvement there.
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-Thanks,
-Graham Moore
+> ---
+>  Documentation/EDID/1024x768.S   |  2 +-
+>  Documentation/EDID/1280x1024.S  |  2 +-
+>  Documentation/EDID/1600x1200.S  |  2 +-
+>  Documentation/EDID/1680x1050.S  |  2 +-
+>  Documentation/EDID/1920x1080.S  |  2 +-
+>  Documentation/EDID/800x600.S    | 41 +++++++++++++++++++++++++++++++++++++++++
+>  Documentation/EDID/HOWTO.txt    |  2 +-
+>  Documentation/EDID/edid.S       | 17 ++++++++++++++---
+>  drivers/gpu/drm/drm_edid_load.c | 21 ++++++++++++++++++++-
+>  9 files changed, 81 insertions(+), 10 deletions(-)
+>  create mode 100644 Documentation/EDID/800x600.S
+>
+> diff --git a/Documentation/EDID/1024x768.S b/Documentation/EDID/1024x768.S
+> index 4b486fe..6f3e4b7 100644
+> --- a/Documentation/EDID/1024x768.S
+> +++ b/Documentation/EDID/1024x768.S
+> @@ -36,7 +36,7 @@
+>  #define DPI 72
+>  #define VFREQ 60 /* Hz */
+>  #define TIMING_NAME "Linux XGA"
+> -#define ESTABLISHED_TIMINGS_BITS 0x08 /* Bit 3 -> 1024x768 @60 Hz */
+> +#define ESTABLISHED_TIMING2_BITS 0x08 /* Bit 3 -> 1024x768 @60 Hz */
+>  #define HSYNC_POL 0
+>  #define VSYNC_POL 0
+>  #define CRC 0x55
+> diff --git a/Documentation/EDID/1280x1024.S b/Documentation/EDID/1280x1024.S
+> index a2799fe..bd9bef2 100644
+> --- a/Documentation/EDID/1280x1024.S
+> +++ b/Documentation/EDID/1280x1024.S
+> @@ -36,7 +36,7 @@
+>  #define DPI 72
+>  #define VFREQ 60 /* Hz */
+>  #define TIMING_NAME "Linux SXGA"
+> -#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
+> +/* No ESTABLISHED_TIMINGx_BITS */
+>  #define HSYNC_POL 1
+>  #define VSYNC_POL 1
+>  #define CRC 0xa0
+> diff --git a/Documentation/EDID/1600x1200.S b/Documentation/EDID/1600x1200.S
+> index 0ded64c..a45101c 100644
+> --- a/Documentation/EDID/1600x1200.S
+> +++ b/Documentation/EDID/1600x1200.S
+> @@ -36,7 +36,7 @@
+>  #define DPI 72
+>  #define VFREQ 60 /* Hz */
+>  #define TIMING_NAME "Linux UXGA"
+> -#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
+> +/* No ESTABLISHED_TIMINGx_BITS */
+>  #define HSYNC_POL 1
+>  #define VSYNC_POL 1
+>  #define CRC 0x9d
+> diff --git a/Documentation/EDID/1680x1050.S b/Documentation/EDID/1680x1050.S
+> index 96f67ca..b0d7c69 100644
+> --- a/Documentation/EDID/1680x1050.S
+> +++ b/Documentation/EDID/1680x1050.S
+> @@ -36,7 +36,7 @@
+>  #define DPI 96
+>  #define VFREQ 60 /* Hz */
+>  #define TIMING_NAME "Linux WSXGA"
+> -#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
+> +/* No ESTABLISHED_TIMINGx_BITS */
+>  #define HSYNC_POL 1
+>  #define VSYNC_POL 1
+>  #define CRC 0x26
+> diff --git a/Documentation/EDID/1920x1080.S b/Documentation/EDID/1920x1080.S
+> index 36ed5d5..3084355e 100644
+> --- a/Documentation/EDID/1920x1080.S
+> +++ b/Documentation/EDID/1920x1080.S
+> @@ -36,7 +36,7 @@
+>  #define DPI 96
+>  #define VFREQ 60 /* Hz */
+>  #define TIMING_NAME "Linux FHD"
+> -#define ESTABLISHED_TIMINGS_BITS 0x00 /* none */
+> +/* No ESTABLISHED_TIMINGx_BITS */
+>  #define HSYNC_POL 1
+>  #define VSYNC_POL 1
+>  #define CRC 0x05
+> diff --git a/Documentation/EDID/800x600.S b/Documentation/EDID/800x600.S
+> new file mode 100644
+> index 0000000..6644e26
+> --- /dev/null
+> +++ b/Documentation/EDID/800x600.S
+> @@ -0,0 +1,41 @@
+> +/*
+> +   800x600.S: EDID data set for standard 800x600 60 Hz monitor
+> +
+> +   Copyright (C) 2011 Carsten Emde <C.Emde@osadl.org>
+> +   Copyright (C) 2014 Linaro Limited
+> +
+> +   This program is free software; you can redistribute it and/or
+> +   modify it under the terms of the GNU General Public License
+> +   as published by the Free Software Foundation; either version 2
+> +   of the License, or (at your option) any later version.
+> +
+> +   This program is distributed in the hope that it will be useful,
+> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +   GNU General Public License for more details.
+> +*/
+> +
+> +/* EDID */
+> +#define VERSION 1
+> +#define REVISION 3
+> +
+> +/* Display */
+> +#define CLOCK 40000 /* kHz */
+> +#define XPIX 800
+> +#define YPIX 600
+> +#define XY_RATIO XY_RATIO_4_3
+> +#define XBLANK 256
+> +#define YBLANK 28
+> +#define XOFFSET 40
+> +#define XPULSE 128
+> +#define YOFFSET (63+1)
+> +#define YPULSE (63+4)
+> +#define DPI 72
+> +#define VFREQ 60 /* Hz */
+> +#define TIMING_NAME "Linux SVGA"
+> +#define ESTABLISHED_TIMING1_BITS 0x01 /* Bit 0: 800x600 @ 60Hz */
+> +#define HSYNC_POL 1
+> +#define VSYNC_POL 1
+> +#define CRC 0xc2
+> +
+> +#include "edid.S"
+> diff --git a/Documentation/EDID/HOWTO.txt b/Documentation/EDID/HOWTO.txt
+> index 7146db1..835db33 100644
+> --- a/Documentation/EDID/HOWTO.txt
+> +++ b/Documentation/EDID/HOWTO.txt
+> @@ -18,7 +18,7 @@ CONFIG_DRM_LOAD_EDID_FIRMWARE was introduced. It allows to provide an
+>  individually prepared or corrected EDID data set in the /lib/firmware
+>  directory from where it is loaded via the firmware interface. The code
+>  (see drivers/gpu/drm/drm_edid_load.c) contains built-in data sets for
+> -commonly used screen resolutions (1024x768, 1280x1024, 1600x1200,
+> +commonly used screen resolutions (800x600, 1024x768, 1280x1024, 1600x1200,
+>  1680x1050, 1920x1080) as binary blobs, but the kernel source tree does
+>  not contain code to create these data. In order to elucidate the origin
+>  of the built-in binary EDID blobs and to facilitate the creation of
+> diff --git a/Documentation/EDID/edid.S b/Documentation/EDID/edid.S
+> index ea97ae2..7ac0327 100644
+> --- a/Documentation/EDID/edid.S
+> +++ b/Documentation/EDID/edid.S
+> @@ -33,6 +33,17 @@
+>  #define XY_RATIO_5_4   0b10
+>  #define XY_RATIO_16_9  0b11
+>
+> +/* Provide defaults for the timing bits */
+> +#ifndef ESTABLISHED_TIMING1_BITS
+> +#define ESTABLISHED_TIMING1_BITS 0x00
+> +#endif
+> +#ifndef ESTABLISHED_TIMING2_BITS
+> +#define ESTABLISHED_TIMING2_BITS 0x00
+> +#endif
+> +#ifndef ESTABLISHED_TIMING3_BITS
+> +#define ESTABLISHED_TIMING3_BITS 0x00
+> +#endif
+> +
+>  #define mfgname2id(v1,v2,v3) \
+>         ((((v1-'@')&0x1f)<<10)+(((v2-'@')&0x1f)<<5)+((v3-'@')&0x1f))
+>  #define swap16(v1) ((v1>>8)+((v1&0xff)<<8))
+> @@ -139,7 +150,7 @@ white_x_y_msb:      .byte   0x50,0x54
+>     Bit 2       640x480 @ 75 Hz
+>     Bit 1       800x600 @ 56 Hz
+>     Bit 0       800x600 @ 60 Hz */
+> -estbl_timing1: .byte   0x00
+> +estbl_timing1: .byte   ESTABLISHED_TIMING1_BITS
+>
+>  /* Bit 7       800x600 @ 72 Hz
+>     Bit 6       800x600 @ 75 Hz
+> @@ -149,11 +160,11 @@ estbl_timing1:    .byte   0x00
+>     Bit 2       1024x768 @ 72 Hz
+>     Bit 1       1024x768 @ 75 Hz
+>     Bit 0       1280x1024 @ 75 Hz */
+> -estbl_timing2: .byte   ESTABLISHED_TIMINGS_BITS
+> +estbl_timing2: .byte   ESTABLISHED_TIMING2_BITS
+>
+>  /* Bit 7       1152x870 @ 75 Hz (Apple Macintosh II)
+>     Bits 6-0    Other manufacturer-specific display mod */
+> -estbl_timing3: .byte   0x00
+> +estbl_timing3: .byte   ESTABLISHED_TIMING3_BITS
+>
+>  /* Standard timing */
+>  /* X resolution, less 31, divided by 8 (256-2288 pixels) */
+> diff --git a/drivers/gpu/drm/drm_edid_load.c b/drivers/gpu/drm/drm_edid_load.c
+> index 1b4c7a5..6e09f61 100644
+> --- a/drivers/gpu/drm/drm_edid_load.c
+> +++ b/drivers/gpu/drm/drm_edid_load.c
+> @@ -31,8 +31,9 @@ module_param_string(edid_firmware, edid_firmware, sizeof(edid_firmware), 0644);
+>  MODULE_PARM_DESC(edid_firmware, "Do not probe monitor, use specified EDID blob "
+>         "from built-in data or /lib/firmware instead. ");
+>
+> -#define GENERIC_EDIDS 5
+> +#define GENERIC_EDIDS 6
+>  static const char *generic_edid_name[GENERIC_EDIDS] = {
+> +       "edid/800x600.bin",
+>         "edid/1024x768.bin",
+>         "edid/1280x1024.bin",
+>         "edid/1600x1200.bin",
+> @@ -44,6 +45,24 @@ static const u8 generic_edid[GENERIC_EDIDS][128] = {
+>         {
+>         0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+>         0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+> +       0x05, 0x16, 0x01, 0x03, 0x6d, 0x1b, 0x14, 0x78,
+> +       0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
+> +       0x20, 0x50, 0x54, 0x01, 0x00, 0x00, 0x45, 0x40,
+> +       0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+> +       0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xa0, 0x0f,
+> +       0x20, 0x00, 0x31, 0x58, 0x1c, 0x20, 0x28, 0x80,
+> +       0x14, 0x00, 0x15, 0xd0, 0x10, 0x00, 0x00, 0x1e,
+> +       0x00, 0x00, 0x00, 0xff, 0x00, 0x4c, 0x69, 0x6e,
+> +       0x75, 0x78, 0x20, 0x23, 0x30, 0x0a, 0x20, 0x20,
+> +       0x20, 0x20, 0x00, 0x00, 0x00, 0xfd, 0x00, 0x3b,
+> +       0x3d, 0x24, 0x26, 0x05, 0x00, 0x0a, 0x20, 0x20,
+> +       0x20, 0x20, 0x20, 0x20, 0x00, 0x00, 0x00, 0xfc,
+> +       0x00, 0x4c, 0x69, 0x6e, 0x75, 0x78, 0x20, 0x53,
+> +       0x56, 0x47, 0x41, 0x0a, 0x20, 0x20, 0x00, 0xc2,
+> +       },
+> +       {
+> +       0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00,
+> +       0x31, 0xd8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+>         0x05, 0x16, 0x01, 0x03, 0x6d, 0x23, 0x1a, 0x78,
+>         0xea, 0x5e, 0xc0, 0xa4, 0x59, 0x4a, 0x98, 0x25,
+>         0x20, 0x50, 0x54, 0x00, 0x08, 0x00, 0x61, 0x40,
+> --
+> 1.9.0
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
