@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062AbaD1PDn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:03:43 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:38284 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564AbaD1PDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:03:38 -0400
-Date: Mon, 28 Apr 2014 17:02:08 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: linux-pwm@vger.kernel.org, broonie@kernel.org, swarren@nvidia.com,
+	id S1756716AbaD1PEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:04:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33620 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756243AbaD1PE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 11:04:28 -0400
+Date: Mon, 28 Apr 2014 17:04:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: hannes@cmpxchg.org, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] pwm: ftm-pwm: Add big-endian support
-Message-ID: <20140428150207.GD28443@ulmo>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
- <1395377590-23537-4-git-send-email-Li.Xiubo@freescale.com>
+Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
+ mem_cgroup_zoneinfo_zone()
+Message-ID: <20140428150426.GB24807@dhcp22.suse.cz>
+References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
+ <20140422095923.GD29311@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qOrJKOH36bD5yhNe"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395377590-23537-4-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <20140422095923.GD29311@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 22-04-14 11:59:23, Michal Hocko wrote:
+> On Sat 19-04-14 07:01:43, Jianyu Zhan wrote:
+> > introduce helper mem_cgroup_zoneinfo_zone(). This will make
+> > mem_cgroup_iter() code more compact.
+> 
+> I dunno. Helpers are usually nice but this one adds more code then it
+> removes. It also doesn't help the generated code.
+> 
+> So I don't see any reason to merge it.
 
---qOrJKOH36bD5yhNe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So should we drop it from mmotm?
 
-On Fri, Mar 21, 2014 at 12:53:10PM +0800, Xiubo Li wrote:
-> Now for the following scenarios:
->=20
->      SoC     |  CPU   | FTM-PWM | 'big-endian' property is needed?
-> -------------|--------|---------|---------------------------------
->     Vybird   |  LE    |   LE    |     No
->      LS1     |  LE    |   BE    |     Yes
->      LS2     |  LE    |   LE    |     No
->=20
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> ---
->  drivers/pwm/pwm-fsl-ftm.c | 6 ++++++
->  1 file changed, 6 insertions(+)
+> > Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> > ---
+> >  mm/memcontrol.c | 15 +++++++++++----
+> >  1 file changed, 11 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index e0ce15c..80d9e38 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -683,6 +683,15 @@ mem_cgroup_zoneinfo(struct mem_cgroup *memcg, int nid, int zid)
+> >  	return &memcg->nodeinfo[nid]->zoneinfo[zid];
+> >  }
+> >  
+> > +static struct mem_cgroup_per_zone *
+> > +mem_cgroup_zoneinfo_zone(struct mem_cgroup *memcg, struct zone *zone)
+> > +{
+> > +       int nid = zone_to_nid(zone);
+> > +       int zid = zone_idx(zone);
+> > +
+> > +       return mem_cgroup_zoneinfo(memcg, nid, zid);
+> > +}
+> > +
+> >  struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg)
+> >  {
+> >  	return &memcg->css;
+> > @@ -1232,11 +1241,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+> >  
+> >  	rcu_read_lock();
+> >  	if (reclaim) {
+> > -		int nid = zone_to_nid(reclaim->zone);
+> > -		int zid = zone_idx(reclaim->zone);
+> >  		struct mem_cgroup_per_zone *mz;
+> >  
+> > -		mz = mem_cgroup_zoneinfo(root, nid, zid);
+> > +		mz = mem_cgroup_zoneinfo_zone(root, reclaim->zone);
+> >  		iter = &mz->reclaim_iter[reclaim->priority];
+> >  		if (prev && reclaim->generation != iter->generation) {
+> >  			iter->last_visited = NULL;
+> > @@ -1340,7 +1347,7 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *zone,
+> >  		goto out;
+> >  	}
+> >  
+> > -	mz = mem_cgroup_zoneinfo(memcg, zone_to_nid(zone), zone_idx(zone));
+> > +	mz = mem_cgroup_zoneinfo_zone(memcg, zone);
+> >  	lruvec = &mz->lruvec;
+> >  out:
+> >  	/*
+> > -- 
+> > 1.9.0.GIT
+> > 
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-And this should probably describe in text what happens. The table may
-look good, but you don't give a real description of what the change
-does.
-
-Oh, and doesn't this change need to update the device tree binding since
-you now have an additional property?
-
-Thierry
-
---qOrJKOH36bD5yhNe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTXm1vAAoJEN0jrNd/PrOh+MMP/3UHzshvRhDwvm1LpAIu9SUy
-jBQKgno8lAvmuAkteA/ZxFs1lvFyLpAnq6GpHkMK1cScVby7Ij77rxOy8poYaKvp
-wXLMnvfWlPnD6Ln+FcqGnsIyaFxRDlxRs8d35oMd2pRIA9hvong4vMKsCn6XFjUG
-6MKbB6jn9hMOA8UIxM3b81m6XxSZPwcJqdxAtvuS+/ZQ1V3CoG30B1mJ3d12Cwcz
-qh0sCvQ3uuaeJvLtXaV71DcGKZkhbKbMQhsdaO9GAG/mr80I1RPtUDCptoavsDNR
-nX3xCsTYlB53RhCL4lGpfamUwSjb1nbAIdwK1jyYniMMWw2+aT1U2UYA2RsqK7tI
-PdHHnt5ZkrYy3L+QN1b1c4QHO5DxhDq6ZcQc6vPDD2kOQfgwCM5+UvydfWq8iwqE
-Tg5u1H875TdMzYu3F6lxWvaqNoc6grQyNefLonUn8/1SE3+IWEmGtMZaHWS/XHHt
-FW3uXl/yqrRo9W4VdrMzZkqPRdZ70h4/14O1pGtHcI/vKbT3xyTQxylvnJ4WkAqi
-wxnTdAzrbhOok/dMpDwMa0X0PTY2v5kEHcrcIkyaLrZgxaUu9ADV63edHdmaSgrA
-/mULjDFGx05DD76YzK9faVuDsI7dewDQ84RjEaV8PnaHl3ksxVOzCsZx+qXNDllR
-4OavEcJrstcPY8Ahkakm
-=lsXu
------END PGP SIGNATURE-----
-
---qOrJKOH36bD5yhNe--
+-- 
+Michal Hocko
+SUSE Labs
