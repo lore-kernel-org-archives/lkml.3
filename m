@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaD1NV1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:21:27 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:63632 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572AbaD1NVZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:21:25 -0400
-Date: Mon, 28 Apr 2014 15:19:54 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] pwm_lpss: Add support for PCI devices
-Message-ID: <20140428131953.GB15946@ulmo>
-References: <1397819860-22213-1-git-send-email-chiau.ee.chew@intel.com>
+	id S1756007AbaD1NW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:22:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44526 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656AbaD1NW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:22:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,944,1389772800"; 
+   d="scan'208";a="530925188"
+Message-ID: <535E58BC.9060004@linux.intel.com>
+Date: Mon, 28 Apr 2014 16:33:48 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1LKvkjL3sHcu1TtY"
-Content-Disposition: inline
-In-Reply-To: <1397819860-22213-1-git-send-email-chiau.ee.chew@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org, sarah.a.sharp@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] xhci: fixes for 3.15-rc usb-linus
+References: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com> <20140425163505.GA8382@kroah.com>
+In-Reply-To: <20140425163505.GA8382@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/25/2014 07:35 PM, Greg KH wrote:
+> On Fri, Apr 25, 2014 at 07:20:12PM +0300, Mathias Nyman wrote:
+>> Hi Greg
+>>
+>> Second try at this xhci fixes series for 3.15-rc usb-linus.
+>> Most of them are very small fixes that didn't make
+>> it to 3.14, sitting and waiting for 3.15-rc1 to come out.
+>>
+>> Only the "Prefer endpoint context.." patch  by Julius has a bit more content.
+>>
+>> These patches are picked together with Sarah, they are tested on top of
+>> 3.15-rc1, and apply on your current usb-linus branch
+>
+> Much better, all now applied.
+>
+> What's with all that trailing whitespace in your email text?
+>
 
---1LKvkjL3sHcu1TtY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for applying, and sorry about the whitespace errors.
+Did some copy-pasting between editors without proper whitespace 
+detection set on all file types.
 
-On Fri, Apr 18, 2014 at 07:17:40PM +0800, Chew Chiau Ee wrote:
-> From: Alan Cox <alan@linux.intel.com>
->=20
-> Not all systems enumerate the PWM devices via ACPI. They can also be expo=
-sed
-> via the PCI interface.
->=20
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> ---
->  drivers/pwm/pwm-lpss.c |  161 ++++++++++++++++++++++++++++++++++++++----=
------
->  1 files changed, 130 insertions(+), 31 deletions(-)
+I'll be more careful with these in the future
 
-Applied, thanks.
-
-Thierry
-
---1LKvkjL3sHcu1TtY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTXlV5AAoJEN0jrNd/PrOhY5cP/3hz7KX/CrdmJA/MLmJV52Nf
-Wrcd2aF7oxbTVuVOfSnctopzu12iKY19wIfJGogiAUk/5vtZtdpWE/iMc6iKOyP3
-o6IN6D+wD/vVGxvG8m7aSPhx9bOJG28JCu4HANsVNnE9EhDSqVWQasfHrM31ugP9
-jlKR5z01QM5LzwLKo1MdUeef97H4zU9T1H+Uy8BPw/vyxeb18meGBjORUOZnty8D
-5mh6WG94iP6Erj6ee48i6F8ZMEvVi/UPscMWXP0/ObnowQdoQX0qCidDpuoywjwc
-/9iOOTsdY8L+K34fL1xl5QN7siqy4tOaqUSIBs1WdZDRyY/3FGG2YQkYoxgbt/W2
-Sn3erMBqZwHHeMgcnWCvo0heysbwm3AFseoYMnvAVg4H/49yq79krQqqUc1oRlNo
-8ZGwK9TKy8jN1WCXa/Tc6YBZNWp85UuIqhiHpdsyt92lGLwYFxjziN06ns6GhwvG
-etdBKiVncMQjngMLWIrw2pRKXuWJCuso46EAvwgqLX3go/m7Gp1AQvGJ/2fQiLSM
-cjVmvsOgy71FCF4bXFuKRrqNb1OvhqL+at4NjU63da0qrGaqblYnqkgSwh5IH02K
-APdSYpTe00M+TaSEyvhGhee2UUMDt4TZKaD0MuKJFMilSW08COnYx9VYdvN9vhBZ
-bDsj96hBNFFpLOJB+yCJ
-=d74f
------END PGP SIGNATURE-----
-
---1LKvkjL3sHcu1TtY--
+-Mathias
