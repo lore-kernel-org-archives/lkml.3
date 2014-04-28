@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646AbaD1L5x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:57:53 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:57842 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755272AbaD1L5v (ORCPT
+	id S1755410AbaD1MAW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:00:22 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36434 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993AbaD1MAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:57:51 -0400
-Date: Mon, 28 Apr 2014 12:57:45 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Mark Brown <broonie@kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-Message-ID: <20140428115745.GZ21279@lee--X1>
-References: <1398180298-2018-4-git-send-email-dianders@chromium.org>
- <20140422190754.GF12304@sirena.org.uk>
- <20140423105540.GJ21613@lee--X1>
- <CAD=FV=V0uWMGTt68CST5i30Xf4pTNMt50-D7XeRmtSdfbPwwLQ@mail.gmail.com>
+	Mon, 28 Apr 2014 08:00:20 -0400
+Date: Mon, 28 Apr 2014 14:59:47 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: micky_ching@realsil.com.cn, ulf.hansson@linaro.org, sameo@linux.intel.com,
+        gregkh@linuxfoundation.org, linux-mmc@vger.kernel.org,
+        chris@printf.net, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, rogerable@realtek.com,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH] mmc: rtsx: Revert "mmc: rtsx: add support for pre_req
+ and post_req"
+Message-ID: <20140428115947.GA28139@mwanda>
+References: <1398670584-26687-1-git-send-email-micky_ching@realsil.com.cn>
+ <20140428105350.GM21279@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=V0uWMGTt68CST5i30Xf4pTNMt50-D7XeRmtSdfbPwwLQ@mail.gmail.com>
+In-Reply-To: <20140428105350.GM21279@lee--X1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> > Nearly all of the registers in tps65090 combine control bits and
-> >> > status bits.  Turn off caching of all registers except the select few
-> >> > that can be cached.
-> >>
-> >> Lee, I don't mind if I apply this and send a pull request to you or I
-> >> pull a tag from you with this in - what's easiest for you?
-> >
-> > I'm happy to do it.
-> >
-> > Doug,
-> >   Can you send the patch-set again with all of the *-bys and ensure
-> >   I'm on TO or CC please?
+On Mon, Apr 28, 2014 at 11:53:50AM +0100, Lee Jones wrote:
+> > From: Micky Ching <micky_ching@realsil.com.cn>
+> > 
+> > This reverts commit c42deffd5b53c9e583d83c7964854ede2f12410d.
 > 
-> It looks as if you've already applied 1, 3, and 4.  I've sent up 2 and
-> 5 again with collected tags.
-> 
-> https://patchwork.kernel.org/patch/4042761/
-> https://patchwork.kernel.org/patch/4042751/
+> Why was this patch even merged without an MFD Ack?
 
-I think we have this sorted now. I sent a pull-request to Mark this
-morning.
+I think process questions like this are very important.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+These patches touch both mmc and mfd but they're mostly mmc patches.
+
+They were first sent to LKML in January.  Samuel was on the CC list but
+you were left off.  There were no replies to the thread.  The patches
+were then resent in February and Micky complained that they had been
+sent "many times" and no one was responding.  So then Chris took them.
+
+You should have been included on the CC list and Chris should have asked
+you or Sam for a response explicitly instead of waiting for a month and
+giving up.
+
+Also Micky, please, when you do a new version of a patch please put an
+explanation of what changed between version 3 and version 4.
+http://kernelnewbies.org/PatchTipsAndTricks
+
+regards,
+dan carpenter
+
