@@ -1,146 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789AbaD1Qfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:35:53 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31256 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755903AbaD1Qfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:35:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,945,1389772800"; 
-   d="scan'208";a="529928156"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>
-Subject: lockdep warning after recent cleanup in console code
-Thread-Topic: lockdep warning after recent cleanup in console code
-Thread-Index: AQHPYv/bwdBQHvpujU+9YJZBYRAh9g==
-Date: Mon, 28 Apr 2014 16:35:26 +0000
-Message-ID: <1398702925.11914.292.camel@smile.fi.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.73]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <66DBDD546D622449882483A1A6E51D56@intel.com>
+	id S932827AbaD1QhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:37:00 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54323 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665AbaD1Qgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 12:36:53 -0400
+Date: Mon, 28 Apr 2014 09:36:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [sched,rcu] 9234566d3a3: +1.6% will-it-scale.scalability,
+ +1302.6% time.involuntary_context_switches
+Message-ID: <20140428163649.GD4430@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5354BA85.6010003@intel.com>
+ <20140422015958.GB4496@linux.vnet.ibm.com>
+ <5355D6C8.7080200@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5355D6C8.7080200@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042816-9332-0000-0000-000000A13B6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3SGaTeZ025240
 
-Hei!
+On Tue, Apr 22, 2014 at 10:41:12AM +0800, Jet Chen wrote:
+> On 04/22/2014 09:59 AM, Paul E. McKenney wrote:
+> >On Mon, Apr 21, 2014 at 02:28:21PM +0800, Jet Chen wrote:
+> >>Hi Paul,
+> >>
+> >>we noticed the below changes on
+> >>git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git torture.2014.04.18a
+> >>commit 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+> >
+> >My impression of these statistics is that this commit results in huge
+> >numbers of additional context switches and interrupts, but has a slightly
+> >positive effect on performance and a larger negative effect on
+> >scalability.
+> >
+> >Is this a reasonable interpretation?
+> >
+> Yes, you're right.
 
-During weekend the linux-next was being broken by introducing a lockdep
-warning in the console code
+OK, sounds like a bit of rework is in order, then...
 
-[    0.000000] BIOS-e820: [mem 0x00000000e0000000-0x00000000ffffffff]
-reserved
-[    0.000000]
-[    0.000000] =============================================
-[    0.000000] [ INFO: possible recursive locking detected ]
-[    0.000000] 3.15.0-rc2-next-20140428-00030-gd3550d8 #38 Not tainted
-[    0.000000] ---------------------------------------------
-[    0.000000] swapper/0 is trying to acquire lock:
-[    0.000000]  (console_lock){......}, at: [<c10728cc>]
-register_console+0x15e/0x295
-[    0.000000]
-[    0.000000] but task is already holding lock:
-[    0.000000]  (console_lock){......}, at: [<c1071e7a>] vprintk_emit
-+0x381/0x3ea
-[    0.000000]
-[    0.000000] other info that might help us debug this:
-[    0.000000]  Possible unsafe locking scenario:
-[    0.000000]
-[    0.000000]        CPU0
-[    0.000000]        ----
-[    0.000000]   lock(console_lock);
-[    0.000000]   lock(console_lock);
-[    0.000000]
-[    0.000000]  *** DEADLOCK ***
-[    0.000000]
-[    0.000000]  May be due to missing lock nesting notation
-[    0.000000]
-[    0.000000] 3 locks held by swapper/0:
-[    0.000000]  #0:  (console_lock){......}, at: [<c1071e7a>]
-vprintk_emit+0x381/0x3ea
-[    0.000000]  #1:  (console_lock){......}, at: [<c1071e7a>]
-vprintk_emit+0x381/0x3ea
-[    0.000000]  #2:  (console_lock){......}, at: [<c1071e7a>]
-vprintk_emit+0x381/0x3ea
-[    0.000000]
-[    0.000000] stack backtrace:
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
-3.15.0-rc2-next-20140428-00030-gd3550d8 #38
-[    0.000000]  00000000 00000000 c186de1c c15878ae c1daf840 c186de88
-c106c154 c1794d9d
-[    0.000000]  c17958f7 c1794c9c 0000002a 00000000 00000000 c1daf840
-c1983700 00000080
-[    0.000000]  04002001 c187a0b0 00000000 c1879ba0 c1879b40 c1879b40
-00200046 00000000
-[    0.000000] Call Trace:
-[    0.000000]  [<c15878ae>] dump_stack+0x49/0x73
-[    0.000000]  [<c106c154>] __lock_acquire+0xb31/0xc7c
-[    0.000000]  [<c106c33b>] lock_acquire+0x9c/0x111
-[    0.000000]  [<c10728cc>] ? register_console+0x15e/0x295
-[    0.000000]  [<c10707dd>] console_lock+0x41/0x46
-[    0.000000]  [<c10728cc>] ? register_console+0x15e/0x295
-[    0.000000]  [<c10728cc>] register_console+0x15e/0x295
-[    0.000000]  [<c1582f80>] early_console_register+0x33/0x35
-[    0.000000]  [<c1910411>] setup_early_printk+0x144/0x151
-[    0.000000]  [<c19013f6>] do_early_param+0x41/0x73
-[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
-[    0.000000]  [<c104c766>] parse_args+0x24f/0x307
-[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
-[    0.000000]  [<c190169d>] parse_early_options+0x1c/0x21
-[    0.000000]  [<c190169d>] ? parse_early_options+0x1c/0x21
-[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
-[    0.000000]  [<c19016cc>] parse_early_param+0x2a/0x36
-[    0.000000]  [<c19042c0>] setup_arch+0x3c9/0xc55
-[    0.000000]  [<c1071ebe>] ? vprintk_emit+0x3c5/0x3ea
-[    0.000000]  [<c1584869>] ? printk+0x28/0x2d
-[    0.000000]  [<c1901754>] start_kernel+0x72/0x305
-[    0.000000]  [<c19012b4>] i386_start_kernel+0x82/0x86
-[    0.000000] bootconsole [earlyhsu0] enabled
+						Thanx, Paul
 
-Bisecting shows the culprit (which I guessed before), namely commit
-5dc90cb49691755faaad2a395d297d0162075eca ("printk: enable interrupts 
-before calling console_trylock_for_printk()").
+> >>Comparison 1 - parent commit of 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+> >>
+> >>e119454e74a852f  9234566d3a36c0aead8852e3c
+> >>---------------  -------------------------
+> >>     1035948 ~ 0%      +1.6%    1052990 ~ 0%  TOTAL will-it-scale.per_thread_ops
+> >>     1271322 ~ 0%      +1.8%    1294004 ~ 0%  TOTAL will-it-scale.per_process_ops
+> >>        0.63 ~ 0%      -5.2%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+> >>       22470 ~ 2%   +1302.6%     315168 ~ 2%  TOTAL time.involuntary_context_switches
+> >>       84265 ~ 5%   +1047.1%     966581 ~ 1%  TOTAL interrupts.IWI
+> >>        1828 ~44%    +189.6%       5295 ~13%  TOTAL time.voluntary_context_switches
+> >>        5337 ~ 1%     +82.1%       9720 ~ 1%  TOTAL vmstat.system.cs
+> >>      118599 ~ 0%     -30.4%      82545 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+> >>      224021 ~ 4%     +34.7%     301858 ~ 2%  TOTAL interrupts.RES
+> >>       25148 ~ 0%      +7.0%      26917 ~ 0%  TOTAL vmstat.system.in
+> >>     7063439 ~ 0%      -5.2%    6694536 ~ 0%  TOTAL interrupts.LOC
+> >>      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.NMI
+> >>      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.PMI
+> >>        3720 ~ 0%      -1.5%       3665 ~ 0%  TOTAL time.system_time
+> >>        1215 ~ 0%      -1.4%       1198 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+> >>
+> >>
+> >>Comparison 2 - b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+> >>
+> >>Fengguang has reported stats changes about b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 to you days ago.
+> >>git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git dev.2014.04.14a
+> >>commit b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+> >>
+> >>Let's have a compare here.
+> >>
+> >>b84c4e08143c98d  9234566d3a36c0aead8852e3c
+> >>---------------  -------------------------
+> >>      809309 ~ 0%      -2.6%     788400 ~ 0%  TOTAL will-it-scale.per_process_ops
+> >>        0.61 ~ 0%      -1.9%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+> >>      434080 ~ 0%      -1.5%     427643 ~ 0%  TOTAL will-it-scale.per_thread_ops
+> >>           4 ~11%  +1.2e+05%       5249 ~ 2%  TOTAL interrupts.IWI
+> >>         607 ~ 7%     +28.0%        778 ~14%  TOTAL interrupts.47:PCI-MSI-edge.eth0
+> >>       12349 ~ 2%     -14.6%      10548 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
+> >>        3078 ~ 3%     +20.9%       3722 ~ 6%  TOTAL interrupts.RES
+> >>
+> >>
+> >>Comparison 3 - parent commit of b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs b84c4e08143c98dad4b4d139f08db0b98b0d3ec4
+> >>
+> >>Duplicated with Fengguang's report. Help you to see these info in a page :)
+> >>
+> >>ad86a04266f9b49  b84c4e08143c98dad4b4d139f
+> >>---------------  -------------------------
+> >>      676264 ~ 0%      +3.3%     698461 ~ 0%  TOTAL will-it-scale.per_thread_ops
+> >>     1174547 ~ 0%      +3.0%    1209307 ~ 0%  TOTAL will-it-scale.per_process_ops
+> >>        1.67 ~ 0%      -2.3%       1.63 ~ 0%  TOTAL will-it-scale.scalability
+> >>       10522 ~ 2%    +921.2%     107463 ~ 1%  TOTAL time.involuntary_context_switches
+> >>       77671 ~ 3%     +67.0%     129688 ~ 3%  TOTAL interrupts.RES
+> >>       99502 ~ 0%     -27.8%      71813 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+> >>        2554 ~ 0%     +49.1%       3809 ~ 1%  TOTAL vmstat.system.cs
+> >>       11524 ~ 0%      -2.3%      11259 ~ 0%  TOTAL vmstat.system.in
+> >>         213 ~ 0%      -4.3%        204 ~ 0%  TOTAL time.system_time
+> >>          74 ~ 0%      -4.1%         71 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+> >>     3495099 ~ 0%      -3.1%    3387173 ~ 0%  TOTAL interrupts.LOC
+> >>
+> >>
+> >>
+> >>
+> >>Thanks,
+> >>Jet
+> >>
+> >>
+> >>
+> >
+> >>./runtest.py open2 32 1 4 6 8
+> >>
+> >>
+> >
+> 
 
-Following patch helps me, but I'm not familiar with console locking
-scheme, I believe there is a better solution.
-
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1700,8 +1700,10 @@ asmlinkage int vprintk_emit(int facility, int
-level,
-         * The release will print out buffers and wake up /dev/kmsg and
-syslog()
-         * users.
-         */
-+       lockdep_off();
-        if (console_trylock_for_printk())
-                console_unlock();
-+       lockdep_on();
-        preempt_enable();
- 
-        return printed_len;
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
