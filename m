@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaD1PLP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:11:15 -0400
-Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:14698
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756477AbaD1PLO convert rfc822-to-8bit (ORCPT
+	id S1756372AbaD1PNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:13:11 -0400
+Received: from ppsw-40.csi.cam.ac.uk ([131.111.8.140]:55286 "EHLO
+	ppsw-40.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557AbaD1PNJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:11:14 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 3/3] pwm: ftm-pwm: Add big-endian support
-Thread-Topic: [PATCH 3/3] pwm: ftm-pwm: Add big-endian support
-Thread-Index: AQHPRMezaWzckG4I3EeuCqQJu14aPJsnXBYAgAABWZU=
-Date: Mon, 28 Apr 2014 15:11:11 +0000
-Message-ID: <3f5658518174446e8edfc0038235e4fc@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
- <1395377590-23537-4-git-send-email-Li.Xiubo@freescale.com>,<20140428150207.GD28443@ulmo>
-In-Reply-To: <20140428150207.GD28443@ulmo>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.48.101.7]
-x-forefront-prvs: 01952C6E96
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(77096999)(83322001)(80022001)(19580395003)(99396002)(54356999)(85852003)(4396001)(2656002)(46102001)(87936001)(76576001)(76482001)(19580405001)(33646001)(79102001)(92566001)(81342001)(77982001)(81542001)(50986999)(83072002)(31966008)(99286001)(20776003)(74316001)(66066001)(76176999)(74662001)(86362001)(101416001)(80976001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:54C6E824.733D1D81.ADD79FBF.88A45AF1.2015D;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
+	Mon, 28 Apr 2014 11:13:09 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: [PATCH 1/1] fs/ntfs/mft.c: fix 2 sparse warnings
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Content-Type: text/plain; charset=us-ascii
+From: Anton Altaparmakov <anton@tuxera.com>
+In-Reply-To: <20140427121219.02069e58cd40f1b78e8b5971@skynet.be>
+Date: Mon, 28 Apr 2014 16:13:06 +0100
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Message-Id: <6E770B36-E0D6-4B98-B1AB-DE92E456BD72@tuxera.com>
+References: <20140427121219.02069e58cd40f1b78e8b5971@skynet.be>
+To: Fabian Frederick <fabf@skynet.be>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+NAK.
 
-> > Now for the following scenarios:
-> >
-> >      SoC     |  CPU   | FTM-PWM | 'big-endian' property is needed?
-> > -------------|--------|---------|---------------------------------
-> >     Vybird   |  LE    |   LE    |     No
-> >     LS1     |  LE    |   BE    |     Yes
-> >     LS2     |  LE    |   LE    |     No
-> >
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > ---
-> >  drivers/pwm/pwm-fsl-ftm.c | 6 ++++++
-> >  1 file changed, 6 insertions(+)
+I do not see why this is needed.  Not all sparse warnings need fixing.
+
+What is so bad about a variable length array that we need to incur kmalloc overhead on each call?  I would have thought the CPU overhead of the kmalloc is a lot larger than any CPU overhead of a variable length array...
+
+The array size is tiny - basically on all volumes mft_record_size is 1024 and blocksize is either 512 or 1024 thus the array size is either 1 or 2 pointers.  The reason it is dynamic is just in case Microsoft change their mind and increase the mft_record_size in a future NTFS/Windows version to something bigger than 1024 bytes, the current code would still cope fine.
+
+Note mft_record_size is the "on disk inode size" thus it will never be much bigger and unlikely to ever change from the 1024 really.  A very long time ago when NTFS was being developed Microsoft used 2048 bytes but quickly changed it to 1024 as most inodes do not need anywhere near that much space for an inode.
+
+Best regards,
+
+	Anton
+
+On 27 Apr 2014, at 11:12, Fabian Frederick <fabf@skynet.be> wrote:
+
+> fs/ntfs/mft.c:471:33: warning: Variable length array is used.
+> fs/ntfs/mft.c:676:33: warning: Variable length array is used.
 > 
-> And this should probably describe in text what happens. The table may
-> look good, but you don't give a real description of what the change
-> does.
+> This is untested.
 > 
-
-I will follow your advice.
-
-
-> Oh, and doesn't this change need to update the device tree binding since
-> you now have an additional property?
->
-
-Yes, you are right. I just forgot it.
-
-I will add update it.
-
-Thanks very much.
-
-BRs
-XIubo
-
+> Cc: Anton Altaparmakov <anton@tuxera.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> fs/ntfs/mft.c | 17 ++++++++++++-----
+> 1 file changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/ntfs/mft.c b/fs/ntfs/mft.c
+> index 3014a36..eddb739 100644
+> --- a/fs/ntfs/mft.c
+> +++ b/fs/ntfs/mft.c
+> @@ -468,7 +468,7 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
+> 	struct page *page;
+> 	unsigned int blocksize = vol->sb->s_blocksize;
+> 	int max_bhs = vol->mft_record_size / blocksize;
+> -	struct buffer_head *bhs[max_bhs];
+> +	struct buffer_head **bhs;
+> 	struct buffer_head *bh, *head;
+> 	u8 *kmirr;
+> 	runlist_element *rl;
+> @@ -478,11 +478,14 @@ int ntfs_sync_mft_mirror(ntfs_volume *vol, const unsigned long mft_no,
+> 
+> 	ntfs_debug("Entering for inode 0x%lx.", mft_no);
+> 	BUG_ON(!max_bhs);
+> -	if (unlikely(!vol->mftmirr_ino)) {
+> +	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
+> +	if (unlikely(!bhs || !vol->mftmirr_ino)) {
+> 		/* This could happen during umount... */
+> 		err = ntfs_sync_mft_mirror_umount(vol, mft_no, m);
+> -		if (likely(!err))
+> +		if (likely(!err)) {
+> +			kfree(bhs);
+> 			return err;
+> +		}
+> 		goto err_out;
+> 	}
+> 	/* Get the page containing the mirror copy of the mft record @m. */
+> @@ -632,6 +635,7 @@ err_out:
+> 				"after umounting to correct this.", -err);
+> 		NVolSetErrors(vol);
+> 	}
+> +	kfree(bhs);
+> 	return err;
+> }
+> 
+> @@ -673,7 +677,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+> 	unsigned int blocksize = vol->sb->s_blocksize;
+> 	unsigned char blocksize_bits = vol->sb->s_blocksize_bits;
+> 	int max_bhs = vol->mft_record_size / blocksize;
+> -	struct buffer_head *bhs[max_bhs];
+> +	struct buffer_head **bhs;
+> 	struct buffer_head *bh, *head;
+> 	runlist_element *rl;
+> 	unsigned int block_start, block_end, m_start, m_end;
+> @@ -689,7 +693,8 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+> 	 * There is no danger of races since the caller is holding the locks
+> 	 * for the mft record @m and the page it is in.
+> 	 */
+> -	if (!NInoTestClearDirty(ni))
+> +	bhs = kmalloc(max_bhs * sizeof(struct buffer_head *), GFP_NOFS);
+> +	if (!bhs || !NInoTestClearDirty(ni))
+> 		goto done;
+> 	bh = head = page_buffers(page);
+> 	BUG_ON(!bh);
+> @@ -820,6 +825,7 @@ int write_mft_record_nolock(ntfs_inode *ni, MFT_RECORD *m, int sync)
+> 		goto err_out;
+> 	}
+> done:
+> +	kfree(bhs);
+> 	ntfs_debug("Done.");
+> 	return 0;
+> cleanup_out:
+> @@ -840,6 +846,7 @@ err_out:
+> 		err = 0;
+> 	} else
+> 		NVolSetErrors(vol);
+> +	kfree(bhs);
+> 	return err;
+> }
