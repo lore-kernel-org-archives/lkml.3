@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380AbaD1WJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 18:09:35 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:40995 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933365AbaD1WJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 18:09:32 -0400
-Date: Mon, 28 Apr 2014 16:09:28 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Apr 28 (drivers/pnp/quirks.c)
-Message-ID: <20140428220928.GA19838@google.com>
-References: <20140428165724.6361cf10ebd3067b7f998c0f@canb.auug.org.au>
- <535E93C1.90908@infradead.org>
- <20140428211141.GA24070@google.com>
- <535EC4A7.5070001@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535EC4A7.5070001@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933365AbaD1WMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 18:12:55 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50681 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755880AbaD1WMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 18:12:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,946,1389772800"; 
+   d="scan'208";a="425089704"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 5/7] x86: Make old K8 swapgs workaround conditional
+Date: Mon, 28 Apr 2014 15:12:39 -0700
+Message-Id: <1398723161-21968-6-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
+References: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 11:14:15PM +0200, Rafael J. Wysocki wrote:
-> On 4/28/2014 11:11 PM, Bjorn Helgaas wrote:
-> >On Mon, Apr 28, 2014 at 10:45:37AM -0700, Randy Dunlap wrote:
-> >>On 04/27/14 23:57, Stephen Rothwell wrote:
-> >>>Hi all,
-> >>>
-> >>>This tree still fails (more than usual) the powerpc allyesconfig build.
-> >>>
-> >>>Changes since 20140424:
-> >>>
-> >>on i386:
-> >>
-> >>   CC      drivers/pnp/quirks.o
-> >>drivers/pnp/quirks.c: In function 'quirk_intel_mch':
-> >>drivers/pnp/quirks.c:393:2: error: implicit declaration of function 'pcibios_bus_to_resource' [-Werror=implicit-function-declaration]
-> >>cc1: some warnings being treated as errors
-> >>make[3]: *** [drivers/pnp/quirks.o] Error 1
-> >Thanks Randy.  This is a config that doesn't define CONFIG_PCI.  Rafael,
-> >here's an incremental fix, or the full updated patch is below.
-> 
-> Well, that went to Linus already, so a fix on top of 3.15-rc3 is needed.
+From: Andi Kleen <ak@linux.intel.com>
 
-Of course; I should have noticed that.
+Every gs selector/index reload always paid an extra MFENCE
+between the two SWAPGS. This was to work around an old
+bug in early K8 steppings.  All other CPUs don't need the extra
+mfence. Patch the extra MFENCE only in for K8.
 
-> >+#if defined(CONFIG_X86) && defined(CONFIG_PCI)
-> 
-> Do we need both or would CONFIG_PCI be sufficient?
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h |  1 +
+ arch/x86/kernel/cpu/amd.c         |  3 +++
+ arch/x86/kernel/entry_64.S        | 10 +++++++++-
+ 3 files changed, 13 insertions(+), 1 deletion(-)
 
-CONFIG_PCI alone should be sufficient.  Here's a fix on top of
-v3.15-rc3.  Sorry for all the hassle.
-
-
-commit c03ae9359c7f97854567f897bafcb2e6489d155f
-Author: Bjorn Helgaas <bhelgaas@google.com>
-Date:   Thu Apr 17 14:22:18 2014 -0600
-
-    PNP: Fix compile error
-    
-    Fix the compile error:
-    
-      drivers/pnp/quirks.c:393:2: error: implicit declaration of function 'pcibios_bus_to_resource'
-    
-    that occurs when building with CONFIG_PCI unset.  The quirk is only
-    relevent to Intel devices, so we could use "#if defined(CONFIG_X86) &&
-    defined(CONFIG_PCI)" instead, but testing CONFIG_X86 is not strictly
-    necessary.
-    
-    Reported-by: Randy Dunlap <rdunlap@infradead.org>
-    Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-index 3736bc408adb..ebf0d6710b5a 100644
---- a/drivers/pnp/quirks.c
-+++ b/drivers/pnp/quirks.c
-@@ -335,7 +335,7 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
- }
- #endif
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 89270b4..eb4bb46 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -102,6 +102,7 @@
+ #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
+ #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
+ #define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
++#define X86_FEATURE_SWAPGS_MFENCE (3*32+31) /* SWAPGS may need MFENCE */
  
--#ifdef CONFIG_X86
-+#ifdef CONFIG_PCI
- /* Device IDs of parts that have 32KB MCH space */
- static const unsigned int mch_quirk_devices[] = {
- 	0x0154,	/* Ivy Bridge */
-@@ -440,7 +440,7 @@ static struct pnp_fixup pnp_fixups[] = {
- #ifdef CONFIG_AMD_NB
- 	{"PNP0c01", quirk_amd_mmconfig_area},
- #endif
--#ifdef CONFIG_X86
-+#ifdef CONFIG_PCI
- 	{"PNP0c02", quirk_intel_mch},
- #endif
- 	{""}
+ /* Intel-defined CPU features, CPUID level 0x00000001 (ecx), word 4 */
+ #define X86_FEATURE_XMM3	(4*32+ 0) /* "pni" SSE-3 */
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index d3153e2..65125d3 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -560,6 +560,9 @@ static void init_amd(struct cpuinfo_x86 *c)
+ 		if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
+ 			set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+ 
++		if (c->x86 == 0xf)
++			set_cpu_cap(c, X86_FEATURE_SWAPGS_MFENCE);
++
+ 		/*
+ 		 * Some BIOSes incorrectly force this feature, but only K8
+ 		 * revision D (model = 0x14) and later actually support it.
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 7c77b2b..810f010 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1369,13 +1369,21 @@ ENTRY(native_load_gs_index)
+ 	SWAPGS
+ gs_change:
+ 	movl %edi,%gs
+-2:	mfence		/* workaround */
++2:	ASM_NOP3	/* may be replaced with mfence */
+ 	SWAPGS
+ 	popfq_cfi
+ 	ret
+ 	CFI_ENDPROC
+ END(native_load_gs_index)
+ 
++	/* Early K8 systems needed an mfence after swapgs to workaround a bug */
++	.section .altinstr_replacement,"ax"
++3:	mfence
++	.previous
++	.section .altinstructions,"a"
++	altinstruction_entry 2b,3b,X86_FEATURE_SWAPGS_MFENCE,3,3
++	.previous
++
+ 	_ASM_EXTABLE(gs_change,bad_gs)
+ 	.section .fixup,"ax"
+ 	/* running with kernelgs */
+-- 
+1.9.0
+
