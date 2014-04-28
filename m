@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaD1B5R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:57:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47726 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458AbaD1B5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:57:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,940,1389772800"; 
-   d="scan'208";a="522121016"
-Message-ID: <1398650223.2443.12.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V5 09/12] ACPI: introduce acpi platform exclude id list
-From: Zhang Rui <rui.zhang@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-Date: Mon, 28 Apr 2014 09:57:03 +0800
-In-Reply-To: <5562797.vTJauiAbJc@vostro.rjw.lan>
-References: <1396886819-2637-1-git-send-email-rui.zhang@intel.com>
-	 <1396886819-2637-10-git-send-email-rui.zhang@intel.com>
-	 <5562797.vTJauiAbJc@vostro.rjw.lan>
+	id S932108AbaD1Bb0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:31:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42926 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752579AbaD1B3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Apr 2014 21:29:21 -0400
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Lee Jones" <lee.jones@linaro.org>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
+Date: Mon, 28 Apr 2014 02:11:22 +0100
+Message-ID: <lsq.1398647482.769655147@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 54/94] mfd: max8925: Fix possible NULL pointer
+ dereference on i2c_new_dummy error
+In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 00:21 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 08, 2014 12:06:56 AM Zhang Rui wrote:
-> > For ACPI PIC (PNP0000) and Timer (PNP0100) device objects, although
-> > they have _HID control method, but they should not be enumerated to
-> > platform bus, because there will never be any platform drivers for them.
-> > 
-> > Thus an exclude id list is introduced in this patch to prevent
-> > those platform device nodes from being created.
-> > 
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> 
-> This should go into [6/12] as well.
-> 
-I think it is okay to keep them as separate patches because they do not
-break bisect. And this patch is just a cleanup, it does not fix a real
-BUG in patch 6/12.
+3.2.58-rc1 review patch.  If anyone has any objections, please let me know.
 
-thanks,
-rui
+------------------
 
-> > ---
-> >  drivers/acpi/acpi_platform.c |   14 ++++++++++++++
-> >  1 file changed, 14 insertions(+)
-> > 
-> > diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
-> > index 33376a9..91ed43a 100644
-> > --- a/drivers/acpi/acpi_platform.c
-> > +++ b/drivers/acpi/acpi_platform.c
-> > @@ -22,6 +22,17 @@
-> >  
-> >  ACPI_MODULE_NAME("platform");
-> >  
-> > +static const struct acpi_device_id excluded_id_list[] = {
-> > +	{"PNP0000", 0},	/* PIC */
-> > +	{"PNP0100", 0},	/* Timer */
-> > +	{"", 0},
-> > +};
-> > +
-> > +static bool is_exclusive_device(struct acpi_device *dev)
-> > +{
-> > +	return !acpi_match_device_ids(dev, excluded_id_list);
-> > +}
-> > +
-> >  /**
-> >   * acpi_create_platform_device - Create platform device for ACPI device node
-> >   * @adev: ACPI device node to create a platform device for.
-> > @@ -48,6 +59,9 @@ int acpi_create_platform_device(struct acpi_device *adev,
-> >  	if (adev->physical_node_count)
-> >  		return 0;
-> >  
-> > +	if (is_exclusive_device(adev))
-> > +		return 0;
-> > +
-> >  	INIT_LIST_HEAD(&resource_list);
-> >  	count = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
-> >  	if (count < 0) {
-> > 
-> 
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
+commit 96cf3dedc491d2f1f66cc26217f2b06b0c7b6797 upstream.
+
+During probe the driver allocates dummy I2C devices for RTC and ADC
+with i2c_new_dummy() but it does not check the return value of this
+calls.
+
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
+
+If i2c_new_dummy() fails for RTC or ADC devices, fail also the probe
+for main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/mfd/max8925-i2c.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/drivers/mfd/max8925-i2c.c
++++ b/drivers/mfd/max8925-i2c.c
+@@ -156,9 +156,18 @@ static int __devinit max8925_probe(struc
+ 	mutex_init(&chip->io_lock);
+ 
+ 	chip->rtc = i2c_new_dummy(chip->i2c->adapter, RTC_I2C_ADDR);
++	if (!chip->rtc) {
++		dev_err(chip->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(chip->rtc, chip);
+ 
+ 	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
++	if (!chip->adc) {
++		dev_err(chip->dev, "Failed to allocate I2C device for ADC\n");
++		i2c_unregister_device(chip->rtc);
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(chip->adc, chip);
+ 
+ 	max8925_device_init(chip, pdata);
 
