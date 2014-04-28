@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567AbaD1LbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:31:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3168 "EHLO mx1.redhat.com"
+	id S1755579AbaD1Lbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:31:42 -0400
+Received: from david.siemens.de ([192.35.17.14]:51784 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754944AbaD1LbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:31:02 -0400
-Message-ID: <535E3BEA.4050704@redhat.com>
-Date: Mon, 28 Apr 2014 13:30:50 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752462AbaD1Lbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 07:31:35 -0400
+Message-ID: <535E3C10.9020403@siemens.com>
+Date: Mon, 28 Apr 2014 13:31:28 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@kernel.org
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v5 5/5] KVM: MMU: flush tlb out of mmu lock when write-protect
- the sptes
-References: <1397725576-6617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1397725576-6617-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-In-Reply-To: <1397725576-6617-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
+CC: Paolo Bonzini <pbonzini@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Emulate VMXON region correctly
+References: <1398661204-4822-1-git-send-email-bsd@redhat.com>
+In-Reply-To: <1398661204-4822-1-git-send-email-bsd@redhat.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
@@ -25,52 +24,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What about some editing of the big comment...
+On 2014-04-28 07:00, Bandan Das wrote:
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=54521
+> 
+> The vmxon region is unused by nvmx, but adding these checks
+> are probably harmless and may detect buggy L1 hypervisors in 
+> the future!
 
-/*
- * Currently, shadow PTEs are write protected in two cases, 1) write protecting
- * guest page tables, 2) resetting dirty tracking after KVM_GET_DIRTY_LOG. The
- * differences between these two sorts are:
- *
- * a) only the first case clears SPTE_MMU_WRITEABLE bit.
- *
- * b) the first case requires flushing the TLB immediately to avoid corruption
- *    of the shadow page table on other VCPUs.  In order to synchronize with
- *    other VCPUs the flush is done under the MMU lock.
- *
- *    The second case instead can delay flushing of the TLB until just before
- *    returning the dirty bitmap is returned to userspace; this is because it
- *    only write-protects pages that are set in the bitmap, and further writes
- *    to those pages can be safely ignored until userspace examines the bitmap.
- *    We rely on this to flush the TLB outside the MMU lock.
- *
- * A problem arises when these two cases occur concurrently.  Userspace can
- * call KVM_GET_DIRTY_LOG, which write-protects pages but does not immediately
- * flush the TLB; in the meanwhile, KVM wants to write-protect a guest page
- * table, sees it's already write-protected, and the result is a corrupted TLB.
- *
- * To avoid this problem, when write protecting guest page tables we *always*
- * flush the TLB if the spte has the SPTE_MMU_WRITEABLE bit set, even if 
- * the spte was already write-protected.  This works since case 2 never touches
- * SPTE_MMU_WRITEABLE bit.  In other words, whenever a spte is updated (only
- * permission and status bits are changed) we need to check whether a spte with
- * SPTE_MMU_WRITEABLE becomes readonly.  If that happens, we flush the TLB.
- * mmu_spte_update() handles this.
- *
- * The rules to use SPTE_MMU_WRITEABLE and PT_WRITABLE_MASK are as follows:
- *
- * a) if you want to see if it has a writable TLB entry, or if the spte can be
- *    writable on the mmu mapping, check SPTE_MMU_WRITEABLE.  This is the most
- *    common case, otherwise
- *
- * b) when fixing a page fault on the spte or doing write-protection for
- *    dirty logging, check PT_WRITABLE_MASK.
+Nice and welcome! Will you provide unit tests for these cases as well?
 
+Jan
 
-Is the above accurate?
+> 
+> Bandan Das (3):
+>   KVM: nVMX: rearrange get_vmx_mem_address
+>   KVM: nVMX: additional checks on vmxon region
+>   KVM: nVMX: fail on invalid vmclear/vmptrld pointer
+> 
+>  arch/x86/kvm/vmx.c | 171 ++++++++++++++++++++++++++++++++++++-----------------
+>  1 file changed, 118 insertions(+), 53 deletions(-)
+> 
 
->  * TODO: introduce APIs to split these two cases.
-
-What do you mean exactly?
-
-Paolo
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
