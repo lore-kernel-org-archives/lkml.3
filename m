@@ -1,38 +1,478 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801AbaD1Pzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 11:55:33 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:45740 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaD1Pz2 (ORCPT
+	id S932802AbaD1Pzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 11:55:48 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52914 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaD1Pzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 11:55:28 -0400
+	Mon, 28 Apr 2014 11:55:42 -0400
+Date: Mon, 28 Apr 2014 10:55:36 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Zhuang Jin Can <jin.can.zhuang@intel.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: debugfs: add snapshot to dump requests trbs
+ events
+Message-ID: <20140428155536.GE30292@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140428204923.GC12185@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20140428150034.GC7839@dhcp22.suse.cz>
-References: <c232030f96bdc60aef967b0d350208e74dc7f57d.1398605516.git.nasa4836@gmail.com>
- <20140428150034.GC7839@dhcp22.suse.cz>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Mon, 28 Apr 2014 23:54:47 +0800
-Message-ID: <CAHz2CGUObc=5g2TspQK-JX0GU9X3HJQ9s4t1ApfNR7qbdH71fw@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/2] mm/swap.c: split put_compound_page function
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        khalid.aziz@oracle.com, "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PGNNI9BzQDUtgA2J"
+Content-Disposition: inline
+In-Reply-To: <20140428204923.GC12185@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 11:00 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> This is a big change and really hard to review to be honest. Maybe a
-> split up would make it easier to follow.
+--PGNNI9BzQDUtgA2J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok,  actually it is quite simple, but the diff looks messy, I will try
-to split up
-this patch to several phases.
+On Mon, Apr 28, 2014 at 04:49:23PM -0400, Zhuang Jin Can wrote:
+> Adds a debugfs file "snapshot" to dump dwc3 requests, trbs and events.
 
-Thanks,
-Jianyu Zhan
+you need to explain what are you trying to provide to our users here.
+
+What "problem" are you trying to solve ?
+
+> As ep0 requests are more complex than others. It's not included in this
+> patch.
+
+For ep0, you could at least print the endpoint phase we are currently
+in and if we have requests in flight or not.
+
+> Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+> ---
+>  drivers/usb/dwc3/core.h    |    4 +
+>  drivers/usb/dwc3/debugfs.c |  192 ++++++++++++++++++++++++++++++++++++++=
+++++++
+>  drivers/usb/dwc3/gadget.h  |   41 ++++++++++
+>  3 files changed, 237 insertions(+)
+>=20
+> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> index 57332e3..9d04ddd 100644
+> --- a/drivers/usb/dwc3/core.h
+> +++ b/drivers/usb/dwc3/core.h
+> @@ -849,6 +849,10 @@ struct dwc3_event_devt {
+>  	u32	type:4;
+>  	u32	reserved15_12:4;
+>  	u32	event_info:9;
+> +
+> +#define DEVT_EVTINFO_SUPERSPEED	(1 << 4)
+> +#define DEVT_EVTINFO_HIRD(n)	(((n) & (0xf << 5)) >> 5)
+> +
+>  	u32	reserved31_25:7;
+>  } __packed;
+> =20
+> diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
+> index 9ac37fe..078d147 100644
+> --- a/drivers/usb/dwc3/debugfs.c
+> +++ b/drivers/usb/dwc3/debugfs.c
+> @@ -618,6 +618,191 @@ static const struct file_operations dwc3_link_state=
+_fops =3D {
+>  	.release		=3D single_release,
+>  };
+> =20
+> +static void dwc3_dump_requests(struct seq_file *s, struct list_head *hea=
+d,
+> +					const char *list_name)
+> +{
+> +	struct dwc3_request	*req;
+> +
+> +	if (list_empty(head)) {
+> +		seq_printf(s, "list %s is empty\n", list_name);
+> +		return;
+> +	}
+> +
+> +	seq_printf(s, "list %s:\n", list_name);
+> +	list_for_each_entry(req, head, list) {
+> +		struct usb_request *request =3D &req->request;
+> +
+> +		seq_printf(s, "usb_request@0x%p: buf@0x%p(dma@0x%pad), len=3D%d\n",
+> +			request, request->buf, &request->dma,
+> +			request->length);
+> +
+> +		if (req->queued)
+> +			seq_printf(s, "\tstatus=3D%d: actual=3D%d; start_slot=3D%u: trb@0x%p(=
+dma@0x%pad)\n",
+> +				request->status, request->actual,
+> +				req->start_slot, req->trb,
+> +				&req->trb_dma);
+> +	}
+> +}
+> +
+> +static void dwc3_dump_trbs(struct seq_file *s, struct dwc3_ep *dep)
+> +{
+> +	struct dwc3_trb	*trb;
+> +	int i;
+> +
+> +	seq_printf(s, "busy_slot =3D %u, free_slot =3D %u\n",
+> +				dep->busy_slot & DWC3_TRB_MASK,
+> +				dep->free_slot & DWC3_TRB_MASK);
+> +
+> +	for (i =3D 0; i < DWC3_TRB_NUM; i++) {
+> +		trb =3D &dep->trb_pool[i];
+> +		if (i =3D=3D (dep->busy_slot & DWC3_TRB_MASK)) {
+
+I really dislike these Yoda Conditionals. Fix this up.
+
+> +			seq_puts(s, "busy_slot--|\n");
+> +			seq_puts(s, "           \\\n");
+> +		}
+> +		if (i =3D=3D (dep->free_slot & DWC3_TRB_MASK)) {
+> +			seq_puts(s, "free_slot--|\n");
+> +			seq_puts(s, "           \\\n");
+> +		}
+> +		seq_printf(s, "trb[%02d](dma@0x%pad): %08x(bpl), %08x(bph), %08x(size)=
+, %08x(ctrl)\n",
+
+I'm not sure you need to print out the TRB address. bpl, bph, size and
+ctrl are desired though.
+
+> +			i, &dep->trb_pool_dma + i * sizeof(*trb),
+> +			trb->bpl, trb->bph, trb->size, trb->ctrl);
+
+this will be pretty difficult to parse by a human. I would rather see
+you creating one directory per TRB (and also one directory per
+endpoint) which holds the details for that entity, so that it looks
+like:
+
+dwc3
+|-- current_state	(or perhaps a better name, but snapshot isn't very good e=
+ither)
+    |-- ep2
+    |   |-- direction
+    |   |-- maxpacket
+    |   |-- number
+    |   |-- state
+    |   |-- stream_capable
+    |   |-- type
+    |   |-- trbs
+    |   |   |-- trb0
+    |   |   |   |-- bph
+    |   |   |   |-- bpl
+    |   |   |   |-- ctrl
+    |   |   |   |-- size
+    |   |   |-- trb1
+    |   |   |   |-- bph
+    |   |   |   |-- bpl
+    |   |   |   |-- ctrl
+    |   |   |   |-- size
+    |   |   |-- trb2
+    |   |   |   |-- bph
+    |   |   |   |-- bpl
+    |   |   |   |-- ctrl
+    |   |   |   |-- size
+    |   |   |-- trb3
+    |   |   |   |-- bph
+    |   |   |   |-- bpl
+    |   |   |   |-- ctrl
+    |   |   |   |-- size
+    .   .   .
+    .   .   .
+    .   .   .
+    |   |-- request0
+    |   |   |-- direction
+    |   |   |-- mapped
+    |   |   |-- queued
+    |   |   |-- trb0	(symlink to actual trb directory)
+    |   |   |-- ep2		(symlink to actual ep2 directory)
+    |   |   |-- usbrequest
+    |   |       |-- actual
+    |   |       |-- length
+    |   |       |-- no_interrupt
+    |   |       |-- num_mapped_sgs
+    |   |       |-- num_sgs
+    |   |       |-- short_not_ok
+    |   |       |-- status
+    |   |       |-- stream_id
+    |   |       |-- zero
+    |   |-- request1
+    |   |   |-- direction
+    |   |   |-- mapped
+    |   |   |-- queued
+    |   |   |-- trb1	(symlink to actual trb directory)
+    |   |   |-- ep2		(symlink to actual ep2 directory)
+    |   |   |-- usbrequest
+    |   |       |-- actual
+    |   |       |-- length
+    |   |       |-- no_interrupt
+    |   |       |-- num_mapped_sgs
+    |   |       |-- num_sgs
+    |   |       |-- short_not_ok
+    |   |       |-- status
+    |   |       |-- stream_id
+    |   |       |-- zero
+    .   .   .   .
+    .   .   .   .
+    .   .   .   .
+
+
+and so forth. That way we get a structured view of everything the
+controller and the driver are managing.
+
+> +static void dwc3_dump_dev_event(struct seq_file *s,
+> +			const struct dwc3_event_devt *event)
+> +{
+> +	seq_puts(s, "[0]DEV ");
+> +	seq_printf(s, "[1:7]%s ",
+> +		event->device_event =3D=3D DWC3_EVENT_TYPE_DEV ? "TYPE_DEV" :
+> +		event->device_event =3D=3D DWC3_EVENT_TYPE_CARKIT ? "TYPE_CARKIT" :
+> +		event->device_event =3D=3D DWC3_EVENT_TYPE_I2C ? "TYPE_CARKIT" :
+> +		"TYPE_UNKOWN");
+> +	seq_printf(s, "[8:11]%s ", dwc3_gadget_event_string(event->type));
+> +
+> +	if (event->type =3D=3D DWC3_DEVICE_EVENT_LINK_STATUS_CHANGE ||
+> +		event->type =3D=3D DWC3_DEVICE_EVENT_HIBER_REQ) {
+> +
+> +		seq_printf(s, "[16:20]%s %s ",
+> +			dwc3_link_state_string(
+> +				event->event_info & DEVT_EVTINFO_SUPERSPEED,
+> +				event->event_info & DWC3_LINK_STATE_MASK),
+> +				event->event_info & DEVT_EVTINFO_SUPERSPEED ?
+> +				"SS" : "HS");
+> +
+> +		if (!(event->event_info & DEVT_EVTINFO_SUPERSPEED))
+> +			seq_printf(s, "[21:24]HIRD %u ",
+> +				DEVT_EVTINFO_HIRD(event->event_info));
+> +	}
+> +}
+> +
+> +static void dwc3_dump_ep_event(struct seq_file *s,
+> +			const struct dwc3_event_depevt *event)
+> +{
+> +	seq_puts(s, "[0]EP ");
+> +	seq_printf(s, "[1:5]ep%d ", event->endpoint_number);
+> +	seq_printf(s, "[6:9]%s ",
+> +		dwc3_ep_event_string(event->endpoint_event));
+> +
+> +	switch (event->endpoint_event) {
+> +	case DWC3_DEPEVT_XFERCOMPLETE:
+> +	case DWC3_DEPEVT_XFERINPROGRESS:
+> +		if (event->status & DEPEVT_STATUS_BUSERR)
+> +			seq_puts(s, "[12]BUSERR ");
+> +		if (event->status & DEPEVT_STATUS_SHORT)
+> +			seq_puts(s, "[13]SHORT ");
+> +		if (event->status & DEPEVT_STATUS_IOC)
+> +			seq_puts(s, "[14]IOC ");
+> +		if (event->status & DEPEVT_STATUS_LST)
+> +			seq_puts(s, "[15]LST ");
+> +		break;
+> +	case DWC3_DEPEVT_XFERNOTREADY:
+> +		if ((event->status & 0x3) =3D=3D 1)
+> +			seq_puts(s, "[12:13]Data_Stage ");
+> +		else if ((event->status & 0x3) =3D=3D 2)
+> +			seq_puts(s, "[12:13]Status_Stage ");
+> +		if (event->status & DEPEVT_STATUS_TRANSFER_ACTIVE)
+> +			seq_puts(s, "[15]XferActive ");
+> +		else
+> +			seq_puts(s, "[15]XferNotActive ");
+> +		break;
+> +	case DWC3_DEPEVT_EPCMDCMPLT:
+> +		if (event->status & BIT(0))
+> +			seq_puts(s, "[12:15]Invalid Transfer Resource ");
+> +		break;
+> +	default:
+> +		seq_puts(s, "[12:15]UNKOWN ");
+> +	}
+> +	seq_printf(s, "[16:31]PARAM 0x%04x ", event->parameters);
+> +}
+> +
+> +static void dwc3_dump_event_buf(struct seq_file *s,
+> +			struct dwc3_event_buffer *evt)
+> +{
+> +	union dwc3_event	event;
+> +	int			i;
+> +
+> +	seq_printf(s, "evt->buf@0x%p(dma@0x%pad), length=3D%u, lpos=3D%u, count=
+=3D%u, flags=3D%s\n",
+> +		evt->buf, &evt->dma,
+> +		evt->length, evt->lpos, evt->count,
+> +		evt->flags & DWC3_EVENT_PENDING ? "pending" : "0");
+> +
+> +	for (i =3D 0; i < evt->length; i +=3D 4) {
+> +		event.raw =3D *(u32 *) (evt->buf + i);
+> +		if (i =3D=3D evt->lpos) {
+> +			seq_puts(s, "lpos-------|\n");
+> +			seq_puts(s, "           \\\n");
+> +		}
+> +		seq_printf(s, "event[%d]: %08x ", i, event.raw);
+> +
+> +		if (event.type.is_devspec)
+> +			dwc3_dump_dev_event(s, &event.devt);
+> +		else
+> +			dwc3_dump_ep_event(s, &event.depevt);
+> +		seq_puts(s, "\n");
+> +	}
+
+how well have you tested this ? I'm not entirely sure you should be
+reading the event buffer at any time you want, though I might be wrong.
+
+It's still a bit easier to reproduce part of the event handling here. I
+think it's best to make a choice of caching the last 5 events in a ring
+buffer and provide a helper for IRQ handlers to push events into the
+ring buffer, then from here you just iterate over that ring buffer
+instead of accessing our actual event buffer.
+
+Also note that we can hold up to 64 events in our event buffer so this
+call could take a looooooot of time to complete and you probably don't
+need all that information anyway because you can get them by just
+enabling VERBOSE_DEBUG on dwc3 and capturing the entire driver behavior
+on dmesg.
+
+> +static int dwc3_snapshot_show(struct seq_file *s, void *unused)
+> +{
+> +	struct dwc3		*dwc =3D s->private;
+> +	unsigned long		flags;
+> +	int			i;
+> +
+> +	spin_lock_irqsave(&dwc->lock, flags);
+> +	for (i =3D 2; i < DWC3_ENDPOINTS_NUM; i++) {
+
+some platforms don't have all 32 physical endpoints, we just had a bug
+fix for that, see commit 32702e9.
+
+> +		struct dwc3_ep	*dep =3D dwc->eps[i];
+> +
+> +		if (!(dep->flags & DWC3_EP_ENABLED))
+> +			continue;
+> +
+> +		seq_printf(s, "[%s]\n", dep->name);
+> +		dwc3_dump_requests(s, &dep->request_list, "request_list");
+> +		dwc3_dump_requests(s, &dep->req_queued, "req_queued");
+> +		if (!list_empty(&dep->req_queued))
+> +			dwc3_dump_trbs(s, dep);
+> +		seq_puts(s, "\n");
+> +	}
+> +
+> +	for (i =3D 0; i < dwc->num_event_buffers; i++)
+> +		dwc3_dump_event_buf(s, dwc->ev_buffs[i]);
+> +	spin_unlock_irqrestore(&dwc->lock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dwc3_snapshot_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, dwc3_snapshot_show, inode->i_private);
+> +}
+> +
+> +static const struct file_operations dwc3_snapshot_fops =3D {
+> +	.open			=3D dwc3_snapshot_open,
+> +	.read			=3D seq_read,
+> +	.llseek			=3D seq_lseek,
+> +	.release		=3D single_release,
+> +};
+> +
+>  int dwc3_debugfs_init(struct dwc3 *dwc)
+>  {
+>  	struct dentry		*root;
+> @@ -672,6 +857,13 @@ int dwc3_debugfs_init(struct dwc3 *dwc)
+>  			ret =3D -ENOMEM;
+>  			goto err1;
+>  		}
+> +
+> +		file =3D debugfs_create_file("snapshot", S_IRUGO, root,
+> +				dwc, &dwc3_snapshot_fops);
+> +		if (!file) {
+> +			ret =3D -ENOMEM;
+> +			goto err1;
+> +		}
+>  	}
+> =20
+>  	return 0;
+> diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
+> index a0ee75b..f589323 100644
+> --- a/drivers/usb/dwc3/gadget.h
+> +++ b/drivers/usb/dwc3/gadget.h
+> @@ -120,6 +120,8 @@ static inline const char *dwc3_gadget_event_string(u8=
+ event)
+>  		return "Link Status Change";
+>  	case DWC3_DEVICE_EVENT_WAKEUP:
+>  		return "WakeUp";
+> +	case DWC3_DEVICE_EVENT_HIBER_REQ:
+> +		return "Hibernation Request";
+
+this should be in a separate patch.
+
+>  	case DWC3_DEVICE_EVENT_EOPF:
+>  		return "End-Of-Frame";
+>  	case DWC3_DEVICE_EVENT_SOF:
+> @@ -159,4 +161,43 @@ static inline const char *dwc3_ep_event_string(u8 ev=
+ent)
+>  	return "UNKNOWN";
+>  }
+> =20
+> +/**
+> + * dwc3_link_state_string - returns link state
+> + * @link_state: the link state code
+> + */
+> +static inline const char *dwc3_link_state_string(u8 is_ss, u8 link_state)
+> +{
+> +	switch (link_state) {
+> +	case DWC3_LINK_STATE_U0:
+> +		return is_ss ? "U0" : "L0";
+> +	case DWC3_LINK_STATE_U1:
+> +		return "U1";
+> +	case DWC3_LINK_STATE_U2:
+> +		return is_ss ? "U2" : "L1";
+> +	case DWC3_LINK_STATE_U3:
+> +		return is_ss ? "U3" : "L2";
+> +	case DWC3_LINK_STATE_SS_DIS:
+> +		return is_ss ? "SS.Disabled" : "L3";
+> +	case DWC3_LINK_STATE_RX_DET:
+> +		return is_ss ? "Rx.Detect" : "Early_Suspend";
+> +	case DWC3_LINK_STATE_SS_INACT:
+> +		return "SS.Inactive";
+> +	case DWC3_LINK_STATE_POLL:
+> +		return "Poll";
+> +	case DWC3_LINK_STATE_RECOV:
+> +		return "Recovery";
+> +	case DWC3_LINK_STATE_HRESET:
+> +		return "HRESET";
+> +	case DWC3_LINK_STATE_CMPLY:
+> +		return "Compliance";
+> +	case DWC3_LINK_STATE_LPBK:
+> +		return "Loopback";
+> +	case DWC3_LINK_STATE_RESET:
+> +		return "Reset";
+> +	case DWC3_LINK_STATE_RESUME:
+> +		return "Resume";
+> +	}
+
+should be part of a separate patch, also I recently added my version of
+this, see the archives (although I didn't care for differentiating U0
+=66rom L0 depending on speed, but that's not really a big deal IMO).
+
+cheers
+
+--=20
+balbi
+
+--PGNNI9BzQDUtgA2J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTXnn4AAoJEIaOsuA1yqRE84sQAKR5IfG5i+nYmqJdZwWMY8ii
+qNmX5u8/dj/z8LmlFtfe+2Y0wIivU4TpANp+oxTgs5ca1ciEhxPdRtCUBHCa/UwK
+sJH4yIQZYF2CFG4YZK/Zm0eokKSu0X5wbsOLzA2TuH7qiPhN5B39LvfNDBTyvPKz
+3ZFxejZGPWXR0TbhSpFn0WuCfS/vPyWLNWxt9N+npeH5xw486QJOiViWSc5W2/I2
+ejeW+r/x9OQYRTHD9naWvFW9eRvpDY1jaZsHY/+w/KqE+Z7ajKJaghyNsDUZFwJA
+0XODmvGreUECitTUV6U3XKsL4C5W/6OeIm5nA4nFFk/ZbjaNN8PDmaDNzMoZuCSf
+8CuSe/dbsxMzj5bnGG6XX2KFq6jvEJbJ/xPPZuyKcnLgXqwrndvm6HbpJAJ0vKuu
+mPzfLWCgFBoMWOsEAu+m8rnrtU3drleazGjf2rMIgU+Txsi20oMYvqqmtnvO/WV5
+FNbdZsMgQAJQIvTLXQn0FqAFx/8b88C8HxBRNs/PFUsHURLawcjTRDjPFGzlcjZv
+tovu4s0i1M8I6MoIPY368VpmMJ+6idf9p6wUk+scO694kT/R0sDVUzucCox47eL7
+R1t84IG4riqhxIKVbm9QiHgWR5RQcE/1Sv9LVvT5vurXcIUEKn4DzC5LumwFZ3xx
+IaZXzndCmSJb3o/FNV8m
+=w2Lc
+-----END PGP SIGNATURE-----
+
+--PGNNI9BzQDUtgA2J--
