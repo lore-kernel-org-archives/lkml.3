@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500AbaD1KIm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:08:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35636 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656AbaD1KIl (ORCPT
+	id S1754788AbaD1KJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:09:25 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:60636 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559AbaD1KJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:08:41 -0400
-Date: Mon, 28 Apr 2014 12:08:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Axel Lin <axel.lin@ingics.com>
-cc: Tony Prisk <linux@prisktech.co.nz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] irqchip: vt8500: Switch to a simple write clear for
- Interrupt Status Register
-In-Reply-To: <1398656117.19333.1.camel@phoenix>
-Message-ID: <alpine.DEB.2.02.1404281207510.6261@ionos.tec.linutronix.de>
-References: <1398656117.19333.1.camel@phoenix>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 28 Apr 2014 06:09:22 -0400
+Message-ID: <535E28D0.7050502@linaro.org>
+Date: Mon, 28 Apr 2014 12:09:20 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <535911DC.9050109@linaro.org> <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com> <2713863.BLQTYQm2Oa@vostro.rjw.lan> <20140425132055.GC11096@twins.programming.kicks-ass.net> <535A94E3.5080004@linaro.org> <20140425184327.GH26782@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140425184327.GH26782@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Apr 2014, Axel Lin wrote:
+On 04/25/2014 08:43 PM, Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 07:01:23PM +0200, Daniel Lezcano wrote:
+>> As the sysctl is some kind of ABI, I would like to make sure we reach a
+>> consensus and discuss a bit about that.
+>
+> We could make it a sysfs file, like /sys/power/state, which when read
+> provides the words it takes.
+>
+> That is more flexible than a numeric sysctl for which we have to keep an
+> enumeration.
 
-> According to the datasheet, the attribute of Interrupt Status Register is RW0S,
-> which means:
-> 	Software can read the register.
-> 	Software can also "write 1 to clear". "write 0" has no effect.
-> 
-> So the read/modify/write cycle is no necessary, switch to a simple write clear
-> instead.
+I agree a numerical value is not flexible. But it sounds weird to put a 
+scheduler option in the sysfs and maybe more options will follow.
 
-Again, what's the point of this?
+I am wondering if we shouldn't create a new cgroup for 'energy' and put 
+everything in there. So we will have more flexibility for extension and 
+we will be able to create a group of tasks for performance and a group 
+of tasks for energy saving.
 
-There is still nothing which masks the interrupt at the controller
-level which is the purpose of the irq_mask() callback.
+Does it make sense ?
 
-Thanks,
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-	tglx
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
- 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> v2: Update commit log, this is a code simplification rather than bug fix.
->  drivers/irqchip/irq-vt8500.c | 6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
-> index eb6e91e..a0085bc 100644
-> --- a/drivers/irqchip/irq-vt8500.c
-> +++ b/drivers/irqchip/irq-vt8500.c
-> @@ -87,14 +87,10 @@ static void vt8500_irq_mask(struct irq_data *d)
->  	void __iomem *base = priv->base;
->  	void __iomem *stat_reg = base + VT8500_ICIS + (d->hwirq < 32 ? 0 : 4);
->  	u8 edge, dctr;
-> -	u32 status;
->  
->  	edge = readb(base + VT8500_ICDC + d->hwirq) & VT8500_EDGE;
->  	if (edge) {
-> -		status = readl(stat_reg);
-> -
-> -		status |= (1 << (d->hwirq & 0x1f));
-> -		writel(status, stat_reg);
-> +		writel(BIT(d->hwirq & 0x1f), stat_reg);
->  	} else {
->  		dctr = readb(base + VT8500_ICDC + d->hwirq);
->  		dctr &= ~VT8500_INT_ENABLE;
-> -- 
-> 1.8.3.2
-> 
-> 
-> 
-> 
