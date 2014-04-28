@@ -1,90 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaD1NfB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:35:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34906 "EHLO mx1.redhat.com"
+	id S932477AbaD1NgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:22 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58321 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160AbaD1NfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:35:00 -0400
-Date: Mon, 28 Apr 2014 15:34:43 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 2/3] perf tools: Cache dso data file descriptor
-Message-ID: <20140428133443.GE18628@krava.brq.redhat.com>
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
- <1397756352-26694-3-git-send-email-jolsa@redhat.com>
- <1398609395.1689.17.camel@leonhard>
- <20140428100133.GE1109@krava.brq.redhat.com>
- <1398690994.1724.13.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398690994.1724.13.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756041AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:22 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v8 09/20] usb: phy: msm: Remove unused pclk_src_name
+Date: Mon, 28 Apr 2014 16:34:12 +0300
+Message-Id: <1398692063-11372-10-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
+References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 10:16:34PM +0900, Namhyung Kim wrote:
-> 2014-04-28 (월), 12:01 +0200, Jiri Olsa:
-> > On Sun, Apr 27, 2014 at 11:36:35PM +0900, Namhyung Kim wrote:
-> > > 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
-> > > > Keeping the data file description open for the whole life
-> > > > of the dso object.
-> > > 
-> > > I suspect there might be an issue for reporting very large data file
-> > > with this approach - like open file limit?
-> > 
-> > I've got as high as ~200 openned file descriptors for
-> > ~2GB data of system wide monitoring
-> > 
-> > but right that could be an issue.. I wonder we could
-> > workaround this somehow, because the speed up is quite
-> > noticable
-> > 
-> > how about we monitor number of openned dso file descriptor
-> > and once we cross this we close some portion of them
-> > 
-> > or something along those lines ;-)
-> 
-> Yeah, we'll need some way to control those eventually.
-> 
-> > 
-> > > 
-> > > 
-> > > [SNIP]
-> > > > @@ -168,8 +174,8 @@ int dso__data_fd(struct dso *dso, struct machine *machine)
-> > > >  	};
-> > > >  	int i = 0;
-> > > >  
-> > > > -	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND)
-> > > > -		return open_dso(dso, machine);
-> > > 
-> > > Why did you remove this line?
-> > 
-> > that code reopens already openned (and closed) file.. 
-> > instead I return (not closed) descriptor from previous open
-> 
-> But it'll overwrite the dso->binary_type then.  What about this?
-> 
-> 	if (dso->data_fd >= 0)
-> 		return dso->data_fd;
-> 
-> 	if (dso->binary_type != DSO_BINARY_TYPE__NOT_FOUND) {
-> 		dso->data_fd = open_dso(dso, machine);
-> 		return dso->data_fd;
-> 	}
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-right, makes sense.. I'll add it with the control code for the
-number of openned descriptors
+There are no references to 'pclk_src_name' in plaform code,
+so it is unused.
 
-thanks,
-jirka
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c | 26 +-------------------------
+ include/linux/usb/msm_hsusb.h |  5 -----
+ 2 files changed, 1 insertion(+), 30 deletions(-)
+
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 7eb2abf..c2361bf 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -464,9 +464,6 @@ static int msm_otg_suspend(struct msm_otg *motg)
+ 	if (!IS_ERR(motg->core_clk))
+ 		clk_disable_unprepare(motg->core_clk);
+
+-	if (!IS_ERR(motg->pclk_src))
+-		clk_disable_unprepare(motg->pclk_src);
+-
+ 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
+ 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
+ 		msm_hsusb_ldo_set_mode(motg, 0);
+@@ -496,9 +493,6 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 	if (!atomic_read(&motg->in_lpm))
+ 		return 0;
+
+-	if (!IS_ERR(motg->pclk_src))
+-		clk_prepare_enable(motg->pclk_src);
+-
+ 	clk_prepare_enable(motg->pclk);
+ 	clk_prepare_enable(motg->clk);
+ 	if (!IS_ERR(motg->core_clk))
+@@ -1396,17 +1390,8 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	 * If USB Core is running its protocol engine based on CORE CLK,
+ 	 * CORE CLK  must be running at >55Mhz for correct HSUSB
+ 	 * operation and USB core cannot tolerate frequency changes on
+-	 * CORE CLK. For such USB cores, vote for maximum clk frequency
+-	 * on pclk source
++	 * CORE CLK.
+ 	 */
+-	 motg->pclk_src = ERR_PTR(-ENOENT);
+-	 if (motg->pdata->pclk_src_name) {
+-		motg->pclk_src = devm_clk_get(&pdev->dev,
+-					motg->pdata->pclk_src_name);
+-		if (IS_ERR(motg->pclk_src))
+-			return PTR_ERR(motg->pclk_src);
+-	}
+-
+ 	motg->pclk = devm_clk_get(&pdev->dev, "usb_hs_pclk");
+ 	if (IS_ERR(motg->pclk)) {
+ 		dev_err(&pdev->dev, "failed to get usb_hs_pclk\n");
+@@ -1446,10 +1431,6 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	motg->v1p8  = regs[2].consumer;
+
+ 	clk_set_rate(motg->clk, 60000000);
+-	if (!IS_ERR(motg->pclk_src)) {
+-		clk_set_rate(motg->pclk_src, INT_MAX);
+-		clk_prepare_enable(motg->pclk_src);
+-	}
+
+ 	clk_prepare_enable(motg->clk);
+ 	clk_prepare_enable(motg->pclk);
+@@ -1525,8 +1506,6 @@ disable_clks:
+ 	clk_disable_unprepare(motg->clk);
+ 	if (!IS_ERR(motg->core_clk))
+ 		clk_disable_unprepare(motg->core_clk);
+-	if (!IS_ERR(motg->pclk_src))
+-		clk_disable_unprepare(motg->pclk_src);
+ 	return ret;
+ }
+
+@@ -1571,9 +1550,6 @@ static int msm_otg_remove(struct platform_device *pdev)
+ 	clk_disable_unprepare(motg->clk);
+ 	if (!IS_ERR(motg->core_clk))
+ 		clk_disable_unprepare(motg->core_clk);
+-	if (!IS_ERR(motg->pclk_src))
+-		clk_disable_unprepare(motg->pclk_src);
+-
+ 	msm_hsusb_ldo_init(motg, 0);
+
+ 	pm_runtime_set_suspended(&pdev->dev);
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 72c5830..262ed80 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -106,8 +106,6 @@ enum usb_chg_type {
+  * @power_budget: VBUS power budget in mA (0 will be treated as 500mA).
+  * @mode: Supported mode (OTG/peripheral/host).
+  * @otg_control: OTG switch controlled by user/Id pin
+- * @pclk_src_name: pclk is derived from ebi1_usb_clk in case of 7x27 and 8k
+- *              dfab_usb_hs_clk in case of 8660 and 8960.
+  */
+ struct msm_otg_platform_data {
+ 	int *phy_init_seq;
+@@ -117,7 +115,6 @@ struct msm_otg_platform_data {
+ 	enum otg_control_type otg_control;
+ 	enum msm_usb_phy_type phy_type;
+ 	void (*setup_gpio)(enum usb_otg_state state);
+-	char *pclk_src_name;
+ 	int (*link_clk_reset)(struct clk *link_clk, bool assert);
+ 	int (*phy_clk_reset)(struct clk *phy_clk);
+ };
+@@ -129,7 +126,6 @@ struct msm_otg_platform_data {
+  * @irq: IRQ number assigned for HSUSB controller.
+  * @clk: clock struct of usb_hs_clk.
+  * @pclk: clock struct of usb_hs_pclk.
+- * @pclk_src: pclk source for voting.
+  * @phy_reset_clk: clock struct of usb_phy_clk.
+  * @core_clk: clock struct of usb_hs_core_clk.
+  * @regs: ioremapped register base address.
+@@ -150,7 +146,6 @@ struct msm_otg {
+ 	int irq;
+ 	struct clk *clk;
+ 	struct clk *pclk;
+-	struct clk *pclk_src;
+ 	struct clk *phy_reset_clk;
+ 	struct clk *core_clk;
+ 	void __iomem *regs;
+--
+1.8.3.2
+
