@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaD1TNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:13:30 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14983 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754732AbaD1TNV (ORCPT
+	id S932415AbaD1TNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:13:36 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:56900 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932305AbaD1TN3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:13:21 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Mark Salter <msalter@redhat.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH] arm64: fixmap: fix missing sub-page offset for earlyprintk
-Date: Mon, 28 Apr 2014 19:50:06 +0100
-Message-Id: <1398711006-14943-1-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 1.8.3.4
+	Mon, 28 Apr 2014 15:13:29 -0400
+Message-ID: <1398705482.25549.6.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+Date: Mon, 28 Apr 2014 10:18:02 -0700
+In-Reply-To: <20140428075205.GN11096@twins.programming.kicks-ass.net>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <20140428075205.GN11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d57c33c5daa4 (add generic fixmap.h) added (among other
-similar things) set_fixmap_io to deal with early ioremap of devices.
+On Mon, 2014-04-28 at 09:52 +0200, Peter Zijlstra wrote:
+> On Tue, Apr 22, 2014 at 03:19:26PM -0700, Davidlohr Bueso wrote:
+> > ---
+> >  include/linux/rwsem.h       |   9 +-
+> >  kernel/locking/rwsem-xadd.c | 213 +++++++++++++++++++++++++++++++++++++++-----
+> >  kernel/locking/rwsem.c      |  31 ++++++-
+> >  3 files changed, 231 insertions(+), 22 deletions(-)
+> 
+> rwsem-spinlock.c doesn't need changes?
 
-More recently, commit bf4b558eba92 (arm64: add early_ioremap support)
-converted the arm64 earlyprintk to use set_fixmap_io. A side effect of
-this conversion is that my virtual machines have stopped booting when
-I pass "earlyprintk=uart8250-8bit,0x3f8" to the guest kernel.
+I had considered this, but the spinlock variant is, of course,
+completely different to the xadd one (ie it doesn't even rely on the
+->count). Furthermore, any systems that should benefit from optimistic
+spinning, should already be using xadd. The same was true when the
+writer lock stealing was done. Note that the rwsem structure in
+rwsem-spinlock.h was not changed. I will explicitly mention the spinlock
+method in the changelog in v2.
 
-Turns out that the new earlyprintk code doesn't care at all about
-sub-page offsets, and just assumes that the earlyprintk device will
-be page-aligned. Obviously, that doesn't play well with the above example.
+> > diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
+> > index cfff143..a911dbf 100644
+> > --- a/kernel/locking/rwsem.c
+> > +++ b/kernel/locking/rwsem.c
+> > @@ -12,6 +12,27 @@
 
-Further investigation shows that set_fixmap_io uses __set_fixmap instead
-of __set_fixmap_offset. A fix is to introduce a set_fixmap_offset_io that
-uses the latter, and to remove the superflous call to fix_to_virt
-(which only returns the value that set_fixmap_io has already given us).
+err I also noticed that in:
 
-With this applied, my VMs are back in business. Tested on a Cortex-A57
-platform with kvmtool as platform emulation.
+@@ -58,7 +63,9 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ #define __RWSEM_INITIALIZER(name)                      \
+        { RWSEM_UNLOCKED_VALUE,                         \
+          __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),     \
+-         LIST_HEAD_INIT((name).wait_list)              \
++         LIST_HEAD_INIT((name).wait_list),             \
++         NULL, /* owner */                             \
++         NULL /* mcs lock */        
 
-Cc: Mark Salter <msalter@redhat.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- arch/arm64/kernel/early_printk.c | 6 ++----
- include/asm-generic/fixmap.h     | 3 +++
- 2 files changed, 5 insertions(+), 4 deletions(-)
+This needs to depend on CONFIG_SMP.
 
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index ffbbdde..2dc36d0 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -143,10 +143,8 @@ static int __init setup_early_printk(char *buf)
- 	}
- 	/* no options parsing yet */
- 
--	if (paddr) {
--		set_fixmap_io(FIX_EARLYCON_MEM_BASE, paddr);
--		early_base = (void __iomem *)fix_to_virt(FIX_EARLYCON_MEM_BASE);
--	}
-+	if (paddr)
-+		early_base = (void __iomem *)set_fixmap_offset_io(FIX_EARLYCON_MEM_BASE, paddr);
- 
- 	printch = match->printch;
- 	early_console = &early_console_dev;
-diff --git a/include/asm-generic/fixmap.h b/include/asm-generic/fixmap.h
-index 5a64ca4..f23174f 100644
---- a/include/asm-generic/fixmap.h
-+++ b/include/asm-generic/fixmap.h
-@@ -93,5 +93,8 @@ static inline unsigned long virt_to_fix(const unsigned long vaddr)
- #define set_fixmap_io(idx, phys) \
- 	__set_fixmap(idx, phys, FIXMAP_PAGE_IO)
- 
-+#define set_fixmap_offset_io(idx, phys) \
-+	__set_fixmap_offset(idx, phys, FIXMAP_PAGE_IO)
-+
- #endif /* __ASSEMBLY__ */
- #endif /* __ASM_GENERIC_FIXMAP_H */
--- 
-1.8.3.4
+> >  #include <linux/atomic.h>
+> >  
+> > +#ifdef CONFIG_SMP
+> > +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> > +{
+> > +	sem->owner = current;
+> > +}
+> > +
+> > +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> > +{
+> > +	sem->owner = NULL;
+> > +}
+> > +
+> > +#else
+> > +static inline void rwsem_set_owner(struct rw_semaphore *sem)
+> > +{
+> > +}
+> > +
+> > +static inline void rwsem_clear_owner(struct rw_semaphore *sem)
+> > +{
+> > +}
+> > +#endif
+> > +
+> >  /*
+> >   * lock for reading
+> >   */
+> > @@ -48,6 +69,7 @@ void __sched down_write(struct rw_semaphore *sem)
+> >  	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
+> >  
+> >  	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
+> > +	rwsem_set_owner(sem);
+> >  }
+> >  
+> >  EXPORT_SYMBOL(down_write);
+> > @@ -59,8 +81,11 @@ int down_write_trylock(struct rw_semaphore *sem)
+> >  {
+> >  	int ret = __down_write_trylock(sem);
+> >  
+> > -	if (ret == 1)
+> > +	if (ret == 1) {
+> >  		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
+> > +		rwsem_set_owner(sem);
+> > +	}
+> > +
+> >  	return ret;
+> >  }
+> 
+> So first acquire lock, then set owner.
+> 
+> > @@ -86,6 +111,7 @@ void up_write(struct rw_semaphore *sem)
+> >  	rwsem_release(&sem->dep_map, 1, _RET_IP_);
+> >  
+> >  	__up_write(sem);
+> > +	rwsem_clear_owner(sem);
+> >  }
+> >  
+> >  EXPORT_SYMBOL(up_write);
+> > @@ -100,6 +126,7 @@ void downgrade_write(struct rw_semaphore *sem)
+> >  	 * dependency.
+> >  	 */
+> >  	__downgrade_write(sem);
+> > +	rwsem_clear_owner(sem);
+> >  }
+> 
+> But here you first release and then clear owner; this is buggy. The
+> moment you release another acquire can happen and your clear will clear
+> the new owner, not us.
+
+Ah yes. The same should go for up_write(). We need to follow this order:
+
+take lock
+set owner
+
+clear owner
+release lock
+
+Will update in v2.
+
+Thanks,
+Davidlohr
 
