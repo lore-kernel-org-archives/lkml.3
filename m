@@ -1,119 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574AbaD1JEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:04:37 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59192 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989AbaD1JEb (ORCPT
+	id S1754545AbaD1JEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:04:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47561 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446AbaD1JEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:04:31 -0400
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org,
-        dave.hansen@intel.com, Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Subject: [PATCH V3 1/2] mm: move FAULT_AROUND_ORDER to arch/
-Date: Mon, 28 Apr 2014 14:31:29 +0530
-Message-Id: <1398675690-16186-2-git-send-email-maddy@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com>
-References: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042809-7014-0000-0000-000004CE4417
+	Mon, 28 Apr 2014 05:04:24 -0400
+Date: Mon, 28 Apr 2014 10:03:45 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, lgirdwood@gmail.com
+Message-ID: <20140428090345.GD15125@sirena.org.uk>
+References: <1398662906-4398-1-git-send-email-j-keerthy@ti.com>
+ <1398662906-4398-3-git-send-email-j-keerthy@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xB0nW4MQa6jZONgY"
+Content-Disposition: inline
+In-Reply-To: <1398662906-4398-3-git-send-email-j-keerthy@ti.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.197.120.38
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] Regulators: TPS65917: Add Regulator driver for
+ TPS65917 PMIC
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill A. Shutemov with 8c6e50b029 commit introduced
-vm_ops->map_pages() for mapping easy accessible pages around
-fault address in hope to reduce number of minor page faults.
 
-This patch creates infrastructure to modify the FAULT_AROUND_ORDER
-value using mm/Kconfig. This will enable architecture maintainers
-to decide on suitable FAULT_AROUND_ORDER value based on
-performance data for that architecture. Patch also defaults
-FAULT_AROUND_ORDER Kconfig element to 4.
+--xB0nW4MQa6jZONgY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
----
- mm/Kconfig  |    8 ++++++++
- mm/memory.c |   11 ++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
+On Mon, Apr 28, 2014 at 10:58:26AM +0530, Keerthy wrote:
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index ebe5880..c7fc4f1 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -176,6 +176,14 @@ config MOVABLE_NODE
- config HAVE_BOOTMEM_INFO_NODE
- 	def_bool n
- 
-+#
-+# Fault around order is a control knob to decide the fault around pages.
-+# Default value is set to 4 , but the arch can override it as desired.
-+#
-+config FAULT_AROUND_ORDER
-+	int
-+	default	4
-+
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
- 	bool "Allow for memory hot-add"
-diff --git a/mm/memory.c b/mm/memory.c
-index d0f0bef..457436d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3382,11 +3382,9 @@ void do_set_pte(struct vm_area_struct *vma, unsigned long address,
- 	update_mmu_cache(vma, address, pte);
- }
- 
--#define FAULT_AROUND_ORDER 4
-+unsigned int fault_around_order = CONFIG_FAULT_AROUND_ORDER;
- 
- #ifdef CONFIG_DEBUG_FS
--static unsigned int fault_around_order = FAULT_AROUND_ORDER;
--
- static int fault_around_order_get(void *data, u64 *val)
- {
- 	*val = fault_around_order;
-@@ -3395,7 +3393,6 @@ static int fault_around_order_get(void *data, u64 *val)
- 
- static int fault_around_order_set(void *data, u64 val)
- {
--	BUILD_BUG_ON((1UL << FAULT_AROUND_ORDER) > PTRS_PER_PTE);
- 	if (1UL << val > PTRS_PER_PTE)
- 		return -EINVAL;
- 	fault_around_order = val;
-@@ -3430,14 +3427,14 @@ static inline unsigned long fault_around_pages(void)
- {
- 	unsigned long nr_pages;
- 
--	nr_pages = 1UL << FAULT_AROUND_ORDER;
-+	nr_pages = 1UL << fault_around_order;
- 	BUILD_BUG_ON(nr_pages > PTRS_PER_PTE);
- 	return nr_pages;
- }
- 
- static inline unsigned long fault_around_mask(void)
- {
--	return ~((1UL << (PAGE_SHIFT + FAULT_AROUND_ORDER)) - 1);
-+	return ~((1UL << (PAGE_SHIFT + fault_around_order)) - 1);
- }
- #endif
- 
-@@ -3495,7 +3492,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * if page by the offset is not ready to be mapped (cold cache or
- 	 * something).
- 	 */
--	if (vma->vm_ops->map_pages) {
-+	if ((vma->vm_ops->map_pages) && (fault_around_order)) {
- 		pte = pte_offset_map_lock(mm, pmd, address, &ptl);
- 		do_fault_around(vma, address, pte, pgoff, flags);
- 		if (!pte_same(*pte, orig_pte))
--- 
-1.7.10.4
+> index 6a79328..5ddb220 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -384,6 +384,18 @@ config REGULATOR_PALMAS
+>  	  on the muxing. This is handled automatically in the driver by
+>  	  reading the mux info from OTP.
+> =20
+> +config REGULATOR_TPS65917
+> +	tristate "TI TPS65917 PMIC Regulators"
+> +	depends on MFD_TPS65917
 
+Please keep the Kconfig and Makefile sorted.
+
+> +static const struct regs_info tps65917_regs_info[] =3D {
+> +	{
+> +		.name		=3D "SMPS1",
+> +		.sname		=3D "smps1-in",
+> +		.vsel_addr	=3D TPS65917_SMPS1_VOLTAGE,
+> +		.ctrl_addr	=3D TPS65917_SMPS1_CTRL,
+> +		.sleep_id	=3D TPS65917_EXTERNAL_REQSTR_ID_SMPS1,
+> +	},
+
+> +static int tps65917_is_enabled_smps(struct regulator_dev *dev)
+> +{
+> +	struct tps65917_pmic *pmic =3D rdev_get_drvdata(dev);
+> +	int id =3D rdev_get_id(dev);
+> +	unsigned int reg;
+> +
+> +	tps65917_smps_read(pmic->tps65917,
+> +			   tps65917_regs_info[id].ctrl_addr, &reg);
+> +
+> +	reg &=3D TPS65917_SMPS1_CTRL_STATUS_MASK;
+> +	reg >>=3D TPS65917_SMPS1_CTRL_STATUS_SHIFT;
+> +
+> +	return !!(reg);
+> +}
+
+A lot of these functions look like they could be implemented using the
+standard helpers rather than open coded - the helpers now support
+multi-bit enable fields.
+
+> +	if (selector =3D=3D 0)
+> +		return 0;
+> +	else if (selector < 6)
+> +		return 500000 * mult;
+> +	else
+> +		/* Voltage is linear mapping starting from selector 6,
+> +		 * volt =3D (0.49V + ((selector - 5) * 0.01V)) * RANGE
+> +		 * RANGE is either x1 or x2
+> +		 */
+> +		return (490000 + ((selector - 5) * 10000)) * mult;
+> +}
+
+This looks like the driver could just use linear ranges.
+
+> +static struct of_device_id of_tps65917_match_tbl[] =3D {
+> +	{ .compatible =3D "ti,tps65917-pmic", },
+> +};
+
+Missing null entry at the end of the table here.
+
+--xB0nW4MQa6jZONgY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTXhluAAoJELSic+t+oim9I7oP/2pUPLf/OOqO32ZbQQrrR+3u
+BH13w5qj54pULhI4IEOumANTyGRicGTiprpO/VHrtk4ql6dPXbST4kQtJPDvAScs
+Q5SS7fSt0gv8McdtKx4XUXTicOTKK/gOvWrHBYGdGXTBNiM9fit8oDF2ULjrtIz3
+nrGXS8dX/hfmKyYreta5diKR7Yi/fBU4Wj6iqhUlHNdzn4Ej7tfjTZicuHLp2yO3
+gqcvOszkUfaKdC4PxpJQlyHMEIh1ZkYCRV6bd004CcuIO1s0oEEaguI7F5hOX+IN
+lP/Tm6hKfaFvCEOTNW2irKMcSIIHgelfetWPxlyaolQ4qITTTFGC0K4cr6JIpGOi
+j4QRsj4KabjaURVc+lGlZsz/jvTOBew5gBI5CN0azmtxmIRdyEGGRilESisJh4OR
+1nbO6Xp+UEdeY/iUTEz8QllUYN2errNTGpWZMyKZvBT8zzkBcm2zwGxkouCXBwcA
+HXvvMm+yf2i7rs+lQ8mM2oCsi+U+2hXFcwRR+wTMPD4opcif9R7jmm+SsSPdnuCq
+92+XGlxPZUGLZwznTooSveERAj/LW39W5iKSWQYXAWcDz8tuPjcW4+l6ltWRdhxG
+qsKJnrKUMbFxg+I7o3zoF00i7kIqKX99ERAXDB0QhqaioO0Pa2pGhvkqP40vz/+E
+TDgcY5dvzoTaWsN3KuSK
+=4Tls
+-----END PGP SIGNATURE-----
+
+--xB0nW4MQa6jZONgY--
