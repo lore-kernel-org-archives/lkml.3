@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616AbaD1Bak (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43065 "EHLO
+	id S1753536AbaD1Bah (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43048 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752851AbaD1B3X (ORCPT
+	by vger.kernel.org with ESMTP id S1752825AbaD1B3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:23 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Evgeniy Polyakov" <zbr@ioremap.net>,
-        "David Fries" <David@Fries.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Dave Kleikamp" <dave.kleikamp@oracle.com>,
+        "Hugh Dickins" <hughd@google.com>, sparclinux@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
 Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.869801152@decadent.org.uk>
+Message-ID: <lsq.1398647481.595997505@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 23/94] w1: fix w1_send_slave dropping a slave id
+Subject: [PATCH 3.2 17/94] Revert "sparc64: Fix __copy_{to,from}_user_inatomic
+  defines."
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,76 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Fries <David@Fries.net>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 6b355b33a64fd6d8ead2b838ec16fb9b551f71e8 upstream.
+[ Upstream commit 16932237f2978a2265662f8de4af743b1f55a209 ]
 
-Previous logic,
-if (avail > 8) {
-	store slave;
-	return;
-}
-send data; clear;
+This reverts commit 145e1c0023585e0e8f6df22316308ec61c5066b2.
 
-The logic error is, if there isn't space send the buffer and clear,
-but the slave wasn't added to the now empty buffer loosing that slave
-id.  It also should have been "if (avail >= 8)" because when it is 8,
-there is space.
+This commit broke the behavior of __copy_from_user_inatomic when
+it is only partially successful. Instead of returning the number
+of bytes not copied, it now returns 1. This translates to the
+wrong value being returned by iov_iter_copy_from_user_atomic.
 
-Instead, if there isn't space send and clear the buffer, then there is
-always space for the slave id.
+xfstests generic/246 and LTP writev01 both fail on btrfs and nfs
+because of this.
 
-Signed-off-by: David Fries <David@Fries.net>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/w1/w1_netlink.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ arch/sparc/include/asm/uaccess_64.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_mast
- 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
- 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
- 	int avail;
-+	u64 *data;
+diff --git a/arch/sparc/include/asm/uaccess_64.h b/arch/sparc/include/asm/uaccess_64.h
+index 3e1449f..6d6c731 100644
+--- a/arch/sparc/include/asm/uaccess_64.h
++++ b/arch/sparc/include/asm/uaccess_64.h
+@@ -267,8 +267,8 @@ extern long __strnlen_user(const char __user *, long len);
  
- 	/* update kernel slave list */
- 	w1_slave_found(dev, rn);
+ #define strlen_user __strlen_user
+ #define strnlen_user __strnlen_user
+-#define __copy_to_user_inatomic ___copy_to_user
+-#define __copy_from_user_inatomic ___copy_from_user
++#define __copy_to_user_inatomic __copy_to_user
++#define __copy_from_user_inatomic __copy_from_user
  
- 	avail = dev->priv_size - cmd->len;
+ #endif  /* __ASSEMBLY__ */
  
--	if (avail > 8) {
--		u64 *data = (void *)(cmd + 1) + cmd->len;
--
--		*data = rn;
--		cmd->len += 8;
--		hdr->len += 8;
--		msg->len += 8;
--		return;
-+	if (avail < 8) {
-+		msg->ack++;
-+		cn_netlink_send(msg, 0, GFP_KERNEL);
-+
-+		msg->len = sizeof(struct w1_netlink_msg) +
-+			sizeof(struct w1_netlink_cmd);
-+		hdr->len = sizeof(struct w1_netlink_cmd);
-+		cmd->len = 0;
- 	}
- 
--	msg->ack++;
--	cn_netlink_send(msg, 0, GFP_KERNEL);
-+	data = (void *)(cmd + 1) + cmd->len;
- 
--	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
--	hdr->len = sizeof(struct w1_netlink_cmd);
--	cmd->len = 0;
-+	*data = rn;
-+	cmd->len += 8;
-+	hdr->len += 8;
-+	msg->len += 8;
- }
- 
- static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
 
