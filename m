@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933317AbaD1T5J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:57:09 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:28071 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933054AbaD1Tx2 (ORCPT
+	id S1756766AbaD1T6P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:58:15 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45495 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaD1T6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:53:28 -0400
-From: Pawel Moll <pawel.moll@arm.com>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        arm@kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH 00/10] Versatile Express changes for 3.16
-Date: Mon, 28 Apr 2014 18:57:47 +0100
-Message-Id: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 28 Apr 2014 15:58:13 -0400
+Date: Mon, 28 Apr 2014 13:23:47 -0400 (EDT)
+Message-Id: <20140428.132347.778081265367223580.davem@davemloft.net>
+To: kys@microsoft.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, stable@kernel.org
+Subject: Re: [PATCH V1 net-next 1/1] hyperv: Properly handle checksum
+ offload
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1398484523-27596-1-git-send-email-kys@microsoft.com>
+References: <1398484523-27596-1-git-send-email-kys@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 28 Apr 2014 10:23:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Fri, 25 Apr 2014 20:55:23 -0700
 
-What follows is the (hopefully) last take on the vexpress
-infrastructure changes. With the exception of the first
-patch, everything else has been discussed and acked
-(or at least not naked) in the past:
+> @@ -467,6 +467,9 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+>  	if (skb_is_gso(skb))
+>  		goto do_lso;
+>  
+> +	if (skb->ip_summed != CHECKSUM_PARTIAL)
+> +		goto do_send;
+> +
 
-http://thread.gmane.org/gmane.linux.kernel/1645586/
-http://thread.gmane.org/gmane.linux.kernel/1619575/
+There are many possible values of ip_summed, why would you go to do_send if
+for example it was set to CHECKSUM_COMPLETE?
 
-I'd like to see it merged in the 3.16, so if there are
-no major issues, I'll send a pull request next week.
+I think you are just rushing this change, take your time and implement the
+fix properly.
 
-The series, based on 3.15-rc3, is available at:
-
-  git://git.linaro.org/people/pawel.moll/linux.git vexpress/sysreg
-
-Pawel Moll (9):
-  of: Keep track of populated platform devices
-  mfd: vexpress: Convert custom func API to regmap
-  mfd: syscon: Add platform data with a regmap config name
-  mfd: vexpress: Define the device as MFD cells
-  clk: versatile: Split config options for sp810 and vexpress_osc
-  clocksource: Sched clock source for Versatile Express
-  ARM: vexpress: Simplify SMP operations for DT-powered system
-  ARM: vexpress: move HBI check to sysreg driver
-  hwmon: vexpress: Use devm helper for hwmon device registration
-
-Sudeep KarkadaNagesha (1):
-  ARM: vexpress: remove redundant vexpress_dt_cpus_num to get cpu count
-
- .../devicetree/bindings/arm/vexpress-sysreg.txt    |  79 ++-
- Documentation/devicetree/bindings/arm/vexpress.txt |  15 +-
- arch/arm/boot/dts/vexpress-v2m-rs1.dtsi            |  76 ++-
- arch/arm/boot/dts/vexpress-v2m.dtsi                |  76 ++-
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts         |   5 +-
- arch/arm/mach-vexpress/core.h                      |   3 +-
- arch/arm/mach-vexpress/ct-ca9x4.c                  |  10 +-
- arch/arm/mach-vexpress/platsmp.c                   | 187 ++-----
- arch/arm/mach-vexpress/v2m.c                       |  82 +--
- arch/arm64/boot/dts/rtsm_ve-motherboard.dtsi       |   2 +-
- drivers/bus/Kconfig                                |   9 +
- drivers/bus/Makefile                               |   2 +
- drivers/bus/vexpress-config.c                      | 202 ++++++++
- drivers/clk/Kconfig                                |   9 +-
- drivers/clk/versatile/Kconfig                      |  26 +
- drivers/clk/versatile/Makefile                     |   5 +-
- drivers/clk/versatile/clk-vexpress-osc.c           |  94 ++--
- drivers/clocksource/Kconfig                        |  11 +
- drivers/clocksource/Makefile                       |   1 +
- drivers/clocksource/versatile.c                    |  40 ++
- drivers/hwmon/vexpress.c                           | 104 ++--
- drivers/mfd/Kconfig                                |  15 +-
- drivers/mfd/Makefile                               |   2 +-
- drivers/mfd/syscon.c                               |   4 +
- drivers/mfd/vexpress-config.c                      | 287 -----------
- drivers/mfd/vexpress-sysreg.c                      | 554 ++++++---------------
- drivers/misc/Kconfig                               |   9 +
- drivers/misc/Makefile                              |   1 +
- drivers/misc/vexpress-syscfg.c                     | 324 ++++++++++++
- drivers/of/platform.c                              |  10 +-
- drivers/power/reset/vexpress-poweroff.c            |  16 +-
- drivers/regulator/vexpress.c                       |  50 +-
- include/linux/of.h                                 |   1 +
- include/linux/platform_data/syscon.h               |   8 +
- include/linux/vexpress.h                           |  94 +---
- 35 files changed, 1209 insertions(+), 1204 deletions(-)
- create mode 100644 drivers/bus/vexpress-config.c
- create mode 100644 drivers/clk/versatile/Kconfig
- create mode 100644 drivers/clocksource/versatile.c
- delete mode 100644 drivers/mfd/vexpress-config.c
- create mode 100644 drivers/misc/vexpress-syscfg.c
- create mode 100644 include/linux/platform_data/syscon.h
-
--- 
-1.9.1
-
+For example, if you only expect two possible values here (CHECKSUM_PARTIAL
+and something else), design your test so that it only allows those two
+values and therefore you'll be documenting this invariant.
