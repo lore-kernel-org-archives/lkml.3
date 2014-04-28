@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035AbaD1VkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 17:40:05 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:52531 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974AbaD1VkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 17:40:03 -0400
-Date: Mon, 28 Apr 2014 22:40:00 +0100
-From: Brian Healy <healybrian@gmail.com>
-To: Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
- rtl28xxu driver
-Message-ID: <20140428214000.GA9187@gmail.com>
-References: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
- <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
+	id S933073AbaD1Vkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 17:40:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40379 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932101AbaD1Vkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 17:40:53 -0400
+Date: Mon, 28 Apr 2014 23:40:36 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Bjorn Helgaas <bhelgaas@google.com>, Robert Richter <rric@kernel.org>,
+        herrmann.der.user@gmail.com
+Cc: Myron Stowe <myron.stowe@gmail.com>, Myron Stowe <myron.stowe@redhat.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com, Daniel J Blueman <daniel@numascale.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Robert Richter <rric@kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
+ capabilities
+Message-ID: <20140428214036.GA32143@pd.tnic>
+References: <20140419025308.2408.51252.stgit@amt.stowe>
+ <20140419025323.2408.88764.stgit@amt.stowe>
+ <20140419135219.GC8109@pd.tnic>
+ <20140420075936.GA19672@pd.tnic>
+ <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
+ <20140426091031.GA10166@pd.tnic>
+ <CAErSpo4Jqo_opj=QqjcquS_6HqckZfP5-oQHkmY5FSAyyLNYMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="opJtzjQTFsWo+cga"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo4Jqo_opj=QqjcquS_6HqckZfP5-oQHkmY5FSAyyLNYMg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sun, Apr 27, 2014 at 03:19:12PM -0700, Linus Torvalds wrote:
-
-Hi Linus,
-
-apologies, i've changed email clients in order to preserve the
-formatting this time around. The patch is now included inline as an
-attachment. I ran the script but noticed you've already cc'd the
-appropriate people. 
-
-Brian.
-
-
-Resubmitting modified patch. It's purpose is to add the appropriate
-device/usb ids for the "Peak DVT-B usb dongle" to the rtl28xxu.c driver.
-
-Signed-off-by: Brian Healy <healybrian <at> gmail.com>
-
-
-> Brian, please use
+On Mon, Apr 28, 2014 at 02:50:29PM -0600, Bjorn Helgaas wrote:
+> This I/O ECS thing seems likely to cause future problems.  My
+> understanding (based on sec 2.8 of [1]) is that enable_pci_io_ecs()
+> and pci_enable_pci_io_ecs() are there to enable access to extended
+> config space (offsets 256-4095) via the 0xcf8/0xcfc I/O ports.
 > 
->  ./scripts/get_maintainer -f drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> Per sec 4.1.1 of [2], we should be using ECAM (the memory-mapped
+> enhanced configuration mechanism, i.e., MMCONFIG) to access extended
+> config space, and the BIOS should supply an MCFG table.
 > 
-> to get the proper people to send this to, so that it doesn't get lost
-> in the flood in lkml.
-> 
-> The indentation of that new entry also seems to be suspect, in that it
-> doesn't match the ones around it.
-> 
-> Quoting full email for context for people added.
-> 
->              Linus
-> 
+> So why do we need to enable I/O access to ECS on AMD chips at all?  Is
+> this a workaround for a broken BIOS that doesn't supply an MCFG table?
 
---opJtzjQTFsWo+cga
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: inline; filename="rtl28xxu.patch"
+That's a good question. 831d991821dae doesn't say but I have a hunch
+Andreas and/or Robert should know. I seem to vaguely remember it
+might've been because of a missing MCFG but have flushed it out of the
+cache long time ago.
 
-diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-index 61d196e..b6e20cc 100644
---- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-+++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
-@@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
- 		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
- 		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
-+        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
-+                &rtl2832u_props, "Peak DVB-T USB", NULL) },
- 
- 	/* RTL2832P devices: */
- 	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+Let's ask them.
 
---opJtzjQTFsWo+cga--
+Andreas, Robert, guys, do you remember why we did the PCI IO ECS access?
+B0rked BIOSes?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
