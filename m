@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaD1JMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:12:35 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:59576 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751837AbaD1JMe (ORCPT
+	id S1754543AbaD1JNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:13:25 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57775 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500AbaD1JNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:12:34 -0400
-Date: Mon, 28 Apr 2014 10:12:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: broonie@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL v2] regulator: First pull of MFD <-> Regulator IB (v3.16)
-Message-ID: <20140428091228.GJ6264@lee--X1>
-References: <20140423113941.GL21613@lee--X1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140423113941.GL21613@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 05:13:24 -0400
+From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org,
+        dave.hansen@intel.com, Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Subject: [PATCH V3 0/2] mm: FAULT_AROUND_ORDER patchset performance data for powerpc
+Date: Mon, 28 Apr 2014 14:31:28 +0530
+Message-Id: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10.4
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042809-1618-0000-0000-00000025FE14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the Regulator patch removed this time - as requested.
+Kirill A. Shutemov with 8c6e50b029 commit introduced
+vm_ops->map_pages() for mapping easy accessible pages around
+fault address in hope to reduce number of minor page faults.
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
+This patch creates infrastructure to modify the FAULT_AROUND_ORDER
+value using mm/Kconfig. This will enable architecture maintainers
+to decide on suitable FAULT_AROUND_ORDER value based on
+performance data for that architecture. First patch also defaults
+FAULT_AROUND_ORDER Kconfig element to 4. Second patch list
+out the performance numbers for powerpc (platform pseries) and
+initialize the fault around order variable for pseries platform of
+powerpc.
 
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
+V3 Changes:
+  Replaced FAULT_AROUND_ORDER macro to a variable to support arch's that
+   supports sub platforms.
+  Made changes in commit messages.
 
-are available in the git repository at:
+V2 Changes:
+  Created Kconfig parameter for FAULT_AROUND_ORDER
+  Added check in do_read_fault to handle FAULT_AROUND_ORDER value of 0
+  Made changes in commit messages.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-regulator-3.16
+Madhavan Srinivasan (2):
+  mm: move FAULT_AROUND_ORDER to arch/
+  powerpc/pseries: init fault_around_order for pseries
 
-for you to fetch changes up to c42ba72ec3a7a1b6aa30122931f1f4b91b601c31:
-
-  mfd: tps65090: Stop caching most registers (2014-04-23 12:32:19 +0100)
-
-----------------------------------------------------------------
-Immutable branch between MFD and Regulator due for v3.16 merge-window.
-
-----------------------------------------------------------------
-Doug Anderson (2):
-      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
-      mfd: tps65090: Stop caching most registers
-
- drivers/mfd/tps65090.c           | 41 +++++++++++++++++++++++++----------------
- drivers/power/tps65090-charger.c | 11 -----------
- include/linux/mfd/tps65090.h     | 14 ++++++++++++++
- 3 files changed, 39 insertions(+), 27 deletions(-)
+ arch/powerpc/platforms/pseries/setup.c |    5 +++++
+ mm/Kconfig                             |    8 ++++++++
+ mm/memory.c                            |   11 ++++-------
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.4
+
