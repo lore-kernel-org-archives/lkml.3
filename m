@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755514AbaD1LKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:10:10 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:46848 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754440AbaD1LKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:10:08 -0400
-Message-ID: <535E370A.2030207@mev.co.uk>
-Date: Mon, 28 Apr 2014 12:10:02 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755289AbaD1LOh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:14:37 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:35158 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754453AbaD1LOf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 07:14:35 -0400
+Message-ID: <535E3818.2040905@linaro.org>
+Date: Mon, 28 Apr 2014 13:14:32 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@gmail.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] staging: comedi: addi_apci_1564: simplify the PCI
- bar reading and don't read the unused bars
-References: <1398562558-5354-1-git-send-email-chase.southwood@gmail.com> <1398562636-5900-1-git-send-email-chase.southwood@gmail.com> <535E2B33.9030308@mev.co.uk>
-In-Reply-To: <535E2B33.9030308@mev.co.uk>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] cpuidle / menu: Return error code if there are no
+ suitable states
+References: <2471963.urOyfY8mOG@vostro.rjw.lan> <6832089.A5AOPipfbA@vostro.rjw.lan>
+In-Reply-To: <6832089.A5AOPipfbA@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-28 11:19, Ian Abbott wrote:
-> On 2014-04-27 02:37, Chase Southwood wrote:
->> This driver only uses PCI bar 1 (devpriv->i_IobaseAmcc), and PCI bar 2
->> (dev->iobase) doon't bother reading the unused PCI bars.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
->> Cc: Ian Abbott <abbotti@mev.co.uk>
->> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
->> ---
->>
->> Hartley,
->>
->> As far as I can tell from reading the I/O Mapping you sent me, these bar
->> numbers are correct, but it seems a bit odd, so please offer correction
->> if I am interpreting the document incorrectly.
->>
->> Thanks,
->> Chase
->>
->>   drivers/staging/comedi/drivers/addi_apci_1564.c | 11 ++---------
->>   1 file changed, 2 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c
->> b/drivers/staging/comedi/drivers/addi_apci_1564.c
->> index fe42f9d..7e42d47 100644
->> --- a/drivers/staging/comedi/drivers/addi_apci_1564.c
->> +++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
->> @@ -65,15 +65,8 @@ static int apci1564_auto_attach(struct
->> comedi_device *dev,
->>       if (ret)
->>           return ret;
->>
->> -    if (this_board->i_IorangeBase1)
->> -        dev->iobase = pci_resource_start(pcidev, 1);
->> -    else
->> -        dev->iobase = pci_resource_start(pcidev, 0);
->> -
->> -    devpriv->iobase = dev->iobase;
->> -    devpriv->i_IobaseAmcc = pci_resource_start(pcidev, 0);
->> -    devpriv->i_IobaseAddon = pci_resource_start(pcidev, 2);
->> -    devpriv->i_IobaseReserved = pci_resource_start(pcidev, 3);
->> +    dev->iobase = pci_resource_start(pcidev, 2);
->> +    devpriv->i_IobaseAmcc = pci_resource_start(pcidev, 1);
+On 04/27/2014 02:55 PM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 >
-> I'm sure the original resources are correct, so since
-> this_board->i_IorangeBase1 is non-zero:
+> If there is a PM QoS latency limit and all of the sufficiently shallow
+> C-states are disabled, the cpuidle menu governor returns 0 which on
+> some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
+> if that C-state has been disabled.
 >
->      dev->iobase = pci_resource_start(pcidev, 1);
->      devpriv->i_IobaseAmcc = pci_resource_start(pcidev, 0);
-
-Maybe this depends on the revision of the board, though.  The documents 
-Chase saw were for APCI1564 revision D, but the PCI BAR assignments 
-might have been different for earlier revisions of the board.
-
-All the driver code I've ever seen for this board (including one of 
-ADDI-DATA's own Linux drivers, which no longer seems to be available for 
-download) has used PCI BARs 0 and 1 with the same functions as the 
-comedi driver.
-
-Most "off-the-shelf" PCI interface chips reserve at least PCI BAR 0 for 
-their own registers.  The clearest image I've found of this board seems 
-to have an Altera ACEX FPGA with built-in PCI interface, so it might not 
-have that restriction on BAR 0.
-
-http://pcqt.com/DAQ/images/apci-1564-400.jpg
-
-I think it's best to stick with the existing BAR assignments until 
-proved otherwise.
-
+> Fix the issue by modifying the menu governor to return an error code
+> in such situations.
 >
-> I suspect the member name 'i_IobaseAmcc' is just a hangover from the
-> distant past and could just be changed to 'iobasemain' or something,
-> since most of the code seems to use it.
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>   drivers/cpuidle/governors/menu.c |    2 +-
+>   include/linux/cpuidle.h          |    2 ++
+>   2 files changed, 3 insertions(+), 1 deletion(-)
 >
+> Index: linux-pm/drivers/cpuidle/governors/menu.c
+> ===================================================================
+> --- linux-pm.orig/drivers/cpuidle/governors/menu.c
+> +++ linux-pm/drivers/cpuidle/governors/menu.c
+> @@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
+>   		data->needs_update = 0;
+>   	}
+>
+> -	data->last_state_idx = 0;
+> +	data->last_state_idx = CPUIDLE_DRIVER_STATE_POLL;
+>
+>   	/* Special case when user has set very strict latency requirement */
+>   	if (unlikely(latency_req == 0))
+> Index: linux-pm/include/linux/cpuidle.h
+> ===================================================================
+> --- linux-pm.orig/include/linux/cpuidle.h
+> +++ linux-pm/include/linux/cpuidle.h
+> @@ -217,8 +217,10 @@ static inline int cpuidle_register_gover
+>
+>   #ifdef CONFIG_ARCH_HAS_CPU_RELAX
+>   #define CPUIDLE_DRIVER_STATE_START	1
+> +#define CPUIDLE_DRIVER_STATE_POLL	0
+>   #else
+>   #define CPUIDLE_DRIVER_STATE_START	0
+> +#define CPUIDLE_DRIVER_STATE_POLL	(-ENXIO)
+>   #endif
+>
+>   #endif /* _LINUX_CPUIDLE_H */
+
+Hi Rafael,
+
+CPUIDLE_DRIVER_STATE_START is only for x86. It introduces some confusion 
+in the code. As only two drivers are concerned by it, wouldn't make 
+sense to add the poll state to those driver directly instead of having 
+the code hacked around ? (eg. insert the poll state in the common 
+cpuidle code).
 
 
 -- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
