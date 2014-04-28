@@ -1,284 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902AbaD1Myy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:54:54 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:54177 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481AbaD1Myw (ORCPT
+	id S932267AbaD1M7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:59:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43130 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162AbaD1M7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:54:52 -0400
-From: Bart Tanghe <bart.tanghe@thomasmore.be>
-To: swarren@wwwdotorg.org, tim.kryger@linaro.org
-Cc: thierry.reding@gmail.com, linux-kernel@vger.kernel.org,
-        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        Bart Tanghe <bart.tanghe@thomasmore.be>
-Subject: [resend rfc v3] pwm: add BCM2835 PWM driver
-Date: Mon, 28 Apr 2014 14:54:46 +0200
-Message-Id: <1398689686-30317-1-git-send-email-bart.tanghe@thomasmore.be>
-X-Mailer: git-send-email 1.9.2
+	Mon, 28 Apr 2014 08:59:09 -0400
+Message-ID: <535E505F.3010302@ti.com>
+Date: Mon, 28 Apr 2014 18:28:07 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
+        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
+        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
+        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
+        <mugunthanvnm@ti.com>, <t-kristo@ti.com>, <mturquette@linaro.org>,
+        <linux@arm.linux.org.uk>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH 4/6] drivers: net: cpsw: Enable Annexe F Time sync
+References: <1398658225-25873-1-git-send-email-george.cherian@ti.com> <1398658225-25873-5-git-send-email-george.cherian@ti.com> <20140428075530.GA8371@netboy>
+In-Reply-To: <20140428075530.GA8371@netboy>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Add some better error handling and Device table support
-	Added Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-	
-Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
-diff --git a/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-new file mode 100644
-index 0000000..44c0b95
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
-@@ -0,0 +1,13 @@
-+bcm2835 PWM controller
-+
-+Required properties:
-+- compatible: should be "bcrm,pwm-bcm2835"
-+- reg: physical base address and length of the controller's registers
-+
-+Examples:
-+
-+pwm@0x2020C000 {
-+	compatible = "bcrm,pwm-bcm2835";
-+	reg = <0x2020C000 0x28>;
-+	clocks = <&clk_pwm>;
-+};
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 22f2f28..20341a3 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -62,6 +62,18 @@ config PWM_ATMEL_TCB
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-atmel-tcb.
- 
-+config PWM_BCM2835
-+	tristate "BCM2835 PWM support"
-+	depends on MACH_BCM2835 || MACH_BCM2708
-+	help
-+	  PWM framework driver for BCM2835 controller (raspberry pi)
-+	  Only 1 channel is implemented.
-+
-+	  The pwm core is tested with a pwm basic frequency of 1Mhz.
-+	  Use period above 1000ns
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-bcm2835.
-+
- config PWM_BFIN
- 	tristate "Blackfin PWM support"
- 	depends on BFIN_GPTIMERS
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index d8906ec..9863590 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -3,6 +3,7 @@ obj-$(CONFIG_PWM_SYSFS)		+= sysfs.o
- obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
- obj-$(CONFIG_PWM_ATMEL)		+= pwm-atmel.o
- obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
-+obj-$(CONFIG_PWM_BCM2835)	+= pwm-bcm2835.o
- obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
- obj-$(CONFIG_PWM_EP93XX)	+= pwm-ep93xx.o
- obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
-diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
-new file mode 100644
-index 0000000..ec9829b
---- /dev/null
-+++ b/drivers/pwm/pwm-bcm2835.c
-@@ -0,0 +1,198 @@
-+/*
-+ * pwm-bcm2835 driver
-+ * Standard raspberry pi (gpio18 - pwm0)
-+ *
-+ * Copyright (C) 2014 Thomas more
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+/*mmio regiser mapping*/
-+
-+#define DUTY		0x14
-+#define PERIOD		0x10
-+#define CHANNEL		0x10
-+
-+#define PWM_ENABLE	0x00000001
-+#define PWM_POLARITY	0x00000010
-+
-+#define MASK_CTL_PWM	0x000000FF
-+#define CTL_PWM		0x00000081
-+
-+#define DRIVER_AUTHOR "Bart Tanghe <bart.tanghe@thomasmore.be>"
-+#define DRIVER_DESC "A bcm2835 pwm driver - raspberry pi development platform"
-+
-+struct bcm2835_pwm_chip {
-+	struct pwm_chip chip;
-+	struct device *dev;
-+	int channel;
-+	int scaler;
-+	void __iomem *mmio_base;
-+};
-+
-+static inline struct bcm2835_pwm_chip *to_bcm2835_pwm_chip(
-+					struct pwm_chip *chip){
-+
-+	return container_of(chip, struct bcm2835_pwm_chip, chip);
-+}
-+
-+static int bcm2835_pwm_config(struct pwm_chip *chip,
-+			      struct pwm_device *pwm,
-+			      int duty_ns, int period_ns){
-+
-+	struct bcm2835_pwm_chip *pc;
-+
-+	pc = container_of(chip, struct bcm2835_pwm_chip, chip);
-+
-+	iowrite32(duty_ns/pc->scaler, pc->mmio_base + DUTY);
-+	iowrite32(period_ns/pc->scaler, pc->mmio_base + PERIOD);
-+
-+	return 0;
-+}
-+
-+static int bcm2835_pwm_enable(struct pwm_chip *chip,
-+			      struct pwm_device *pwm){
-+
-+	struct bcm2835_pwm_chip *pc;
-+
-+	pc = container_of(chip, struct bcm2835_pwm_chip, chip);
-+
-+	iowrite32(ioread32(pc->mmio_base) | PWM_ENABLE, pc->mmio_base);
-+	return 0;
-+}
-+
-+static void bcm2835_pwm_disable(struct pwm_chip *chip,
-+				struct pwm_device *pwm)
-+{
-+	struct bcm2835_pwm_chip *pc;
-+
-+	pc = to_bcm2835_pwm_chip(chip);
-+
-+	iowrite32(ioread32(pc->mmio_base) & ~PWM_ENABLE, pc->mmio_base);
-+}
-+
-+static int bcm2835_set_polarity(struct pwm_chip *chip, struct pwm_device *pwm,
-+				enum pwm_polarity polarity)
-+{
-+	struct bcm2835_pwm_chip *pc;
-+
-+	pc = to_bcm2835_pwm_chip(chip);
-+
-+	if (polarity == PWM_POLARITY_NORMAL)
-+		iowrite32((ioread32(pc->mmio_base) & ~PWM_POLARITY),
-+						pc->mmio_base);
-+	else if (polarity == PWM_POLARITY_INVERSED)
-+		iowrite32((ioread32(pc->mmio_base) | PWM_POLARITY),
-+						pc->mmio_base);
-+
-+	return 0;
-+}
-+
-+static const struct pwm_ops bcm2835_pwm_ops = {
-+	.config = bcm2835_pwm_config,
-+	.enable = bcm2835_pwm_enable,
-+	.disable = bcm2835_pwm_disable,
-+	.set_polarity = bcm2835_set_polarity,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int bcm2835_pwm_probe(struct platform_device *pdev)
-+{
-+	struct bcm2835_pwm_chip *pwm;
-+
-+	int ret;
-+	struct resource *r;
-+	u32 start, end;
-+	struct clk *clk;
-+
-+	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
-+	if (!pwm) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	pwm->dev = &pdev->dev;
-+
-+	clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "could not find clk: %ld\n", PTR_ERR(clk));
-+		devm_kfree(&pdev->dev, pwm);
-+		return PTR_ERR(clk);
-+	}
-+
-+	pwm->scaler = (int)1000000000/clk_get_rate(clk);
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	pwm->mmio_base = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(pwm->mmio_base)) {
-+		devm_kfree(&pdev->dev, pwm);
-+		return PTR_ERR(pwm->mmio_base);
-+	}
-+
-+	start = r->start;
-+	end = r->end;
-+
-+	pwm->chip.dev = &pdev->dev;
-+	pwm->chip.ops = &bcm2835_pwm_ops;
-+	pwm->chip.npwm = 2;
-+
-+	ret = pwmchip_add(&pwm->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		devm_kfree(&pdev->dev, pwm);
-+		return -1;
-+	}
-+
-+	/*set the pwm0 configuration*/
-+	iowrite32((ioread32(pwm->mmio_base) & ~MASK_CTL_PWM)
-+				| CTL_PWM, pwm->mmio_base);
-+
-+	platform_set_drvdata(pdev, pwm);
-+
-+	return 0;
-+}
-+
-+static int bcm2835_pwm_remove(struct platform_device *pdev)
-+{
-+
-+	struct bcm2835_pwm_chip *pc;
-+	pc  = platform_get_drvdata(pdev);
-+
-+	if (WARN_ON(!pc))
-+		return -ENODEV;
-+
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static const struct of_device_id bcm2835_pwm_of_match[] = {
-+	{ .compatible = "bcrm,pwm-bcm2835", },
-+	{ /* sentinel */ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, bcm2835_pwm_of_match);
-+
-+static struct platform_driver bcm2835_pwm_driver = {
-+	.driver = {
-+		.name = "pwm-bcm2835",
-+		.owner = THIS_MODULE,
-+		.of_match_table = bcm2835_pwm_of_match,
-+	},
-+	.probe = bcm2835_pwm_probe,
-+	.remove = bcm2835_pwm_remove,
-+};
-+module_platform_driver(bcm2835_pwm_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
+On 4/28/2014 1:25 PM, Richard Cochran wrote:
+> On Mon, Apr 28, 2014 at 09:40:23AM +0530, George Cherian wrote:
+>> Enable the Annex F Time Sync explicitly for DRA7x and AM4372.
+>> With this enabled the L2 PTP is working.
+> L2 works fine without this bit. If this is needed for V3 hardware,
+> then it should have its own code variant.
+okay
+>   
+>> while at that rename TS_BIT8 to TS_TTL_NONZERO
+> Is this bit finally documented for am335x?
+Not for am335x, but for other SoC's it s documented.
+> Thanks,
+> Richard
+>
+
+
+-- 
+-George
+
