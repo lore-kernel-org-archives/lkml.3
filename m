@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaD1LEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:04:13 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41997 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755066AbaD1LEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:04:10 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: roland@redhat.com, hpa@zytor.com, suresh.b.siddha@intel.com,
-        palves@redhat.com, Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Subject: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code documentation
-Date: Mon, 28 Apr 2014 16:30:53 +0530
-Message-Id: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042811-3864-0000-0000-00000DE707AD
+	id S1755490AbaD1LEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:04:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755046AbaD1LEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 07:04:42 -0400
+Date: Mon, 28 Apr 2014 13:00:03 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: Re: [PATCH 1/3] perf tools: Cache register accesses for unwind
+ processing
+Message-ID: <20140428110003.GA18628@krava.brq.redhat.com>
+References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
+ <1397756352-26694-2-git-send-email-jolsa@redhat.com>
+ <535E2FDC.2020309@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535E2FDC.2020309@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current documentation is bit misleading and does not explicitly
-specify that iov.len need to be initialized failing which kernel
-may just ignore the ptrace request and never read from/write into
-the user specified buffer. This patch fixes the documentation.
+On Mon, Apr 28, 2014 at 12:39:24PM +0200, Christian Borntraeger wrote:
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- include/uapi/linux/ptrace.h | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+SNIP
 
-diff --git a/include/uapi/linux/ptrace.h b/include/uapi/linux/ptrace.h
-index cf1019e..e9d6b37 100644
---- a/include/uapi/linux/ptrace.h
-+++ b/include/uapi/linux/ptrace.h
-@@ -43,8 +43,12 @@
-  *
-  *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
-  *
-- * On the successful completion, iov.len will be updated by the kernel,
-- * specifying how much the kernel has written/read to/from the user's iov.buf.
-+ * A non-zero value upto the max size of data expected to be written/read by the
-+ * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
-+ * before initiating the ptrace call. If iov.len is 0, then kernel will neither
-+ * read from or write into the user buffer specified. On successful completion,
-+ * iov.len will be updated by the kernel, specifying how much the kernel has
-+ * written/read to/from the user's iov.buf.
-  */
- #define PTRACE_GETREGSET	0x4204
- #define PTRACE_SETREGSET	0x4205
--- 
-1.7.11.7
+> >  {
+> > 
+> 
+> Want such a speedup, 
+> but it does not compile on my s390x system:
 
+the speed up is for DWARF unwind report, which is not yet
+supported on s390x perf.. still it should compile ;-)
+
+I'll try to get some s390x and make a fix
+
+thanks,
+jirka
