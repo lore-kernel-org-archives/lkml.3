@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaD1Llw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 07:41:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28589 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbaD1Llu (ORCPT
+	id S1754753AbaD1LmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 07:42:21 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:65144 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaD1LmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 07:41:50 -0400
-Date: Mon, 28 Apr 2014 14:41:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: walter harms <wharms@bfs.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Oleg Drokin <oleg.drokin@intel.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Dmitry Eremin <dmitry.eremin@intel.com>,
-        Jinshan Xiong <jinshan.xiong@intel.com>,
-        Dulshani Gunawardhana <dulshani.gunawardhana89@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch 2/2 v2] staging: lustre: integer overflow in
- obd_ioctl_is_invalid()
-Message-ID: <20140428114126.GK4963@mwanda>
-References: <20140428105858.GA31925@mwanda>
- <535E3CF7.9030609@bfs.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535E3CF7.9030609@bfs.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 28 Apr 2014 07:42:18 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/4] dt: bindings: Typo s/clocks-names/clock-names/g
+To: Dinh Nguyen <dinguyen@altera.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org
+In-Reply-To: <1398440850.389.0.camel@linux-builds1>
+References: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
+	<1398440850.389.0.camel@linux-builds1>
+Date: Mon, 28 Apr 2014 12:42:13 +0100
+Message-Id: <20140428114213.D81B5C40AAE@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 01:35:19PM +0200, walter harms wrote:
-> 
-> 
-> Am 28.04.2014 12:58, schrieb Dan Carpenter:
-> > The obd_ioctl_getdata() function caps "data->ioc_len" at
-> > OBD_MAX_IOCTL_BUFFER and then calls this obd_ioctl_is_invalid() to check
-> > that the other values inside data are valid.
-> > 
-> > There are several lengths inside data but when they are added together
-> > they must not be larger than "data->ioc_len".  The checks against
-> > "(data->ioc_inllen1 > (1<<30))" are supposed to ensure that the addition
-> > does not have an integer overflow.  But "(1<<30) * 4" actually can
-> > overflow 32 bits, so the checks are insufficient.
-> > 
-> > I have changed it to "> OBD_MAX_IOCTL_BUFFER" instead.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Fri, 25 Apr 2014 10:47:30 -0500, Dinh Nguyen <dinguyen@altera.com> wrote:
+> On Tue, 2014-04-22 at 20:40 +0200, Geert Uytterhoeven wrote:
+> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> > Cc: Dinh Nguyen <dinguyen@altera.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: netdev@vger.kernel.org
 > > ---
-> > v2: Updated the error messages as Walter Harms pointed out.
+> >  .../devicetree/bindings/net/socfpga-dwmac.txt      |    2 +-
+> >  Documentation/devicetree/bindings/net/stmmac.txt   |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
 > > 
-> > diff --git a/drivers/staging/lustre/lustre/include/lustre_lib.h b/drivers/staging/lustre/lustre/include/lustre_lib.h
-> > index bdc9812..3c26bbd 100644
-> > --- a/drivers/staging/lustre/lustre/include/lustre_lib.h
-> > +++ b/drivers/staging/lustre/lustre/include/lustre_lib.h
-> > @@ -179,24 +179,25 @@ static inline int obd_ioctl_packlen(struct obd_ioctl_data *data)
+> > diff --git a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> > index 636f0ac4e223..2a60cd3e8d5d 100644
+> > --- a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> > +++ b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+> > @@ -23,5 +23,5 @@ gmac0: ethernet@ff700000 {
+> >  	interrupt-names = "macirq";
+> >  	mac-address = [00 00 00 00 00 00];/* Filled in by U-Boot */
+> >  	clocks = <&emac_0_clk>;
+> > -	clocks-names = "stmmaceth";
+> > +	clock-names = "stmmaceth";
+> >  };
+> > diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+> > index 80c1fb8bfbb8..a2acd2b26baf 100644
+> > --- a/Documentation/devicetree/bindings/net/stmmac.txt
+> > +++ b/Documentation/devicetree/bindings/net/stmmac.txt
+> > @@ -33,7 +33,7 @@ Optional properties:
+> >  - max-frame-size: See ethernet.txt file in the same directory
+> >  - clocks: If present, the first clock should be the GMAC main clock,
+> >    further clocks may be specified in derived bindings.
+> > -- clocks-names: One name for each entry in the clocks property, the
+> > +- clock-names: One name for each entry in the clocks property, the
+> >    first one should be "stmmaceth".
 > >  
-> >  static inline int obd_ioctl_is_invalid(struct obd_ioctl_data *data)
-> >  {
-> > -	if (data->ioc_len > (1<<30)) {
-> > -		CERROR("OBD ioctl: ioc_len larger than 1<<30\n");
-> > +	if (data->ioc_len > OBD_MAX_IOCTL_BUFFER) {
-> > +		CERROR("OBD ioctl: ioc_len larger than %d\n",
-> > +		       OBD_MAX_IOCTL_BUFFER);
-> >  		return 1;
-> >  	}
-> > -	if (data->ioc_inllen1 > (1<<30)) {
-> > -		CERROR("OBD ioctl: ioc_inllen1 larger than 1<<30\n");
-> > +	if (data->ioc_inllen1 > OBD_MAX_IOCTL_BUFFER) {
-> > +		CERROR("OBD ioctl: ioc_inllen1 larger than ioc_len\n");
-> >  		return 1;
-> >  	}
+> >  Examples:
 > 
-> The error mention ioc_len the compare is OBD_MAX_IOCTL_BUFFER ?
-> Is that intentional ?
+> I've applied this patch to git.rocketboards.org/linux-socfpga-next.git
+> next-dt.
 
-Yep.
+I've already got it in my tree which is in linux-next and will be asking
+Linus to pull shortly.
 
-regards,
-dan carpenter
+g.
 
