@@ -1,171 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281AbaD1Xlj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 19:41:39 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43246 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367AbaD1Xli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 19:41:38 -0400
-Date: Mon, 28 Apr 2014 19:40:39 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-Message-ID: <20140428234039.GC6358@logfs.org>
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
- <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
- <20140424005247.GA17713@logfs.org>
- <20140424194024.GA25446@logfs.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140424194024.GA25446@logfs.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932532AbaD1XmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 19:42:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:34727 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932339AbaD1XmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 19:42:22 -0400
+Date: Tue, 29 Apr 2014 09:42:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: paulmck@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>,
+        Randy Dunlap <rdunlap@infradead.org>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        umgwanakikbuti@gmail.com
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+Message-Id: <20140429094211.aa10845c82f772155d12923c@canb.auug.org.au>
+In-Reply-To: <20140428160501.df072b191fce77ab5d042054@linux-foundation.org>
+References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
+	<535992DD.3060808@infradead.org>
+	<20140425100459.7824f676@annuminas.surriel.com>
+	<535AC91A.1070504@infradead.org>
+	<535ACB0E.4070600@infradead.org>
+	<20140427062650.GW4496@linux.vnet.ibm.com>
+	<20140428135540.GA14661@linux.vnet.ibm.com>
+	<535E8D14.7080405@infradead.org>
+	<535E8E17.2050600@nod.at>
+	<20140428200640.GG4430@linux.vnet.ibm.com>
+	<20140428213909.GA16623@linux.vnet.ibm.com>
+	<20140428160501.df072b191fce77ab5d042054@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Apr_2014_09_42_11_+1000_7YrNW7mQo=3Cqg+J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 April 2014 15:40:24 -0400, Jörn Engel wrote:
-> On Wed, 23 April 2014 20:52:47 -0400, Jörn Engel wrote:
-> > 
-> > I use the patch below for some time now.  While it doesn't avoid the
-> > log pollution in the first place, it lessens the impact somewhat.
-> 
-> Added a config option and ported it to current -linus.  Andrew, would
-> you take this patch?
+--Signature=_Tue__29_Apr_2014_09_42_11_+1000_7YrNW7mQo=3Cqg+J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Andrew?  Did you dislike this patch for some reason or just miss it in
-the thread?
+Hi Andrew,
 
-> ---
-> 
-> Sometimes the printk log is heavily interleaving between different cpus.
-> This is particularly bad when you have two backtraces at the same time,
-> but can be annoying in other cases as well.  With an explicit cpu
-> number, a simple grep can disentangle the mess for you.
-> 
-> Signed-off-by: Joern Engel <joern@logfs.org>
-> ---
->  kernel/printk/printk.c | 19 ++++++++++++++++---
->  lib/Kconfig.debug      |  9 +++++++++
->  2 files changed, 25 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-> index a45b50962295..b9e464924825 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -200,6 +200,7 @@ struct printk_log {
->  	u16 len;		/* length of entire record */
->  	u16 text_len;		/* length of text buffer */
->  	u16 dict_len;		/* length of dictionary buffer */
-> +	u16 cpu;		/* cpu the message was generated on */
->  	u8 facility;		/* syslog facility */
->  	u8 flags:5;		/* internal record flags */
->  	u8 level:3;		/* syslog level */
-> @@ -346,6 +347,7 @@ static void log_store(int facility, int level,
->  	msg->facility = facility;
->  	msg->level = level & 7;
->  	msg->flags = flags & 0x1f;
-> +	msg->cpu = smp_processor_id();
->  	if (ts_nsec > 0)
->  		msg->ts_nsec = ts_nsec;
->  	else
-> @@ -859,7 +861,7 @@ static bool printk_time;
->  #endif
->  module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
->  
-> -static size_t print_time(u64 ts, char *buf)
-> +static size_t print_time(u64 ts, u16 cpu, char *buf)
->  {
->  	unsigned long rem_nsec;
->  
-> @@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
->  
->  	rem_nsec = do_div(ts, 1000000000);
->  
-> +#ifdef CONFIG_PRINTK_CPU
-> +	if (!buf)
-> +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
-> +				(unsigned long)ts, cpu);
-> +
-> +	return sprintf(buf, "[%5lu.%06lu,%02x] ",
-> +			(unsigned long)ts, rem_nsec / 1000, cpu);
-> +#else
->  	if (!buf)
->  		return snprintf(NULL, 0, "[%5lu.000000] ", (unsigned long)ts);
->  
->  	return sprintf(buf, "[%5lu.%06lu] ",
->  		       (unsigned long)ts, rem_nsec / 1000);
-> +#endif
->  }
->  
->  static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
-> @@ -894,7 +905,7 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
->  		}
->  	}
->  
-> -	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
-> +	len += print_time(msg->ts_nsec, msg->cpu, buf ? buf + len : NULL);
->  	return len;
->  }
->  
-> @@ -1391,6 +1402,7 @@ static struct cont {
->  	size_t cons;			/* bytes written to console */
->  	struct task_struct *owner;	/* task of first print*/
->  	u64 ts_nsec;			/* time of first print */
-> +	u16 cpu;			/* cpu the message was generated on */
->  	u8 level;			/* log level of first message */
->  	u8 facility;			/* log level of first message */
->  	enum log_flags flags;		/* prefix, newline flags */
-> @@ -1440,6 +1452,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
->  		cont.facility = facility;
->  		cont.level = level;
->  		cont.owner = current;
-> +		cont.cpu = smp_processor_id();
->  		cont.ts_nsec = local_clock();
->  		cont.flags = 0;
->  		cont.cons = 0;
-> @@ -1461,7 +1474,7 @@ static size_t cont_print_text(char *text, size_t size)
->  	size_t len;
->  
->  	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
-> -		textlen += print_time(cont.ts_nsec, text);
-> +		textlen += print_time(cont.ts_nsec, cont.cpu, text);
->  		size -= textlen;
->  	}
->  
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 819ac51202c0..bdec67eca521 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -15,6 +15,15 @@ config PRINTK_TIME
->  	  The behavior is also controlled by the kernel command line
->  	  parameter printk.time=1. See Documentation/kernel-parameters.txt
->  
-> +config PRINTK_CPU
-> +	bool "Show CPU number along with timing information"
-> +	depends on PRINTK_TIME
-> +	help
-> +	  Selecting this option adds the CPU number to be added to
-> +	  timestamps of printk() messages.  This can be useful when
-> +	  messages from several CPUs are interleaved, in particular
-> +	  for stack traces.
-> +
->  config DEFAULT_MESSAGE_LOGLEVEL
->  	int "Default message log level (1-7)"
->  	range 1 7
-> -- 
-> 2.0.0.rc0.1.g7b2ba98
-> 
+On Mon, 28 Apr 2014 16:05:01 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> OK, my tiny brain just burst.  Rik, I think I shall ease
+>=20
+> sysrq-rcu-ify-__handle_sysrq.patch
+> sysrq-rcu-ify-__handle_sysrq-fix.patch
+> and
+> sysrqrcu-suppress-rcu-stall-warnings-while-sysrq-runs.patch
+>=20
+> into the bitbucket for now.  Please resend everything when it's all
+> sorted out?
 
-Jörn
+And I have dropped them from today's linux-next.
 
---
-The grand essentials of happiness are: something to do, something to
-love, and something to hope for.
--- Allan K. Chalmers
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__29_Apr_2014_09_42_11_+1000_7YrNW7mQo=3Cqg+J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTXudcAAoJEMDTa8Ir7ZwVgQEP/11NkHf0lMu+wO4BQClrOlHi
+IiHfeTJWUvCUL/jlfa9RxSRzJ95MVk/CizmatyPO0+zvzuxBEnBN7TM/Jvf27gTd
+VwHj2L5j7A0AUeCMTDOyXSrvZ2VCSpnv1GyEWw1K1S2SxyioOBfbYYkgbJooV8xs
+kc48/slcRrMoZsQc6fR6QYrk6lD4K0wpvQghQFI3NLtA1lpZie+n9CNGnAk+QGUi
+FVKeAJsiT4BaJGDOgpMDKspiouNHLg9sswMOVNjAkG4Gc1fX4rfjDOtnmRaSHThP
+SNdjpC1acwmisM3FGEJUE3hi4Bxh9wgm2xrPfQVKJAp9ZOvR1Gw91pUoy9XlUzqo
+NkjfR72RDCLr9eKyJnDhS0bmuhKfTfc1MuP8SDvr+T8cwhzECUgIXaUCVQjBN52S
+5hGD3rRPMl9x3060jQeweVaOn9pwNeLgDqbK7a+O0Bw3A4OiHJFURFzGsqnIeWYA
+61o+Q6yGEQg9OP+hcXCZE8xAs8EQwm9vqx+9YuD1/J206Fw8Kjde4uFJj0SOX7mU
+NpRLdgQXKtdHv01bGlYiMXXe1EuHtGqn9tvEU/RnhZ1nth+p9GK7zTX2FV3Lb99l
+rKDTvsPxDfX8qYuhhDQYwdhZ5XQ060LrZIvaIzldImA75ud2QkVQREOT4+rphDx3
+L8TxldWXA8Tqf2g0QbeI
+=5rWU
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Apr_2014_09_42_11_+1000_7YrNW7mQo=3Cqg+J--
