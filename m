@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299AbaD1Bcl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:32:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42963 "EHLO
+	id S1755284AbaD1Bck (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:32:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42989 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752676AbaD1B3V (ORCPT
+	by vger.kernel.org with ESMTP id S1752711AbaD1B3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Apr 2014 21:29:21 -0400
+	Sun, 27 Apr 2014 21:29:22 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Michal Schmidt" <mschmidt@redhat.com>,
-        "Lennart Poettering" <lpoetter@redhat.com>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Jan Kratochvil" <jan.kratochvil@redhat.com>,
-        "Tejun Heo" <tj@kernel.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Roland McGrath" <roland@hack.frob.com>,
-        "Al Viro" <viro@ZenIV.linux.org.uk>
-Date: Mon, 28 Apr 2014 02:11:22 +0100
-Message-ID: <lsq.1398647482.333293991@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Tomi Valkeinen" <tomi.valkeinen@ti.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>
+Date: Mon, 28 Apr 2014 02:11:21 +0100
+Message-ID: <lsq.1398647481.211798857@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 82/94] wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE
- race
+Subject: [PATCH 3.2 26/94] matroxfb: restore the registers M_ACCESS and
+ M_PITCH
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -38,76 +32,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit dfccbb5e49a621c1b21a62527d61fc4305617aca upstream.
+commit a772d4736641ec1b421ad965e13457c17379fc86 upstream.
 
-wait_task_zombie() first does EXIT_ZOMBIE->EXIT_DEAD transition and
-drops tasklist_lock.  If this task is not the natural child and it is
-traced, we change its state back to EXIT_ZOMBIE for ->real_parent.
+When X11 is running and the user switches back to console, the card
+modifies the content of registers M_MACCESS and M_PITCH in periodic
+intervals.
 
-The last transition is racy, this is even documented in 50b8d257486a
-"ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE
-race".  wait_consider_task() tries to detect this transition and clear
-->notask_error but we can't rely on ptrace_reparented(), debugger can
-exit and do ptrace_unlink() before its sub-thread sets EXIT_ZOMBIE.
+This patch fixes it by restoring the content of these registers before
+issuing any accelerator command.
 
-And there is another problem which were missed before: this transition
-can also race with reparent_leader() which doesn't reset >exit_signal if
-EXIT_DEAD, assuming that this task must be reaped by someone else.  So
-the tracee can be re-parented with ->exit_signal != SIGCHLD, and if
-/sbin/init doesn't use __WALL it becomes unreapable.
-
-Change reparent_leader() to update ->exit_signal even if EXIT_DEAD.
-Note: this is the simple temporary hack for -stable, it doesn't try to
-solve all problems, it will be reverted by the next changes.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
-Reported-by: Michal Schmidt <mschmidt@redhat.com>
-Tested-by: Michal Schmidt <mschmidt@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/exit.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/video/matrox/matroxfb_accel.c | 38 ++++++++++++++++++++++++++---------
+ drivers/video/matrox/matroxfb_base.h  |  2 ++
+ 2 files changed, 30 insertions(+), 10 deletions(-)
 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -734,9 +734,6 @@ static void reparent_leader(struct task_
- 				struct list_head *dead)
- {
- 	list_move_tail(&p->sibling, &p->real_parent->children);
--
--	if (p->exit_state == EXIT_DEAD)
--		return;
- 	/*
- 	 * If this is a threaded reparent there is no need to
- 	 * notify anyone anything has happened.
-@@ -744,9 +741,19 @@ static void reparent_leader(struct task_
- 	if (same_thread_group(p->real_parent, father))
- 		return;
+--- a/drivers/video/matrox/matroxfb_accel.c
++++ b/drivers/video/matrox/matroxfb_accel.c
+@@ -192,10 +192,18 @@ void matrox_cfbX_init(struct matrox_fb_i
+ 	minfo->accel.m_dwg_rect = M_DWG_TRAP | M_DWG_SOLID | M_DWG_ARZERO | M_DWG_SGNZERO | M_DWG_SHIFTZERO;
+ 	if (isMilleniumII(minfo)) minfo->accel.m_dwg_rect |= M_DWG_TRANSC;
+ 	minfo->accel.m_opmode = mopmode;
++	minfo->accel.m_access = maccess;
++	minfo->accel.m_pitch = mpitch;
+ }
  
--	/* We don't want people slaying init.  */
-+	/*
-+	 * We don't want people slaying init.
-+	 *
-+	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
-+	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
-+	 * state, do_notify_parent() was already called and ->exit_signal
-+	 * doesn't matter.
-+	 */
- 	p->exit_signal = SIGCHLD;
+ EXPORT_SYMBOL(matrox_cfbX_init);
  
-+	if (p->exit_state == EXIT_DEAD)
-+		return;
++static void matrox_accel_restore_maccess(struct matrox_fb_info *minfo)
++{
++	mga_outl(M_MACCESS, minfo->accel.m_access);
++	mga_outl(M_PITCH, minfo->accel.m_pitch);
++}
 +
- 	/* If it has exited notify the new parent about this child's death. */
- 	if (!p->ptrace &&
- 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 			       int sx, int dy, int dx, int height, int width)
+ {
+@@ -207,7 +215,8 @@ static void matrox_accel_bmove(struct ma
+ 	CRITBEGIN
+ 
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			 M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -215,7 +224,8 @@ static void matrox_accel_bmove(struct ma
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -224,7 +234,8 @@ static void matrox_accel_bmove(struct ma
+ 		start = end+width;
+ 		dy += height-1;
+ 	}
+-	mga_fifo(4);
++	mga_fifo(6);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -246,7 +257,8 @@ static void matrox_accel_bmove_lin(struc
+ 	CRITBEGIN
+ 
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -254,7 +266,8 @@ static void matrox_accel_bmove_lin(struc
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -263,7 +276,8 @@ static void matrox_accel_bmove_lin(struc
+ 		start = end+width;
+ 		dy += height-1;
+ 	}
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -298,7 +312,8 @@ static void matroxfb_accel_clear(struct
+ 
+ 	CRITBEGIN
+ 
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE);
+ 	mga_outl(M_FCOL, color);
+ 	mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -341,7 +356,8 @@ static void matroxfb_cfb4_clear(struct m
+ 	width >>= 1;
+ 	sx >>= 1;
+ 	if (width) {
+-		mga_fifo(5);
++		mga_fifo(7);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE2);
+ 		mga_outl(M_FCOL, bgx);
+ 		mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -415,7 +431,8 @@ static void matroxfb_1bpp_imageblit(stru
+ 
+ 	CRITBEGIN
+ 
+-	mga_fifo(3);
++	mga_fifo(5);
++	matrox_accel_restore_maccess(minfo);
+ 	if (easy)
+ 		mga_outl(M_DWGCTL, M_DWG_ILOAD | M_DWG_SGNZERO | M_DWG_SHIFTZERO | M_DWG_BMONOWF | M_DWG_LINEAR | M_DWG_REPLACE);
+ 	else
+@@ -425,7 +442,8 @@ static void matroxfb_1bpp_imageblit(stru
+ 	fxbndry = ((xx + width - 1) << 16) | xx;
+ 	mmio = minfo->mmio.vbase;
+ 
+-	mga_fifo(6);
++	mga_fifo(8);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_writel(mmio, M_FXBNDRY, fxbndry);
+ 	mga_writel(mmio, M_AR0, ar0);
+ 	mga_writel(mmio, M_AR3, 0);
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -307,6 +307,8 @@ struct matrox_accel_data {
+ #endif
+ 	u_int32_t	m_dwg_rect;
+ 	u_int32_t	m_opmode;
++	u_int32_t	m_access;
++	u_int32_t	m_pitch;
+ };
+ 
+ struct v4l2_queryctrl;
 
