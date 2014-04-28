@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaD1NgW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 09:36:22 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58321 "EHLO extserv.mm-sol.com"
+	id S932590AbaD1Nge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 09:36:34 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:58347 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756041AbaD1NfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 09:35:22 -0400
+	id S1756051AbaD1NfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 09:35:23 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+Cc: Tim Bird <tbird20d@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v8 09/20] usb: phy: msm: Remove unused pclk_src_name
-Date: Mon, 28 Apr 2014 16:34:12 +0300
-Message-Id: <1398692063-11372-10-git-send-email-iivanov@mm-sol.com>
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Subject: [PATCH v8 17/20] usb: phy: msm: Select secondary PHY via TCSR
+Date: Mon, 28 Apr 2014 16:34:20 +0300
+Message-Id: <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
 References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
@@ -22,127 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+From: Tim Bird <tbird20d@gmail.com>
 
-There are no references to 'pclk_src_name' in plaform code,
-so it is unused.
+Select the secondary PHY using the TCSR register, if phy-num=1
+in the DTS (or phy_number is set in the platform data).  The
+SOC has 2 PHYs which can be used with the OTG port, and this
+code allows configuring the correct one.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Note: This resolves the problem I was seeing where I couldn't
+get the USB driver working at all on a dragonboard, from cold
+boot.  This patch depends on patch 5/14 from Ivan's msm USB
+patch set.  It does not use DT for the register address, as
+there's no evidence that this address changes between SoC
+versions.
+
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 ---
- drivers/usb/phy/phy-msm-usb.c | 26 +-------------------------
- include/linux/usb/msm_hsusb.h |  5 -----
- 2 files changed, 1 insertion(+), 30 deletions(-)
+ drivers/usb/phy/phy-msm-usb.c    | 14 ++++++++++++++
+ include/linux/usb/msm_hsusb_hw.h |  3 +++
+ 2 files changed, 17 insertions(+)
 
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 7eb2abf..c2361bf 100644
+index db8d963..9437bcf 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -464,9 +464,6 @@ static int msm_otg_suspend(struct msm_otg *motg)
- 	if (!IS_ERR(motg->core_clk))
- 		clk_disable_unprepare(motg->core_clk);
+@@ -1489,6 +1489,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct msm_otg *motg;
+ 	struct usb_phy *phy;
++	void __iomem *phy_select;
 
--	if (!IS_ERR(motg->pclk_src))
--		clk_disable_unprepare(motg->pclk_src);
--
- 	if (motg->pdata->phy_type == SNPS_28NM_INTEGRATED_PHY &&
- 			motg->pdata->otg_control == OTG_PMIC_CONTROL) {
- 		msm_hsusb_ldo_set_mode(motg, 0);
-@@ -496,9 +493,6 @@ static int msm_otg_resume(struct msm_otg *motg)
- 	if (!atomic_read(&motg->in_lpm))
- 		return 0;
+ 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
+ 	if (!motg) {
+@@ -1553,6 +1554,19 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	if (IS_ERR(motg->regs))
+ 		return PTR_ERR(motg->regs);
 
--	if (!IS_ERR(motg->pclk_src))
--		clk_prepare_enable(motg->pclk_src);
--
- 	clk_prepare_enable(motg->pclk);
- 	clk_prepare_enable(motg->clk);
- 	if (!IS_ERR(motg->core_clk))
-@@ -1396,17 +1390,8 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	 * If USB Core is running its protocol engine based on CORE CLK,
- 	 * CORE CLK  must be running at >55Mhz for correct HSUSB
- 	 * operation and USB core cannot tolerate frequency changes on
--	 * CORE CLK. For such USB cores, vote for maximum clk frequency
--	 * on pclk source
-+	 * CORE CLK.
- 	 */
--	 motg->pclk_src = ERR_PTR(-ENOENT);
--	 if (motg->pdata->pclk_src_name) {
--		motg->pclk_src = devm_clk_get(&pdev->dev,
--					motg->pdata->pclk_src_name);
--		if (IS_ERR(motg->pclk_src))
--			return PTR_ERR(motg->pclk_src);
--	}
--
- 	motg->pclk = devm_clk_get(&pdev->dev, "usb_hs_pclk");
- 	if (IS_ERR(motg->pclk)) {
- 		dev_err(&pdev->dev, "failed to get usb_hs_pclk\n");
-@@ -1446,10 +1431,6 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	motg->v1p8  = regs[2].consumer;
++	/*
++	 * NOTE: The PHYs can be multiplexed between the chipidea controller
++	 * and the dwc3 controller, using a single bit. It is important that
++	 * the dwc3 driver does not set this bit in an incompatible way.
++	 */
++	if (motg->phy_number) {
++		phy_select = devm_ioremap_nocache(&pdev->dev, USB2_PHY_SEL, 4);
++		if (IS_ERR(phy_select))
++			return PTR_ERR(phy_select);
++		/* Enable second PHY with the OTG port */
++		writel_relaxed(0x1, phy_select);
++	}
++
+ 	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
 
- 	clk_set_rate(motg->clk, 60000000);
--	if (!IS_ERR(motg->pclk_src)) {
--		clk_set_rate(motg->pclk_src, INT_MAX);
--		clk_prepare_enable(motg->pclk_src);
--	}
+ 	motg->irq = platform_get_irq(pdev, 0);
+diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
+index 98d3dd8..a29f603 100644
+--- a/include/linux/usb/msm_hsusb_hw.h
++++ b/include/linux/usb/msm_hsusb_hw.h
+@@ -16,6 +16,9 @@
+ #ifndef __LINUX_USB_GADGET_MSM72K_UDC_H__
+ #define __LINUX_USB_GADGET_MSM72K_UDC_H__
 
- 	clk_prepare_enable(motg->clk);
- 	clk_prepare_enable(motg->pclk);
-@@ -1525,8 +1506,6 @@ disable_clks:
- 	clk_disable_unprepare(motg->clk);
- 	if (!IS_ERR(motg->core_clk))
- 		clk_disable_unprepare(motg->core_clk);
--	if (!IS_ERR(motg->pclk_src))
--		clk_disable_unprepare(motg->pclk_src);
- 	return ret;
- }
-
-@@ -1571,9 +1550,6 @@ static int msm_otg_remove(struct platform_device *pdev)
- 	clk_disable_unprepare(motg->clk);
- 	if (!IS_ERR(motg->core_clk))
- 		clk_disable_unprepare(motg->core_clk);
--	if (!IS_ERR(motg->pclk_src))
--		clk_disable_unprepare(motg->pclk_src);
--
- 	msm_hsusb_ldo_init(motg, 0);
-
- 	pm_runtime_set_suspended(&pdev->dev);
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index 72c5830..262ed80 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -106,8 +106,6 @@ enum usb_chg_type {
-  * @power_budget: VBUS power budget in mA (0 will be treated as 500mA).
-  * @mode: Supported mode (OTG/peripheral/host).
-  * @otg_control: OTG switch controlled by user/Id pin
-- * @pclk_src_name: pclk is derived from ebi1_usb_clk in case of 7x27 and 8k
-- *              dfab_usb_hs_clk in case of 8660 and 8960.
-  */
- struct msm_otg_platform_data {
- 	int *phy_init_seq;
-@@ -117,7 +115,6 @@ struct msm_otg_platform_data {
- 	enum otg_control_type otg_control;
- 	enum msm_usb_phy_type phy_type;
- 	void (*setup_gpio)(enum usb_otg_state state);
--	char *pclk_src_name;
- 	int (*link_clk_reset)(struct clk *link_clk, bool assert);
- 	int (*phy_clk_reset)(struct clk *phy_clk);
- };
-@@ -129,7 +126,6 @@ struct msm_otg_platform_data {
-  * @irq: IRQ number assigned for HSUSB controller.
-  * @clk: clock struct of usb_hs_clk.
-  * @pclk: clock struct of usb_hs_pclk.
-- * @pclk_src: pclk source for voting.
-  * @phy_reset_clk: clock struct of usb_phy_clk.
-  * @core_clk: clock struct of usb_hs_core_clk.
-  * @regs: ioremapped register base address.
-@@ -150,7 +146,6 @@ struct msm_otg {
- 	int irq;
- 	struct clk *clk;
- 	struct clk *pclk;
--	struct clk *pclk_src;
- 	struct clk *phy_reset_clk;
- 	struct clk *core_clk;
- 	void __iomem *regs;
++/* USB phy selector - in TCSR address range */
++#define USB2_PHY_SEL         0xfd4ab000
++
+ #define USB_AHBBURST         (MSM_USB_BASE + 0x0090)
+ #define USB_AHBMODE          (MSM_USB_BASE + 0x0098)
+ #define USB_CAPLENGTH        (MSM_USB_BASE + 0x0100) /* 8 bit */
 --
 1.8.3.2
 
