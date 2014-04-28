@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718AbaD1TZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:25:37 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38926 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658AbaD1TZb (ORCPT
+	id S932750AbaD1TZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:25:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33302 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932670AbaD1TZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:25:31 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/5] cpufreq,
- powernow-k6: Fix incorrect comparison with max_multipler
-To: rjw@rjwysocki.net, mroos@linux.ee, viresh.kumar@linaro.org
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
-Date: Tue, 29 Apr 2014 00:24:27 +0530
-Message-ID: <20140428185418.28755.68864.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 28 Apr 2014 15:25:35 -0400
+Date: Mon, 28 Apr 2014 22:24:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        rashika.kheria@gmail.com, linux-kernel@vger.kernel.org,
+        tulinizer@gmail.com, michael.banken@mathe.stud.uni-erlangen.de,
+        andriy.shevchenko@linux.intel.com, lorenz@badgers.com
+Subject: Re: [PATCH v2] staging: silicom: Remove unused pointer in
+ bypass_init_module()
+Message-ID: <20140428192455.GW26890@mwanda>
+References: <20140428204727.699dc618@spike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042818-2674-0000-0000-00000E035F10
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428204727.699dc618@spike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The value of 'max_multiplier' is meant to be used for comparison with
-clock_ratio[index].driver_data, not the index itself! Fix the code in
-powernow_k6_cpu_exit() that has this bug.
+On Mon, Apr 28, 2014 at 08:47:27PM +0200, Christian Engelmayer wrote:
+> Pointer 'pbpctl_dev_c' in function bypass_init_module() is unused. Thus remove
+> it. With the last variable declaration gone, there is no more need for an own
+> block. Remove it and adapt the indenting accordingly.
+> 
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> ---
+> v2: Added changes requested by Dan Carpenter:
+> 
+>     Dan pointed out that with the declaration gone, the indent block shall be
+>     removed. This was intentionally left out in v1 in order to keep the
+>     changeset more readable. However, according to the input, also with the
+>     additional indenting change this still qualifies for one logical change.
+> 
+> Compile tested and applies against v3.15-rc2 as well as branch staging-next
+> of tree git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
 
-Also, while at it, make the for-loop condition look for CPUFREQ_TABLE_END,
-instead of hard-coding the loop count to 8.
+Great thanks.  :)  You only need to work against staging next and not
+v3.15-rc2 because this will go into v3.16.
 
-Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
----
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
 
- drivers/cpufreq/powernow-k6.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index 49f120e..695a68c 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -227,8 +227,9 @@ have_busfreq:
- static int powernow_k6_cpu_exit(struct cpufreq_policy *policy)
- {
- 	unsigned int i;
--	for (i = 0; i < 8; i++) {
--		if (i == max_multiplier)
-+
-+	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
-+		if (clock_ratio[i].driver_data == max_multiplier)
- 			powernow_k6_target(policy, i);
- 	}
- 	return 0;
+regards,
+dan carpenter
 
