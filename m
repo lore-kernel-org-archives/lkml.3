@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106AbaD1Ba6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Apr 2014 21:30:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43107 "EHLO
+	id S1754031AbaD1Baz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Apr 2014 21:30:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43111 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752930AbaD1B3Y (ORCPT
+	by vger.kernel.org with ESMTP id S1752925AbaD1B3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 Apr 2014 21:29:24 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "=?UTF-8?q?YOSHIFUJI=20Hideaki=20/=20=E5=90=89=E8=97=A4=E8=8B=B1?= 
-	=?UTF-8?q?=E6=98=8E?=" <yoshfuji@linux-ipv6.org>,
+CC: akpm@linux-foundation.org, "Thomas Graf" <tgraf@suug.ch>,
+        "Pablo Neira" <pablo@netfilter.org>, "Florian Westphal" <fw@strlen.de>,
         "David S. Miller" <davem@davemloft.net>
 Date: Mon, 28 Apr 2014 02:11:21 +0100
-Message-ID: <lsq.1398647481.720184235@decadent.org.uk>
+Message-ID: <lsq.1398647481.659216143@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 13/94] isdnloop: Validate NUL-terminated strings from
- user.
+Subject: [PATCH 3.2 12/94] netlink: don't compare the nul-termination in 
+ nla_strcmp
 In-Reply-To: <lsq.1398647481.453080089@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,33 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: YOSHIFUJI Hideaki / 吉藤英明 <yoshfuji@linux-ipv6.org>
+From: Pablo Neira <pablo@netfilter.org>
 
-[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
+[ Upstream commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 ]
 
-Return -EINVAL unless all of user-given strings are correctly
-NUL-terminated.
+nla_strcmp compares the string length plus one, so it's implicitly
+including the nul-termination in the comparison.
 
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+ int nla_strcmp(const struct nlattr *nla, const char *str)
+ {
+        int len = strlen(str) + 1;
+        ...
+                d = memcmp(nla_data(nla), str, len);
+
+However, if NLA_STRING is used, userspace can send us a string without
+the nul-termination. This is a problem since the string
+comparison will not match as the last byte may be not the
+nul-termination.
+
+Fix this by skipping the comparison of the nul-termination if the
+attribute data is nul-terminated. Suggested by Thomas Graf.
+
+Cc: Florian Westphal <fw@strlen.de>
+Cc: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ lib/nlattr.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card * card, isd
- 		return -EBUSY;
- 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
- 		return -EFAULT;
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -299,9 +299,15 @@ int nla_memcmp(const struct nlattr *nla,
+  */
+ int nla_strcmp(const struct nlattr *nla, const char *str)
+ {
+-	int len = strlen(str) + 1;
+-	int d = nla_len(nla) - len;
++	int len = strlen(str);
++	char *buf = nla_data(nla);
++	int attrlen = nla_len(nla);
++	int d;
+ 
++	if (attrlen > 0 && buf[attrlen - 1] == '\0')
++		attrlen--;
 +
-+	for (i = 0; i < 3; i++) {
-+		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
-+			return -EINVAL;
-+	}
-+
- 	spin_lock_irqsave(&card->isdnloop_lock, flags);
- 	switch (sdef.ptype) {
- 		case ISDN_PTYPE_EURO:
++	d = attrlen - len;
+ 	if (d == 0)
+ 		d = memcmp(nla_data(nla), str, len);
+ 
 
