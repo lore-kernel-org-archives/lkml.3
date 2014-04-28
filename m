@@ -1,96 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbaD1Oaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 10:30:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48059 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065AbaD1Oa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 10:30:29 -0400
-Date: Mon, 28 Apr 2014 09:29:51 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Matt Porter <mporter@linaro.org>
-CC: Russell King <linux@arm.linux.org.uk>, Barry Song <baohua@kernel.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching
- nodes
-Message-ID: <20140428142950.GB30292@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p4qYPpj5QlsIQJ0K"
-Content-Disposition: inline
-In-Reply-To: <1398644860-22973-1-git-send-email-mporter@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756426AbaD1ObY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 10:31:24 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31383 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932456AbaD1O1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 10:27:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,944,1389772800"; 
+   d="scan'208";a="424899226"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tianyu.lan@intel.com
+Subject: [Patch V2 6/9] I2C: Add smbus word/block process call helper function
+Date: Mon, 28 Apr 2014 22:27:45 +0800
+Message-Id: <1398695268-28645-7-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---p4qYPpj5QlsIQJ0K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add i2c_smbus_word/block_proc_call() helper function. These will be used
+in the implementation of i2c ACPI address space handler.
 
-On Sun, Apr 27, 2014 at 08:27:40PM -0400, Matt Porter wrote:
-> l2x0_of_init() is executed unconditionally within the sirfsoc_l2x0_init()
-> early initcall. In a multi v7 kernel this causes bcm281xx and bcm21664
-> platform to fail boot since they have their own pre l2x0 init sequence
-> that is required. Fix this by checking that a matching OF ID is present
-> before calling l2x0_of_init().
->=20
-> Reported-by: Kevin Hilman <khilman@linaro.org>
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> ---
-> Applies against next-20140424 to fix the issue introduced in
-> 50655e6 ARM: l2c: prima2: remove cache size override
->=20
->  arch/arm/mach-prima2/l2x0.c | 16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
->=20
-> diff --git a/arch/arm/mach-prima2/l2x0.c b/arch/arm/mach-prima2/l2x0.c
-> index 09f68f0..1c2ed15 100644
-> --- a/arch/arm/mach-prima2/l2x0.c
-> +++ b/arch/arm/mach-prima2/l2x0.c
-> @@ -8,10 +8,24 @@
-> =20
->  #include <linux/init.h>
->  #include <linux/kernel.h>
-> +#include <linux/of.h>
->  #include <asm/hardware/cache-l2x0.h>
-> =20
-> +static const struct of_device_id sirf_l2x0_ids[] __initconst =3D {
-> +	{ .compatible =3D "sirf,prima2-pl310-cache" },
-> +	{ .compatible =3D "sirf,marco-pl310-cache" },
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/i2c/i2c-core.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c.h    |  4 ++++
+ 2 files changed, 60 insertions(+)
 
-that same commit removed these two from DTS, did you test with old DTS,
-btw any chance ?
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 3bf0048..638befd 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -2306,6 +2306,30 @@ s32 i2c_smbus_write_word_data(const struct i2c_client *client, u8 command,
+ EXPORT_SYMBOL(i2c_smbus_write_word_data);
+ 
+ /**
++ * i2c_smbus_word_proc_call - SMBus "word proc call" protocol
++ * @client: Handle to slave device
++ * @command: Byte interpreted by slave
++ * @value: 16-bit "word" being written
++ *
++ * This executes the SMBus "word proc all" protocol, returning negative errno
++ * else a 16-bit unsigned "word" received from the device.
++ */
++s32 i2c_smbus_word_proc_call(const struct i2c_client *client, u8 command,
++			      u16 value)
++{
++	union i2c_smbus_data data;
++	int status;
++
++	data.word = value;
++	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++			      I2C_SMBUS_READ, command,
++			      I2C_SMBUS_PROC_CALL, &data);
++
++	return (status < 0) ? status : data.word;
++}
++EXPORT_SYMBOL(i2c_smbus_word_proc_call);
++
++/**
+  * i2c_smbus_read_block_data - SMBus "block read" protocol
+  * @client: Handle to slave device
+  * @command: Byte interpreted by slave
+@@ -2362,6 +2386,38 @@ s32 i2c_smbus_write_block_data(const struct i2c_client *client, u8 command,
+ }
+ EXPORT_SYMBOL(i2c_smbus_write_block_data);
+ 
++/**
++ * i2c_smbus_block_proc_call - SMBus "block write" protocol
++ * @client: Handle to slave device
++ * @command: Byte interpreted by slave
++ * @length: Size of data block; SMBus allows at most 32 bytes
++ * @values: Byte array which will be written.
++ *
++ * This executes the SMBus "block proc call" protocol, returning negative errno
++ * else the number of read bytes.
++ */
++s32 i2c_smbus_block_proc_call(const struct i2c_client *client, u8 command,
++			       u8 length, u8 *values)
++{
++	union i2c_smbus_data data;
++	int status;
++
++	if (length > I2C_SMBUS_BLOCK_MAX)
++		length = I2C_SMBUS_BLOCK_MAX;
++	data.block[0] = length;
++	memcpy(&data.block[1], values, length);
++	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++			      I2C_SMBUS_READ, command,
++			      I2C_SMBUS_BLOCK_PROC_CALL, &data);
++
++	if (status < 0)
++		return status;
++
++	memcpy(values, &data.block[1], data.block[0]);
++	return data.block[0];
++}
++EXPORT_SYMBOL(i2c_smbus_block_proc_call);
++
+ /* Returns the number of read bytes */
+ s32 i2c_smbus_read_i2c_block_data(const struct i2c_client *client, u8 command,
+ 				  u8 length, u8 *values)
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 3e6ea90..724440a 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -94,6 +94,10 @@ extern s32 i2c_smbus_read_word_data(const struct i2c_client *client,
+ 				    u8 command);
+ extern s32 i2c_smbus_write_word_data(const struct i2c_client *client,
+ 				     u8 command, u16 value);
++extern s32 i2c_smbus_word_proc_call(const struct i2c_client *client,
++				    u8 command, u16 value);
++extern s32 i2c_smbus_block_proc_call(const struct i2c_client *client,
++				u8 command, u8 length, u8 *values);
+ 
+ static inline s32
+ i2c_smbus_read_word_swapped(const struct i2c_client *client, u8 command)
+-- 
+1.8.3.1
 
---=20
-balbi
-
---p4qYPpj5QlsIQJ0K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTXmXeAAoJEIaOsuA1yqRENDwP/0NgVpoO1SS4T3BK1py8AbFF
-RGefxBt/kjef1+sxLXlECT9DIu0qC6ceOJ42scpt/xIxQZdoKt8AgjUsRVZi1zOh
-aFtrhkdekIcKIWNO68yPYMlKVEyscRKTKdQYIgItX69CpKTfm6MIIXjTdPA9b1vK
-GXY/S8hdS61Sez+mM/livPaBksmu0MFHWJFM54T+WqrxpCC9EQkMh0xetJ2OW63b
-aXtVJWI4LZuzs2KLm3gKkGdh0oRfwKI4eMRcmjkiaSpGl41xDpxFEzFr2bdBdMdQ
-RSpq8bVQT2K2+bZ585cFpQM4WMeexkocjFOSx/E+LS10KtYLzRJ5TWjaiKpmS69r
-UkX9j3iGXdeOWLG1Uo3Bqj0eM04zJXfq9UEKjPQmYtcD1VqJH95eEfeUe1mo0dLR
-ImxKw6ANHrfGYHmdV9SCEXh6BNs+DTKVx1QFNHIxCBiJKkDOqcdPRXLRJKKOdQQK
-mvFa1cwRNxdyMgh+3uudp9JUSJ0QzvNIEz2WeYSvKzFpGTxRDrYluY74plo5JlII
-kLGD6isCIOPj3VXG/dNSq6wCzTr9DPaSdOmA6zXFK+rw97dzXTNArhCQ1wa5ojIp
-1merjh70vz5lfROmJ8KVNA0VVfjn7OkmdWW6/C73qoWKkRshixOl+ca6J+59jtcq
-hC+ZRcapOV6z/VIt3IvM
-=vIM6
------END PGP SIGNATURE-----
-
---p4qYPpj5QlsIQJ0K--
