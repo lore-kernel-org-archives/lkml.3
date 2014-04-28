@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbaD1Kl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 06:41:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25889 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754252AbaD1Kly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 06:41:54 -0400
-Message-ID: <535E3061.2030402@redhat.com>
-Date: Mon, 28 Apr 2014 12:41:37 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755312AbaD1Kme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 06:42:34 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:42784 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296AbaD1Kmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 06:42:32 -0400
+Date: Mon, 28 Apr 2014 11:42:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        sameo@linux.intel.com, nm@ti.com
+Subject: Re: [RESEND 1/3] mfd: twl6040: Select i2c fast mode as default with
+ regmap patch
+Message-ID: <20140428104226.GJ21279@lee--X1>
+References: <1396359901-32656-1-git-send-email-peter.ujfalusi@ti.com>
+ <1396359901-32656-2-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-CC: Nadav Amit <namit@cs.technion.ac.il>, gleb@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: Fix page-tables reserved bits
-References: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il> <20140416190329.GB8773@amt.cnet> <534EF354.3090204@zytor.com> <20140416220409.GB15155@amt.cnet>
-In-Reply-To: <20140416220409.GB15155@amt.cnet>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1396359901-32656-2-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 17/04/2014 00:04, Marcelo Tosatti ha scritto:
->>>> > >> @@ -3550,9 +3550,9 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
->>>> > >>  		break;
->>>> > >>  	case PT64_ROOT_LEVEL:
->>>> > >>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
->>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
->>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
->>>> > >>  		context->rsvd_bits_mask[0][2] = exb_bit_rsvd |
->>>> > >> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
->>>> > >> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
->>> > >
->>> > > Bit 7 is not reserved either, for the PDPTE (its PageSize bit).
->>> > >
->> >
->> > In long mode (IA-32e), bit 7 is definitely reserved.
+> All boards using twl6040 configures the i2c bus to 400KHz. While twl6040's
+> defaults to normal mode (100KHz). So far twl6040 has no problem with i2c
+> communication in this configuration it is safer to select fast i2c mode.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  drivers/mfd/twl6040.c       | 9 +++++++--
+>  include/linux/mfd/twl6040.h | 1 +
+>  2 files changed, 8 insertions(+), 2 deletions(-)
 
-It's always reserved for PML4E (rsvd_bits_mask[x][3]), while for PDPTEs 
-it is not reserved if you have 1GB pages.
+Applied, thanks.
 
-> There is a separate reserved mask for PS=1, nevermind.
->
-
-Yeah, but the situation for IA32e rsvd_bits_mask[0][2] is exactly the 
-same as for PAE rsvd_bits_mask[0][1], and we're not marking the bit as 
-reserved there.
-
-The right thing to do is to add rsvd_bits(7, 7) to both 
-rsvd_bits_mask[0][2] and rsvd_bits_mask[1][2], if 1GB pages are not 
-supported.
-
-As written, the patch has no effect on PDPTEs because 
-rsvd_bits_mask[0][2] is only accessed if bit 7 is zero.
-
-Nadav, would you mind preparing a follow-up?  Also, how did you find 
-these issues and test the fixes?
-
-Paolo
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
