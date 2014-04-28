@@ -1,417 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822AbaD1Mob (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:44:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44412 "EHLO mx1.redhat.com"
+	id S1755858AbaD1Mop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:44:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50703 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755698AbaD1Mo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:44:27 -0400
+	id S1755825AbaD1Moj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 08:44:39 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 1/7] perf tests: Factor out fake_setup_machine()
-Date: Mon, 28 Apr 2014 13:59:59 +0200
-Message-Id: <1398686405-31951-2-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 6/7] perf tools: Share map_groups among threads of the same group
+Date: Mon, 28 Apr 2014 14:00:04 +0200
+Message-Id: <1398686405-31951-7-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
 References: <1398686405-31951-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+Sharing map groups within all process threads. This way
+there's only one copy of mmap info and it's reachable
+from any thread within the process.
 
-The fake_setup_machine() is for setting up a environment for testing
-various hists operations. As it'll be used for other test cases it'd
-better factoring it out.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398396494-12811-1-git-send-email-namhyung@kernel.org
+Original-patch-by: Arnaldo Carvalho de Melo <acme@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1397490723-1992-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf        |   1 +
- tools/perf/tests/hists_common.c | 148 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/hists_common.h |  44 ++++++++++++
- tools/perf/tests/hists_link.c   | 141 +-------------------------------------
- 4 files changed, 195 insertions(+), 139 deletions(-)
- create mode 100644 tools/perf/tests/hists_common.c
- create mode 100644 tools/perf/tests/hists_common.h
+ tools/perf/util/machine.c | 11 +++++++++++
+ tools/perf/util/thread.c  | 48 ++++++++++++++++++++++++++++++++++-------------
+ tools/perf/util/thread.h  |  1 +
+ 3 files changed, 47 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index e969233..a4aad78 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -397,6 +397,7 @@ LIB_OBJS += $(OUTPUT)tests/rdpmc.o
- LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
-+LIB_OBJS += $(OUTPUT)tests/hists_common.o
- LIB_OBJS += $(OUTPUT)tests/hists_link.o
- LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
-diff --git a/tools/perf/tests/hists_common.c b/tools/perf/tests/hists_common.c
-new file mode 100644
-index 0000000..44655b3
---- /dev/null
-+++ b/tools/perf/tests/hists_common.c
-@@ -0,0 +1,148 @@
-+#include "perf.h"
-+#include "util/debug.h"
-+#include "util/symbol.h"
-+#include "util/sort.h"
-+#include "util/evsel.h"
-+#include "util/evlist.h"
-+#include "util/machine.h"
-+#include "util/thread.h"
-+#include "tests/hists_common.h"
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index a53cd0b..98ec56d 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -316,6 +316,17 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 		rb_link_node(&th->rb_node, parent, p);
+ 		rb_insert_color(&th->rb_node, &machine->threads);
+ 		machine->last_match = th;
 +
-+static struct {
-+	u32 pid;
-+	const char *comm;
-+} fake_threads[] = {
-+	{ 100, "perf" },
-+	{ 200, "perf" },
-+	{ 300, "bash" },
-+};
-+
-+static struct {
-+	u32 pid;
-+	u64 start;
-+	const char *filename;
-+} fake_mmap_info[] = {
-+	{ 100, 0x40000, "perf" },
-+	{ 100, 0x50000, "libc" },
-+	{ 100, 0xf0000, "[kernel]" },
-+	{ 200, 0x40000, "perf" },
-+	{ 200, 0x50000, "libc" },
-+	{ 200, 0xf0000, "[kernel]" },
-+	{ 300, 0x40000, "bash" },
-+	{ 300, 0x50000, "libc" },
-+	{ 300, 0xf0000, "[kernel]" },
-+};
-+
-+struct fake_sym {
-+	u64 start;
-+	u64 length;
-+	const char *name;
-+};
-+
-+static struct fake_sym perf_syms[] = {
-+	{ 700, 100, "main" },
-+	{ 800, 100, "run_command" },
-+	{ 900, 100, "cmd_record" },
-+};
-+
-+static struct fake_sym bash_syms[] = {
-+	{ 700, 100, "main" },
-+	{ 800, 100, "xmalloc" },
-+	{ 900, 100, "xfree" },
-+};
-+
-+static struct fake_sym libc_syms[] = {
-+	{ 700, 100, "malloc" },
-+	{ 800, 100, "free" },
-+	{ 900, 100, "realloc" },
-+};
-+
-+static struct fake_sym kernel_syms[] = {
-+	{ 700, 100, "schedule" },
-+	{ 800, 100, "page_fault" },
-+	{ 900, 100, "sys_perf_event_open" },
-+};
-+
-+static struct {
-+	const char *dso_name;
-+	struct fake_sym *syms;
-+	size_t nr_syms;
-+} fake_symbols[] = {
-+	{ "perf", perf_syms, ARRAY_SIZE(perf_syms) },
-+	{ "bash", bash_syms, ARRAY_SIZE(bash_syms) },
-+	{ "libc", libc_syms, ARRAY_SIZE(libc_syms) },
-+	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
-+};
-+
-+struct machine *setup_fake_machine(struct machines *machines)
++		/*
++		 * We have to initialize map_groups separately
++		 * after rb tree is updated.
++		 *
++		 * The reason is that we call machine__findnew_thread
++		 * within thread__init_map_groups to find the thread
++		 * leader and that would screwed the rb tree.
++		 */
++		if (thread__init_map_groups(th, machine))
++			return NULL;
+ 	}
+ 
+ 	return th;
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index b501848..2fde0d5 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -8,6 +8,22 @@
+ #include "debug.h"
+ #include "comm.h"
+ 
++int thread__init_map_groups(struct thread *thread, struct machine *machine)
 +{
-+	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
-+	size_t i;
++	struct thread *leader;
++	pid_t pid = thread->pid_;
 +
-+	if (machine == NULL) {
-+		pr_debug("Not enough memory for machine setup\n");
-+		return NULL;
++	if (pid == thread->tid) {
++		thread->mg = map_groups__new();
++	} else {
++		leader = machine__findnew_thread(machine, pid, pid);
++		if (leader)
++			thread->mg = map_groups__get(leader->mg);
 +	}
 +
-+	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
-+		struct thread *thread;
-+
-+		thread = machine__findnew_thread(machine, fake_threads[i].pid,
-+						 fake_threads[i].pid);
-+		if (thread == NULL)
-+			goto out;
-+
-+		thread__set_comm(thread, fake_threads[i].comm, 0);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
-+		union perf_event fake_mmap_event = {
-+			.mmap = {
-+				.header = { .misc = PERF_RECORD_MISC_USER, },
-+				.pid = fake_mmap_info[i].pid,
-+				.tid = fake_mmap_info[i].pid,
-+				.start = fake_mmap_info[i].start,
-+				.len = 0x1000ULL,
-+				.pgoff = 0ULL,
-+			},
-+		};
-+
-+		strcpy(fake_mmap_event.mmap.filename,
-+		       fake_mmap_info[i].filename);
-+
-+		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
-+		size_t k;
-+		struct dso *dso;
-+
-+		dso = __dsos__findnew(&machine->user_dsos,
-+				      fake_symbols[i].dso_name);
-+		if (dso == NULL)
-+			goto out;
-+
-+		/* emulate dso__load() */
-+		dso__set_loaded(dso, MAP__FUNCTION);
-+
-+		for (k = 0; k < fake_symbols[i].nr_syms; k++) {
-+			struct symbol *sym;
-+			struct fake_sym *fsym = &fake_symbols[i].syms[k];
-+
-+			sym = symbol__new(fsym->start, fsym->length,
-+					  STB_GLOBAL, fsym->name);
-+			if (sym == NULL)
-+				goto out;
-+
-+			symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
-+		}
-+	}
-+
-+	return machine;
-+
-+out:
-+	pr_debug("Not enough memory for machine setup\n");
-+	machine__delete_threads(machine);
-+	machine__delete(machine);
-+	return NULL;
++	return thread->mg ? 0 : -1;
 +}
-diff --git a/tools/perf/tests/hists_common.h b/tools/perf/tests/hists_common.h
-new file mode 100644
-index 0000000..2528b8f
---- /dev/null
-+++ b/tools/perf/tests/hists_common.h
-@@ -0,0 +1,44 @@
-+#ifndef __PERF_TESTS__HISTS_COMMON_H__
-+#define __PERF_TESTS__HISTS_COMMON_H__
 +
-+struct machine;
-+struct machines;
-+
-+/*
-+ * The setup_fake_machine() provides a test environment which consists
-+ * of 3 processes that have 3 mappings and in turn, have 3 symbols
-+ * respectively.  See below table:
-+ *
-+ * Command:  Pid  Shared Object               Symbol
-+ * .............  .............  ...................
-+ *    perf:  100           perf  main
-+ *    perf:  100           perf  run_command
-+ *    perf:  100           perf  comd_record
-+ *    perf:  100           libc  malloc
-+ *    perf:  100           libc  free
-+ *    perf:  100           libc  realloc
-+ *    perf:  100       [kernel]  schedule
-+ *    perf:  100       [kernel]  page_fault
-+ *    perf:  100       [kernel]  sys_perf_event_open
-+ *    perf:  200           perf  main
-+ *    perf:  200           perf  run_command
-+ *    perf:  200           perf  comd_record
-+ *    perf:  200           libc  malloc
-+ *    perf:  200           libc  free
-+ *    perf:  200           libc  realloc
-+ *    perf:  200       [kernel]  schedule
-+ *    perf:  200       [kernel]  page_fault
-+ *    perf:  200       [kernel]  sys_perf_event_open
-+ *    bash:  300           bash  main
-+ *    bash:  300           bash  xmalloc
-+ *    bash:  300           bash  xfree
-+ *    bash:  300           libc  malloc
-+ *    bash:  300           libc  free
-+ *    bash:  300           libc  realloc
-+ *    bash:  300       [kernel]  schedule
-+ *    bash:  300       [kernel]  page_fault
-+ *    bash:  300       [kernel]  sys_perf_event_open
-+ */
-+struct machine *setup_fake_machine(struct machines *machines);
-+
-+#endif /* __PERF_TESTS__HISTS_COMMON_H__ */
-diff --git a/tools/perf/tests/hists_link.c b/tools/perf/tests/hists_link.c
-index 7ccbc7b..e42d679 100644
---- a/tools/perf/tests/hists_link.c
-+++ b/tools/perf/tests/hists_link.c
-@@ -8,145 +8,7 @@
- #include "machine.h"
- #include "thread.h"
- #include "parse-events.h"
--
--static struct {
--	u32 pid;
--	const char *comm;
--} fake_threads[] = {
--	{ 100, "perf" },
--	{ 200, "perf" },
--	{ 300, "bash" },
--};
--
--static struct {
--	u32 pid;
--	u64 start;
--	const char *filename;
--} fake_mmap_info[] = {
--	{ 100, 0x40000, "perf" },
--	{ 100, 0x50000, "libc" },
--	{ 100, 0xf0000, "[kernel]" },
--	{ 200, 0x40000, "perf" },
--	{ 200, 0x50000, "libc" },
--	{ 200, 0xf0000, "[kernel]" },
--	{ 300, 0x40000, "bash" },
--	{ 300, 0x50000, "libc" },
--	{ 300, 0xf0000, "[kernel]" },
--};
--
--struct fake_sym {
--	u64 start;
--	u64 length;
--	const char *name;
--};
--
--static struct fake_sym perf_syms[] = {
--	{ 700, 100, "main" },
--	{ 800, 100, "run_command" },
--	{ 900, 100, "cmd_record" },
--};
--
--static struct fake_sym bash_syms[] = {
--	{ 700, 100, "main" },
--	{ 800, 100, "xmalloc" },
--	{ 900, 100, "xfree" },
--};
--
--static struct fake_sym libc_syms[] = {
--	{ 700, 100, "malloc" },
--	{ 800, 100, "free" },
--	{ 900, 100, "realloc" },
--};
--
--static struct fake_sym kernel_syms[] = {
--	{ 700, 100, "schedule" },
--	{ 800, 100, "page_fault" },
--	{ 900, 100, "sys_perf_event_open" },
--};
--
--static struct {
--	const char *dso_name;
--	struct fake_sym *syms;
--	size_t nr_syms;
--} fake_symbols[] = {
--	{ "perf", perf_syms, ARRAY_SIZE(perf_syms) },
--	{ "bash", bash_syms, ARRAY_SIZE(bash_syms) },
--	{ "libc", libc_syms, ARRAY_SIZE(libc_syms) },
--	{ "[kernel]", kernel_syms, ARRAY_SIZE(kernel_syms) },
--};
--
--static struct machine *setup_fake_machine(struct machines *machines)
--{
--	struct machine *machine = machines__find(machines, HOST_KERNEL_ID);
--	size_t i;
--
--	if (machine == NULL) {
--		pr_debug("Not enough memory for machine setup\n");
--		return NULL;
--	}
--
--	for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
--		struct thread *thread;
--
--		thread = machine__findnew_thread(machine, fake_threads[i].pid,
--						 fake_threads[i].pid);
--		if (thread == NULL)
--			goto out;
--
--		thread__set_comm(thread, fake_threads[i].comm, 0);
--	}
--
--	for (i = 0; i < ARRAY_SIZE(fake_mmap_info); i++) {
--		union perf_event fake_mmap_event = {
--			.mmap = {
--				.header = { .misc = PERF_RECORD_MISC_USER, },
--				.pid = fake_mmap_info[i].pid,
--				.tid = fake_mmap_info[i].pid,
--				.start = fake_mmap_info[i].start,
--				.len = 0x1000ULL,
--				.pgoff = 0ULL,
--			},
--		};
--
--		strcpy(fake_mmap_event.mmap.filename,
--		       fake_mmap_info[i].filename);
--
--		machine__process_mmap_event(machine, &fake_mmap_event, NULL);
--	}
--
--	for (i = 0; i < ARRAY_SIZE(fake_symbols); i++) {
--		size_t k;
--		struct dso *dso;
--
--		dso = __dsos__findnew(&machine->user_dsos,
--				      fake_symbols[i].dso_name);
--		if (dso == NULL)
--			goto out;
--
--		/* emulate dso__load() */
--		dso__set_loaded(dso, MAP__FUNCTION);
--
--		for (k = 0; k < fake_symbols[i].nr_syms; k++) {
--			struct symbol *sym;
--			struct fake_sym *fsym = &fake_symbols[i].syms[k];
--
--			sym = symbol__new(fsym->start, fsym->length,
--					  STB_GLOBAL, fsym->name);
--			if (sym == NULL)
--				goto out;
--
--			symbols__insert(&dso->symbols[MAP__FUNCTION], sym);
--		}
--	}
--
--	return machine;
--
--out:
--	pr_debug("Not enough memory for machine setup\n");
--	machine__delete_threads(machine);
--	machine__delete(machine);
--	return NULL;
--}
-+#include "hists_common.h"
+ struct thread *thread__new(pid_t pid, pid_t tid)
+ {
+ 	char *comm_str;
+@@ -15,10 +31,6 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	struct thread *thread = zalloc(sizeof(*thread));
  
- struct sample {
- 	u32 pid;
-@@ -156,6 +18,7 @@ struct sample {
- 	struct symbol *sym;
- };
+ 	if (thread != NULL) {
+-		thread->mg = map_groups__new();
+-		if (thread->mg == NULL)
+-			goto out_free;
+-
+ 		thread->pid_ = pid;
+ 		thread->tid = tid;
+ 		thread->ppid = -1;
+@@ -40,8 +52,6 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	return thread;
  
-+/* For the numbers, see hists_common.c */
- static struct sample fake_common_samples[] = {
- 	/* perf [kernel] schedule() */
- 	{ .pid = 100, .ip = 0xf0000 + 700, },
+ err_thread:
+-	map_groups__delete(thread->mg);
+-out_free:
+ 	free(thread);
+ 	return NULL;
+ }
+@@ -126,9 +136,26 @@ void thread__insert_map(struct thread *thread, struct map *map)
+ 	map_groups__insert(thread->mg, map);
+ }
+ 
++static int thread__clone_map_groups(struct thread *thread,
++				    struct thread *parent)
++{
++	int i;
++
++	/* This is new thread, we share map groups for process. */
++	if (thread->pid_ == parent->pid_)
++		return 0;
++
++	/* But this one is new process, copy maps. */
++	for (i = 0; i < MAP__NR_TYPES; ++i)
++		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
++			return -ENOMEM;
++
++	return 0;
++}
++
+ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ {
+-	int i, err;
++	int err;
+ 
+ 	if (parent->comm_set) {
+ 		const char *comm = thread__comm_str(parent);
+@@ -140,13 +167,8 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ 		thread->comm_set = true;
+ 	}
+ 
+-	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
+-			return -ENOMEM;
+-
+ 	thread->ppid = parent->tid;
+-
+-	return 0;
++	return thread__clone_map_groups(thread, parent);
+ }
+ 
+ void thread__find_cpumode_addr_location(struct thread *thread,
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index bee1eb0..3c0c272 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -30,6 +30,7 @@ struct machine;
+ struct comm;
+ 
+ struct thread *thread__new(pid_t pid, pid_t tid);
++int thread__init_map_groups(struct thread *thread, struct machine *machine);
+ void thread__delete(struct thread *thread);
+ static inline void thread__exited(struct thread *thread)
+ {
 -- 
 1.8.3.1
 
