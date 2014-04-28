@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960AbaD1QTP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 12:19:15 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:42380 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932933AbaD1QTK (ORCPT
+	id S932979AbaD1QUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 12:20:00 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:47534 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932277AbaD1QTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 12:19:10 -0400
-Date: Mon, 28 Apr 2014 18:18:56 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: George Cherian <george.cherian@ti.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-omap@vger.kernel.org, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, dborkman@redhat.com, ast@plumgrid.com,
-        tklauser@distanz.ch, mpa@pengutronix.de, bhutchings@solarflare.com,
-        zonque@gmail.com, balbi@ti.com, mugunthanvnm@ti.com, t-kristo@ti.com,
-        mturquette@linaro.org, linux@arm.linux.org.uk, galak@codeaurora.org,
-        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
-        pawel.moll@arm.com, robh+dt@kernel.org, tony@atomide.com,
-        bcousson@baylibre.com
-Subject: Re: [PATCH 5/6] ARM: AM43xx: clk: Change the cpts ref clock source
- to dpll_core_m5 clk
-Message-ID: <20140428161856.GB4266@netboy>
-References: <1398658225-25873-1-git-send-email-george.cherian@ti.com>
- <1398658225-25873-6-git-send-email-george.cherian@ti.com>
- <20140428071034.GB4380@netboy>
- <535E4FDC.70306@ti.com>
+	Mon, 28 Apr 2014 12:19:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535E4FDC.70306@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFuL7B7kVw7ME=Vo_snhG27aBphKO8Uzvzen1gyD=R2ETNA@mail.gmail.com>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-2-git-send-email-wens@csie.org> <CACRpkdZDjC1KxM2yJqsgpg2MxBamX1EObsuahB-2c+ShuBXm8A@mail.gmail.com>
+ <CAAVeFuL7B7kVw7ME=Vo_snhG27aBphKO8Uzvzen1gyD=R2ETNA@mail.gmail.com>
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Tue, 29 Apr 2014 00:19:34 +0800
+X-Google-Sender-Auth: BHSyAZaERTFP2sNCaO2gXsmEOgs
+Message-ID: <CAGb2v64rs4UYMbQ--i=pcuuORVneozDpucCeHQKE4Qn7+qSCdA@mail.gmail.com>
+Subject: Re: [linux-sunxi] Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement
+ device tree gpio-names based lookup
+To: linux-sunxi <linux-sunxi@googlegroups.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 06:25:56PM +0530, George Cherian wrote:
-> In beagle bone white (AM335x)  CPTS has a choice of 2 clocksource
-> -dpll_core_m5_ck
-> -dpll_core_m4_ck
-> and by default  dpll_core_m5_ck is used. Where as in AM437x the
-> default clocksource used is dpll_core_m4_ck .
+On Wed, Apr 23, 2014 at 9:49 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Wed, Apr 23, 2014 at 12:02 AM, Linus Walleij
+> <linus.walleij@linaro.org> wrote:
+>> On Tue, Apr 15, 2014 at 8:41 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+>>
+>>> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
+>>> phandles by name only, through gpios/gpio-names, and not by index.
+>>>
+>>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>>
+>> Like Alexandre I have no strong opinion on this alternative scheme.
+>
+> Yeah this new lookup scheme probably does no harm, but I think it
+> should be a little bit more motivated as it is, after all, introducing
+> more potential confusion for DT users.
+>
+> It does not look like this new lookup scheme is necessary to Chen-Yu's
+> patchset and that he could as well have used the current one. Right
+> now there is only one way to define GPIOs - if we introduce a second
+> one, then which one should new DT users choose? Which one looks
+> better? I can already endless fights taking place over this.
 
-Is your patch changing the default clock for am335x?
+I will pull out the two patches.
 
-If yes, it shouldn't.
-If no, then the patch description should say so.
+> Does this new lookup help with some of the existing problems we have
+> like ACPI/DT lookup compatibility?
 
-Thanks,
-Richard
+I hope they will be compatible with ACPI named gpios, whenever support
+for ACPI named properties extension lands. But that really depends on
+the ACPI implementation. For now I think it's best that I just hold on
+to these. We can revisit the discussion later if needed.
 
- 
+> I just need to be given one practical reason to give my ack.
+
+
+Thanks
+ChenYu
