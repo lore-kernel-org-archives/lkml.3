@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657AbaD1MOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 08:14:01 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:61579 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaD1MN7 (ORCPT
+	id S1755427AbaD1MQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 08:16:56 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24394 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874AbaD1MQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 08:13:59 -0400
-Date: Mon, 28 Apr 2014 13:13:52 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 3/6] rtc: s5m: Use shorter time of register update
-Message-ID: <20140428121352.GC21279@lee--X1>
-References: <1397827139-14589-1-git-send-email-k.kozlowski@samsung.com>
- <1397827139-14589-4-git-send-email-k.kozlowski@samsung.com>
+	Mon, 28 Apr 2014 08:16:55 -0400
+Date: Mon, 28 Apr 2014 15:16:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: micky <micky_ching@realsil.com.cn>
+Cc: chris@printf.net, sameo@linux.intel.com, gregkh@linuxfoundation.org,
+        ulf.hansson@linaro.org, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Subject: Re: [PATCH v2 1/2] mmc: rtsx: add R1-no-CRC mmc command type handle
+Message-ID: <20140428121627.GL4963@mwanda>
+References: <cover.1395824147.git.micky_ching@realsil.com.cn>
+ <afbc1328fb8a89fda3da23f1e9c755311450e1f6.1395824147.git.micky_ching@realsil.com.cn>
+ <535E3BEC.9040100@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397827139-14589-4-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <535E3BEC.9040100@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Set the time needed for updating alarm and time registers to 0.45 ms.
-> The default is 7.32 ms which is too long and leads to warnings when
-> setting alarm or time:
-> 	s5m-rtc: waiting for UDR update, reached max number of retries
+On Mon, Apr 28, 2014 at 07:30:52PM +0800, micky wrote:
+> Hi Chris and Ulf,
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/rtc/rtc-s5m.c           |  7 +++++++
->  include/linux/mfd/samsung/rtc.h | 10 ++++++++++
+> This patch should be applied to 3.15(rc), 3.14, 3.13.
+> without this patch the MMC card can not identified.
+> 
 
-For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Top posting is annoying.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+If Chris and Ulf don't mind then you could actually deal with this by
+yourself.  Read Documentation/stable_kernel_rules.txt
+
+regards,
+dan carpenter
+
