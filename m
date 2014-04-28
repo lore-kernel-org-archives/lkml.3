@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654AbaD1TYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 15:24:40 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:63627 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630AbaD1TYj (ORCPT
+	id S1753487AbaD1TYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 15:24:53 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:44987 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756697AbaD1TYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 15:24:39 -0400
+	Mon, 28 Apr 2014 15:24:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <201404281922.19399.linux@rainbow-software.org>
-References: <201404281303.24977.linux@rainbow-software.org>
-	<57283945f737477b90e5ae31b9403799@fmsmsx156.amr.corp.intel.com>
-	<1398703903.97992.10.camel@djiang5-desk1.amr.corp.intel.com>
-	<201404281922.19399.linux@rainbow-software.org>
-Date: Mon, 28 Apr 2014 12:24:38 -0700
-Message-ID: <CAPcyv4hzaDq61aM2eYayKbW1FX9KC-X32rvHXqYqePGXgo2xQQ@mail.gmail.com>
-Subject: Re: 3.2.57 regression: isci driver broken: Unable to reset I T nexus?
-From: Dan Williams <dan.j.williams@intel.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: "Jiang, Dave" <dave.jiang@intel.com>,
-        "Paszkiewicz, Artur" <artur.paszkiewicz@intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+In-Reply-To: <53555C56.1040900@infradead.org>
+References: <1397415946.1555.16.camel@vger.seibold.net>
+	<53555C56.1040900@infradead.org>
+Date: Mon, 28 Apr 2014 11:16:37 -0700
+Message-ID: <CALAqxLVVGM2nON71BbhuD-7eXnqbKGomfL63COaT7nePuQQ=zg@mail.gmail.com>
+Subject: Re: X86: Impossible select Enhanced Real Time Clock Support (legacy
+ PC RTC driver)
+From: John Stultz <john.stultz@linaro.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg KH <greg@kroah.com>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Prarit Bhargava <prarit@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ adding Ben ]
-
-On Mon, Apr 28, 2014 at 10:22 AM, Ondrej Zary
-<linux@rainbow-software.org> wrote:
-> On Monday 28 April 2014 18:51:44 Jiang, Dave wrote:
->> On Mon, 2014-04-28 at 16:28 +0000, Ondrej Zary wrote:
->> > On Monday 28 April 2014 17:50:29 Jiang, Dave wrote:
->> > > On Mon, 2014-04-28 at 13:03 +0200, Ondrej Zary wrote:
->> > > > Hello,
->> > > > just upgraded a server running 3.2.54-2 to 3.2.57-3 (Debian Wheezy)
->> > > > and it does not boot anymore because of isci driver breakage.
->> > >
->> > > I would not run anything less than 3.8 for the isci controller. 3.2 is
->> > > VERY old for that particular driver and likely very unstable. The
->> > > product version of that driver plus libsas started with 3.8. Also I'm
->> > > concerned that you aren't using the platform OEM parameters. You need
->> > > to turn your OROM or EFI driver on for the SAS controller.
->> >
->> > It's a Cisco UCS C22 M3 server with a crappy LSI fakeraid that cannot
->> > even be disabled. It was a pain to make it boot properly - had to use
->> > dmraid. But it has been working fine since then (2012). Until now.
+On Mon, Apr 21, 2014 at 10:58 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> [adding more patch committers]
+>
+> On 04/13/2014 12:05 PM, Stefani Seibold wrote:
+>> Since some kernel version it is impossible to select the Enhanced Real
+>> Time Clock Support (legacy PC RTC driver) because RTC_LIB is set by
+>> default in arch/x86/Kconfig, but the rule for selecting CONFIG_RTC is
+>> RTC_LIB=n. So the code of driver/char/rtc is still useless.
 >>
->> Yes but just because it has been working doesn't mean it is a good idea
->> to run unstable code.... You need the driver updates and the libsas
->> updates for it to function properly. Does this fail on 3.14? If it is
->> that patch I have a feeling it may be interacting badly with whatever is
->> was in 3.2 libsas that may not be a problem with latest kernels.... It
->> is odd to see all those hard resets however.... Did you have them when
->> it was working for you?
->
-> Didn't know that it was unstable - it worked with no problems, better than
-> some products marked as stable :)
-> 3.13 works fine - I've installed it from wheezy-backports to work-around the
-> bug.
->
-> The log from working 3.2.54 is below (at the end) - there's one reset for each
-> port.
->
+>> This breaks the API since there is no more misc device /dev/rtc
+>> available without a udev rule or a link to /dev/rtc0.
 
-I think the right answer for 3.2 is to drop commit 584ec1226519 "isci:
-fix reset timeout handling".
+So yea.. I feel like that /dev/rtcN renaming (and API) break (which
+was a huge and annoying pain) was back in the 2.6.18-ish era?
 
-libsas and its libata interaction went through significant overhaul
-after 3.2 so it's not surprising that a change to reset handling
-regresses like this.
+But it sounds like the driver/char/rtc bit is dead code, and needs a
+cleanup? Or is there some use of that code that you need that the
+generic RTC layer doesn't have?
 
-Ideally there would be a backport of latest libsas available for 3.2,
-but no one to my knowledge is working on that.
-
---
-Dan
+thanks
+-john
