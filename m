@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaD1JY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 05:24:56 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42600 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754251AbaD1JYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 05:24:52 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        k.debski@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v3 0/4] usb: ehci/ohci-exynos: Move to generic phy framework
-Date: Mon, 28 Apr 2014 14:54:36 +0530
-Message-Id: <1398677080-30555-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754700AbaD1JZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 05:25:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22349 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754251AbaD1JZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 05:25:18 -0400
+Date: Mon, 28 Apr 2014 11:24:15 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@kernel.org>,
+        Patch Tracking <patches@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] perf: ARM64: wire up perf_regs and unwind support
+Message-ID: <20140428092415.GA1109@krava.brq.redhat.com>
+References: <1392311193-21214-1-git-send-email-jean.pihet@linaro.org>
+ <CAFrcx1=ZBWt1mak_6+=KbCFZEsaD3T_xZ8up4WBLSr6_JTkP1A@mail.gmail.com>
+ <20140312174520.GB17308@arm.com>
+ <20140313101202.GB11365@mudshark.cambridge.arm.com>
+ <20140313102203.GC30339@arm.com>
+ <CAFrcx1mZg-kdBG2d4bwWdqJByYXLG2SJ5+GD7cSteqJj=A6Sxw@mail.gmail.com>
+ <CAFrcx1mvSMFea999FZCEVxMZsmyFw+b_fugdGSEsAJkqwzkXQw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFrcx1mvSMFea999FZCEVxMZsmyFw+b_fugdGSEsAJkqwzkXQw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based and tested on 'usb-next' branch of Greg's usb tree, with relevant
-device tree patches[1]
+On Mon, Apr 28, 2014 at 11:15:43AM +0200, Jean Pihet wrote:
+> Arnaldo,
+> 
+> > This patch hooks in the perf_regs and libunwind code for ARM64.
+> > The tools/perf/arch/arm64 is created; it contains the arch specific
+> > code for DWARF unwinding.
+> >
+> > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> > Acked-by: Will Deacon <will.deacon@arm.com>
+> 
+> Ping on this patch. Can you take this patch in your tree?
+> Please let me know if you need a rebased version of this one.
 
-Changes from v2:
- - Added two patches in the series for some cleanup.
-   usb: ohci-exynos: Use struct device instead of platform_device
-   usb: ehci-exynos: Use struct device instead of platform_device
- - Addressed review comments.
-   -- Moved exynos_ohci_phyg_on()/off routines inside
-      exynos_ohci_phy_enable()/disable.
-   -- Added functions exynos_ehci_phy_enable() and exynos_ehci_phy_disable()
-      and moved exynos_ehci_phyg_on()/off routines respectively in them.
-   -- Added necessary checks.
+I'll check this one
 
-Kamil Debski (1):
-  usb: ehci-exynos: Change to use phy provided by the generic phy
-    framework
-
-Vivek Gautam (3):
-  usb: ohci-exynos: Use struct device instead of platform_device
-  usb: ehci-exynos: Use struct device instead of platform_device
-  usb: ohci-exynos: Add facility to use phy provided by the generic phy
-    framework
-
- .../devicetree/bindings/usb/exynos-usb.txt         |   37 +++++
- drivers/usb/host/ehci-exynos.c                     |  148 +++++++++++++++++---
- drivers/usb/host/ohci-exynos.c                     |  141 ++++++++++++++++---
- 3 files changed, 280 insertions(+), 46 deletions(-)
-
--- 
-1.7.10.4
-
+jirka
