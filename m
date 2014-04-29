@@ -1,69 +1,63 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583AbaD2LUH (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 29 Apr 2014 07:20:07 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:58442 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757533AbaD2LUC (ORCPT
+	id S965507AbaD2WiT (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 29 Apr 2014 18:38:19 -0400
+Received: from 203.197.39.82.static.vsnl.net.in ([203.197.39.82]:54299 "EHLO
+	tmcout.tmc.gov.in" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932312AbaD2WiQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:20:02 -0400
-From: Xia Kaixu <kaixu.xia@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, arnd@arndb.de, kaixu.xia@linaro.org,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 10/15] ASoC: TLV320AIC23 and Simtec Hermes audio 
-Date: Tue, 29 Apr 2014 19:18:31 +0800
-Message-Id: <1398770316-19715-11-git-send-email-kaixu.xia@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
-References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+	Tue, 29 Apr 2014 18:38:16 -0400
+X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 18:38:15 EDT
+X-AuditID: ac100102-b7ff56d000004524-78-536021d45611
+Subject: Dear Winner
+MIME-Version: 1.0
+From: TMH HRD Training <hrdtraining@tmc.gov.in>
+Date: Tue, 29 Apr 2014 18:04:43 +0530
+Message-ID: <OF7F6D9B56.CF43FD41-ON65257CC9.004518D0-65257CC9.004518FA@tmc.gov.in>
+X-Mailer: Lotus Domino Web Server Release 9.0.1 October 14, 2013
+X-MIMETrack: Serialize by HTTP Server on Mailserver/TMH(Release 9.0.1|October 14, 2013) at
+ 04/29/2014 06:04:43 PM,
+	Serialize complete at 04/29/2014 06:04:43 PM,
+	Itemize by HTTP Server on Mailserver/TMH(Release 9.0.1|October 14, 2013) at
+ 04/29/2014 06:04:43 PM,
+	Serialize by Router on Mailserver/TMH(Release 9.0.1|October 14, 2013) at 04/30/2014
+ 03:58:25 AM,
+	Serialize complete at 04/30/2014 03:58:25 AM
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
+X-Notes-Item: linux-kernel@vger.kernel.org; name=AltBlindCopyTo
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsWyRoCRVfeqYkKwwZJz3BaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugStj7ecl7AVfmCtm79jI2sDYz9zFyMkhIWAisef3V0YIW0ziwr31
+	bF2MXBxCAhsYJSbNXMEKkhAWEJFYseQTO4jNKyAocXLmExYQm01AX2LtqwawZhEBFomV37+D
+	xZmB7D9vNoDZLAKqEo/vL4HqDZLofH2LFWKZg8SfS6cZQZZJCCxglpj+4SwzRLO2xLKFr6Fs
+	PYn/P08BFXFwMAkoSsw4FgtiSgjYS3x64zSBUWAWkotmIWmehaR5ASPzKkbBktzk/NISPSCl
+	l55fppeZt4kREnZMOxiXrlE8xCjNwaIkzjtp6yJfIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
+	DYx8D9bpTZt4+X0X1x7lk2afO4u2i4sd+vq6JuvcE7b7xadFbefGRgjtlU31dqjYfGGm/9JZ
+	ki2cd6MWM/4yvezmU8i0MT7vxcm6PVLO7/Zczz3756nA72ZdjiOFvi+u1PKf0P9/yZ91dlnK
+	7Ymn7jr0VObxzAj/+NfT+qzBRF1XVwb+d4qJUnJKLMUZiYZazEXFiQCpHk81CQIAAA==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
 
-This codec requires I2C to be enabled, so any other option
-that selects it should also depend on I2C.
+You have won One Million Dollars
+($1,000,000) You are therefore requested to contact  immediately our Claims
+Department below  quoting winning number : CODE NUMBER-04378490.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>
-Cc: alsa-devel@alsa-project.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-samsung-soc@vger.kernel.org
----
- sound/soc/samsung/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+NAME: MR. Jurgen Sterk
+EMAIL: jurgensterk@yahoo.se
+Provide the following information needed to  process your winning  claim.
 
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index b09b5a4..9fd6f62 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -116,14 +116,14 @@ config SND_SOC_SAMSUNG_SIMTEC
- 
- config SND_SOC_SAMSUNG_SIMTEC_TLV320AIC23
- 	tristate "SoC I2S Audio support for TLV320AIC23 on Simtec boards"
--	depends on SND_SOC_SAMSUNG && ARCH_S3C24XX
-+	depends on SND_SOC_SAMSUNG && ARCH_S3C24XX && I2C
- 	select SND_S3C24XX_I2S
- 	select SND_SOC_TLV320AIC23_I2C
- 	select SND_SOC_SAMSUNG_SIMTEC
- 
- config SND_SOC_SAMSUNG_SIMTEC_HERMES
- 	tristate "SoC I2S Audio support for Simtec Hermes board"
--	depends on SND_SOC_SAMSUNG && ARCH_S3C24XX
-+	depends on SND_SOC_SAMSUNG && ARCH_S3C24XX && I2C
- 	select SND_S3C24XX_I2S
- 	select SND_SOC_TLV320AIC3X
- 	select SND_SOC_SAMSUNG_SIMTEC
--- 
-1.7.9.5
+(a) Your full Name:
+(b) Your Address:
+(c) Your Telephone no:
+(d) Yout Ages:
+(e) Your sex
+(e) your country of origin:
 
+Congratulations once again.
+
+
+Thanks
+
+TMH HRD LOTTERY GROUP
