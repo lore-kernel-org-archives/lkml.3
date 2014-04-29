@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758017AbaD2OwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:52:17 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:49510 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaD2OwO (ORCPT
+	id S1757872AbaD2OwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:52:15 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:54870 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751706AbaD2OwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Apr 2014 10:52:14 -0400
-From: Kieran Clancy <clancy.kieran@gmail.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Kieran Clancy <clancy.kieran@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Stefan Biereigel <stefan@biereigel.de>
-Subject: [PATCH] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Wed, 30 Apr 2014 00:21:20 +0930
-Message-Id: <1398783080-24554-1-git-send-email-clancy.kieran@gmail.com>
-X-Mailer: git-send-email 1.9.0
+Date: Tue, 29 Apr 2014 15:52:21 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "wangyun@linux.vnet.ibm.com" <wangyun@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>
+Subject: Re: [RESEND PATCH V5 0/8] remove cpu_load idx
+Message-ID: <20140429145221.GH2639@e103034-lin>
+References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+On Wed, Apr 16, 2014 at 03:43:21AM +0100, Alex Shi wrote:
+> In the cpu_load decay usage, we mixed the long term, short term load with
+> balance bias, randomly pick a big or small value according to balance 
+> destination or source.
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+I disagree that it is random. min()/max() in {source,target}_load()
+provides a conservative bias to the load estimate that should prevent us
+from trying to pull tasks from the source cpu if its current load is
+just a temporary spike. Likewise, we don't try to pull tasks to the
+target cpu if the load is just a temporary drop.
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+> This mix is wrong, the balance bias should be based
+> on task moving cost between cpu groups, not on random history or instant load.
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
+Your patch set actually changes everything to be based on the instant
+load alone. rq->cfs.runnable_load_avg is updated instantaneously when
+tasks are enqueued and deqeueue, so this load expression is quite volatile.
 
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
+What do you mean by "task moving cost"?
 
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Cc: Lan Tianyu <tianyu.lan@intel.com>
----
+> History load maybe diverage a lot from real load, that lead to incorrect bias.
+> 
+> like on busy_idx,
+> We mix history load decay and bias together. The ridiculous thing is, when 
+> all cpu load are continuous stable, long/short term load is same. then we 
+> lose the bias meaning, so any minimum imbalance may cause unnecessary task
+> moving. To prevent this funny thing happen, we have to reuse the 
+> imbalance_pct again in find_busiest_group().  But that clearly causes over
+> bias in normal time. If there are some burst load in system, it is more worse.
 
-To maintainers: Assuming this patch is accepted, please mark this for
-inclusion in all -stable trees. It should be noted that the previous
-patch (ad332c8a4533) was excluded from a number of stable trees after
-the regression was found, but should now be included again along with
-this patch. I am not sure of the correct way to annotate this above.
+Isn't imbalance_pct only used once in the periodic load-balance path?
 
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+It is not clear to me what the over bias problem is. If you have a
+stable situation, I would expect the long and short term load to be the
+same?
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index d7d32c2..ad11ba4 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -206,13 +206,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
- 
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
- 	}
- 	return 0;
- }
-@@ -443,10 +443,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -455,7 +453,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -582,13 +580,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
-+
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -612,7 +615,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
- 
--- 
-1.9.0
+> As to idle_idx:
+> Though I have some cencern of usage corretion, 
+> https://lkml.org/lkml/2014/3/12/247 but since we are working on cpu
+> idle migration into scheduler. The problem will be reconsidered. We don't
+> need to care it too much now.
+> 
+> In fact, the cpu_load decays can be replaced by the sched_avg decay, that 
+> also decays load on time. The balance bias part can fullly use fixed bias --
+> imbalance_pct, which is already used in newly idle, wake, forkexec balancing
+> and numa balancing scenarios.
 
+As I have said previously, I agree that cpu_load[] is somewhat broken in
+its current form, but I don't see how removing it and replacing it with
+the instantaneous cpu load solves the problems you point out.
+
+The current cpu_load[] averages the cpu_load over time, while
+rq->cfs.runnable_load_avg is the sum of the currently runnable tasks'
+load_avg_contrib. The former provides a long term view of the cpu_load,
+the latter does not. It can change radically in an instant. I'm
+therefore a bit concerned about the stability of the load-balance
+decisions. However, since most decisions are based on cpu_load[0]
+anyway, we could try setting LB_BIAS to false as Peter suggests and see
+what happens.
+
+Morten
