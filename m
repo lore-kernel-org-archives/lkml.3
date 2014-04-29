@@ -1,152 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbaD2XXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 19:23:17 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:64087 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964AbaD2XXQ (ORCPT
+	id S1754070AbaD2XgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 19:36:25 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:56920 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668AbaD2XgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 19:23:16 -0400
+	Tue, 29 Apr 2014 19:36:22 -0400
+X-IronPort-AV: E=Sophos;i="4.97,954,1389772800"; 
+   d="scan'208";a="27289553"
+From: Zi Shen Lim <zlim@broadcom.com>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Brown <broonie@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>
+CC: Zi Shen Lim <zlim@broadcom.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCHv3] arm64: topology: add MPIDR-based detection
+Date: Tue, 29 Apr 2014 16:36:13 -0700
+Message-ID: <1398814573-27389-1-git-send-email-zlim@broadcom.com>
+X-Mailer: git-send-email 1.8.4.3
 MIME-Version: 1.0
-In-Reply-To: <536033A9.5070504@1h.com>
-References: <535FADDA.2070803@1h.com> <20140429183534.GB19325@thunk.org>
- <20140429185251.GA27969@ubuntumail> <53601E5B.5050004@1h.com>
- <20140429220234.GC28410@ubuntumail> <536026B3.1020905@1h.com>
- <20140429222913.GD28410@ubuntumail> <53602B84.1020304@mit.edu> <536033A9.5070504@1h.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Apr 2014 16:22:55 -0700
-Message-ID: <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
-Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-To: Marian Marinov <mm@1h.com>, "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lxc-devel <lxc-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 4:20 PM, Marian Marinov <mm@1h.com> wrote:
-> On 04/30/2014 01:45 AM, Andy Lutomirski wrote:
->>
->> On 04/29/2014 03:29 PM, Serge Hallyn wrote:
->>>
->>> Quoting Marian Marinov (mm-108MBtLGafw@public.gmane.org):
->>>>
->>>> On 04/30/2014 01:02 AM, Serge Hallyn wrote:
->>>>>
->>>>> Quoting Marian Marinov (mm-108MBtLGafw@public.gmane.org):
->>>>>>
->>>>>> On 04/29/2014 09:52 PM, Serge Hallyn wrote:
->>>>>>>
->>>>>>> Quoting Theodore Ts'o (tytso-3s7WtUTddSA@public.gmane.org):
->>>>>>>>
->>>>>>>> On Tue, Apr 29, 2014 at 04:49:14PM +0300, Marian Marinov wrote:
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> I'm proposing a fix to this, by replacing the
->>>>>>>>> capable(CAP_LINUX_IMMUTABLE)
->>>>>>>>> check with ns_capable(current_cred()->user_ns,
->>>>>>>>> CAP_LINUX_IMMUTABLE).
->>>>>>>>
->>>>>>>>
->>>>>>>> Um, wouldn't it be better to simply fix the capable() function?
->>>>>>>>
->>>>>>>> /**
->>>>>>>>   * capable - Determine if the current task has a superior
->>>>>>>> capability in effect
->>>>>>>>   * @cap: The capability to be tested for
->>>>>>>>   *
->>>>>>>>   * Return true if the current task has the given superior
->>>>>>>> capability currently
->>>>>>>>   * available for use, false if not.
->>>>>>>>   *
->>>>>>>>   * This sets PF_SUPERPRIV on the task if the capability is
->>>>>>>> available on the
->>>>>>>>   * assumption that it's about to be used.
->>>>>>>>   */
->>>>>>>> bool capable(int cap)
->>>>>>>> {
->>>>>>>>         return ns_capable(&init_user_ns, cap);
->>>>>>>> }
->>>>>>>> EXPORT_SYMBOL(capable);
->>>>>>>>
->>>>>>>> The documentation states that it is for "the current task", and I
->>>>>>>> can't imagine any use case, where user namespaces are in effect,
->>>>>>>> where
->>>>>>>> using init_user_ns would ever make sense.
->>>>>>>
->>>>>>>
->>>>>>> the init_user_ns represents the user_ns owning the object, not the
->>>>>>> subject.
->>>>>>>
->>>>>>> The patch by Marian is wrong.  Anyone can do 'clone(CLONE_NEWUSER)',
->>>>>>> setuid(0), execve, and end up satisfying
->>>>>>> 'ns_capable(current_cred()->userns,
->>>>>>> CAP_SYS_IMMUTABLE)' by definition.
->>>>>>>
->>>>>>> So NACK to that particular patch.  I'm not sure, but IIUC it should
->>>>>>> be
->>>>>>> safe to check against the userns owning the inode?
->>>>>>>
->>>>>>
->>>>>> So what you are proposing is to replace
->>>>>> 'ns_capable(current_cred()->userns, CAP_SYS_IMMUTABLE)' with
->>>>>> 'inode_capable(inode, CAP_SYS_IMMUTABLE)' ?
->>>>>>
->>>>>> I agree that this is more sane.
->>>>>
->>>>>
->>>>> Right, and I think the two operations you're looking at seem sane
->>>>> to allow.
->>>>
->>>>
->>>> If you are ok with this patch, I will fix all file systems and send
->>>> patches.
->>>
->>>
->>> Sounds good, thanks.
->>>
->>>> Signed-off-by: Marian Marinov <mm-NV7Lj0SOnH0@public.gmane.org>
->>>
->>>
->>> Acked-by: Serge E. Hallyn
->>> <serge.hallyn-GeWIH/nMZzLQT0dZR+AlfA@public.gmane.org>
->>
->>
->> Wait, what?
->>
->> Inodes aren't owned by user namespaces; they're owned by users.  And any
->> user can arrange to have a user namespace in which they pass an
->> inode_capable check on any inode that they own.
->>
->> Presumably there's a reason that CAP_SYS_IMMUTABLE is needed.  If this
->> gets merged, then it would be better to just drop CAP_SYS_IMMUTABLE
->> entirely.
->
->
-> The problem I'm trying to solve is this:
->
-> container with its own user namespace and CAP_SYS_IMMUTABLE should be able
-> to use chattr on all files witch this container has access to.
->
-> Unfortunately with the capable(CAP_SYS_IMMUTABLE) check this is not working.
->
-> With the proposed two fixes CAP_SYS_IMMUTABLE started working in the
-> container.
->
-> The first solution got its user namespace from the currently running process
-> and the second gets its user namespace from the currently opened inode.
->
-> So what would be the best solution in this case?
+Create cpu topology based on MPIDR. When hardware sets MPIDR to sane
+values, this method will always work. Therefore it should also work well
+as the fallback method. [1]
 
-I'd suggest adding a mount option like fs_owner_uid that names a uid
-that owns, in the sense of having unlimited access to, a filesystem.
-Then anyone with caps on a namespace owned by that uid could do
-whatever.
+When we have multiple processing elements in the system, we create
+the cpu topology by mapping each affinity level (from lowest to highest)
+to threads (if they exist), cores, and clusters.
 
-Eric?
+We combine data from all higher affinity levels into cluster_id
+so we don't lose any information from MPIDR. [2]
 
---Andy
+[1] http://www.spinics.net/lists/arm-kernel/msg317445.html
+[2] https://lkml.org/lkml/2014/4/23/703
+
+Signed-off-by: Zi Shen Lim <zlim@broadcom.com>
+---
+v1->v2: Addressed comments from Mark Brown.
+ - Reduce noise. Use pr_debug instead of pr_info.
+ - Don't ignore higher affinity levels.
+
+v2->v3: Addressed comments from Lorenzo Pieralisi.
+ - Rebased on top of Mark Brown's DT topology series.
+ - Make MPIDR fallback option.
+ - Fixed usage of mpidr_hash.shift_aff. Please review :)
+
+Tested on my multi-core multi-thread model.
+
+ arch/arm64/include/asm/cputype.h |  5 +++++
+ arch/arm64/kernel/topology.c     | 44 +++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 46 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
+index c404fb0..b3b3287 100644
+--- a/arch/arm64/include/asm/cputype.h
++++ b/arch/arm64/include/asm/cputype.h
+@@ -18,6 +18,8 @@
+ 
+ #define INVALID_HWID		ULONG_MAX
+ 
++#define MPIDR_UP_BITMASK	(0x1 << 30)
++#define MPIDR_MT_BITMASK	(0x1 << 24)
+ #define MPIDR_HWID_BITMASK	0xff00ffffff
+ 
+ #define MPIDR_LEVEL_BITS_SHIFT	3
+@@ -30,6 +32,9 @@
+ #define MPIDR_AFFINITY_LEVEL(mpidr, level) \
+ 	((mpidr >> MPIDR_LEVEL_SHIFT(level)) & MPIDR_LEVEL_MASK)
+ 
++#define MPIDR_AFF_MASK(level) \
++	((u64)MPIDR_LEVEL_MASK << MPIDR_LEVEL_SHIFT(level))
++
+ #define read_cpuid(reg) ({						\
+ 	u64 __val;							\
+ 	asm("mrs	%0, " #reg : "=r" (__val));			\
+diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
+index caf2a7c..cfaa2a3 100644
+--- a/arch/arm64/kernel/topology.c
++++ b/arch/arm64/kernel/topology.c
+@@ -21,6 +21,8 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ 
++#include <asm/cputype.h>
++#include <asm/smp_plat.h>
+ #include <asm/topology.h>
+ 
+ /*
+@@ -362,9 +364,7 @@ static void update_siblings_masks(unsigned int cpuid)
+ 	int cpu;
+ 
+ 	if (cpuid_topo->cluster_id == -1) {
+-		/*
+-		 * DT does not contain topology information for this cpu.
+-		 */
++		/* No topology information for this cpu ?! */
+ 		pr_debug("CPU%u: No topology information configured\n", cpuid);
+ 		return;
+ 	}
+@@ -391,6 +391,44 @@ static void update_siblings_masks(unsigned int cpuid)
+ 
+ void store_cpu_topology(unsigned int cpuid)
+ {
++	struct cpu_topology *cpuid_topo = &cpu_topology[cpuid];
++	u64 mpidr;
++
++	if (cpuid_topo->cluster_id != -1)
++		goto topology_populated;
++
++	mpidr = read_cpuid_mpidr();
++
++	/* Create cpu topology mapping based on MPIDR. */
++	if (mpidr & MPIDR_UP_BITMASK) {
++		/* Uniprocessor system */
++		cpuid_topo->thread_id  = -1;
++		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++		cpuid_topo->cluster_id = 0;
++	} else if (mpidr & MPIDR_MT_BITMASK) {
++		/* Multiprocessor system : Multi-threads per core */
++		cpuid_topo->thread_id  = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 1);
++		cpuid_topo->cluster_id =
++			((mpidr & MPIDR_AFF_MASK(2)) >> mpidr_hash.shift_aff[2] |
++			 (mpidr & MPIDR_AFF_MASK(3)) >> mpidr_hash.shift_aff[3])
++			>> mpidr_hash.shift_aff[1] >> mpidr_hash.shift_aff[0];
++	} else {
++		/* Multiprocessor system : Single-thread per core */
++		cpuid_topo->thread_id  = -1;
++		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 0);
++		cpuid_topo->cluster_id =
++			((mpidr & MPIDR_AFF_MASK(1)) >> mpidr_hash.shift_aff[1] |
++			 (mpidr & MPIDR_AFF_MASK(2)) >> mpidr_hash.shift_aff[2] |
++			 (mpidr & MPIDR_AFF_MASK(3)) >> mpidr_hash.shift_aff[3])
++			>> mpidr_hash.shift_aff[0];
++	}
++
++	pr_debug("CPU%u: cluster %d core %d thread %d mpidr %llx\n",
++		 cpuid, cpuid_topo->cluster_id, cpuid_topo->core_id,
++		 cpuid_topo->thread_id, mpidr);
++
++topology_populated:
+ 	update_siblings_masks(cpuid);
+ 	update_cpu_power(cpuid);
+ }
+-- 
+1.8.4.3
+
