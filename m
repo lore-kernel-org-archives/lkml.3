@@ -1,80 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848AbaD2ObS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:31:18 -0400
+	id S1757863AbaD2ObT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:31:19 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:3478 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751521AbaD2ObN (ORCPT
+	by vger.kernel.org with ESMTP id S1757795AbaD2ObO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:31:13 -0400
-Message-Id: <20140429143058.198462905@goodmis.org>
+	Tue, 29 Apr 2014 10:31:14 -0400
+Message-Id: <20140429143112.199559104@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Tue, 29 Apr 2014 10:30:58 -0400
+Date: Tue, 29 Apr 2014 10:30:59 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH RT 0/4] Linux 3.10.37-rt38-rc2
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        <stable-rt@vger.kernel.org>
+Subject: [PATCH RT 1/4] net: gianfar: do not disable interrupts
+References: <20140429143058.198462905@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0001-net-gianfar-do-not-disable-interrupts.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10.37-rt38-rc2 stable review patch.
+If anyone has any objections, please let me know.
 
-Dear RT Folks,
+------------------
 
-This is the RT stable review cycle of patch 3.10.37-rt38-rc2.
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-Please scream at me if I messed something up. Please test the patches too.
+each per-queue lock is taken with spin_lock_irqsave() except in the case
+where all of them are taken for some kind of serialisation. As an
+optimisation local_irq_save() is used so that lock_tx_qs() and
+lock_rx_qs() can use just the spin_lock() variant instead.
+On RT local_irq_save() behaves differently so we use the nort()
+variant.
+Lockdep screems easily by "ethtool -K eth0 rx off tx off"
 
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candidate).
+What remains is missing lockdep annotation that makes lockdep think
+lock_tx_qs() may cause a dead lock.
 
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the next main release
-on 4/30/2014.
-
-Enjoy,
-
--- Steve
-
-
-To build 3.10.37-rt38-rc2 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.37.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.37-rt38-rc2.patch.xz
-
-You can also build from 3.10.37-rt37 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/incr/patch-3.10.37-rt37-rt38-rc2.patch.xz
-
-
-Changes from 3.10.37-rt37:
-
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ drivers/net/ethernet/freescale/gianfar.c         | 16 ++++++++--------
+ drivers/net/ethernet/freescale/gianfar_ethtool.c |  8 ++++----
+ drivers/net/ethernet/freescale/gianfar_sysfs.c   | 24 ++++++++++++------------
+ 3 files changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index 0343a14..5c0efcc 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -1274,7 +1274,7 @@ static int gfar_suspend(struct device *dev)
+ 
+ 	if (netif_running(ndev)) {
+ 
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
+ 
+@@ -1292,7 +1292,7 @@ static int gfar_suspend(struct device *dev)
+ 
+ 		unlock_rx_qs(priv);
+ 		unlock_tx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		disable_napi(priv);
+ 
+@@ -1334,7 +1334,7 @@ static int gfar_resume(struct device *dev)
+ 	/* Disable Magic Packet mode, in case something
+ 	 * else woke us up.
+ 	 */
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 	lock_rx_qs(priv);
+ 
+@@ -1346,7 +1346,7 @@ static int gfar_resume(struct device *dev)
+ 
+ 	unlock_rx_qs(priv);
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	netif_device_attach(ndev);
+ 
+@@ -2346,7 +2346,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+ 	u32 tempval;
+ 
+ 	regs = priv->gfargrp[0].regs;
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (features & NETIF_F_HW_VLAN_CTAG_TX) {
+@@ -2379,7 +2379,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+ 	gfar_change_mtu(dev, dev->mtu);
+ 
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ }
+ 
+ static int gfar_change_mtu(struct net_device *dev, int new_mtu)
+@@ -3258,14 +3258,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
+ 			dev->stats.tx_dropped++;
+ 			atomic64_inc(&priv->extra_stats.tx_underrun);
+ 
+-			local_irq_save(flags);
++			local_irq_save_nort(flags);
+ 			lock_tx_qs(priv);
+ 
+ 			/* Reactivate the Tx Queues */
+ 			gfar_write(&regs->tstat, gfargrp->tstat);
+ 
+ 			unlock_tx_qs(priv);
+-			local_irq_restore(flags);
++			local_irq_restore_nort(flags);
+ 		}
+ 		netif_dbg(priv, tx_err, dev, "Transmit Error\n");
+ 	}
+diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+index 21cd881..c965c0a 100644
+--- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
++++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+@@ -501,7 +501,7 @@ static int gfar_sringparam(struct net_device *dev,
+ 		/* Halt TX and RX, and process the frames which
+ 		 * have already been received
+ 		 */
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
+ 
+@@ -509,7 +509,7 @@ static int gfar_sringparam(struct net_device *dev,
+ 
+ 		unlock_rx_qs(priv);
+ 		unlock_tx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		for (i = 0; i < priv->num_rx_queues; i++)
+ 			gfar_clean_rx_ring(priv->rx_queue[i],
+@@ -552,7 +552,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+ 		/* Halt TX and RX, and process the frames which
+ 		 * have already been received
+ 		 */
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
+ 
+@@ -560,7 +560,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+ 
+ 		unlock_tx_qs(priv);
+ 		unlock_rx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		for (i = 0; i < priv->num_rx_queues; i++)
+ 			gfar_clean_rx_ring(priv->rx_queue[i],
+diff --git a/drivers/net/ethernet/freescale/gianfar_sysfs.c b/drivers/net/ethernet/freescale/gianfar_sysfs.c
+index acb55af..f0160e67 100644
+--- a/drivers/net/ethernet/freescale/gianfar_sysfs.c
++++ b/drivers/net/ethernet/freescale/gianfar_sysfs.c
+@@ -68,7 +68,7 @@ static ssize_t gfar_set_bd_stash(struct device *dev,
+ 		return count;
+ 
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	/* Set the new stashing value */
+@@ -84,7 +84,7 @@ static ssize_t gfar_set_bd_stash(struct device *dev,
+ 	gfar_write(&regs->attr, temp);
+ 
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -112,7 +112,7 @@ static ssize_t gfar_set_rx_stash_size(struct device *dev,
+ 	if (!(priv->device_flags & FSL_GIANFAR_DEV_HAS_BUF_STASHING))
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (length > priv->rx_buffer_size)
+@@ -140,7 +140,7 @@ static ssize_t gfar_set_rx_stash_size(struct device *dev,
+ 
+ out:
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -171,7 +171,7 @@ static ssize_t gfar_set_rx_stash_index(struct device *dev,
+ 	if (!(priv->device_flags & FSL_GIANFAR_DEV_HAS_BUF_STASHING))
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (index > priv->rx_stash_size)
+@@ -189,7 +189,7 @@ static ssize_t gfar_set_rx_stash_index(struct device *dev,
+ 
+ out:
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -219,7 +219,7 @@ static ssize_t gfar_set_fifo_threshold(struct device *dev,
+ 	if (length > GFAR_MAX_FIFO_THRESHOLD)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_threshold = length;
+@@ -230,7 +230,7 @@ static ssize_t gfar_set_fifo_threshold(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_thr, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -259,7 +259,7 @@ static ssize_t gfar_set_fifo_starve(struct device *dev,
+ 	if (num > GFAR_MAX_FIFO_STARVE)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_starve = num;
+@@ -270,7 +270,7 @@ static ssize_t gfar_set_fifo_starve(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_starve, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -300,7 +300,7 @@ static ssize_t gfar_set_fifo_starve_off(struct device *dev,
+ 	if (num > GFAR_MAX_FIFO_STARVE_OFF)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_starve_off = num;
+@@ -311,7 +311,7 @@ static ssize_t gfar_set_fifo_starve_off(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_starve_shutoff, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+-- 
+1.8.5.3
 
 
-Sebastian Andrzej Siewior (3):
-      net: gianfar: do not disable interrupts
-      net: gianfar: do not try to cleanup TX packets if they are not done
-      rcu: make RCU_BOOST default on RT
-
-Steven Rostedt (Red Hat) (1):
-      Linux 3.10.37-rt38-rc2
-
-----
- drivers/net/ethernet/freescale/gianfar.c         | 28 ++++++++++++++----------
- drivers/net/ethernet/freescale/gianfar_ethtool.c |  8 +++----
- drivers/net/ethernet/freescale/gianfar_sysfs.c   | 24 ++++++++++----------
- init/Kconfig                                     |  2 +-
- localversion-rt                                  |  2 +-
- 5 files changed, 34 insertions(+), 30 deletions(-)
