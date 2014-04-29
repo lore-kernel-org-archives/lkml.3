@@ -1,132 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267AbaD2Qys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:54:48 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:52580 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805AbaD2Qyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:54:45 -0400
+	id S933692AbaD2QzE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:55:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34691 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933181AbaD2Qy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 12:54:59 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] KVM: nVMX: additional checks on vmxon region
+References: <1398661204-4822-1-git-send-email-bsd@redhat.com>
+	<1398661204-4822-3-git-send-email-bsd@redhat.com>
+	<535E3BDA.1000008@siemens.com>
+Date: Tue, 29 Apr 2014 12:54:50 -0400
+In-Reply-To: <535E3BDA.1000008@siemens.com> (Jan Kiszka's message of "Mon, 28
+	Apr 2014 13:30:34 +0200")
+Message-ID: <jpgha5cxehx.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1398416894-6782-6-git-send-email-cw00.choi@samsung.com>
-References: <1398416894-6782-1-git-send-email-cw00.choi@samsung.com>
-	<1398416894-6782-6-git-send-email-cw00.choi@samsung.com>
-Date: Tue, 29 Apr 2014 22:24:45 +0530
-Message-ID: <CAK9yfHyP63QaaBwc4vkkqU4g3+B2DpqeC_11E5+LevWXED0Qxg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] devfreq: exynos5: Use devm_devfreq_* function using
- device resource management
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, rafael.j.wysocki@intel.com,
-        Nishanth Menon <nm@ti.com>, Jiri Kosina <jkosina@suse.cz>,
-        labbe.montjoie@gmail.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Manish Badarkhe <badarkhe.manish@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+Jan Kiszka <jan.kiszka@siemens.com> writes:
 
-On 25 April 2014 14:38, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch uses devm_devfreq_add_device()/devm_devfreq_register_opp_notifier()
-> to control automatically the resource of devfreq.
+> On 2014-04-28 07:00, Bandan Das wrote:
+>> Currently, the vmxon region isn't used in the nested case.
+>> However, according to the spec, the vmxon instruction performs
+>> additional sanity checks on this region and the associated
+>> pointer. Modify emulated vmxon to better adhere to the spec
+>> requirements
+>> 
+>> Signed-off-by: Bandan Das <bsd@redhat.com>
+>> ---
+>>  arch/x86/kvm/vmx.c | 53 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 53 insertions(+)
+>> 
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index c18fe9a4..d5342c7 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -354,6 +354,7 @@ struct vmcs02_list {
+>>  struct nested_vmx {
+>>  	/* Has the level1 guest done vmxon? */
+>>  	bool vmxon;
+>> +	gpa_t vmxon_ptr;
+>>  
+>>  	/* The guest-physical address of the current VMCS L1 keeps for L2 */
+>>  	gpa_t current_vmptr;
+>> @@ -5840,9 +5841,19 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
+>>  	struct kvm_segment cs;
+>>  	struct vcpu_vmx *vmx = to_vmx(vcpu);
+>>  	struct vmcs *shadow_vmcs;
+>> +	gva_t gva;
+>> +	gpa_t vmptr;
+>> +	struct x86_exception e;
+>> +	struct page *page;
+>> +
+>>  	const u64 VMXON_NEEDED_FEATURES = FEATURE_CONTROL_LOCKED
+>>  		| FEATURE_CONTROL_VMXON_ENABLED_OUTSIDE_SMX;
+>>  
+>> +	/* Guest physical Address Width */
+>> +	struct kvm_cpuid_entry2 *best =
+>> +		kvm_find_cpuid_entry(vcpu, 0x80000008, 0);
 >
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Cc: Manish Badarkhe <badarkhe.manish@gmail.com>
-> Cc: Abhilash Kesavan <a.kesavan@samsung.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-samsung-soc@vger.kernel.org
-> ---
->  drivers/devfreq/exynos/exynos5_bus.c | 23 ++++++++---------------
->  1 file changed, 8 insertions(+), 15 deletions(-)
+> We have cpuid_maxphyaddr().
 >
-> diff --git a/drivers/devfreq/exynos/exynos5_bus.c b/drivers/devfreq/exynos/exynos5_bus.c
-> index ab54a69..1f622f8 100644
-> --- a/drivers/devfreq/exynos/exynos5_bus.c
-> +++ b/drivers/devfreq/exynos/exynos5_bus.c
-> @@ -165,11 +165,6 @@ static int exynos5_int_get_dev_status(struct device *dev,
->  }
->  static void exynos5_int_exit(struct device *dev)
->  {
-> -       struct platform_device *pdev = container_of(dev, struct platform_device,
-> -                                                   dev);
-> -       struct busfreq_data_int *data = platform_get_drvdata(pdev);
-> -
-> -       devfreq_unregister_opp_notifier(dev, data->devfreq);
->  }
+>> +
+>> +
+>>  	/* The Intel VMX Instruction Reference lists a bunch of bits that
+>>  	 * are prerequisite to running VMXON, most notably cr4.VMXE must be
+>>  	 * set to 1 (see vmx_set_cr4() for when we allow the guest to set this).
+>> @@ -5865,6 +5876,46 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
+>>  		kvm_inject_gp(vcpu, 0);
+>>  		return 1;
+>>  	}
+>> +
+>> +	if (get_vmx_mem_address(vcpu, vmcs_readl(EXIT_QUALIFICATION),
+>> +				vmcs_read32(VMX_INSTRUCTION_INFO), &gva))
+>> +		return 1;
+>> +
+>> +	if (kvm_read_guest_virt(&vcpu->arch.emulate_ctxt, gva, &vmptr,
+>> +				sizeof(vmptr), &e)) {
+>> +		kvm_inject_page_fault(vcpu, &e);
+>> +		return 1;
+>> +	}
+>> +
+>> +	/* Don't bailout if best is NULL */
+>> +	WARN_ON(!best);
+>> +
+>> +	/*
+>> +	 * SDM 3: 24.11.5
+>> +	 * VMXON pointer must be 4KB aligned
+>> +	 * VMXON pointer must not set any bits beyond processor's
+>> +	 * physical address width
+>> +	 * The first 4 bytes of VMXON region contain the supported
+>> +	 * VMCS revision identifier
+>> +	 *
+>> +	 * Note - IA32_VMX_BASIC[48] will never be 1 for the nested case;
+>> +	 * which replaces physical address width with 32
+>> +	 */
+>> +	if (!IS_ALIGNED(vmptr, PAGE_SIZE) || (best &&
+>> +					      (vmptr >> (best->eax & 0xff)))) {
+>> +		nested_vmx_failInvalid(vcpu);
+>> +		skip_emulated_instruction(vcpu);
+>> +		return 1;
+>> +	}
+>> +
+>> +	page = nested_get_page(vcpu, vmptr);
+>> +	if ((page == NULL) || ((*(u32 *)kmap(page) != VMCS12_REVISION))) {
+>
+> Style: you don't need braces around the comparisons.
+>
+>> +		nested_vmx_failInvalid(vcpu);
+>> +		kunmap(page);
+>> +		skip_emulated_instruction(vcpu);
+>> +		return 1;
+>> +	}
+>> +
+>>  	if (vmx->nested.vmxon) {
+>>  		nested_vmx_failValid(vcpu, VMXERR_VMXON_IN_VMX_ROOT_OPERATION);
+>>  		skip_emulated_instruction(vcpu);
+>> @@ -5896,9 +5947,11 @@ static int handle_vmon(struct kvm_vcpu *vcpu)
+>>  	vmx->nested.preemption_timer.function = vmx_preemption_timer_fn;
+>>  
+>>  	vmx->nested.vmxon = true;
+>> +	vmx->nested.vmxon_ptr = vmptr;
+>>  
+>>  	skip_emulated_instruction(vcpu);
+>>  	nested_vmx_succeed(vcpu);
+>> +	kunmap(page);
+>
+> This late unmapping leaks the page in other error cases.
 
-Do you need an empty function?
+Oops, sorry!
 
+> Jan
 >
->  static struct devfreq_dev_profile exynos5_devfreq_int_profile = {
-> @@ -343,30 +338,29 @@ static int exynos5_busfreq_int_probe(struct platform_device *pdev)
->
->         busfreq_mon_reset(ppmu_data);
->
-> -       data->devfreq = devfreq_add_device(dev, &exynos5_devfreq_int_profile,
-> +       data->devfreq = devm_devfreq_add_device(dev, &exynos5_devfreq_int_profile,
->                                            "simple_ondemand", NULL);
-> -
->         if (IS_ERR(data->devfreq)) {
->                 err = PTR_ERR(data->devfreq);
-
-No need of err.   return PTR_ERR(data->devfreq);
-
-> -               goto err_devfreq_add;
-> +               return err;
->         }
->
-> -       devfreq_register_opp_notifier(dev, data->devfreq);
-> +       err = devm_devfreq_register_opp_notifier(dev, data->devfreq);
-> +       if (err < 0) {
-> +               dev_err(dev, "Failed to register opp notifier\n");
-> +               return err;
-> +       }
->
->         err = register_pm_notifier(&data->pm_notifier);
->         if (err) {
->                 dev_err(dev, "Failed to setup pm notifier\n");
-> -               goto err_devfreq_add;
-> +               return err;
->         }
->
->         /* TODO: Add a new QOS class for int/mif bus */
->         pm_qos_add_request(&data->int_req, PM_QOS_NETWORK_THROUGHPUT, -1);
->
->         return 0;
-> -
-> -err_devfreq_add:
-> -       devfreq_remove_device(data->devfreq);
-> -       return err;
->  }
->
->  static int exynos5_busfreq_int_remove(struct platform_device *pdev)
-> @@ -375,7 +369,6 @@ static int exynos5_busfreq_int_remove(struct platform_device *pdev)
->
->         pm_qos_remove_request(&data->int_req);
->         unregister_pm_notifier(&data->pm_notifier);
-> -       devfreq_remove_device(data->devfreq);
->
->         return 0;
->  }
-> --
-> 1.8.0
->
-
-
-
--- 
-With warm regards,
-Sachin
+>>  	return 1;
+>>  }
+>>  
+>> 
