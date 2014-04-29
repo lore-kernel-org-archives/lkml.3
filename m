@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934080AbaD2SSY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:18:24 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:43088 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933612AbaD2SSX (ORCPT
+	id S934090AbaD2SUE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:20:04 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:63280 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933478AbaD2SUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:18:23 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 29 Apr 2014 14:21:56 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140429094632.GP27561@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu> <20140417145418.GM11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu> <20140418152314.GY11182@twins.programming.kicks-ass.net>
- <20140418165958.GQ13658@twins.programming.kicks-ass.net> <20140418171516.GR13658@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 29 Apr 2014 14:20:03 -0400
+Message-ID: <535FED4D.5000703@amacapital.net>
+Date: Tue, 29 Apr 2014 11:19:57 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
+CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
+References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-5-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1398723161-21968-5-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014, Peter Zijlstra wrote:
-
-> > Event #16 is a SW event created and running in the parent on CPU0.
+On 04/28/2014 03:12 PM, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> A regular software one, right? Not a timer one.
-
-Maybe.  From traces I have it looks like it's a regular one (i.e. calls 
- perf_swevent_add() ) but who knows at this point.
-
-When I actually got a trace with perf_event_open() instrumented to print 
-some attr values it looked like things were being caused by
-PERF_COUNT_SW_TASK_CLOCK which makes no sense.
-
-> > CPU6 (child) shutting down.
-> >    last user of event #16
-> >    perf_release() called on event
-> >    which eventually calls event_sched_out()
-> >    which calls pmu->del which removes event from swevent_htable
-> >    *but only on CPU6*
+> IvyBridge added new instructions to directly write the fs and gs
+> 64bit base registers. Previously this had to be done with a system
+> call to write to MSRs. The main use case is fast user space threading
+> and switching the fs/gs registers quickly there.
 > 
-> So on fork() we'll also clone the counter; after which there's two. One
-> will run on each task.
+> The instructions are opt-in and have to be explicitely enabled
+> by the OS.
+> 
+> Previously Linux couldn't support this because the paranoid
+> entry code relied on the gs base never being negative outside
+> the kernel to decide when to use swaps. It would check the gs MSR
+> value and assume it was already running in kernel if the value
+> was already negative.
+> 
+> This patch changes the paranoid entry code to use rdgsbase
+> if available.  Then we check the GS value against the expected GS value
+> stored at the bottom of the IST stack. If the value is the expected
+> value we skip swapgs.
+> 
+> This is also significantly faster than a MSR read, so will speed
+> NMis (critical for profiling)
+> 
+> An alternative would have been to save/restore the GS value
+> unconditionally, but this approach needs less changes.
+> 
+> Then after these changes we need to also use the new instructions
+> to save/restore fs and gs, so that the new values set by the
+> users won't disappear.  This is also significantly
+> faster for the case when the 64bit base has to be switched
+> (that is when GS is larger than 4GB), as we can replace
+> the slow MSR write with a faster wr[fg]sbase execution.
+> 
+> The instructions do not context switch
+> the segment index, so the old invariant that fs or gs index
+> have to be 0 for a different 64bit value to stick is still
+> true. Previously it was enforced by arch_prctl, now the user
+> program has to make sure it keeps the segment indexes zero.
+> If it doesn't the changes may not stick.
+> 
+> This is in term enables fast switching when there are
+> enough threads that their TLS segment does not fit below 4GB,
+> or alternatively programs that use fs as an additional base
+> register will not get a sigificant context switch penalty.
+> 
+> It is all done in a single patch to avoid bisect crash
+> holes.
+> 
 
-even if inherit isn't set?
 
-> Because of a context switch optimization they can actually flip around
-> (the below patch disables that).
+> +paranoid_save_gs:
+> +	.byte 0xf3,0x48,0x0f,0xae,0xc9	# rdgsbaseq %rcx
+> +	movq $-EXCEPTION_STKSZ,%rax	# non debug stack size
+> +	cmpq $DEBUG_STACK,ORIG_RAX+8(%rsp)
+> +	movq $-1,ORIG_RAX+8(%rsp)	# no syscall to restart
+> +	jne  1f
+> +	movq $-DEBUG_STKSZ,%rax		# debug stack size
+> +1:
+> +	andq %rsp,%rax			# bottom of stack
+> +	movq (%rax),%rdi		# get expected GS
+> +	cmpq %rdi,%rcx			# is it the kernel gs?
 
-ENOPATCH?
+I don't like this part.  There are now three cases:
 
-> quite the puzzle this one
+1. User gs, gsbase != kernel gs base.  This works the same as before
 
-yes.
+2. Kernel gs.  This also works the same as before.
 
-I'm tediously working on trying to get a good trace of this happening.
+3. User gs, but gsbase == kernel gs base.  This will cause C code to
+execute on the *user* gs base.
 
-I have a random seed that will trigger the bug in the fuzzer around 1 time 
-in 10.
+Case 3 is annoying.  If nothing tries to change the user gs base, then
+everything is okay because the user gs base and the kernel gs bases are
+equal.  But if something does try to change the user gs base, then it
+will accidentally change the kernel gs base instead.
 
-Unfortunately many of the times it crashes so hard/quickly there's no 
-chance of getting the trace data (dump trace on oops never holds enough 
-state, and often the fuzzing triggers its own random trace events that 
-clutter those logs).
+For the IST entries, this should be fine -- cpu migration, scheduling,
+and such are impossible anyway.  For the non-IST entries, I'm less
+convinced.  The entry_64.S code suggests that the problematic entries are:
 
-Also trace-cmd is a pain to use.  Any suggested events I should trace 
-beyond the obvious?
+double_fault
+stack_segment
+machine_check
 
-Part of the problem is that despite what the documentation says it doesn't 
-look like you can combine the "-P pid" and "-c" children option, which 
-makes debugging a forking problem like this a lot harder to trace.
+Of course, all of those entries really do use IST, so I wonder why they
+are paranoid*entry instead of paranoid*entry_ist.  Is it because they're
+supposedly non-recursive?
 
-It's sort of possible to get around that with a really complicated -F ""
-command line that does sudo back to me (don't want to fuzz as root) and 
-such, but still awkward.
+In any case, wouldn't this all be much simpler and less magical if the
+paranoid entries just saved the old gsbase to the rbx and loaded the new
+ones?  The exits could do the inverse.  This should be really fast:
 
-Vince
+rdgsbaseq %rbx
+wrgsbaseq {the correct value}
+
+...
+
+wrgsbaseq %rbx
+
+This still doesn't support changing the usergs value inside a paranoid
+entry, but at least it will fail consistently instead of only failing if
+the user gs has a particular special value.
+
+I don't know the actual latencies, but I suspect that this would be
+faster, too -- it removes some branches, and wrgsbase and rdgsbase
+deserve to be faster than swapgs.  It's probably no good for
+non-rd/wrgsbase-capable cpus, though, since I suspect that three MSR
+accesses are much worse than one MSR access and two swapgs calls.
+
+--Andy
