@@ -1,193 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933866AbaD2LfA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:35:00 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:43024 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933540AbaD2Le6 convert rfc822-to-8bit (ORCPT
+	id S933887AbaD2Lf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:35:56 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:62862 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933750AbaD2Lfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:34:58 -0400
-Date: Tue, 29 Apr 2014 07:34:54 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: NeilBrown <neilb@suse.de>, "Stefan (metze) Metzmacher" <metze@samba.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-nfs <linux-nfs@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: flock() and NFS [Was: Re: [PATCH] locks: rename file-private
- locks to file-description locks]
-Message-ID: <20140429073454.220572a8@tlielax.poochiereds.net>
-In-Reply-To: <535F76A4.4090208@gmail.com>
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
-	<20140421140246.GB26358@brightrain.aerifal.cx>
-	<535529FA.8070709@gmail.com>
-	<20140421161004.GC26358@brightrain.aerifal.cx>
-	<5355644C.7000801@gmail.com>
-	<20140421184640.GD26358@brightrain.aerifal.cx>
-	<535573E0.9080106@gmail.com>
-	<20140421155520.3b33fbef@ipyr.poochiereds.net>
-	<53558A73.3010602@samba.org>
-	<5355F60C.8010004@gmail.com>
-	<20140427145125.21e7e6c6@notabene.brown>
-	<535CCAD2.4060304@gmail.com>
-	<20140427200431.426c98d1@notabene.brown>
-	<CAKgNAkgv5NqDRUNu0XtSABqmctd7=rpMMEYhhDQNzPssZuU5bA@mail.gmail.com>
-	<20140428072845.67f48d8e@notabene.brown>
-	<535F6BC4.2090601@gmail.com>
-	<20140429192458.641ebf1d@notabene.brown>
-	<535F76A4.4090208@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Tue, 29 Apr 2014 07:35:55 -0400
 MIME-Version: 1.0
+In-Reply-To: <535B13D7.4050202@kernel.dk>
+References: <cover.1395840483.git.agordeev@redhat.com>
+	<20140422071057.GA13195@dhcp-26-169.brq.redhat.com>
+	<535676A1.3070706@kernel.dk>
+	<5356916F.4000205@kernel.dk>
+	<CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com>
+	<535716A5.6050108@kernel.dk>
+	<CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com>
+	<535AD235.90604@kernel.dk>
+	<CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
+	<535B13D7.4050202@kernel.dk>
+Date: Tue, 29 Apr 2014 19:35:54 +0800
+Message-ID: <CACVXFVORX_qgJNXcB3OFpscVx0eQAbLPv2Jr1N3_yBKrPsGXFA@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+From: Ming Lei <tom.leiming@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 11:53:40 +0200
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+On Sat, Apr 26, 2014 at 10:03 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2014-04-25 18:01, Ming Lei wrote:
+>>
+>> Hi Jens,
+>>
+>> On Sat, Apr 26, 2014 at 5:23 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>
+>>> On 04/25/2014 03:10 AM, Ming Lei wrote:
+>>>
+>>> Sorry, I did run it the other day. It has little to no effect here, but
+>>> that's mostly because there's so much other crap going on in there. The
+>>> most effective way to currently make it work better, is just to ensure
+>>> the caching pool is of a sane size.
+>>
+>>
+>> Yes, that is just what the patch is doing, :-)
+>
+>
+> But it's not enough.
 
-> On 04/29/2014 11:24 AM, NeilBrown wrote:
-> > On Tue, 29 Apr 2014 11:07:16 +0200 "Michael Kerrisk (man-pages)"
-> > <mtk.manpages@gmail.com> wrote:
-> > 
-> >> On 04/27/2014 11:28 PM, NeilBrown wrote:
-> >>> On Sun, 27 Apr 2014 13:11:33 +0200 "Michael Kerrisk (man-pages)"
-> >>> <mtk.manpages@gmail.com> wrote:
-> >>>
-> >>>> On Sun, Apr 27, 2014 at 12:04 PM, NeilBrown <neilb@suse.de> wrote:
-> >>>>> On Sun, 27 Apr 2014 11:16:02 +0200 "Michael Kerrisk (man-pages)"
-> >>>>> <mtk.manpages@gmail.com> wrote:
-> >>>>>
-> >>>>>> [Trimming some folk from CC, and adding various NFS people]
-> >>>>>>
-> >>>>>> On 04/27/2014 06:51 AM, NeilBrown wrote:
-> >>>>>>
-> >>>>>> [...]
-> >>>>>>
-> >>>>>>> Note to Michael: The text
-> >>>>>>>    flock() does not lock files over NFS.
-> >>>>>>> in flock(2) is no longer accurate.  The reality is ... complex.
-> >>>>>>> See nfs(5), and search for "local_lock".
-> >>>>>>
-> >>>>>> Ahhh -- I see:
-> >>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5eebde23223aeb0ad2d9e3be6590ff8bbfab0fc2
-> >>>>>>
-> >>>>>> Thanks for the heads up.
-> >>>>>>
-> >>>>>> Just in general, it would be great if the flock(2) and fcntl(2) man pages
-> >>>>>> contained correct details for NFS, of course. So, for example, if there
-> >>>>>> are any current gotchas for NFS and fcntl() byte-range locking, I'd like
-> >>>>>> to add those to the fcntl(2) man page.
-> >>>>>
-> >>>>> The only peculiarities I can think of are:
-> >>>>>  - With NFS, locking or unlocking a region forces a flush of any cached data
-> >>>>>    for that file (or maybe for the region of the file).  I'm not sure if this
-> >>>>>    is worth mentioning.
-> >>>>
-> >>>> I agree that it's probably not necessary to mention.
-> >>>>
-> >>>>>  - With NFSv4 the client can lose a lock if it is out of contact with the
-> >>>>>    server for a period of time.  When this happens, any IO to the file by a
-> >>>>>    process which "thinks" it holds a lock will fail until that process closes
-> >>>>>    and re-opens the file.
-> >>>>>    This behaviour is since 3.12.  Prior to that the client might lose and
-> >>>>>    regain the lock without ever knowing thus potentially risking corruption
-> >>>>>    (but only if client and server lost contact for an extended period).
-> >>>>
-> >>>> Do you have a pointer for that commit to 3.12?
-> >>>>
-> >>>
-> >>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ef1820f9be27b6ad158f433ab38002ab8131db4d
-> >>>
-> >>> did most of the work while  the subsequent commit
-> >>>
-> >>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f6de7a39c181dfb8a2c534661a53c73afb3081cd
-> >>>
-> >>> changed some details, added some documentation, and inverted the default
-> >>> behaviour.
-> >>
-> >> Thanks for that detail. What do you think of the following text for the 
-> >> fcntl(2) man page:
-> >>
-> >>        Before  Linux 3.12, if an NFS client is out of contact with the
-> >>        server for a period of time, it might lose and  regain  a  lock
-> >>        without  ever  being  aware  of the fact.  This scenario poten‐
-> >>        tially risks  data  corruption,  since  another  process  might
-> >>        acquire  a lock in the intervening period and perform file I/O.
-> >>        Since Linux 3.12, if the client loses contact with the  server,
-> >>        any I/O to the file by a process which "thinks" it holds a lock
-> >>        will fail until that process closes and reopens  the  file.   A
-> >>        kernel  parameter,  nfs.recover_lost_locks,  can be set to 1 to
-> >>        obtain the pre-3.12 behavior, whereby the client  will  attempt
-> >>        to  recover  lost  locks when contact is reestablished with the
-> >>        server.  Because of the attendant risk of data corruption, this
-> >>        parameter defaults to 0 (disabled).
-> >>
-> > 
-> > Mostly good.
-> > 
-> > I'm just a little concerned about "if the client loses contact with the
-> > server" in the middle there.  It is no longer qualified and it isn't clear
-> > that the "for a period of time" qualification still applied.  And we should
-> > probably quantify the period of time - which defaults to 90 seconds.
-> > I don't remember just now the difference between
-> >    /proc/fs/nfsd/nfsv4{lease,grace}time
-> > but this 90 seconds is one of those.
-> > 
-> > Also this is NFSv4 specific.  With NFSv3 the failure mode is the reverse.  If
-> > the server loses contact with a client then any lock stays in place
-> > indefinitely ("why can't I read my mail"... I remember it well).
-> > 
-> >   Before Linux 3.12, if an NFSv4 client loses contact with the server
-> >   (defined as more than 90 seconds with no communication), it might lose
-> >   and regain ....
-> 
-> Thanks, Neil. Changed as you suggest. I'd quite like to mention
-> which of /proc/fs/nfsd/nfsv4{lease,grace}time is relevant here. I had a 
-> quick scan, but could not determine it with complete confidence. My suspicion, 
-> looking at fs/lockd/svcproc.c and fs/lockd/grace.c::locks_in_grace()
-> is that it is /proc/fs/nfsd/nfsv4gracetime that is relevant here. Can anyone
-> confirm?
-> 
+Yes, the patch is only for cases of mutli hw queue and having
+offline CPUs existed.
 
-The difference here is subtle. The gracetime is how long after a reboot
-should knfsd allow clients to reclaim state (and deny the creation of
-new locks and opens). The leasetime is how long the NFSv4 lease period
-is. There is a relationship between the two that's illustrated in the
-comments above write_gracetime:
+> For instance, my test case, it's 255 tags and 64 CPUs.
+> We end up in cross-cpu spinlock nightmare mode.
 
-/**
- * write_gracetime - Set or report current NFSv4 grace period time
- *
- * As above, but sets the time of the NFSv4 grace period.
- *
- * Note this should never be set to less than the *previous*
- * lease-period time, but we don't try to enforce this.  (In the common
- * case (a new boot), we don't know what the previous lease time was
- * anyway.)
- */
+IMO, the scaling problem for the above case might be
+caused by either current percpu ida design or blk-mq's
+usage on it.
 
-The value you're interested in here is the nfsv4leasetime. If the
-client doesn't renew its lease within that period, then it's subject to
-the server giving up on it and dropping any state that it holds on that
-clients' behalf.
+One of problems in blk-mq is that the 'set->queue_depth'
+parameter from driver isn't scalable, maybe it is reasonable to
+introduce 'set->min_percpu_cache', then ' tags->nr_max_cache'
+can be computed as below:
 
-Note that this is not a firm timeout. The server runs a job
-periodically to clean out expired stateful objects, and it's likely
-that there is some time (maybe even up to another whole lease period)
-between when the timeout expires and the job actually runs. If the
-client gets a RENEW in there within that window, its lease will be
-renewed and its state preserved.
+     max(nr_tags / hctx->nr_ctx, set->min_percpu_cache)
 
-Also note that all of the above just applies to the Linux knfsd. There
-are many other servers in the field and they have different rules for
-dropping state held by clients that have gone AWOL.
+Another problem in blk-mq is that if it can be improved by computing
+tags->nr_max_cache as 'nr_tags / hctx->nr_ctx' ?  The current
+approach should be based on that there are parallel I/O
+activity on each CPU, but I am wondering if it is the common
+case in reality.  Suppose there are N(N << online CPUs in
+big machine) concurrent I/O on some of CPUs, percpu cache
+can be increased a lot by (nr_tags / N).
 
+>
+>
+>> From percpu_ida view, it is easy to observe it can improve
+>> allocation performance. I have several patches to export
+>> these information by sysfs for monitoring percpu_ida
+>> performance.
+>
+>
+> Sounds good!
+
+If we need exporting percpu_ida allocation/free information via
+sysfs for monitoring performance, percpu ida need a parent
+kobject, which means it may be better to allocate percpu_ida
+tag until sw/hw queue is initialized, like the patch does.
+
+>
+>
+>>> I've got an alternative tagging scheme that I think would be useful for
+>>> the cases where the tag space to cpu ratio isn't big enough. So I think
+>>> we'll retain percpu_ida for the cases where it can cache enough, and
+>>> punt to an alternative scheme when not.
+>>
+>>
+>> OK, care to comment on the patch or the idea of setting percpu cache
+>> size as (nr_tags / hctx->nr_ctx)?
+>
+>
+> I think it's a good idea. The problem is that for percpu_ida to be
+> effective, you need a bigger cache than the 3 I'd get above. If that isn't
+> the case, it performs poorly. I'm just not convinced the design can ever
+> work in the realm of realistic queue depths.
+>
+>
+>
+>>> That doesn't mean we should not improve percpu_ida. There's quite a bit
+>>> of low hanging fruit in there.
+>>
+>>
+>> IMO percpu_max_size in percpu_ida is very important for the
+>> performance, and it might need to adjust dynamically according
+>> to the percpu allocation loading, but it is far more complicated
+>> to implement. And it might be the simplest way to fix the parameter
+>> before percpu_ida_init().
+>
+>
+> That's what I did, essentially. Ensuring that the percpu_max_size is at
+> least 8 makes it a whole lot better here. But still slower than a regular
+> simple bitmap, which makes me sad. A fairly straight forward cmpxchg based
+> scheme I tested here is around 20% faster than the bitmap approach on a
+> basic desktop machine, and around 35% faster on a 4-socket. Outside of NVMe,
+> I can't think of cases where that approach would not be faster than
+> percpu_ida. That means all of SCSI, basically, and the basic block drivers.
+
+If percpu_ida wants to beat bitmap allocation,  the local cache hit
+ratio has to keep high, in my tests, it can be got with enough local
+cache size.
+
+
+Thanks,
 -- 
-Jeff Layton <jlayton@poochiereds.net>
+Ming Lei
