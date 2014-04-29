@@ -1,138 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086AbaD2O6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:58:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824AbaD2O6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:58:30 -0400
-From: Maurizio Lombardi <mlombard@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        JBottomley@parallels.com, hch@lst.de, linux-scsi@vger.kernel.org,
-        kmo@daterainc.com, linux-kernel@vger.kernel.org,
-        m.lombardi85@gmail.com
-Subject: [PATCH] bio: modify __bio_add_page() to accept pages that don't start a new segment
-Date: Tue, 29 Apr 2014 16:58:18 +0200
-Message-Id: <1398783498-19814-1-git-send-email-mlombard@redhat.com>
+	id S1757853AbaD2PCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 11:02:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50748 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447AbaD2PCv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 11:02:51 -0400
+Date: Tue, 29 Apr 2014 18:02:26 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mateusz Guzik <mguzik@redhat.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, Laurent Navet <laurent.navet@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: line6: fix possible overrun
+Message-ID: <20140429150226.GU4963@mwanda>
+References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
+ <20140426204704.GB17562@mguzik.redhat.com>
+ <20140426213137.GM26890@mwanda>
+ <20140426215945.GC17562@mguzik.redhat.com>
+ <20140427173932.GP26890@mwanda>
+ <20140427200042.GA23846@mguzik.redhat.com>
+ <20140427224425.GQ26890@mwanda>
+ <s5h38gw9or4.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5h38gw9or4.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original behaviour is to refuse to add a new page if the maximum number
-of segments has been reached, regardless of the fact the page we are
-going to add can be merged into the last segment or not.
+Yeah.  If this were a brand new driver then returning -EINVAL would be a
+good idea.
 
-Unfortunately, when the system runs under heavy memory fragmentation conditions,
-a driver may try to add multiple pages to the last segment.
-The original code won't accept them and EBUSY will be reported to
-userspace.
+Smatch actually warns about this code as well if you turn on the
+--spammy option.  But there are too many of these kinds of warnings and
+even I can't check them all so the warning is basically useless.
 
-This patch modifies the function so it refuses to add a page
-only in case the latter starts a new segment and the maximum number
-of segments has already been reached.
+In a few months I will have improved the Smatch code to know that the
+source string is too large so this bug could have been avoided.
 
-The bug can be easily reproduced with the st driver:
-
-1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
-2) modprobe st buffer_kbs=1024
-3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
-   dd: error writing ‘/dev/st0’: Device or resource busy
-
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
----
- fs/bio.c | 50 ++++++++++++++++++++++++++++----------------------
- 1 file changed, 28 insertions(+), 22 deletions(-)
-
-diff --git a/fs/bio.c b/fs/bio.c
-index 6f0362b..9a3a0b1 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -750,29 +750,31 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		return 0;
- 
- 	/*
--	 * we might lose a segment or two here, but rather that than
--	 * make this too complex.
-+	 * setup the new entry, we might clear it again later if we
-+	 * cannot add the page
-+	 */
-+	bvec = &bio->bi_io_vec[bio->bi_vcnt];
-+	bvec->bv_page = page;
-+	bvec->bv_len = len;
-+	bvec->bv_offset = offset;
-+	bio->bi_vcnt++;
-+	bio->bi_phys_segments++;
-+
-+	/*
-+	 * Perform a recount if the number of segments is greater
-+	 * than queue_max_segments(q).
- 	 */
- 
--	while (bio->bi_phys_segments >= queue_max_segments(q)) {
-+	while (bio->bi_phys_segments > queue_max_segments(q)) {
- 
- 		if (retried_segments)
--			return 0;
-+			goto failed;
- 
- 		retried_segments = 1;
- 		blk_recount_segments(q, bio);
- 	}
- 
- 	/*
--	 * setup the new entry, we might clear it again later if we
--	 * cannot add the page
--	 */
--	bvec = &bio->bi_io_vec[bio->bi_vcnt];
--	bvec->bv_page = page;
--	bvec->bv_len = len;
--	bvec->bv_offset = offset;
--
--	/*
- 	 * if queue has other restrictions (eg varying max sector size
- 	 * depending on offset), it can specify a merge_bvec_fn in the
- 	 * queue to get further control
-@@ -789,23 +791,27 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		 * merge_bvec_fn() returns number of bytes it can accept
- 		 * at this offset
- 		 */
--		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
--			bvec->bv_page = NULL;
--			bvec->bv_len = 0;
--			bvec->bv_offset = 0;
--			return 0;
--		}
-+		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
-+			goto failed;
- 	}
- 
- 	/* If we may be able to merge these biovecs, force a recount */
--	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
-+	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
- 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
- 
--	bio->bi_vcnt++;
--	bio->bi_phys_segments++;
-  done:
- 	bio->bi_iter.bi_size += len;
- 	return len;
-+
-+ failed:
-+	bvec->bv_page = NULL;
-+	bvec->bv_len = 0;
-+	bvec->bv_offset = 0;
-+	bio->bi_vcnt--;
-+	if (!retried_segments)
-+		bio->bi_phys_segments--;
-+
-+	return 0;
- }
- 
- /**
--- 
-Maurizio Lombardi
-
+regards,
+dan carpenter
