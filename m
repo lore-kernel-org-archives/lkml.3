@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346AbaD2AgT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:36:19 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47133 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975AbaD2AZs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:25:48 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 12/45] torture: Rename RCU_QEMU_MAC to TORTURE_QEMU_MAC
-Date: Mon, 28 Apr 2014 17:25:00 -0700
-Message-Id: <1398731133-18925-12-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20140429002455.GA15461@linux.vnet.ibm.com>
- <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042900-9332-0000-0000-000000A24CF6
+	id S1757355AbaD2AhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:37:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:54998 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173AbaD2AhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 20:37:10 -0400
+Date: Tue, 29 Apr 2014 10:37:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chao Yu <chao2.yu@samsung.com>
+Subject: linux-next: manual merge of the vfs tree with the f2fs tree
+Message-Id: <20140429103703.efca943550755ccb0ed875eb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+--Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This commit makes the torture scripts a bit more RCU-independent.
+Hi Al,
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- tools/testing/selftests/rcutorture/bin/functions.sh | 6 +++---
- tools/testing/selftests/rcutorture/bin/kvm.sh       | 4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
+Today's linux-next merge of the vfs tree got a conflict in fs/f2fs/file.c
+between commit adeb670f1fee ("f2fs: introduce f2fs_seek_block to support
+SEEK_{DATA, HOLE} in llseek") from the f2fs tree and commits 8eb02141b8a6
+("switch simple generic_file_aio_read() users to ->read_iter()") and
+e6552301fb08 ("write_iter variants of {__,}generic_file_aio_write()")
+from the vfs tree.
 
-diff --git a/tools/testing/selftests/rcutorture/bin/functions.sh b/tools/testing/selftests/rcutorture/bin/functions.sh
-index 623939cf814e..41fb52b805e4 100644
---- a/tools/testing/selftests/rcutorture/bin/functions.sh
-+++ b/tools/testing/selftests/rcutorture/bin/functions.sh
-@@ -124,7 +124,7 @@ identify_qemu_append () {
- 
- # identify_qemu_args qemu-cmd serial-file
- #
--# Output arguments for qemu arguments based on the RCU_QEMU_MAC
-+# Output arguments for qemu arguments based on the TORTURE_QEMU_MAC
- # and TORTURE_QEMU_INTERACTIVE environment variables.
- identify_qemu_args () {
- 	case "$1" in
-@@ -133,9 +133,9 @@ identify_qemu_args () {
- 	qemu-system-ppc64)
- 		echo -enable-kvm -M pseries -cpu POWER7 -nodefaults
- 		echo -device spapr-vscsi
--		if test -n "$TORTURE_QEMU_INTERACTIVE" -a -n "$RCU_QEMU_MAC"
-+		if test -n "$TORTURE_QEMU_INTERACTIVE" -a -n "$TORTURE_QEMU_MAC"
- 		then
--			echo -device spapr-vlan,netdev=net0,mac=$RCU_QEMU_MAC
-+			echo -device spapr-vlan,netdev=net0,mac=$TORTURE_QEMU_MAC
- 			echo -netdev bridge,br=br0,id=net0
- 		elif test -n "$TORTURE_QEMU_INTERACTIVE"
- 		then
-diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
-index 2f9605ed5b58..1a4a68c76914 100644
---- a/tools/testing/selftests/rcutorture/bin/kvm.sh
-+++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
-@@ -128,7 +128,7 @@ do
- 		;;
- 	--mac)
- 		checkarg --mac "(MAC address)" $# "$2" '^\([0-9a-fA-F]\{2\}:\)\{5\}[0-9a-fA-F]\{2\}$' error
--		RCU_QEMU_MAC=$2; export RCU_QEMU_MAC
-+		TORTURE_QEMU_MAC=$2; export TORTURE_QEMU_MAC
- 		shift
- 		;;
- 	--no-initrd)
-@@ -380,7 +380,7 @@ then
- 	echo RCU_QEMU_CMD="$RCU_QEMU_CMD; export RCU_QEMU_CMD"
- 	echo TORTURE_QEMU_INTERACTIVE="$TORTURE_QEMU_INTERACTIVE;
- 		export TORTURE_QEMU_INTERACTIVE"
--	echo RCU_QEMU_MAC="$RCU_QEMU_MAC; export RCU_QEMU_MAC"
-+	echo TORTURE_QEMU_MAC="$TORTURE_QEMU_MAC; export TORTURE_QEMU_MAC"
- 	echo "mkdir -p "$resdir" || :"
- 	echo "mkdir $resdir/$ds"
- 	cat $T/script
--- 
-1.8.1.5
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/f2fs/file.c
+index b9f4fbf5c07e,e4ba4b93f96a..000000000000
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@@ -802,11 -678,11 +802,11 @@@ long f2fs_compat_ioctl(struct file *fil
+  #endif
+ =20
+  const struct file_operations f2fs_file_operations =3D {
+ -	.llseek		=3D generic_file_llseek,
+ +	.llseek		=3D f2fs_llseek,
+- 	.read		=3D do_sync_read,
+- 	.write		=3D do_sync_write,
+- 	.aio_read	=3D generic_file_aio_read,
+- 	.aio_write	=3D generic_file_aio_write,
++ 	.read		=3D new_sync_read,
++ 	.write		=3D new_sync_write,
++ 	.read_iter	=3D generic_file_read_iter,
++ 	.write_iter	=3D generic_file_write_iter,
+  	.open		=3D generic_file_open,
+  	.mmap		=3D f2fs_file_mmap,
+  	.fsync		=3D f2fs_sync_file,
+
+--Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTXvQ0AAoJEMDTa8Ir7ZwVt+MP/AxLH1yUhfigWUpj88HhkNgW
+Iiv2Zyr1Z2Ky06Iu5qGE+hlLc2gN9xcqLFK/lC4U+Xh4DCggo0+DvL5OhUjNTMMG
+ZspWcU9ugkZz7/QJP/bfzubBk0zPCj7Q7bnHdSCg1F2oD/LwkZturJ+hq7A0A8we
+MdFnQCO04bUimdP0czyK7yOIG1bYLZVs03Zbk2u7bQPTJFjXLDcpn8b7qDHb1lZE
+nuJfjqS+rYA4/Wo6SuMW8foQ61bvweSG3pV4/Vy1ZosGFn/P70G3ENSU79gpFl78
+FGl5QNsQGuYaQKe2TEMl72hFAr02a/bs2/aHczc23dYnrzob3s6klrRykuRofpWC
+0MhC36OfimUy56OUmF4uwppVq/zqGMsf5jjiC9JYx58Mv2yPdJaOFNXaJE79Zi/s
+HU+H6abgrWV6THlVbazlQh7gpipmbElndcVqKUnqfobDGlvDo65N44S01PPEjNNy
+MqsMywOPiv283DLSfSbHt+0oDyhFbWLSrcZIHKP2BNUrrUT0qZ0Co4se12eESD5d
+vMHqf1tiebQqigb+8AzAgQdMd8Puttr0Zs+Up03MwGLMVhIRUU3cI1Jje035Exkv
+PJE6fT7PxolNUF+GAhKs/wVHYCPNfaxfMUDQ0f6zMJh3BhT/bW2spbaBcLx2+9rn
+pzYXym1ZpGs+GDhPMJh6
+=DFvG
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_--
