@@ -1,121 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933804AbaD2Qhd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:37:33 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.41]:36536 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155AbaD2Qhc (ORCPT
+	id S1758285AbaD2Qjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:39:49 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:46799 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758122AbaD2Qjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:37:32 -0400
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1398763077-5542-1-git-send-email-peter@piie.net> <1398763077-5542-4-git-send-email-peter@piie.net> <20140429155323.GB31488@e102654-lin.cambridge.arm.com>
-Message-ID: <cone.1398789448.90431.1768.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Javi Merino <javi.merino@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v2 3/4] thermal: Added Bang-bang thermal governor
-Date: Tue, 29 Apr 2014 18:37:28 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Df-Sender: NDA0MDk0
+	Tue, 29 Apr 2014 12:39:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398268565-4789-3-git-send-email-dianders@chromium.org>
+References: <1398268565-4789-3-git-send-email-dianders@chromium.org>
+Date: Tue, 29 Apr 2014 09:39:46 -0700
+X-Google-Sender-Auth: UUprVs9RJPRLF7r68kZl0xtH6vY
+Message-ID: <CAD=FV=W=Ffye5wp0PhJ2uX4jhEQkTKA4VTT4LyX2ZdByfE4UaQ@mail.gmail.com>
+Subject: Re: [RESEND PATCH v3 2/5] charger: tps65090: Allow charger module to
+ be used when no irq
+From: Doug Anderson <dianders@chromium.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javi Merino writes:
+Anton,
 
-> On Tue, Apr 29, 2014 at 10:17:56AM +0100, Peter Feuerer wrote:
->> The bang-bang thermal governor uses a hysteresis to switch abruptly on
->> or off a cooling device.  It is intended to control fans, which can
->> not be throttled but just switched on or off.
->> Bang-bang cannot be set as default governor as it is intended for
->> special devices only.  For those special devices the driver needs to
->> explicitely request it.
-> 
-> I don't really understand why step-wise doesn't work for you (AIUI,
-> this governor should be a subset of it.  I'll let others comment on
-> that, just a minor comment below.
+On Wed, Apr 23, 2014 at 8:56 AM, Doug Anderson <dianders@chromium.org> wrote:
+> On the ARM Chromebook tps65090 has two masters: the AP (the main
+> processor running linux) and the EC (the embedded controller).  The AP
+> is allowed to mess with FETs but the EC is in charge of charge control.
+>
+> The tps65090 interupt line is routed to both the AP and the EC, which
+> can cause quite a headache.  Having two people adjusting masks and
+> acking interrupts is a recipe for disaster.
+>
+> In the shipping kernel we had a hack to have the AP pay attention to
+> the IRQ but not to ack it.  It also wasn't supposed to configure the
+> IRQ in any way.  That hack allowed us to detect when the device was
+> charging without messing with the EC's state.
+>
+> The current tps65090 infrastructure makes the above difficult, and it
+> was a bit of a hack to begin with.  Rather than uglify the driver to
+> support it, just extend the driver's existing notion of "no irq" to
+> the charger.  This makes the charger code poll every 2 seconds for AC
+> detect, which is sufficient.
+>
+> For proper functioning, requires (mfd: tps65090: Don't tell child
+> devices we have an IRQ if we don't).  If we don't have that patch
+> we'll simply fail to probe on devices without an interrupt (just like
+> we did before this patch).
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v3: None
+> Changes in v2:
+> - Split noirq (polling mode) changes into MFD and charger
+>
+>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+>  1 file changed, 59 insertions(+), 17 deletions(-)
 
-That's what we thought in the first place too and we've been doing a lot of 
-fiddling in the past to somehow fit acerhdf into stepwise. But it never 
-really fitted and it broke all the time. Furthermore stepwise has a lot of 
-features like trend analysis, which is just overkill for the two step 
-regulation of acerhdf.
+All the rest of this series has been acked and applied.  Do you have
+time to review this patch?
 
-If I recall correctly, even Rui claimed in some email, that inventing a 
-separate governor would be a good long term solution.
+Thanks!  :)
 
-
-> [...]
->> diff --git a/drivers/thermal/gov_bang_bang.c b/drivers/thermal/gov_bang_bang.c
->> new file mode 100644
->> index 0000000..328dde0
->> --- /dev/null
->> +++ b/drivers/thermal/gov_bang_bang.c
->> @@ -0,0 +1,124 @@
->> +/*
->> + *  gov_bang_bang.c - A simple thermal throttling governor using hysteresis
->> + *
->> + *  Copyright (C) 2014 Peter Feuerer <peter@piie.net>
->> + *
->> + *  Based on step_wise.c with following Copyrights:
->> + *  Copyright (C) 2012 Intel Corp
->> + *  Copyright (C) 2012 Durgadoss R <durgadoss.r@intel.com>
->> + *
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation, version 2.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
->> + * the GNU General Public License for more details.
->> + *
->> + */
->> +
->> +#include <linux/thermal.h>
->> +
->> +#include "thermal_core.h"
->> +
->> +static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
->> +{
->> +	long trip_temp;
->> +	unsigned long trip_hyst;
->> +	struct thermal_instance *instance;
->> +
->> +	tz->ops->get_trip_temp(tz, trip, &trip_temp);
->> +	tz->ops->get_trip_hyst(tz, trip, &trip_hyst);
->> +
->> +	dev_dbg(&tz->device, "Trip%d[temp=%ld]:temp=%d:hyst=%ld\n",
->> +				trip, trip_temp, tz->temperature,
->> +				trip_hyst);
->> +
->> +	mutex_lock(&tz->lock);
->> +
->> +	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
->> +		if (instance->trip != trip)
->> +			continue;
->> +
->> +		/* in case fan is neither on nor off set the fan to active */
->> +		if (instance->target != 0 && instance->target != 1)
->> +			instance->target = 1;
-> 
-> I think you should add a pr_warn() here to warn the user that the
-> governor is being used with a cooling device that seems to support
-> more than one cooling state.
-
-Strange thing is, that the first time it is actually called with acerhdf 
-attached, it comes in with instance→target = -1 … I did not yet find out, 
-why.
-
-I'll further investigate on this and add some warning to it.
-
-thanks for your comments.
-
--- 
-kind regards,
---peter;
+-Doug
