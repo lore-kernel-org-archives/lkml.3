@@ -1,57 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390AbaD2GOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:14:52 -0400
-Received: from mail-bl2lp0210.outbound.protection.outlook.com ([207.46.163.210]:18029
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754865AbaD2GOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:14:51 -0400
-Date: Tue, 29 Apr 2014 14:14:19 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lad Prabhakar <prabhakar.csengg@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: configs: drop CONFIG_COMMON_CLK_DEBUG
-Message-ID: <20140429061417.GJ16451@dragon>
-References: <1398504922-9223-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S1755441AbaD2GRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:17:14 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:36765 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755117AbaD2GRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 02:17:13 -0400
+Message-ID: <535F43B2.2000309@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 11:46:18 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1398504922-9223-1-git-send-email-prabhakar.csengg@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(24454002)(50986999)(76176999)(85852003)(23726002)(33716001)(6806004)(4396001)(83072002)(47776003)(92566001)(33656001)(97756001)(77982001)(44976005)(20776003)(83322001)(54356999)(87936001)(77096999)(46406003)(81542001)(19580395003)(92726001)(99396002)(76482001)(46102001)(81342001)(80976001)(74502001)(57986002)(19580405001)(101416001)(80022001)(31966008)(86362001)(79102001)(50466002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB245;H:tx30smr01.am.freescale.net;FPR:EE1E08A3.E9E5769.31EEA4BB.8CE2912B.20110;MLV:sfv;PTR:gate-tx3.freescale.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0196A226D1
-X-OriginatorOrg: freescale.com
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Meelis Roos <mroos@linux.ee>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] cpufreq: Catch double invocations of cpufreq_freq_transition_begin/end
+References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com> <20140428185507.28755.6483.stgit@srivatsabhat.in.ibm.com> <CAKohpomaJ0ubnzzQ7AwAd6z+Zm085i+UwB7XMa=si7qthZdgZg@mail.gmail.com> <CAKohpokiy2Fvry=uTVnOCymH7Co1ka+JCFT3ndtPQBSD94Mnew@mail.gmail.com>
+In-Reply-To: <CAKohpokiy2Fvry=uTVnOCymH7Co1ka+JCFT3ndtPQBSD94Mnew@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042906-7014-0000-0000-000004CF47A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 03:05:22PM +0530, Lad Prabhakar wrote:
-> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 04/29/2014 10:25 AM, Viresh Kumar wrote:
+> On 29 April 2014 10:21, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> Nice effort.
+>>
+>> On 29 April 2014 00:25, Srivatsa S. Bhat
+>> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>> Now all such drivers have been fixed, but debugging this issue was not
+>>> very straight-forward (even lockdep didn't catch this). So let us add a
+>>> debug infrastructure to the cpufreq core to catch such issues more easily
+>>> in the future.
+>>
+>> BUT, I am not sure if we really need it :(
+>>
+>> I think we just got into the 'barrier' stuff as we had some doubts about it
+>> earlier and were quite sure that nothing else could go wrong. Otherwise
+>> the only problem could have been present was the second queuing
+>> from the same thread. And we will surely get stuck if that happens and
+>> we can't just miss that error..
+>>
+>>> Scenario 1: (Deadlock-free)
+>>> ----------
+>>>
+>>>          Task A                                         Task B
+>>>
+>>>     /* 1st freq transition */
+>>>     Invoke _begin() {
+>>>             ...
+>>>             ...
+>>>     }
+>>>
+>>>     Change the frequency
+>>>
+>>>                                                 Got interrupt for successful
+>>>                                                 change of frequency.
+>>>
+>>>                                                 /* 1st freq transition */
+>>>                                                 Invoke _end() {
+>>>                                                         ...
+>>>                                                         ...
+>>>     /* 2nd freq transition */                           ...
+>>>     Invoke _begin() {                                   ...
+>>>             ... //waiting for B                         ...
+>>>             ... //to finish _end()              }
+>>>             ...
+>>>             ...
+>>>     }
+>>>
+>>>
+>>> This scenario is actually deadlock-free because Task A can wait inside the
+>>> second call to _begin() without self-deadlocking, because it is the
+>>> responsibility of Task B to finish the first sequence by invoking the
+>>> corresponding _end().
 > 
-> this patch removes COMMON_CLK_DEBUG config option
-> from defconfig file as this config option is obsolete.
+> WTF, I was writing my mail and it just got send due to some stupid combination
+> of keys :( .. Sorry.
+>
+
+No problem!
+ 
+> Also, this might not work as expected. Consider this scenario:
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> ---
->  arch/arm/configs/imx_v4_v5_defconfig    |    1 -
->  arch/arm/configs/imx_v6_v7_defconfig    |    1 -
-...
->  arch/arm/configs/mxs_defconfig          |    1 -
+>      /* 1st freq transition */
+>      Invoke _begin() {
+>              ...
+>              ...
+>      }
+> 
+>      Start Change of frequency and return
+>      back as there is no end from same thread.
+> 
+>      /* 2nd freq transition as there is nobody stopping us */
+>      Invoke _begin() {
+>              ... //waiting for B
+>              ... //to finish _end()
+>              ...
+>              ...
+>      }
+> 
+>                                                               Got
+> interrupt for successful
+>                                                               change
+> of frequency.
+> 
+>                                                               /* 1st
+> freq transition */
+>                                                               Invoke _end() {
+>                                                                      ...
+>                                                                      ...
+>                                                              }
+> 
+> And your patch will probably break this ?
 
-Please drop these 3 files from your patch.  The obsolete
-COMMON_CLK_DEBUG option has been removed from two of them on my branch
-by savedefconfig, and we will address the remaining one in another
-patch.
+Yes, I'm aware that this corner case doesn't work well with my debug
+patch. I tried to avoid this but couldn't think of any solution.
+(One big-hammer way to avoid this is to exclude this infrastructure
+for all ASYNC_NOTIFICATION drivers, but I didn't want to go with that
+approach, since it makes it look ugly). Do you have any better ideas
+to deal with this scenario?
 
-Shawn
+Also, do we really have cases in mind where a single thread does
+multiple frequency transitions in one go? That too in such quick
+successions? Echo's to sysfs, changing of governors from userspace etc
+all do one frequency transition at a time per-task...
+
+
+Regards,
+Srivatsa S. Bhat
+
