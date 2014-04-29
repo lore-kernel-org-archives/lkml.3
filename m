@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaD2C4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:56:33 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:60401 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751495AbaD2C4b convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:56:31 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jan Kasprzak <kas@fi.muni.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Apr 2014 19:56:24 -0700
-Subject: RE: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
-Thread-Topic: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
-Thread-Index: Ac9jS3GK/Sj9aJq9Qwi8Lsk7betFEQACueqw
-Message-ID: <F766E4F80769BD478052FB6533FA745D4F63685A27@SC-VEXCH4.marvell.com>
-References: <20140428145201.GG29712@fi.muni.cz>
-	 <F766E4F80769BD478052FB6533FA745D4F6368598F@SC-VEXCH4.marvell.com>
- <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752806AbaD2C45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:56:57 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:48758 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaD2C4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 22:56:55 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-29_01:2014-04-29,2014-04-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404290041
+In-Reply-To: <CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
+	<CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
+Date: Mon, 28 Apr 2014 19:56:54 -0700
+X-Google-Sender-Auth: iFQqiXHF15g6YF4Cc8mwVDc8JRE
+Message-ID: <CAE9FiQVdwumX7Dsmt8NJhw4uWsj2sjUKaKS1wJQujW1fn1szLw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Yinghai Lu <yinghai@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ben Hutchings already submitted a patch for this twice, which I cc'd you
-> on:
-> 
-> http://marc.info/?t=139277203900003
-> 
-> will you ack it?  
-I can't find this mail in my mail box.
+On Mon, Apr 28, 2014 at 4:24 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Sat, Apr 26, 2014 at 1:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>
+> Thanks for finding these. I missed them in my build tests. This should fix them:
+>
+> diff --git a/drivers/tty/serial/8250/8250_early.c
+> b/drivers/tty/serial/8250/8250_early.c
+> index e83c9db..2094c3b 100644
+> --- a/drivers/tty/serial/8250/8250_early.c
+> +++ b/drivers/tty/serial/8250/8250_early.c
+> @@ -156,6 +156,11 @@ static int __init early_serial8250_setup(struct
+> earlycon_device *device,
+>  EARLYCON_DECLARE(uart8250, early_serial8250_setup);
+>  EARLYCON_DECLARE(uart, early_serial8250_setup);
+>
+> +int __init setup_early_serial8250_console(char *cmdline)
+> +{
+> +       return setup_earlycon(cmdline, "uart8250", early_serial8250_setup);
+> +}
+> +
+>  int serial8250_find_port_for_earlycon(void)
+>  {
+>         struct earlycon_device *device = early_device;
 
+that only handle "uart8250,", may need to add more lines to handle "uart,"
+
++int __init setup_early_serial8250_console(char *cmdline)
++{
++       char *options;
++       options = strstr(cmdline, "uart8250,");
++       if (options)
++               return setup_earlycon(cmdline, "uart8250",
+early_serial8250_setup);
++
++       options = strstr(cmdline, "uart,");
++       if (options)
++              return setup_earlycon(cmdline, "uart", early_serial8250_setup);
++
++      return 0;
++}
++
+
+Thanks
+
+Yinghai
