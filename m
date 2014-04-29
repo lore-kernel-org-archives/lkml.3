@@ -1,69 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934038AbaD2Rz1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:55:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63274 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932491AbaD2Rz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:55:26 -0400
-From: Daniel Bristot de Oliveira <bristot@redhat.com>
-To: linux-rt-users@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC PATCH RT] netconsole: enable netconsole on PREEMPT_RT
-Date: Tue, 29 Apr 2014 14:55:04 -0300
-Message-Id: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
+	id S934047AbaD2R45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:56:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46336 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933478AbaD2R44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 13:56:56 -0400
+Date: Tue, 29 Apr 2014 18:56:54 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140429175654.GI18016@ZenIV.linux.org.uk>
+References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Tue, Apr 29, 2014 at 06:01:39PM +0200, Miklos Szeredi wrote:
 
-This patch enables the netconsole on PREEMPT_RT_FULL, netconsole
-was disabled on commit:
-cb7cb77 kconfig-disable-a-few-options-rt.patch
+> Attached patch is just a starting point (untested).  Not sure how to minimize
+> contention without adding too much complexity.
 
-I tested the netconsole on three machines:
+Contention isn't the worst problem here - I'd expect the cacheline ping-pong
+to hurt more...  I agree with the analysis, but I'd really like to avoid that
+spinlock ;-/
 
-- Intel Core i5 (4 cpus) - Local network
-- Intel Xeon (32 cpus)   - Remote network
-- KVM VM (on a Core i7)  - Virtual network
-
-On these machines I build the kernel 3.10.34-rt34 + netconsole
-built as module. In order to execute some printks, I run a small
-benchmark that runs as a module. To analyse the output I captured
-the netconsole messages using Wireshark.
-
-On all cases, the tests passed without any error:
-
-- No error messages from the kernel
-- No missed messages
-- No out of order messages
-
-I ran +1 hour tests on each machine. The test using the Xeon machine
-ran by around 10 hours. On this test I received 317149 netconsole's
-messages.
-
-I also read the code and ran some traces (using the ftrace's
-function_graph). In the traces that I read, the netconsole code never
-broke the rt lock assumptions.
-
-Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
----
- drivers/net/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index 096de88..3835321 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -164,7 +164,6 @@ config VXLAN
- 
- config NETCONSOLE
- 	tristate "Network console logging support"
--	depends on !PREEMPT_RT_FULL
- 	---help---
- 	If you want to log kernel messages over the network, enable this.
- 	See <file:Documentation/networking/netconsole.txt> for details.
--- 
-1.9.0
-
+Let me see if we can avoid that...  Oh, well - at least that's a good excuse
+to take a break from fucking deadlock analysis around the damn acct(2), most
+of VFS and network filesystems ;-/
