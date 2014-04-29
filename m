@@ -1,133 +1,644 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770AbaD2Qgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:36:36 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:44113 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155AbaD2Qge convert rfc822-to-8bit (ORCPT
+	id S933848AbaD2Qhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:37:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33739 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933140AbaD2Qhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:36:34 -0400
-Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary CPU
-From: Joel Fernandes <agnel.joel@gmail.com>
-X-Mailer: iPad Mail (11B554a)
-In-Reply-To: <20140429091725.GA3582@e103592.cambridge.arm.com>
-Date: Tue, 29 Apr 2014 09:36:30 -0700
-Cc: Joel Fernandes <joelf@ti.com>, Nishanth Menon <nm@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D49C397D-1ABD-4882-B3F5-94F359D7552B@gmail.com>
-References: <1398191506-3741-1-git-send-email-joelf@ti.com> <20140428164348.GA14354@e103592.cambridge.arm.com> <535E8DC2.4010504@ti.com> <535E8E2D.1020708@ti.com> <20140429091725.GA3582@e103592.cambridge.arm.com>
-To: Dave Martin <Dave.Martin@arm.com>
+	Tue, 29 Apr 2014 12:37:33 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH 3/3] regulator: Add LTC3589 support
+Date: Tue, 29 Apr 2014 18:37:10 +0200
+Message-Id: <1398789430-23897-3-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds support for the Linear Technology LTC3589, LTC3589-1,
+and LTC3589-2 8-output I2C voltage regulator ICs.
 
-> On Apr 29, 2014, at 2:17 AM, Dave Martin <Dave.Martin@arm.com> wrote:
-> 
->> On Mon, Apr 28, 2014 at 06:21:49PM +0100, Joel Fernandes wrote:
->>> On 04/28/2014 12:20 PM, Joel Fernandes wrote:
->>>> On 04/28/2014 11:43 AM, Dave Martin wrote:
->>>>> On Tue, Apr 22, 2014 at 01:31:46PM -0500, Joel Fernandes wrote:
->>>>> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
->>>>> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
->>>>> seems to be because the CPU is in ARM mode once the ROM hands over control to
->>>>> the kernel.  Switch to THUMB mode if required once the kernel is control of
->>>>> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
->>>>> entry so this is not required and SMP boot works as is.
->>>>> 
->>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>> Cc: Nishanth Menon <nm@ti.com>
->>>>> Cc: Tony Lindgren <tony@atomide.com>
->>>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>>>> ---
->>>>> arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
->>>>> 1 file changed, 6 insertions(+), 2 deletions(-)
->>>>> 
->>>>> diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
->>>>> index 75e9295..1809dce 100644
->>>>> --- a/arch/arm/mach-omap2/omap-headsmp.S
->>>>> +++ b/arch/arm/mach-omap2/omap-headsmp.S
->>>>> @@ -1,7 +1,7 @@
->>>>> /*
->>>>>  * Secondary CPU startup routine source file.
->>>>>  *
->>>>> - * Copyright (C) 2009 Texas Instruments, Inc.
->>>>> + * Copyright (C) 2014 Texas Instruments, Inc.
->>>>>  *
->>>>>  * Author:
->>>>>  *      Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>> @@ -28,9 +28,13 @@
->>>>>  * code.  This routine also provides a holding flag into which
->>>>>  * secondary core is held until we're ready for it to initialise.
->>>>>  * The primary core will update this flag using a hardware
->>>>> -+ * register AuxCoreBoot0.
->>>>> + * register AuxCoreBoot0.
->>>>>  */
->>>>> ENTRY(omap5_secondary_startup)
->>>> 
->>>> Are you sure this problem is not caused by the missing ENDPROC() for
->>>> omap5_secondary_startup?
->>>> 
->>>> You have END() instead (which may have been accidental).
->>>> 
->>>> Without ENDPROC(), the symbol is not marked as a function and so
->>>> the Thumb bit won't be set when taking a pointer -- so the kernel
->>>> is actually telling the firmware to enter in ARM state.
->>>> 
->>>> 
->>>> Try changing END() to ENDPROC() without this patch, and see if it
->>>> makes a difference.
->>>> 
->>>> If it still doesn't work, then the firmware either doesn't support
->>>> entering in ARM, or is buggy.
->>> 
->>> Thanks for the suggestion. I'm guessing what you mean is with ENDPROC,
->>> interworking code uses bx instead of bl to set thumb mode.
->>> 
->>> But ROM/firmware doesn't have access to symbol table, how would it know
->>> the type of the symbol to be ARM or THUMB before it branches?
->> Sorry what I meant is, say its of Type function. What tells the firmware
->> to switch to THUMB?
->> 
->> What's typically done is a boot address register is written by the
->> kernel, and the firmware jumps to it after WFE.
-> 
-> Using ENTRY(x) ... ENDPROC(x) causes the symbol seen by the linker
-> for x to have the Thumb bit set if the code is Thumb.
-> 
-> This means that any reference the linker fixes up for that symbol
-> will have the Thumb bit set appropriately.  This applies to any kind
-> of reference, so code in another file that takes the address of the
-> symbol and then passes that address to the firmware should result in the
-> firmware getting an address with the Thumb bit.
-> 
-> From the firmware's point of view it just gets a raw address, but
-> the Thumb bit will now be set.  The firmware still needs to handle
-> this correctly when jumping, but from the look of the code this may
-> already work on omap3/4.  It would be interesting to know whether it
-> works on omap5.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+ drivers/regulator/Kconfig   |   6 +
+ drivers/regulator/Makefile  |   1 +
+ drivers/regulator/ltc3589.c | 564 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 571 insertions(+)
+ create mode 100644 drivers/regulator/ltc3589.c
 
-Thanks a lot for the explanation. That makes perfect sense. I will try it and let you know if it works on OMAP5.
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 903eb37..5599a61 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -265,6 +265,12 @@ config REGULATOR_LP8788
+ 	help
+ 	  This driver supports LP8788 voltage regulator chip.
+ 
++config REGULATOR_LTC3589
++	bool "LTC3589 8-output voltage regulator"
++	help
++	  This enables support for the LTC3589, LTC3589-1, and LTC3589-2
++	  8-output regulators controlled via I2C.
++
+ config REGULATOR_MAX14577
+ 	tristate "Maxim 14577 regulator"
+ 	depends on MFD_MAX14577
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 12ef277..16d429b 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
+ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
+ obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
++obj-$(CONFIG_REGULATOR_LTC3589) += ltc3589.o
+ obj-$(CONFIG_REGULATOR_MAX14577) += max14577.o
+ obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
+new file mode 100644
+index 0000000..37e18dc
+--- /dev/null
++++ b/drivers/regulator/ltc3589.c
+@@ -0,0 +1,564 @@
++/*
++ * Linear Technology LTC3589,LTC3589-1 regulator support
++ *
++ * Copyright (c) 2014 Philipp Zabel <p.zabel@pengutronix.de>, Pengutronix
++ *
++ * See file CREDITS for list of people who contributed to this
++ * project.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/of.h>
++#include <linux/regmap.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
++
++#define DRIVER_NAME		"ltc3589"
++
++#define LTC3589_IRQSTAT		0x02
++#define LTC3589_SCR1		0x07
++#define LTC3589_OVEN		0x10
++#define LTC3589_SCR2		0x12
++#define LTC3589_PGSTAT		0x13
++#define LTC3589_VCCR		0x20
++#define LTC3589_CLIRQ		0x21
++#define LTC3589_B1DTV1		0x23
++#define LTC3589_B1DTV2		0x24
++#define LTC3589_VRRCR		0x25
++#define LTC3589_B2DTV1		0x26
++#define LTC3589_B2DTV2		0x27
++#define LTC3589_B3DTV1		0x29
++#define LTC3589_B3DTV2		0x2a
++#define LTC3589_L2DTV1		0x32
++#define LTC3589_L2DTV2		0x33
++
++#define LTC3589_IRQSTAT_PGOOD_TIMEOUT	BIT(3)
++#define LTC3589_IRQSTAT_UNDERVOLT_WARN	BIT(4)
++#define LTC3589_IRQSTAT_UNDERVOLT_FAULT	BIT(5)
++#define LTC3589_IRQSTAT_THERMAL_WARN	BIT(6)
++#define LTC3589_IRQSTAT_THERMAL_FAULT	BIT(7)
++
++#define LTC3589_OVEN_SW1		BIT(0)
++#define LTC3589_OVEN_SW2		BIT(1)
++#define LTC3589_OVEN_SW3		BIT(2)
++#define LTC3589_OVEN_BB_OUT		BIT(3)
++#define LTC3589_OVEN_LDO2		BIT(4)
++#define LTC3589_OVEN_LDO3		BIT(5)
++#define LTC3589_OVEN_LDO4		BIT(6)
++#define LTC3589_OVEN_SW_CTRL		BIT(7)
++
++#define LTC3589_VCCR_SW1_GO		BIT(0)
++#define LTC3589_VCCR_SW2_GO		BIT(2)
++#define LTC3589_VCCR_SW3_GO		BIT(4)
++#define LTC3589_VCCR_LDO2_GO		BIT(6)
++
++enum ltc3589_variant {
++	LTC3589,
++	LTC3589_1,
++	LTC3589_2,
++};
++
++enum ltc3589_reg {
++	LTC3589_SW1,
++	LTC3589_SW2,
++	LTC3589_SW3,
++	LTC3589_BB_OUT,
++	LTC3589_LDO1,
++	LTC3589_LDO2,
++	LTC3589_LDO3,
++	LTC3589_LDO4,
++	LTC3589_NUM_REGULATORS,
++};
++
++struct ltc3589_regulator {
++	struct regulator_desc desc;
++
++	/* External feedback voltage divider */
++	unsigned int r1;
++	unsigned int r2;
++};
++
++struct ltc3589 {
++	struct regmap *regmap;
++	struct device *dev;
++	enum ltc3589_variant variant;
++	struct ltc3589_regulator regulator_descs[LTC3589_NUM_REGULATORS];
++	struct regulator_dev *regulators[LTC3589_NUM_REGULATORS];
++};
++
++static const int ltc3589_ldo4[] = {
++	2800000, 2500000, 1800000, 3300000,
++};
++
++static const int ltc3589_12_ldo4[] = {
++	1200000, 1800000, 2500000, 3200000,
++};
++
++static int ltc3589_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
++{
++	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
++	int sel, shift;
++
++	if (unlikely(ramp_delay <= 0))
++		return -EINVAL;
++
++	/* VRRCR slew rate offsets are the same as VCCR go bit offsets */
++	shift = ffs(rdev->desc->apply_bit) - 1;
++
++	/* The slew rate can be set to 0.88, 1.75, 3.5, or 7 mV/uS */
++	for (sel = 0; sel < 4; sel++) {
++		if ((880 << sel) >= ramp_delay) {
++			return regmap_update_bits(ltc3589->regmap,
++						  LTC3589_VRRCR,
++						  0x3 << shift, sel << shift);
++		}
++	}
++	return -EINVAL;
++}
++
++static int ltc3589_set_suspend_voltage(struct regulator_dev *rdev, int uV)
++{
++	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
++	int sel;
++
++	sel = regulator_map_voltage_linear(rdev, uV, uV);
++	if (sel < 0)
++		return sel;
++
++	/* DTV2 register follows right after the corresponding DTV1 register */
++	return regmap_update_bits(ltc3589->regmap, rdev->desc->vsel_reg + 1,
++				  rdev->desc->vsel_mask, sel);
++}
++
++static int ltc3589_set_suspend_mode(struct regulator_dev *rdev,
++				    unsigned int mode)
++{
++	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
++	int mask, bit = 0;
++
++	/* VCCR reference selects are right next to the VCCR go bits */
++	mask = rdev->desc->apply_bit << 1;
++
++	if (mode == REGULATOR_MODE_STANDBY)
++		bit = mask;	/* Select DTV2 */
++
++	mask |= rdev->desc->apply_bit;
++	bit |= rdev->desc->apply_bit;
++	return regmap_update_bits(ltc3589->regmap, LTC3589_VCCR, mask, bit);
++}
++
++static int ltc3589_list_voltage_fixed(struct regulator_dev *rdev,
++				      unsigned int selector)
++{
++	if (selector)
++		return -EINVAL;
++
++	return rdev->desc->fixed_uV;
++}
++
++/* SW1, SW2, SW3, LDO2 */
++static struct regulator_ops ltc3589_linear_regulator_ops = {
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_ramp_delay = ltc3589_set_ramp_delay,
++	.set_voltage_time_sel = regulator_set_voltage_time_sel,
++	.set_suspend_voltage = ltc3589_set_suspend_voltage,
++	.set_suspend_mode = ltc3589_set_suspend_mode,
++};
++
++/* BB_OUT, LDO3 */
++static struct regulator_ops ltc3589_fixed_regulator_ops = {
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.list_voltage = ltc3589_list_voltage_fixed,
++};
++
++/* LDO1 */
++static struct regulator_ops ltc3589_standby_regulator_ops = {
++	.list_voltage = ltc3589_list_voltage_fixed,
++};
++
++/* LDO4 */
++static struct regulator_ops ltc3589_table_regulator_ops = {
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.list_voltage = regulator_list_voltage_table,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++};
++
++
++#define LTC3589_REG(_name, _ops, en_bit, dtv1_reg, dtv_mask, go_bit)	\
++	[LTC3589_ ## _name] = {						\
++		.desc = {						\
++			.name = #_name,					\
++			.n_voltages = (dtv_mask) + 1,			\
++			.min_uV = (go_bit) ? 362500 : 0,		\
++			.uV_step = (go_bit) ? 12500 : 0,		\
++			.fixed_uV = (dtv_mask) ? 0 : 800000,		\
++			.ops = &ltc3589_ ## _ops ## _regulator_ops,	\
++			.type = REGULATOR_VOLTAGE,			\
++			.id = LTC3589_ ## _name,			\
++			.owner = THIS_MODULE,				\
++			.vsel_reg = (dtv1_reg),			\
++			.vsel_mask = (dtv_mask),			\
++			.apply_reg = (go_bit) ? LTC3589_VCCR : 0,	\
++			.apply_bit = (go_bit),				\
++			.enable_reg = (en_bit) ? LTC3589_OVEN : 0,	\
++			.enable_mask = (en_bit),			\
++		},							\
++	}
++
++#define LTC3589_LINEAR_REG(_name, _dtv1)				\
++	LTC3589_REG(_name, linear, LTC3589_OVEN_ ## _name,		\
++		    LTC3589_ ## _dtv1, 0x1f,				\
++		    LTC3589_VCCR_ ## _name ## _GO)
++
++#define LTC3589_FIXED_REG(_name) \
++	LTC3589_REG(_name, fixed, LTC3589_OVEN_ ## _name, 0, 0, 0)
++
++static struct ltc3589_regulator ltc3589_regulators[LTC3589_NUM_REGULATORS] = {
++	LTC3589_LINEAR_REG(SW1, B1DTV1),
++	LTC3589_LINEAR_REG(SW2, B2DTV1),
++	LTC3589_LINEAR_REG(SW3, B3DTV1),
++	LTC3589_FIXED_REG(BB_OUT),
++	LTC3589_REG(LDO1, standby, 0, 0, 0, 0),
++	LTC3589_LINEAR_REG(LDO2, L2DTV1),
++	LTC3589_FIXED_REG(LDO3),
++	LTC3589_REG(LDO4, table, LTC3589_OVEN_LDO4, LTC3589_L2DTV2, 0x60, 0),
++};
++
++#ifdef CONFIG_OF
++static struct of_regulator_match ltc3589_matches[LTC3589_NUM_REGULATORS] = {
++	{ .name = "sw1",    },
++	{ .name = "sw2",    },
++	{ .name = "sw3",    },
++	{ .name = "bb-out", },
++	{ .name = "ldo1",   }, /* standby */
++	{ .name = "ldo2",   },
++	{ .name = "ldo3",   },
++	{ .name = "ldo4",   },
++};
++
++static int ltc3589_parse_regulators_dt(struct ltc3589 *ltc3589)
++{
++	struct device *dev = ltc3589->dev;
++	struct device_node *node;
++	int i, ret;
++
++	node = of_find_node_by_name(dev->of_node, "regulators");
++	if (!node) {
++		dev_err(dev, "regulators node not found\n");
++		return -EINVAL;
++	}
++
++	ret = of_regulator_match(dev, node, ltc3589_matches,
++				 ARRAY_SIZE(ltc3589_matches));
++	of_node_put(node);
++	if (ret < 0) {
++		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
++		return ret;
++	}
++	if (ret != LTC3589_NUM_REGULATORS) {
++		dev_err(dev, "Only %d regulators described in device tree\n",
++			ret);
++		return -EINVAL;
++	}
++
++	/* Parse feedback voltage dividers. LDO3 and LDO4 don't have them */
++	for (i = 0; i < LTC3589_LDO3; i++) {
++		struct ltc3589_regulator *desc = &ltc3589->regulator_descs[i];
++		struct device_node *np = ltc3589_matches[i].of_node;
++		u32 vdiv[2];
++
++		ret = of_property_read_u32_array(np, "ltc,fb-voltage-divider",
++						 vdiv, 2);
++		if (ret) {
++			dev_err(dev, "Failed to parse voltage divider: %d\n",
++				ret);
++			return ret;
++		}
++
++		desc->r1 = vdiv[0];
++		desc->r2 = vdiv[1];
++	}
++
++	return 0;
++}
++
++static inline struct regulator_init_data *match_init_data(int index)
++{
++	return ltc3589_matches[index].init_data;
++}
++
++static inline struct device_node *match_of_node(int index)
++{
++	return ltc3589_matches[index].of_node;
++}
++#else
++static inline int ltc3589_parse_regulators_dt(struct ltc3589 *ltc3589)
++{
++	return 0;
++}
++
++static inline struct regulator_init_data *match_init_data(int index)
++{
++	return NULL;
++}
++
++static inline struct device_node *match_of_node(int index)
++{
++	return NULL;
++}
++#endif
++
++static bool ltc3589_writeable_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case LTC3589_IRQSTAT:
++	case LTC3589_SCR1:
++	case LTC3589_OVEN:
++	case LTC3589_SCR2:
++	case LTC3589_VCCR:
++	case LTC3589_CLIRQ:
++	case LTC3589_B1DTV1:
++	case LTC3589_B1DTV2:
++	case LTC3589_VRRCR:
++	case LTC3589_B2DTV1:
++	case LTC3589_B2DTV2:
++	case LTC3589_B3DTV1:
++	case LTC3589_B3DTV2:
++	case LTC3589_L2DTV1:
++	case LTC3589_L2DTV2:
++		return true;
++	}
++	return false;
++}
++
++static bool ltc3589_readable_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case LTC3589_IRQSTAT:
++	case LTC3589_SCR1:
++	case LTC3589_OVEN:
++	case LTC3589_SCR2:
++	case LTC3589_PGSTAT:
++	case LTC3589_VCCR:
++	case LTC3589_B1DTV1:
++	case LTC3589_B1DTV2:
++	case LTC3589_VRRCR:
++	case LTC3589_B2DTV1:
++	case LTC3589_B2DTV2:
++	case LTC3589_B3DTV1:
++	case LTC3589_B3DTV2:
++	case LTC3589_L2DTV1:
++	case LTC3589_L2DTV2:
++		return true;
++	}
++	return false;
++}
++
++static bool ltc3589_volatile_reg(struct device *dev, unsigned int reg)
++{
++	switch (reg) {
++	case LTC3589_IRQSTAT:
++	case LTC3589_PGSTAT:
++		return true;
++	}
++	return false;
++}
++
++struct reg_default ltc3589_reg_defaults[] = {
++	{ LTC3589_SCR1,   0x00 },
++	{ LTC3589_OVEN,   0x00 },
++	{ LTC3589_SCR2,   0x00 },
++	{ LTC3589_VCCR,   0x00 },
++	{ LTC3589_B1DTV1, 0x19 },
++	{ LTC3589_B1DTV2, 0x19 },
++	{ LTC3589_VRRCR,  0xff },
++	{ LTC3589_B2DTV1, 0x19 },
++	{ LTC3589_B2DTV2, 0x19 },
++	{ LTC3589_B3DTV1, 0x19 },
++	{ LTC3589_B3DTV2, 0x19 },
++	{ LTC3589_L2DTV1, 0x19 },
++	{ LTC3589_L2DTV2, 0x19 },
++};
++
++static const struct regmap_config ltc3589_regmap_config = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.writeable_reg = ltc3589_writeable_reg,
++	.readable_reg = ltc3589_readable_reg,
++	.volatile_reg = ltc3589_volatile_reg,
++	.max_register = LTC3589_L2DTV2,
++	.reg_defaults = ltc3589_reg_defaults,
++	.num_reg_defaults = ARRAY_SIZE(ltc3589_reg_defaults),
++	.use_single_rw = true,
++	.cache_type = REGCACHE_RBTREE,
++};
++
++
++static irqreturn_t ltc3589_isr(int irq, void *dev_id)
++{
++	struct ltc3589 *ltc3589 = dev_id;
++	unsigned int i, irqstat, event;
++
++	regmap_read(ltc3589->regmap, LTC3589_IRQSTAT, &irqstat);
++
++	if (irqstat & LTC3589_IRQSTAT_THERMAL_WARN) {
++		event = REGULATOR_EVENT_OVER_TEMP;
++		for (i = 0; i < LTC3589_NUM_REGULATORS; i++)
++			regulator_notifier_call_chain(ltc3589->regulators[i],
++						      event, NULL);
++	}
++
++	if (irqstat & LTC3589_IRQSTAT_UNDERVOLT_WARN) {
++		event = REGULATOR_EVENT_UNDER_VOLTAGE;
++		for (i = 0; i < LTC3589_NUM_REGULATORS; i++)
++			regulator_notifier_call_chain(ltc3589->regulators[i],
++						      event, NULL);
++	}
++
++	/* Clear warning condition */
++	regmap_write(ltc3589->regmap, LTC3589_CLIRQ, 0);
++
++	return IRQ_HANDLED;
++}
++
++static inline unsigned int ltc3589_scale(unsigned int uV, u32 r1, u32 r2)
++{
++	uint64_t tmp;
++	if (uV == 0)
++		return 0;
++	tmp = (uint64_t)uV * r1;
++	do_div(tmp, r2);
++	return uV + (unsigned int)tmp;
++}
++
++static void ltc3589_apply_fb_voltage_divider(struct ltc3589_regulator *rdesc)
++{
++	struct regulator_desc *desc = &rdesc->desc;
++
++	if (!rdesc->r1 || !rdesc->r2)
++		return;
++
++	desc->min_uV = ltc3589_scale(desc->min_uV, rdesc->r1, rdesc->r2);
++	desc->uV_step = ltc3589_scale(desc->uV_step, rdesc->r1, rdesc->r2);
++	desc->fixed_uV = ltc3589_scale(desc->fixed_uV, rdesc->r1, rdesc->r2);
++}
++
++static int ltc3589_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct device *dev = &client->dev;
++	struct ltc3589_regulator *descs;
++	struct ltc3589 *ltc3589;
++	int i, ret;
++
++	ltc3589 = devm_kzalloc(dev, sizeof(*ltc3589), GFP_KERNEL);
++	if (!ltc3589)
++		return -ENOMEM;
++
++	i2c_set_clientdata(client, ltc3589);
++	ltc3589->variant = id->driver_data;
++	ltc3589->dev = dev;
++
++	descs = ltc3589->regulator_descs;
++	memcpy(descs, ltc3589_regulators, sizeof(ltc3589_regulators));
++	if (ltc3589->variant == LTC3589) {
++		descs[LTC3589_LDO3].desc.fixed_uV = 1800000;
++		descs[LTC3589_LDO4].desc.volt_table = ltc3589_ldo4;
++	} else {
++		descs[LTC3589_LDO3].desc.fixed_uV = 2800000;
++		descs[LTC3589_LDO4].desc.volt_table = ltc3589_12_ldo4;
++	}
++
++	ltc3589->regmap = devm_regmap_init_i2c(client, &ltc3589_regmap_config);
++	if (IS_ERR(ltc3589->regmap)) {
++		ret = PTR_ERR(ltc3589->regmap);
++		dev_err(dev, "failed to initialize regmap: %d\n", ret);
++		return ret;
++	}
++
++	ret = ltc3589_parse_regulators_dt(ltc3589);
++	if (ret)
++		return ret;
++
++	for (i = 0; i < LTC3589_NUM_REGULATORS; i++) {
++		struct ltc3589_regulator *rdesc = &ltc3589->regulator_descs[i];
++		struct regulator_desc *desc = &rdesc->desc;
++		struct regulator_init_data *init_data;
++		struct regulator_config config = { };
++
++		init_data = match_init_data(i);
++
++		if (i < LTC3589_LDO3)
++			ltc3589_apply_fb_voltage_divider(rdesc);
++
++		config.dev = dev;
++		config.init_data = init_data;
++		config.driver_data = ltc3589;
++		config.of_node = match_of_node(i);
++
++		ltc3589->regulators[i] = devm_regulator_register(dev, desc,
++								 &config);
++		if (IS_ERR(ltc3589->regulators[i])) {
++			ret = PTR_ERR(ltc3589->regulators[i]);
++			dev_err(dev, "failed to register regulator %s: %d\n",
++				desc->name, ret);
++			return ret;
++		}
++	}
++
++	ret = devm_request_threaded_irq(dev, client->irq, NULL, ltc3589_isr,
++					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++					client->name, ltc3589);
++	if (ret) {
++		dev_err(dev, "Failed to request IRQ: %d\n", ret);
++		return ret;
++	}
++
++	return 0;
++}
++
++static struct i2c_device_id ltc3589_i2c_id[] = {
++	{ "ltc3589",   LTC3589   },
++	{ "ltc3589-1", LTC3589_1 },
++	{ "ltc3589-2", LTC3589_2 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ltc3589_i2c_id);
++
++static struct i2c_driver ltc3589_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++	.probe = ltc3589_probe,
++	.id_table = ltc3589_i2c_id,
++};
++module_i2c_driver(ltc3589_driver);
++
++MODULE_AUTHOR("Philipp Zabel <p.zabel@pengutronix.de>");
++MODULE_DESCRIPTION("Regulator driver for Linear Technology LTC3589(-1,2)");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("i2c:ltc3589");
+-- 
+1.9.1
 
-Regards,
--Joel
-
-
-> 
-> Cheers
-> ---Dave
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
