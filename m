@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633AbaD2XEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 19:04:13 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:49899 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaD2XEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 19:04:12 -0400
+	id S1755851AbaD2XFN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 19:05:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34882 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755793AbaD2XFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 19:05:12 -0400
+Date: Wed, 30 Apr 2014 01:04:58 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table once
+ and avoid rcu_read_lock()
+Message-ID: <20140429230457.GA4604@mguzik.redhat.com>
+References: <20140429183915.GA32513@redhat.com>
+ <20140429184004.GB32521@redhat.com>
+ <20140429204217.GO14608@kvack.org>
+ <20140429212222.GA28959@kvack.org>
 MIME-Version: 1.0
-In-Reply-To: <20140429214842.GL18016@ZenIV.linux.org.uk>
-References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
-	<CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
-	<20140429181610.GJ18016@ZenIV.linux.org.uk>
-	<20140429191015.GK18016@ZenIV.linux.org.uk>
-	<20140429211851.GA32204@dastard>
-	<20140429214842.GL18016@ZenIV.linux.org.uk>
-Date: Tue, 29 Apr 2014 16:04:11 -0700
-X-Google-Sender-Auth: WwLSDWsfj7taJPwPhAhpxvDCGoI
-Message-ID: <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Chinner <david@fromorbit.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140429212222.GA28959@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 2:48 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Ummm...  You mean, have d_lookup() et.al. fail on something that is on
-> a shrink list?
+On Tue, Apr 29, 2014 at 05:22:22PM -0400, Benjamin LaHaise wrote:
+> On Tue, Apr 29, 2014 at 04:42:17PM -0400, Benjamin LaHaise wrote:
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > 
+> > Your patch does not apply because it is whitespace damaged.  Please resend 
+> > and verify that it applies with 'git am'.
+> 
+> Whoops, it's not whitespace damange, but rather that it doesn't apply with 
+> the other changes that are queued up in the aio-next tree.  You can find a 
+> copy of that tree at git://git.kvack.org/~bcrl/aio-next.git .  The change 
+> that conflicts is an additional parameter to kill_ioctx().
 
-So I tried to see if that would work just consider it dead by the time
-it hits the shrink list, and if somebody does a lookup on the dentry,
-fail on it and just allocate a new dentry and do a real lookup.
+While here is there any reason for:
+rcu_assign_pointer(mm->ioctx_table, NULL);
 
-But at a minimum, we have "d_op->d_prune()" that would now be possibly
-be called for the old dentry *after* a new dentry has been allocated.
-Not to mention the inode not having been dropped. So it looks like a
-disaster where the filesystem now ends up having concurrent "live"
-dentries for the same entry.  Even if one of them is on its way out,
-it's still visible to the filesystem. That makes me very
-uncomfortable.
+Nothing looks at this pointer afterwards and mm is about to be freed.
 
-I'm starting to think that Miklos' original patch (perhaps with the
-spinlock split to at least be one per superblock) is the most
-straightforward approach after all. It's annoying having to add locks
-here, but the whole pruning path should not be a hotpath, so maybe
-it's not actually a big deal.
+I thought it would be used to sanity check that everything was cleared
+before freeing, but that is nod one and not every pointer is nullified
+anyway.
 
-               Linus
+-- 
+Mateusz Guzik
