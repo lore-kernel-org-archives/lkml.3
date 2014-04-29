@@ -1,148 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758187AbaD2Qhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:37:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33749 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756824AbaD2Qhj (ORCPT
+	id S1758256AbaD2Qh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:37:58 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:56228 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756788AbaD2Qhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:37:39 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 2/3] regulator: ltc3589: Add DT binding documentation
-Date: Tue, 29 Apr 2014 18:37:09 +0200
-Message-Id: <1398789430-23897-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
-References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 29 Apr 2014 12:37:54 -0400
+Date: Tue, 29 Apr 2014 17:41:39 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2 00/10] arm64: UEFI support
+Message-ID: <20140429164139.GI4179@bivouac.eciton.net>
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+ <20140429102817.GE17007@arm.com>
+ <20140429114356.GK26088@console-pimps.org>
+ <20140429134726.GH17007@arm.com>
+ <20140429144713.GL26088@console-pimps.org>
+ <535FBD94.9040101@zytor.com>
+ <20140429152707.GM26088@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429152707.GM26088@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the device tree binding documentation for Linear
-Technology LTC3589, LTC3589-1, and LTC3589-2 8-port regulators.
+On Tue, Apr 29, 2014 at 04:27:07PM +0100, Matt Fleming wrote:
+> > I'm wondering if it would be better to organize it into a separate topic
+> > branch.  We can still take it through tip, if you want, but it would be
+> > better than putting it all into one tree.
+> 
+> Sure, that makes sense. I'll do that.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- .../devicetree/bindings/regulator/ltc3589.txt      | 99 ++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/regulator/ltc3589.txt
+I've set up a new topic branch, "uefi-for-3.16" on
+git://git.linaro.org/people/leif.lindholm/linux.git
+Based off tip/x86/efi.
 
-diff --git a/Documentation/devicetree/bindings/regulator/ltc3589.txt b/Documentation/devicetree/bindings/regulator/ltc3589.txt
-new file mode 100644
-index 0000000..4229a2e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/ltc3589.txt
-@@ -0,0 +1,99 @@
-+Linear Technology LTC3589, LTC3589-1, and LTC3589-2 8-output regulators
-+
-+Required properties:
-+- compatible: "ltc,ltc3589", "ltc,ltc3589-1" or "ltc,ltc3589-2"
-+- reg: I2C slave address
-+
-+Required child node:
-+- regulators: Contains eight regulator child nodes sw1, sw2, sw3, bb-out,
-+  ldo1, ldo2, ldo3, and ldo4, specifying the initialization data as
-+  documented in Documentation/devicetree/bindings/regulator/regulator.txt.
-+
-+Each regulator is defined using the standard binding for regulators. The
-+nodes for sw1, sw2, sw3, bb-out, ldo1, and ldo2 additionally need to specify
-+the resistor values of their external feedback voltage dividers:
-+
-+Required properties (not on ldo3, ldo4):
-+- ltc,fb-voltage-divider: An array of two integers containing the resistor
-+  values R1 and R2 of the feedback voltage divider in ohms.
-+
-+Regulators sw1, sw2, sw3, and ldo2 can regulate the feedback reference from
-+0.3625 V to 0.75 V in 12.5 mV steps. The output voltage thus ranges between
-+0.3625 * (1 + R1/R2) V and 0.75 * (1 + R1/R2) V. Regulators bb-out and ldo1
-+have a fixed 0.8 V reference and thus output 0.8 * (1 + R1/R2) V. The ldo3
-+regulator is fixed to 1.8 V on LTC3589 and to 2.8 V on LTC3589-1,2. The ldo4
-+regulator can output between 1.8 V and 3.3 V on LTC3589 and between 1.2 V
-+and 3.2 V on LTC3589-1,2 in four steps. The ldo1 standby regulator can not
-+be disabled and thus should have the regulator-always-on property set.
-+
-+Example:
-+
-+	ltc3589: pmic@34 {
-+		compatible = "ltc,ltc3589-1";
-+		reg = <0x34>;
-+
-+		regulators {
-+			sw1_reg: sw1 {
-+				regulator-min-microvolt = <591930>;
-+				regulator-max-microvolt = <1224671>;
-+				ltc,fb-voltage-divider = <100000 158000>;
-+				regulator-ramp-delay = <7000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			sw2_reg: sw2 {
-+				regulator-min-microvolt = <704123>;
-+				regulator-max-microvolt = <1456803>;
-+				ltc,fb-voltage-divider = <180000 191000>;
-+				regulator-ramp-delay = <7000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			sw3_reg: sw3 {
-+				regulator-min-microvolt = <1341250>;
-+				regulator-max-microvolt = <2775000>;
-+				ltc,fb-voltage-divider = <270000 100000>;
-+				regulator-ramp-delay = <7000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			bb_out_reg: bb-out {
-+				regulator-min-microvolt = <3387341>;
-+				regulator-max-microvolt = <3387341>;
-+				ltc,fb-voltage-divider = <511000 158000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo1_reg: ldo1 {
-+				regulator-min-microvolt = <1306329>;
-+				regulator-max-microvolt = <1306329>;
-+				ltc,fb-voltage-divider = <100000 158000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo2_reg: ldo2 {
-+				regulator-min-microvolt = <704123>;
-+				regulator-max-microvolt = <1456806>;
-+				ltc,fb-voltage-divider = <180000 191000>;
-+				regulator-ramp-delay = <7000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo3_reg: ldo3 {
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
-+				regulator-boot-on;
-+			};
-+
-+			ldo4_reg: ldo4 {
-+				regulator-min-microvolt = <1200000>;
-+				regulator-max-microvolt = <3200000>;
-+			};
-+		};
-+	};
--- 
-1.9.1
-
+/
+    Leif
