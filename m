@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965365AbaD2WUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:20:49 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:51709 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965265AbaD2WUo (ORCPT
+	id S965381AbaD2WWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:22:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50959 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933083AbaD2WWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:20:44 -0400
+	Tue, 29 Apr 2014 18:22:15 -0400
+Date: Tue, 29 Apr 2014 15:21:31 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
+        lm-sensors@lm-sensors.org, Liam Girdwood <lgirdwood@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>
+Message-ID: <20140429222131.GO15125@sirena.org.uk>
+References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
+ <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <20140429071610.63ccdfae.m.chehab@samsung.com>
-References: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
- <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
- <20140428214000.GA9187@gmail.com> <20140429071610.63ccdfae.m.chehab@samsung.com>
-From: Brian Healy <healybrian@gmail.com>
-Date: Tue, 29 Apr 2014 23:20:23 +0100
-Message-ID: <CAGG=RuZ-uuJPq3cQJkZkHdDV=1t2Z_y=+ZC-gBq8dq7DmytmGA@mail.gmail.com>
-Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
- rtl28xxu driver
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Antti Palosaari <crope@iki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Vy1A5eXR7jld12ZH"
+Content-Disposition: inline
+In-Reply-To: <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 12.104.145.3
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 02/10] mfd: vexpress: Convert custom func API to regmap
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Mauro,
 
-I'll know for next time. It's my first patch submission so wasn't
-aware of the formatting rules.
+--Vy1A5eXR7jld12ZH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Brian
+On Mon, Apr 28, 2014 at 06:57:49PM +0100, Pawel Moll wrote:
 
-On 29 April 2014 15:16, Mauro Carvalho Chehab <m.chehab@samsung.com> wrote:
-> Em Mon, 28 Apr 2014 22:40:00 +0100
-> Brian Healy <healybrian@gmail.com> escreveu:
->
->> From: Brian Healy <healybrian@gmail.com>
->> To: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <m.chehab@samsung.com>
->> Cc: Linus Torvalds <torvalds@linux-foundation.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Linux Media Mailing List <linux-media@vger.kernel.org>
->> Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for rtl28xxu driver
->> Date: Mon, 28 Apr 2014 22:40:00 +0100
->> Sender: linux-media-owner@vger.kernel.org
->> User-Agent: Mutt/1.5.21 (2010-09-15)
->>
->> On Sun, Apr 27, 2014 at 03:19:12PM -0700, Linus Torvalds wrote:
->>
->> Hi Linus,
->>
->> apologies, i've changed email clients in order to preserve the
->> formatting this time around. The patch is now included inline as an
->> attachment. I ran the script but noticed you've already cc'd the
->> appropriate people.
->>
->> Brian.
->>
->>
->> Resubmitting modified patch. It's purpose is to add the appropriate
->> device/usb ids for the "Peak DVT-B usb dongle" to the rtl28xxu.c driver.
->>
->> Signed-off-by: Brian Healy <healybrian <at> gmail.com>
->>
->>
->> > Brian, please use
->> >
->> >  ./scripts/get_maintainer -f drivers/media/usb/dvb-usb-v2/rtl28xxu.c
->> >
->> > to get the proper people to send this to, so that it doesn't get lost
->> > in the flood in lkml.
->> >
->> > The indentation of that new entry also seems to be suspect, in that it
->> > doesn't match the ones around it.
->> >
->> > Quoting full email for context for people added.
->> >
->> >              Linus
->> >
->>
->> diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
->> index 61d196e..b6e20cc 100644
->> --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
->> +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
->> @@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
->>               &rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
->>       { DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
->>               &rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
->> +        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
->> +                &rtl2832u_props, "Peak DVB-T USB", NULL) },
->
-> Patch is still a little odd, as you're using spaces for indenting, instead of
-> tabs, but I can fix it with my scripts. Next time, please use tabs.
->
-> Also, specifically in the case of patches for linux-media, you don't need
-> to c/c me. Just send the patch to linux-media and to the driver maintainer
-> (Antti, in this case).
->
-> My workflow is to pick the patches from patchwork:
->         https://patchwork.linuxtv.org/patch/23792/
-> after receiving Antti's ack.
->
-> Alternatively, Antti may opt to put it on his git tree, sending it to me
-> latter together of other patches he may have for the devices he maintains.
->
->>
->>       /* RTL2832P devices: */
->>       { DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
->
-> Thanks,
-> Mauro
+> Components of the Versatile Express platform (configuration
+> microcontrollers on motherboard and daughterboards in particular)
+> talk to each other over a custom configuration bus. They
+> provide miscellaneous functions (from clock generator control
+> to energy sensors) which are represented as platform devices
+
+Acked-by: Mark Brown <broonie@linaro.org>
+
+--Vy1A5eXR7jld12ZH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTYCXkAAoJELSic+t+oim9meEQAJISu52vfboXBUHxI1ipL4jT
+tjCvzAx1VLcVlUgWjuxwdIMYhszOQwjvp8j5/KFJ3LmZ4G7b99PlZAhMUeaDkD0G
+IY15zj/yPelhUuMhLMwFCJrO4AXM3FltAhpxDf+RKsWPEpMzJ3rT4aR0/Fl/dXQ3
+QsNGSKUi3RknT+fXoYb0Kr2GDJxIgi9fty/aIsNG7nZA4OqB3tex9w/8uPf1rN6G
+g21ryh7YAp6o3r2146S9kiY0dYxByLRJ1pDHJYoRcOzh9YZwNIQFsQACCXhVzoP7
+WiA4h8e76AW327/Fe78X7AEHQ+jfdP9wcWC7OYfRySukwzsO8QpFX6gsrYU0p2Vj
+fpPDLiTtd6V0bSm2G8pMxrcAZq3YJKd4mN0lO4zaKitrdAvUD4AxbASt6ODFzMxp
+ejQk+mZdBO5/gl9uE6B8aK+RqDQ6hPICVWo7O4UMMkBITfLxG5XX8XUmKBoTS4sC
+SZ9cnxBJlwbCgavRpylR9qx0GLxzC6spfp8hmerJRvc84T1VBM3Ef61uvmC5naBV
+eTFs6lr1FD/uih11n29WCwDNmaF4N2Mw6R3ezuC7oW/DaadIk44p1yE0opr/3o5f
+w+IgUgz7bOfLFvKUefiA6LefigY3llgHG4zBXxCBgkraaFIFIn5mertQH5qeWvF2
+m9LFUk74mADNNTKUsNq1
+=kkiV
+-----END PGP SIGNATURE-----
+
+--Vy1A5eXR7jld12ZH--
