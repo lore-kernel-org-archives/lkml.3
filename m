@@ -1,112 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579AbaD2KCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:02:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933515AbaD2KC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:02:28 -0400
-Date: Tue, 29 Apr 2014 18:03:52 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
-Message-ID: <20140429100352.GD2016@darkstar.nay.redhat.com>
-References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
- <20140425115345.GC26088@console-pimps.org>
- <20140426072821.GA2286@darkstar.redhat.com>
- <20140429094539.GD26088@console-pimps.org>
+	id S933602AbaD2KEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:04:10 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41418 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933587AbaD2KEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 06:04:09 -0400
+Message-ID: <535F78A8.80403@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 15:32:16 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429094539.GD26088@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net> <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com> <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org> <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com> <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042910-3568-0000-0000-00000566843D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/14 at 10:45am, Matt Fleming wrote:
-> On Sat, 26 Apr, at 03:28:21PM, Dave Young wrote:
-> > 
-> > There's other kernel messages without appending ,keep.
-> > 
-> > Also console=ttyS0 does not work with earlyprintk=efi,keep, removing
-> > ,keep it works well.
+On 04/29/2014 05:41 AM, Davidlohr Bueso wrote:
+> On Mon, 2014-04-28 at 16:57 -0700, Linus Torvalds wrote:
+>> On Mon, Apr 28, 2014 at 4:11 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>>>
+>>> unuse_mm() leaves current->mm at NULL so we'd hear about it pretty
+>>> quickly if a user task was running use_mm/unuse_mm.
+>>
+>> Yes.
+>>
+>>> I think so.  Maybe it's time to cook up a debug patch for Srivatsa to
+>>> use?  Dump the vma cache when the bug hits, or wire up some trace
+>>> points.  Or perhaps plain old printks - it seems to be happening pretty
+>>> early in boot.
+>>
+>> Well, I think Srivatsa has only seen it once, and wasn't able to
+>> reproduce it, so we'd have to make it happen more first.
+>>
+>>> Are there additional sanity checks we can perform at cache addition
+>>> time?
+>>
+>> I wouldn't really expect it to happen at cache addition time, since
+>> that's really quite simple. There's only one caller of
+>> vmacache_update(), namely find_vma(). And vmacache_update() does the
+>> same sanity check that vmacache lookup does (ie check that the
+>> passed-on mm is the current thread mm, and that we're not a kernel
+>> thread).
 > 
-> Try console=efi
-
-With console=efi, it also hangs the screen is not readable. When I add both console=efi
-and console=ttyS0, in serial console output looks like it hangs while mounting rootfs. 
-On screen it's same as console=efi only case.
-
-I justed tested on qemu.
-
+> Agreed.
 > 
-> > > > Actually efi earlyprintk is using __init functions such as early_ioremap etc.
-> > > > Thus efi earlyconsole can not be kept.
-> > >  
-> > > Urgh, good point, that's a bug. However I'm sure I've had this working
-> > > in the past and have in fact used it to debug stuff.
-> > > 
-> > > Could you try and fix this up so it works with 'keep'?
-> > 
-> > Will do. I want use ioremap when it is available but it's hard to decide
-> > where to add the code.
-> > 
-> > I'm thinking to do below:
-> > 1. ioremap the whole framebuffer like: efi_fb = ioremap(lfb_base, lfb_size) in the
-> >    function efi_enter_virtual_mode because ioremap should be usable then.
-> > 
-> > 2. add two functions for earlyprintk use (scrollup, write, etc.) 
-> > __init_refok void * get_vaddr(unsigned long start, unsigned long len)
-> > {
-> > 	unsigned long base;
-> > 
-> > 	base = boot_params.screen_info.lfb_base;
-> > 	if (efi_fb)
-> > 		return (efi_fb + start - base);
-> > 	else
-> > 		return early_ioremap(start, len);
-> > }
-> > 
-> > __init_refok void put_vaddr(void *addr, unsigned long len)
-> > {
-> > 	if (!efi_fb)
-> > 		early_iounmap(addr, len);
-> > }
-> > 
-> > But it does not sound good to add the ioremap in enter virtual mode funtion.   
-> > 
-> > Please help if you have any other better idea.
+>> I'd be more inclined to think it's a missing invalidate, but I can
+>> only think of two reasons to invalidate:
+>>
+>>  - the vma itself went away from the mm, got free'd/reused, and so
+>> vm_mm changes..
+>>
+>>    But then we'd have to remove it from the rb-tree, and both callers
+>> of vma_rb_erase() do a vmacache_invalidate()
 > 
-> I would just replace the existing calls to early_ioremap() with
-> efi_ioremap() and implement it like so (all in
-> arch/x86/platform/efi/early_printk.c),
+> Right, if this were the case, -next never would have allowed it.
 > 
-> static void *efi_ioremap(resource_size_t phys_addr, unsigned long size)
-> {
-> 	if (system_state == SYSTEM_BOOTING)
-> 		return early_ioremap(phys_addr, size);
+>>  - the mm of a thread changed
+>>
+>>    This is exec, use_mm(), and fork() (and fork really only just
+>> because we copy the vmacache).
+>>
+>>    exec and fork do that "vmacache_flush(tsk)", which is why I was
+>> looking at use_mm().
 > 
-> 	return ioremap(phys_addr, size);
-> }
-> 
-> At least I think SYSTEM_BOOTING is the correct way to figure out when to
-> use early_ioremap(), I'm open to other suggestions though.
+> Here's a patch to remove treating kthreads specially. Not sure how
+> easily it would be to test since Srivatsa only ran into it once and I
+> see no other users complaining.
+>
 
-I also thought about this before, but I remember it hangs before system state
-changing.
+I guess I'll hold off on testing this fix until I get to reproduce
+the bug more reliably..
 
-The flow is like below, I added some debug printk, only the ones before free_initmem()
-shows in log. Thus I guess this will not work. But I can have a try. 
-        kernel_init_freeable();
-        /* need to finish all async __init code before freeing the memory */
-        async_synchronize_full();
-        free_initmem();
-        mark_rodata_ro();
-        system_state = SYSTEM_RUNNING; 
+Regards,
+Srivatsa S. Bhat
 
-Thanks
-Dave
+> diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+> index f802c2d..41445bb 100644
+> --- a/mm/mmu_context.c
+> +++ b/mm/mmu_context.c
+> @@ -4,6 +4,7 @@
+>   */
+> 
+>  #include <linux/mm.h>
+> +#include <linux/vmacache.h>
+>  #include <linux/mmu_context.h>
+>  #include <linux/export.h>
+>  #include <linux/sched.h>
+> @@ -29,6 +30,7 @@ void use_mm(struct mm_struct *mm)
+>                 tsk->active_mm = mm;
+>         }
+>         tsk->mm = mm;
+> +       vmacache_flush(tsk);
+>         switch_mm(active_mm, mm, tsk);
+>         task_unlock(tsk);
+>  #ifdef finish_arch_post_lock_switch
+> diff --git a/mm/vmacache.c b/mm/vmacache.c
+> index 1037a3ba..04009d3 100644
+> --- a/mm/vmacache.c
+> +++ b/mm/vmacache.c
+> @@ -36,13 +36,10 @@ void vmacache_flush_all(struct mm_struct *mm)
+>   * get_user_pages()->find_vma().  The vmacache is task-local and this
+>   * task's vmacache pertains to a different mm (ie, its own).  There is
+>   * nothing we can do here.
+> - *
+> - * Also handle the case where a kernel thread has adopted this mm via use_mm().
+> - * That kernel thread's vmacache is not applicable to this mm.
+>   */
+>  static bool vmacache_valid_mm(struct mm_struct *mm)
+>  {
+> -       return current->mm == mm && !(current->flags & PF_KTHREAD);
+> +       return current->mm == mm;
+>  }
+> 
+>  void vmacache_update(unsigned long addr, struct vm_area_struct *newvma)
+> 
+> 
+
