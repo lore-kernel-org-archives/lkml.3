@@ -1,137 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934090AbaD2SUE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:20:04 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:63280 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933478AbaD2SUD (ORCPT
+	id S964947AbaD2SWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:22:33 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:40193 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491AbaD2SWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:20:03 -0400
-Message-ID: <535FED4D.5000703@amacapital.net>
-Date: Tue, 29 Apr 2014 11:19:57 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 29 Apr 2014 14:22:30 -0400
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
-References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-5-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1398723161-21968-5-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAL_Jsq+uNunqfsvPNxZLQQ3y1ay_XMZKb4c=HNWvKtwuiZGQ0g@mail.gmail.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
+	<CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
+	<CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
+	<CAE9FiQVdwumX7Dsmt8NJhw4uWsj2sjUKaKS1wJQujW1fn1szLw@mail.gmail.com>
+	<CAL_Jsq+uNunqfsvPNxZLQQ3y1ay_XMZKb4c=HNWvKtwuiZGQ0g@mail.gmail.com>
+Date: Tue, 29 Apr 2014 11:22:28 -0700
+X-Google-Sender-Auth: 8KLkYJRz5ObMfS5aR3CsDtu5oXs
+Message-ID: <CAE9FiQU40p-e8mqZKzaGg6nTuPdep3inRdpQtNu5txPOJ6Aw-Q@mail.gmail.com>
+Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
+From: Yinghai Lu <yinghai@kernel.org>
+To: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 03:12 PM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> IvyBridge added new instructions to directly write the fs and gs
-> 64bit base registers. Previously this had to be done with a system
-> call to write to MSRs. The main use case is fast user space threading
-> and switching the fs/gs registers quickly there.
-> 
-> The instructions are opt-in and have to be explicitely enabled
-> by the OS.
-> 
-> Previously Linux couldn't support this because the paranoid
-> entry code relied on the gs base never being negative outside
-> the kernel to decide when to use swaps. It would check the gs MSR
-> value and assume it was already running in kernel if the value
-> was already negative.
-> 
-> This patch changes the paranoid entry code to use rdgsbase
-> if available.  Then we check the GS value against the expected GS value
-> stored at the bottom of the IST stack. If the value is the expected
-> value we skip swapgs.
-> 
-> This is also significantly faster than a MSR read, so will speed
-> NMis (critical for profiling)
-> 
-> An alternative would have been to save/restore the GS value
-> unconditionally, but this approach needs less changes.
-> 
-> Then after these changes we need to also use the new instructions
-> to save/restore fs and gs, so that the new values set by the
-> users won't disappear.  This is also significantly
-> faster for the case when the 64bit base has to be switched
-> (that is when GS is larger than 4GB), as we can replace
-> the slow MSR write with a faster wr[fg]sbase execution.
-> 
-> The instructions do not context switch
-> the segment index, so the old invariant that fs or gs index
-> have to be 0 for a different 64bit value to stick is still
-> true. Previously it was enforced by arch_prctl, now the user
-> program has to make sure it keeps the segment indexes zero.
-> If it doesn't the changes may not stick.
-> 
-> This is in term enables fast switching when there are
-> enough threads that their TLS segment does not fit below 4GB,
-> or alternatively programs that use fs as an additional base
-> register will not get a sigificant context switch penalty.
-> 
-> It is all done in a single patch to avoid bisect crash
-> holes.
-> 
+On Tue, Apr 29, 2014 at 8:16 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On Mon, Apr 28, 2014 at 9:56 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Mon, Apr 28, 2014 at 4:24 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On Sat, Apr 26, 2014 at 1:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>
+>>> Thanks for finding these. I missed them in my build tests. This should fix them:
+>>>
+>>> diff --git a/drivers/tty/serial/8250/8250_early.c
+>>> b/drivers/tty/serial/8250/8250_early.c
+>>> index e83c9db..2094c3b 100644
+>>> --- a/drivers/tty/serial/8250/8250_early.c
+>>> +++ b/drivers/tty/serial/8250/8250_early.c
+>>> @@ -156,6 +156,11 @@ static int __init early_serial8250_setup(struct
+>>> earlycon_device *device,
+>>>  EARLYCON_DECLARE(uart8250, early_serial8250_setup);
+>>>  EARLYCON_DECLARE(uart, early_serial8250_setup);
+>>>
+>>> +int __init setup_early_serial8250_console(char *cmdline)
+>>> +{
+>>> +       return setup_earlycon(cmdline, "uart8250", early_serial8250_setup);
+>>> +}
+>>> +
+>>>  int serial8250_find_port_for_earlycon(void)
+>>>  {
+>>>         struct earlycon_device *device = early_device;
+>>
+>> that only handle "uart8250,", may need to add more lines to handle "uart,"
+>
+>
+> That is on purpose because the only 2 users use uart8250. I consider
+> this a legacy interface and use of "uart" is horrible because there
+> are lots of uarts which are not 8250.
+>
+> Rob
+>
+>>
+>> +int __init setup_early_serial8250_console(char *cmdline)
+>> +{
+>> +       char *options;
+>> +       options = strstr(cmdline, "uart8250,");
+>> +       if (options)
+>> +               return setup_earlycon(cmdline, "uart8250",
+>> early_serial8250_setup);
+>> +
+>> +       options = strstr(cmdline, "uart,");
+>> +       if (options)
+>> +              return setup_earlycon(cmdline, "uart", early_serial8250_setup);
+>> +
+>> +      return 0;
+>> +}
 
+You want to obsolete "console=uart,io,0x3f8,115200n8" ?
 
-> +paranoid_save_gs:
-> +	.byte 0xf3,0x48,0x0f,0xae,0xc9	# rdgsbaseq %rcx
-> +	movq $-EXCEPTION_STKSZ,%rax	# non debug stack size
-> +	cmpq $DEBUG_STACK,ORIG_RAX+8(%rsp)
-> +	movq $-1,ORIG_RAX+8(%rsp)	# no syscall to restart
-> +	jne  1f
-> +	movq $-DEBUG_STKSZ,%rax		# debug stack size
-> +1:
-> +	andq %rsp,%rax			# bottom of stack
-> +	movq (%rax),%rdi		# get expected GS
-> +	cmpq %rdi,%rcx			# is it the kernel gs?
+ Let's check with Andrew. He suggested to use uart and uart8250 at that time.
 
-I don't like this part.  There are now three cases:
+Thanks
 
-1. User gs, gsbase != kernel gs base.  This works the same as before
-
-2. Kernel gs.  This also works the same as before.
-
-3. User gs, but gsbase == kernel gs base.  This will cause C code to
-execute on the *user* gs base.
-
-Case 3 is annoying.  If nothing tries to change the user gs base, then
-everything is okay because the user gs base and the kernel gs bases are
-equal.  But if something does try to change the user gs base, then it
-will accidentally change the kernel gs base instead.
-
-For the IST entries, this should be fine -- cpu migration, scheduling,
-and such are impossible anyway.  For the non-IST entries, I'm less
-convinced.  The entry_64.S code suggests that the problematic entries are:
-
-double_fault
-stack_segment
-machine_check
-
-Of course, all of those entries really do use IST, so I wonder why they
-are paranoid*entry instead of paranoid*entry_ist.  Is it because they're
-supposedly non-recursive?
-
-In any case, wouldn't this all be much simpler and less magical if the
-paranoid entries just saved the old gsbase to the rbx and loaded the new
-ones?  The exits could do the inverse.  This should be really fast:
-
-rdgsbaseq %rbx
-wrgsbaseq {the correct value}
-
-...
-
-wrgsbaseq %rbx
-
-This still doesn't support changing the usergs value inside a paranoid
-entry, but at least it will fail consistently instead of only failing if
-the user gs has a particular special value.
-
-I don't know the actual latencies, but I suspect that this would be
-faster, too -- it removes some branches, and wrgsbase and rdgsbase
-deserve to be faster than swapgs.  It's probably no good for
-non-rd/wrgsbase-capable cpus, though, since I suspect that three MSR
-accesses are much worse than one MSR access and two swapgs calls.
-
---Andy
+Yinghai
