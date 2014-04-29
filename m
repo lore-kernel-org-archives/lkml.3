@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336AbaD2Vfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 17:35:51 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52726 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932130AbaD2Vfu convert rfc822-to-8bit (ORCPT
+	id S932739AbaD2Vka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 17:40:30 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:42403 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932130AbaD2Vk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 17:35:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Change the calculation of next pstate
-Date: Tue, 29 Apr 2014 23:52:19 +0200
-Message-ID: <25001203.glgeYCc6ZZ@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <535FD4A6.3050905@semaphore.gr>
-References: <535D80C8.9090906@semaphore.gr> <CAKohpomhUk7RQ3YL3=wpVKSbK_oSkyYBRUZiqnHzWqrZ2DjRRA@mail.gmail.com> <535FD4A6.3050905@semaphore.gr>
+	Tue, 29 Apr 2014 17:40:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140429191454.GB4726@pd.tnic>
+References: <20140419025323.2408.88764.stgit@amt.stowe>
+	<20140419135219.GC8109@pd.tnic>
+	<20140420075936.GA19672@pd.tnic>
+	<CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
+	<20140426091031.GA10166@pd.tnic>
+	<CAErSpo4Jqo_opj=QqjcquS_6HqckZfP5-oQHkmY5FSAyyLNYMg@mail.gmail.com>
+	<20140428214036.GA32143@pd.tnic>
+	<20140429073309.GE10997@alberich>
+	<20140429102013.GA4726@pd.tnic>
+	<535FC269.2000808@amd.com>
+	<20140429191454.GB4726@pd.tnic>
+Date: Tue, 29 Apr 2014 15:40:28 -0600
+Message-ID: <CAL-B5D2Z7AvJZ3G2JLY6ZOZBRe4DGgO27RVJ_HHotGrnKL7Y1A@mail.gmail.com>
+Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range capabilities
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        Borislav Petkov <bp@suse.de>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Robert Richter <rric@kernel.org>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>, kim.naru@amd.com,
+        Daniel J Blueman <daniel@numascale.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 07:34:46 PM Stratos Karafotis wrote:
-> On 29/04/2014 07:58 πμ, Viresh Kumar wrote:
-> > Cc'd Dirk,
-> > 
-> > On 28 April 2014 03:42, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> >> Currently the driver calculates the next pstate proportional to
-> >> core_busy factor and reverse proportional to current pstate.
-> >>
-> >> Change the above method and calculate the next pstate independently
-> >> of current pstate.
-> > 
-> > We must mention why the change is required.
-> > 
-> 
-> Hi Viresh,
-> 
-> Actually, I can't say that it's required. :)
-> I just believe that calculation of next p-state should be independent
-> from current one. In my opinion we can't scale the load across different
-> p-states, because it's not always equivalent.
-> 
-> For example suppose a load of 100% because of a tight for loop in the
-> current p-state. It will be also a 100% load in any other p-state.
-> It will be wrong if we scale the load in the calculation formula
-> according to the current p-state.
-> 
-> I included the test results in the change log to point out an improvement
-> because of this patch.
-> 
-> I will enrich more the change log as you suggested.
+On Tue, Apr 29, 2014 at 1:14 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Apr 29, 2014 at 10:16:57AM -0500, Suravee Suthikulanit wrote:
+>> In the new code, the IO ECS was needed to retrieve the
+>> AMD_NB_F1_MMIO_BASE_LIMIT_HI_REG (offset 0x180) during the early
+>> initialization as part of (2) logic. However, this register exists only on
+>> the newer systems.  However, as you mentioned, for (2) we can assume that
+>> the MCFG exists for most of the systems (family10h and later), and should be
+>> used instead.
+>>
+>> The main purpose of this patch set is mainly to deal with the the node
+>> information (1).  So, we might need to split these all up and handle them
+>> separately as needed where (2) and (3) will be used as fallback for older
+>> systems where MCFG does not exist.
+>
+> So sounds to me like we want to get rid of the whole IO ECS deal
+> altogether then.
+>
+> Now, I'm wondering whether we should kill it completely since I don't
+> think anyone cares about numa node info being correct on K8, or? I'm
+> specifically turning to our numascale friends who love to have a lot of
+> nodes. :-)
 
-Please do so.
+I think we need to be careful here as there are two unrelated topics
+being discussed together.  What started this whole thread was the need
+for sysfs related numa_node information with respect to PCI devices
+(1).  Without patch 1, platforms with newer AMD CPUs end up having
+'-1' numa_node values for all PCI devices.
 
-Also, we need to take your patch to our power lab and see if we can reproduce
-your results in other workloads.
+IO ECS has no bearing on patch 1, it only comes into play with patch 2
+which is concerned with MMIO resource information when MCFG doesn't
+exist.  For the particular issue I'm trying to get resolved, patch 2
+is not needed.  However, since we have expended time and effort on
+this subject, perhaps we should get this cleaned up while it has our
+attention.
 
-And I'm waiting for the intel_pstate developer Dirk Brandewie to comment.
+I'm all for deleting as much of amd_bus.c as possible due to its
+"perennial maintenance headache".  The obvious choices seem to be all,
+or some combination, of:
+  o removing IO ECS logic,
+  o removing IO/MMIO logic (assuming MCFG issues were long enough ago
+to no longer be a concern),
+  o start deprecating amd_bus.c by adding logic to skip if BIOS >= 2015
 
-Thanks!
+Myron
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>
+> Daniel, Steffen?
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
