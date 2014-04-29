@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965108AbaD2T0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:26:39 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:24518 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964887AbaD2T0i (ORCPT
+	id S965100AbaD2T3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:29:55 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:57285 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757398AbaD2T3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:26:38 -0400
-Date: Tue, 29 Apr 2014 15:26:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-Message-ID: <20140429152637.590b2b04@gandalf.local.home>
-In-Reply-To: <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu>
-	<20140417145418.GM11096@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu>
-	<20140418152314.GY11182@twins.programming.kicks-ass.net>
-	<20140418165958.GQ13658@twins.programming.kicks-ass.net>
-	<20140418171516.GR13658@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu>
-	<alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
-	<alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu>
-	<alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu>
-	<20140429094632.GP27561@twins.programming.kicks-ass.net>
-	<alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 29 Apr 2014 15:29:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <535F0837.2020102@amd.com>
+References: <20140419025308.2408.51252.stgit@amt.stowe> <20140419025345.2408.99229.stgit@amt.stowe>
+ <20140420105419.GB19676@pd.tnic> <CAL-B5D1_fns=mu7Cw6jeVHO0XPeKYakUrPv-JgO=ma1rjCoQvg@mail.gmail.com>
+ <53554D27.1010803@numascale.com> <535F0837.2020102@amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 29 Apr 2014 13:29:32 -0600
+Message-ID: <CAErSpo77c5F0vftHEOFFwvXLa7S2DZzPdTjO4v6zRGcpJmjj3w@mail.gmail.com>
+Subject: Re: [PATCH v2 5/5] PCI: Remove redundant 'quirk_amd_nb_node'
+To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+Cc: Daniel J Blueman <daniel@numascale.com>,
+        Myron Stowe <myron.stowe@gmail.com>, Borislav Petkov <bp@suse.de>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86 <x86@kernel.org>, Steffen Persvold <sp@numascale.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 14:21:56 -0400 (EDT)
-Vince Weaver <vincent.weaver@maine.edu> wrote:
- 
-> Also trace-cmd is a pain to use.  Any suggested events I should trace 
-> beyond the obvious?
-> 
-> Part of the problem is that despite what the documentation says it doesn't 
-> look like you can combine the "-P pid" and "-c" children option, which 
-> makes debugging a forking problem like this a lot harder to trace.
+On Mon, Apr 28, 2014 at 8:02 PM, Suravee Suthikulanit
+<suravee.suthikulpanit@amd.com> wrote:
 
-Yeah, I need kernel assistance to fix some of that.
+> Sorry for late reply.  My concern is that removing the "quirk_amd_nb_node()"
+> will affect the value of "numa_node" of the host bridge devices (i.e.
+> X:00.[18|19|1a|1b|1c|1d|1e|1f].X).  I am not sure if any code is using this
+> information.  But in theory, these host-bridge devices are not on the same
+> node as where the PCI root complex lives (e.g. 0 and 4 from the example
+> above).
 
-> 
-> It's sort of possible to get around that with a really complicated -F ""
-> command line that does sudo back to me (don't want to fuzz as root) and 
-> such, but still awkward.
+I doubt anything in the kernel uses the node number for these devices
+(00:[18|19|...]).  The only place the PCI core uses it is to run a
+driver probe method on the same node as the device.  Are there even
+drivers for these devices?
 
-I'll try to write up a patch that lets you use -P with -c. But due to
-the (crappy) implementation with ptrace, trace-cmd needs to be a parent
-of task.
+They aren't PCI-to-PCI bridges, so there are no devices below them
+that would be affected by their node numbers.
 
-In the mean time, you could run this as root:
+> If we want the "numa_node" to really representing the actual node, then the
+> quirk has to stay for now.  We might need to come up with a different logic
+> to replace the quirks here, which would automatically determine the actual
+> node value for these host-bridge devices.
 
- trace-cmd record -p function -F -c su non-root-user fuzz
+It sounds like the numa_node for these devices in sysfs is misleading
+unless we have a quirk like this.  If that's important, I think it
+could be fixed by having the BIOS provide _PXM methods for them.  But
+I don't think it is, and I'm inclined to remove the quirk.
 
+I'm pushing hard to get rid of CPU-specific code like this because
+there are generic methods to do it, e.g., _PXM, and the CPU-specific
+code is a perennial maintenance headache.
 
--- Steve
+Bjorn
