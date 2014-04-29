@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaD2NJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 09:09:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15240 "EHLO mx1.redhat.com"
+	id S1757374AbaD2NKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 09:10:07 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:57791 "EHLO smtp1.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167AbaD2NJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 09:09:28 -0400
-Date: Tue, 29 Apr 2014 09:09:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Tomlin <atomlin@redhat.com>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140429130923.GA32375@redhat.com>
-References: <20140429171321.69409c76a15ad2a97761585c@canb.auug.org.au>
+	id S1751400AbaD2NKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 09:10:03 -0400
+Date: Tue, 29 Apr 2014 16:09:59 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] cpufreq: Catch double invocations of
+ cpufreq_freq_transition_begin/end
+In-Reply-To: <20140429130506.7052.54268.stgit@srivatsabhat.in.ibm.com>
+Message-ID: <alpine.SOC.1.00.1404291609220.3349@math.ut.ee>
+References: <20140429130506.7052.54268.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429171321.69409c76a15ad2a97761585c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 05:13:21PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
 > 
-> After merging the akpm tree, today's linux-next build (sparc64 defconfig)
-> failed like this:
-> 
-> arch/sparc/kernel/process_64.c: In function 'arch_trigger_all_cpu_backtrace':
-> arch/sparc/kernel/process_64.c:267:3: error: ISO C90 forbids mixed declarations and code [-Werror=declaration-after-statement]
-> cc1: all warnings being treated as errors
-> 
-> Caused by commit dd0063a16aa1 ("nmi: provide the option to issue an NMI
-> back trace to every cpu but current").
-> 
-> I have no idea why I did not see this yesterday.
-> 
-> I applied the following fix up patch:
-
-I apologize for that.  The downsides of making changes without having a
-cross compiler.  Thanks for the fixup!
-
-Cheers,
-Don
-
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 29 Apr 2014 17:10:00 +1000
-> Subject: [PATCH] nmi-provide-the-option-to-issue-an-nmi-back-trace-to-every-cpu-but-current-fix
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > ---
->  arch/sparc/kernel/process_64.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-> index 65b405c36421..9975a6dbca0a 100644
-> --- a/arch/sparc/kernel/process_64.c
-> +++ b/arch/sparc/kernel/process_64.c
-> @@ -261,10 +261,12 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
->  	smp_fetch_global_regs();
->  
->  	for_each_online_cpu(cpu) {
-> +		struct global_reg_snapshot *gp;
+> v2: Removed the coverage of ASYNC_NOTIFICATION drivers, in order to avoid
+> false-positives.
+
+I am confused - on top of what patches should I test it?
+
+
+
+> 
+>  drivers/cpufreq/cpufreq.c |    7 +++++++
+>  include/linux/cpufreq.h   |    1 +
+>  2 files changed, 8 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index abda660..afcac67 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -354,6 +354,11 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+>  void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+>  		struct cpufreq_freqs *freqs)
+>  {
 > +
->  		if (!include_self && cpu == this_cpu)
->  			continue;
+> +	/* Catch double invocations of _begin() which lead to self-deadlock */
+> +	WARN_ON(!(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION)
+> +				&& current == policy->transition_task);
+> +
+>  wait:
+>  	wait_event(policy->transition_wait, !policy->transition_ongoing);
 >  
-> -		struct global_reg_snapshot *gp = &global_cpu_snapshot[cpu].reg;
-> +		gp = &global_cpu_snapshot[cpu].reg;
+> @@ -365,6 +370,7 @@ wait:
+>  	}
 >  
->  		__global_reg_poll(gp);
+>  	policy->transition_ongoing = true;
+> +	policy->transition_task = current;
 >  
-> -- 
-> 2.0.0.rc0
+>  	spin_unlock(&policy->transition_lock);
+>  
+> @@ -381,6 +387,7 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+>  	cpufreq_notify_post_transition(policy, freqs, transition_failed);
+>  
+>  	policy->transition_ongoing = false;
+> +	policy->transition_task = NULL;
+>  
+>  	wake_up(&policy->transition_wait);
+>  }
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 5ae5100..8f44d79 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -110,6 +110,7 @@ struct cpufreq_policy {
+>  	bool			transition_ongoing; /* Tracks transition status */
+>  	spinlock_t		transition_lock;
+>  	wait_queue_head_t	transition_wait;
+> +	struct task_struct	*transition_task; /* Task which is doing the transition */
+>  };
+>  
+>  /* Only for ACPI */
 > 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
 
-
+-- 
+Meelis Roos (mroos@linux.ee)
