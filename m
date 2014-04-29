@@ -1,161 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182AbaD2QgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:36:10 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:51466 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757761AbaD2QgI (ORCPT
+	id S933770AbaD2Qgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:36:36 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:44113 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933155AbaD2Qge convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:36:08 -0400
-Date: Tue, 29 Apr 2014 09:36:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Richard Weinberger <richard@nod.at>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140429163604.GH8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <535AC91A.1070504@infradead.org>
- <535ACB0E.4070600@infradead.org>
- <20140427062650.GW4496@linux.vnet.ibm.com>
- <20140428135540.GA14661@linux.vnet.ibm.com>
- <535E8D14.7080405@infradead.org>
- <535E8E17.2050600@nod.at>
- <20140428200640.GG4430@linux.vnet.ibm.com>
- <535EBAE6.3080907@infradead.org>
- <20140428211535.GK4430@linux.vnet.ibm.com>
- <535F95FC.1020909@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535F95FC.1020909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042916-3532-0000-0000-00000163ADDF
+	Tue, 29 Apr 2014 12:36:34 -0400
+Content-Type: text/plain;
+	charset=us-ascii
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary CPU
+From: Joel Fernandes <agnel.joel@gmail.com>
+X-Mailer: iPad Mail (11B554a)
+In-Reply-To: <20140429091725.GA3582@e103592.cambridge.arm.com>
+Date: Tue, 29 Apr 2014 09:36:30 -0700
+Cc: Joel Fernandes <joelf@ti.com>, Nishanth Menon <nm@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <D49C397D-1ABD-4882-B3F5-94F359D7552B@gmail.com>
+References: <1398191506-3741-1-git-send-email-joelf@ti.com> <20140428164348.GA14354@e103592.cambridge.arm.com> <535E8DC2.4010504@ti.com> <535E8E2D.1020708@ti.com> <20140429091725.GA3582@e103592.cambridge.arm.com>
+To: Dave Martin <Dave.Martin@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 08:07:24AM -0400, Rik van Riel wrote:
-> On 04/28/2014 05:15 PM, Paul E. McKenney wrote:
-> > On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
-> >> On 04/28/14 13:06, Paul E. McKenney wrote:
+
+> On Apr 29, 2014, at 2:17 AM, Dave Martin <Dave.Martin@arm.com> wrote:
 > 
-> >>> Please see below for a patch against next-20140428 that makes this build
-> >>> for me.  This is derived from Rik's patch, my patch, and is consistent with
-> >>> Arnd's patch.
-> >>>
-> >>> 							Thanx, Paul
-> >>
-> >> Thnx, works for me.  Finally.
-> > 
-> > Good!
-> > 
-> > Rik, how would you like to proceed with this?
+>> On Mon, Apr 28, 2014 at 06:21:49PM +0100, Joel Fernandes wrote:
+>>> On 04/28/2014 12:20 PM, Joel Fernandes wrote:
+>>>> On 04/28/2014 11:43 AM, Dave Martin wrote:
+>>>>> On Tue, Apr 22, 2014 at 01:31:46PM -0500, Joel Fernandes wrote:
+>>>>> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
+>>>>> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
+>>>>> seems to be because the CPU is in ARM mode once the ROM hands over control to
+>>>>> the kernel.  Switch to THUMB mode if required once the kernel is control of
+>>>>> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
+>>>>> entry so this is not required and SMP boot works as is.
+>>>>> 
+>>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>>> Cc: Nishanth Menon <nm@ti.com>
+>>>>> Cc: Tony Lindgren <tony@atomide.com>
+>>>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>>>>> ---
+>>>>> arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
+>>>>> 1 file changed, 6 insertions(+), 2 deletions(-)
+>>>>> 
+>>>>> diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+>>>>> index 75e9295..1809dce 100644
+>>>>> --- a/arch/arm/mach-omap2/omap-headsmp.S
+>>>>> +++ b/arch/arm/mach-omap2/omap-headsmp.S
+>>>>> @@ -1,7 +1,7 @@
+>>>>> /*
+>>>>>  * Secondary CPU startup routine source file.
+>>>>>  *
+>>>>> - * Copyright (C) 2009 Texas Instruments, Inc.
+>>>>> + * Copyright (C) 2014 Texas Instruments, Inc.
+>>>>>  *
+>>>>>  * Author:
+>>>>>  *      Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>> @@ -28,9 +28,13 @@
+>>>>>  * code.  This routine also provides a holding flag into which
+>>>>>  * secondary core is held until we're ready for it to initialise.
+>>>>>  * The primary core will update this flag using a hardware
+>>>>> -+ * register AuxCoreBoot0.
+>>>>> + * register AuxCoreBoot0.
+>>>>>  */
+>>>>> ENTRY(omap5_secondary_startup)
+>>>> 
+>>>> Are you sure this problem is not caused by the missing ENDPROC() for
+>>>> omap5_secondary_startup?
+>>>> 
+>>>> You have END() instead (which may have been accidental).
+>>>> 
+>>>> Without ENDPROC(), the symbol is not marked as a function and so
+>>>> the Thumb bit won't be set when taking a pointer -- so the kernel
+>>>> is actually telling the firmware to enter in ARM state.
+>>>> 
+>>>> 
+>>>> Try changing END() to ENDPROC() without this patch, and see if it
+>>>> makes a difference.
+>>>> 
+>>>> If it still doesn't work, then the firmware either doesn't support
+>>>> entering in ARM, or is buggy.
+>>> 
+>>> Thanks for the suggestion. I'm guessing what you mean is with ENDPROC,
+>>> interworking code uses bx instead of bl to set thumb mode.
+>>> 
+>>> But ROM/firmware doesn't have access to symbol table, how would it know
+>>> the type of the symbol to be ARM or THUMB before it branches?
+>> Sorry what I meant is, say its of Type function. What tells the firmware
+>> to switch to THUMB?
+>> 
+>> What's typically done is a boot address register is written by the
+>> kernel, and the firmware jumps to it after WFE.
 > 
-> I guess this fix should go into -mm?
+> Using ENTRY(x) ... ENDPROC(x) causes the symbol seen by the linker
+> for x to have the Thumb bit set if the code is Thumb.
+> 
+> This means that any reference the linker fixes up for that symbol
+> will have the Thumb bit set appropriately.  This applies to any kind
+> of reference, so code in another file that takes the address of the
+> symbol and then passes that address to the firmware should result in the
+> firmware getting an address with the Thumb bit.
+> 
+> From the firmware's point of view it just gets a raw address, but
+> the Thumb bit will now be set.  The firmware still needs to handle
+> this correctly when jumping, but from the look of the code this may
+> already work on omap3/4.  It would be interesting to know whether it
+> works on omap5.
 
-Andrew dropped the original patch, so a consolidated patch is needed.
-I believe that something like the following is what we ended up with.
-Does this look right to you?
+Thanks a lot for the explanation. That makes perfect sense. I will try it and let you know if it works on OMAP5.
 
-							Thanx, Paul
+Regards,
+-Joel
 
-------------------------------------------------------------------------
 
-sysrq,rcu: suppress RCU stall warnings while sysrq runs
-
-Some sysrq handlers can run for a long time, because they dump a lot
-of data onto a serial console. Having RCU stall warnings pop up in
-the middle of them only makes the problem worse.
-
-This patch temporarily disables RCU stall warnings while a sysrq
-request is handled.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-[ paulmck: Fix build bugs for obscure config options. ]
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: Joern Engel <joern@logfs.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Madper Xie <cxie@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index fc67a89..38d5f9a 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -46,6 +46,7 @@
- #include <linux/jiffies.h>
- #include <linux/syscalls.h>
- #include <linux/of.h>
-+#include <linux/rcupdate.h>
- 
- #include <asm/ptrace.h>
- #include <asm/irq_regs.h>
-@@ -511,6 +512,7 @@ void __handle_sysrq(int key, bool check_mask)
- 	int orig_log_level;
- 	int i;
- 
-+	rcu_sysrq_start();
- 	rcu_read_lock();
- 	/*
- 	 * Raise the apparent loglevel to maximum so that the sysrq header
-@@ -554,6 +556,7 @@ void __handle_sysrq(int key, bool check_mask)
- 		console_loglevel = orig_log_level;
- 	}
- 	rcu_read_unlock();
-+	rcu_sysrq_end();
- }
- 
- void handle_sysrq(int key)
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 00a7fd6..f3a672c 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -227,6 +227,17 @@ void rcu_idle_enter(void);
- void rcu_idle_exit(void);
- void rcu_irq_enter(void);
- void rcu_irq_exit(void);
-+#ifdef CONFIG_RCU_STALL_COMMON
-+void rcu_sysrq_start(void);
-+void rcu_sysrq_end(void);
-+#else /* #ifdef CONFIG_RCU_STALL_COMMON */
-+static inline void rcu_sysrq_start(void)
-+{
-+}
-+static inline void rcu_sysrq_end(void)
-+{
-+}
-+#endif /* #else #ifdef CONFIG_RCU_STALL_COMMON */
- 
- #ifdef CONFIG_RCU_USER_QS
- void rcu_user_enter(void);
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 4c0a9b0..d22309c 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -320,6 +320,18 @@ int rcu_jiffies_till_stall_check(void)
- 	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
- }
- 
-+void rcu_sysrq_start(void)
-+{
-+	if (!rcu_cpu_stall_suppress)
-+		rcu_cpu_stall_suppress = 2;
-+}
-+
-+void rcu_sysrq_end(void)
-+{
-+	if (rcu_cpu_stall_suppress == 2)
-+		rcu_cpu_stall_suppress = 0;
-+}
-+
- static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
- {
- 	rcu_cpu_stall_suppress = 1;
-
+> 
+> Cheers
+> ---Dave
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
