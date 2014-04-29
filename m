@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965117AbaD2Td4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:33:56 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:59223 "EHLO kanga.kvack.org"
+	id S1758303AbaD2Tgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:36:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11364 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964811AbaD2Tdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:33:55 -0400
-Date: Tue, 29 Apr 2014 15:33:54 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
-Message-ID: <20140429193354.GM14608@kvack.org>
-References: <20140429183915.GA32513@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429183915.GA32513@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751878AbaD2Tgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:36:47 -0400
+Date: Tue, 29 Apr 2014 15:36:15 -0400
+From: Rik van Riel <riel@redhat.com>
+To: n-horiguchi@ah.jp.nec.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
+        peterz@infradead.org, mgorman@suse.de, dave.hansen@intel.com,
+        sunil.k.pandey@intel.com
+Subject: [PATCH -v2] mm,numa: remove BUG_ON in __handle_mm_fault
+Message-ID: <20140429153615.2d72098e@annuminas.surriel.com>
+In-Reply-To: <1398799576-9pfzypnu@n-horiguchi@ah.jp.nec.com>
+References: <20140425144147.679a7608@annuminas.surriel.com>
+	<1398799576-9pfzypnu@n-horiguchi@ah.jp.nec.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 08:39:15PM +0200, Oleg Nesterov wrote:
-> Completely untested and I know nothing about aio, thus needs an ack
-> from maintainers or should be ignored.
-> 
-> But exit_aio() looks "obviously unnecessarily overcomplicated", I was
-> really puzzled when I looked at this code by accident.
-> 
-> Kent, could you also explain kioctx->dead is atomic_t? This looks
-> pointless? afaics atomic_ buys nothing in this case.
+Peter pointed out we can do this slightly simpler, since we already
+have a test for pmd_trans_huge(*pmd) below...
 
-If it wasn't atomic, it would need to be volatile.
+---8<---
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
+mmap_sem held for reading, which means a pmd can be instantiated
+and turned into a numa one while __handle_mm_fault is examining
+the value of old_pmd.
+
+If that happens, __handle_mm_fault should just return and let
+the page fault retry, instead of throwing an oops. This is
+handled by the test for pmd_trans_huge(*pmd) below.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
+Cc: stable@kernel.org
+---
+ mm/memory.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index d0f0bef..9c2dc65 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3900,9 +3900,6 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 	}
+ 
+-	/* THP should already have been handled */
+-	BUG_ON(pmd_numa(*pmd));
+-
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
+ 	 * run pte_offset_map on the pmd, if an huge pmd could
