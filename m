@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343AbaD2Sw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:52:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52365 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbaD2Sw6 (ORCPT
+	id S1758432AbaD2Szt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:55:49 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:44378 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758090AbaD2Szs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:52:58 -0400
-Date: Tue, 29 Apr 2014 18:52:51 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Marian Marinov <mm@1h.com>,
-        containers@lists.linux-foundation.org,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-Message-ID: <20140429185251.GA27969@ubuntumail>
-References: <535FADDA.2070803@1h.com>
- <20140429183534.GB19325@thunk.org>
+	Tue, 29 Apr 2014 14:55:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/v6fOcd3C41v5xd2NMFCW6SmMHPcIfJ54=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 785235674CF
+Date: Tue, 29 Apr 2014 14:55:27 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
+ for M25P80)
+Message-ID: <20140429185527.GP28159@titan.lakedaemon.net>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+ <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+ <535A8FC9.8040707@wwwdotorg.org>
+ <20140429172227.GB11657@arch.cereza>
+ <20140429174849.GO28159@titan.lakedaemon.net>
+ <20140429182815.GA28069@arch.cereza>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140429183534.GB19325@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140429182815.GA28069@arch.cereza>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Theodore Ts'o (tytso@mit.edu):
-> On Tue, Apr 29, 2014 at 04:49:14PM +0300, Marian Marinov wrote:
+On Tue, Apr 29, 2014 at 03:28:15PM -0300, Ezequiel Garcia wrote:
+> On Apr 29, Jason Cooper wrote:
+> > On Tue, Apr 29, 2014 at 02:22:27PM -0300, Ezequiel Garcia wrote:
+> > > On Apr 25, Stephen Warren wrote:
+> > > > On 04/17/2014 01:21 AM, Brian Norris wrote:
+> > > > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
+> > > > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+> > > > > relevant defconfigs.
+> > > > > 
+> > > > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
 > > 
-> > I'm proposing a fix to this, by replacing the capable(CAP_LINUX_IMMUTABLE)
-> > check with ns_capable(current_cred()->user_ns, CAP_LINUX_IMMUTABLE).
+> > Excuse my ignorance of the history of this bug, but shouldn't this be
+> > solved in the Kconfig logic?  Since when do we solve config symbol
+> > dependency bugs in the defconfigs?
+> > 
 > 
-> Um, wouldn't it be better to simply fix the capable() function?
+> Long story short: it was decided that select'ing this new symbol was not
+> appropriate. Instead, it must be explicitly selected by the user, hence
+> the defconfig fix.
 > 
-> /**
->  * capable - Determine if the current task has a superior capability in effect
->  * @cap: The capability to be tested for
->  *
->  * Return true if the current task has the given superior capability currently
->  * available for use, false if not.
->  *
->  * This sets PF_SUPERPRIV on the task if the capability is available on the
->  * assumption that it's about to be used.
->  */
-> bool capable(int cap)
-> {
-> 	return ns_capable(&init_user_ns, cap);
-> }
-> EXPORT_SYMBOL(capable);
-> 
-> The documentation states that it is for "the current task", and I
-> can't imagine any use case, where user namespaces are in effect, where
-> using init_user_ns would ever make sense.
+> The full story: https://lkml.org/lkml/2014/4/17/45
 
-the init_user_ns represents the user_ns owning the object, not the
-subject.
+ahhh, it already depend's on MTD_SPI_NOR in Kconfig
 
-The patch by Marian is wrong.  Anyone can do 'clone(CLONE_NEWUSER)',
-setuid(0), execve, and end up satisfying 'ns_capable(current_cred()->userns,
-CAP_SYS_IMMUTABLE)' by definition.
+  http://git.infradead.org/l2-mtd.git/blobdiff/254592db612aeb55d80399a04995b68f7da48c99..e43b20619bdb6c851dd7b49cbd15e52875a785d4:/drivers/mtd/devices/Kconfig
 
-So NACK to that particular patch.  I'm not sure, but IIUC it should be
-safe to check against the userns owning the inode?
+ok, now it makes sense.
 
-> No?  Otherwise, pretty much every single use of capable() would be
-> broken, not just this once instances in ext4/ioctl.c.
-> 
-> 					- Ted
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+thx,
+
+Jason.
