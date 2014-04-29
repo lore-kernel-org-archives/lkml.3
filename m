@@ -1,80 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583AbaD2NKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 09:10:25 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57628 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaD2NKV (ORCPT
+	id S932814AbaD2NLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 09:11:32 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43767 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193AbaD2NLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 09:10:21 -0400
-Message-ID: <535FA488.8020405@linux.vnet.ibm.com>
-Date: Tue, 29 Apr 2014 18:39:28 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 29 Apr 2014 09:11:30 -0400
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Davidlohr Bueso <davidlohr@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] vmacache: change vmacache_find() to always check ->vm_mm
-References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net> <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com> <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org> <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com> <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net> <535F78A8.80403@linux.vnet.ibm.com> <20140429125255.GA13934@redhat.com>
-In-Reply-To: <20140429125255.GA13934@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042913-5490-0000-0000-0000058699A4
+In-Reply-To: <535F88B6.8010105@redhat.com>
+References: <1398632169-3870-1-git-send-email-patrik.r.jakobsson@gmail.com>
+	<535F88B6.8010105@redhat.com>
+Date: Tue, 29 Apr 2014 15:11:28 +0200
+Message-ID: <CAMeQTsZXWwetYK7SRVkbrVTnrq05nSGqhFRvFqnV=1yYC1zMng@mail.gmail.com>
+Subject: Re: [RFC PATCH] mba6x_bl: Backlight driver for mid 2013 MacBook Air
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        matthew.garrett@nebula.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 06:22 PM, Oleg Nesterov wrote:
-> On 04/29, Srivatsa S. Bhat wrote:
->>
->> I guess I'll hold off on testing this fix until I get to reproduce
->> the bug more reliably..
-> 
-> perhaps the patch below can help a bit?
-> 
-> -------------------------------------------------------------------------------
-> Subject: [PATCH] vmacache: change vmacache_find() to always check ->vm_mm
-> 
-> If ->vmacache was corrupted it would be better to detect and report
-> the problem asap, check vma->vm_mm before vm_start/vm_end.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  mm/vmacache.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmacache.c b/mm/vmacache.c
-> index d4224b3..952a324 100644
-> --- a/mm/vmacache.c
-> +++ b/mm/vmacache.c
-> @@ -81,9 +81,10 @@ struct vm_area_struct *vmacache_find(struct mm_struct *mm, unsigned long addr)
->  	for (i = 0; i < VMACACHE_SIZE; i++) {
->  		struct vm_area_struct *vma = current->vmacache[i];
-> 
-> -		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
-> +		if (vma) {
->  			BUG_ON(vma->vm_mm != mm);
-> -			return vma;
-> +			if (vma->vm_start <= addr && vma->vm_end > addr)
-> +				return vma;
->  		}
->  	}
-> 
+On Tue, Apr 29, 2014 at 1:10 PM, Hans de Goede <hdegoede@redhat.com> wrote:
+>
+> Hi,
+>
+> Why is this patch an RFC? If it is ready for upstreaming please drop
+> the RFC prefix when you post the next version.
 
-IIUC, this is similar to commit 50f5aa8a9b2 (mm: don't pointlessly use
-BUG_ON() for sanity check). But even with that commit included I was
-not able to reproduce the bug again, as reported here:
+I'll do that
 
-https://lkml.org/lkml/2014/4/29/187
+> On 04/27/2014 10:56 PM, Patrik Jakobsson wrote:
+> > This driver takes control over the LP8550 backlight driver chip found
+> > in the mid 2013 and newer MacBook Air (6,1 and 6,2). The i915 GPU driver
+> > cannot properly restore the backlight after resume, but with this driver
+> > we can hijack the LP8550 and get fully functional backlight support.
+> >
+> > Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+> > ---
+> >  MAINTAINERS                     |   6 +
+> >  drivers/platform/x86/Kconfig    |  13 ++
+> >  drivers/platform/x86/Makefile   |   1 +
+> >  drivers/platform/x86/mba6x_bl.c | 351 ++++++++++++++++++++++++++++++++++++++++
+> >  4 files changed, 371 insertions(+)
+> >  create mode 100644 drivers/platform/x86/mba6x_bl.c
+> >
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index e67ea24..cad3e82 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -5576,6 +5576,12 @@ T:     git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next.git
+> >  S:   Maintained
+> >  F:   net/mac80211/rc80211_pid*
+> >
+> > +MACBOOK AIR 6,X BACKLIGHT DRIVER
+> > +M:   Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+> > +L:   platform-driver-x86@vger.kernel.org
+> > +S:   Maintained
+> > +F:   drivers/platform/x86/mba6x_bl.c
+> > +
+> >  MACVLAN DRIVER
+> >  M:   Patrick McHardy <kaber@trash.net>
+> >  L:   netdev@vger.kernel.org
+> > diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> > index 27df2c5..1308924 100644
+> > --- a/drivers/platform/x86/Kconfig
+> > +++ b/drivers/platform/x86/Kconfig
+> > @@ -795,6 +795,19 @@ config APPLE_GMUX
+> >         graphics as well as the backlight. Currently only backlight
+> >         control is supported by the driver.
+> >
+> > +config MBA6X_BL
+> > +     tristate "MacBook Air 6,x backlight driver"
+> > +     depends on ACPI
+> > +     depends on BACKLIGHT_CLASS_DEVICE
+> > +        select ACPI_VIDEO if ACPI
+>
+> You can drop the if ACPI here, as you already DEPEND on it above
 
-Regards,
-Srivatsa S. Bhat
+Ok, will do
 
+> > +     help
+> > +      This driver takes control over the LP8550 backlight driver found in
+> > +      some MacBook Air models. Say Y here if you have a MacBook Air from mid
+> > +      2013 or newer.
+> > +
+> > +      To compile this driver as a module, choose M here: the module will
+> > +      be called mba6x_bl.
+> > +
+> >  config INTEL_RST
+> >          tristate "Intel Rapid Start Technology Driver"
+> >       depends on ACPI
+> > diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> > index 1a2eafc..9a182fe 100644
+> > --- a/drivers/platform/x86/Makefile
+> > +++ b/drivers/platform/x86/Makefile
+> > @@ -56,3 +56,4 @@ obj-$(CONFIG_INTEL_SMARTCONNECT)    += intel-smartconnect.o
+> >
+> >  obj-$(CONFIG_PVPANIC)           += pvpanic.o
+> >  obj-$(CONFIG_ALIENWARE_WMI)  += alienware-wmi.o
+> > +obj-$(CONFIG_MBA6X_BL)               += mba6x_bl.o
+> > diff --git a/drivers/platform/x86/mba6x_bl.c b/drivers/platform/x86/mba6x_bl.c
+> > new file mode 100644
+> > index 0000000..022bc8d
+> > --- /dev/null
+> > +++ b/drivers/platform/x86/mba6x_bl.c
+> > @@ -0,0 +1,351 @@
+> > +/*
+> > + * MacBook Air 6,1 and 6,2 (mid 2013) backlight driver
+> > + *
+> > + * Copyright (C) 2014 Patrik Jakobsson (patrik.r.jakobsson@gmail.com)
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License version 2 as published by
+> > + * the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License
+> > + * along with this program; if not, write to the Free Software Foundation.
+> > + *
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/init.h>
+> > +#include <linux/module.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/backlight.h>
+> > +#include <linux/acpi.h>
+> > +#include <acpi/acpi.h>
+> > +#include <acpi/video.h>
+> > +
+> > +#define LP8550_SMBUS_ADDR    (0x58 >> 1)
+> > +#define LP8550_REG_BRIGHTNESS        0
+> > +#define LP8550_REG_DEV_CTL   1
+> > +#define LP8550_REG_FAULT     2
+> > +#define LP8550_REG_IDENT     3
+> > +#define LP8550_REG_DIRECT_CTL        4
+> > +#define LP8550_REG_TEMP_MSB  5 /* Must be read before TEMP_LSB */
+> > +#define LP8550_REG_TEMP_LSB  6
+> > +
+> > +#define INIT_BRIGHTNESS              150
+> > +
+> > +static struct {
+> > +     u8 brightness;  /* Brightness control */
+> > +     u8 dev_ctl;     /* Device control */
+> > +     u8 fault;       /* Fault indication */
+> > +     u8 ident;       /* Identification */
+> > +     u8 direct_ctl;  /* Direct control */
+> > +     u8 temp_msb;    /* Temperature MSB  */
+> > +     u8 temp_lsb;    /* Temperature LSB */
+> > +} lp8550_regs;
+> > +
+> > +static struct platform_device *platform_device;
+> > +static struct backlight_device *backlight_device;
+> > +
+> > +static int lp8550_reg_read(u8 reg, u8 *val)
+> > +{
+> > +     acpi_status status;
+> > +     acpi_handle handle;
+> > +     struct acpi_object_list arg_list;
+> > +     struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+> > +     union acpi_object args[2];
+> > +     union acpi_object *result;
+> > +     int ret = 0;
+> > +
+> > +     status = acpi_get_handle(NULL, "\\_SB.PCI0.SBUS.SRDB", &handle);
+> > +     if (ACPI_FAILURE(status)) {
+> > +             pr_debug("mba6x_bl: Failed to get acpi handle\n");
+> > +             ret = -ENODEV;
+> > +             goto out;
+> > +     }
+> > +
+> > +     args[0].type = ACPI_TYPE_INTEGER;
+> > +     args[0].integer.value = (LP8550_SMBUS_ADDR << 1) | 1;
+> > +
+> > +     args[1].type = ACPI_TYPE_INTEGER;
+> > +     args[1].integer.value = reg;
+> > +
+> > +     arg_list.count = 2;
+> > +     arg_list.pointer = args;
+> > +
+> > +     status = acpi_evaluate_object(handle, NULL, &arg_list, &buffer);
+> > +     if (ACPI_FAILURE(status)) {
+> > +             pr_debug("mba6x_bl: Failed to read reg: 0x%x\n", reg);
+> > +             ret = -ENODEV;
+> > +             goto out;
+> > +     }
+> > +
+> > +     result = buffer.pointer;
+> > +
+> > +     if (result->type != ACPI_TYPE_INTEGER) {
+> > +             pr_debug("mba6x_bl: Invalid response in reg: 0x%x (len: %Ld)\n",
+> > +                      reg, buffer.length);
+> > +             ret = -EINVAL;
+> > +             goto out;
+> > +     }
+> > +
+> > +     *val = (u8)result->integer.value;
+> > +out:
+> > +     kfree(buffer.pointer);
+> > +     return ret;
+> > +}
+> > +
+> > +static int lp8550_reg_write(u8 reg, u8 val)
+> > +{
+> > +     acpi_status status;
+> > +     acpi_handle handle;
+> > +     struct acpi_object_list arg_list;
+> > +     struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
+> > +     union acpi_object args[3];
+> > +     union acpi_object *result;
+> > +     int ret = 0;
+> > +
+> > +     status = acpi_get_handle(NULL, "\\_SB.PCI0.SBUS.SWRB", &handle);
+> > +     if (ACPI_FAILURE(status)) {
+> > +             pr_debug("mba6x_bl: Failed to get acpi handle\n");
+> > +             ret = -ENODEV;
+> > +             goto out;
+> > +     }
+> > +
+> > +     args[0].type = ACPI_TYPE_INTEGER;
+> > +     args[0].integer.value = (LP8550_SMBUS_ADDR << 1) & ~1;
+> > +
+> > +     args[1].type = ACPI_TYPE_INTEGER;
+> > +     args[1].integer.value = reg;
+> > +
+> > +     args[2].type = ACPI_TYPE_INTEGER;
+> > +     args[2].integer.value = val;
+> > +
+> > +     arg_list.count = 3;
+> > +     arg_list.pointer = args;
+> > +
+> > +     status = acpi_evaluate_object(handle, NULL, &arg_list, &buffer);
+> > +     if (ACPI_FAILURE(status)) {
+> > +             pr_debug("mba6x_bl: Failed to write reg: 0x%x\n", reg);
+> > +             ret = -ENODEV;
+> > +             goto out;
+> > +     }
+> > +
+> > +     result = buffer.pointer;
+> > +
+> > +     if (result->type != ACPI_TYPE_INTEGER || result->integer.value != 1) {
+> > +             pr_debug("mba6x_bl: Invalid response at reg: 0x%x (len: %Ld)\n",
+> > +                      reg, buffer.length);
+> > +             ret = -EINVAL;
+> > +             goto out;
+> > +     }
+> > +
+> > +out:
+> > +     kfree(buffer.pointer);
+> > +     return ret;
+> > +}
+> > +
+> > +static inline int map_brightness(int b)
+> > +{
+> > +     return ((b * b + 254) / 255);
+> > +}
+>
+> What does this do ? it looks like some weird
+> rounding code, is this really needed ?
+>
+> At a minimum please add a comment explaining what this does.
+
+This makes the actual strength of the backlight more linear. It takes the
+original value and maps it onto an exponential curve. What looks like rounding
+is just there to make sure 0 is 0 and 255 is 255. I'll add a comment.
+
+> > +
+> > +static int lp8550_init(void);
+> > +
+> > +static int set_brightness(int brightness)
+> > +{
+> > +     int ret;
+> > +
+> > +     if (brightness < 0 || brightness > 255)
+> > +             return -EINVAL;
+> > +
+> > +     lp8550_init();
+>
+> hmm, do we really need to re-init the lp8550 on each
+> brightness change ?
+
+I think it's just left-over paranoia from when I debugged some other issue.
+I'll take a look at it again.
+
+> > +     brightness = map_brightness(brightness);
+> > +     ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, (u8)brightness);
+> > +
+> > +     return ret;
+> > +}
+> > +
+> > +static int get_brightness(struct backlight_device *bdev)
+> > +{
+> > +     return bdev->props.brightness;
+> > +}
+> > +
+> > +static int update_status(struct backlight_device *bdev)
+> > +{
+> > +     return set_brightness(bdev->props.brightness);
+> > +}
+> > +
+> > +static int lp8550_probe(void)
+> > +{
+> > +     u8 val;
+> > +     int ret;
+> > +
+> > +     ret = lp8550_reg_read(LP8550_REG_IDENT, &val);
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     if (val != 0xfc)
+> > +             return -ENODEV;
+> > +
+> > +     pr_info("mba6x_bl: Found LP8550 backlight driver\n");
+> > +     return 0;
+> > +}
+> > +
+> > +static int lp8550_save(void)
+> > +{
+> > +     int ret;
+> > +
+> > +     ret = lp8550_reg_read(LP8550_REG_DEV_CTL, &lp8550_regs.dev_ctl);
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     ret = lp8550_reg_read(LP8550_REG_BRIGHTNESS, &lp8550_regs.brightness);
+> > +     return ret;
+> > +}
+> > +
+> > +
+> > +static int lp8550_restore(void)
+> > +{
+> > +     int ret;
+> > +
+> > +     ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, lp8550_regs.brightness);
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     ret = lp8550_reg_write(LP8550_REG_DEV_CTL, lp8550_regs.dev_ctl);
+> > +     return ret;
+> > +}
+> > +
+> > +static int lp8550_init(void)
+> > +{
+> > +     int ret, i;
+> > +
+> > +     for (i = 0; i < 10; i++) {
+> > +             ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, INIT_BRIGHTNESS);
+> > +             if (!ret)
+> > +                     break;
+> > +     }
+> > +
+> > +     if (i > 0)
+> > +             pr_err("mba6x_bl: Init retries: %d\n", i);
+> > +
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     ret = lp8550_reg_write(LP8550_REG_DEV_CTL, 0x05);
+> > +     return ret;
+> > +}
+> > +
+> > +static struct backlight_ops backlight_ops = {
+> > +     .update_status = update_status,
+> > +     .get_brightness = get_brightness,
+> > +};
+> > +
+> > +static struct platform_driver drv;
+> > +
+> > +static int platform_probe(struct platform_device *dev)
+> > +{
+> > +     struct backlight_properties props;
+> > +     int ret;
+> > +
+> > +     ret = lp8550_probe();
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     ret = lp8550_save();
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     ret = lp8550_init();
+> > +     if (ret)
+> > +             return ret;
+> > +
+> > +     memset(&props, 0, sizeof(struct backlight_properties));
+> > +     props.max_brightness = 255;
+> > +     props.brightness = INIT_BRIGHTNESS;
+> > +     props.type = BACKLIGHT_FIRMWARE;
+> > +
+> > +     backlight_device = backlight_device_register("mba6x_backlight",
+> > +                                                  NULL, NULL,
+> > +                                                  &backlight_ops, &props);
+> > +     if (IS_ERR(backlight_device)) {
+> > +             pr_err("mba6x_bl: Failed to register backlight device\n");
+> > +             return PTR_ERR(backlight_device);
+> > +     }
+> > +
+> > +     acpi_video_dmi_promote_vendor();
+> > +     acpi_video_unregister();
+> > +
+> > +     backlight_update_status(backlight_device);
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static int platform_remove(struct platform_device *dev)
+> > +{
+> > +     backlight_device_unregister(backlight_device);
+> > +     lp8550_restore();
+> > +     pr_info("mba6x_bl: Restored old configuration\n");
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static int platform_resume(struct platform_device *dev)
+> > +{
+> > +     /*
+> > +      * Firmware restores the LP8550 for us but we might need some tweaking
+> > +      * in the future if firmware behaviour is changed.
+> > +      */
+> > +     return 0;
+> > +}
+> > +
+> > +static void platform_shutdown(struct platform_device *dev)
+> > +{
+> > +     /* We must restore or screen might go black on reboot */
+> > +     lp8550_restore();
+> > +}
+> > +
+> > +static struct platform_driver drv = {
+> > +     .probe          = platform_probe,
+> > +     .remove         = platform_remove,
+> > +     .resume         = platform_resume,
+> > +     .shutdown       = platform_shutdown,
+> > +     .driver = {
+> > +             .name = "mba6x_bl",
+> > +             .owner = THIS_MODULE,
+> > +     },
+> > +};
+> > +
+> > +static int __init mba6x_bl_init(void)
+> > +{
+> > +     int ret;
+> > +
+> > +     ret = platform_driver_register(&drv);
+> > +     if (ret) {
+> > +             pr_err("Failed to register platform driver\n");
+> > +             return ret;
+> > +     }
+> > +
+> > +     platform_device = platform_device_register_simple("mba6x_bl", -1, NULL,
+> > +                                                       0);
+> > +     return 0;
+> > +}
+> > +
+> > +static void __exit mba6x_bl_exit(void)
+> > +{
+> > +     platform_device_unregister(platform_device);
+> > +     platform_driver_unregister(&drv);
+> > +}
+> > +
+> > +module_init(mba6x_bl_init);
+> > +module_exit(mba6x_bl_exit);
+> > +
+> > +MODULE_AUTHOR("Patrik Jakobsson <patrik.r.jakobsson@gmail.com>");
+> > +MODULE_DESCRIPTION("MacBook Air 6,1 and 6,2 backlight driver");
+> > +MODULE_LICENSE("GPL");
+> > +
+> > +MODULE_ALIAS("dmi:*:pnMacBookAir6*");
+> >
+>
+> Besides my few small comments this looks good overall.
+>
+> Regards,
+>
+> Hans
+
+I missed a couple of checkpatch issues. I'll fix them as well.
+
+Thanks for the review
+
+Cheers
+Patrik
