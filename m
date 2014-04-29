@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933951AbaD2RbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:31:22 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:61596 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692AbaD2RbU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:31:20 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: olof@lixom.net, Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c: mux: Add more warnings to i2c-arb-gpio-challenge docs
-Date: Tue, 29 Apr 2014 10:30:51 -0700
-Message-Id: <1398792651-27115-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	id S964903AbaD2Rbn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:31:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933921AbaD2Rbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 13:31:41 -0400
+Message-ID: <535FE1DB.2060601@redhat.com>
+Date: Tue, 29 Apr 2014 13:31:07 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Randy Dunlap <rdunlap@infradead.org>, Richard Weinberger <richard@nod.at>,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+References: <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <20140428135540.GA14661@linux.vnet.ibm.com> <535E8D14.7080405@infradead.org> <535E8E17.2050600@nod.at> <20140428200640.GG4430@linux.vnet.ibm.com> <535EBAE6.3080907@infradead.org> <20140428211535.GK4430@linux.vnet.ibm.com> <535F95FC.1020909@redhat.com> <20140429163604.GH8754@linux.vnet.ibm.com>
+In-Reply-To: <20140429163604.GH8754@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds some more warnings to the i2c-arb-gpio-challenge docs to
-help encourage people not to use it in their designs unless they have
-no choice.
+On 04/29/2014 12:36 PM, Paul E. McKenney wrote:
+> On Tue, Apr 29, 2014 at 08:07:24AM -0400, Rik van Riel wrote:
+>> On 04/28/2014 05:15 PM, Paul E. McKenney wrote:
+>>> On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
+>>>> On 04/28/14 13:06, Paul E. McKenney wrote:
+>>
+>>>>> Please see below for a patch against next-20140428 that makes this build
+>>>>> for me.  This is derived from Rik's patch, my patch, and is consistent with
+>>>>> Arnd's patch.
+>>>>>
+>>>>> 							Thanx, Paul
+>>>>
+>>>> Thnx, works for me.  Finally.
+>>>
+>>> Good!
+>>>
+>>> Rik, how would you like to proceed with this?
+>>
+>> I guess this fix should go into -mm?
+> 
+> Andrew dropped the original patch, so a consolidated patch is needed.
+> I believe that something like the following is what we ended up with.
+> Does this look right to you?
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt | 6 ++++++
- 1 file changed, 6 insertions(+)
+That looks exactly like the one I have here :)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt b/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt
-index 1ac8ea8..bfeabb8 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt
-@@ -8,6 +8,12 @@ the standard I2C multi-master rules.  Using GPIOs is generally useful in
- the case where there is a device on the bus that has errata and/or bugs
- that makes standard multimaster mode not feasible.
- 
-+Note that this scheme works well enough but has some downsides:
-+* It is nonstandard (not using standard I2C multimaster)
-+* Having two masters on a bus in general makes it relatively hard to debug
-+  problems (hard to tell if i2c issues were caused by one master, another, or
-+  some device on the bus).
-+
- 
- Algorithm:
- 
+Andrew, should I send you the two patches?
+
 -- 
-1.9.1.423.g4596e3a
-
+All rights reversed
