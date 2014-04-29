@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964971AbaD2SHo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:07:44 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:52931 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934064AbaD2SHk (ORCPT
+	id S934044AbaD2SGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:06:49 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:48119 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755711AbaD2SGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:07:40 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Tue, 29 Apr 2014 14:11:09 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140429085236.GO27561@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1404291407180.22490@vincent-weaver-1.umelst.maine.edu>
-References: <20140417142213.GA29338@gmail.com> <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu> <20140417145418.GM11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu>
- <20140418152314.GY11182@twins.programming.kicks-ass.net> <20140418165958.GQ13658@twins.programming.kicks-ass.net> <20140418171516.GR13658@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <20140429085236.GO27561@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Apr 2014 14:06:48 -0400
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        rdunlap@infradead.org, richard@nod.at, umgwanakikbuti@gmail.com
+Subject: [PATCH 1/2] sysrq: rcu-ify __handle_sysrq
+Date: Tue, 29 Apr 2014 14:06:35 -0400
+Message-Id: <1398794796-17464-2-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1398794796-17464-1-git-send-email-riel@redhat.com>
+References: <1398794796-17464-1-git-send-email-riel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014, Peter Zijlstra wrote:
+From: Rik van Riel <riel@redhat.com>
 
-> On Mon, Apr 28, 2014 at 10:21:34AM -0400, Vince Weaver wrote:
-> > so it's looking more and more like this issue is with a
-> > 	PERF_COUNT_SW_TASK_CLOCK
-> > event.
-> 
-> But they don't actually use the hlist thing..
+Echoing values into /proc/sysrq-trigger seems to be a popular way to
+get information out of the kernel. However, dumping information about
+thousands of processes, or hundreds of CPUs to serial console can
+result in IRQs being blocked for minutes, resulting in various kinds
+of cascade failures.
 
-yes.
+The most common failure is due to interrupts being blocked for a very
+long time. This can lead to things like failed IO requests, and other
+things the system cannot easily recover from.
 
-This turns out into another issue that I think is just use-after-free 
-memory corruption exhibiting itself a different way.
+This problem is easily fixable by making __handle_sysrq use RCU
+instead of spin_lock_irqsave.
 
-I've documented at least 8 different types of error message that I think 
-are all due to this issue.
+This leaves the warning that RCU grace periods have not elapsed for a
+long time, but the system will come back from that automatically.
 
-> So this is a different problem from the hlist corruption?
+It also leaves sysrq-from-irq-context when the sysrq keys are pressed,
+but that is probably desired since people want that to work in situations
+where the system is already hosed.
 
-Who knows.  That's why I'm trying to get this issue fixed so I can figure 
-out which of the 10+ other bugs I'm tracking are the same or different.
+The callers of register_sysrq_key and unregister_sysrq_key appear to be
+capable of sleeping.
 
-> > This is made all the more confusing because the PERF_COUNT_SW_TASK_CLOCK 
-> > events are handled by their own PMU even though it's faked up so they look 
-> > like regular software events.  Is there a reason for that?
-> 
-> This was the easiest route when we introduced the mulitple pmu thing or
-> so, its been on the todo list for a cleanup ever since :-/
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Madper Xie <cxie@redhat.com>
+---
+ drivers/tty/sysrq.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-It was very confusing and poorly documented, as is much of the perf_event 
-files.  And yes, I know, I should do something about it rather than 
-complain.
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index ce396ec..fc67a89 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -510,9 +510,8 @@ void __handle_sysrq(int key, bool check_mask)
+ 	struct sysrq_key_op *op_p;
+ 	int orig_log_level;
+ 	int i;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	rcu_read_lock();
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -554,7 +553,7 @@ void __handle_sysrq(int key, bool check_mask)
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++	rcu_read_unlock();
+ }
+ 
+ void handle_sysrq(int key)
+@@ -1043,16 +1042,23 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+                                 struct sysrq_key_op *remove_op_p)
+ {
+ 	int retval;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	spin_lock(&sysrq_key_table_lock);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+ 		__sysrq_put_key_op(key, insert_op_p);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++	spin_unlock(&sysrq_key_table_lock);
++
++	/*
++	 * A concurrent __handle_sysrq either got the old op or the new op.
++	 * Wait for it to go away before returning, so the code for an old
++	 * op is not freed (eg. on module unload) while it is in use.
++	 */
++	synchronize_rcu();
++
+ 	return retval;
+ }
+ 
+-- 
+1.8.5.3
 
-I've actually given up on source code inspection to figure out what's 
-going on in kernel/events/core.c.  What I do now is write simple test
-cases and do an ftrace function trace.  The results are often surprising.
-
-Vince
