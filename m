@@ -1,113 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbaD2Xlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 19:41:37 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:34647 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbaD2Xld (ORCPT
+	id S1756815AbaD2Xqn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 19:46:43 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:41641 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaD2Xql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 19:41:33 -0400
-Date: Tue, 29 Apr 2014 17:41:30 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Bandan Das <bsd@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PCI: rework new_id interface for known vendor/device
- values
-Message-ID: <20140429234130.GC9912@google.com>
-References: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
+	Tue, 29 Apr 2014 19:46:41 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Richard Yao <ryao@gentoo.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf machine: Search for modules in %s/lib/modules/%s
+References: <1398532675-13684-1-git-send-email-ryao@gentoo.org>
+	<20140427100556.GB1111@krava.brq.redhat.com>
+	<20140429080617.GA26967@krava.brq.redhat.com>
+Date: Wed, 30 Apr 2014 08:46:38 +0900
+In-Reply-To: <20140429080617.GA26967@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Tue, 29 Apr 2014 10:06:17 +0200")
+Message-ID: <87zjj3og0x.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 09:32:59PM -0400, Bandan Das wrote:
-> 
-> While using the new_id interface, the user can unintentionally feed
-> incorrect values if the driver static table has a matching entry.
-> This is possible since only the device and vendor fields are
-> mandatory and the rest are optional. As a result, store_new_id
-> will fill in default values that are then passed on to the driver
-> and can have unintended consequences.
-> 
-> As an example, consider the ixgbe driver and the 82599EB network card :
-> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
-> 
-> This will pass a driver_data value of 0 to the driver whereas
-> the index 0 in ixgbe actually points to a different set of card
-> operations.
-> 
-> This change returns an error if the user attempts to add a dynid for
-> a vendor/device combination for which a static entry already exists.
-> However, if the user intentionally wants a different set of values,
-> she must provide all the 7 fields and that will be accepted.
-> 
-> In KVM/device assignment scenario, the user might want 
-> to bind a device back to the host driver by writing to new_id
-> and trip on a possible null pointer dereference.
-> 
-> Signed-off-by: Bandan Das <bsd@redhat.com>
+Hi Jiri,
 
-Applied with Alex's ack to pci/misc for v3.16, thanks!
+On Tue, 29 Apr 2014 10:06:17 +0200, Jiri Olsa wrote:
+> On Sun, Apr 27, 2014 at 12:05:56PM +0200, Jiri Olsa wrote:
+>> On Sat, Apr 26, 2014 at 01:17:55PM -0400, Richard Yao wrote:
+>> > Modules installed outside of the kernel's build system should go into
+>> > "%s/lib/modules/%s/extra", but at present, perf will only look at them
+>> > when they are in "%s/lib/modules/%s/kernel". Lets encourage good
+>> > citizenship by relaxing this requirement to "%s/lib/modules/%s". This
+>> > way open source modules that are out-of-tree have no incentive to start
+>> > populating a directory reserved for in-kernel modules and I can stop
+>> > hex-editing my system's perf binary when profiling OSS out-of-tree
+>> > modules.
+>> > 
+>> > Feedback from Namhyung Kim correctly revealed that the hex-edits that I
+>> > had been doing meant that perf was also traversing the build and source
+>> > symlinks in %s/lib/modules/%s. That is undesireable, so we explicitly
+>> > exclude them from traversal with a minor tweak to the traversal routine.
+>> 
+>> looks good to me, Namhyung?
+>
+> just realized Namhyung wasn't CC-ed on this one ;-)
 
-> ---
-> v3:
-> relocate pdev decl
-> v2:
-> 1. Return error if there is a matching static entry
-> and change commit message to reflect this behavior
-> 3. Fill in a pdev and call pci_match_id instead of creating
-> a new matching function
-> 4. Change commit message to reflect that libvirt does not
-> depend on this behavior
-> 
->  drivers/pci/pci-driver.c | 22 +++++++++++++++++++++-
->  1 file changed, 21 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-> index 25f0bc6..a65a014 100644
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -107,7 +107,7 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
->  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
->  	unsigned long driver_data=0;
->  	int fields=0;
-> -	int retval;
-> +	int retval = 0;
->  
->  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
->  			&vendor, &device, &subvendor, &subdevice,
-> @@ -115,6 +115,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
->  	if (fields < 2)
->  		return -EINVAL;
->  
-> +	if (fields != 7) {
-> +		struct pci_dev *pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
-> +		if (!pdev)
-> +			return -ENOMEM;
-> +
-> +		pdev->vendor = vendor;
-> +		pdev->device = device;
-> +		pdev->subsystem_vendor = subvendor;
-> +		pdev->subsystem_device = subdevice;
-> +		pdev->class = class;
-> +
-> +		if (pci_match_id(pdrv->id_table, pdev))
-> +			retval = -EEXIST;
-> +
-> +		kfree(pdev);
-> +
-> +		if (retval)
-> +			return retval;
-> +	}
-> +
->  	/* Only accept driver_data values that match an existing id_table
->  	   entry */
->  	if (ids) {
-> -- 
-> 1.8.3.1
-> 
+:)
+
+Well, I still prefer the symlink check with lstat(), I can live with
+this, so:
+
+  Acked-by: Namhyung kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+>
+>> 
+>> thanks,
+>> jirka
+>> 
+>> > 
+>> > Signed-off-by: Richard Yao <ryao@gentoo.org>
+>> > ---
+>> >  tools/perf/util/machine.c | 16 ++++++++++++----
+>> >  1 file changed, 12 insertions(+), 4 deletions(-)
+>> > 
+>> > diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+>> > index a53cd0b..27c2a5e 100644
+>> > --- a/tools/perf/util/machine.c
+>> > +++ b/tools/perf/util/machine.c
+>> > @@ -717,7 +717,7 @@ static char *get_kernel_version(const char *root_dir)
+>> >  }
+>> >  
+>> >  static int map_groups__set_modules_path_dir(struct map_groups *mg,
+>> > -				const char *dir_name)
+>> > +				const char *dir_name, int depth)
+>> >  {
+>> >  	struct dirent *dent;
+>> >  	DIR *dir = opendir(dir_name);
+>> > @@ -742,7 +742,15 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
+>> >  			    !strcmp(dent->d_name, ".."))
+>> >  				continue;
+>> >  
+>> > -			ret = map_groups__set_modules_path_dir(mg, path);
+>> > +			/* Do not follow top-level source and build symlinks */
+>> > +			if (depth == 0) {
+>> > +				if (!strcmp(dent->d_name, "source") ||
+>> > +				    !strcmp(dent->d_name, "build"))
+>> > +					continue;
+>> > +			}
+>> > +
+>> > +			ret = map_groups__set_modules_path_dir(mg, path,
+>> > +							       depth + 1);
+>> >  			if (ret < 0)
+>> >  				goto out;
+>> >  		} else {
+>> > @@ -786,11 +794,11 @@ static int machine__set_modules_path(struct machine *machine)
+>> >  	if (!version)
+>> >  		return -1;
+>> >  
+>> > -	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s/kernel",
+>> > +	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s",
+>> >  		 machine->root_dir, version);
+>> >  	free(version);
+>> >  
+>> > -	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
+>> > +	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path, 0);
+>> >  }
+>> >  
+>> >  static int machine__create_module(void *arg, const char *name, u64 start)
+>> > -- 
+>> > 1.8.3.2
+>> > 
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
