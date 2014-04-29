@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964947AbaD2SWd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:22:33 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:40193 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491AbaD2SWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:22:30 -0400
+	id S934057AbaD2S0O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:26:14 -0400
+Received: from imap.thunk.org ([74.207.234.97]:40139 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932491AbaD2S0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 14:26:13 -0400
+Date: Tue, 29 Apr 2014 14:26:10 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Florian Weimer <fweimer@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random: Add "initialized" variable to proc
+Message-ID: <20140429182610.GA19325@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org
+References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
+ <20140428214112.GC7857@thunk.org>
+ <535FE68C.8060002@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL_Jsq+uNunqfsvPNxZLQQ3y1ay_XMZKb4c=HNWvKtwuiZGQ0g@mail.gmail.com>
-References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
-	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
-	<CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
-	<CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
-	<CAE9FiQVdwumX7Dsmt8NJhw4uWsj2sjUKaKS1wJQujW1fn1szLw@mail.gmail.com>
-	<CAL_Jsq+uNunqfsvPNxZLQQ3y1ay_XMZKb4c=HNWvKtwuiZGQ0g@mail.gmail.com>
-Date: Tue, 29 Apr 2014 11:22:28 -0700
-X-Google-Sender-Auth: 8KLkYJRz5ObMfS5aR3CsDtu5oXs
-Message-ID: <CAE9FiQU40p-e8mqZKzaGg6nTuPdep3inRdpQtNu5txPOJ6Aw-Q@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-From: Yinghai Lu <yinghai@kernel.org>
-To: Rob Herring <robherring2@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535FE68C.8060002@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 8:16 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On Mon, Apr 28, 2014 at 9:56 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Mon, Apr 28, 2014 at 4:24 PM, Rob Herring <robherring2@gmail.com> wrote:
->>> On Sat, Apr 26, 2014 at 1:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>
->>> Thanks for finding these. I missed them in my build tests. This should fix them:
->>>
->>> diff --git a/drivers/tty/serial/8250/8250_early.c
->>> b/drivers/tty/serial/8250/8250_early.c
->>> index e83c9db..2094c3b 100644
->>> --- a/drivers/tty/serial/8250/8250_early.c
->>> +++ b/drivers/tty/serial/8250/8250_early.c
->>> @@ -156,6 +156,11 @@ static int __init early_serial8250_setup(struct
->>> earlycon_device *device,
->>>  EARLYCON_DECLARE(uart8250, early_serial8250_setup);
->>>  EARLYCON_DECLARE(uart, early_serial8250_setup);
->>>
->>> +int __init setup_early_serial8250_console(char *cmdline)
->>> +{
->>> +       return setup_earlycon(cmdline, "uart8250", early_serial8250_setup);
->>> +}
->>> +
->>>  int serial8250_find_port_for_earlycon(void)
->>>  {
->>>         struct earlycon_device *device = early_device;
->>
->> that only handle "uart8250,", may need to add more lines to handle "uart,"
->
->
-> That is on purpose because the only 2 users use uart8250. I consider
-> this a legacy interface and use of "uart" is horrible because there
-> are lots of uarts which are not 8250.
->
-> Rob
->
->>
->> +int __init setup_early_serial8250_console(char *cmdline)
->> +{
->> +       char *options;
->> +       options = strstr(cmdline, "uart8250,");
->> +       if (options)
->> +               return setup_earlycon(cmdline, "uart8250",
->> early_serial8250_setup);
->> +
->> +       options = strstr(cmdline, "uart,");
->> +       if (options)
->> +              return setup_earlycon(cmdline, "uart", early_serial8250_setup);
->> +
->> +      return 0;
->> +}
+On Tue, Apr 29, 2014 at 07:51:08PM +0200, Florian Weimer wrote:
+> 
+> I've got a (physical) machine where it happens after ten seconds, or much
+> longer if there is no activity.
+> 
+> I've seen cases where on the first boot of virtual machines, the SSH key was
+> generated before the printk with the initialization message.  It's not a
+> problem if you install the OS first and then generate the keys, but for
+> booting from pre-provisioned images, it could be.  (I have no evidence that
+> this hurts the quality of the generated key material, this is just based on
+> what's reported by the kernel.)
 
-You want to obsolete "console=uart,io,0x3f8,115200n8" ?
+Yes, fair enough, just because it works for me for my laptops doesn't
+mean that there aren't systems for which it was a problem.  :-)
 
- Let's check with Andrew. He suggested to use uart and uart8250 at that time.
+I will say that for virtual machines, we *really* need virtio-rng.
+And I wonder if the right answer is that initially we have some other
+process listening on the ssh port, which can generate the ssh host
+keys when someone actually first connects to the ssh port (since at
+that point, networking will have come up and we'll get some entropy
+just from the networking interupts if nothing else), and then exec the
+real ssh daemon to handle the incoming connection, as well as execing
+a the real ssh daemon to take over listening on the ssh port.
 
-Thanks
+> I'm not sure if I want to bet an increasingly crucial part of the boot
+> design on the continuing availability of the current entropy levels (which
+> could go down as the result of environmental changes or a reassessment of
+> the entropy that actually comes into the system).
 
-Yinghai
+It doesn't matter of entropy levels go down; what's important is that
+at least at one point, the entropy estimate goes above the threshold
+level.  Once that happens, someone can only break the RNG if (a) we
+were wrong about the entropy estimate --- and we've made the entropy
+estimator extremely conservative for that reason; the academic papers
+which have studied /dev/random have not found fault with the
+estimator, or (b) someone has broken the underlying crypto algorithm.
+
+> Or a new /dev/?random device that blocks until initialized, but behaves just
+> like /dev/urandom after that.   The question is how useful it would be
+> because of the deadlock scenario.
+
+It's like any other technology; it depends on how you use it.  If you
+don't block the whole boot, but just those services which depend on
+the entropy generation (for example, ssh), and there's enough services
+up so that the machine has activity so that eventually the initialized
+flag is set, it won't be a deadlock.  Maybe it will take five minutes
+before the machine is answering ssh queries, and that could be a
+support nightmare, sure.  At some level, it's up to use to generate a
+system that can generate enough entropy in a reasonable time, which is
+why I added the printk in the first place -- to assist in that effort.
+
+So if you're not going to block on the urandom generator being
+"initialized" (where the definition, like the entropy estimator, is
+somewhat arbitrary), how were you thinking the information from
+/proc/sys/kernel/random/intialized would be used?
+
+							- Ted
