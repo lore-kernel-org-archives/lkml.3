@@ -1,66 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081AbaD2O5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:57:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33997 "EHLO mail.zytor.com"
+	id S1758086AbaD2O6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:58:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43314 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824AbaD2O5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:57:05 -0400
-Message-ID: <535FBD94.9040101@zytor.com>
-Date: Tue, 29 Apr 2014 07:56:20 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753824AbaD2O6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 10:58:30 -0400
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        JBottomley@parallels.com, hch@lst.de, linux-scsi@vger.kernel.org,
+        kmo@daterainc.com, linux-kernel@vger.kernel.org,
+        m.lombardi85@gmail.com
+Subject: [PATCH] bio: modify __bio_add_page() to accept pages that don't start a new segment
+Date: Tue, 29 Apr 2014 16:58:18 +0200
+Message-Id: <1398783498-19814-1-git-send-email-mlombard@redhat.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-CC: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2 00/10] arm64: UEFI support
-References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org> <20140429102817.GE17007@arm.com> <20140429114356.GK26088@console-pimps.org> <20140429134726.GH17007@arm.com> <20140429144713.GL26088@console-pimps.org>
-In-Reply-To: <20140429144713.GL26088@console-pimps.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 07:47 AM, Matt Fleming wrote:
-> On Tue, 29 Apr, at 02:47:28PM, Catalin Marinas wrote:
->>
->> Waiting for the tip/x86/efi to be merged first is not a problem. We
->> also need a stable base for testing the arm64 UEFI series, so I assume
->> this series can be based onto tip/x86/efi (would such branch be rebased
->> before hitting mainline?).
->  
-> tip/x86/efi is unlikely to be rebased. Certainly with dependencies like
-> this there would have to be a really good reason to rebase it.
-> 
->> Given that Leif's series contains both generic efi and arm64 patches,
->> what's your preference for merging them? I'm happy to add my ack and
->> they go via your tree (or the other way around).
-> 
-> I'm happy either way, though if I take them through my tree (and
-> subsequently through tip) you won't have to worry about the merge window
-> rigmarole, which is a plus.
-> 
-> So, eveyone happy for me to take these with Catalin's Acked-by?
-> 
+The original behaviour is to refuse to add a new page if the maximum number
+of segments has been reached, regardless of the fact the page we are
+going to add can be merged into the last segment or not.
 
-I'm wondering if it would be better to organize it into a separate topic
-branch.  We can still take it through tip, if you want, but it would be
-better than putting it all into one tree.
+Unfortunately, when the system runs under heavy memory fragmentation conditions,
+a driver may try to add multiple pages to the last segment.
+The original code won't accept them and EBUSY will be reported to
+userspace.
 
-	-hpa
+This patch modifies the function so it refuses to add a page
+only in case the latter starts a new segment and the maximum number
+of segments has already been reached.
+
+The bug can be easily reproduced with the st driver:
+
+1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
+2) modprobe st buffer_kbs=1024
+3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
+   dd: error writing ‘/dev/st0’: Device or resource busy
+
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+---
+ fs/bio.c | 50 ++++++++++++++++++++++++++++----------------------
+ 1 file changed, 28 insertions(+), 22 deletions(-)
+
+diff --git a/fs/bio.c b/fs/bio.c
+index 6f0362b..9a3a0b1 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -750,29 +750,31 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		return 0;
+ 
+ 	/*
+-	 * we might lose a segment or two here, but rather that than
+-	 * make this too complex.
++	 * setup the new entry, we might clear it again later if we
++	 * cannot add the page
++	 */
++	bvec = &bio->bi_io_vec[bio->bi_vcnt];
++	bvec->bv_page = page;
++	bvec->bv_len = len;
++	bvec->bv_offset = offset;
++	bio->bi_vcnt++;
++	bio->bi_phys_segments++;
++
++	/*
++	 * Perform a recount if the number of segments is greater
++	 * than queue_max_segments(q).
+ 	 */
+ 
+-	while (bio->bi_phys_segments >= queue_max_segments(q)) {
++	while (bio->bi_phys_segments > queue_max_segments(q)) {
+ 
+ 		if (retried_segments)
+-			return 0;
++			goto failed;
+ 
+ 		retried_segments = 1;
+ 		blk_recount_segments(q, bio);
+ 	}
+ 
+ 	/*
+-	 * setup the new entry, we might clear it again later if we
+-	 * cannot add the page
+-	 */
+-	bvec = &bio->bi_io_vec[bio->bi_vcnt];
+-	bvec->bv_page = page;
+-	bvec->bv_len = len;
+-	bvec->bv_offset = offset;
+-
+-	/*
+ 	 * if queue has other restrictions (eg varying max sector size
+ 	 * depending on offset), it can specify a merge_bvec_fn in the
+ 	 * queue to get further control
+@@ -789,23 +791,27 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		 * merge_bvec_fn() returns number of bytes it can accept
+ 		 * at this offset
+ 		 */
+-		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
+-			bvec->bv_page = NULL;
+-			bvec->bv_len = 0;
+-			bvec->bv_offset = 0;
+-			return 0;
+-		}
++		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
++			goto failed;
+ 	}
+ 
+ 	/* If we may be able to merge these biovecs, force a recount */
+-	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
++	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
+ 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 
+-	bio->bi_vcnt++;
+-	bio->bi_phys_segments++;
+  done:
+ 	bio->bi_iter.bi_size += len;
+ 	return len;
++
++ failed:
++	bvec->bv_page = NULL;
++	bvec->bv_len = 0;
++	bvec->bv_offset = 0;
++	bio->bi_vcnt--;
++	if (!retried_segments)
++		bio->bi_phys_segments--;
++
++	return 0;
+ }
+ 
+ /**
+-- 
+Maurizio Lombardi
 
