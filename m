@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270AbaD2WWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:22:44 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51371 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756381AbaD2WWl convert rfc822-to-8bit (ORCPT
+	id S933999AbaD2WXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:23:22 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50986 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932736AbaD2WXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:22:41 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: powernow-k8: Fix checkpatch warnings
-Date: Wed, 30 Apr 2014 00:39:11 +0200
-Message-ID: <4780344.RfsAca3Qz3@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5357C5E0.1070207@semaphore.gr>
-References: <5356DB92.1060600@semaphore.gr> <2606012.9SjvfKiI5Z@vostro.rjw.lan> <5357C5E0.1070207@semaphore.gr>
+	Tue, 29 Apr 2014 18:23:20 -0400
+Date: Tue, 29 Apr 2014 15:22:46 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20140429222246.GP15125@sirena.org.uk>
+References: <1398694047-28596-1-git-send-email-sre@kernel.org>
+ <1398694047-28596-2-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U+NfgObvpQT1Q9Yq"
+Content-Disposition: inline
+In-Reply-To: <1398694047-28596-2-git-send-email-sre@kernel.org>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 12.104.145.3
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 1/9] ASoC: omap: rx51: Use static const char * const
+ arrays
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 23, 2014 04:53:36 PM Stratos Karafotis wrote:
-> On 23/04/2014 01:37 μμ, Rafael J. Wysocki wrote:
-> > On Wednesday, April 23, 2014 12:13:54 AM Stratos Karafotis wrote:
-> >> Fix the following checkpatch warnings:
-> > 
-> > In addition to comments from Viresh, I have a general one.
-> > 
-> > Some of the checkpatch.pl warnings are not worth fixing at all ->
-> > 
-> >> - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
-> >> - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
-> >> - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
-> >> - WARNING: quoted string split across lines
-> >> - WARNING: line over 80 characters
-> > 
-> > -> and the "line over 80 characters" ones are outright wrong in many cases,
-> > so please don't "fix" them.
-> > 
-> 
-> Hi Rafael,
-> 
-> Thanks for your comments!
-> 
-> Could you please clarify if you want me to drop the entire patch or
-> send it only with the changes about the last warning found ("no spaces
-> at the start of a line)?
-> 
-> Also, I would like to take the opportunity and ask a question. :)
-> 
-> Reading the code, sometimes, I find some minor formatting issues.
-> Like the checkpatch warnings or unnecessary parentheses and braces.
-> 
-> For example the line bellow:
-> 		if ((freq < policy->min) || (freq > policy->max))
-> 
-> I know that this is not actually an issue and a patch with such changes
-> is (somehow) a noise for the maintainers. But, should it be "fixed" or not?
 
-It should be cleaned up generally, so if you have the time and you're willing
-to do such things, please do them.
+--U+NfgObvpQT1Q9Yq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-That said things like lines in excess of 80 characters may stay as they are.
+On Mon, Apr 28, 2014 at 04:07:19PM +0200, Sebastian Reichel wrote:
+> Mark the array and the string const by using "static const char * const
+> foo[]" instead of "static const char* foo[]".
 
-Thanks!
+Applied, thanks.
 
+--U+NfgObvpQT1Q9Yq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTYCYzAAoJELSic+t+oim9h+MP/jfm2/mAEUyhGm9ZNpF8maQB
+8AbfyBZmRwmBvdf8RS9d9tywsTluRlBlOjzjUEbSU39y7fScOejhsxfnwAwaW6/B
+Wk9MICUtCM/Dxrf8TgOMdY6IT9kNZbjsRmOfmda5P5YYA2UOinPcDoV7x/JeZ+pF
+bSO10AjJ9mKeKBp7YCO5DA6fHpK7V7v4ICP+8Ue+wuhaAlLWgUV4p8tAgel8hgES
+ndRwQeSmSMVbzoB5VxBogj5BtJ23NoKDYXqZPdaqk90K3clKUsF4SjcpnDFhuxpU
+wUkPjwB2gsiwDnlQYQtn32asyjPbS9dQR64Ehw1qRPD5cCwTDFmYYV8hK3CPMqWM
+vnUOtPPoq08RoAp9dexm0ukS9DyWpu+X5026vAijRncsAsfcxt/DoS2CmdtZe1Ey
+RlcXuwaMgCM7z0g/JS5MJZ09n1t1hPWaTvIclAjuN9HhTNheXOt7+7pSWVfFZJ3h
+m/S+OL4AN/0pNAncOsvb9/MYNgwubCZCTQfDzIjQ/M5Mh7GqqqVDd+kNV9FyvqmV
+EwUyy4Oppc4hhVk4aSlmkNb/O372KLgysg/W6ubcKUOwRG/t8v/z+ny64+Pg4Xy4
+40SQ4gHMe8xXxLP8xl5Pi6q1GgCkge7pOi5VI7lFdoTpj1rO2HAEJtVFFFy6DWTE
+Vkca6Qqn4F85w16jJvKV
+=832Z
+-----END PGP SIGNATURE-----
+
+--U+NfgObvpQT1Q9Yq--
