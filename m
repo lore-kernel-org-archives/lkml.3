@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908AbaD2RmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:42:11 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55678 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491AbaD2RmJ (ORCPT
+	id S934013AbaD2RnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:43:09 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:40118 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491AbaD2RnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:42:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18EqCAX7ne0XWL075s18ow3gui2KPszNSg=
-X-DKIM: OpenDKIM Filter v2.0.1 titan AB15C56740D
-Date: Tue, 29 Apr 2014 13:41:58 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] irqchip: mvebu: fixes for v3.15
-Message-ID: <20140429174158.GN28159@titan.lakedaemon.net>
-References: <20140429125554.GH28159@titan.lakedaemon.net>
- <alpine.DEB.2.02.1404291925210.6261@ionos.tec.linutronix.de>
+	Tue, 29 Apr 2014 13:43:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1404291925210.6261@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+Date: Tue, 29 Apr 2014 10:43:05 -0700
+X-Google-Sender-Auth: XkaQUG3XKhKtnnju_olzA43aupI
+Message-ID: <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 07:26:01PM +0200, Thomas Gleixner wrote:
-> On Tue, 29 Apr 2014, Jason Cooper wrote:
-> > Thomas Petazzoni (2):
-> >       irqchip: armada-370-xp: fix invalid cast of signed value into unsigned variable
-> >       irqchip: armada-370-xp: implement the ->check_device() msi_chip operation
-> 
-> Please make sure next time, that the sentence starts with an upper
-> case letter.
+On Tue, Apr 29, 2014 at 9:01 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> This was reported by IBM for 3.12, but if my analysis is right, it affects
+> current kernel as well as older ones.
+>
+> So the question is: does anything protect the shrink list from concurrent
+> modification by one or more dput() instances?
 
-gah!  sorry.  I even checked that they matched other log entries, but
-only the 'irqchip: armada-370-xp: ' part but missed the capitalization.
-Will do next time.  Thanks for pulling despite the oversight.
+Ugh. I don't see anything. The shrinking list is a private list, so
+adding on its own would be entirely safe, and I think that's where the
+"we don't need no steenking locking" comes from.
 
-> Pulled and pushed inot tip/irq/urgent
+But yes, the dentries are then visible on the hash chains, and there
+can be concurrent removals from the list.
 
-thx,
+That new global lock smells, though - and if we want to use a global
+lock, we should simply use the existing per-superblock LRU lock, not
+make up some new global one. The moving case already holds it, can't
+we just take it in the add/del case? Was there some reason you didn't
+do that?
 
-Jason.
+Let me think about it, maybe there's some trick we can do by virtue of
+the list head being private and us holding the dentry lock. So at
+least on addition, we have *two* of the tree involved nodes locked.
+Does that perhaps allow for any lockless games to be played?
+
+               Linus
