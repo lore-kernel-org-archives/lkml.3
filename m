@@ -1,189 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159AbaD2KQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:16:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64938 "EHLO mx1.redhat.com"
+	id S1757298AbaD2KUV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:20:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49405 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942AbaD2KQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:16:22 -0400
-Message-ID: <535F7BEC.3030106@redhat.com>
-Date: Tue, 29 Apr 2014 12:16:12 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756462AbaD2KUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 06:20:19 -0400
+Date: Tue, 29 Apr 2014 12:20:13 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Robert Richter <rric@kernel.org>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        linux-pci <linux-pci@vger.kernel.org>, kim.naru@amd.com,
+        Daniel J Blueman <daniel@numascale.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
+        Steffen Persvold <sp@numascale.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
+ capabilities
+Message-ID: <20140429102013.GA4726@pd.tnic>
+References: <20140419025308.2408.51252.stgit@amt.stowe>
+ <20140419025323.2408.88764.stgit@amt.stowe>
+ <20140419135219.GC8109@pd.tnic>
+ <20140420075936.GA19672@pd.tnic>
+ <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com>
+ <20140426091031.GA10166@pd.tnic>
+ <CAErSpo4Jqo_opj=QqjcquS_6HqckZfP5-oQHkmY5FSAyyLNYMg@mail.gmail.com>
+ <20140428214036.GA32143@pd.tnic>
+ <20140429073309.GE10997@alberich>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] uprobes: use BX register for rip-relative fixups, not
- AX
-References: <1398704774-25173-1-git-send-email-dvlasenk@redhat.com> <1398704774-25173-2-git-send-email-dvlasenk@redhat.com> <20140428173432.GA27363@redhat.com> <535EA6C3.3030903@redhat.com> <20140428192304.GA9412@redhat.com>
-In-Reply-To: <20140428192304.GA9412@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140429073309.GE10997@alberich>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 09:23 PM, Oleg Nesterov wrote:
-> On 04/28, Denys Vlasenko wrote:
->>
->> On 04/28/2014 07:34 PM, Oleg Nesterov wrote:
->>>
->>> It seems that you are right. But it would be really great if you also
->>> provide the test-case which proves the fix ;)
->>
->> Working on a testcase for this. So far covered div (test1)
->> and cmpxchg (test2).
+On Tue, Apr 29, 2014 at 09:33:09AM +0200, Andreas Herrmann wrote:
+> I am sure, it's because some server systems had MMIO ECS access not
+> enabled in BIOS. I can't remember which systems were affected.
 
-I looked thourgh docs and documented other weird insns.
+Ok, now AMD people: what's the story with IO ECS, can we assume that on
+everything after F10h, BIOS has a sensible MCFG and we can limit this to
+F10h only? I like Bjorn's idea but we need to make sure a working MCFG
+is ubiquitous.
 
-Executive summary: looks like we will need to add [e]vex.b
-bit clearing analogous to rex.b clearing we already have,
-add checks for [e]vex.vvvv colliding with our selected
-scratch reg, therefore we will need *three* candidates
-for scratch reg (up from two as we do today).
+Which begs the real question: Suravee, why are you even touching IO ECS
+provided F15h and later have a MCFG? Or, do they?
 
-So far I didn't find instructions using modrm and also
-using SI register implicitly. DI register is used only
-by one insn (maskmovq) and BX register is used only by
-one too (cmpxchg8b).
-BP is stack-segment based (may be a problem?).
-AX, DX, CX are off-limits (many implicit users).
-SP is unusable (it's stack pointer - think about "pop mem";
-also, rsp+disp32 needs sib encoding -> insn length change).
+-- 
+Regards/Gruss,
+    Boris.
 
-Here's a more complete testcase which also tests cmpxchg8b
-case:
-
-test_riprel.c
-=============
-// What instructions have modrm bytes
-// and also use registers not encoded in modrm byte?
-//
-//[i]div/[i]mul: implicitly use dx:ax
-//
-//shift ops: implicitly use cx
-//
-//cmpxchg: implicitly uses ax
-//
-//cmpxchg8/16b: implicitly uses dx:ax and bx:cx
-//
-//[e]vex insns: can have three operands
-//IOW: they may use additional register encoded in [e]vex.vvvv
-//
-//mulx: implicitly uses dx.
-//It's a new instruction (first appeared in Haswell, part of BMI2 instructions)
-//mulx r/m,r1,r2: r1:r2 = dx * r/m
-//It is vex-encoded. Example where we can use none of bx,cx,dx as scratch:
-//c4 e2 63 f6 0d disp32   mulx disp32(%rip),%ebx,%ecx
-//
-//maskmovq: implicitly uses rdi as pointer to destination memory operand.
-//MMXext insn. Encoding: 0f f7 modrm
-//[v]maskmovdqu: similar SSE2/AVX insn
-//Encoding: 66 0f f7 modrm (or vex-encoded analogue: c5 f9 f7 modrm).
-//Stores first operand, byte-masked by second operand msb's in each byte, to (ds:rdi).
-//
-//AMD says it has no 3-operand form (vex.vvvv must be 1111)
-//and that it can have only register operands, not mem
-//(its modrm byte must have mode=11)
-//However, if we don't special-case analysis of this insn,
-//and if a memory-referencing modrm form will be allowed in the future,
-//then we see it as "yet another modrm insn",
-//can see it using register numbers colliding with our "scratch regs",
-//and we may end up selecting rdi register as scrath - which
-//is wrong for this insn.
-//
-//[v]pcmpistri: implicitly uses cx, xmm0
-//[v]pcmpistrm: implicitly uses xmm0
-//[v]pcmpestri: implicitly uses ax, dx, cx, xmm0
-//[v]pcmpestrm: implicitly uses ax, dx, xmm0
-//Evil SSE4.2 string comparison ops from hell.
-
-#include <stdio.h>
-
-static const char *const pass[] = { "FAIL", "pass" };
-
-long two = 2;
-void test1(void)
-{
-	long ax = 0, dx = 0;
-	asm volatile("\n"
-"			xor	%%edx,%%edx\n"
-"			lea	2(%%edx),%%eax\n"
-// We divide 2 by 2. Result (in eax) should be 1:
-"	probe1:		.globl	probe1\n"
-"			divl	two(%%rip)\n"
-// If we have a bug (eax mangled on entry) the result will be 2,
-// because eax gets restored by probe machinery.
-	: "=a" (ax), "=d" (dx) /*out*/
-	: "0" (ax), "1" (dx) /*in*/
-	: "memory" /*clobber*/
-	);
-	dprintf(2, "%s: %s\n", __func__,
-		pass[ax == 1]
-	);
-}
-
-long val2 = 0;
-void test2(void)
-{
-	long old_val = val2;
-	long ax = 0, dx = 0;
-	asm volatile("\n"
-"			mov	val2,%%eax\n"     // eax := val2
-"			lea	1(%%eax),%%edx\n" // edx := eax+1
-// eax is equal to val2. cmpxchg should store edx to val2:
-"	probe2:		.globl  probe2\n"
-"			cmpxchg %%edx,val2(%%rip)\n"
-// If we have a bug (eax mangled on entry), val2 will stay unchanged
-	: "=a" (ax), "=d" (dx) /*out*/
-	: "0" (ax), "1" (dx) /*in*/
-	: "memory" /*clobber*/
-	);
-	dprintf(2, "%s: %s\n", __func__,
-		pass[val2 == old_val + 1]
-	);
-}
-
-long val3[2] = {0,0};
-void test3(void)
-{
-	long old_val = val3[0];
-	long ax = 0, dx = 0;
-	asm volatile("\n"
-"			mov	val3,%%eax\n"  // edx:eax := val3
-"			mov	val3+4,%%edx\n"
-"			mov	%%eax,%%ebx\n" // ecx:ebx := edx:eax + 1
-"			mov	%%edx,%%ecx\n"
-"			add	$1,%%ebx\n"
-"			adc	$0,%%ecx\n"
-// edx:eax is equal to val3. cmpxchg8b should store ecx:ebx to val3:
-"	probe3:		.globl  probe3\n"
-"			cmpxchg8b val3(%%rip)\n"
-// If we have a bug (edx:eax mangled on entry), val3 will stay unchanged.
-// If ecx:edx in mangled, val3 will get wrong value.
-	: "=a" (ax), "=d" (dx) /*out*/
-	: "0" (ax), "1" (dx) /*in*/
-	: "cx", "bx", "memory" /*clobber*/
-	);
-	dprintf(2, "%s: %s\n", __func__,
-		pass[val3[0] == old_val + 1 && val3[1] == 0]
-	);
-}
-
-// Usage:
-// gcc -Os -Wall test_riprel.c -o test_riprel
-//
-// perf probe -x ./test_riprel probe1
-// perf record -e probe_test:probe1 ./test_riprel
-// ^^^^^^^^^^^^^^^^ repeat for other probeN's
-int main(int argc, char **argv)
-{
-	test1();
-	test2();
-	test3();
-	return 0;
-}
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
