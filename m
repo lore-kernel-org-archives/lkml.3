@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805AbaD2Qcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:32:46 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:52487 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127AbaD2Qcp (ORCPT
+	id S933404AbaD2QdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:33:20 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:34386 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758102AbaD2QdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:32:45 -0400
+	Tue, 29 Apr 2014 12:33:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140428133908.GE24913@ubuntumail>
-References: <CALCETrVSaboa0Y2v_sTbSz3xOxOZ-6jSq_D7DyQXMRB9VXJB8w@mail.gmail.com>
- <87ha5h42va.fsf@x220.int.ebiederm.org> <CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
- <20140428133908.GE24913@ubuntumail>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Apr 2014 09:32:24 -0700
-Message-ID: <CALCETrUPCXmfJFs71T4jLSMS6XOBEb15SdQDz37t_6Whf2DWWA@mail.gmail.com>
-Subject: Re: pid ns feature request
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
+Date: Tue, 29 Apr 2014 13:33:17 -0300
+Message-ID: <CAOMZO5Bb3P20S15Hi8fKO1r8-JOQa3j8GekNBiABVb9XXN0hZw@mail.gmail.com>
+Subject: Warning from kernel/printk/printk.c in linux-next
+From: Fabio Estevam <festevam@gmail.com>
+To: jack@suse.cz
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 6:39 AM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> On Fri, Apr 25, 2014 at 12:37 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->> > Andy Lutomirski <luto@amacapital.net> writes:
->> >
->> >> Unless I'm missing some trick, it's currently rather painful to mount
->> >> a namespace /proc.  You have to actually be in the pid namespace to
->> >> mount the correct /proc instance, and you can't unmount the old /proc
->> >> until you've mounted the new /proc.  This means that you have to fork
->> >> into the new pid namespace before you can finish setting it up.
->> >
->> > Yes.  You have to be inside just about all namespaces before you can
->> > finish setting them up.
->> >
->> > I don't know the context in which needed to be inside the pid namespace
->> > is a burden.
->>
->> I'm trying to sandbox myself.  I unshare everything, setup up new
->> mounts, pivot_root, umount the old stuff, fork, and wait around for
->> the child to finish.
->>
->> This doesn't work: the parent can't mount the new /proc, and the child
->> can't either because it's too late.
->
-> I'm probably not thinking it through enough...  But can't the parent, before
-> forking, do
->
->         mkdir -p /childproc/proc
->         mount --bind /childproc /childproc
->         mount --make-rshared /childproc
->
-> then the child mounts its proc under /childproc/proc and have that show
-> up in the parent's tree?
+Jan,
 
-Yes, and the --make-rshared /childproc isn't necessary.  This is still
-a bit annoying, since the parent now needs to wait for the child to
-set up mounts if it wants to do anything that requires all the mounts
-to be fully set up.
+I am running linux-next 20140429 on a mx6 board (ARM 32-bit) and after commit
+5dc90cb49691755faa ("printk: enable interrupts before calling
+console_trylock_for_printk()") I get the following warning:
 
-This issue certainly isn't a show-stopper, but it might be nice to
-address if anyone ever adds options to proc to do other sensible
-namespacy things (e.g. turning off sysctls).
 
---Andy
+[ INFO: possible recursive locking detected ]
+3.15.0-rc3-next-20140429-00001-gac246a5 #1074 Not tainted
+---------------------------------------------
+swapper/0/0 is trying to acquire lock:
+ (console_lock){+.+...}, at: [<808c1358>] con_init+0x14/0x29c
+
+but task is already holding lock:
+ (console_lock){+.+...}, at: [<8006deac>] vprintk_emit+0x194/0x514
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(console_lock);
+  lock(console_lock);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+1 lock held by swapper/0/0:
+ #0:  (console_lock){+.+...}, at: [<8006deac>] vprintk_emit+0x194/0x514
+
+stack backtrace:
+CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.15.0-rc3-next-20140429-00001-gac2464
+Backtrace:
+[<80011cbc>] (dump_backtrace) from [<80011e58>] (show_stack+0x18/0x1c)
+ r6:8114b4fc r5:00000000 r4:00000000 r3:00000000
+[<80011e40>] (show_stack) from [<8065e65c>] (dump_stack+0x88/0xa4)
+[<8065e5d4>] (dump_stack) from [<80065518>] (__lock_acquire+0x1494/0x1c10)
+ r5:808f3f70 r4:80a7d6c0
+[<80064084>] (__lock_acquire) from [<80066178>] (lock_acquire+0x68/0x7c)
+ r10:00000000 r9:412fc09a r8:8000406a r7:00000001 r6:60000153 r5:808e8000
+ r4:00000000
+[<80066110>] (lock_acquire) from [<8006c91c>] (console_lock+0x54/0x68)
+ r7:befffbc0 r6:808d6db0 r5:808c1358 r4:00000001
+[<8006c8c8>] (console_lock) from [<808c1358>] (con_init+0x14/0x29c)
+ r5:808e37a4 r4:808e37a4
+[<808c1344>] (con_init) from [<808c0ae4>] (console_init+0x24/0x38)
+ r6:808d6db0 r5:808e37a4 r4:808e37a4
+[<808c0ac0>] (console_init) from [<80894bb4>] (start_kernel+0x26c/0x3a4)
+ r5:8094d5c0 r4:ffffffff
+[<80894948>] (start_kernel) from [<80008074>] (0x80008074)
+ r7:808f5644 r6:808d6dac r5:808f0928 r4:10c5387d
+
+Reverting this commit causes the warning to go away.
+
+Any suggestions?
+
+Regards,
+
+Fabio Estevam
