@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966AbaD2AUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:20:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51566 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252AbaD2AUi (ORCPT
+	id S1757190AbaD2AUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:20:46 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:31531 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757066AbaD2AUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:20:38 -0400
-Date: Mon, 28 Apr 2014 17:22:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-Message-Id: <20140428172219.4be61cf7.akpm@linux-foundation.org>
-In-Reply-To: <20140428234039.GC6358@logfs.org>
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
-	<alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
-	<20140424005247.GA17713@logfs.org>
-	<20140424194024.GA25446@logfs.org>
-	<20140428234039.GC6358@logfs.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Apr 2014 20:20:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvVLAMXvXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAxUDCSUPBSUDBxoTiEDJAxcWhUSIfweEOQEDmQuKdIsuKw
+Date: Tue, 29 Apr 2014 10:20:13 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 09/22] vfs: Make acl_permission_check() work for
+ richacls
+Message-ID: <20140429002013.GR15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1398615293-22931-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398615293-22931-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Apr 2014 19:40:39 -0400 J__rn Engel <joern@logfs.org> wrote:
-
-> On Thu, 24 April 2014 15:40:24 -0400, J__rn Engel wrote:
-> > On Wed, 23 April 2014 20:52:47 -0400, J__rn Engel wrote:
-> > > 
-> > > I use the patch below for some time now.  While it doesn't avoid the
-> > > log pollution in the first place, it lessens the impact somewhat.
-> > 
-> > Added a config option and ported it to current -linus.  Andrew, would
-> > you take this patch?
+On Sun, Apr 27, 2014 at 09:44:40PM +0530, Aneesh Kumar K.V wrote:
+> From: Andreas Gruenbacher <agruen@kernel.org>
 > 
-> Andrew?  Did you dislike this patch for some reason or just miss it in
-> the thread?
+> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/namei.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 26b9a8212837..06474553c08d 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -284,6 +284,19 @@ static int acl_permission_check(struct inode *inode, int mask)
+>  {
+>  	unsigned int mode = inode->i_mode;
+>  
+> +	if (IS_RICHACL(inode)) {
+> +		int error = check_acl(inode, mask);
+> +		if (error != -EAGAIN)
+> +			return error;
+> +		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
+> +			    MAY_CHMOD | MAY_SET_TIMES)) {
+> +			/*
+> +			 * The file permission bit cannot grant these
+> +			 * permissions.
+> +			 */
+> +			return -EACCES;
+> +		}
+> +	}
+>  	if (likely(uid_eq(current_fsuid(), inode->i_uid)))
+>  		mode >>= 6;
+>  	else {
 
-Neither ;) I try to respond in some way to all patches unless I think it's clear
-to the originator why I took no action.  And I think I'm pretty good at
-not losing stuff.
+why does this take priority over a simple uid match? Some comments
+explaining this for people unfamiliar with richacls would be nice.
+Not to mention the commit message should also explain the change...
 
-otoh, it has only been four days, three of which I spent offline...
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
