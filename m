@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509AbaD2FAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 01:00:54 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:64263 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108AbaD2E7Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 00:59:25 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-f6-535f31ac06e2
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        steve.capper@linaro.org, sungjinn.chung@samsung.com,
-        Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
-        ilho215.lee@samsung.com
-Subject: [PATCH v4 3/7] arm64: Introduce a kernel configuration option for
- VA_BITS
-Date: Tue, 29 Apr 2014 13:59:23 +0900
-Message-id: <000301cf6367$ca12e150$5e38a3f0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9jZVrJFchiuwljR/2ghksfz/LPsQ==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zI901hvHBBm/ni1r8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG
-	wx3BBe94K7obVjA3MK7g7mLk5JAQMJE4tuMeK4QtJnHh3nq2LkYuDiGBZYwSyyadYexi5AAr
-	mtBTCRFfxChxevIVqKI/jBLf9vczgXSzCWhKPLrbww6SEBHYwSgxee0iVhCHWeAho8TPt/uZ
-	QaqEBUIkZnduZgIZyyKgKrH5mQtImFfAUuLeyndsELagxI/J91hAbGYBLYn1O48zQdjyEpvX
-	vGWGOFVBYsfZ14wgtoiAnsTd3jnMEDUiEvtevGOEqOnlkDjxmhPEZhEQkPg2+RALxDeyEpsO
-	QI2RlDi44gbLBEaxWUg2z0KyeRaSzbOQbFjAyLKKUTS1ILmgOCm9yEivODG3uDQvXS85P3cT
-	IySi+3Yw3jxgfYgxGWj9RGYp0eR8YELIK4k3NDYzsjA1MTU2Mrc0I01YSZx30cOkICGB9MSS
-	1OzU1ILUovii0pzU4kOMTBycUg2MRQHtLxMft8neiEjW82h7dHr+r1jDV35HdSVu3X2iMnfr
-	46xLxy60cDzbd3aVyizjmAszZmaefbCFa03NC6fPR0Szz2w0ZardUK/1x0fUWNUl9l26f838
-	yM06YQyyfhcEu6ZLlN15/t/v8E7VQu9ikUKpTY9vmMVckrRzOr17guA57ok/ful4KrEUZyQa
-	ajEXFScCALDUdhP+AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAd01hvHBBpeuC1j8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7VAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QpUoKZYk5pUChgMTiYiV9O0wT
-	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjIc7ggve8VZ0N6xgbmBcwd3FyMEhIWAiMaGnsouRE8gU
-	k7hwbz1bFyMXh5DAIkaJ05OvQDl/GCW+7e9nAqliE9CUeHS3hx0kISKwg1Fi8tpFrCAOs8BD
-	Romfb/czg1QJC4RIzO7czASygkVAVWLzMxeQMK+ApcS9le/YIGxBiR+T77GA2MwCWhLrdx5n
-	grDlJTavecsMcZKCxI6zrxlBbBEBPYm7vXOYIWpEJPa9eMc4gVFgFpJRs5CMmoVk1CwkLQsY
-	WVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBCeMZ1I7GFc2WBxiFOBgVOLhNYiKCxZiTSwr
-	rsw9xCjBwawkwsuhGR8sxJuSWFmVWpQfX1Sak1p8iDEZ6NGJzFKiyfnAZJZXEm9obGJmZGlk
-	ZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyihcZ/NeYy/c2yzzB/UGHarRK7
-	0l3ptslNDkOlL50vKnsX9oruWvXs6IvYuGYJ3wUN3bzX90SVHZxu5vp3Zt9eQ61GyelBU0V2
-	cn799utrzOU10VIb56nFGLRUvL0TKvtgh+ut+uvb7kX71HfH7Nstdmmi47Zs+dcX1zva57wR
-	CWhgj3jMfk6JpTgj0VCLuag4EQD/KdCeXAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753356AbaD2FPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 01:15:30 -0400
+Received: from nm31.bullet.mail.ne1.yahoo.com ([98.138.229.24]:41654 "EHLO
+	nm31.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751305AbaD2FP2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 01:15:28 -0400
+X-Yahoo-Newman-Property: ymail-4
+X-Yahoo-Newman-Id: 494895.3598.bm@omp1053.mail.bf1.yahoo.com
+X-YMail-OSG: eQkESNEVM1mP49iANDfLljmNlk4ghwE_jOV7IOfJ1kBDKQz
+ 1jN6iC3ttVKxJsnxrmI1qvSt0Zcc5.K1PQ6KqCkvb3vy7qMfBB3Sldy2Kd6P
+ cpGs0GDyhj5jtZ_v69cfWJdKYw.89tz9ZfGgurNldAWXQdIRp8wSDk.HyoDC
+ qzTWKM8Mudf4FQDAmTCOjckh1yBEcecmtVmnaW01P9h1EX1wSo1mK7YJavfz
+ MckgUGtt6c6rvtw60QPB5FBFY94EqQxMFPgiJEOEiNd4qmyOD9cGaQ3MQwho
+ mhMAJussoBgbLaZOBC8GFchyA6BTD23J2ZdDcdMt9hAjLanLKcvNJbS4sTvC
+ OktqpDGSh.VgzywR.ncSitO32d4TxRL0oFKVYprIY_dSj3nmjDh3cT3WnTO6
+ Ea8J0GVNZvWbbpLJ5.X2QLMqWaruOAav3RaztVelgOTx7EZ3yL_ym5CdnLAG
+ 12QoB4oxb.l7SsQ0Rhufac7Czvi.QZoc3UWBuVAcjh3fG5kfo6j8ChfRueKS
+ i6UfTPwjZNeQ-
+X-Rocket-MIMEInfo: 002.001,SGFsbG8sIGljaCBoYWJlIGVpbmUgZ3V0ZSBJbmZvIGbDvHIgU2llCgpoYXQgZGllIEJhbmsgbWFsIHdpZWRlciBlaW5lbiBHcnVuZCBnZWZ1bmRlbiwgSWhuZW4ga2VpbmVuIEtyZSBkaXQgenUgZ2ViZW4_IAoKR2VoZW4gU2llIGRvY2ggZG9ydGhpbiwgd28gbWFuIFNpZSBhbHMgS3VuZGVuIG5vY2ggYW5zdMOkbmRpZyBiZWhhbmRlbHQuCgpBdWNoIGJlaSBzY2hsZWNodGVyIEF1c2t1bmZ0IHVuZCBiZXJlaXRzIHZvbiBJaHJlciBlaWdlbmVuIEJhbmsgYWJnZWxlaG50ZW0gQW50cmFnIGvDtm5uZW4gd2lyIEkBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.185.657
+Message-ID: <1398748333.34222.YahooMailNeo@web140005.mail.bf1.yahoo.com>
+Date: Mon, 28 Apr 2014 22:12:13 -0700 (PDT)
+From: Malgorzata Brandt <malgorzata17786@yahoo.com.mx>
+Reply-To: Malgorzata Brandt <malgorzata17786@yahoo.com.mx>
+Subject: Ge ldp rob le m?
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a kernel configuration for VA_BITS.
+Hallo, ich habe eine gute Info für Sie
 
-It helps to prevent unnecessary #ifdef statements insertions
-for VA_BITS when implementing different page sizes and level of
-translation tables.
+hat die Bank mal wieder einen Grund gefunden, Ihnen keinen Kre dit zu geben? 
 
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Steve Capper <steve.capper@linaro.org>
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
----
- arch/arm64/Kconfig              |    8 ++++++++
- arch/arm64/include/asm/memory.h |    6 +-----
- 2 files changed, 9 insertions(+), 5 deletions(-)
+Gehen Sie doch dorthin, wo man Sie als Kunden noch anständig behandelt.
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index c7f5d65..7b8d429 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -186,6 +186,14 @@ config ARM64_3_LEVELS
- 
- endchoice
- 
-+config ARM64_VA_BITS
-+	int "Virtual address space size"
-+	range 39 39 if ARM64_4K_PAGES && ARM64_3_LEVELS
-+	range 42 42 if ARM64_64K_PAGES && ARM64_2_LEVELS
-+	help
-+	  This feature is determined by a combination of page size and
-+	  level of translation tables.
-+
- config CPU_BIG_ENDIAN
-        bool "Build big-endian kernel"
-        help
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index e94f945..f6e7480 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -41,11 +41,7 @@
-  * The module space lives between the addresses given by TASK_SIZE
-  * and PAGE_OFFSET - it must be within 128MB of the kernel text.
-  */
--#ifdef CONFIG_ARM64_64K_PAGES
--#define VA_BITS			(42)
--#else
--#define VA_BITS			(39)
--#endif
-+#define VA_BITS			(CONFIG_ARM64_VA_BITS)
- #define PAGE_OFFSET		(UL(0xffffffffffffffff) << (VA_BITS - 1))
- #define MODULES_END		(PAGE_OFFSET)
- #define MODULES_VADDR		(MODULES_END - SZ_64M)
--- 
-1.7.10.4
+Auch bei schlechter Auskunft und bereits von Ihrer eigenen Bank abgelehntem Antrag können wir Ihnen ein Darlehen vermitteln zu niedrigen Zinsen (bspw. ab 1,8% Zinsen p.a. für Immobilien, ab 3,1% für Gewerbe, ab 3,2% für Privat). 
+
+Ihren Kredit bekommen Sie jetzt aus Südamerika ohne die üblichen Schikanen, ohne Bankauskunft und schnell. 
+Also ideal für Unternehmensgründer, Angestellte und Pensionäre.
+
+Wenn das Geld nicht reicht hilf ein NeuKredit aus dem Ausland.
+
+Komplette Unterlagen haben wir hier für Sie zusammengestellt:  directintercredit und ergänzen Sie 
+c o m
+
+Holen Sie sich Kapital dort, wo die Geldspeicher voll sind, die Zinsen absolut im Keller und die Laufzeiten lang sind. 
+
+Mit freundlichem Gruß 
+
+Christoph Becker
+
+Mitarbeiter im support
+
+
+Sie haben diese Info bekommen, weil wir Ihre Registrierung von einem Drittanbieter erhalten haben. Wenn Sie sich aus unserem Verteiler streichen wollen, dann besuchen Sie unsere Seite. Die Funktion finden Sie in der Navigation.
+
 
 
