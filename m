@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350AbaD2RRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:17:38 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:49096 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758331AbaD2RRg (ORCPT
+	id S1758297AbaD2RWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:22:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:42939 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757795AbaD2RWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:17:36 -0400
+	Tue, 29 Apr 2014 13:22:11 -0400
+Date: Tue, 29 Apr 2014 19:22:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiri Bohac <jbohac@suse.cz>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] timer: prevent overflow in apply_slack
+In-Reply-To: <20140429111356.GA23888@midget.suse.cz>
+Message-ID: <alpine.DEB.2.02.1404291921490.6261@ionos.tec.linutronix.de>
+References: <20140417194215.GA10494@midget.suse.cz> <alpine.DEB.2.02.1404172344420.22697@ionos.tec.linutronix.de> <20140418152310.GA13654@midget.suse.cz> <20140429111356.GA23888@midget.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <535FDE71.7000601@linux.intel.com>
-References: <CAODwPW9i-pwgzE-OELwwkw2M_Vnhtsq4p=_5ppO7R6xXpzu==w@mail.gmail.com>
-	<Pine.LNX.4.44L0.1404011753420.8643-100000@netrider.rowland.org>
-	<CAODwPW_N9sNKCcfD9ebGgCW71+zN_Ge9OM9uq7eRwyxgfyu4Uw@mail.gmail.com>
-	<535FDE71.7000601@linux.intel.com>
-Date: Tue, 29 Apr 2014 10:17:35 -0700
-X-Google-Sender-Auth: 8_EoN-T8iQfJFU4luS9dmSyaFkQ
-Message-ID: <CAODwPW_wpG3Xupfgfzi4LeYukL6qOFNkK=Zg9Ks7sjRA5y450A@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Correct last context entry calculation for
- Configure Endpoint
-From: Julius Werner <jwerner@chromium.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Okay, thanks, sounds good. I personally don't care that much about the
-stable backport. Let me respin this with a fixed commit message and
-the type change Felipe suggested.
+On Tue, 29 Apr 2014, Jiri Bohac wrote:
+
+> Thomas, does this make sense now, with the new description?
+
+Yep, except
+ 
+> On Fri, Apr 18, 2014 at 05:23:11PM +0200, Jiri Bohac wrote:
+> > On architectures with sizeof(int) < sizeof (long), the
+> > computation of mask inside apply_slack() can be undefined if the
+> > computed bit is > 32.
+> > 
+> > E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
+> > 
+> > expires_limit = 0x20000000e
+> > bit = 33
+> > mask = (1 << 33) - 1  /* undefined */
+> > 
+> > On x86, mask becomes 1 and and the slack is not applied properly.
+> > On s390, mask is -1, expires is set to 0 and the timer fires immediately.
+> > 
+> > Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+> > Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+> > 
+> > diff --git a/kernel/timer.c b/kernel/timer.c
+> > index 87bd529..4c36c91 100644
+> > --- a/kernel/timer.c
+> > +++ b/kernel/timer.c
+> > @@ -838,7 +838,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+> >  
+> >  	bit = find_last_bit(&mask, BITS_PER_LONG);
+> >  
+> > -	mask = (1 << bit) - 1;
+> > +	mask = (1LL << bit) - 1;
+
+This should be 1UL, shouldn't it?
+
+> >  	expires_limit = expires_limit & ~(mask);
+> >  
+> 
+> Thanks,
+> 
+> -- 
+> Jiri Bohac <jbohac@suse.cz>
+> SUSE Labs, SUSE CZ
+> 
+> 
