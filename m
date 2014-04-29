@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770AbaD2Tm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:42:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52952 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932491AbaD2Tmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:42:54 -0400
-Message-ID: <536000BA.4000101@wwwdotorg.org>
-Date: Tue, 29 Apr 2014 13:42:50 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S965012AbaD2Toh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:44:37 -0400
+Received: from fujitsu24.fnanic.fujitsu.com ([192.240.6.14]:41761 "EHLO
+	fujitsu24.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932491AbaD2Tof convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:44:35 -0400
+From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+To: Rik van Riel <riel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "sandeen@redhat.com" <sandeen@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "jweiner@redhat.com" <jweiner@redhat.com>,
+        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
+        "mpatlasov@parallels.com" <mpatlasov@parallels.com>
+Date: Tue, 29 Apr 2014 12:43:54 -0700
+Subject: RE: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+Thread-Topic: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+Thread-Index: Ac9j4ALT4O1+nPD9RjeKUHfRkIP4nQAAz2qQ
+Message-ID: <6B2BA408B38BA1478B473C31C3D2074E31D4C5C3BB@SV-EXCHANGE1.Corp.FC.LOCAL>
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+In-Reply-To: <20140429151910.53f740ef@annuminas.surriel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Brian Norris <computersforpeace@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, Marek Vasut <marex@denx.de>,
-        linux-mtd@lists.infradead.org, Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        "arm@kernel.org" <arm@kernel.org>
-Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
- for M25P80)
-References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com> <1397719309-2022-2-git-send-email-computersforpeace@gmail.com> <535A8FC9.8040707@wwwdotorg.org> <20140429190603.GB9418@norris-Latitude-E6410>
-In-Reply-To: <20140429190603.GB9418@norris-Latitude-E6410>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-29_05:2014-04-29,2014-04-29,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 01:06 PM, Brian Norris wrote:
-> Hi Stephen,
-> 
-> On Fri, Apr 25, 2014 at 10:39:37AM -0600, Stephen Warren wrote:
->> On 04/17/2014 01:21 AM, Brian Norris wrote:
->>> These defconfigs contain the CONFIG_M25P80 symbol, which is now
->>> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
->>> relevant defconfigs.
->>>
->>> At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
-...
->> I think this should be split it up so that each defconfig can go through
->> the tree that owns it to avoid conflicts. If you repost split up, I can
->> apply the tegra_defconfig change to the Tegra tree.
-> 
-> OK, I'll try to split it up. Is ARM unique in tracking defconfigs in
-> separate trees? I assume MIPS, PowerPC, and Blackfin won't require the
-> same splitting? I'd like to avoid 31 patches when <20 could suffice.
 
-Sorry, I have no idea how the other arches handle defconfigs:-(
 
-I guess you could also just see if arm-soc (arm@kernel.org) will take
-this patch, and deal with any merge conflicts that arise when they merge
-all the sub-arch defconfig changes. I CC'd them to find out if they
-think that's a better idea.
+> -----Original Message-----
+> From: Rik van Riel [mailto:riel@redhat.com]
+> Sent: Tuesday, April 29, 2014 3:19 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org; sandeen@redhat.com; akpm@linux-foundation.org; jweiner@redhat.com; Motohiro Kosaki JP;
+> mhocko@suse.cz; fengguang.wu@intel.com; mpatlasov@parallels.com
+> Subject: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+> 
+> It is possible for "limit - setpoint + 1" to equal zero, leading to a divide by zero error. Blindly adding 1 to "limit - setpoint" is not working,
+> so we need to actually test the divisor before calling div64.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Cc: stable@vger.kernel.org
+
+Fairly obvious fix.
+
+Acked-by: KOSAKI Motohiro <Kosaki.motohiro@jp.fujitsu.com>
+
+
+> ---
+>  mm/page-writeback.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c index ef41349..2682516 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+>  					  unsigned long dirty,
+>  					  unsigned long limit)
+>  {
+> +	unsigned int divisor;
+>  	long long pos_ratio;
+>  	long x;
+> 
+> +	divisor = limit - setpoint;
+> +	if (!divisor)
+> +		divisor = 1;
+> +
+>  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+> -		    limit - setpoint + 1);
+> +		    divisor);
+>  	pos_ratio = x;
+>  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+>  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
