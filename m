@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933848AbaD2RIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:08:23 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:49494 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529AbaD2RIV (ORCPT
+	id S933926AbaD2RIf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:08:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35827 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932529AbaD2RIe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:08:21 -0400
-Date: Tue, 29 Apr 2014 10:07:42 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, olof@lixom.net,
-        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
-        linux-samsung-soc@vger.kernel.org, lee.jones@linaro.org,
-        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
-        Sean Paul <seanpaul@chromium.org>, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140429170742.GE15125@sirena.org.uk>
-References: <1398268565-4789-3-git-send-email-dianders@chromium.org>
- <1398268565-4789-6-git-send-email-dianders@chromium.org>
+	Tue, 29 Apr 2014 13:08:34 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: RE: [PATCH] serial: uart: add hw flow control support configuration
+Thread-Topic: [PATCH] serial: uart: add hw flow control support configuration
+Thread-Index: AQHPVbrH/e11Yqjrzka83vq/5rajNZsfVb/ggAJ9FICABxy9UA==
+Date: Tue, 29 Apr 2014 17:07:52 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B704724EF9@DFLE11.ent.ti.com>
+References: <1397243877-23234-1-git-send-email-m-karicheri2@ti.com>
+ <3E54258959B69E4282D79E01AB1F32B70471B273@DFLE11.ent.ti.com>
+ <20140424233053.GB21443@kroah.com>
+In-Reply-To: <20140424233053.GB21443@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gMR3gsNFwZpnI/Ts"
-Content-Disposition: inline
-In-Reply-To: <1398268565-4789-6-git-send-email-dianders@chromium.org>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.133.115.210
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RESEND PATCH v3 5/5] regulator: tps65090: Make FETs more
- reliable by adding retries
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>-----Original Message-----
+>From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+>Sent: Thursday, April 24, 2014 7:31 PM
+>To: Karicheri, Muralidharan
+>Cc: devicetree@vger.kernel.org; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org;
+>linux-serial@vger.kernel.org; Balbi, Felipe; Rob Herring; Mark Rutland; Ian Campbell;
+>Kumar Gala; Randy Dunlap; Jiri Slaby
+>Subject: Re: [PATCH] serial: uart: add hw flow control support configuration
+>
+>On Wed, Apr 23, 2014 at 02:31:51PM +0000, Karicheri, Muralidharan wrote:
+>>
+>> Can this be queued up for merge if looks good?
+>
+>Can you fix up the line Alan had questions about?
+>
+>thanks,
+>
+>greg k-h
 
---gMR3gsNFwZpnI/Ts
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Will fix and re-send the patch
 
-On Wed, Apr 23, 2014 at 08:56:05AM -0700, Doug Anderson wrote:
-> An issue was discovered with tps65090 where sometimes the FETs
-> wouldn't actually turn on when requested (they would report
-> overcurrent).  The most problematic FET was the one used for the LCD
+Thanks
 
-Applied, thanks.
-
---gMR3gsNFwZpnI/Ts
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTX9xbAAoJELSic+t+oim9t5kP/10HC8UNSZEcnCzDi21HphdQ
-ZZD8p2OTDdvpmGY77KSeZeIVGASd9twrnBZQpx91Iw4z3SZpPfMmcmCnd38G8EYi
-cRJcGJKOK/GnX0WmPfzarz1yGK4lR1FJ2Q5ftacXle4nZre3mJtdUZy7kFbPwEuv
-yShOJvvp435MKv9GoJ1BNuCUCrEIPyLGqDbZOuAY5JcwIxbCPG5XJiAfWqHcFrsJ
-Lok3vN6F+rBeVUp7uqvzt5y80FPAmuW14tE9Ig9eIecabQEoAl2mfcTtToXfXIgJ
-NsphoeQFaARROFRUA36CbTuDZDpjQJm5PHkd1kwRjhZnZd35wbbJdov+erUo1BkT
-OSajHmo0EM1KbQSEhaLbwpA9jRKWJ9zSPl1a0kQg4buglle4UzuwNHu+y33S/ohC
-1yja43I91hekJenH8jXEhfsLuvso89+mq0ebpXJIl/KtHDIq5OF6wUUF8S5u6jI1
-ordSRBqNedVZhkg/QPzeQmk+yc8/U46lcXL3PBEiYGXYQ/F77diMK+n4nOkL+ct6
-8adQvTTd7FeV2Pi9zqrNgbqmf+RwE9JCIsO5hmb8DKbgnTl4x4N158WWWvFG5Xmb
-UiHYiwDx3lK42dbL8KVN3j0hyrWf1zofGKDP1uDZgWu+mCmyncS/3d6rOQgzAPpH
-wYlt/DqgA+1JqCkeIcz6
-=PNW9
------END PGP SIGNATURE-----
-
---gMR3gsNFwZpnI/Ts--
+Murali
