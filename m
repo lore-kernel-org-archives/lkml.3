@@ -1,209 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaD2AwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:52:13 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9064 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756190AbaD2AwL (ORCPT
+	id S1756416AbaD2BDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 21:03:48 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31948 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804AbaD2BDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:52:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvdLAAH3XlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEEAScTHCMFCwgDFQMJJQ8FJQMHGhOIOQfJAhcWhUSIfweEOQSNGotxh1uORys
-Date: Tue, 29 Apr 2014 10:52:04 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+	Mon, 28 Apr 2014 21:03:47 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-a3-535efa71d6a3
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 19/22] vfs: Cache richacl in struct inode
-Message-ID: <20140429005203.GT15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [f2fs-dev][PATCH 3/3 v2] f2fs: fix to truncate inline data in inode
+ page when setattr
+Date: Tue, 29 Apr 2014 09:03:03 +0800
+Message-id: <000001cf6346$dfbc8bd0$9f35a370$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9jQ+lnpMm7XBeMRA+6TC0l9vTNiQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jAd3CX3HBBpdv81lc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAldHW+oetoF2oYtP5
+	JsYGxhd8XYycHBICJhL7l01jgbDFJC7cW8/WxcjFISSwiFGi+doVsISQwA9GidV3S0FsNgEV
+	ieUd/5lAbBEBRYkN7zewg9jMApkS95pmMIPYwgIJEl8OnGfsYuTgYBFQlZj0SQDE5BWwlJj4
+	NhKkgldAUOLH5HssEJ1aEut3HmeCsOUlNq95ywxxjoLEjrOvGSE26Uns3jwDapO4xMYjt1gm
+	MArMQjJqFpJRs5CMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4CB+JrWDcWWD
+	xSFGAQ5GJR5eg6i4YCHWxLLiytxDjBIczEoivLatQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8
+	B1qtA4UE0hNLUrNTUwtSi2CyTBycUg2MQQtDsyrn5guWmUvv33o2Y8L/rQn5zXx5pm8YN2RU
+	6RYYTxRb9uPiK//HBu38pgYbrse71nWFh9/Qm5gos/tUQev8F6waZSf/JAgnNS21OP6ph+v+
+	wxkLH55c3l/G+WlKzPli2U/nf90MC9n9IVr2f+TGRJN77hfT9zkFcMwpUGW+1fjcdH+lEktx
+	RqKhFnNRcSIAmpPKQl4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 09:44:50PM +0530, Aneesh Kumar K.V wrote:
-> From: Andreas Gruenbacher <agruen@kernel.org>
-> 
-> Cache richacls in struct inode so that this doesn't have to be done
-> individually in each filesystem.
-> 
-> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/inode.c              | 25 ++++++++++++++++++-----
->  include/linux/fs.h      | 12 +++++++++--
->  include/linux/richacl.h | 53 +++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 83 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index f96d2a6f88cc..b96a16d5c653 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -18,6 +18,7 @@
->  #include <linux/buffer_head.h> /* for inode_has_buffers */
->  #include <linux/ratelimit.h>
->  #include <linux/list_lru.h>
-> +#include <linux/richacl.h>
->  #include "internal.h"
->  
->  /*
-> @@ -185,7 +186,12 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
->  	inode->i_mapping = mapping;
->  	INIT_HLIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
->  #ifdef CONFIG_FS_POSIX_ACL
-> -	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
-> +	if (IS_POSIXACL(inode))
-> +		inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
-> +#endif
-> +#ifdef CONFIG_FS_RICHACL
-> +	if (IS_RICHACL(inode))
-> +		inode->i_richacl = ACL_NOT_CACHED;
->  #endif
+Previous we do not truncate inline data in inode page when setattr, so following
+case could still read the inline data which has already truncated:
 
-That's just plain wrong. i think this is what Christoph didn't like.
-An inode can have either a POSIX ACL or a RICH ACL, so there is no
-need for multiple pointers in the inode for them.
+1.write inline data
+2.ftruncate size to 0
+3.ftruncate size to max inline data size
+4.read from offset 0
 
->  
->  #ifdef CONFIG_FSNOTIFY
-> @@ -240,10 +246,19 @@ void __destroy_inode(struct inode *inode)
->  	}
->  
->  #ifdef CONFIG_FS_POSIX_ACL
-> -	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-> -		posix_acl_release(inode->i_acl);
-> -	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
-> -		posix_acl_release(inode->i_default_acl);
-> +	if (IS_POSIXACL(inode)) {
-> +		if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-> +			posix_acl_release(inode->i_acl);
-> +		if (inode->i_default_acl &&
-> +		    inode->i_default_acl != ACL_NOT_CACHED)
-> +			posix_acl_release(inode->i_default_acl);
-> +	}
-> +#endif
-> +#ifdef CONFIG_FS_RICHACL
-> +	if (IS_RICHACL(inode)) {
-> +		if (inode->i_richacl && inode->i_richacl != ACL_NOT_CACHED)
-> +			richacl_put(inode->i_richacl);
-> +	}
->  #endif
+This patch introduces truncate_inline_data() to fix this problem.
 
-	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-		acl_release(inode->i_acl);
+change log from v1:
+ o fix a bug and do not truncate first page data after truncate inline data.
 
-And all the mess of working out what acl needs releasing get taken
-out of of this code.
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/f2fs.h   |    1 +
+ fs/f2fs/file.c   |    3 +++
+ fs/f2fs/inline.c |   18 ++++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
-> index 22d85798b520..95df64d21e55 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -492,6 +492,7 @@ static inline int mapping_writably_mapped(struct address_space *mapping)
->  #endif
->  
->  struct posix_acl;
-> +struct richacl;
->  #define ACL_NOT_CACHED ((void *)(-1))
->  
->  #define IOP_FASTPERM	0x0001
-> @@ -510,10 +511,17 @@ struct inode {
->  	kgid_t			i_gid;
->  	unsigned int		i_flags;
->  
-> +	union {
->  #ifdef CONFIG_FS_POSIX_ACL
-> -	struct posix_acl	*i_acl;
-> -	struct posix_acl	*i_default_acl;
-> +		struct {
-> +			struct posix_acl *i_acl;
-> +			struct posix_acl *i_default_acl;
-> +		};
->  #endif
-> +#ifdef CONFIG_FS_RICHACL
-> +		struct richacl	*i_richacl;
-> +#endif
-> +	};
-
->  
->  	const struct inode_operations	*i_op;
->  	struct super_block	*i_sb;
-> diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-> index 88f95d78b897..a7db341e4ee9 100644
-> --- a/include/linux/richacl.h
-> +++ b/include/linux/richacl.h
-> @@ -191,6 +191,59 @@ richacl_put(struct richacl *acl)
->  		kfree(acl);
->  }
->  
-> +#ifdef CONFIG_FS_RICHACL
-> +static inline struct richacl *get_cached_richacl(struct inode *inode)
-> +{
-> +	struct richacl **p, *acl;
-> +
-> +	p = &inode->i_richacl;
-> +	acl = ACCESS_ONCE(*p);
-> +	if (acl) {
-> +		spin_lock(&inode->i_lock);
-> +		acl = *p;
-> +		if (acl != ACL_NOT_CACHED)
-> +			acl = richacl_get(acl);
-> +		spin_unlock(&inode->i_lock);
-> +	}
-> +	return acl;
-> +}
-> +
-> +static inline void set_cached_richacl(struct inode *inode,
-> +				      struct richacl *acl)
-> +{
-> +	struct richacl *old = NULL;
-> +	spin_lock(&inode->i_lock);
-> +	old = inode->i_richacl;
-> +	inode->i_richacl = richacl_get(acl);
-> +	spin_unlock(&inode->i_lock);
-> +	if (old != ACL_NOT_CACHED)
-> +		richacl_put(old);
-> +}
-> +
-> +static inline void forget_cached_richacl(struct inode *inode)
-> +{
-> +	struct richacl *old = NULL;
-> +	spin_lock(&inode->i_lock);
-> +	old = inode->i_richacl;
-> +	inode->i_richacl = ACL_NOT_CACHED;
-> +	spin_unlock(&inode->i_lock);
-> +	if (old != ACL_NOT_CACHED)
-> +		richacl_put(old);
-> +}
-> +
-> +static inline int negative_cached_richacl(struct inode *inode)
-> +{
-> +	struct richacl **p, *acl;
-> +
-> +	p = &inode->i_richacl;
-> +	acl = ACCESS_ONCE(*p);
-> +	if (acl)
-> +		return 0;
-> +	return 1;
-> +}
-> +
-> +#endif
-
-This is all just copy-and-paste from the posix_acl code with the RCU
-path-walk awareness removed from it. There should only be a single
-RCU aware version of these functions that does not care what type of
-ACL is in use.
-
-Cheers,
-
-Dave.
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 2b67679..676a2c6 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1410,5 +1410,6 @@ bool f2fs_may_inline(struct inode *);
+ int f2fs_read_inline_data(struct inode *, struct page *);
+ int f2fs_convert_inline_data(struct inode *, pgoff_t);
+ int f2fs_write_inline_data(struct inode *, struct page *, unsigned int);
++void truncate_inline_data(struct inode *, u64);
+ int recover_inline_data(struct inode *, struct page *);
+ #endif
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index d99d173..1b27bd6 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -332,6 +332,9 @@ static void truncate_partial_data_page(struct inode *inode, u64 from)
+ 	unsigned offset = from & (PAGE_CACHE_SIZE - 1);
+ 	struct page *page;
+ 
++	if (f2fs_has_inline_data(inode))
++		return truncate_inline_data(inode, from);
++
+ 	if (!offset)
+ 		return;
+ 
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index 3258c7c..d215dbb 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -176,6 +176,24 @@ int f2fs_write_inline_data(struct inode *inode,
+ 	return 0;
+ }
+ 
++void truncate_inline_data(struct inode *inode, u64 from)
++{
++	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
++	struct page *ipage;
++
++	if (from >= MAX_INLINE_DATA)
++		return;
++
++	ipage = get_node_page(sbi, inode->i_ino);
++	if (IS_ERR(ipage))
++		return;
++
++	zero_user_segment(ipage, INLINE_DATA_OFFSET + from,
++				INLINE_DATA_OFFSET + MAX_INLINE_DATA);
++	set_page_dirty(ipage);
++	f2fs_put_page(ipage, 1);
++}
++
+ int recover_inline_data(struct inode *inode, struct page *npage)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
+
