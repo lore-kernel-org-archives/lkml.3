@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107AbaD2WqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:46:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54178 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751697AbaD2WqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:46:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "David E. Box" <david.e.box@linux.intel.com>
-Cc: jacob.jun.pan@linux.intel.com, linux-pm@vger.kernel.org,
-        rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org,
-        hpa@linux.intel.com, alan@linux.intel.com, durgadoss.r@intel.com,
-        kristen.c.accardi@intel.com
-Subject: Re: [PATCH v2 0/4] RAPL driver updates
-Date: Wed, 30 Apr 2014 01:02:36 +0200
-Message-ID: <2848366.d6jLR9v0Ov@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398810789-2301-1-git-send-email-david.e.box@linux.intel.com>
-References: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com> <1398810789-2301-1-git-send-email-david.e.box@linux.intel.com>
+	id S1753490AbaD2WsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:48:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751060AbaD2WsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 18:48:24 -0400
+Message-ID: <53602C2B.50604@redhat.com>
+Date: Tue, 29 Apr 2014 18:48:11 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com, mhocko@suse.cz,
+        fengguang.wu@intel.com, mpatlasov@parallels.com
+Subject: Re: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+References: <20140429151910.53f740ef@annuminas.surriel.com> <20140429153936.49a2710c0c2bba4d233032f2@linux-foundation.org>
+In-Reply-To: <20140429153936.49a2710c0c2bba4d233032f2@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 03:33:05 PM David E. Box wrote:
-> From: "David E. Box" <david.e.box@linux.intel.com>
+On 04/29/2014 06:39 PM, Andrew Morton wrote:
+> On Tue, 29 Apr 2014 15:19:10 -0400 Rik van Riel <riel@redhat.com> wrote:
 > 
-> v2: iosf: Remove Kconfig exposure. Make mailbox driver a module.
+>> It is possible for "limit - setpoint + 1" to equal zero, leading to a
+>> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+>> working, so we need to actually test the divisor before calling div64.
+>>
+>> ...
+>>
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+>>  					  unsigned long dirty,
+>>  					  unsigned long limit)
+>>  {
+>> +	unsigned int divisor;
 > 
-> David E. Box (1):
->   x86/iosf: Make IOSF driver modular and usable by more drivers
-> 
-> Jacob Pan (3):
->   powercap/rapl: further relax energy counter checks
->   powercap/rapl: add new cpu ids
->   powercap/rapl: change floor frequency for vallewview
+> I'm thinking this would be better as a ulong so I don't have to worry
+> my pretty head over truncation things?
 
-I'm fine with [1-2/4].
+I looked at div_*64, and the second argument is a 32 bit
+variable. I guess a long would be ok, since if we are
+dividing by more than 4 billion we don't really care :)
 
-[3/4] has to go via the x86 tree and [4/4] probably too, because it
-depends on [3/4].
+static inline s64 div_s64(s64 dividend, s32 divisor)
 
-So would you like me to queue up [1-2/4] without the remaining two for 3.16?
+> --- a/mm/page-writeback.c~mm-page-writebackc-fix-divide-by-zero-in-pos_ratio_polynom-fix
+> +++ a/mm/page-writeback.c
+> @@ -597,13 +597,13 @@ static inline long long pos_ratio_polyno
+>  					  unsigned long dirty,
+>  					  unsigned long limit)
+>  {
+> -	unsigned int divisor;
+> +	unsigned long divisor;
+>  	long long pos_ratio;
+>  	long x;
+>  
+>  	divisor = limit - setpoint;
+>  	if (!divisor)
+> -		divisor = 1;
+> +		divisor = 1;	/* Avoid div-by-zero */
 
+Works for me :)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+All rights reversed
