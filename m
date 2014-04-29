@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290AbaD2Ad7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:33:59 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37399 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933004AbaD2AZs (ORCPT
+	id S933577AbaD2AeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:34:09 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47134 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932979AbaD2AZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Apr 2014 20:25:48 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -16,142 +16,284 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
         oleg@redhat.com, sbw@mit.edu,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 27/45] rcutorture: Export RCU grace-period kthread wait state to rcutorture
-Date: Mon, 28 Apr 2014 17:25:15 -0700
-Message-Id: <1398731133-18925-27-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 04/45] torture: Make parse-rcutorture.sh less RCU-specific
+Date: Mon, 28 Apr 2014 17:24:52 -0700
+Message-Id: <1398731133-18925-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20140429002455.GA15461@linux.vnet.ibm.com>
  <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042900-7164-0000-0000-0000015FD2DC
+x-cbid: 14042900-9332-0000-0000-000000A24CF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This commit allows rcutorture to print additional state for the
-RCU grace-period kthreads in cases where RCU seems reluctant to
-start a new grace period.
+It can be a bit jarring to see a locking test complain about RCU, so
+this commit renames parse-rcutorture.sh to parse-torture.sh and makes
+the messages it emits more generic.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcutiny.h |  4 ++++
- include/linux/rcutree.h |  1 +
- kernel/rcu/rcutorture.c |  1 +
- kernel/rcu/tree.c       | 17 +++++++++++++++++
- kernel/rcu/tree.h       |  8 +++++++-
- 5 files changed, 30 insertions(+), 1 deletion(-)
+ .../selftests/rcutorture/bin/kvm-recheck.sh        |   2 +-
+ .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   2 +-
+ .../selftests/rcutorture/bin/parse-rcutorture.sh   | 106 ---------------------
+ .../selftests/rcutorture/bin/parse-torture.sh      | 106 +++++++++++++++++++++
+ 4 files changed, 108 insertions(+), 108 deletions(-)
+ delete mode 100755 tools/testing/selftests/rcutorture/bin/parse-rcutorture.sh
+ create mode 100755 tools/testing/selftests/rcutorture/bin/parse-torture.sh
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index 425c659d54e5..d40a6a451330 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -119,6 +119,10 @@ static inline void rcu_sched_force_quiescent_state(void)
- {
- }
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
+index a44daaa259a9..26d78b7eaccf 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-recheck.sh
+@@ -41,7 +41,7 @@ do
+ 		kvm-recheck-${TORTURE_SUITE}.sh $i
+ 		configcheck.sh $i/.config $i/ConfigFragment
+ 		parse-build.sh $i/Make.out $configfile
+-		parse-rcutorture.sh $i/console.log $configfile
++		parse-torture.sh $i/console.log $configfile
+ 		parse-console.sh $i/console.log $configfile
+ 		if test -r $i/Warnings
+ 		then
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+index 94b28bb37d36..e82f4f201c8c 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+@@ -199,5 +199,5 @@ then
+ fi
  
-+static inline void show_rcu_gp_kthreads(void)
-+{
-+}
+ cp $builddir/console.log $resdir
+-parse-${TORTURE_SUITE}torture.sh $resdir/console.log $title
++parse-torture.sh $resdir/console.log $title
+ parse-console.sh $resdir/console.log $title
+diff --git a/tools/testing/selftests/rcutorture/bin/parse-rcutorture.sh b/tools/testing/selftests/rcutorture/bin/parse-rcutorture.sh
+deleted file mode 100755
+index dd0a275d9796..000000000000
+--- a/tools/testing/selftests/rcutorture/bin/parse-rcutorture.sh
++++ /dev/null
+@@ -1,106 +0,0 @@
+-#!/bin/sh
+-#
+-# Check the console output from an rcutorture run for goodness.
+-# The "file" is a pathname on the local system, and "title" is
+-# a text string for error-message purposes.
+-#
+-# The file must contain rcutorture output, but can be interspersed
+-# with other dmesg text.
+-#
+-# Usage:
+-#	sh parse-rcutorture.sh file title
+-#
+-# This program is free software; you can redistribute it and/or modify
+-# it under the terms of the GNU General Public License as published by
+-# the Free Software Foundation; either version 2 of the License, or
+-# (at your option) any later version.
+-#
+-# This program is distributed in the hope that it will be useful,
+-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-# GNU General Public License for more details.
+-#
+-# You should have received a copy of the GNU General Public License
+-# along with this program; if not, you can access it online at
+-# http://www.gnu.org/licenses/gpl-2.0.html.
+-#
+-# Copyright (C) IBM Corporation, 2011
+-#
+-# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+-
+-T=/tmp/parse-rcutorture.sh.$$
+-file="$1"
+-title="$2"
+-
+-trap 'rm -f $T.seq' 0
+-
+-. functions.sh
+-
+-# check for presence of rcutorture.txt file
+-
+-if test -f "$file" -a -r "$file"
+-then
+-	:
+-else
+-	echo $title unreadable rcutorture.txt file: $file
+-	exit 1
+-fi
+-
+-# check for abject failure
+-
+-if grep -q FAILURE $file || grep -q -e '-torture.*!!!' $file
+-then
+-	nerrs=`grep --binary-files=text '!!!' $file | tail -1 | awk '{for (i=NF-8;i<=NF;i++) sum+=$i; } END {print sum}'`
+-	print_bug $title FAILURE, $nerrs instances
+-	echo "   " $url
+-	exit
+-fi
+-
+-grep --binary-files=text 'torture:.*ver:' $file | grep --binary-files=text -v '(null)' | sed -e 's/^(initramfs)[^]]*] //' -e 's/^\[[^]]*] //' |
+-awk '
+-BEGIN	{
+-	ver = 0;
+-	badseq = 0;
+-	}
+-
+-	{
+-	if (!badseq && ($5 + 0 != $5 || $5 <= ver)) {
+-		badseqno1 = ver;
+-		badseqno2 = $5;
+-		badseqnr = NR;
+-		badseq = 1;
+-	}
+-	ver = $5
+-	}
+-
+-END	{
+-	if (badseq) {
+-		if (badseqno1 == badseqno2 && badseqno2 == ver)
+-			print "RCU GP HANG at " ver " rcutorture stat " badseqnr;
+-		else
+-			print "BAD SEQ " badseqno1 ":" badseqno2 " last:" ver " RCU version " badseqnr;
+-	}
+-	}' > $T.seq
+-
+-if grep -q SUCCESS $file
+-then
+-	if test -s $T.seq
+-	then
+-		print_warning $title $title `cat $T.seq`
+-		echo "   " $file
+-		exit 2
+-	fi
+-else
+-	if grep -q RCU_HOTPLUG $file
+-	then
+-		print_warning HOTPLUG FAILURES $title `cat $T.seq`
+-		echo "   " $file
+-		exit 3
+-	fi
+-	echo $title no success message, `grep --binary-files=text 'ver:' $file | wc -l` successful RCU version messages
+-	if test -s $T.seq
+-	then
+-		print_warning $title `cat $T.seq`
+-	fi
+-	exit 2
+-fi
+diff --git a/tools/testing/selftests/rcutorture/bin/parse-torture.sh b/tools/testing/selftests/rcutorture/bin/parse-torture.sh
+new file mode 100755
+index 000000000000..3455560ab4e4
+--- /dev/null
++++ b/tools/testing/selftests/rcutorture/bin/parse-torture.sh
+@@ -0,0 +1,106 @@
++#!/bin/sh
++#
++# Check the console output from a torture run for goodness.
++# The "file" is a pathname on the local system, and "title" is
++# a text string for error-message purposes.
++#
++# The file must contain torture output, but can be interspersed
++# with other dmesg text, as in console-log output.
++#
++# Usage:
++#	sh parse-torture.sh file title
++#
++# This program is free software; you can redistribute it and/or modify
++# it under the terms of the GNU General Public License as published by
++# the Free Software Foundation; either version 2 of the License, or
++# (at your option) any later version.
++#
++# This program is distributed in the hope that it will be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, you can access it online at
++# http://www.gnu.org/licenses/gpl-2.0.html.
++#
++# Copyright (C) IBM Corporation, 2011
++#
++# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 +
- static inline void rcu_cpu_stall_reset(void)
- {
- }
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index a59ca05fd4e3..3e2f5d432743 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -84,6 +84,7 @@ extern unsigned long rcutorture_vernum;
- long rcu_batches_completed(void);
- long rcu_batches_completed_bh(void);
- long rcu_batches_completed_sched(void);
-+void show_rcu_gp_kthreads(void);
- 
- void rcu_force_quiescent_state(void);
- void rcu_bh_force_quiescent_state(void);
-diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
-index 50c26a7b6d97..15af04177e7e 100644
---- a/kernel/rcu/rcutorture.c
-+++ b/kernel/rcu/rcutorture.c
-@@ -1033,6 +1033,7 @@ rcu_torture_printk(char *page)
- 				"??? Writer stall state %d g%lu c%lu f%#x\n",
- 				rcu_torture_writer_state,
- 				gpnum, completed, flags);
-+		show_rcu_gp_kthreads();
- 		rcutorture_trace_dump();
- 	}
- 	rtcv_snap = rcu_torture_current_version;
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 032106df7391..3107bd935b2b 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -280,6 +280,21 @@ void rcu_bh_force_quiescent_state(void)
- EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
- 
- /*
-+ * Show the state of the grace-period kthreads.
-+ */
-+void show_rcu_gp_kthreads(void)
-+{
-+	struct rcu_state *rsp;
++T=/tmp/parse-torture.sh.$$
++file="$1"
++title="$2"
 +
-+	for_each_rcu_flavor(rsp) {
-+		pr_info("%s: wait state: %d ->state: %#lx\n",
-+			rsp->name, rsp->gp_state, rsp->gp_kthread->state);
-+		/* sched_show_task(rsp->gp_kthread); */
++trap 'rm -f $T.seq' 0
++
++. functions.sh
++
++# check for presence of torture output file.
++
++if test -f "$file" -a -r "$file"
++then
++	:
++else
++	echo $title unreadable torture output file: $file
++	exit 1
++fi
++
++# check for abject failure
++
++if grep -q FAILURE $file || grep -q -e '-torture.*!!!' $file
++then
++	nerrs=`grep --binary-files=text '!!!' $file | tail -1 | awk '{for (i=NF-8;i<=NF;i++) sum+=$i; } END {print sum}'`
++	print_bug $title FAILURE, $nerrs instances
++	echo "   " $url
++	exit
++fi
++
++grep --binary-files=text 'torture:.*ver:' $file | grep --binary-files=text -v '(null)' | sed -e 's/^(initramfs)[^]]*] //' -e 's/^\[[^]]*] //' |
++awk '
++BEGIN	{
++	ver = 0;
++	badseq = 0;
 +	}
-+}
-+EXPORT_SYMBOL_GPL(show_rcu_gp_kthreads);
 +
-+/*
-  * Record the number of times rcutorture tests have been initiated and
-  * terminated.  This information allows the debugfs tracing stats to be
-  * correlated to the rcutorture messages, even when the rcutorture module
-@@ -1611,6 +1626,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 			trace_rcu_grace_period(rsp->name,
- 					       ACCESS_ONCE(rsp->gpnum),
- 					       TPS("reqwait"));
-+			rsp->gp_state = RCU_GP_WAIT_GPS;
- 			wait_event_interruptible(rsp->gp_wq,
- 						 ACCESS_ONCE(rsp->gp_flags) &
- 						 RCU_GP_FLAG_INIT);
-@@ -1638,6 +1654,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
- 			trace_rcu_grace_period(rsp->name,
- 					       ACCESS_ONCE(rsp->gpnum),
- 					       TPS("fqswait"));
-+			rsp->gp_state = RCU_GP_WAIT_FQS;
- 			ret = wait_event_interruptible_timeout(rsp->gp_wq,
- 					((gf = ACCESS_ONCE(rsp->gp_flags)) &
- 					 RCU_GP_FLAG_FQS) ||
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 75dc3c39a02a..c2fd1e722879 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -406,7 +406,8 @@ struct rcu_state {
- 	unsigned long completed;		/* # of last completed gp. */
- 	struct task_struct *gp_kthread;		/* Task for grace periods. */
- 	wait_queue_head_t gp_wq;		/* Where GP task waits. */
--	int gp_flags;				/* Commands for GP task. */
-+	short gp_flags;				/* Commands for GP task. */
-+	short gp_state;				/* GP kthread sleep state. */
- 
- 	/* End of fields guarded by root rcu_node's lock. */
- 
-@@ -469,6 +470,11 @@ struct rcu_state {
- #define RCU_GP_FLAG_INIT 0x1	/* Need grace-period initialization. */
- #define RCU_GP_FLAG_FQS  0x2	/* Need grace-period quiescent-state forcing. */
- 
-+/* Values for rcu_state structure's gp_flags field. */
-+#define RCU_GP_WAIT_INIT 0	/* Initial state. */
-+#define RCU_GP_WAIT_GPS  1	/* Wait for grace-period start. */
-+#define RCU_GP_WAIT_FQS  2	/* Wait for force-quiescent-state time. */
++	{
++	if (!badseq && ($5 + 0 != $5 || $5 <= ver)) {
++		badseqno1 = ver;
++		badseqno2 = $5;
++		badseqnr = NR;
++		badseq = 1;
++	}
++	ver = $5
++	}
 +
- extern struct list_head rcu_struct_flavors;
- 
- /* Sequence through rcu_state structures for each RCU flavor. */
++END	{
++	if (badseq) {
++		if (badseqno1 == badseqno2 && badseqno2 == ver)
++			print "GP HANG at " ver " torture stat " badseqnr;
++		else
++			print "BAD SEQ " badseqno1 ":" badseqno2 " last:" ver " version " badseqnr;
++	}
++	}' > $T.seq
++
++if grep -q SUCCESS $file
++then
++	if test -s $T.seq
++	then
++		print_warning $title $title `cat $T.seq`
++		echo "   " $file
++		exit 2
++	fi
++else
++	if grep -q "_HOTPLUG:" $file
++	then
++		print_warning HOTPLUG FAILURES $title `cat $T.seq`
++		echo "   " $file
++		exit 3
++	fi
++	echo $title no success message, `grep --binary-files=text 'ver:' $file | wc -l` successful version messages
++	if test -s $T.seq
++	then
++		print_warning $title `cat $T.seq`
++	fi
++	exit 2
++fi
 -- 
 1.8.1.5
 
