@@ -1,454 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757747AbaD2OWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:22:05 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:51973 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685AbaD2OWB (ORCPT
+	id S964823AbaD2OWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:22:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58743 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933181AbaD2OW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:22:01 -0400
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: platform-driver-x86@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, hdegoede@redhat.com,
-        matthew.garrett@nebula.com
-Subject: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
-Date: Tue, 29 Apr 2014 16:21:52 +0200
-Message-Id: <1398781312-3607-1-git-send-email-patrik.r.jakobsson@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 29 Apr 2014 10:22:29 -0400
+Date: Tue, 29 Apr 2014 16:22:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, rostedt@goodmis.org,
+        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
+        johan.eker@ericsson.com, p.faure@akatech.ch,
+        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        linux-man@vger.kernel.org
+Subject: Re: sched_{set,get}attr() manpage
+Message-ID: <20140429142221.GT11096@twins.programming.kicks-ass.net>
+References: <20131217122720.950475833@infradead.org>
+ <20131217123352.692059839@infradead.org>
+ <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
+ <20140121153851.GZ31570@twins.programming.kicks-ass.net>
+ <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
+ <20140214161929.GL27965@twins.programming.kicks-ass.net>
+ <53020C9D.1050208@gmail.com>
+ <20140428081858.GX13658@twins.programming.kicks-ass.net>
+ <535FA467.2070403@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535FA467.2070403@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver takes control over the LP8550 backlight driver chip found
-in the mid 2013 and newer MacBook Air (6,1 and 6,2). The i915 GPU driver
-cannot properly restore the backlight after resume, but with this driver
-we can hijack the LP8550 and get fully functional backlight support.
+On Tue, Apr 29, 2014 at 03:08:55PM +0200, Michael Kerrisk (man-pages) wrote:
+> Hi Peter,
+> 
+> On 04/28/2014 10:18 AM, Peter Zijlstra wrote:
+> > Hi Michael,
+> > 
+> > find below an updated manpage, I did not apply the comments on parts
+> > that are identical to SCHED_SETSCHEDULER(2) in order to keep these texts
+> > in alignment. I feel that if we change one we should also change the
+> > other, and such a 'patch' is best done separate from the new manpage
+> > itself.
+> > 
+> > I did add the missing EBUSY error, and amended the text where it said
+> > we'd return EINVAL in that case.
+> > 
+> > I added a paragraph stating that SCHED_DEADLINE preempted anything else
+> > userspace can do (with the explicit mention of userspace to leave me
+> > wriggle room for the kernel's stop task :-).
+> > 
+> > I also did a short paragraph on the deadline sched_yield(). For further
+> > deadline yield details we should maybe add to the SCHED_YIELD(2)
+> > manpage.
+> > 
+> > Re juri/claudio; no I think sched_yield() as implemented for deadline
+> > makes sense, no other yield semantics other than NOP makes sense for it,
+> > and since we have the syscall already might as well make it do something
+> > useful.
+> 
+> Thanks for the updated page. Would you be willing
+> to revise as per the comments below.
 
-v2: - Dropped "if ACPI" in Kconfig since we already depend on it
-    - Added comment about brightness mapping
-    - Removed lp8550_init() from set_brightness()
-    - Always write to dev_ctl when setting brightness
-    - Change %Ld to standard C %lld
-    - Constify the backlight_ops struct
+Ok.
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
----
- MAINTAINERS                     |   6 +
- drivers/platform/x86/Kconfig    |  13 ++
- drivers/platform/x86/Makefile   |   1 +
- drivers/platform/x86/mba6x_bl.c | 353 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 373 insertions(+)
- create mode 100644 drivers/platform/x86/mba6x_bl.c
+> 
+> > NAME
+> > 	sched_setattr, sched_getattr - set and get scheduling policy/attributes
+> > 
+> > SYNOPSIS
+> > 	#include <sched.h>
+> > 
+> > 	struct sched_attr {
+> > 		u32 size;
+> > 		u32 sched_policy;
+> > 		u64 sched_flags;
+> > 
+> > 		/* SCHED_NORMAL, SCHED_BATCH */
+> > 		s32 sched_nice;
+> > 		/* SCHED_FIFO, SCHED_RR */
+> > 		u32 sched_priority;
+> > 		/* SCHED_DEADLINE */
+> > 		u64 sched_runtime;
+> > 		u64 sched_deadline;
+> > 		u64 sched_period;
+> > 	};
+> > 	int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
+> > 
+> > 	int sched_getattr(pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags);
+> > 
+> > DESCRIPTION
+> > 	sched_setattr() sets both the scheduling policy and the
+> > 	associated attributes for the process whose ID is specified in
+> > 	pid.  
+> 
+> Around about here, I think there needs to be a sentence explaining
+> that sched_setattr() provides a superset of the functionality of 
+> sched_setscheduler(2) and setpritority(2). I mean, it can do all that 
+> those two calls can do, right?
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e67ea24..cad3e82 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5576,6 +5576,12 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jberg/mac80211-next.git
- S:	Maintained
- F:	net/mac80211/rc80211_pid*
- 
-+MACBOOK AIR 6,X BACKLIGHT DRIVER
-+M:	Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-+L:	platform-driver-x86@vger.kernel.org
-+S:	Maintained
-+F:	drivers/platform/x86/mba6x_bl.c
-+
- MACVLAN DRIVER
- M:	Patrick McHardy <kaber@trash.net>
- L:	netdev@vger.kernel.org
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 27df2c5..10ac918 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -795,6 +795,19 @@ config APPLE_GMUX
- 	  graphics as well as the backlight. Currently only backlight
- 	  control is supported by the driver.
- 
-+config MBA6X_BL
-+	tristate "MacBook Air 6,x backlight driver"
-+	depends on ACPI
-+	depends on BACKLIGHT_CLASS_DEVICE
-+	select ACPI_VIDEO
-+	help
-+	 This driver takes control over the LP8550 backlight driver found in
-+	 some MacBook Air models. Say Y here if you have a MacBook Air from mid
-+	 2013 or newer.
-+
-+	 To compile this driver as a module, choose M here: the module will
-+	 be called mba6x_bl.
-+
- config INTEL_RST
-         tristate "Intel Rapid Start Technology Driver"
- 	depends on ACPI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 1a2eafc..9a182fe 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -56,3 +56,4 @@ obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
- 
- obj-$(CONFIG_PVPANIC)           += pvpanic.o
- obj-$(CONFIG_ALIENWARE_WMI)	+= alienware-wmi.o
-+obj-$(CONFIG_MBA6X_BL)		+= mba6x_bl.o
-diff --git a/drivers/platform/x86/mba6x_bl.c b/drivers/platform/x86/mba6x_bl.c
-new file mode 100644
-index 0000000..c549667
---- /dev/null
-+++ b/drivers/platform/x86/mba6x_bl.c
-@@ -0,0 +1,353 @@
-+/*
-+ * MacBook Air 6,1 and 6,2 (mid 2013) backlight driver
-+ *
-+ * Copyright (C) 2014 Patrik Jakobsson (patrik.r.jakobsson@gmail.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/backlight.h>
-+#include <linux/acpi.h>
-+#include <acpi/acpi.h>
-+#include <acpi/video.h>
-+
-+#define LP8550_SMBUS_ADDR	(0x58 >> 1)
-+#define LP8550_REG_BRIGHTNESS	0
-+#define LP8550_REG_DEV_CTL	1
-+#define LP8550_REG_FAULT	2
-+#define LP8550_REG_IDENT	3
-+#define LP8550_REG_DIRECT_CTL	4
-+#define LP8550_REG_TEMP_MSB	5 /* Must be read before TEMP_LSB */
-+#define LP8550_REG_TEMP_LSB	6
-+
-+#define INIT_BRIGHTNESS		150
-+
-+static struct {
-+	u8 brightness;	/* Brightness control */
-+	u8 dev_ctl;	/* Device control */
-+	u8 fault;	/* Fault indication */
-+	u8 ident;	/* Identification */
-+	u8 direct_ctl;	/* Direct control */
-+	u8 temp_msb;	/* Temperature MSB  */
-+	u8 temp_lsb;	/* Temperature LSB */
-+} lp8550_regs;
-+
-+static struct platform_device *platform_device;
-+static struct backlight_device *backlight_device;
-+
-+static int lp8550_reg_read(u8 reg, u8 *val)
-+{
-+	acpi_status status;
-+	acpi_handle handle;
-+	struct acpi_object_list arg_list;
-+	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
-+	union acpi_object args[2];
-+	union acpi_object *result;
-+	int ret = 0;
-+
-+	status = acpi_get_handle(NULL, "\\_SB.PCI0.SBUS.SRDB", &handle);
-+	if (ACPI_FAILURE(status)) {
-+		pr_debug("mba6x_bl: Failed to get acpi handle\n");
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	args[0].type = ACPI_TYPE_INTEGER;
-+	args[0].integer.value = (LP8550_SMBUS_ADDR << 1) | 1;
-+
-+	args[1].type = ACPI_TYPE_INTEGER;
-+	args[1].integer.value = reg;
-+
-+	arg_list.count = 2;
-+	arg_list.pointer = args;
-+
-+	status = acpi_evaluate_object(handle, NULL, &arg_list, &buffer);
-+	if (ACPI_FAILURE(status)) {
-+		pr_debug("mba6x_bl: Failed to read reg: 0x%x\n", reg);
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	result = buffer.pointer;
-+
-+	if (result->type != ACPI_TYPE_INTEGER) {
-+		pr_debug("mba6x_bl: Invalid response in reg: 0x%x (len: %Ld)\n",
-+			 reg, buffer.length);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	*val = (u8)result->integer.value;
-+out:
-+	kfree(buffer.pointer);
-+	return ret;
-+}
-+
-+static int lp8550_reg_write(u8 reg, u8 val)
-+{
-+	acpi_status status;
-+	acpi_handle handle;
-+	struct acpi_object_list arg_list;
-+	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
-+	union acpi_object args[3];
-+	union acpi_object *result;
-+	int ret = 0;
-+
-+	status = acpi_get_handle(NULL, "\\_SB.PCI0.SBUS.SWRB", &handle);
-+	if (ACPI_FAILURE(status)) {
-+		pr_debug("mba6x_bl: Failed to get acpi handle\n");
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	args[0].type = ACPI_TYPE_INTEGER;
-+	args[0].integer.value = (LP8550_SMBUS_ADDR << 1) & ~1;
-+
-+	args[1].type = ACPI_TYPE_INTEGER;
-+	args[1].integer.value = reg;
-+
-+	args[2].type = ACPI_TYPE_INTEGER;
-+	args[2].integer.value = val;
-+
-+	arg_list.count = 3;
-+	arg_list.pointer = args;
-+
-+	status = acpi_evaluate_object(handle, NULL, &arg_list, &buffer);
-+	if (ACPI_FAILURE(status)) {
-+		pr_debug("mba6x_bl: Failed to write reg: 0x%x\n", reg);
-+		ret = -ENODEV;
-+		goto out;
-+	}
-+
-+	result = buffer.pointer;
-+
-+	if (result->type != ACPI_TYPE_INTEGER || result->integer.value != 1) {
-+		pr_debug("mba6x_bl: Invalid response at reg: 0x%x (len: %lld)\n",
-+			 reg, buffer.length);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+out:
-+	kfree(buffer.pointer);
-+	return ret;
-+}
-+
-+/*
-+ * Map the brightness value to an exponential curve. This makes the perceived
-+ * brightness more linear and allows to make better use of the available
-+ * brightness range.
-+ */
-+static inline int map_brightness(int b)
-+{
-+	return ((b * b + 254) / 255);
-+}
-+
-+static int set_brightness(int brightness)
-+{
-+	int ret;
-+
-+	if (brightness < 0 || brightness > 255)
-+		return -EINVAL;
-+
-+	brightness = map_brightness(brightness);
-+	ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, (u8)brightness);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_reg_write(LP8550_REG_DEV_CTL, 0x05);
-+	return ret;
-+}
-+
-+static int get_brightness(struct backlight_device *bdev)
-+{
-+	return bdev->props.brightness;
-+}
-+
-+static int update_status(struct backlight_device *bdev)
-+{
-+	return set_brightness(bdev->props.brightness);
-+}
-+
-+static int lp8550_probe(void)
-+{
-+	u8 val;
-+	int ret;
-+
-+	ret = lp8550_reg_read(LP8550_REG_IDENT, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val != 0xfc)
-+		return -ENODEV;
-+
-+	pr_info("mba6x_bl: Found LP8550 backlight driver\n");
-+	return 0;
-+}
-+
-+static int lp8550_save(void)
-+{
-+	int ret;
-+
-+	ret = lp8550_reg_read(LP8550_REG_DEV_CTL, &lp8550_regs.dev_ctl);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_reg_read(LP8550_REG_BRIGHTNESS, &lp8550_regs.brightness);
-+	return ret;
-+}
-+
-+
-+static int lp8550_restore(void)
-+{
-+	int ret;
-+
-+	ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, lp8550_regs.brightness);
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_reg_write(LP8550_REG_DEV_CTL, lp8550_regs.dev_ctl);
-+	return ret;
-+}
-+
-+static int lp8550_init(void)
-+{
-+	int ret, i;
-+
-+	for (i = 0; i < 10; i++) {
-+		ret = lp8550_reg_write(LP8550_REG_BRIGHTNESS, INIT_BRIGHTNESS);
-+		if (!ret)
-+			break;
-+	}
-+
-+	if (i > 0)
-+		pr_err("mba6x_bl: Init retries: %d\n", i);
-+
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_reg_write(LP8550_REG_DEV_CTL, 0x05);
-+	return ret;
-+}
-+
-+static const struct backlight_ops backlight_ops = {
-+	.update_status = update_status,
-+	.get_brightness = get_brightness,
-+};
-+
-+static struct platform_driver drv;
-+
-+static int platform_probe(struct platform_device *dev)
-+{
-+	struct backlight_properties props;
-+	int ret;
-+
-+	ret = lp8550_probe();
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_save();
-+	if (ret)
-+		return ret;
-+
-+	ret = lp8550_init();
-+	if (ret)
-+		return ret;
-+
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.max_brightness = 255;
-+	props.brightness = INIT_BRIGHTNESS;
-+	props.type = BACKLIGHT_FIRMWARE;
-+
-+	backlight_device = backlight_device_register("mba6x_backlight",
-+						     NULL, NULL,
-+						     &backlight_ops, &props);
-+	if (IS_ERR(backlight_device)) {
-+		pr_err("mba6x_bl: Failed to register backlight device\n");
-+		return PTR_ERR(backlight_device);
-+	}
-+
-+	acpi_video_dmi_promote_vendor();
-+	acpi_video_unregister();
-+
-+	backlight_update_status(backlight_device);
-+
-+	return 0;
-+}
-+
-+static int platform_remove(struct platform_device *dev)
-+{
-+	backlight_device_unregister(backlight_device);
-+	lp8550_restore();
-+	pr_info("mba6x_bl: Restored old configuration\n");
-+
-+	return 0;
-+}
-+
-+static int platform_resume(struct platform_device *dev)
-+{
-+	/*
-+	 * Firmware restores the LP8550 for us but we might need some tweaking
-+	 * in the future if firmware behaviour is changed.
-+	 */
-+	return 0;
-+}
-+
-+static void platform_shutdown(struct platform_device *dev)
-+{
-+	/* We must restore or screen might go black on reboot */
-+	lp8550_restore();
-+}
-+
-+static struct platform_driver drv = {
-+	.probe		= platform_probe,
-+	.remove		= platform_remove,
-+	.resume		= platform_resume,
-+	.shutdown	= platform_shutdown,
-+	.driver	= {
-+		.name = "mba6x_bl",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init mba6x_bl_init(void)
-+{
-+	int ret;
-+
-+	ret = platform_driver_register(&drv);
-+	if (ret) {
-+		pr_err("Failed to register platform driver\n");
-+		return ret;
-+	}
-+
-+	platform_device = platform_device_register_simple("mba6x_bl", -1, NULL,
-+							  0);
-+	return 0;
-+}
-+
-+static void __exit mba6x_bl_exit(void)
-+{
-+	platform_device_unregister(platform_device);
-+	platform_driver_unregister(&drv);
-+}
-+
-+module_init(mba6x_bl_init);
-+module_exit(mba6x_bl_exit);
-+
-+MODULE_AUTHOR("Patrik Jakobsson <patrik.r.jakobsson@gmail.com>");
-+MODULE_DESCRIPTION("MacBook Air 6,1 and 6,2 backlight driver");
-+MODULE_LICENSE("GPL");
-+
-+MODULE_ALIAS("dmi:*:pnMacBookAir6*");
--- 
-1.9.1
+Almost; setpriority() has the .which argument which we don't have. So
+while that syscall can change the nice value for an entire process group
+or user, sched_setattr() can only change the nice value for 1 task.
 
+But yes, I can mention something along those lines.
+
+> > If pid equals zero, the scheduling policy and attributes
+> > 	of the calling process will be set.  The interpretation of the
+> > 	argument attr depends on the selected policy.  Currently, Linux
+> > 	supports the following "normal" (i.e., non-real-time) scheduling
+> > 	policies:
+> > 
+> > 	SCHED_OTHER	the standard "fair" time-sharing policy;
+> > 
+> > 	SCHED_BATCH	for "batch" style execution of processes; and
+> > 
+> > 	SCHED_IDLE	for running very low priority background jobs.
+> > 
+> > 	The following "real-time" policies are also supported, for
+> > 	special time-critical applications that need precise control
+> > 	over the way in which runnable processes are selected for
+> > 	execution:
+> > 
+> > 	SCHED_FIFO	a first-in, first-out policy;
+> > 
+> > 	SCHED_RR	a round-robin policy; and
+> > 
+> > 	SCHED_DEADLINE	a deadline policy.
+> > 
+> > 	The semantics of each of these policies are detailed below.
+> 
+> The semantics of each of these policies are detailed in sched(7).
+
+I don't appear to have SCHED(7), how new is that?
+
+> [See my comments below]
+> 
+> > 
+> > 	sched_attr::size must be set to the size of the structure, as in
+> > 	sizeof(struct sched_attr), if the provided structure is smaller
+> > 	than the kernel structure, any additional fields are assumed
+> > 	'0'. If the provided structure is larger than the kernel
+> > 	structure, the kernel verifies all additional fields are '0' if
+> > 	not the syscall will fail with -E2BIG.
+> > 
+> > 	sched_attr::sched_policy the desired scheduling policy.
+> > 
+> > 	sched_attr::sched_flags additional flags that can influence
+> > 	scheduling behaviour. Currently as per Linux kernel 3.14:
+> > 
+> > 		SCHED_FLAG_RESET_ON_FORK - resets the scheduling policy
+> > 		to: (struct sched_attr){ .sched_policy = SCHED_OTHER, }
+> > 		on fork().
+> > 
+> > 	is the only supported flag.
+> > 
+> > 	sched_attr::sched_nice should only be set for SCHED_OTHER,
+> > 	SCHED_BATCH, the desired nice value [-20,19], see NICE(2).
+> > 
+> > 	sched_attr::sched_priority should only be set for SCHED_FIFO,
+> > 	SCHED_RR, the desired static priority [1,99].
+> > 
+> > 	sched_attr::sched_runtime
+> > 	sched_attr::sched_deadline
+> > 	sched_attr::sched_period should only be set for SCHED_DEADLINE
+> > 	and are the traditional sporadic task model parameters.
+> 
+> Could you add (a lot ;-)) more detail on these three fields? Assume the
+> reader does not know about this traditional sporadic task model, and 
+> then give some explanation of what these three fields do. Probably, at
+> this point you can work in some statement  about the admission control
+> test.
+> 
+> [but, see my comment below. It may be that sched(7) is a better
+> place for this detail.
+
+Yes, I think SCHED(7) would be a better place; also I think I forgot to
+put a reference in to Documentation/scheduler/sched-deadline.txt
+
+I'll try and write something concise. This is the stuff of books, not
+paragraphs :/
+
+> > 	The flags argument should be 0.
+> > 
+> > 	sched_getattr() queries the scheduling policy currently applied
+> > 	to the process identified by pid.  If pid equals zero, the
+> > 	policy of the calling process will be retrieved.
+> > 
+> > 	The size argument should reflect the size of struct sched_attr
+> > 	as known to userspace. The kernel fills out sched_attr::size to
+> > 	the size of its sched_attr structure. If the user provided
+> > 	structure is larger, additional fields are not touched. If the
+> > 	user provided structure is smaller, but the kernel needs to
+> > 	return values outside the provided space, the syscall will fail
+> > 	with -E2BIG.
+> > 
+> > 	The flags argument should be 0.
+> > 
+> > 	The other sched_attr fields are filled out as described in
+> > 	sched_setattr().
+> 
+> I assume that everything between my [[[ and ]]] blocks below is taken straight 
+> from sched_setscheduler(2). (If that is not true, please let me know.)
+
+That did indeed look about right.
+
+> This reminds me that there is a structural fault in this part of man-pages ;-).
+> The problem is sched_setscheduler(2) currently tries to do two things:
+> 
+> [a] Document the sched_setscheduler() and sched_scheduler system calls
+> [b] Provide and overview od scheduling policies and parameters.
+> 
+> It should really only do the former. I have now gone through the task of
+> separating [b] out into a separate page, sched(7), which other pages,
+> such as sched_setscheduler(2) and sched_setattr(2) can refer to. You
+> can see the current versions of sched_setscheduelr.2 and sched.7 in Git
+> (https://www.kernel.org/doc/man-pages/download.html )
+> 
+> So, what I would ideally like to see
+> 
+> [1] A page describing the sched_setattr() and sched_getattr() APIs
+> [2] A piece of text describing the SCHED_DEADLINE policy, which I can
+> drop into sched(7).
+> 
+> Could you revise like that?
+
+ACK.
+
+> [[[[
+
+> ]]]]
+> 
+> >     SCHED_DEADLINE: Sporadic task model deadline scheduling
+> >        SCHED_DEADLINE is an implementation of GEDF (Global Earliest
+> >        Deadline First) with additional CBS (Constant Bandwidth Server).
+> >        The CBS guarantees that tasks that over-run their specified
+> >        budget are throttled and do not affect the correct performance
+> >        of other SCHED_DEADLINE tasks.
+> > 
+> >        SCHED_DEADLINE tasks will fail FORK(2) with -EAGAIN
+> > 
+> >        Setting SCHED_DEADLINE can fail with -EBUSY when admission
+> >        control tests fail.
+> > 
+> >        Because of the nature of (G)EDF, SCHED_DEADLINE tasks are the
+> >        highest priority (user controllable) tasks in the system, if any
+> >        SCHED_DEADLINE task is runnable it will preempt anything
+> >        FIFO/RR/OTHER/BATCH/IDLE task out there.
+> > 
+> >        A SCHED_DEADLINE task calling sched_yield() will 'yield' the
+> >        current job and wait for a new period to begin.
+> 
+> This is the piece that could go into sched(7), but I'd like it to include
+> a discussion of deadline, period, and runtime.
+> 
+> [[[[
+
+> ]]]]
+> 
+> > RETURN VALUE
+> > 	On success, sched_setattr() and sched_getattr() return 0. On
+> > 	error, -1 is returned, and errno is set appropriately.
+> > 
+> > ERRORS
+> >        EINVAL The scheduling policy is not one  of  the  recognized  policies,
+> >               param is NULL, or param does not make sense for the policy.
+> > 
+> >        EPERM  The calling process does not have appropriate privileges.
+> > 
+> >        ESRCH  The process whose ID is pid could not be found.
+> > 
+> >        E2BIG  The provided storage for struct sched_attr is either too
+> >               big, see sched_setattr(), or too small, see sched_getattr().
+> > 
+> >        EBUSY  SCHED_DEADLINE admission control failure
+> 
+> The above is the only place on the page that mentions admission control.
+> As well as the suggestions above, it would be nice to have somewhere a
+> summary of how admission control is calculated.
+
+I think I'll write down what admission control is without specifics.
+Giving specifics pins you down on the implementation. In general
+admission control enforces a bound on the schedulability of the task
+set. New and interesting ways of computing schedulability are the
+subject of papers each year.
