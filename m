@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881AbaD2RtK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:49:10 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15833 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759AbaD2RtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:49:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/kCmvjA7gncudwvdGbz5rqDBfnk2y6VZs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan F3591567447
-Date: Tue, 29 Apr 2014 13:48:49 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
- for M25P80)
-Message-ID: <20140429174849.GO28159@titan.lakedaemon.net>
-References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
- <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
- <535A8FC9.8040707@wwwdotorg.org>
- <20140429172227.GB11657@arch.cereza>
+	id S933915AbaD2RvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:51:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932491AbaD2RvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 13:51:13 -0400
+Message-ID: <535FE68C.8060002@redhat.com>
+Date: Tue, 29 Apr 2014 19:51:08 +0200
+From: Florian Weimer <fweimer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429172227.GB11657@arch.cereza>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] random: Add "initialized" variable to proc
+References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com> <20140428214112.GC7857@thunk.org>
+In-Reply-To: <20140428214112.GC7857@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 02:22:27PM -0300, Ezequiel Garcia wrote:
-> On Apr 25, Stephen Warren wrote:
-> > On 04/17/2014 01:21 AM, Brian Norris wrote:
-> > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
-> > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
-> > > relevant defconfigs.
-> > > 
-> > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+On 04/28/2014 11:41 PM, Theodore Ts'o wrote:
+> On Mon, Apr 28, 2014 at 09:52:11PM +0200, Florian Weimer wrote:
+>> Before this change, you had to check kernel log messages to see if the
+>> non-blocking pool had been properly initialized.  With this change, you
+>> can consult the file /proc/sys/kernel/random/intialized instead.
+>>
+>> Signed-off-by: Florian Weimer <fweimer@redhat.com>
+>
+> The main reason why I hadn't added a facility like this was because
+> the main goal was to make knowledge of when the /dev/urandom entropy
+> pool had been fully initialized could be made clear.  In fact, at
+> least on my laptop, this happened at 2.5 seconds after boot, which is
+> after the hard drives had been probed, and before all of the various
+> laptop devices have been fully probed.
 
-Excuse my ignorance of the history of this bug, but shouldn't this be
-solved in the Kconfig logic?  Since when do we solve config symbol
-dependency bugs in the defconfigs?
+I've got a (physical) machine where it happens after ten seconds, or 
+much longer if there is no activity.
 
-> > I hadn't realized that the problem this patch solves was already present
-> > in the code, so this patch is simply catching up the defconfigs rather
-> > than part of a series which changed the code to cause the problem.
-> > 
-> > So, this needs to be applied ASAP.
-> > 
-> 
-> What's the status of this?
-> 
-> > I think this should be split it up so that each defconfig can go through
-> > the tree that owns it to avoid conflicts. If you repost split up, I can
-> > apply the tegra_defconfig change to the Tegra tree.
-> > 
-> 
-> Probably the same for mvebu (Ccing Jason).
+I've seen cases where on the first boot of virtual machines, the SSH key 
+was generated before the printk with the initialization message.  It's 
+not a problem if you install the OS first and then generate the keys, 
+but for booting from pre-provisioned images, it could be.  (I have no 
+evidence that this hurts the quality of the generated key material, this 
+is just based on what's reported by the kernel.)
 
-confused.
+> My goal was to see if we could make it be more or less guaranteed that
+> by the time userspace daemons started coming up, in practice
+> /dev/urandom would be initialized, so we wouldn't have to change
+> userspace.  And for the most part, this isn't a problem.
 
-Jason.
+I'm not sure if I want to bet an increasingly crucial part of the boot 
+design on the continuing availability of the current entropy levels 
+(which could go down as the result of environmental changes or a 
+reassessment of the entropy that actually comes into the system).
+
+> Now there may be systems where the device probe can happen much more
+> quickly. in which case it does make sense for really paranoid crypto
+> libraries to check if the urandom pool has been fully initialized.
+> But in that case, instead of (or perhaps in addition to) providing a
+> file which a library daemon could poll on, to provide an ioctl
+> interface which allows userspace to block until /dev/urandom has been
+> initialized.
+
+Or a new /dev/?random device that blocks until initialized, but behaves 
+just like /dev/urandom after that.   The question is how useful it would 
+be because of the deadlock scenario.
+
+-- 
+Florian Weimer / Red Hat Product Security Team
