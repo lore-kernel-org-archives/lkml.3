@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaEAJ6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:58:15 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:39797 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941AbaEAJ6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:58:10 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 30/47] mtd: nand: stm_nand_bch: write IBBT to Flash
-Date: Thu,  1 May 2014 10:56:37 +0100
-Message-Id: <1398938214-17847-31-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
-References: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
+	id S1756611AbaEAKCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 06:02:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58789 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753941AbaEAKCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 06:02:20 -0400
+Date: Tue, 29 Apr 2014 17:41:58 +0200
+From: Vojtech Pavlik <vojtech@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Petr Tesarik <ptesarik@suse.cz>, Petr Mladek <pmladek@suse.cz>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+Message-ID: <20140429154158.GB21754@suse.cz>
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+ <20140429100345.3f76a5bd@gandalf.local.home>
+ <alpine.LNX.2.00.1404291720440.16783@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1404291720440.16783@pobox.suse.cz>
+X-Bounce-Cookie: It's a lemon tree, dear Watson!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Write BBT contents to the first page of a specified block, then
-update the IBBT header and write it to last page of the same block.
+On Tue, Apr 29, 2014 at 05:24:32PM +0200, Jiri Kosina wrote:
+> On Tue, 29 Apr 2014, Steven Rostedt wrote:
+> 
+> > > According to 38.4 of [1], when SMM mode is entered while the CPU is 
+> > > handling NMI, the end result might be that upon exit from SMM, NMIs will 
+> > > be re-enabled and latched NMI delivered as nested [2].
+> > 
+> > Note, if this were true, then the x86_64 hardware would be extremely
+> > buggy. That's because NMIs are not made to be nested. If SMM's come in
+> > during an NMI and re-enables the NMI, then *all* software would break.
+> > That would basically make NMIs useless.
+> > 
+> > The only time I've ever witness problems (and I stress NMIs all the
+> > time), is when the NMI itself does a fault. Which my patch set handles
+> > properly. 
+> 
+> Yes, it indeed does. 
+> 
+> In the scenario I have outlined, the race window is extremely small, plus 
+> NMIs don't happen that often, plus SMIs don't happen that often, plus 
+> (hopefully) many BIOSes don't enable NMIs upon SMM exit.
+> 
+> The problem is, that Intel documentation is clear in this respect, and 
+> explicitly states it can happen. And we are violating that, which makes me 
+> rather nervous -- it'd be very nice to know what is the background of 38.4 
+> section text in the Intel docs.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/nand/stm_nand_bch.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+If we cannot disable IST for NMI on x86_64, because it'd break SYSCALL,
+and thus cannot handle this situation well, then we should at least try
+to detect it post-factum.
 
-diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index bf8669b..8b70a36 100644
---- a/drivers/mtd/nand/stm_nand_bch.c
-+++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -758,6 +758,35 @@ static void bch_fill_ibbt_header(struct nandi_controller *nandi,
- 	memcpy(ibbt_header->author, author, sizeof(author));
- }
- 
-+/* Write IBBT to Flash */
-+static int bch_write_bbt_data(struct nandi_controller *nandi,
-+			      struct nandi_bbt_info *bbt_info,
-+			      uint32_t block, int bak, uint8_t vers)
-+{
-+	uint32_t page_size = nandi->info.mtd.writesize;
-+	uint32_t block_size = nandi->info.mtd.erasesize;
-+	struct nand_ibbt_bch_header *ibbt_header =
-+		(struct nand_ibbt_bch_header *)nandi->page_buf;
-+	loff_t offs;
-+
-+	nandi->cached_page = -1;
-+
-+	/* Write BBT contents to first page of block */
-+	offs = (loff_t)block << nandi->block_shift;
-+	if (bch_write_page(nandi, offs, bbt_info->bbt) & NAND_STATUS_FAIL)
-+		return 1;
-+
-+	/* Update IBBT header and write to last page of block */
-+	memset(ibbt_header, 0xff, nandi->info.mtd.writesize);
-+	bch_fill_ibbt_header(nandi, ibbt_header, bak, vers);
-+	offs += block_size - page_size;
-+	if (bch_write_page(nandi, offs, (uint8_t *)ibbt_header) &
-+	    NAND_STATUS_FAIL)
-+		return 1;
-+
-+	return 0;
-+}
-+
- /* Scan block for IBBT signature */
- static int bch_find_ibbt_sig(struct nandi_controller *nandi,
- 			     uint32_t block, int *bak, uint8_t *vers,
+In the NMI handler, after ascertaining that the first NMI is executing
+(in_nmi not yet set) we check the return address stored on the stack.
+
+If it points anywhere inside the NMI handler (in reality only in the
+space between the NMI handler start and the check), a SMI-triggered
+nested NMI has happened.
+
+Then we should be able to at least report it before dying.
+
+If it doesn't ever happen: Great, this wasn't a real concern. If it
+does, we can pester BIOS vendors.
+
 -- 
-1.8.3.2
-
+Vojtech Pavlik
+Director SuSE Labs
