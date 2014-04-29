@@ -1,24 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456AbaD2GqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:46:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56837 "EHLO
+	id S932596AbaD2Gqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:46:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56879 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125AbaD2GqB (ORCPT
+	with ESMTP id S932101AbaD2Gqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:46:01 -0400
-Date: Mon, 28 Apr 2014 23:45:50 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-3c3cfd99c8988e568a5243f38c600a6a03d1b148@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1398396494-12811-2-git-send-email-namhyung@kernel.org>
-References: <1398396494-12811-2-git-send-email-namhyung@kernel.org>
+	Tue, 29 Apr 2014 02:46:40 -0400
+Date: Mon, 28 Apr 2014 23:46:16 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-93d5731dcb5b8cb7fa56ee11a5891f10c96c2a45@git.kernel.org>
+Cc: eranian@google.com, acme@redhat.com, mingo@kernel.org, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, acme@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, dzickus@redhat.com, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com
+Reply-To: mingo@kernel.org, acme@redhat.com, eranian@google.com,
+        jolsa@kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+        acme@kernel.org, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, dzickus@redhat.com,
+        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, adrian.hunter@intel.com
+In-Reply-To: <1397490723-1992-3-git-send-email-jolsa@redhat.com>
+References: <1397490723-1992-3-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add a test case for hists filtering
-Git-Commit-ID: 3c3cfd99c8988e568a5243f38c600a6a03d1b148
+Subject: [tip:perf/core] perf tools: Allocate thread map_groups'
+ s dynamically
+Git-Commit-ID: 93d5731dcb5b8cb7fa56ee11a5891f10c96c2a45
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,385 +40,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3c3cfd99c8988e568a5243f38c600a6a03d1b148
-Gitweb:     http://git.kernel.org/tip/3c3cfd99c8988e568a5243f38c600a6a03d1b148
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Fri, 25 Apr 2014 12:28:14 +0900
+Commit-ID:  93d5731dcb5b8cb7fa56ee11a5891f10c96c2a45
+Gitweb:     http://git.kernel.org/tip/93d5731dcb5b8cb7fa56ee11a5891f10c96c2a45
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 21 Mar 2014 17:57:01 -0300
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 28 Apr 2014 13:42:45 +0200
+CommitDate: Mon, 28 Apr 2014 13:43:20 +0200
 
-perf tests: Add a test case for hists filtering
+perf tools: Allocate thread map_groups's dynamically
 
-Now we have changed how hists stats are accounted especially when
-filter(s) applied.  So add a test case to verify it.
+Moving towards sharing map groups within a process threads.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398396494-12811-2-git-send-email-namhyung@kernel.org
+Because of this we need the map groups to be dynamically allocated. No
+other functional change is intended in here.
+
+Based on a patch by Jiri Olsa, but this time _just_ making the
+conversion from statically allocating thread->mg to turning it into a
+pointer and instead of initializing it at thread's constructor,
+introduce a constructor/destructor for the map_groups class and
+call at thread creation time.
+
+Later we will introduce the get/put methods when we move to sharing
+those map_groups, when the get/put refcounting semantics will be needed.
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1397490723-1992-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf        |   1 +
- tools/perf/tests/builtin-test.c |   4 +
- tools/perf/tests/hists_filter.c | 315 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h        |   1 +
- 4 files changed, 321 insertions(+)
+ tools/perf/arch/x86/tests/dwarf-unwind.c |  2 +-
+ tools/perf/ui/stdio/hist.c               |  2 +-
+ tools/perf/util/event.c                  |  2 +-
+ tools/perf/util/map.c                    | 16 ++++++++++++++++
+ tools/perf/util/map.h                    |  3 +++
+ tools/perf/util/thread.c                 | 18 ++++++++++++------
+ tools/perf/util/thread.h                 |  2 +-
+ 7 files changed, 35 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index a4aad78..0807e4c 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -399,6 +399,7 @@ LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
- LIB_OBJS += $(OUTPUT)tests/pmu.o
- LIB_OBJS += $(OUTPUT)tests/hists_common.o
- LIB_OBJS += $(OUTPUT)tests/hists_link.o
-+LIB_OBJS += $(OUTPUT)tests/hists_filter.o
- LIB_OBJS += $(OUTPUT)tests/python-use.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal.o
- LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index b11bf8a..ceb9dae 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -124,6 +124,10 @@ static struct test {
- #endif
- #endif
- 	{
-+		.desc = "Test filtering hist entries",
-+		.func = test__hists_filter,
-+	},
-+	{
- 		.func = NULL,
- 	},
- };
-diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
-new file mode 100644
-index 0000000..23dc2f4
---- /dev/null
-+++ b/tools/perf/tests/hists_filter.c
-@@ -0,0 +1,315 @@
-+#include "perf.h"
-+#include "util/debug.h"
-+#include "util/symbol.h"
-+#include "util/sort.h"
-+#include "util/evsel.h"
-+#include "util/evlist.h"
-+#include "util/machine.h"
-+#include "util/thread.h"
-+#include "util/parse-events.h"
-+#include "tests/tests.h"
-+#include "tests/hists_common.h"
-+
-+struct sample {
-+	u32 pid;
-+	u64 ip;
-+	struct thread *thread;
-+	struct map *map;
-+	struct symbol *sym;
-+};
-+
-+/* For the numbers, see hists_common.c */
-+static struct sample fake_samples[] = {
-+	/* perf [kernel] schedule() */
-+	{ .pid = 100, .ip = 0xf0000 + 700, },
-+	/* perf [perf]   main() */
-+	{ .pid = 100, .ip = 0x40000 + 700, },
-+	/* perf [libc]   malloc() */
-+	{ .pid = 100, .ip = 0x50000 + 700, },
-+	/* perf [perf]   main() */
-+	{ .pid = 200, .ip = 0x40000 + 700, }, /* will be merged */
-+	/* perf [perf]   cmd_record() */
-+	{ .pid = 200, .ip = 0x40000 + 900, },
-+	/* perf [kernel] page_fault() */
-+	{ .pid = 200, .ip = 0xf0000 + 800, },
-+	/* bash [bash]   main() */
-+	{ .pid = 300, .ip = 0x40000 + 700, },
-+	/* bash [bash]   xmalloc() */
-+	{ .pid = 300, .ip = 0x40000 + 800, },
-+	/* bash [libc]   malloc() */
-+	{ .pid = 300, .ip = 0x50000 + 700, },
-+	/* bash [kernel] page_fault() */
-+	{ .pid = 300, .ip = 0xf0000 + 800, },
-+};
-+
-+static int add_hist_entries(struct perf_evlist *evlist, struct machine *machine)
-+{
-+	struct perf_evsel *evsel;
-+	struct addr_location al;
-+	struct hist_entry *he;
-+	struct perf_sample sample = { .cpu = 0, };
-+	size_t i;
-+
-+	/*
-+	 * each evsel will have 10 samples but the 4th sample
-+	 * (perf [perf] main) will be collapsed to an existing entry
-+	 * so total 9 entries will be in the tree.
-+	 */
-+	evlist__for_each(evlist, evsel) {
-+		for (i = 0; i < ARRAY_SIZE(fake_samples); i++) {
-+			const union perf_event event = {
-+				.header = {
-+					.misc = PERF_RECORD_MISC_USER,
-+				},
-+			};
-+
-+			/* make sure it has no filter at first */
-+			evsel->hists.thread_filter = NULL;
-+			evsel->hists.dso_filter = NULL;
-+			evsel->hists.symbol_filter_str = NULL;
-+
-+			sample.pid = fake_samples[i].pid;
-+			sample.ip = fake_samples[i].ip;
-+
-+			if (perf_event__preprocess_sample(&event, machine, &al,
-+							  &sample) < 0)
-+				goto out;
-+
-+			he = __hists__add_entry(&evsel->hists, &al, NULL,
-+						NULL, NULL, 100, 1, 0);
-+			if (he == NULL)
-+				goto out;
-+
-+			fake_samples[i].thread = al.thread;
-+			fake_samples[i].map = al.map;
-+			fake_samples[i].sym = al.sym;
-+
-+			hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
-+			if (!he->filtered)
-+				he->hists->stats.nr_non_filtered_samples++;
-+		}
-+	}
-+
-+	return 0;
-+
-+out:
-+	pr_debug("Not enough memory for adding a hist entry\n");
-+	return TEST_FAIL;
-+}
-+
-+static void print_hists(struct hists *hists)
-+{
-+	int i = 0;
-+	struct rb_root *root;
-+	struct rb_node *node;
-+
-+	root = &hists->entries;
-+
-+	pr_info("----- %s --------\n", __func__);
-+	node = rb_first(root);
-+	while (node) {
-+		struct hist_entry *he;
-+
-+		he = rb_entry(node, struct hist_entry, rb_node);
-+
-+		if (!he->filtered) {
-+			pr_info("%2d: entry: %-8s [%-8s] %20s: period = %"PRIu64"\n",
-+				i, thread__comm_str(he->thread),
-+				he->ms.map->dso->short_name,
-+				he->ms.sym->name, he->stat.period);
-+		}
-+
-+		i++;
-+		node = rb_next(node);
-+	}
-+}
-+
-+int test__hists_filter(void)
-+{
-+	int err = TEST_FAIL;
-+	struct machines machines;
-+	struct machine *machine;
-+	struct perf_evsel *evsel;
-+	struct perf_evlist *evlist = perf_evlist__new();
-+
-+	TEST_ASSERT_VAL("No memory", evlist);
-+
-+	err = parse_events(evlist, "cpu-clock");
-+	if (err)
-+		goto out;
-+	err = parse_events(evlist, "task-clock");
-+	if (err)
-+		goto out;
-+
-+	/* default sort order (comm,dso,sym) will be used */
-+	if (setup_sorting() < 0)
-+		goto out;
-+
-+	machines__init(&machines);
-+
-+	/* setup threads/dso/map/symbols also */
-+	machine = setup_fake_machine(&machines);
-+	if (!machine)
-+		goto out;
-+
-+	if (verbose > 1)
-+		machine__fprintf(machine, stderr);
-+
-+	/* process sample events */
-+	err = add_hist_entries(evlist, machine);
-+	if (err < 0)
-+		goto out;
-+
-+	evlist__for_each(evlist, evsel) {
-+		struct hists *hists = &evsel->hists;
-+
-+		hists__collapse_resort(hists, NULL);
-+		hists__output_resort(hists);
-+
-+		if (verbose > 2) {
-+			pr_info("Normal histogram\n");
-+			print_hists(hists);
-+		}
-+
-+		TEST_ASSERT_VAL("Invalid nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] == 10);
-+		TEST_ASSERT_VAL("Invalid nr hist entries",
-+				hists->nr_entries == 9);
-+		TEST_ASSERT_VAL("Invalid total period",
-+				hists->stats.total_period == 1000);
-+		TEST_ASSERT_VAL("Unmatched nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] ==
-+				hists->stats.nr_non_filtered_samples);
-+		TEST_ASSERT_VAL("Unmatched nr hist entries",
-+				hists->nr_entries == hists->nr_non_filtered_entries);
-+		TEST_ASSERT_VAL("Unmatched total period",
-+				hists->stats.total_period ==
-+				hists->stats.total_non_filtered_period);
-+
-+		/* now applying thread filter for 'bash' */
-+		evsel->hists.thread_filter = fake_samples[9].thread;
-+		hists__filter_by_thread(hists);
-+
-+		if (verbose > 2) {
-+			pr_info("Histogram for thread filter\n");
-+			print_hists(hists);
-+		}
-+
-+		/* normal stats should be invariant */
-+		TEST_ASSERT_VAL("Invalid nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] == 10);
-+		TEST_ASSERT_VAL("Invalid nr hist entries",
-+				hists->nr_entries == 9);
-+		TEST_ASSERT_VAL("Invalid total period",
-+				hists->stats.total_period == 1000);
-+
-+		/* but filter stats are changed */
-+		TEST_ASSERT_VAL("Unmatched nr samples for thread filter",
-+				hists->stats.nr_non_filtered_samples == 4);
-+		TEST_ASSERT_VAL("Unmatched nr hist entries for thread filter",
-+				hists->nr_non_filtered_entries == 4);
-+		TEST_ASSERT_VAL("Unmatched total period for thread filter",
-+				hists->stats.total_non_filtered_period == 400);
-+
-+		/* remove thread filter first */
-+		evsel->hists.thread_filter = NULL;
-+		hists__filter_by_thread(hists);
-+
-+		/* now applying dso filter for 'kernel' */
-+		evsel->hists.dso_filter = fake_samples[0].map->dso;
-+		hists__filter_by_dso(hists);
-+
-+		if (verbose > 2) {
-+			pr_info("Histogram for dso filter\n");
-+			print_hists(hists);
-+		}
-+
-+		/* normal stats should be invariant */
-+		TEST_ASSERT_VAL("Invalid nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] == 10);
-+		TEST_ASSERT_VAL("Invalid nr hist entries",
-+				hists->nr_entries == 9);
-+		TEST_ASSERT_VAL("Invalid total period",
-+				hists->stats.total_period == 1000);
-+
-+		/* but filter stats are changed */
-+		TEST_ASSERT_VAL("Unmatched nr samples for dso filter",
-+				hists->stats.nr_non_filtered_samples == 3);
-+		TEST_ASSERT_VAL("Unmatched nr hist entries for dso filter",
-+				hists->nr_non_filtered_entries == 3);
-+		TEST_ASSERT_VAL("Unmatched total period for dso filter",
-+				hists->stats.total_non_filtered_period == 300);
-+
-+		/* remove dso filter first */
-+		evsel->hists.dso_filter = NULL;
-+		hists__filter_by_dso(hists);
-+
-+		/*
-+		 * now applying symbol filter for 'main'.  Also note that
-+		 * there's 3 samples that have 'main' symbol but the 4th
-+		 * entry of fake_samples was collapsed already so it won't
-+		 * be counted as a separate entry but the sample count and
-+		 * total period will be remained.
-+		 */
-+		evsel->hists.symbol_filter_str = "main";
-+		hists__filter_by_symbol(hists);
-+
-+		if (verbose > 2) {
-+			pr_info("Histogram for symbol filter\n");
-+			print_hists(hists);
-+		}
-+
-+		/* normal stats should be invariant */
-+		TEST_ASSERT_VAL("Invalid nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] == 10);
-+		TEST_ASSERT_VAL("Invalid nr hist entries",
-+				hists->nr_entries == 9);
-+		TEST_ASSERT_VAL("Invalid total period",
-+				hists->stats.total_period == 1000);
-+
-+		/* but filter stats are changed */
-+		TEST_ASSERT_VAL("Unmatched nr samples for symbol filter",
-+				hists->stats.nr_non_filtered_samples == 3);
-+		TEST_ASSERT_VAL("Unmatched nr hist entries for symbol filter",
-+				hists->nr_non_filtered_entries == 2);
-+		TEST_ASSERT_VAL("Unmatched total period for symbol filter",
-+				hists->stats.total_non_filtered_period == 300);
-+
-+		/* now applying all filters at once. */
-+		evsel->hists.thread_filter = fake_samples[1].thread;
-+		evsel->hists.dso_filter = fake_samples[1].map->dso;
-+		hists__filter_by_thread(hists);
-+		hists__filter_by_dso(hists);
-+
-+		if (verbose > 2) {
-+			pr_info("Histogram for all filters\n");
-+			print_hists(hists);
-+		}
-+
-+		/* normal stats should be invariant */
-+		TEST_ASSERT_VAL("Invalid nr samples",
-+				hists->stats.nr_events[PERF_RECORD_SAMPLE] == 10);
-+		TEST_ASSERT_VAL("Invalid nr hist entries",
-+				hists->nr_entries == 9);
-+		TEST_ASSERT_VAL("Invalid total period",
-+				hists->stats.total_period == 1000);
-+
-+		/* but filter stats are changed */
-+		TEST_ASSERT_VAL("Unmatched nr samples for all filter",
-+				hists->stats.nr_non_filtered_samples == 2);
-+		TEST_ASSERT_VAL("Unmatched nr hist entries for all filter",
-+				hists->nr_non_filtered_entries == 1);
-+		TEST_ASSERT_VAL("Unmatched total period for all filter",
-+				hists->stats.total_non_filtered_period == 200);
-+	}
-+
-+
-+	err = TEST_OK;
-+
-+out:
-+	/* tear down everything */
-+	perf_evlist__delete(evlist);
-+	machines__exit(&machines);
-+
-+	return err;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index a24795c..fe39163 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -41,6 +41,7 @@ int test__sample_parsing(void);
- int test__keep_tracking(void);
- int test__parse_no_sample_id_all(void);
- int test__dwarf_unwind(void);
-+int test__hists_filter(void);
+diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
+index b8c0102..c916656 100644
+--- a/tools/perf/arch/x86/tests/dwarf-unwind.c
++++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
+@@ -23,7 +23,7 @@ static int sample_ustack(struct perf_sample *sample,
  
- #if defined(__x86_64__) || defined(__i386__)
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
+ 	sp = (unsigned long) regs[PERF_REG_X86_SP];
+ 
+-	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
++	map = map_groups__find(thread->mg, MAP__FUNCTION, (u64) sp);
+ 	if (!map) {
+ 		pr_debug("failed to get stack map\n");
+ 		free(buf);
+diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
+index d59893e..9eccf7f 100644
+--- a/tools/perf/ui/stdio/hist.c
++++ b/tools/perf/ui/stdio/hist.c
+@@ -495,7 +495,7 @@ print_entries:
+ 			break;
+ 
+ 		if (h->ms.map == NULL && verbose > 1) {
+-			__map_groups__fprintf_maps(&h->thread->mg,
++			__map_groups__fprintf_maps(h->thread->mg,
+ 						   MAP__FUNCTION, verbose, fp);
+ 			fprintf(fp, "%.10s end\n", graph_dotted_line);
+ 		}
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 9d12aa6..dbcaea1 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -699,7 +699,7 @@ void thread__find_addr_map(struct thread *thread,
+ 			   enum map_type type, u64 addr,
+ 			   struct addr_location *al)
+ {
+-	struct map_groups *mg = &thread->mg;
++	struct map_groups *mg = thread->mg;
+ 	bool load_map = false;
+ 
+ 	al->machine = machine;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 39cd2d0..ae4c5e1 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -358,6 +358,22 @@ void map_groups__exit(struct map_groups *mg)
+ 	}
+ }
+ 
++struct map_groups *map_groups__new(void)
++{
++	struct map_groups *mg = malloc(sizeof(*mg));
++
++	if (mg != NULL)
++		map_groups__init(mg);
++
++	return mg;
++}
++
++void map_groups__delete(struct map_groups *mg)
++{
++	map_groups__exit(mg);
++	free(mg);
++}
++
+ void map_groups__flush(struct map_groups *mg)
+ {
+ 	int type;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index f00f058..1073e2d 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -61,6 +61,9 @@ struct map_groups {
+ 	struct machine	 *machine;
+ };
+ 
++struct map_groups *map_groups__new(void);
++void map_groups__delete(struct map_groups *mg);
++
+ static inline struct kmap *map__kmap(struct map *map)
+ {
+ 	return (struct kmap *)(map + 1);
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 3ce0498..dc51d16 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -15,7 +15,10 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	struct thread *thread = zalloc(sizeof(*thread));
+ 
+ 	if (thread != NULL) {
+-		map_groups__init(&thread->mg);
++		thread->mg = map_groups__new();
++		if (thread->mg == NULL)
++			goto out_free;
++
+ 		thread->pid_ = pid;
+ 		thread->tid = tid;
+ 		thread->ppid = -1;
+@@ -37,6 +40,8 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	return thread;
+ 
+ err_thread:
++	map_groups__delete(thread->mg);
++out_free:
+ 	free(thread);
+ 	return NULL;
+ }
+@@ -45,7 +50,8 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
+ 
+-	map_groups__exit(&thread->mg);
++	map_groups__delete(thread->mg);
++	thread->mg = NULL;
+ 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
+ 		list_del(&comm->list);
+ 		comm__free(comm);
+@@ -111,13 +117,13 @@ int thread__comm_len(struct thread *thread)
+ size_t thread__fprintf(struct thread *thread, FILE *fp)
+ {
+ 	return fprintf(fp, "Thread %d %s\n", thread->tid, thread__comm_str(thread)) +
+-	       map_groups__fprintf(&thread->mg, verbose, fp);
++	       map_groups__fprintf(thread->mg, verbose, fp);
+ }
+ 
+ void thread__insert_map(struct thread *thread, struct map *map)
+ {
+-	map_groups__fixup_overlappings(&thread->mg, map, verbose, stderr);
+-	map_groups__insert(&thread->mg, map);
++	map_groups__fixup_overlappings(thread->mg, map, verbose, stderr);
++	map_groups__insert(thread->mg, map);
+ }
+ 
+ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+@@ -135,7 +141,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ 	}
+ 
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		if (map_groups__clone(&thread->mg, &parent->mg, i) < 0)
++		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
+ 			return -ENOMEM;
+ 
+ 	thread->ppid = parent->tid;
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 9b29f08..bee1eb0 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -13,7 +13,7 @@ struct thread {
+ 		struct rb_node	 rb_node;
+ 		struct list_head node;
+ 	};
+-	struct map_groups	mg;
++	struct map_groups	*mg;
+ 	pid_t			pid_; /* Not all tools update this */
+ 	pid_t			tid;
+ 	pid_t			ppid;
