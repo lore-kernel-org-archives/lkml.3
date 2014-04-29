@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964915AbaD2SD0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:03:26 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:49701 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692AbaD2SDZ (ORCPT
+	id S934006AbaD2SEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:04:41 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:51230 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933510AbaD2SEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:03:25 -0400
+	Tue, 29 Apr 2014 14:04:40 -0400
 MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
-References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
-Date: Tue, 29 Apr 2014 20:03:24 +0200
-Message-ID: <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <s5hbnvk9pxn.wl%tiwai@suse.de>
+References: <CAAWf5=s-hQ2xMtLxNFXjXH6UGmQtgkrzS9zWj3z_CTq41XGpdw@mail.gmail.com>
+ <s5h4n1ov8h9.wl%tiwai@suse.de> <CAAWf5=usG_Q-11kMd=58mVEELb8b0nyBXanaDqKqCGSFVJP0Rw@mail.gmail.com>
+ <s5hbnvk9pxn.wl%tiwai@suse.de>
+From: Bryan Quigley <gquigs@gmail.com>
+Date: Tue, 29 Apr 2014 14:04:15 -0400
+Message-ID: <CAAWf5=tENLeh8VeM2i_FwYiqGYtZEMZ625XQTjx6nutE=A46Mg@mail.gmail.com>
+Subject: Re: PROBLEM: Pulseaudio hung at schedule in 3.15-rc1
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 7:43 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Apr 29, 2014 at 9:01 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> This was reported by IBM for 3.12, but if my analysis is right, it affects
->> current kernel as well as older ones.
->>
->> So the question is: does anything protect the shrink list from concurrent
->> modification by one or more dput() instances?
+I pastebined the full boots syslog here: http://pastebin.ubuntu.com/7360925/
+
+The only kernel error I get is that pulseaudio hangs.. Nothing more
+specific as to why.
+I can also get a hang if I just run: sudo lsusb -v.  It displays
+Bus 002 Device 002: ID 046d:0825 Logitech, Inc. Webcam C270
+[blinking cursor]
+
+Thanks,
+Bryan
+
+
+> Now I'm back and start looking at this again.
+> Could you give the raw kernel messages with the stack trace?
+> The previous cited message is hard to read.
 >
-> Ugh. I don't see anything. The shrinking list is a private list, so
-> adding on its own would be entirely safe, and I think that's where the
-> "we don't need no steenking locking" comes from.
+>> I did determine it is caused by having my Logitech webcam plugged in.
+>> Here is lsusb from a working system:
+>> Bus 002 Device 002: ID 046d:0825 Logitech, Inc. Webcam C270
 >
-> But yes, the dentries are then visible on the hash chains, and there
-> can be concurrent removals from the list.
->
-> That new global lock smells, though - and if we want to use a global
-> lock, we should simply use the existing per-superblock LRU lock, not
-> make up some new global one. The moving case already holds it, can't
-> we just take it in the add/del case? Was there some reason you didn't
-> do that?
-
-Because we no longer have that.  It now uses the list_lru thing, with
-a "per-node" lock, whatever that one is.
-
-Introducing a new per-sb lock should be OK.
-
-Another idea, which could have subtler effects, is simply not to kill
-a dentry that is on the shrink list (indicated by
-DCACHE_SHRINK_LIST), since it's bound to get killed anyway.  But
-that's a change in behaviour...
-
->
-> Let me think about it, maybe there's some trick we can do by virtue of
-> the list head being private and us holding the dentry lock. So at
-> least on addition, we have *two* of the tree involved nodes locked.
-> Does that perhaps allow for any lockless games to be played?
-
-I don't understand how that could be made to work.
+> OK, there is a quick for this device but it shouldn't affect the
+> suspend/resume behavior, at least.
