@@ -1,54 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181AbaD2Ihj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:37:39 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:61766 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358AbaD2Ihh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:37:37 -0400
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH 5/6 v2] staging: comedi: addi_apci_1564: remove unnecessary info from boardinfo
-Date: Tue, 29 Apr 2014 03:37:17 -0500
-Message-Id: <1398760637-19143-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398562693-6140-1-git-send-email-chase.southwood@gmail.com>
-References: <1398562693-6140-1-git-send-email-chase.southwood@gmail.com>
+	id S933212AbaD2IiL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:38:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37170 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaD2IiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 04:38:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,949,1389772800"; 
+   d="scan'208";a="530317561"
+Message-ID: <1398760684.23470.1.camel@smile.fi.intel.com>
+Subject: Re: lockdep warning after recent cleanup in console code
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Date: Tue, 29 Apr 2014 11:38:04 +0300
+In-Reply-To: <20140428192416.GE9091@quack.suse.cz>
+References: <1398702925.11914.292.camel@smile.fi.intel.com>
+	 <20140428134331.68771bf7@gandalf.local.home>
+	 <20140428175139.GD9091@quack.suse.cz>
+	 <20140428141439.3580dce9@gandalf.local.home>
+	 <20140428192416.GE9091@quack.suse.cz>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i_IorangeBase1, i_PCIEeprom, and pc_EepromChip data in the boardinfo
-was only needed to work out the usage of the PCI bars.  Now that that is
-squared away, this info is no longer needed and can be removed.
+On Mon, 2014-04-28 at 21:24 +0200, Jan Kara wrote:
+> On Mon 28-04-14 14:14:39, Steven Rostedt wrote:
+> > On Mon, 28 Apr 2014 19:51:39 +0200
+> > Jan Kara <jack@suse.cz> wrote:
+> > 
+> > > On Mon 28-04-14 13:43:31, Steven Rostedt wrote:
+> > > > Things have changed with regard to printk() in linux-next. Now it
+> > > > appears that lockdep is going haywire over it. I don't understand the
+> > > > exact reason for the lockdep_off() and lockdep_on() logic that is in
+> > > > printk(), but it obviously seems to be causing issues with the new
+> > > > changes.
+> > > > 
+> > > > Care to take a look?
+> > >   The obvious cause is that I moved lockdep_on() somewhat earlier in
+> > > vprintk_emit() so lockdep now covers more of printk code. And apparently
+> > > something is wrong there...
+> > > 
+> > 
+> > Exactly, and I rather know *exactly* what is wrong before we just start
+> > throwing patches at the problem and hope it goes away. That's not how
+> > to solve a software bug.
+>   So I had a look and we are missing mutex_release() in
+> console_trylock_for_printk() if we don't have a console to print to.
+> Attached patch should fix the problem.
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
----
-2: Incorrect patch title fixed.
+Besides it doesn't apply clearly on top of today's linux-next, it
+doesn't fix the issue, but modifies it a bit.
 
- drivers/staging/comedi/drivers/addi_apci_1564.c | 3 ---
- 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
-index 7e42d47..d5be8d3 100644
---- a/drivers/staging/comedi/drivers/addi_apci_1564.c
-+++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
-@@ -11,9 +11,6 @@
- static const struct addi_board apci1564_boardtypes[] = {
- 	{
- 		.pc_DriverName		= "apci1564",
--		.i_IorangeBase1		= APCI1564_ADDRESS_RANGE,
--		.i_PCIEeprom		= ADDIDATA_EEPROM,
--		.pc_EepromChip		= ADDIDATA_93C76,
- 		.i_NbrDiChannel		= 32,
- 		.i_NbrDoChannel		= 32,
- 		.i_DoMaxdata		= 0xffffffff,
+[    0.000000] =============================================
+[    0.000000] [ INFO: possible recursive locking detected ]
+[    0.000000] 3.15.0-rc3-next-20140429-00031-gb91b421 #54 Not tainted
+[    0.000000] ---------------------------------------------
+[    0.000000] swapper/0 is trying to acquire lock:
+[    0.000000]  (console_lock){......}, at: [<c107078b>] console_lock
++0x8/0x27
+[    0.000000] 
+[    0.000000] but task is already holding lock:
+[    0.000000]  (console_lock){......}, at: [<c1070be5>] console_trylock
++0x1b/0x50
+[    0.000000] 
+[    0.000000] other info that might help us debug this:
+[    0.000000]  Possible unsafe locking scenario:
+[    0.000000] 
+[    0.000000]        CPU0
+[    0.000000]        ----
+[    0.000000]   lock(console_lock);
+[    0.000000]   lock(console_lock);
+[    0.000000] 
+[    0.000000]  *** DEADLOCK ***
+[    0.000000] 
+[    0.000000]  May be due to missing lock nesting notation
+[    0.000000] 
+[    0.000000] 3 locks held by swapper/0:
+[    0.000000]  #0:  (console_lock){......}, at: [<c1070be5>]
+console_trylock+0x1b/0x50
+[    0.000000]  #1:  (console_lock){......}, at: [<c1070be5>]
+console_trylock+0x1b/0x50
+[    0.000000]  #2:  (console_lock){......}, at: [<c1070be5>]
+console_trylock+0x1b/0x50
+[    0.000000] 
+[    0.000000] stack backtrace:
+[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
+3.15.0-rc3-next-20140429-00031-gb91b421 #54
+[    0.000000]  00000000 00000000 c186de14 c15879ea c1daf840 c186de80
+c106c188 c1794dff
+[    0.000000]  c1795959 c1794cfe 0000002a 00000000 00000000 c1daf840
+c1983700 00000080
+[    0.000000]  04002001 c187a0b0 00000000 00000000 c1879b40 c1879b40
+00200046 00000000
+[    0.000000] Call Trace:
+[    0.000000]  [<c15879ea>] dump_stack+0x49/0x73
+[    0.000000]  [<c106c188>] __lock_acquire+0xb31/0xc7c
+[    0.000000]  [<c106c36f>] lock_acquire+0x9c/0x111
+[    0.000000]  [<c107078b>] ? console_lock+0x8/0x27
+[    0.000000]  [<c107077e>] down_console_sem+0x24/0x29
+[    0.000000]  [<c107078b>] ? console_lock+0x8/0x27
+[    0.000000]  [<c107078b>] console_lock+0x8/0x27
+[    0.000000]  [<c10728e9>] register_console+0x15e/0x295
+[    0.000000]  [<c15830bc>] early_console_register+0x33/0x35
+[    0.000000]  [<c191047a>] setup_early_printk+0x144/0x151
+[    0.000000]  [<c19013f6>] do_early_param+0x41/0x73
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c104c788>] parse_args+0x271/0x33b
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c19016e6>] parse_early_options+0x1c/0x21
+[    0.000000]  [<c19016e6>] ? parse_early_options+0x1c/0x21
+[    0.000000]  [<c19013b5>] ? loglevel+0x2c/0x2c
+[    0.000000]  [<c1901715>] parse_early_param+0x2a/0x36
+[    0.000000]  [<c1904329>] setup_arch+0x3c9/0xc55
+[    0.000000]  [<c1071f08>] ? vprintk_emit+0x3c5/0x3ea
+[    0.000000]  [<c15849a5>] ? printk+0x28/0x2d
+[    0.000000]  [<c190179d>] start_kernel+0x72/0x325
+[    0.000000]  [<c19012b4>] i386_start_kernel+0x82/0x86
+[    0.000000] bootconsole [earlyhsu0] enabled
+
+
+
+
 -- 
-1.9.0
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
