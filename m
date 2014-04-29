@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934119AbaD2WXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:23:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51008 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933755AbaD2WXg (ORCPT
+	id S1757587AbaD2WY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:24:58 -0400
+Received: from mail.siteground.com ([67.19.240.234]:57700 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaD2WY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:23:36 -0400
-Date: Tue, 29 Apr 2014 15:23:10 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        alsa-devel@alsa-project.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Message-ID: <20140429222310.GR15125@sirena.org.uk>
-References: <1398694047-28596-1-git-send-email-sre@kernel.org>
- <1398694047-28596-4-git-send-email-sre@kernel.org>
+	Tue, 29 Apr 2014 18:24:56 -0400
+Message-ID: <536026B3.1020905@1h.com>
+Date: Wed, 30 Apr 2014 01:24:51 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tV/+6PImfyFtriLg"
-Content-Disposition: inline
-In-Reply-To: <1398694047-28596-4-git-send-email-sre@kernel.org>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 12.104.145.3
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 3/9] ASoC: omap: rx51: Use devm_snd_soc_register_card
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, containers@lists.linux-foundation.org,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
+References: <535FADDA.2070803@1h.com> <20140429183534.GB19325@thunk.org> <20140429185251.GA27969@ubuntumail> <53601E5B.5050004@1h.com> <20140429220234.GC28410@ubuntumail>
+In-Reply-To: <20140429220234.GC28410@ubuntumail>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/30/2014 01:02 AM, Serge Hallyn wrote:
+> Quoting Marian Marinov (mm@1h.com):
+>> On 04/29/2014 09:52 PM, Serge Hallyn wrote:
+>>> Quoting Theodore Ts'o (tytso@mit.edu):
+>>>> On Tue, Apr 29, 2014 at 04:49:14PM +0300, Marian Marinov wrote:
+>>>>>
+>>>>> I'm proposing a fix to this, by replacing the capable(CAP_LINUX_IMMUTABLE)
+>>>>> check with ns_capable(current_cred()->user_ns, CAP_LINUX_IMMUTABLE).
+>>>>
+>>>> Um, wouldn't it be better to simply fix the capable() function?
+>>>>
+>>>> /**
+>>>>   * capable - Determine if the current task has a superior capability in effect
+>>>>   * @cap: The capability to be tested for
+>>>>   *
+>>>>   * Return true if the current task has the given superior capability currently
+>>>>   * available for use, false if not.
+>>>>   *
+>>>>   * This sets PF_SUPERPRIV on the task if the capability is available on the
+>>>>   * assumption that it's about to be used.
+>>>>   */
+>>>> bool capable(int cap)
+>>>> {
+>>>> 	return ns_capable(&init_user_ns, cap);
+>>>> }
+>>>> EXPORT_SYMBOL(capable);
+>>>>
+>>>> The documentation states that it is for "the current task", and I
+>>>> can't imagine any use case, where user namespaces are in effect, where
+>>>> using init_user_ns would ever make sense.
+>>>
+>>> the init_user_ns represents the user_ns owning the object, not the
+>>> subject.
+>>>
+>>> The patch by Marian is wrong.  Anyone can do 'clone(CLONE_NEWUSER)',
+>>> setuid(0), execve, and end up satisfying 'ns_capable(current_cred()->userns,
+>>> CAP_SYS_IMMUTABLE)' by definition.
+>>>
+>>> So NACK to that particular patch.  I'm not sure, but IIUC it should be
+>>> safe to check against the userns owning the inode?
+>>>
+>>
+>> So what you are proposing is to replace 'ns_capable(current_cred()->userns, CAP_SYS_IMMUTABLE)' with
+>> 'inode_capable(inode, CAP_SYS_IMMUTABLE)' ?
+>>
+>> I agree that this is more sane.
+>
+> Right, and I think the two operations you're looking at seem sane
+> to allow.
 
---tV/+6PImfyFtriLg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If you are ok with this patch, I will fix all file systems and send patches.
 
-On Mon, Apr 28, 2014 at 04:07:21PM +0200, Sebastian Reichel wrote:
-> This patch converts the rx51 ASoC module to use
-> devm_snd_soc_register_card.
+Signed-off-by: Marian Marinov <mm@yuhu.biz>
+---
+  fs/ext4/ioctl.c | 2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Applied, thanks.
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index d011b69..9418634 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -265,7 +265,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+                  * This test looks nicer. Thanks to Pauline Middelink
+                  */
+                 if ((flags ^ oldflags) & (EXT4_APPEND_FL | EXT4_IMMUTABLE_FL)) {
+-                   if (!capable(CAP_LINUX_IMMUTABLE))
++                 if (!inode_capable(inode, CAP_LINUX_IMMUTABLE))
+                                 goto flags_out;
+                 }
 
---tV/+6PImfyFtriLg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+---
+1.8.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Marian
 
-iQIcBAEBAgAGBQJTYCZKAAoJELSic+t+oim91dUP/0R34P4VuZw/NvaI8G5IcwVo
-nirBkCC3TmjksRwA11l+ouTJpf4Blmybssp6/vDCL0jDt+FCgFcgCsiqK8zGZQyZ
-JR1O9OKgvHWThYVmIv2oJuDEikhtSzvc+SnPzv4VvXgbMtZXhWiJG4j5O0+PJA7E
-vvZChiMOSRoZ2SpnylCNAw8KF1iDNdKvmO10Sb4RwhLqX+YoxLU/tSV1yE7zeD1z
-2lMxEtr/jN9AUAqVQz4cTq3pI4muv8G2zLd4W0LOz91UgjXdIgc+MJz0oJKqoVjt
-g1l2yzvGNTz61nark7n0sEaN4NG+2tAA+QBZeHKasn+FKaFIQ/TrOXlfa4P1e+pg
-fDuhwlIzbmaXSt2+UEg/VkBBJ6T/jLY1VD0hUeP3JYgtpnTO+uQzux+aSOTGd6Vw
-q1a0rrHh4PjlbGlyoDyZUiWixMLGlkt/w2nIhwQlAPnKMJ274dQ5f04ulMwRpk9W
-uZUIhFm6i/MidN6il1D9OKWi/dD93RDSZTRhipSoIUE2YJSmemlYsJzCt5POS8uh
-mZRHMes+hB2o99S6Tosht0RATdZlg0K3QHahiu292LIq9pEUI7yr3/R47MDHMDID
-24PgMw6O5w1/bxwuii44fEOqlDCp+m3i7ZXfSOSB1/YzSx0OeWs8rlteWJI0Ci3a
-yCWCMSvWvJHzx9eiQ6A6
-=sabg
------END PGP SIGNATURE-----
 
---tV/+6PImfyFtriLg--
+>
+> thanks,
+> -serge
+>
+
+
+-- 
+Marian Marinov
+Founder & CEO of 1H Ltd.
+Jabber/GTalk: hackman@jabber.org
+ICQ: 7556201
+Mobile: +359 886 660 270
