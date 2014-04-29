@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898AbaD2ARa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:17:30 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:57021 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751515AbaD2AR2 (ORCPT
+	id S1756966AbaD2AUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:20:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51566 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252AbaD2AUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:17:28 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvVLAJ3uXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAxUDCSUPBSUDBxoTiEDJAxcWhUSIfweEOQSZC5YiKw
-Date: Tue, 29 Apr 2014 10:17:23 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 08/22] vfs: Add permission flags for setting file
- attributes
-Message-ID: <20140429001723.GQ15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1398615293-22931-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398615293-22931-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 20:20:38 -0400
+Date: Mon, 28 Apr 2014 17:22:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-Id: <20140428172219.4be61cf7.akpm@linux-foundation.org>
+In-Reply-To: <20140428234039.GC6358@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+	<alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+	<20140424005247.GA17713@logfs.org>
+	<20140424194024.GA25446@logfs.org>
+	<20140428234039.GC6358@logfs.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 09:44:39PM +0530, Aneesh Kumar K.V wrote:
-> From: Andreas Gruenbacher <agruen@kernel.org>
+On Mon, 28 Apr 2014 19:40:39 -0400 J__rn Engel <joern@logfs.org> wrote:
+
+> On Thu, 24 April 2014 15:40:24 -0400, J__rn Engel wrote:
+> > On Wed, 23 April 2014 20:52:47 -0400, J__rn Engel wrote:
+> > > 
+> > > I use the patch below for some time now.  While it doesn't avoid the
+> > > log pollution in the first place, it lessens the impact somewhat.
+> > 
+> > Added a config option and ported it to current -linus.  Andrew, would
+> > you take this patch?
 > 
-> Some permission models can allow processes to take ownership of a file,
-> change the file permissions, and set the file timestamps.  Introduce new
-> permission mask flags and check for those permissions in
-> inode_change_ok().
-> 
-> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  fs/attr.c          | 68 ++++++++++++++++++++++++++++++++++++++++++++----------
->  fs/namei.c         |  2 +-
->  include/linux/fs.h |  4 ++++
->  3 files changed, 61 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/attr.c b/fs/attr.c
-> index 1d158c972442..e468d4f2dca8 100644
-> --- a/fs/attr.c
-> +++ b/fs/attr.c
-> @@ -16,6 +16,54 @@
->  #include <linux/evm.h>
->  #include <linux/ima.h>
->  
-> +static int richacl_change_ok(struct inode *inode, int mask)
-> +{
+> Andrew?  Did you dislike this patch for some reason or just miss it in
+> the thread?
 
-acl_change_ok()
+Neither ;) I try to respond in some way to all patches unless I think it's clear
+to the originator why I took no action.  And I think I'm pretty good at
+not losing stuff.
 
-> +	if (!IS_RICHACL(inode))
-> +		return -EPERM;
-> +
-> +	if (inode->i_op->permission)
-> +		return inode->i_op->permission(inode, mask);
-> +
-> +	return check_acl(inode, mask);
-> +}
-> +
-> +static bool inode_uid_change_ok(struct inode *inode, kuid_t ia_uid)
-> +{
-> +	if (uid_eq(current_fsuid(), inode->i_uid) &&
-> +	    uid_eq(ia_uid, inode->i_uid))
-> +		return true;
-> +	if (uid_eq(current_fsuid(), ia_uid) &&
-> +	    richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-> +		return true;
-> +	if (capable(CAP_CHOWN))
-> +		return true;
-> +	return false;
-> +}
-> +
-> +static bool inode_gid_change_ok(struct inode *inode, kgid_t ia_gid)
-> +{
-> +	int in_group = in_group_p(ia_gid);
-> +	if (uid_eq(current_fsuid(), inode->i_uid) &&
-> +	    (in_group || gid_eq(ia_gid, inode->i_gid)))
-> +		return true;
-> +	if (in_group && richacl_change_ok(inode, MAY_TAKE_OWNERSHIP) == 0)
-> +		return true;
-> +	if (capable(CAP_CHOWN))
-> +		return true;
-> +	return false;
-> +}
-> +
-> +static bool inode_owner_permitted_or_capable(struct inode *inode, int mask)
-> +{
-> +	if (uid_eq(current_fsuid(), inode->i_uid))
-> +		return true;
-> +	if (richacl_change_ok(inode, mask) == 0)
-> +		return true;
-> +	if (inode_capable(inode, CAP_FOWNER))
-> +		return true;
-> +	return false;
-> +}
-
-Some comments on when and why these need to be used instead of
-inode_owner_or_capable() would be useful. I can see people getting
-this wrong in future.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+otoh, it has only been four days, three of which I spent offline...
