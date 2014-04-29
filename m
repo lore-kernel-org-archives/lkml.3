@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529AbaD2U2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 16:28:38 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:42434 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753522AbaD2U2g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 16:28:36 -0400
-Message-ID: <53600B71.2050904@semaphore.gr>
-Date: Tue, 29 Apr 2014 23:28:33 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S965060AbaD2Udr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 16:33:47 -0400
+Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:60807
+	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753522AbaD2Udq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 16:33:46 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 6/6 v2] staging: comedi: addi_apci_1564: remove use of
+ devpriv->s_EeParameters
+Thread-Topic: [PATCH 6/6 v2] staging: comedi: addi_apci_1564: remove use of
+ devpriv->s_EeParameters
+Thread-Index: AQHPY4ZnHPwFiimH2UOrIUkZMgSYGJspCbaQ
+Date: Tue, 29 Apr 2014 20:33:45 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E24280@P3PWEX4MB008.ex4.secureserver.net>
+References: <1398562711-6313-1-git-send-email-chase.southwood@gmail.com>
+ <1398760700-19397-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1398760700-19397-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: Break out early when frequency equals target_freq
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many drivers keep frequencies in frequency table in ascending
-or descending order. When governor tries to change to policy->min
-or policy->max respectively then the cpufreq_frequency_table_target
-could return on first iteration. This will save some iteration cycles.
+On, Tuesday, April 29, 2014 1:38 AM, Chase Southwood wrote: 
+> This driver no longer reads the eeprom to find the board specific data,
+> all the necessary data is in the boardinfo. Use the boardinfo directly
+> instead of passing through devpriv->s_EeParameters.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+> 2: Incorrect patch title fixed.
+>
+> Ian and Hartley,
+>
+> The auto_attach() function is starting to look much better now.  My next patchset
+> will be geared towards only allocating subdevices which are actually used.
 
-So, break out early when a frequency in cpufreq_frequency_table
-equals to target one.
+Other than Ian's comment on patch 4/6 everything looks good to me.
 
-Testing this during kernel compilation using ondemand governor
-with a frequency table in ascending order, the
-cpufreq_frequency_table_target returned early on the first
-iteration at about 30% of times called.
+For the series:
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/freq_table.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+BTW, for a patch series you should include a cover letter (PATCH 00/xx).
 
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 8e518c6..1632981 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -137,9 +137,13 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- 		i = pos - table;
- 		if ((freq < policy->min) || (freq > policy->max))
- 			continue;
-+		if (freq == target_freq) {
-+			optimal.driver_data = i;
-+			break;
-+		}
- 		switch (relation) {
- 		case CPUFREQ_RELATION_H:
--			if (freq <= target_freq) {
-+			if (freq < target_freq) {
- 				if (freq >= optimal.frequency) {
- 					optimal.frequency = freq;
- 					optimal.driver_data = i;
-@@ -152,7 +156,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- 			}
- 			break;
- 		case CPUFREQ_RELATION_L:
--			if (freq >= target_freq) {
-+			if (freq > target_freq) {
- 				if (freq <= optimal.frequency) {
- 					optimal.frequency = freq;
- 					optimal.driver_data = i;
--- 
-1.9.0
+Regards,
+Hartley
