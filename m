@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933670AbaD2K51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:57:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932384AbaD2K50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:57:26 -0400
-Date: Tue, 29 Apr 2014 12:56:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
- line workload
-Message-ID: <20140429105654.GB1148@krava.brq.redhat.com>
-References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
- <1398346054-3322-2-git-send-email-namhyung@kernel.org>
+	id S933699AbaD2LDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:03:11 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40150 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384AbaD2LDJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 07:03:09 -0400
+Date: Tue, 29 Apr 2014 14:02:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        "John L. Hammond" <john.hammond@intel.com>
+Subject: Re: [PATCH 41/47] staging/lustre/llite: remove dead code
+Message-ID: <20140429110251.GC26890@mwanda>
+References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
+ <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398346054-3322-2-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:27:33PM +0900, Namhyung Kim wrote:
-
-SNIP
-
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-record.c |  121 ++++++++++++++++++-------------------------
->  1 file changed, 51 insertions(+), 70 deletions(-)
+On Sun, Apr 27, 2014 at 01:07:05PM -0400, Oleg Drokin wrote:
+> From: "John L. Hammond" <john.hammond@intel.com>
 > 
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index eb524f91bffe..b1523d8a6191 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -152,26 +152,6 @@ static void sig_handler(int sig)
->  	signr = sig;
+> In llite remove unused declarations, parameters, types, and unused,
+> get-only, or set-only structure members. Add static and const
+> qualifiers to declarations where possible.
+> 
+> Signed-off-by: John L. Hammond <john.hammond@intel.com>
+> Reviewed-on: http://review.whamcloud.com/9767
+> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2675
+> Reviewed-by: Lai Siyao <lai.siyao@intel.com>
+> Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
+> Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
 
-looks like there's no use for 'signr' now.. could be removed
+This is a random grab bag of changes to lots of files.  One thing per
+patch, etc, next time.
 
->  }
+> diff --git a/drivers/staging/lustre/lustre/llite/dcache.c b/drivers/staging/lustre/lustre/llite/dcache.c
+> index 8b55080..7d520d8 100644
+> --- a/drivers/staging/lustre/lustre/llite/dcache.c
+> +++ b/drivers/staging/lustre/lustre/llite/dcache.c
+> @@ -69,8 +69,7 @@ static void ll_release(struct dentry *de)
+>  		ll_intent_release(lld->lld_it);
+>  		OBD_FREE(lld->lld_it, sizeof(*lld->lld_it));
+>  	}
+> -	LASSERT(lld->lld_cwd_count == 0);
+> -	LASSERT(lld->lld_mnt_count == 0);
+> +
+
+I'm totally in favour of removing LASSERT() calls...  But is this a
+"set only" struct member?  It's totally unclear from the patch
+description.
+
+> diff --git a/drivers/staging/lustre/lustre/llite/statahead.c b/drivers/staging/lustre/lustre/llite/statahead.c
+> index 51c5327..1b47774 100644
+> --- a/drivers/staging/lustre/lustre/llite/statahead.c
+> +++ b/drivers/staging/lustre/lustre/llite/statahead.c
+> @@ -1230,9 +1230,7 @@ do_it:
+>  			 */
+>  			ll_release_page(page, le32_to_cpu(dp->ldp_flags) &
+>  					      LDF_COLLIDE);
+> -			sai->sai_in_readpage = 1;
+>  			page = ll_get_dir_page(dir, pos, &chain);
+> -			sai->sai_in_readpage = 0;
+>  		} else {
+>  			LASSERT(le32_to_cpu(dp->ldp_flags) & LDF_COLLIDE);
+>  			ll_release_page(page, 1);
+> @@ -1563,12 +1561,6 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
+>  			return entry ? 1 : -EAGAIN;
+>  		}
 >  
-> -static void record__sig_exit(int exit_status __maybe_unused, void *arg)
-> -{
-> -	struct record *rec = arg;
-> -	int status;
+> -		/* if statahead is busy in readdir, help it do post-work */
+> -		while (!ll_sa_entry_stated(entry) &&
+> -		       sai->sai_in_readpage &&
+> -		       !sa_received_empty(sai))
+> -			ll_post_statahead(sai);
 > -
-> -	if (rec->evlist->workload.pid > 0) {
-> -		if (!child_finished)
-> -			kill(rec->evlist->workload.pid, SIGTERM);
-> -
-> -		wait(&status);
-> -		if (WIFSIGNALED(status))
-> -			psignal(WTERMSIG(status), rec->progname);
-> -	}
-> -
-> -	if (signr == -1 || signr == SIGUSR1)
-> -		return;
-> -
-> -	signal(signr, SIG_DFL);
+>  		if (!ll_sa_entry_stated(entry)) {
+>  			sai->sai_index_wait = entry->se_index;
+>  			lwi = LWI_TIMEOUT_INTR(cfs_time_seconds(30), NULL,
 
-I was wondering what was this one for and found:
+What is this change about really?  I've already waded through 1271 lines
+of random changes at this point and now I have to figure out what
+ll_post_statahead() does and why we don't need to call it now?
 
-  perf_counter tools: Propagate signals properly
-  commit f7b7c26e01e51fe46097e11f179dc71ce7950084
-  Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-  Date:   Wed Jun 10 15:55:59 2009 +0200
+Anyways, please explain this change.
 
-but I dont think we need to do that
+Btw, it's very easy to break up a patch into separate patches.  Use
+git citool.  Highlight the lines of code which make things static.
+Right click and select "Add highlighted lines to commit."  This patch
+has three Reviewed-by tags so you guys need to be pushing back on this
+kind of stuff, it's obviously outside of the "one thing per patch" rule.
 
-thanks,
-jirka
+regards,
+dan carpenter
