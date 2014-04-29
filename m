@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794AbaD2AE4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:04:56 -0400
-Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:54219
-	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932475AbaD2AEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:04:55 -0400
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=TM7LSjVa c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=BdtlclQ1lucA:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=zd2uoN0lAAAA:8
- a=rB7i5J72bpEGVivGSTQA:9 a=QEXdDO2ut3YA:10 a=wu_e27o_rKQA:10
-Date: Tue, 29 Apr 2014 01:04:51 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Ed Tomlinson <edt@aei.ca>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.15.0-rc2 radeon HD 7480D [Aruba] blank display
-Message-ID: <20140429000451.GA17008@milliways>
-References: <20140421203207.GA27025@milliways>
- <5549363.XIKIYZeGzc@grover>
- <20140422023106.GA1709@milliways>
- <20140422023410.GB1709@milliways>
- <CADnq5_OPQdict2MoUFDcLB0AXjkg9Np4W+U6O+RR8mExWKt-Rw@mail.gmail.com>
+	id S1756769AbaD2AGA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:06:00 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:5656 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752002AbaD2AF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 20:05:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvZLAEfsXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAw4HAwklDwUlAwcaE4hAyQQXFoVEiH8HhDkEmQuWIis
+Date: Tue, 29 Apr 2014 10:04:02 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
+        bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 05/22] vfs: Add new file and directory create
+ permission flags
+Message-ID: <20140429000402.GO15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1398615293-22931-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20140428072301.123674d4@tlielax.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADnq5_OPQdict2MoUFDcLB0AXjkg9Np4W+U6O+RR8mExWKt-Rw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140428072301.123674d4@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 01:54:01AM -0400, Alex Deucher wrote:
+On Mon, Apr 28, 2014 at 07:23:01AM -0400, Jeff Layton wrote:
+> On Sun, 27 Apr 2014 21:44:36 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> The attached patch should fix it.
+> > From: Andreas Gruenbacher <agruen@kernel.org>
+> > 
+> > Some permission models distinguish between the permission to create a
+> > non-directory and a directory.  Pass this information down to
+> > inode_permission() as mask flags
+> > 
+> > Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > ---
+> >  fs/namei.c         | 21 ++++++++++++---------
+> >  include/linux/fs.h |  2 ++
+> >  2 files changed, 14 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index 7d93d195f0e5..028bc8bcf77c 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -445,7 +445,8 @@ static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
+> >   * this, letting us set arbitrary permissions for filesystem access without
+> >   * changing the "normal" UIDs which are used for other things.
+> >   *
+> > - * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
+> > + * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
+> > + * MAY_WRITE must also be set in @mask.
+> >   */
+> >  int inode_permission(struct inode *inode, int mask)
+> >  {
+> > @@ -2444,14 +2445,16 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
+> >   *  3. We should have write and exec permissions on dir
+> >   *  4. We can't do it if dir is immutable (done in permission())
+> >   */
+> > -static inline int may_create(struct inode *dir, struct dentry *child)
+> > +static inline int may_create(struct inode *dir, struct dentry *child, bool isdir)
+> >  {
+> > +	int mask = isdir ? MAY_CREATE_DIR : MAY_CREATE_FILE;
+> > +
+> >  	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
+> >  	if (child->d_inode)
+> >  		return -EEXIST;
+> >  	if (IS_DEADDIR(dir))
+> >  		return -ENOENT;
+> > -	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
+> > +	return inode_permission(dir, MAY_WRITE | MAY_EXEC | mask);
+> >  }
+> >  
+> >  /*
+> > @@ -2501,7 +2504,7 @@ EXPORT_SYMBOL(unlock_rename);
+> >  int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+> >  		bool want_excl)
+> >  {
+> > -	int error = may_create(dir, dentry);
+> > +	int error = may_create(dir, dentry, 0);
 > 
-> Thanks,
-> 
-> Alex
+> nit: since the third argument here is a bool, this should be "false"
+> and not "0". Ditto for all of the other calls of may_create.
 
-> From 9cd764fd57bb2a4e5f618d0f8a64c8154a820688 Mon Sep 17 00:00:00 2001
-> From: Alex Deucher <alexander.deucher@amd.com>
-> Date: Tue, 22 Apr 2014 01:49:28 -0400
-> Subject: [PATCH] drm/radeon/aux: fix hpd assignment for aux bus
-> 
- Sorry, my default mailbox (the one where personal mail ends up)
-overflowed (the old "procmail thinks it cannot write to it" issue)
-and I've been reading mail on my netbook with a short 24-line term,
-didn't notice that my overflow mailbox had appeared because it was
-on the next screen.  So, sorry for not replying.
+IMO, the third argument should be MAY_CREATE_FILE or MAY_CREATE_DIR,
+which is what the boolean evaluates to in may_create()....
 
- And then when I did notice, I accidentally sent a personal reply
-only to Ed.
+Cheers,
 
- The good news is that -rc3 obviously has the fix, and is working
-fine.  Thanks.
-
-ĸen
+Dave.
 -- 
-das eine Mal als Tragödie, dieses Mal als Farce
+Dave Chinner
+david@fromorbit.com
