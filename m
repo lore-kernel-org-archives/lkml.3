@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974AbaD2MID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:08:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933447AbaD2MIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:08:01 -0400
-Message-ID: <535F95FC.1020909@redhat.com>
-Date: Tue, 29 Apr 2014 08:07:24 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S933988AbaD2MLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:11:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58219 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933447AbaD2MLH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:11:07 -0400
+Date: Tue, 29 Apr 2014 14:11:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
+ line workload
+Message-ID: <20140429121103.GR11096@twins.programming.kicks-ass.net>
+References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+ <1398346054-3322-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Randy Dunlap <rdunlap@infradead.org>
-CC: Richard Weinberger <richard@nod.at>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <535992DD.3060808@infradead.org> <20140425100459.7824f676@annuminas.surriel.com> <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <20140428135540.GA14661@linux.vnet.ibm.com> <535E8D14.7080405@infradead.org> <535E8E17.2050600@nod.at> <20140428200640.GG4430@linux.vnet.ibm.com> <535EBAE6.3080907@infradead.org> <20140428211535.GK4430@linux.vnet.ibm.com>
-In-Reply-To: <20140428211535.GK4430@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398346054-3322-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 05:15 PM, Paul E. McKenney wrote:
-> On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
->> On 04/28/14 13:06, Paul E. McKenney wrote:
+On Thu, Apr 24, 2014 at 10:27:33PM +0900, Namhyung Kim wrote:
+>  static void record__sig_exit(int exit_status __maybe_unused, void *arg)
+>  {
+> -	struct record *rec = arg;
+> -	int status;
+> -
+> -	if (rec->evlist->workload.pid > 0) {
+> -		if (!child_finished)
+> -			kill(rec->evlist->workload.pid, SIGTERM);
+> -
+> -		wait(&status);
+> -		if (WIFSIGNALED(status))
+> -			psignal(WTERMSIG(status), rec->progname);
+> -	}
+> -
+> -	if (signr == -1 || signr == SIGUSR1)
+> +	if (signr == -1)
+>  		return;
+>  
+>  	signal(signr, SIG_DFL);
+>  }
 
->>> Please see below for a patch against next-20140428 that makes this build
->>> for me.  This is derived from Rik's patch, my patch, and is consistent with
->>> Arnd's patch.
->>>
->>> 							Thanx, Paul
->>
->> Thnx, works for me.  Finally.
-> 
-> Good!
-> 
-> Rik, how would you like to proceed with this?
 
-I guess this fix should go into -mm?
+> +out_child:
+> +	if (forks) {
+> +		int exit_status;
+>  
+> -	return 0;
+> +		if (!child_finished)
+> +			kill(rec->evlist->workload.pid, SIGTERM);
+> +
+> +		wait(&exit_status);
+> +
+> +		if (err < 0)
+> +			status = err;
+> +		else if (WIFEXITED(exit_status))
+> +			status = WEXITSTATUS(exit_status);
+> +		else if (WIFSIGNALED(status))
+		{
+		signr = WTERMSIG(status);
+> +			psignal(WTERMSIG(status), rec->progname);
+		}
+> +	} else
+> +		status = err;
+> +
+> +	if (!err && !file->is_pipe) {
+> +		rec->session->header.data_size += rec->bytes_written;
+> +
+> +		if (!rec->no_buildid)
+> +			process_buildids(rec);
+> +		perf_session__write_header(rec->session, rec->evlist,
+> +					   file->fd, true);
+> +	}
 
--- 
-All rights reversed
+Should do I suppose; not sure why the psignal() muck is in there, but it
+don't hurt I suppose.
