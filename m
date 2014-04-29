@@ -1,100 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145AbaD2QSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:18:52 -0400
-Received: from smtp-out-078.synserver.de ([212.40.185.78]:1044 "EHLO
-	smtp-out-008.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757871AbaD2QSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:18:51 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 19950
-Message-ID: <535FD0E0.70809@metafoo.de>
-Date: Tue, 29 Apr 2014 18:18:40 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1758193AbaD2QTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:19:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57592 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756224AbaD2QTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 12:19:09 -0400
+Date: Tue, 29 Apr 2014 18:19:07 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jack <jack@suse.cz>,
+        hch <hch@infradead.org>, Viro <viro@zeniv.linux.org.uk>,
+        tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH V3 1/2] FS: Add generic data flush to fsync
+Message-ID: <20140429161907.GA29634@quack.suse.cz>
+References: <20140428231239.dbae4da4297c0b9230d9db4d@skynet.be>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier@dowhile0.org>
-CC: Julia Lawall <Julia.Lawall@lip6.fr>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
-Subject: Re: [Cocci] [PATCH v2 1/1] scripts/coccinelle: use BIT macro if used
-References: <1398595800-6683-1-git-send-email-javier@dowhile0.org>
-In-Reply-To: <1398595800-6683-1-git-send-email-javier@dowhile0.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428231239.dbae4da4297c0b9230d9db4d@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/27/2014 12:50 PM, Javier Martinez Canillas wrote:
-> Using the BIT() macro instead of manually shifting bits
-> makes the code less error prone.
->
-> If is more readable is a matter of taste so only replace
-> if the file is already using this macro.
->
-> Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
+On Mon 28-04-14 23:12:39, Fabian Frederick wrote:
+> This patch issues a flush in generic_file_fsync.
+> (Modern filesystems already do it)
+> 
+> -Behaviour can be reversed using /sys/devices/.../cache_type
+> -Filesystems can also call __generic_file_fsync with bool flush false
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-I don't think this should be enabled by default. It will generate a ton of 
-false positives, not everything that is 1 shifted by something is a 
-single-bit field. E.g. imagine a device with multi-bit fields:
+								Honza
 
-#define FOOBAR_A (0 << FOOBAR_OFFSET)
-#define FOOBAR_B (1 << FOOBAR_OFFSET)
-#define FOOBAR_C (2 << FOOBAR_OFFSET)
-#define FOOBAR_D (3 << FOOBAR_OFFSET)
-
-The script will now suggest to replace FOOBAR_B (1 << FOOBAR_OFFSET) with 
-FOOBAR_B BIT(FOOBAR_OFFSET). Which is technically correct, but not semantically.
-
-- Lars
-
+> 
+> Suggested-by: Jan Kara <jack@suse.cz>
+> Suggested-by: Christoph Hellwig <hch@infradead.org>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 > ---
->
-> Changes since v1:
->   - Add a rule that checks if the file is already using this macro
->     as suggested by Julia Lawall
->
->   scripts/coccinelle/api/bit.cocci | 30 ++++++++++++++++++++++++++++++
->   1 file changed, 30 insertions(+)
->   create mode 100644 scripts/coccinelle/api/bit.cocci
->
-> diff --git a/scripts/coccinelle/api/bit.cocci b/scripts/coccinelle/api/bit.cocci
-> new file mode 100644
-> index 0000000..a02cfd3
-> --- /dev/null
-> +++ b/scripts/coccinelle/api/bit.cocci
-> @@ -0,0 +1,30 @@
-> +// Use the BIT() macro if is already used
-> +//
-> +// Confidence: High
-> +// Copyright (C) 2014 Javier Martinez Canillas.  GPLv2.
-> +// URL: http://coccinelle.lip6.fr/
-> +// Options: --include-headers
+> V3: __generic_file_fsync = no flush
+> V2: No flag
+> V1: First version with MS_BARRIER flag
+> 
+>  fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
+>  include/linux/fs.h |  1 +
+>  2 files changed, 34 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/libfs.c b/fs/libfs.c
+> index a184424..4877906 100644
+> --- a/fs/libfs.c
+> +++ b/fs/libfs.c
+> @@ -3,6 +3,7 @@
+>   *	Library for filesystems writers.
+>   */
+>  
+> +#include <linux/blkdev.h>
+>  #include <linux/export.h>
+>  #include <linux/pagemap.h>
+>  #include <linux/slab.h>
+> @@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
+>  EXPORT_SYMBOL_GPL(generic_fh_to_parent);
+>  
+>  /**
+> - * generic_file_fsync - generic fsync implementation for simple filesystems
+> + * __generic_file_fsync - generic fsync implementation for simple filesystems
+> + *
+>   * @file:	file to synchronize
+> + * @start:	start offset in bytes
+> + * @end:	end offset in bytes (inclusive)
+>   * @datasync:	only synchronize essential metadata if true
+>   *
+>   * This is a generic implementation of the fsync method for simple
+>   * filesystems which track all non-inode metadata in the buffers list
+>   * hanging off the address_space structure.
+>   */
+> -int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+> -		       int datasync)
+> +int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
+> +				 int datasync)
+>  {
+>  	struct inode *inode = file->f_mapping->host;
+>  	int err;
+> @@ -952,10 +956,36 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+>  	err = sync_inode_metadata(inode, 1);
+>  	if (ret == 0)
+>  		ret = err;
 > +
-> +@hasbitops@
-> +@@
+>  out:
+>  	mutex_unlock(&inode->i_mutex);
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL(__generic_file_fsync);
 > +
-> +#include <linux/bitops.h>
+> +/**
+> + * generic_file_fsync - generic fsync implementation for simple filesystems
+> + *			with flush
+> + * @file:	file to synchronize
+> + * @start:	start offset in bytes
+> + * @end:	end offset in bytes (inclusive)
+> + * @datasync:	only synchronize essential metadata if true
+> + *
+> + */
 > +
-> +@usesbit@
-> +@@
+> +int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+> +		       int datasync)
+> +{
+> +	struct inode *inode = file->f_mapping->host;
+> +	int err;
 > +
-> +BIT(...)
+> +	err = __generic_file_fsync(file, start, end, datasync);
+> +	if (err)
+> +		return err;
 > +
-> +@depends on hasbitops && usesbit@
-> +expression E;
-> +@@
+> +	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
 > +
-> +- 1 << E
-> ++ BIT(E)
-> +
-> +@depends on hasbitops && usesbit@
-> +expression E;
-> +@@
-> +
-> +- BIT((E))
-> ++ BIT(E)
->
-
+> +}
+>  EXPORT_SYMBOL(generic_file_fsync);
+>  
+>  /**
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 8780312..c3f46e4 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
+>  extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
+>  		const void __user *from, size_t count);
+>  
+> +extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
+>  extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
+>  
+>  extern int generic_check_addressable(unsigned, u64);
+> -- 
+> 1.8.4.5
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
