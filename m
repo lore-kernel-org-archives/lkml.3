@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758238AbaD2QTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:19:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55517 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758212AbaD2QTg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:19:36 -0400
-Date: Tue, 29 Apr 2014 12:19:34 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
-        Petr Mladek <pmladek@suse.cz>
-Subject: Re: 64bit x86: NMI nesting still buggy?
-Message-ID: <20140429121934.00ea4a2f@gandalf.local.home>
-In-Reply-To: <20140429120908.61ee947f@gandalf.local.home>
-References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
-	<20140429100345.3f76a5bd@gandalf.local.home>
-	<alpine.LNX.2.00.1404291720440.16783@pobox.suse.cz>
-	<20140429120908.61ee947f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1758250AbaD2QTv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:19:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57606 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758213AbaD2QTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 12:19:37 -0400
+Date: Tue, 29 Apr 2014 18:19:36 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jack <jack@suse.cz>,
+        hch <hch@infradead.org>, Viro <viro@zeniv.linux.org.uk>,
+        tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH V3 2/2] fs/ext4/fsync.c: generic_file_fsync call based on
+ barrier flag
+Message-ID: <20140429161936.GB29634@quack.suse.cz>
+References: <20140428231508.a101532b3154e7742489abf2@skynet.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428231508.a101532b3154e7742489abf2@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 12:09:08 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Mon 28-04-14 23:15:08, Fabian Frederick wrote:
+> generic_file_fsync has been updated to issue a flush for
+> older filesystems.
+> 
+> This patch tests for barrier flag in ext4 mount flags
+> and calls the right function.
+> 
+> Suggested-by: Jan Kara <jack@suse.cz>
+> Suggested-by: Christoph Hellwig <hch@infradead.org>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+  The patch looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-> Can you reproduce your problem on different platforms, or is this just
-> one box that exhibits this behavior? If it's only one box, I'm betting
-> it has a BIOS doing nasty things.
-
-This box probably crashes on all kernels too. My NMI nesting changes
-did not fix a bug (well, it did as a side effect, see below). It was
-done to allow NMIs to use IRET so that we could remove stopmachine from
-ftrace, and instead have it use breakpoints (which return with IRET).
-
-The bug that was fixed by this was the ability to do stack traces
-(sysrq-t) from NMI context. Stack traces can page fault, and when I was
-debugging hard lock ups and having the NMI do a stack dump of all
-tasks, another NMI would trigger and corrupt the stack of the NMI doing
-the dumps. But that was something that would only be seen while
-debugging, and not something seen in normal operation.
-
-I don't see a bug to fix in the kernel. I see a bug to fix in the
-vendor's BIOS.
-
--- Steve
+								Honza
+> ---
+>  fs/ext4/fsync.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+> index a8bc47f..fa82c0a 100644
+> --- a/fs/ext4/fsync.c
+> +++ b/fs/ext4/fsync.c
+> @@ -108,6 +108,10 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+>  
+>  	if (!journal) {
+>  		ret = generic_file_fsync(file, start, end, datasync);
+> +		if (test_opt(inode->i_sb, BARRIER))
+> +			ret = generic_file_fsync(file, start, end, datasync);
+> +		else
+> +			ret = __generic_file_fsync(file, start, end, datasync);
+>  		if (!ret && !hlist_empty(&inode->i_dentry))
+>  			ret = ext4_sync_parent(inode);
+>  		goto out;
+> -- 
+> 1.8.4.5
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
