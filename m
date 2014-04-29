@@ -1,99 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769AbaD2AGA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:06:00 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:5656 "EHLO
+	id S932911AbaD2AI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:08:26 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:48843 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752002AbaD2AF6 (ORCPT
+	by vger.kernel.org with ESMTP id S1751515AbaD2AIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:05:58 -0400
+	Mon, 28 Apr 2014 20:08:24 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvZLAEfsXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAw4HAwklDwUlAwcaE4hAyQQXFoVEiH8HhDkEmQuWIis
-Date: Tue, 29 Apr 2014 10:04:02 +1000
+X-IronPort-Anti-Spam-Result: AvVLAEfsXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAxUDCSUPBSUDBxoTiEDJBBcWhUSIfweEOQSZC5YiKw
+Date: Tue, 29 Apr 2014 10:07:58 +1000
 From: Dave Chinner <david@fromorbit.com>
-To: Jeff Layton <jlayton@poochiereds.net>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        bfields@fieldses.org, akpm@linux-foundation.org,
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com,
         linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 05/22] vfs: Add new file and directory create
+Subject: Re: [PATCH -V1 06/22] vfs: Add delete child and delete self
  permission flags
-Message-ID: <20140429000402.GO15995@dastard>
+Message-ID: <20140429000758.GP15995@dastard>
 References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1398615293-22931-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20140428072301.123674d4@tlielax.poochiereds.net>
+ <1398615293-22931-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140428072301.123674d4@tlielax.poochiereds.net>
+In-Reply-To: <1398615293-22931-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 07:23:01AM -0400, Jeff Layton wrote:
-> On Sun, 27 Apr 2014 21:44:36 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Sun, Apr 27, 2014 at 09:44:37PM +0530, Aneesh Kumar K.V wrote:
+> From: Andreas Gruenbacher <agruen@kernel.org>
 > 
-> > From: Andreas Gruenbacher <agruen@kernel.org>
-> > 
-> > Some permission models distinguish between the permission to create a
-> > non-directory and a directory.  Pass this information down to
-> > inode_permission() as mask flags
-> > 
-> > Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > ---
-> >  fs/namei.c         | 21 ++++++++++++---------
-> >  include/linux/fs.h |  2 ++
-> >  2 files changed, 14 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index 7d93d195f0e5..028bc8bcf77c 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -445,7 +445,8 @@ static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
-> >   * this, letting us set arbitrary permissions for filesystem access without
-> >   * changing the "normal" UIDs which are used for other things.
-> >   *
-> > - * When checking for MAY_APPEND, MAY_WRITE must also be set in @mask.
-> > + * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
-> > + * MAY_WRITE must also be set in @mask.
-> >   */
-> >  int inode_permission(struct inode *inode, int mask)
-> >  {
-> > @@ -2444,14 +2445,16 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
-> >   *  3. We should have write and exec permissions on dir
-> >   *  4. We can't do it if dir is immutable (done in permission())
-> >   */
-> > -static inline int may_create(struct inode *dir, struct dentry *child)
-> > +static inline int may_create(struct inode *dir, struct dentry *child, bool isdir)
-> >  {
-> > +	int mask = isdir ? MAY_CREATE_DIR : MAY_CREATE_FILE;
-> > +
-> >  	audit_inode_child(dir, child, AUDIT_TYPE_CHILD_CREATE);
-> >  	if (child->d_inode)
-> >  		return -EEXIST;
-> >  	if (IS_DEADDIR(dir))
-> >  		return -ENOENT;
-> > -	return inode_permission(dir, MAY_WRITE | MAY_EXEC);
-> > +	return inode_permission(dir, MAY_WRITE | MAY_EXEC | mask);
-> >  }
-> >  
-> >  /*
-> > @@ -2501,7 +2504,7 @@ EXPORT_SYMBOL(unlock_rename);
-> >  int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
-> >  		bool want_excl)
-> >  {
-> > -	int error = may_create(dir, dentry);
-> > +	int error = may_create(dir, dentry, 0);
+> Normally, deleting a file requires write access to the parent directory.
+> Some permission models use a different permission on the parent
+> directory to indicate delete access.  In addition, a process can have
+> per-file delete access even without delete access on the parent
+> directory.
 > 
-> nit: since the third argument here is a bool, this should be "false"
-> and not "0". Ditto for all of the other calls of may_create.
+> Introduce two new inode_permission() mask flags and use them in
+> may_delete()
+> 
+> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/namei.c         | 45 ++++++++++++++++++++++++++++++++++-----------
+>  include/linux/fs.h |  2 ++
+>  2 files changed, 36 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 028bc8bcf77c..56ac7613fbca 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -446,7 +446,7 @@ static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
+>   * changing the "normal" UIDs which are used for other things.
+>   *
+>   * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
+> - * MAY_WRITE must also be set in @mask.
+> + * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
+>   */
+>  int inode_permission(struct inode *inode, int mask)
+>  {
+> @@ -2366,11 +2366,25 @@ kern_path_mountpoint(int dfd, const char *name, struct path *path,
+>  }
+>  EXPORT_SYMBOL(kern_path_mountpoint);
+>  
+> +
+> +/*
+> + * We should have exec permission on directory and MAY_DELETE_SELF
+> + * on the object being deleted.
+> + */
+> +static int richacl_may_selfdelete(struct inode *dir,
+> +				  struct inode *inode, int replace_mask)
+> +{
+> +	return (IS_RICHACL(inode) &&
+> +		(inode_permission(dir, MAY_EXEC | replace_mask) == 0) &&
+> +		(inode_permission(inode, MAY_DELETE_SELF) == 0));
+> +}
 
-IMO, the third argument should be MAY_CREATE_FILE or MAY_CREATE_DIR,
-which is what the boolean evaluates to in may_create()....
+Can't say I like these "richacl" prefixes. Why not just "may_*"
+like all the other permission checks?
+
+
+> @@ -2414,13 +2431,19 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
+>  	BUG_ON(victim->d_parent->d_inode != dir);
+>  	audit_inode_child(dir, victim, AUDIT_TYPE_CHILD_DELETE);
+>  
+> -	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+> +	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
+> +	if (replace)
+> +		replace_mask = S_ISDIR(inode->i_mode) ?
+> +				MAY_CREATE_DIR : MAY_CREATE_FILE;
+> +	error = inode_permission(dir, mask | replace_mask);
+> +	if (error && richacl_may_selfdelete(dir, inode, replace_mask))
+> +		error = 0;
+>  	if (error)
+>  		return error;
+>  	if (IS_APPEND(dir))
+>  		return -EPERM;
+>  
+> -	if (check_sticky(dir, inode) || IS_APPEND(inode) ||
+> +	if (check_sticky(dir, inode, replace_mask) || IS_APPEND(inode) ||
+>  	    IS_IMMUTABLE(inode) || IS_SWAPFILE(inode))
+>  		return -EPERM;
+>  	if (isdir) {
+> @@ -3539,7 +3562,7 @@ EXPORT_SYMBOL(dentry_unhash);
+>  
+>  int vfs_rmdir(struct inode *dir, struct dentry *dentry)
+>  {
+> -	int error = may_delete(dir, dentry, 1);
+> +	int error = may_delete(dir, dentry, 1, 0);
+>  
+>  	if (error)
+>  		return error;
+> @@ -3658,7 +3681,7 @@ SYSCALL_DEFINE1(rmdir, const char __user *, pathname)
+>  int vfs_unlink(struct inode *dir, struct dentry *dentry, struct inode **delegated_inode)
+>  {
+>  	struct inode *target = dentry->d_inode;
+> -	int error = may_delete(dir, dentry, 0);
+> +	int error = may_delete(dir, dentry, 0, 0);
+>  
+>  	if (error)
+>  		return error;
+> @@ -4060,7 +4083,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  	if (source == target)
+>  		return 0;
+>  
+> -	error = may_delete(old_dir, old_dentry, is_dir);
+> +	error = may_delete(old_dir, old_dentry, is_dir, 0);
+>  	if (error)
+>  		return error;
+>  
+> @@ -4070,9 +4093,9 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+>  		new_is_dir = d_is_dir(new_dentry);
+>  
+>  		if (!(flags & RENAME_EXCHANGE))
+> -			error = may_delete(new_dir, new_dentry, is_dir);
+> +			error = may_delete(new_dir, new_dentry, is_dir, 1);
+>  		else
+> -			error = may_delete(new_dir, new_dentry, new_is_dir);
+> +			error = may_delete(new_dir, new_dentry, new_is_dir, 1);
+
+Another boolean parameter that means nothing at the call site.  This
+should really be passing a flags field, not a bunch of booleans that
+are simply evaluated into flags...
 
 Cheers,
 
