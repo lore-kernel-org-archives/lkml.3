@@ -1,264 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612AbaD2R2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:28:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8051 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932529AbaD2R2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:28:03 -0400
-Date: Tue, 29 Apr 2014 13:27:35 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
- output fields (v4)
-Message-ID: <20140429172735.GD32375@redhat.com>
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
- <20140422211647.GO8488@redhat.com>
- <87lhuwr2pk.fsf@sejong.aot.lge.com>
- <20140423125828.GL5328@redhat.com>
- <1398346899.1681.18.camel@leonhard>
- <20140424210015.GJ8488@redhat.com>
- <20140428194642.GQ5328@redhat.com>
- <878uqpos3k.fsf@sejong.aot.lge.com>
+	id S933801AbaD2R3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:29:13 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:37817 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529AbaD2R3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 13:29:12 -0400
+Date: Tue, 29 Apr 2014 20:28:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: Takashi Iwai <tiwai@suse.de>, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, Laurent Navet <laurent.navet@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: line6: fix possible overrun
+Message-ID: <20140429172858.GD26890@mwanda>
+References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
+ <20140426204704.GB17562@mguzik.redhat.com>
+ <20140426213137.GM26890@mwanda>
+ <20140426215945.GC17562@mguzik.redhat.com>
+ <20140427173932.GP26890@mwanda>
+ <20140427200042.GA23846@mguzik.redhat.com>
+ <20140427224425.GQ26890@mwanda>
+ <s5h38gw9or4.wl%tiwai@suse.de>
+ <20140429152616.GA2316@mguzik.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <878uqpos3k.fsf@sejong.aot.lge.com>
+In-Reply-To: <20140429152616.GA2316@mguzik.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
-> > Our orignal concept for the c2c tool was to sort hist entries into
-> > cachelines, filter in only the HITMs and stores and re-sort based on
-> > cachelines with the most weight.
-> >
-> > So using today's perf with a new search called 'cacheline' to achieve
-> > this (copy-n-pasted):
-> 
-> Maybe 'd'cacheline is a more appropriate name IMHO.
+We have two options:
+1) Do we risk introducing new truncation bugs.
+2) Do we risk breaking the driver because we didn't catch every
+   truncation bug.
 
-Fair enough :-)
+Truncation bugs here are very low impact and probably no one would even
+notice.  That's how not worried I am about truncation bugs in this
+context.  It's also unlikely that we will introduce any new truncation
+bugs.
 
-> 
-> >
-> > ----
-> > #define CACHE_LINESIZE       64
-> > #define CLINE_OFFSET_MSK     (CACHE_LINESIZE - 1)
-> > #define CLADRS(a)            ((a) & ~(CLINE_OFFSET_MSK))
-> > #define CLOFFSET(a)          (int)((a) &  (CLINE_OFFSET_MSK))
-> >
-> > static int64_t
-> > sort__cacheline_cmp(struct hist_entry *left, struct hist_entry *right)
-> > {
-> >        u64 l, r;
-> >        struct map *l_map, *r_map;
-> >
-> >        if (!left->mem_info)  return -1;
-> >        if (!right->mem_info) return 1;
-> >
-> >        /* group event types together */
-> >        if (left->cpumode > right->cpumode) return -1;
-> >        if (left->cpumode < right->cpumode) return 1;
-> >
-> >        l_map = left->mem_info->daddr.map;
-> >        r_map = right->mem_info->daddr.map;
-> >
-> >        /* properly sort NULL maps to help combine them */
-> >        if (!l_map && !r_map)
-> >                goto addr;
-> >
-> >        if (!l_map) return -1;
-> >        if (!r_map) return 1;
-> >
-> >        if (l_map->maj > r_map->maj) return -1;
-> >        if (l_map->maj < r_map->maj) return 1;
-> >
-> >        if (l_map->min > r_map->min) return -1;
-> >        if (l_map->min < r_map->min) return 1;
-> >
-> >        if (l_map->ino > r_map->ino) return -1;
-> >        if (l_map->ino < r_map->ino) return 1;
-> >
-> >        if (l_map->ino_generation > r_map->ino_generation) return -1;
-> >        if (l_map->ino_generation < r_map->ino_generation) return 1;
-> >
-> >        /*
-> >         * Addresses with no major/minor numbers are assumed to be
-> >         * anonymous in userspace.  Sort those on pid then address.
-> >         *
-> >         * The kernel and non-zero major/minor mapped areas are
-> >         * assumed to be unity mapped.  Sort those on address.
-> >         */
-> >
-> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
-> >            !l_map->maj && !l_map->min && !l_map->ino &&
-> >            !l_map->ino_generation) {
-> >                /* userspace anonymous */
-> >
-> >                if (left->thread->pid_ > right->thread->pid_) return -1;
-> >                if (left->thread->pid_ < right->thread->pid_) return 1;
-> 
-> Isn't it necessary to check whether the address is in a same map in case
-> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
-> might have same value for different maps.
+Breaking the driver is very serious.  But on the other hand as soon as
+you proposed introducing an -EINVAL, I reviewed the driver and found the
+places which would break when the code was changed.  As a result of my
+review then the likely hood of breakage is now low.
 
-That's why I sort on pids here.  Because the anon address might have the
-same value for different maps.  The thought was to group all the pid
-addresses together to keep things seperated.
+In other words both options are probably fine.  If someone is able to
+test the -EINVAL change then I would be happy to have it.
 
-Do you see a different way to solve the problem?  I am not sure al_addr
-vs. addr will make much difference here.
+regards,
+dan carpenter
 
-> 
-> 
-> >        }
-> >
-> > addr:
-> >        /* al_addr does all the right addr - start + offset calculations */
-> >        l = CLADRS(left->mem_info->daddr.al_addr);
-> >        r = CLADRS(right->mem_info->daddr.al_addr);
-> >
-> >        if (l > r) return -1;
-> >        if (l < r) return 1;
-> >
-> >        return 0;
-> > }
-> >
-> > ----
-> >
-> > I can get the following 'perf mem report' outputs
-> >
-> > I used a special program called hitm_test3 which purposely generates
-> > HITMs either locally or remotely based on cpu input.  It does this by
-> > having processA grab lockX from cacheline1, release lockY from cacheline2,
-> > then processB grabs lockY from cacheline2 and releases lockX from
-> > cacheline1 (IOW ping pong two locks across two cachelines), found here
-> >
-> > http://people.redhat.com/dzickus/hitm_test/
-> >
-> > [ perf mem record -a hitm_test -s1,19 -c1000000 -t]
-> >
-> > (where -s is the cpus to bind to, -c is loop count, -t disables internal
-> > perf tracking)
-> >
-> > (using 'perf mem' to auto generate correct record/report options for
-> > cachelines)
-> > (the hitm counts should be higher, but sampling is a crapshoot.  Using
-> > ld_lat=30 would probably filter most of the L1 hits)
-> >
-> > Table 1: normal perf
-> > #perf mem report --stdio -s cacheline,pid
-> >
-> >
-> > # Overhead       Samples  Cacheline                       Command:  Pid
-> > # ........  ............  .......................  ....................
-> > #
-> >     47.61%         42257  [.] 0x0000000000000080      hitm_test3:146344
-> >     46.14%         42596  [.] 0000000000000000        hitm_test3:146343
-> >      2.16%          2074  [.] 0x0000000000003340      hitm_test3:146344
-> >      1.88%          1796  [.] 0x0000000000003340      hitm_test3:146343
-> >      0.20%           140  [.] 0x00007ffff291ce00      hitm_test3:146344
-> >      0.18%           126  [.] 0x00007ffff291ce00      hitm_test3:146343
-> >      0.10%             1  [k] 0xffff88042f071500         swapper:     0
-> >      0.07%             1  [k] 0xffff88042ef747c0     watchdog/11:    62
-> > ...
-> >
-> > Ok, now I know the hottest cachelines. Not to bad.  However, in order to
-> > determine cacheline contention, it would be nice to know the offsets into
-> > the cacheline to see if there is contention or not. Unfortunately, the way
-> > the sorting works here, all the hist_entry data was combined into each
-> > cacheline, so I lose my granularity...
-> >
-> > I can do:
-> >
-> > Table 2: normal perf
-> > #perf mem report --stdio -s cacheline,pid,dso_daddr,mem
-> >
-> >
-> > # Overhead       Samples  Cacheline                       Command:  Pid
-> > # Data Object             Memory access
-> > # ........  ............  .......................  ....................
-> > # ..............................  ........................
-> > #
-> >     45.24%         42581  [.] 0000000000000000        hitm_test3:146343 SYSV00000000 (deleted)          L1 hit
-> >     44.43%         42231  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          L1 hit
-> >      2.19%            13  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          Local RAM hit
-> >      2.16%          2074  [.] 0x0000000000003340      hitm_test3:146344 hitm_test3                      L1 hit
-> >      1.88%          1796  [.] 0x0000000000003340      hitm_test3:146343 hitm_test3                      L1 hit
-> >      1.00%            13  [.] 0x0000000000000080      hitm_test3:146344 SYSV00000000 (deleted)          Remote Cache (1 hop) hit
-> >      0.91%            15  [.] 0000000000000000        hitm_test3:146343 SYSV00000000 (deleted)          Remote Cache (1 hop) hit
-> >      0.20%           140  [.] 0x00007ffff291ce00      hitm_test3:146344 [stack]                         L1 hit
-> >      0.18%           126  [.] 0x00007ffff291ce00      hitm_test3:146343 [stack]                         L1 hit
-> >
-> > Now I have some granularity (though the program keeps hitting the same
-> > offset in the cacheline) and some different levels of memory operations.
-> > Seems like a step forward.  However, the cacheline is broken up a little
-> > bit (see 0x0000000000000080 is split up three ways).
-> >
-> > I can now see where the cache contention is but I don't know how prevalent
-> > it is (what percentage of the cacheline is under contention).  No need to
-> > waste time with cachelines that have little or no contention.
-> >
-> > Hmm, what if I used the -F option to group all the cachelines and their
-> > offsets together.
-> >
-> > Table 3: perf with -F
-> > #perf mem report --stdio -s cacheline,pid,dso_daddr,mem  -i don.data -F cacheline,pid,dso_daddr,mem,overhead,sample|grep 0000000000000
-> >   [k] 0000000000000000           swapper:     0  [kernel.kallsyms] Uncached hit                 0.00%             1
-> >   [k] 0000000000000000            kipmi0:  1500  [kernel.kallsyms] Uncached hit                 0.02%             1
-> >   [.] 0000000000000000        hitm_test3:146343  SYSV00000000 (deleted) L1 hit                      45.24%         42581
-> >   [.] 0000000000000000        hitm_test3:146343  SYSV00000000 (deleted) Remote Cache (1 hop) hit     0.91%            15
-> >   [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) L1 hit                      44.43%         42231
-> >   [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) Local RAM hit                2.19%            13
-> >   [.] 0x0000000000000080      hitm_test3:146344  SYSV00000000 (deleted) Remote Cache (1 hop) hit     1.00%            13
-> >
-> > Now I have the ability to see the whole cacheline easily and can probably
-> > roughly calculate the contention in my head.  Of course there was some
-> > pre-determined knowledge that was needed to get this info (like which
-> > cacheline is interesting from Table 1).
-> >
-> > Of course, our c2c tool was trying to make the output more readable and
-> > more obvious such that the user didn't have to know what to look for.
-> >
-> > Internally our tool sorts similar to Table2, but then resorts onto a new
-> > rbtree with a struct c2c_hit based on the hottest cachelines.  Based on
-> > this new rbtree we can print our analysis easily.
-> >
-> > This new rbtree is slightly different than the -F output in that we
-> > 'group' cacheline entries together and re-sort that group.  The -F option
-> > just resorts the sorted hist_entry and has no concept of grouping.
-> >
-> >
-> >
-> >
-> > We would prefer to have a 'group' sorting concept as we believe that is
-> > the easiest way to organize the data.  But I don't know if that can be
-> > incorporated into the 'perf' tool itself, or just keep that concept local
-> > to our flavor of the perf subcommand.
-> >
-> > I am hoping this semi-concocted example gives a better picture of the
-> > problem I am trying to wrestle with.
-> 
-> Yep, I understand your problem.
-> 
-> And I think it's good for having the group sorting concept in perf tools
-> for general use.  But it has a conflict with the proposed change of -F
-> option when non-sort keys are used for the -s or -F.  So it needs more
-> thinking..
-> 
-> Unfortunately I'll be busy by the end of next week.  So I'll be able to
-> discuss and work on it later.
-
-Ok.  I am glad you are able to understand my problem.  It will be nice to
-have others looking at a solution too. :-)
-
-Cheers,
-Don
