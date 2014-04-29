@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964876AbaD2OZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:25:11 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:57509 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932284AbaD2OZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:25:08 -0400
-Date: Tue, 29 Apr 2014 10:25:05 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, <stable-rt@vger.kernel.org>
-Subject: Re: [PATCH RT 2/4] net: gianfar: do not try to cleanup TX packets
- if they are not done
-Message-ID: <20140429102505.1d52f93c@gandalf.local.home>
-In-Reply-To: <535FB453.2060100@windriver.com>
-References: <20140427143119.898655303@goodmis.org>
-	<20140427143140.384915886@goodmis.org>
-	<535DF744.60606@linutronix.de>
-	<535FB453.2060100@windriver.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1757656AbaD2O3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:29:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42614 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752AbaD2O3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 10:29:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,951,1389772800"; 
+   d="scan'208";a="502936909"
+Message-ID: <535FB72A.1050403@linux.intel.com>
+Date: Tue, 29 Apr 2014 07:28:58 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>	<535FA920.9080503@linux.intel.com> <20140429100652.56c8c07f@gandalf.local.home>
+In-Reply-To: <20140429100652.56c8c07f@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 10:16:51 -0400
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-
- 
-> Sanity boot tested the 3.10 rc1 on a sbc8548 (UP PPC with gianfar), with
-> the one-liner added as follows:
+On 04/29/2014 07:06 AM, Steven Rostedt wrote:
+> On Tue, 29 Apr 2014 06:29:04 -0700
+> "H. Peter Anvin" <hpa@linux.intel.com> wrote:
 > 
-> diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-> index 8aecc1d81395..b87a8c919c3e 100644
-> --- a/drivers/net/ethernet/freescale/gianfar.c
-> +++ b/drivers/net/ethernet/freescale/gianfar.c
-> @@ -2574,6 +2574,7 @@ static int gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
->         tx_queue->dirty_tx = bdp;
 >  
->         netdev_tx_completed_queue(txq, howmany, bytes_sent);
-> +       return howmany;
+>>> [2] 	"A special case can occur if an SMI handler nests inside an NMI 
+>>> 	 handler and then another NMI occurs. During NMI interrupt 
+>>> 	 handling, NMI interrupts are disabled, so normally NMI interrupts 
+>>>  	 are serviced and completed with an IRET instruction one at a 
+>>> 	 time. When the processor enters SMM while executing an NMI 
+>>> 	 handler, the processor saves the SMRAM state save map but does 
+>>> 	 not save the attribute to keep NMI interrupts disabled. 
+>>> 	 Potentially, an NMI could be latched (while in SMM or upon exit) 
+>>> 	 and serviced upon exit of SMM even though the previous NMI  
+>>> 	 handler has still not completed."
+>>
+>> I believe [2] only applies if there is an IRET executing inside the SMM
+>> handler, which should not normally be the case.  It might also have been
+>> addressed since that was written, but I don't know.
+> 
+> Bad behaving BIOS? But I'm sure there's no such thing ;-)
+> 
 
-That's the change I added to 3.10-rc2. I'll post it soon if you want to
-test it.
+Never...
 
--- Steve
+	-hpa
 
->  }
->  
->  static void gfar_schedule_cleanup(struct gfar_priv_grp *gfargrp)
+
