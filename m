@@ -1,193 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaD2GJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:09:22 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33964 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754915AbaD2GJT (ORCPT
+	id S1755290AbaD2GJl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:09:41 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:60359 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978AbaD2GJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:09:19 -0400
-Message-ID: <535F41D8.90002@linux.vnet.ibm.com>
-Date: Tue, 29 Apr 2014 11:38:24 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 29 Apr 2014 02:09:40 -0400
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Meelis Roos <mroos@linux.ee>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] cpufreq: Catch double invocations of cpufreq_freq_transition_begin/end
-References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com> <20140428185507.28755.6483.stgit@srivatsabhat.in.ibm.com> <CAKohpomaJ0ubnzzQ7AwAd6z+Zm085i+UwB7XMa=si7qthZdgZg@mail.gmail.com>
-In-Reply-To: <CAKohpomaJ0ubnzzQ7AwAd6z+Zm085i+UwB7XMa=si7qthZdgZg@mail.gmail.com>
+In-Reply-To: <20140429032354.GA13445@core.coreip.homeip.net>
+References: <20140429032354.GA13445@core.coreip.homeip.net>
+Date: Tue, 29 Apr 2014 08:09:39 +0200
+Message-ID: <CANq1E4T9_ckVWzrpxf+x1YBbVMekXpQpqo8ta6da+zrwPPOanw@mail.gmail.com>
+Subject: Re: [PATCH] Input: implement managed polled input devices
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexander Shiyan <shc_work@mail.ru>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042906-5564-0000-0000-00000D678B86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 10:21 AM, Viresh Kumar wrote:
-> Nice effort.
+Hi
+
+On Tue, Apr 29, 2014 at 5:23 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Managed resources are becoming more and more popular in drivers. Let's
+> implement managed polled input devices, to complement managed regular input
+> devices.
 >
+> Similarly to managed regular input devices only one new call
+> devm_input_allocate_polled_device() is added and the rest of APIs is
+> modified to work with both managed and non-managed devices.
+>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/input/input-polldev.c | 113 +++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/input-polldev.h |   3 ++
+>  2 files changed, 115 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
+> index 4b19190..27961fc 100644
+> --- a/drivers/input/input-polldev.c
+> +++ b/drivers/input/input-polldev.c
+> @@ -176,6 +176,90 @@ struct input_polled_dev *input_allocate_polled_device(void)
+>  }
+>  EXPORT_SYMBOL(input_allocate_polled_device);
+>
+> +struct input_polled_devres {
+> +       struct input_polled_dev *polldev;
+> +};
+> +
+> +static int devm_input_polldev_match(struct device *dev, void *res, void *data)
+> +{
+> +       struct input_polled_devres *devres = res;
+> +
+> +       return devres->polldev == data;
+> +}
+> +
+> +static void devm_input_polldev_release(struct device *dev, void *res)
+> +{
+> +       struct input_polled_devres *devres = res;
+> +       struct input_polled_dev *polldev = devres->polldev;
+> +
+> +       dev_dbg(dev, "%s: dropping reference/freeing %s\n",
+> +               __func__, dev_name(&polldev->input->dev));
+> +
+> +       input_put_device(polldev->input);
+> +       kfree(polldev);
+> +}
+> +
+> +static void devm_input_polldev_unregister(struct device *dev, void *res)
+> +{
+> +       struct input_polled_devres *devres = res;
+> +       struct input_polled_dev *polldev = devres->polldev;
+> +
+> +       dev_dbg(dev, "%s: unregistering device %s\n",
+> +               __func__, dev_name(&polldev->input->dev));
+> +       input_unregister_device(polldev->input);
+> +
+> +       /*
+> +        * Note that we are still holding extra reference to the input
+> +        * device so it will stick around until devm_input_polldev_release()
+> +        * is called.
+> +        */
+> +}
+> +
+> +/**
+> + * devm_input_allocate_polled_device - allocate managed polled device
+> + * @dev: device owning the polled device being created
+> + *
+> + * Returns prepared &struct input_polled_dev or %NULL.
+> + *
+> + * Managed polled input devices do not need to be explicitly unregistered
+> + * or freed as it will be done automatically when owner device unbinds
+> + * from * its driver (or binding fails). Once such managed polled device
+> + * is allocated, it is ready to be set up and registered in the same
+> + * fashion as regular polled input devices (using
+> + * input_register_polled_device() function).
+> + *
+> + * If you want to manually unregister and free such managed polled devices,
+> + * it can be still done by calling input_unregister_polled_device() and
+> + * input_free_polled_device(), although it is rarely needed.
+> + *
+> + * NOTE: the owner device is set up as parent of input device and users
+> + * should not override it.
+> + */
+> +struct input_polled_dev *devm_input_allocate_polled_device(struct device *dev)
+> +{
+> +       struct input_polled_dev *polldev;
+> +       struct input_polled_devres *devres;
+> +
+> +       devres = devres_alloc(devm_input_polldev_release, sizeof(*devres),
+> +                             GFP_KERNEL);
+> +       if (!devres)
+> +               return NULL;
+> +
+> +       polldev = input_allocate_polled_device();
+> +       if (!polldev) {
+> +               devres_free(devres);
+> +               return NULL;
+> +       }
+> +
+> +       polldev->input->dev.parent = dev;
+> +       polldev->devres_managed = true;
+> +
+> +       devres->polldev = polldev;
+> +       devres_add(dev, devres);
+> +
+> +       return polldev;
+> +}
+> +
+>  /**
+>   * input_free_polled_device - free memory allocated for polled device
+>   * @dev: device to free
+> @@ -186,7 +270,12 @@ EXPORT_SYMBOL(input_allocate_polled_device);
+>  void input_free_polled_device(struct input_polled_dev *dev)
+>  {
+>         if (dev) {
+> -               input_free_device(dev->input);
+> +               if (dev->devres_managed)
+> +                       WARN_ON(devres_destroy(dev->input->dev.parent,
+> +                                               devm_input_polldev_release,
+> +                                               devm_input_polldev_match,
+> +                                               dev));
+> +               input_put_device(dev->input);
+>                 kfree(dev);
+>         }
+>  }
+> @@ -204,9 +293,19 @@ EXPORT_SYMBOL(input_free_polled_device);
+>   */
+>  int input_register_polled_device(struct input_polled_dev *dev)
+>  {
+> +       struct input_polled_devres *devres = NULL;
+>         struct input_dev *input = dev->input;
+>         int error;
+>
+> +       if (dev->devres_managed) {
+> +               devres = devres_alloc(devm_input_polldev_unregister,
+> +                                     sizeof(*devres), GFP_KERNEL);
+> +               if (!devres)
+> +                       return -ENOMEM;
+> +
+> +               devres->polldev = dev;
 
-Thanks! :-)
- 
-> On 29 April 2014 00:25, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> Now all such drivers have been fixed, but debugging this issue was not
->> very straight-forward (even lockdep didn't catch this). So let us add a
->> debug infrastructure to the cpufreq core to catch such issues more easily
->> in the future.
-> 
-> BUT, I am not sure if we really need it :(
-> 
-> I think we just got into the 'barrier' stuff as we had some doubts about it
-> earlier and were quite sure that nothing else could go wrong. Otherwise
-> the only problem could have been present was the second queuing
-> from the same thread. And we will surely get stuck if that happens and
-> we can't just miss that error..
-> 
+Your error-paths in this function _must_ free "devres" via devres_free().
 
-Yeah, and we _did_ hit that hang, but it was not at all intuitive at first
-as to what was going wrong. Worse, even lockdep is not in a position to catch
-such scenarios. So it definitely doesn't hurt to add a small infrastructure
-to catch such issues in the future, IMHO.
+With this fixed:
+  Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-Besides, if we can add features for users, surely we can also add some
-non-intrusive debug code for ourselves too, to make our lives easier, right? :-)
-I'm sure we deserve that privilege ;-)
+Thanks
+David
 
-Regards,
-Srivatsa S. Bhat
-
->> Scenario 1: (Deadlock-free)
->> ----------
->>
->>          Task A                                         Task B
->>
->>     /* 1st freq transition */
->>     Invoke _begin() {
->>             ...
->>             ...
->>     }
->>
->>     Change the frequency
->>
->>                                                 Got interrupt for successful
->>                                                 change of frequency.
->>
->>                                                 /* 1st freq transition */
->>                                                 Invoke _end() {
->>                                                         ...
->>                                                         ...
->>     /* 2nd freq transition */                           ...
->>     Invoke _begin() {                                   ...
->>             ... //waiting for B                         ...
->>             ... //to finish _end()              }
->>             ...
->>             ...
->>     }
->>
->>
->> This scenario is actually deadlock-free because Task A can wait inside the
->> second call to _begin() without self-deadlocking, because it is the
->> responsibility of Task B to finish the first sequence by invoking the
->> corresponding _end().
->>
->> By setting the value of 'transition_task' again explicitly in _end(), we
->> ensure that the code won't print a false-positive warning in this case.
->>
->> However the same code successfully catches the following deadlock-prone
->> scenario even in ASYNC_NOTIFICATION drivers:
->>
->> Scenario 2: (Deadlock-prone)
->> ----------
->>
->>          Task A                                         Task B
->>
->>     /* 1st freq transition */
->>     Invoke _begin() {
->>             ...
->>             ...
->>     }
->>
->>     /* 2nd freq transition */
->>     Invoke _begin() {
->>             ...
->>             ...
->>     }
->>
->>     Change the frequency
->>
->>
->> Here the bug is that Task A called the second _begin() *before* actually
->> performing the 1st frequency transition. In other words, it failed to set
->> Task B in motion for the 1st frequency transition, and hence it will
->> self-deadlock. This is very similar to the case of drivers which do
->> synchronous notification, and hence the debug infrastructure developed
->> in this patch can catch this scenario easily.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/cpufreq/cpufreq.c |   12 ++++++++++++
->>  include/linux/cpufreq.h   |    1 +
->>  2 files changed, 13 insertions(+)
->>
->> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->> index abda660..2c99a6c 100644
->> --- a/drivers/cpufreq/cpufreq.c
->> +++ b/drivers/cpufreq/cpufreq.c
->> @@ -354,6 +354,10 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
->>  void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
->>                 struct cpufreq_freqs *freqs)
->>  {
->> +
->> +       /* Catch double invocations of _begin() which lead to self-deadlock */
->> +       WARN_ON(current == policy->transition_task);
->> +
->>  wait:
->>         wait_event(policy->transition_wait, !policy->transition_ongoing);
->>
->> @@ -365,6 +369,7 @@ wait:
->>         }
->>
->>         policy->transition_ongoing = true;
->> +       policy->transition_task = current;
->>
->>         spin_unlock(&policy->transition_lock);
->>
->> @@ -378,9 +383,16 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
->>         if (unlikely(WARN_ON(!policy->transition_ongoing)))
->>                 return;
->>
->> +       /*
->> +        * The task invoking _end() could be different from the one that
->> +        * invoked the _begin(). So set ->transition_task again here
->> +        * explicity.
->> +        */
->> +       policy->transition_task = current;
->>         cpufreq_notify_post_transition(policy, freqs, transition_failed);
->>
->>         policy->transition_ongoing = false;
->> +       policy->transition_task = NULL;
->>
->>         wake_up(&policy->transition_wait);
->>  }
->> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
->> index 5ae5100..8f44d79 100644
->> --- a/include/linux/cpufreq.h
->> +++ b/include/linux/cpufreq.h
->> @@ -110,6 +110,7 @@ struct cpufreq_policy {
->>         bool                    transition_ongoing; /* Tracks transition status */
->>         spinlock_t              transition_lock;
->>         wait_queue_head_t       transition_wait;
->> +       struct task_struct      *transition_task; /* Task which is doing the transition */
->>  };
->>
->>  /* Only for ACPI */
->>
-
+> +       }
+> +
+>         input_set_drvdata(input, dev);
+>         INIT_DELAYED_WORK(&dev->work, input_polled_device_work);
+>
+> @@ -233,6 +332,12 @@ int input_register_polled_device(struct input_polled_dev *dev)
+>          */
+>         input_get_device(input);
+>
+> +       if (dev->devres_managed) {
+> +               dev_dbg(input->dev.parent, "%s: registering %s with devres.\n",
+> +                       __func__, dev_name(&input->dev));
+> +               devres_add(input->dev.parent, devres);
+> +       }
+> +
+>         return 0;
+>  }
+>  EXPORT_SYMBOL(input_register_polled_device);
+> @@ -247,6 +352,12 @@ EXPORT_SYMBOL(input_register_polled_device);
+>   */
+>  void input_unregister_polled_device(struct input_polled_dev *dev)
+>  {
+> +       if (dev->devres_managed)
+> +               WARN_ON(devres_destroy(dev->input->dev.parent,
+> +                                       devm_input_polldev_unregister,
+> +                                       devm_input_polldev_match,
+> +                                       dev));
+> +
+>         input_unregister_device(dev->input);
+>  }
+>  EXPORT_SYMBOL(input_unregister_polled_device);
+> diff --git a/include/linux/input-polldev.h b/include/linux/input-polldev.h
+> index ce0b724..2465182 100644
+> --- a/include/linux/input-polldev.h
+> +++ b/include/linux/input-polldev.h
+> @@ -48,9 +48,12 @@ struct input_polled_dev {
+>
+>  /* private: */
+>         struct delayed_work work;
+> +
+> +       bool devres_managed;
+>  };
+>
+>  struct input_polled_dev *input_allocate_polled_device(void);
+> +struct input_polled_dev *devm_input_allocate_polled_device(struct device *dev);
+>  void input_free_polled_device(struct input_polled_dev *dev);
+>  int input_register_polled_device(struct input_polled_dev *dev);
+>  void input_unregister_polled_device(struct input_polled_dev *dev);
+> --
+> 1.9.0
+>
+>
+> --
+> Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
