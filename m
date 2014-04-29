@@ -1,129 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759AbaD2H74 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 03:59:56 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42355 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678AbaD2H7y (ORCPT
+	id S1756304AbaD2IAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:00:43 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39209 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbaD2IAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 03:59:54 -0400
-Date: Tue, 29 Apr 2014 08:59:48 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: [PATCH v2 2/2] mfd: max77693: handle IRQs using regmap
-Message-ID: <20140429075948.GB29462@lee--X1>
-References: <1398750527-20715-1-git-send-email-r.baldyga@samsung.com>
- <1398750527-20715-3-git-send-email-r.baldyga@samsung.com>
+	Tue, 29 Apr 2014 04:00:41 -0400
+Message-ID: <535F5BF1.6020405@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 13:29:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398750527-20715-3-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+In-Reply-To: <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042908-2674-0000-0000-00000E05FB2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch modifies mfd driver to use regmap for handling interrupts.
-> It allows to simplify irq handling process. This modifications needed
-> to make small changes in function drivers, which use interrupts.
+On 04/29/2014 03:25 AM, Linus Torvalds wrote:
+> On Mon, Apr 28, 2014 at 2:20 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> That said, the bug does seem to be that some path doesn't invalidate
+>> the vmacache sufficiently, or something inserts a vmacache entry into
+>> the current process when looking up a remote process or whatever.
+>> Davidlohr, ideas?
 > 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->  drivers/extcon/extcon-max77693.c     |   3 +-
->  drivers/mfd/Kconfig                  |   1 +
->  drivers/mfd/Makefile                 |   2 +-
->  drivers/mfd/max77693-irq.c           | 346 -----------------------------------
->  drivers/mfd/max77693.c               | 151 ++++++++++++++-
->  include/linux/mfd/max77693-private.h |  47 ++++-
->  6 files changed, 191 insertions(+), 359 deletions(-)
->  delete mode 100644 drivers/mfd/max77693-irq.c
+> Maybe we missed some use_mm() call. That will change the current mm
+> without flushing the vma cache. The code considers kernel threads to
+> be bad targets for vma caching for this reason (and perhaps others),
+> but maybe we missed something.
+> 
+> I wonder if we should just invalidate the vma cache in use_mm(), and
+> remote the "kernel tasks are special" check.
+> 
+> Srivatsa, are you doing something peculiar on that system that would
+> trigger this? I see some kdump failures in the log, anything else?
+> 
 
-Patch looks _mostly_ okay and the diffstat looks great.
+No, it was just plain booting. The machine is simply configured with
+kdump, that's all. I'm surprised that so many processes got segfaults
+during boot. Looks like an mm bug in the kernel.
 
-[...]
+Regards,
+Srivatsa S. Bhat
 
-> +static const struct regmap_irq max77693_led_irqs[] = {
-> +	{ .mask = LED_IRQ_FLED2_OPEN, },
-> +	{ .mask = LED_IRQ_FLED2_SHORT, },
-> +	{ .mask = LED_IRQ_FLED1_OPEN, },
-> +	{ .mask = LED_IRQ_FLED1_SHORT, },
-> +	{ .mask = LED_IRQ_MAX_FLASH, },
-> +};
-
-Tiny-nit: If you can line those '}'s up, that'd be great. :)
-
-Same below. You've already gone to the trouble with the '='s.
-
-/me likes straight lines.
-
-> +static const struct regmap_irq_chip max77693_led_irq_chip = {
-> +	.name                   = "max77693-led",
-> +	.status_base            = MAX77693_LED_REG_FLASH_INT,
-> +	.mask_base              = MAX77693_LED_REG_FLASH_INT_MASK,
-> +	.mask_invert            = false,
-> +	.num_regs               = 1,
-> +	.irqs                   = max77693_led_irqs,
-> +	.num_irqs               = ARRAY_SIZE(max77693_led_irqs),
-> +};
-> +
-> +static const struct regmap_irq max77693_topsys_irqs[] = {
-> +	{ .mask = TOPSYS_IRQ_T120C_INT, },
-> +	{ .mask = TOPSYS_IRQ_T140C_INT, },
-> +	{ .mask = TOPSYS_IRQ_LOWSYS_INT, },
-> +};
-
-[...]
-
-> +#define LED_IRQ_FLED2_OPEN		(0x1 << 0)
-> +#define LED_IRQ_FLED2_SHORT		(0x1 << 1)
-> +#define LED_IRQ_FLED1_OPEN		(0x1 << 2)
-> +#define LED_IRQ_FLED1_SHORT		(0x1 << 3)
-> +#define LED_IRQ_MAX_FLASH		(0x1 << 4)
-> +
-> +#define TOPSYS_IRQ_T120C_INT		(0x1 << 0)
-> +#define TOPSYS_IRQ_T140C_INT		(0x1 << 1)
-> +#define TOPSYS_IRQ_LOWSYS_INT		(0x1 << 3)
-> +
-> +#define CHG_IRQ_BYP_I			(0x1 << 0)
-> +#define CHG_IRQ_THM_I			(0x1 << 2)
-> +#define CHG_IRQ_BAT_I			(0x1 << 3)
-> +#define CHG_IRQ_CHG_I			(0x1 << 4)
-> +#define CHG_IRQ_CHGIN_I			(0x1 << 6)
-> +
-> +#define MUIC_IRQ_INT1_ADC		(0x1 << 0)
-> +#define MUIC_IRQ_INT1_ADC_LOW		(0x1 << 1)
-> +#define MUIC_IRQ_INT1_ADC_ERR		(0x1 << 2)
-> +#define MUIC_IRQ_INT1_ADC1K		(0x1 << 3)
-> +
-> +#define MUIC_IRQ_INT2_CHGTYP		(0x1 << 0)
-> +#define MUIC_IRQ_INT2_CHGDETREUN	(0x1 << 1)
-> +#define MUIC_IRQ_INT2_DCDTMR		(0x1 << 2)
-> +#define MUIC_IRQ_INT2_DXOVP		(0x1 << 3)
-> +#define MUIC_IRQ_INT2_VBVOLT		(0x1 << 4)
-> +#define MUIC_IRQ_INT2_VIDRM		(0x1 << 5)
-> +
-> +#define MUIC_IRQ_INT3_EOC		(0x1 << 0)
-> +#define MUIC_IRQ_INT3_CGMBC		(0x1 << 1)
-> +#define MUIC_IRQ_INT3_OVP		(0x1 << 2)
-> +#define MUIC_IRQ_INT3_MBCCHG_ERR	(0x1 << 3)
-> +#define MUIC_IRQ_INT3_CHG_ENABLED	(0x1 << 4)
-> +#define MUIC_IRQ_INT3_BAT_DET		(0x1 << 5)
-
-Use BIT() for these.
-
-> +
-> +
-
-One more '\n' than you need.
-
-[...]
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
