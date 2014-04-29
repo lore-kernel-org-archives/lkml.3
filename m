@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614AbaD2HNa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 03:13:30 -0400
-Received: from ozlabs.org ([103.22.144.67]:41544 "EHLO ozlabs.org"
+	id S1755831AbaD2HQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 03:16:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57219 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750749AbaD2HN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 03:13:28 -0400
-Date: Tue, 29 Apr 2014 17:13:21 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaron Tomlin <atomlin@redhat.com>, Don Zickus <dzickus@redhat.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140429171321.69409c76a15ad2a97761585c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Apr_2014_17_13_21_+1000_fTlGq2cc/i2h0y4N"
+	id S1751400AbaD2HQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 03:16:09 -0400
+Message-ID: <535F5173.5030301@zytor.com>
+Date: Tue, 29 Apr 2014 00:14:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Andrew Lutomirski <amluto@gmail.com>
+CC: comex <comexk@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com> <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com> <535F108C.9010001@linux.intel.com> <535F205F.9040101@zytor.com> <535F2C66.9090902@zytor.com>
+In-Reply-To: <535F2C66.9090902@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Apr_2014_17_13_21_+1000_fTlGq2cc/i2h0y4N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/28/2014 09:36 PM, H. Peter Anvin wrote:
+> 
+> There are still things that need fixing: we need to go through the
+> espfix path even when returning from NMI/MC (which fortunately can't
+> nest with taking an NMI/MC on the espfix path itself, since in that case
+> we will have been interrupted while running in the kernel with a kernel
+> stack.)
+> 
+> (Cc: Rostedt because of the NMI issue.)
+> 
 
-Hi Andrew,
+NMI is fine: we go through irq_return except for nested NMI.  There are
+only three IRETs in the kernel (irq_return, nested_nmi_out, and the
+early trap handler) and all of them are good.
 
-After merging the akpm tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+I think we just need to clean up the PV aspects of this and then we
+should be in good shape.  I have done a bunch of cleanups to the
+development git tree.
 
-arch/sparc/kernel/process_64.c: In function 'arch_trigger_all_cpu_backtrace=
-':
-arch/sparc/kernel/process_64.c:267:3: error: ISO C90 forbids mixed declarat=
-ions and code [-Werror=3Ddeclaration-after-statement]
-cc1: all warnings being treated as errors
+I'm considering making 16-bit segment support a EXPERT config option for
+both 32- and 64-bit kernels, as it seems like a bit of a waste for
+embedded systems which don't need this kind of backward compatibility.
+Maybe that is something that can be left for someone else to implement
+if they feel like it.
 
-Caused by commit dd0063a16aa1 ("nmi: provide the option to issue an NMI
-back trace to every cpu but current").
+	-hpa
 
-I have no idea why I did not see this yesterday.
-
-I applied the following fix up patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 29 Apr 2014 17:10:00 +1000
-Subject: [PATCH] nmi-provide-the-option-to-issue-an-nmi-back-trace-to-every=
--cpu-but-current-fix
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/sparc/kernel/process_64.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index 65b405c36421..9975a6dbca0a 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -261,10 +261,12 @@ void arch_trigger_all_cpu_backtrace(bool include_self)
- 	smp_fetch_global_regs();
-=20
- 	for_each_online_cpu(cpu) {
-+		struct global_reg_snapshot *gp;
-+
- 		if (!include_self && cpu =3D=3D this_cpu)
- 			continue;
-=20
--		struct global_reg_snapshot *gp =3D &global_cpu_snapshot[cpu].reg;
-+		gp =3D &global_cpu_snapshot[cpu].reg;
-=20
- 		__global_reg_poll(gp);
-=20
---=20
-2.0.0.rc0
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__29_Apr_2014_17_13_21_+1000_fTlGq2cc/i2h0y4N
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTX1EWAAoJEMDTa8Ir7ZwVMwMP/3/cpl3vglIXCkT/3aZCRRko
-c/IcMC29Gfcqc38ehSRB9/OtnywTCWFR1ubEe4V6w5XJkk+QaqgypQ/1nEo/83Lx
-taczxsMcND2hz+5PHDM5hik2V3+53B49c4/r7CXkaONc3IUhaRx2ZzZ7urYmj9+j
-bfo+qM6EWT6yw+8MJVFrjtTku9kc8Sn9vrWArPal28UqgMOQvQCHXdJZd5kFOUK5
-u8vtbDAeHCASC9dSsOFSTWzTf7eWuAKE6puRsy11BUoknuXo2ttPR+kvPBUdzfJj
-eXY4VPNH6PKTEAwAOqEyyK6ocfFj9WNG3BlHzr0NUqzeryslKZvGJG8QKxN2nMlH
-PeIvPTh8rhY8sGoZS02qesRSpsgiUqWfd9AD4NgyCFD4kW1/eWERI2FeKfY4Jm0w
-nYBygQ1aZfH2tVmZ2FgZzWf6oJXCTHgIgOciLN+xjLtRUzeYGr4asIC/kmvN30YX
-tRYmIlxRso/NNLAKRydn7Z0viK4HVtBmb9IzxMABC2SYMaNurCI9A3Mb4vKPVJnf
-mBR5mlpliwGKho55ze8QKeG+MfoTw9elQ4K8jn+ARXkzNn/a6jfdMoLAzS3MjJva
-pZzxSyvylcMvTa+6KS41PKMq3Jvl0Phe8vI638PxDETY/hAINhHDFqsIEJYMiZ3G
-NOFDiaRXRFgRIyZnjOar
-=nQ+T
------END PGP SIGNATURE-----
-
---Signature=_Tue__29_Apr_2014_17_13_21_+1000_fTlGq2cc/i2h0y4N--
