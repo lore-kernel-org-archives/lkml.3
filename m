@@ -1,158 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757270AbaD2V0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 17:26:03 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53753 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755565AbaD2V0A (ORCPT
+	id S1758609AbaD2V2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 17:28:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44722 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757271AbaD2V2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 17:26:00 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kieran Clancy <clancy.kieran@gmail.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Lan Tianyu <tianyu.lan@intel.com>,
-        Stefan Biereigel <stefan@biereigel.de>
-Subject: Re: [PATCH] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Tue, 29 Apr 2014 23:42:30 +0200
-Message-ID: <24139858.4TxL0glm7k@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398783080-24554-1-git-send-email-clancy.kieran@gmail.com>
-References: <1398783080-24554-1-git-send-email-clancy.kieran@gmail.com>
+	Tue, 29 Apr 2014 17:28:14 -0400
+Date: Tue, 29 Apr 2014 23:28:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stuart Hayes <stuart.w.hayes@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hrtimer: invalid timout set after hang_detected
+In-Reply-To: <CAL5oW02RBdQ8GwJcDHqHO9vpAmq6y+bUFLcZ0tMThu1qYhz=2A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1404292327210.6261@ionos.tec.linutronix.de>
+References: <CAL5oW02RBdQ8GwJcDHqHO9vpAmq6y+bUFLcZ0tMThu1qYhz=2A@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 30, 2014 12:21:20 AM Kieran Clancy wrote:
-> Address a regression caused by commit ad332c8a4533:
-> (ACPI / EC: Clear stale EC events on Samsung systems)
-> 
-> After the earlier patch, there was found to be a race condition on some
-> earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-> sometimes discarding a new EC event before its GPE was triggered by the
-> system. In the case of these systems, this meant that the "lid open"
-> event was not registered on resume if that was the cause of the wake,
-> leading to problems when attempting to close the lid to suspend again.
-> 
-> After testing on a number of Samsung systems, both those affected by the
-> previous EC bug and those affected by the race condition, it seemed that
-> the best course of action was to process rather than discard the events.
-> On Samsung systems which accumulate stale EC events, there does not seem
-> to be any adverse side-effects of running the associated _Q methods.
-> 
-> This patch adds an argument to the static function acpi_ec_sync_query so
-> that it may be used within the acpi_ec_clear loop in place of
-> acpi_ec_query_unlocked which was used previously.
-> 
-> With thanks to Stefan Biereigel for reporting the issue, and for all the
-> people who helped test the new patch on affected systems.
-> 
-> References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-> References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-> Reported-by: Stefan Biereigel <stefan@biereigel.de>
-> Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-> Tested-by: Stefan Biereigel <stefan@biereigel.de>
-> Tested-by: Dennis Jansen <dennis.jansen@web.de>
-> Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-> Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-> Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-> Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-> Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-> Cc: Lan Tianyu <tianyu.lan@intel.com>
+On Tue, 29 Apr 2014, Stuart Hayes wrote:
 
-Queued up for 3.15, thanks!
-
+> Make hrtimer_force_reprogram() not reprogram the clock event device if
+> hang_detected has been set in hrtimer_interrupt().
+> 
+> 
+> Otherwise, if an active hrtimer is changed by calling hrtimer_start() (for
+> example) while hang_detected is set, the clock event device can be
+> programmed with the wrong value, which can result in the clock event device
+> interrupt occurring much later than expected, and timer functions being run
+> very late.
+> 
+> 
+> This can occur, for instance, if a CPU goes idle and calls
+> tick_nohz_stop_sched_tick() after hang_detected is set.  The function
+> tick_nohz_stop_sched_tick() will call hrtimer_start() to reprogram the
+> sched_timer to a longer timeout.  hrtimer_start() will call
+> __hrtimer_start_range_ns(), which first calls remove_hrtimer() to remove
+> sched_timer, then hrtimer_enqueue_reprogram() to add it with its new
+> timeout.  The problem is that remove_hrtimer() calls __remove_hrtimer(),
+> which calls hrtimer_force_reprogram(), and hrtimer_force_reprogram()
+> ignores hang_detected and will reprogram the clock event device to the next
+> soonest hrtimer expiry, which could be, say, 11 seconds away.  This
+> overwrites the value that was programmed into the clock event device when
+> hang_detected was set (which was no more than 100ms).  Then
+> hrtimer_enqueue_reprogram() calls hrtimer_reprogram(), which observes
+> hang_detected and does not reprogram the clock event device, so the device
+> remains set to the value of, in this example, 11 seconds, during which time
+> no clock event device interrupts occur and no timer expiration functions
+> are run.
+> 
+> 
+> Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
+> 
 > ---
 > 
-> To maintainers: Assuming this patch is accepted, please mark this for
-> inclusion in all -stable trees. It should be noted that the previous
-> patch (ad332c8a4533) was excluded from a number of stable trees after
-> the regression was found, but should now be included again along with
-> this patch. I am not sure of the correct way to annotate this above.
-
-I only can tag it for 3.14.y, because the mainline regression is in 3.14.
-
-You'll need to ask the -stable maintainers in question to pick up both
-patches after this one reaches the Linus' tree.
-
->  drivers/acpi/ec.c | 21 ++++++++++++---------
->  1 file changed, 12 insertions(+), 9 deletions(-)
 > 
-> diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-> index d7d32c2..ad11ba4 100644
-> --- a/drivers/acpi/ec.c
-> +++ b/drivers/acpi/ec.c
-> @@ -206,13 +206,13 @@ unlock:
->  	spin_unlock_irqrestore(&ec->lock, flags);
->  }
->  
-> -static int acpi_ec_sync_query(struct acpi_ec *ec);
-> +static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
->  
->  static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
->  {
->  	if (state & ACPI_EC_FLAG_SCI) {
->  		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
-> -			return acpi_ec_sync_query(ec);
-> +			return acpi_ec_sync_query(ec, NULL);
->  	}
->  	return 0;
->  }
-> @@ -443,10 +443,8 @@ acpi_handle ec_get_handle(void)
->  
->  EXPORT_SYMBOL(ec_get_handle);
->  
-> -static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-> -
->  /*
-> - * Clears stale _Q events that might have accumulated in the EC.
-> + * Process _Q events that might have accumulated in the EC.
->   * Run with locked ec mutex.
->   */
->  static void acpi_ec_clear(struct acpi_ec *ec)
-> @@ -455,7 +453,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
->  	u8 value = 0;
->  
->  	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
-> -		status = acpi_ec_query_unlocked(ec, &value);
-> +		status = acpi_ec_sync_query(ec, &value);
->  		if (status || !value)
->  			break;
->  	}
-> @@ -582,13 +580,18 @@ static void acpi_ec_run(void *cxt)
->  	kfree(handler);
->  }
->  
-> -static int acpi_ec_sync_query(struct acpi_ec *ec)
-> +static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
->  {
->  	u8 value = 0;
->  	int status;
->  	struct acpi_ec_query_handler *handler, *copy;
-> -	if ((status = acpi_ec_query_unlocked(ec, &value)))
-> +
-> +	status = acpi_ec_query_unlocked(ec, &value);
-> +	if (data)
-> +		*data = value;
-> +	if (status)
->  		return status;
-> +
->  	list_for_each_entry(handler, &ec->list, node) {
->  		if (value == handler->query_bit) {
->  			/* have custom handler for this bit */
-> @@ -612,7 +615,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
->  	if (!ec)
->  		return;
->  	mutex_lock(&ec->mutex);
-> -	acpi_ec_sync_query(ec);
-> +	acpi_ec_sync_query(ec, NULL);
->  	mutex_unlock(&ec->mutex);
->  }
->  
+> --- linux-3.15-rc3/kernel_orig/hrtimer.c 2014-04-29 13:10:58.087832963 -0400
+> 
+> +++ linux-3.15-rc3/kernel/hrtimer.c 2014-04-29 15:42:49.581084736 -0400
+> 
+> @@ -569,6 +569,15 @@ hrtimer_force_reprogram(struct hrtimer_c
 > 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Can you please resend without the  line wraps and whitespace dammage?
+ 
+> 
+>   cpu_base->expires_next.tv64 = expires_next.tv64;
+> 
+> 
+> 
+> + /*
+> 
+> +  * If a hang was detected in the last timer interrupt then we
+> 
+> +  * do not schedule a timer which is earlier than the expiry
+> 
+> +  * which we enforced in the hang detection. We want the system
+> 
+> +  * to make progress.
+> 
+> +  */
+> 
+> + if (cpu_base->hang_detected)
+> 
+> + return;
+> 
+> +
+> 
+>   if (cpu_base->expires_next.tv64 != KTIME_MAX)
+> 
+>   tick_program_event(cpu_base->expires_next, 1);
+> 
+>  }
+> 
