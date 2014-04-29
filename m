@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894AbaD2PqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 11:46:23 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:48393 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaD2PqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 11:46:22 -0400
-Date: Tue, 29 Apr 2014 08:46:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        oleg@redhat.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 0/3] Miscellaneous fixes for 3.16
-Message-ID: <20140429154616.GG8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140428235600.GA12200@linux.vnet.ibm.com>
- <20140429032345.GA8793@thin>
+	id S1757967AbaD2Pss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 11:48:48 -0400
+Received: from imp02.mtu.ru ([62.5.255.19]:39068 "EHLO imp02.mtu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756419AbaD2Psr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 11:48:47 -0400
+X-Spam-Flag: NO
+Message-ID: <535FC9D5.4040107@pavlinux.ru>
+Date: Tue, 29 Apr 2014 19:48:37 +0400
+From: Pavel Vasilyev <pavel@pavlinux.ru>
+Reply-To: pavel@pavlinux.ru
+Organization: Pavlinux. Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429032345.GA8793@thin>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042915-7164-0000-0000-0000016381F8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH RT 0/3] Linux 3.2.57-rt84-rc1
+References: <20140427143925.177486597@goodmis.org>	<535D8180.1020607@pavlinux.ru> <20140428093956.78d0f3ea@gandalf.local.home>
+In-Reply-To: <20140428093956.78d0f3ea@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 08:23:45PM -0700, Josh Triplett wrote:
-> On Mon, Apr 28, 2014 at 04:56:00PM -0700, Paul E. McKenney wrote:
-> > Hello!
-> > 
-> > This series provides miscellaneous fixes:
-> > 
-> > 1.	Apply ACCESS_ONCE() to unprotected ->gp_flags accesses.
-> > 
-> > 2.	Fix typo in comment, courtesy of Liu Ping Fan.
-> > 
-> > 3.	Make RCU CPU stall warnings print grace-period numbers in
-> > 	signed format to improve readability of stall-warning output.
-> > 
-> > 4.	Make cpu_needs_another_gp() take future grace-period needs
-> > 	into account.
-> > 
-> > 5.	Remove unused ->preemptible field from the rcu_data structure,
-> > 	courtesty of Iulia Manda.
-> > 
-> > 6.	Apply ACCESS_ONCE() to unprotected ->jiffies_stall accesses,
-> > 	courtesty of Iulia Manda.
-> > 
-> > 7.	Make callers responsible for grace-period kthread wakeup in
-> > 	order to avoid potential silent grace-period stalls.
-> > 
-> > 8.	Remove "extern" from RCU function declarations, courtesy of
-> > 	Iulia Manda.
-> > 
-> > 9.	Apply ACCESS_ONCE() to additional ->jiffies_stall accesses,
-> > 	courtesy of Himangi Saraogi.
-> > 
-> > 10.	Add event tracing to dyntick_save_progress_counter(), courtesy
-> > 	of Andreea-Cristina Bernat.
-> > 
-> > 11.	Make rcu_init_one() use nr_cpu_ids instead of NR_CPUS for
-> > 	data-structure setup limit check, courtesy of Himangi Saraogi.
-> > 
-> > 12.	Remove redundant kfree_call_rcu() definition by using the
-> > 	rcu_state pointer, courtesy of Andreea-Cristina Bernat.
-> > 
-> > 13.	Merge rcu_sched_force_quiescent_state() definition with
-> > 	rcu_force_quiescent_state() by using the rcu_state pointer,
-> > 	courtesy of Andreea-Cristina Bernat.
-> > 
-> > 14.	Document RCU_INIT_POINTER()'s lack of ordering guarantees.
-> > 
-> > 15.	Automatically bind RCU's grace-period kthreads to timekeeping
-> > 	CPU for NO_HZ_FULL builds.
-> > 
-> > 16.	Make large and small sysidle systems use equivalent state machine.
-> > 
-> > 17.	Remove duplicate resched_cpu() declaration, courtesy of
-> > 	Pranith Kumar.
-> > 
-> > 18.	Replace deprecated __this_cpu_ptr() uses with raw_cpu_ptr(),
-> > 	courtesy of Christoph Lameter.
-> > 
-> > 19.	Make softirq processing provide a quiescent state only once
-> > 	per full pass over all softirqs rather than once per action,
-> > 	courtesy of Eric Dumazet.
-> 
-> For all 19:
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+28.04.2014 17:39, Steven Rostedt пишет:
+> On Mon, 28 Apr 2014 02:15:28 +0400
+> Pavel Vasilyev <pavel@pavlinux.ru> wrote:
+>
+>> 27.04.2014 18:39, Steven Rostedt пишет:
+>>> Dear RT Folks,
+>>>
+>>> This is the RT stable review cycle of patch 3.2.57-rt84-rc1.
+>>>
+>>> Please scream at me if I messed something up. Please test the patches too.
+>>
+>>
+>> More than two years our thin clients (about 5000 machines, Intel Atom, x86_32)
+>> work with RCU_BOOST.
+>>
+>> CONFIG_RCU_BOOST=y
+>> CONFIG_RCU_BOOST_PRIO=80
+>> CONFIG_RCU_BOOST_DELAY=400
+>>
+>
+> Is this just a confirmation of having RCU_BOOST default y for
+> PREEMPT_RT is a good thing?
 
-And thank you for these reviews as well, applied!
 
-							Thanx, Paul
+Only 3.2-rt
 
+
+-- 
+
+                                                          Pavel.
