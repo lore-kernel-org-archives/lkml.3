@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739AbaD2Ctl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:49:41 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:25761 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750756AbaD2Ctk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:49:40 -0400
-From: Xiangliang Yu <yuxiangl@marvell.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jan Kasprzak <kas@fi.muni.cz>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Apr 2014 19:49:29 -0700
-Subject: RE: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
-Thread-Topic: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
-Thread-Index: Ac9jS3GK/Sj9aJq9Qwi8Lsk7betFEQACQKAg
-Message-ID: <F766E4F80769BD478052FB6533FA745D4F63685A1F@SC-VEXCH4.marvell.com>
-References: <20140428145201.GG29712@fi.muni.cz>
-	 <F766E4F80769BD478052FB6533FA745D4F6368598F@SC-VEXCH4.marvell.com>
- <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751758AbaD2Cxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:53:41 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:60426 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751349AbaD2Cxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 22:53:40 -0400
+Date: Tue, 29 Apr 2014 11:53:10 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: akpm@linux-foundation.org
+Cc: daeseok.youn@gmail.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] dmapool: remove redundant NULL check for dev in
+ dma_pool_create()
+Message-ID: <20140429025310.GA5913@devel>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-29_01:2014-04-29,2014-04-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404290040
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ben Hutchings already submitted a patch for this twice, which I cc'd you
-> on:
-> 
-> http://marc.info/?t=139277203900003
-> 
-> will you ack it?  PCI_VDEVICE() is a sort of take it or leave it macro.
-> It's not important and it will look untidy and a bit confusing having a
-> mix of open coding and macros, so I'd say convert all or none.
-> 
-Using open coding because PCI_VENDOR_ID_MARVELL_EXT was undefined before.
-Now, we should use the macros instead of open coding.
+"dev" cannot be NULL because it is already checked before
+calling dma_pool_create().
 
-> 
-> 
-> > > Add support for the AOC-SAS2LP-MV8 SAS-2 controller from SuperMicro.
-> > > This controller has subdevice id 0x9485 instead of 0x9480, and apparently
-> > > this simple patch is the only thing needed to make it work.
-> > >
-> > > # lspci -vn
-> > > [...]
-> > > 03:00.0 0104: 1b4b:9485 (rev 03)
-> > > 	Subsystem: 1b4b:9485
-> > > 	Flags: bus master, fast devsel, latency 0, IRQ 24
-> > > 	Memory at feba0000 (64-bit, non-prefetchable) [size=128K]
-> > > 	Memory at febc0000 (64-bit, non-prefetchable) [size=256K]
-> > > 	Expansion ROM at feb90000 [disabled] [size=64K]
-> > > 	Capabilities: [40] Power Management version 3
-> > > 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-> > > 	Capabilities: [70] Express Endpoint, MSI 00
-> > > 	Capabilities: [100] Advanced Error Reporting
-> > > 	Capabilities: [140] Virtual Channel
-> > > 	Kernel driver in use: mvsas
-> > > 	Kernel modules: mvsas
-> > >
-> > > Signed-off-by: Jan Kasprzak <kas@fi.muni.cz>
-> > >
-> > > diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-> > > index 5ff978b..eacee48 100644
-> > > --- a/drivers/scsi/mvsas/mv_init.c
-> > > +++ b/drivers/scsi/mvsas/mv_init.c
-> > > @@ -728,6 +728,15 @@ static struct pci_device_id mvs_pci_table[] = {
-> > >  		.class_mask	= 0,
-> > >  		.driver_data	= chip_9485,
-> > >  	},
-> > > +	{
-> > > +		.vendor		= PCI_VENDOR_ID_MARVELL_EXT,
-> > > +		.device		= 0x9485,
-> > > +		.subvendor	= PCI_ANY_ID,
-> > > +		.subdevice	= 0x9485,
-> > > +		.class		= 0,
-> > > +		.class_mask	= 0,
-> > > +		.driver_data	= chip_9485,
-> > > +	},
-> > >  	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3 */
-> > >  	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4
-> (exact
-> > > model unknown) */
-> > >  	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4
-> (exact
-> > > model unknown) */
-> > >
-> > > --
-> > > | Jan "Yenya" Kasprzak  <kas at {fi.muni.cz - work | yenya.net - private}>
-> |
-> > > | New GPG 4096R/A45477D5 - see http://www.fi.muni.cz/~kas/pgp-rollover.txt
-> |
-> > > | http://www.fi.muni.cz/~kas/    Journal:
-> http://www.fi.muni.cz/~kas/blog/
-> > > |
-> > >   There's clearly a balance between "octopus merges are fine" and "Christ,
-> > >   that's not an octopus, that's a Cthulhu merge".         --Linus Torvalds
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+If dev can be NULL, it has NULL deferencing when kmalloc_node()
+is called after enabling CONFIG_NUMA.
+
+ mm/dmapool.c |   26 +++++++++-----------------
+ 1 files changed, 9 insertions(+), 17 deletions(-)
+
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index c69781e..38dfcdd 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -170,24 +170,16 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+ 
+-	if (dev) {
+-		int ret;
++	INIT_LIST_HEAD(&retval->pools);
+ 
+-		mutex_lock(&pools_lock);
+-		if (list_empty(&dev->dma_pools))
+-			ret = device_create_file(dev, &dev_attr_pools);
+-		else
+-			ret = 0;
+-		/* note:  not currently insisting "name" be unique */
+-		if (!ret)
+-			list_add(&retval->pools, &dev->dma_pools);
+-		else {
+-			kfree(retval);
+-			retval = NULL;
+-		}
+-		mutex_unlock(&pools_lock);
++	mutex_lock(&pools_lock);
++	if (list_empty(&dev->dma_pools) &&
++	    device_create_file(dev, &dev_attr_pools)) {
++		kfree(retval);
++		return NULL;
+ 	} else
+-		INIT_LIST_HEAD(&retval->pools);
++		list_add(&retval->pools, &dev->dma_pools);
++	mutex_unlock(&pools_lock);
+ 
+ 	return retval;
+ }
+-- 
+1.7.4.4
 
