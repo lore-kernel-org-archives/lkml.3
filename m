@@ -1,96 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306AbaD2RR3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:17:29 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:40810 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757817AbaD2RRZ (ORCPT
+	id S1758328AbaD2RRf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:17:35 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:32802 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758311AbaD2RRd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:17:25 -0400
-Date: Tue, 29 Apr 2014 19:17:20 +0200
-From: Robert Richter <rric@kernel.org>
-To: Myron Stowe <myron.stowe@redhat.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        suravee.suthikulpanit@amd.com, aravind.gopalakrishnan@amd.com,
-        kim.naru@amd.com, andreas.herrmann3@amd.com, daniel@numascale.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        bp@suse.de, sp@numascale.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
- capabilities
-Message-ID: <20140429171720.GL32718@rric.localhost>
-References: <20140419025308.2408.51252.stgit@amt.stowe>
- <20140419025323.2408.88764.stgit@amt.stowe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140419025323.2408.88764.stgit@amt.stowe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 29 Apr 2014 13:17:33 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao4WAAvcX1NbsnvL/2dsb2JhbABZgwasGwUBAQEEAZlzAgKBJBd0glMTHCMYgQIkE4hFAck1hVWII1eEQAEDjwCKDwGSYoMzO4Et
+Date: Tue, 29 Apr 2014 19:19:34 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Joel Becker <jlbec@evilplan.org>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/configs/item.c: kernel-doc fixes + clean-up
+Message-Id: <20140429191934.a4568129c64fa1ec2ac72771@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to Boris I have the following:
+-Fix function parameter documentation
+-EXPORT_SYMBOLS moved after corresponding functions
+-Small coding style and checkpatch warning fixes
 
-On 18.04.14 20:53:23, Myron Stowe wrote:
-> +#define AMD_PCIE_CF8(bus, dev, fn, reg) \
-> +			(0x80000000 | \
-> +			((reg & 0xF00) << 16) | \
-> +			((bus & 0xF) << 16) | \
-> +			((dev & 0x1F) << 11) | \
-> +			((fn & 0x7) << 8) | \
-> +			((reg & 0xFC)))
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/configfs/item.c | 58 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 28 insertions(+), 30 deletions(-)
 
-Make this a static function.
+diff --git a/fs/configfs/item.c b/fs/configfs/item.c
+index 50cee7f..e65f9ff 100644
+--- a/fs/configfs/item.c
++++ b/fs/configfs/item.c
+@@ -19,7 +19,7 @@
+  * Boston, MA 021110-1307, USA.
+  *
+  * Based on kobject:
+- * 	kobject is Copyright (c) 2002-2003 Patrick Mochel
++ *	kobject is Copyright (c) 2002-2003 Patrick Mochel
+  *
+  * configfs Copyright (C) 2005 Oracle.  All rights reserved.
+  *
+@@ -35,9 +35,9 @@
+ #include <linux/configfs.h>
+ 
+ 
+-static inline struct config_item * to_item(struct list_head * entry)
++static inline struct config_item *to_item(struct list_head *entry)
+ {
+-	return container_of(entry,struct config_item,ci_entry);
++	return container_of(entry, struct config_item, ci_entry);
+ }
+ 
+ /* Evil kernel */
+@@ -47,34 +47,35 @@ static void config_item_release(struct kref *kref);
+  *	config_item_init - initialize item.
+  *	@item:	item in question.
+  */
+-void config_item_init(struct config_item * item)
++void config_item_init(struct config_item *item)
+ {
+ 	kref_init(&item->ci_kref);
+ 	INIT_LIST_HEAD(&item->ci_entry);
+ }
++EXPORT_SYMBOL(config_item_init);
+ 
+ /**
+  *	config_item_set_name - Set the name of an item
+  *	@item:	item.
+- *	@name:	name.
++ *	@fmt:  The vsnprintf()'s format string.
+  *
+  *	If strlen(name) >= CONFIGFS_ITEM_NAME_LEN, then use a
+  *	dynamically allocated string that @item->ci_name points to.
+  *	Otherwise, use the static @item->ci_namebuf array.
+  */
+-int config_item_set_name(struct config_item * item, const char * fmt, ...)
++int config_item_set_name(struct config_item *item, const char *fmt, ...)
+ {
+ 	int error = 0;
+ 	int limit = CONFIGFS_ITEM_NAME_LEN;
+ 	int need;
+ 	va_list args;
+-	char * name;
++	char *name;
+ 
+ 	/*
+ 	 * First, try the static array
+ 	 */
+-	va_start(args,fmt);
+-	need = vsnprintf(item->ci_namebuf,limit,fmt,args);
++	va_start(args, fmt);
++	need = vsnprintf(item->ci_namebuf, limit, fmt, args);
+ 	va_end(args);
+ 	if (need < limit)
+ 		name = item->ci_namebuf;
+@@ -83,13 +84,13 @@ int config_item_set_name(struct config_item * item, const char * fmt, ...)
+ 		 * Need more space? Allocate it and try again
+ 		 */
+ 		limit = need + 1;
+-		name = kmalloc(limit,GFP_KERNEL);
++		name = kmalloc(limit, GFP_KERNEL);
+ 		if (!name) {
+ 			error = -ENOMEM;
+ 			goto Done;
+ 		}
+-		va_start(args,fmt);
+-		need = vsnprintf(name,limit,fmt,args);
++		va_start(args, fmt);
++		need = vsnprintf(name, limit, fmt, args);
+ 		va_end(args);
+ 
+ 		/* Still? Give up. */
+@@ -109,7 +110,6 @@ int config_item_set_name(struct config_item * item, const char * fmt, ...)
+  Done:
+ 	return error;
+ }
+-
+ EXPORT_SYMBOL(config_item_set_name);
+ 
+ void config_item_init_type_name(struct config_item *item,
+@@ -131,20 +131,21 @@ void config_group_init_type_name(struct config_group *group, const char *name,
+ }
+ EXPORT_SYMBOL(config_group_init_type_name);
+ 
+-struct config_item * config_item_get(struct config_item * item)
++struct config_item *config_item_get(struct config_item *item)
+ {
+ 	if (item)
+ 		kref_get(&item->ci_kref);
+ 	return item;
+ }
++EXPORT_SYMBOL(config_item_get);
+ 
+-static void config_item_cleanup(struct config_item * item)
++static void config_item_cleanup(struct config_item *item)
+ {
+-	struct config_item_type * t = item->ci_type;
+-	struct config_group * s = item->ci_group;
+-	struct config_item * parent = item->ci_parent;
++	struct config_item_type *t = item->ci_type;
++	struct config_group *s = item->ci_group;
++	struct config_item *parent = item->ci_parent;
+ 
+-	pr_debug("config_item %s: cleaning up\n",config_item_name(item));
++	pr_debug("config_item %s: cleaning up\n", config_item_name(item));
+ 	if (item->ci_name != item->ci_namebuf)
+ 		kfree(item->ci_name);
+ 	item->ci_name = NULL;
+@@ -167,21 +168,23 @@ static void config_item_release(struct kref *kref)
+  *
+  *	Decrement the refcount, and if 0, call config_item_cleanup().
+  */
+-void config_item_put(struct config_item * item)
++void config_item_put(struct config_item *item)
+ {
+ 	if (item)
+ 		kref_put(&item->ci_kref, config_item_release);
+ }
++EXPORT_SYMBOL(config_item_put);
+ 
+ /**
+  *	config_group_init - initialize a group for use
+- *	@k:	group
++ *	@group:	config_group
+  */
+ void config_group_init(struct config_group *group)
+ {
+ 	config_item_init(&group->cg_item);
+ 	INIT_LIST_HEAD(&group->cg_children);
+ }
++EXPORT_SYMBOL(config_group_init);
+ 
+ /**
+  *	config_group_find_item - search for item in group.
+@@ -195,11 +198,11 @@ void config_group_init(struct config_group *group)
+ struct config_item *config_group_find_item(struct config_group *group,
+ 					   const char *name)
+ {
+-	struct list_head * entry;
+-	struct config_item * ret = NULL;
++	struct list_head *entry;
++	struct config_item *ret = NULL;
+ 
+-	list_for_each(entry,&group->cg_children) {
+-		struct config_item * item = to_item(entry);
++	list_for_each(entry, &group->cg_children) {
++		struct config_item *item = to_item(entry);
+ 		if (config_item_name(item) &&
+ 		    !strcmp(config_item_name(item), name)) {
+ 			ret = config_item_get(item);
+@@ -208,9 +211,4 @@ struct config_item *config_group_find_item(struct config_group *group,
+ 	}
+ 	return ret;
+ }
+-
+-EXPORT_SYMBOL(config_item_init);
+-EXPORT_SYMBOL(config_group_init);
+-EXPORT_SYMBOL(config_item_get);
+-EXPORT_SYMBOL(config_item_put);
+ EXPORT_SYMBOL(config_group_find_item);
+-- 
+1.8.4.5
 
-> +/* This version of read_pci_config allows reading registers in the ECS area */
-> +static inline int _amd_read_pci_config(u8 bus, u8 slot, u8 fn, u32 offset)
-
-No need to inline this, no need for a single tailing underscore.
-
-> +{
-> +	u32 value;
-> +
-> +	if ((!amd_early_ecs_enabled) && (offset > 0xFF))
-> +		return -1;
-> +
-> +	outl(AMD_PCIE_CF8(bus, slot, fn, offset), 0xcf8);
-> +	value = inl(0xcfc);
-> +
-> +	return value;
-
-This design is broken. The return type does not match the functions
-return value and you can't do error checking as -1 can be a value too.
-
-Why reinventing this new instead of trying to reuse functions in
-arch/x86/pci/direct.c/early.c or so?
-
-Would an access via mmconfig space at this early stage possible? If so
-this code could be skipped as we wouln't need it for fam10h (no early
-access needed) nor fam15h or newer (mmconfig available).
-
-> +}
-> +
->  static struct pci_root_info __init *find_pci_root_info(int node, int link)
->  {
->  	struct pci_root_info *info;
-> @@ -48,6 +81,9 @@ static struct pci_root_info __init *find_pci_root_info(int node, int link)
->  		if (info->node == node && info->link == link)
->  			return info;
->  
-> +	pr_warn("AMD-Bus: WARNING: Failed to find root info for node %#x, link %#x\n",
-> +		node, link);
-
-As there might be (virtual) systems where this case is valid, I
-wouldn't print anything here. We should only print things that exist
-or error/warnings.
-
--Robert
-
-> +
->  	return NULL;
->  }
->  
-> @@ -118,6 +154,12 @@ static int __init early_fill_mp_bus_info(void)
->  
->  	pr_debug("Found AMD hostbridge at %x:%x.0\n", bus, slot);
