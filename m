@@ -1,209 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967AbaD2IEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:04:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36197 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaD2IED (ORCPT
+	id S933004AbaD2IEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:04:30 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:53150 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932971AbaD2IEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:04:03 -0400
-Message-ID: <535F5CEC.8090401@ti.com>
-Date: Tue, 29 Apr 2014 11:03:56 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] drivercore: deferral race condition fix
-References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>	<5358BDDF.1010709@ti.com>	<CACxGe6sJtEeMOx+qMws2BCC4tuHMnWRAZv9NkEPADAtXAvtM4g@mail.gmail.com> <20140428141844.8AFB9C40AF4@trevor.secretlab.ca>
-In-Reply-To: <20140428141844.8AFB9C40AF4@trevor.secretlab.ca>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Apr 2014 04:04:25 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee690-b7fcd6d0000026e0-eb-535f5d07f65e
+Content-transfer-encoding: 8BIT
+Message-id: <1398758534.13268.8.camel@kjgkr>
+Subject: RE: [f2fs-dev][PATCH 3/3 v3] f2fs: fix to truncate inline data in
+ inode page when setattr
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 29 Apr 2014 17:02:14 +0900
+In-reply-to: <001901cf6380$43643c80$ca2cb580$@samsung.com>
+References: <001801cf6370$e0553040$a0ff90c0$@samsung.com>
+ <1398752174.13268.4.camel@kjgkr> <001901cf6380$43643c80$ca2cb580$@samsung.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t8zA1322Phgg9YGWYv/TR/ZLC4tcrfY
+	s/cki8XlXXPYHFg8di/4zOTRt2UVo8fnTXIBzFFcNimpOZllqUX6dglcGS/39DIX3FSseHxb
+	voFxjlQXIyeHhICJRMuOA8wQtpjEhXvr2boYuTiEBJYxSpzd+5ENpujDp4MsEInpjBJLll5m
+	BUnwCghK/Jh8DyjBwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxglzhztZYao15H4cfwpO4gtLJAi
+	cebZB0aQXjYBbYnN+w1AwkICihJv998FGy8ioCTxa/4iVoiZmRL3mmaAjWERUJXYvWQx2G2c
+	AlYSr++fY4fY1cUocfzZJ7AifgFRicMLt0N9piSxu70TrEhC4Bi7xJSF71khJglIfJt8COwB
+	CQFZiU2wkJCUOLjiBssERolZSN6chfDmLCRvLmBkXsUomlqQXFCclF5kolecmFtcmpeul5yf
+	u4kREm8TdjDeO2B9iDEZaONEZinR5HxgvOaVxBsamxlZmJqYGhuZW5qRJqwkzqv2KClISCA9
+	sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2Om3szndYkWvNyZigd9b3uy5O2R1p5899WbTokPN3M+
+	dLq/3fXw1N2mvC+f3dcuqIt/s7xYw1Jkz4MrZ2L/rkpQ2LHokO+fRTNm9An28H15vGaRb4NT
+	dPB0jY6C93VCqR4Cd87q5evJbQ3QYq8+KqiU6H3G7HjPPbknvC/mPzY6JWt00nbZol1KLMUZ
+	iYZazEXFiQA7mHUezQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jQV322PhggzuPJCz+N31ks7i0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWa83NPLXHBTseLxbfkGxjlSXYycHBICJhIfPh1kgbDFJC7cW8/WxcjFISQw
+	nVFiydLLrCAJXgFBiR+T7wEVcXAwC8hLHLmUDRJmFlCXmDRvETNE/StGiTNHe5kh6nUkfhx/
+	yg5iCwukSJx59oERpJdNQFti834DkLCQgKLE2/13wcaLCChJ/Jq/iBViZqbEvaYZYGNYBFQl
+	di9ZzAZicwpYSby+f44dYlcXo8TxZ5/AivgFRCUOL9zODPGAksTu9k72CYxCs5CcPQvh7FlI
+	zl7AyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzian0nvYFzVYHGIUYCDUYmHtyMmLliI
+	NbGsuDL3EKMEB7OSCG++VXywEG9KYmVValF+fFFpTmrxIcZkoMsnMkuJJucDE01eSbyhsYmZ
+	kaWRmYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTDOE+3+0qKv7Nid89CwftNs
+	9nXqeppO7T5nF3Z/vps2fa1ZwXv9qPVhD/YXdR1n0/rzw1DJpV727wRu3ZatrjKTV7/5/vvu
+	sV3ZTqe3+AeuWcHkK8/E17rDS3iGEy8Dg0dUrvc0/j8bHgtwPDU46tB5IU3V3mH24qTZE851
+	GYfVTH27wErf+4sSS3FGoqEWc1FxIgAdyHrAKgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 05:18 PM, Grant Likely wrote:
-> On Thu, 24 Apr 2014 22:01:02 +0100, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Thu, Apr 24, 2014 at 8:31 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->>> Hi Greg, Grant,
->>>
->>> On 04/09/2014 01:52 PM, Peter Ujfalusi wrote:
->>>> Hi,
->>>>
->>>> Changes since v1:
->>>> - The deferral race detection and handling has been moved to
->>>>   driver_deferred_probe_trigger() and driver_deferred_probe_add() functions with
->>>>   comment section.
->>>> - driver_deferred_probe_add/del function needed to be moved. Both of them placed
->>>>   after driver_deferred_probe_trigger() so they remain together.
->>>> - I have not added the Acked-by from Mark and Grant since the patch itself
->>>>   changed from v1, but the functionality remained.
->>>
->>> Is this solution sounds good? Do you want me to resend the two patch?
->>
->> You don't need to resend. I just got back from vacation. I will look
->> at it tomorrow.
-> 
-> Hi Peter,
-> 
-> I think I have a cleaner solution. I think it avoids a lot of the corner
-> cases that I was concerned about with the flag approach. Can you look at
-> this and tell me if it works for you?
-> 
-> Basically, at the start of each probe, really_probe() checks how many
-> triggers have occurred, and then later in the defer failure path, it
-> checks to see if the trigger number has changed. If it has, then it is
-> possible that the dependencies are resolved, so it does a trigger again.
-> 
-> I could refine this a bit more. The local_trigger_count could be passed
-> into driver_deferred_probe_add() and the add function could be more
-> intelligent about only adding that one device to the active list instead
-> of the entire pending list. However, I don't think doing a full trigger
-> is actually going to be expensive in the conditions that will trigger
-> the race. Unless you can convince me otherwise, I think it is better to
-> keep it simple.
+Hi,
 
-I don't think we can be more clever with this. I just noticed that my patch
-would fail to trigger in the following case (because it was trying to be clever):
-Four drivers probing at the same time and they return from their probes with:
-1st driver: deferred
-2nd driver: probe OK
-3rd driver: deferred
-4th driver: Error
+2014-04-29 (화), 15:53 +0800, Chao Yu:
+> Hi Kim,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> > Sent: Tuesday, April 29, 2014 2:16 PM
+> > To: Chao Yu
+> > Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
+> > linux-kernel@vger.kernel.org
+> > Subject: Re: [f2fs-dev][PATCH 3/3 v3] f2fs: fix to truncate inline data in inode page when setattr
+> > 
+> > Hi,
+> > 
+> > 2014-04-29 (화), 14:03 +0800, Chao Yu:
+> > > Previous we do not truncate inline data in inode page when setattr, so following
+> > > case could still read the inline data which has already truncated:
+> > >
+> > > 1.write inline data
+> > > 2.ftruncate size to 0
+> > > 3.ftruncate size to max inline data size
+> > > 4.read from offset 0
+> > >
+> > > This patch introduces truncate_inline_data() to fix this problem.
+> > >
+> > > change log from v1:
+> > >  o fix a bug and do not truncate first page data after truncate inline data.
+> > > change log from v2:
+> > >  o wait to writeback for inode page if it was already submitted.
+> > >
+> > > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> > > ---
+> > >  fs/f2fs/f2fs.h   |    1 +
+> > >  fs/f2fs/file.c   |    3 +++
+> > >  fs/f2fs/inline.c |   19 +++++++++++++++++++
+> > >  3 files changed, 23 insertions(+)
+> > >
+> > > diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> > > index 2b67679..676a2c6 100644
+> > > --- a/fs/f2fs/f2fs.h
+> > > +++ b/fs/f2fs/f2fs.h
+> > > @@ -1410,5 +1410,6 @@ bool f2fs_may_inline(struct inode *);
+> > >  int f2fs_read_inline_data(struct inode *, struct page *);
+> > >  int f2fs_convert_inline_data(struct inode *, pgoff_t);
+> > >  int f2fs_write_inline_data(struct inode *, struct page *, unsigned int);
+> > > +void truncate_inline_data(struct inode *, u64);
+> > >  int recover_inline_data(struct inode *, struct page *);
+> > >  #endif
+> > > diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> > > index b9f4fbf..d97e5c4 100644
+> > > --- a/fs/f2fs/file.c
+> > > +++ b/fs/f2fs/file.c
+> > > @@ -369,6 +369,9 @@ static void truncate_partial_data_page(struct inode *inode, u64 from)
+> > >  	unsigned offset = from & (PAGE_CACHE_SIZE - 1);
+> > >  	struct page *page;
+> > >
+> > > +	if (f2fs_has_inline_data(inode))
+> > > +		return truncate_inline_data(inode, from);
+> > > +
+> > >  	if (!offset)
+> > >  		return;
+> > >
+> > > diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+> > > index 3258c7c..6a13997 100644
+> > > --- a/fs/f2fs/inline.c
+> > > +++ b/fs/f2fs/inline.c
+> > > @@ -176,6 +176,25 @@ int f2fs_write_inline_data(struct inode *inode,
+> > >  	return 0;
+> > >  }
+> > >
+> > > +void truncate_inline_data(struct inode *inode, u64 from)
+> > > +{
+> > > +	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > > +	struct page *ipage;
+> > > +
+> > > +	if (from >= MAX_INLINE_DATA)
+> > > +		return;
+> > > +
+> > > +	ipage = get_node_page(sbi, inode->i_ino);
+> > > +	if (IS_ERR(ipage))
+> > > +		return;
+> > > +
+> > > +	f2fs_wait_on_page_writeback(ipage, NODE);
+> > 
+> > The get_node_page() triggers,
+> >  grab_cache_page_write_begin()
+> >   -> wait_for_stable_page()
+> >      -> wait_on_page_writeback().
+> 
+> Oh, it's my mistake for this missing, thanks for the mention.:)
+> 
+> > 
+> > Any bugs in there?
+> 
+> If we wait in grab_cache_page_write_begin(), maybe we will face long time delay
+> or potential deadlock caused by f2fs bio cache. So how about use
+> grab_cache_page & f2fs_wait_on_page_writeback to avoid this?
 
-With my patch we would not have driver_deferred_probe_trigger() called to
-check if the 3rd driver has it's dependency because when it was deferring it
-was not the last driver and the last driver is returned with error.
-
-Your patch would handle this fine since it is going to call
-driver_deferred_probe_trigger() for the 3rd driver.
-
-This is why I think we can not be too clever. Actually we can be clever but it
-means we need to add more code and logic.
-
-Reviewed-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Tested-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Nice catch. :)
+IMO, it'd better merge your v2, and let me investigate all the paths to
+avoid that.
+Is it okay?
 
 > 
-> g.
+> > 
+> > > +	zero_user_segment(ipage, INLINE_DATA_OFFSET + from,
+> > > +				INLINE_DATA_OFFSET + MAX_INLINE_DATA);
+> > > +	set_page_dirty(ipage);
+> > > +	f2fs_put_page(ipage, 1);
+> > > +}
+> > > +
+> > >  int recover_inline_data(struct inode *inode, struct page *npage)
+> > >  {
+> > >  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+> > 
+> > --
+> > Jaegeuk Kim
+> > Samsung
 > 
-> ---
-> 
-> drivercore: deferral race condition fix
-> 
-> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-> when all modules loaded but some driver still stuck in the deferred list
-> and there is a need for external event to kick the deferred queue to probe
-> these drivers.
-> 
-> The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-> audio support built as modules and using nfsroot for root filesystem.
-> 
-> The following log fragment shows such sequence when all audio modules
-> were loaded but the sound card is not present since the machine driver has
-> failed to probe due to missing dependency during it's probe.
-> The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-> machine driver:
-> 
-> ...
-> [   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-> [   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-> [   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-> [   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-> [   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-> [   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-> [   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-> [   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-> [   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-> [   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-> [   13.346755] davinci_mcasp_driver_init: LEAVE
-> [   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-> [   13.592527] platform sound.3: really_probe: probe_count = 0
-> 
-> In the log the machine driver enters it's probe at 12.719969 (this point it
-> has been removed from the deferred lists). McASP driver already executing
-> it's probing (since 12.615118).
-> The machine driver tries to construct the sound card (12.950839) but did
-> not found one of the components so it fails. After this McASP driver
-> registers all the ASoC components (the machine driver still in it's probe
-> function after it failed to construct the card) and the deferred work is
-> prepared at 13.099026 (note that this time the machine driver is not in the
-> lists so it is not going to be handled when the work is executing).
-> Lastly the machine driver exit from it's probe and the core places it to
-> the deferred list but there will be no other driver going to load and the
-> deferred queue is not going to be kicked again - till we have external event
-> like connecting USB stick, etc.
-> 
-> The proposed solution is to check if a trigger has occured during probe, and
-> if so then trigger the deferred queue again in the defer path.
-> 
-> This way we can avoid drivers stuck in the deferred queue.
-> 
-> [commit description written by Peter Ujfalusi]
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
-> 
-> ---
-> 
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index 8986b9f22781..af76fcd8da64 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
->  static LIST_HEAD(deferred_probe_pending_list);
->  static LIST_HEAD(deferred_probe_active_list);
->  static struct workqueue_struct *deferred_wq;
-> +static atomic_t deferred_trigger_count = ATOMIC_INIT(0);
->  
->  /**
->   * deferred_probe_work_func() - Retry probing devices in the active list.
-> @@ -135,6 +136,17 @@ static bool driver_deferred_probe_enable = false;
->   * This functions moves all devices from the pending list to the active
->   * list and schedules the deferred probe workqueue to process them.  It
->   * should be called anytime a driver is successfully bound to a device.
-> + *
-> + * Note, there is a race condition in multi-threaded probe. In the case where
-> + * more than one device is probing at the same time, it is possible for one
-> + * probe to complete successfully while another is about to defer. If the second
-> + * depends on the first, then it will get put on the pending list after the
-> + * trigger event has already occured and will be stuck there.
-> + *
-> + * The atomic 'deferred_trigger_count' is used to determine if a successful
-> + * trigger has occurred in the midst of probing a driver. If the trigger count
-> + * changes in the midst of a probe, then deferred processing should be triggered
-> + * again.
->   */
->  static void driver_deferred_probe_trigger(void)
->  {
-> @@ -147,6 +159,7 @@ static void driver_deferred_probe_trigger(void)
->  	 * into the active list so they can be retried by the workqueue
->  	 */
->  	mutex_lock(&deferred_probe_mutex);
-> +	atomic_inc(&deferred_trigger_count);
->  	list_splice_tail_init(&deferred_probe_pending_list,
->  			      &deferred_probe_active_list);
->  	mutex_unlock(&deferred_probe_mutex);
-> @@ -265,6 +278,7 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
->  static int really_probe(struct device *dev, struct device_driver *drv)
->  {
->  	int ret = 0;
-> +	int local_trigger_count = atomic_read(&deferred_trigger_count);
->  
->  	atomic_inc(&probe_count);
->  	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
-> @@ -310,6 +324,8 @@ probe_failed:
->  		/* Driver requested deferred probing */
->  		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
->  		driver_deferred_probe_add(dev);
-> +		if (local_trigger_count != atomic_read(&deferred_trigger_count))
-> +			driver_deferred_probe_trigger();
->  	} else if (ret != -ENODEV && ret != -ENXIO) {
->  		/* driver matched but the probe failed */
->  		printk(KERN_WARNING
-> 
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Péter
+Jaegeuk Kim
+Samsung
+
