@@ -1,220 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924AbaD2PiC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 11:38:02 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58426 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757618AbaD2PiA (ORCPT
+	id S1757934AbaD2PlE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 11:41:04 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59867 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaD2PlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 11:38:00 -0400
-Date: Tue, 29 Apr 2014 08:37:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, mingo@kernel.org,
-        laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        Oleg Nesterov <oleg@redhat.com>, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 2/3] documentation: Record rcu_dereference()
- value mishandling
-Message-ID: <20140429153752.GE8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAJUuVQ7owF11j+Z0dGXkgVUQqUXQw4m1Vu4USHb7xWgAiSKHLw@mail.gmail.com>
- <CAJhHMCATytuGFbq3Sgy8en-D39LA0iBvysE9=Q7j41QKs2+GfA@mail.gmail.com>
+	Tue, 29 Apr 2014 11:41:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJhHMCATytuGFbq3Sgy8en-D39LA0iBvysE9=Q7j41QKs2+GfA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042915-6688-0000-0000-0000017060CA
+In-Reply-To: <20140429151433.GD26756@n2100.arm.linux.org.uk>
+References: <1398644860-22973-1-git-send-email-mporter@linaro.org>
+ <20140428142950.GB30292@saruman.home> <20140428143709.GC7719@beef>
+ <20140428145223.GL26756@n2100.arm.linux.org.uk> <CAGsJ_4x1+eePRDMP0-0WeTG6ZJdzmMkN_9USbKt8joY8AKsDdw@mail.gmail.com>
+ <20140429151433.GD26756@n2100.arm.linux.org.uk>
+From: Barry Song <baohua@kernel.org>
+Date: Tue, 29 Apr 2014 23:40:33 +0800
+X-Google-Sender-Auth: GSfTgfJMiQNKhCAk5hKtDlsobuQ
+Message-ID: <CAGsJ_4yg2Dcwyj5cLc2DuYVOcWwmpkPzK_=BUZLqRLDyErBL=Q@mail.gmail.com>
+Subject: Re: [PATCH] ARM: l2c: prima2: only call l2x0_of_init() on matching nodes
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Kevin Hilman <khilman@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Matt Porter <mporter@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 01:42:13AM -0400, Pranith Kumar wrote:
-> Minor nits below:
-> 
-> Other than that Acked-by: Pranith Kumar <bobby.prani@gmail.com>
-> 
-> On Tue, Apr 29, 2014 at 1:04 AM, Andev <debiandev@gmail.com> wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >
-> > Recent LKML discussings (see http://lwn.net/Articles/586838/ and
-> > http://lwn.net/Articles/588300/ for the LWN writeups) brought out
-> > some ways of misusing the return value from rcu_dereference() that
-> > are not necessarily completely intuitive.  This commit therefore
-> > documents what can and cannot safely be done with these values.
-> >
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> snip
-> > +
-> > +       o       The pointer is never dereferenced after being compared.
-> > +               Since there are no subsequent dereferences, the compiler
-> > +               cannot use anything it learned from the comparison
-> > +               to reorder the non-existent subsequent dereferences.
-> > +               This sort of comparison occurs frequently when scanning
-> > +               RCU-protected circular linked lists.
-> > +
-> > +       o       The comparison is against a pointer pointer that
-> 
-> duplicate pointer, remove one
+2014-04-29 23:14 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> On Tue, Apr 29, 2014 at 11:05:06PM +0800, Barry Song wrote:
+>> 2014-04-28 22:52 GMT+08:00 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+>> > On Mon, Apr 28, 2014 at 10:37:09AM -0400, Matt Porter wrote:
+>> >> The "fix" is tested against bcm281xx and bcm21664 as that is what the
+>> >> l2c cleanup breaks in -next. As mentioned, I don't have the sirfsoc h/w
+>> >> so this first attempt at a fix also breaks their platform. It can be
+>> >> addressed by adding those platform specific compatibles back to the dts,
+>> >> of course.
+>> >>
+>> >> I'd much prefer that the sirfsoc folks fix this...it's going to break
+>> >> other platforms in a multi v7 build.
+>> >
+>> > Well, it's about time we got rid of this from platform specific code
+>> > anyway, taking it away from platform maintainers to mess around with.
+>> > So that's what I'm doing.
+>> >
+>> > It's worth noting that if you build a single zImage with exynos also
+>> > enabled, then you also end up with an unconditional call from that
+>> > code to l2x0_of_init() with it's own magic numbers - and that applies
+>> > before my changes.
+>> >
+>> > So let's fix this properly and yank this crap from platform maintainers
+>> > fingers.
+>>
+>> i mentioned dropping specific dts compatible prop will break non-csr
+>> platforms in the mail thread "ARM: prima2: remove L2 cache size
+>> override" and i said i was going to send v2. you said you need it
+>> before rc6. now it has been sent, but i am sorry it is not against
+>> next-20140424.
+>
+> FFS.  IT HASN'T BEEN SENT.  All that I did was drop it into linux-next
+> so that more people would get off their fat backsides and test this
+> fscking patch set - something which hasn't happened because no one
+> pays attention to emails sent to mailing lists.
 
-Good catch, fixed!
+so your point is people don't pay attention to your mails? or you are
+ignored? i think that is 100% not real. i think your opinions and
+mails are always respected as you are the chief arm linux expert.
 
-> > +               references memory that was initialized "a long time ago."
-> > +               The reason this is safe is that even if misordering
-> > +               occurs, the misordering will not affect the accesses
-> > +               that follow the comparison.  So exactly how long ago is
-> > +               "a long time ago"?  Here are some possibilities:
-> snip
-> > +       o       All of the accesses following the comparison are stores,
-> > +               so that a control dependency preserves the needed ordering.
-> > +               That said, it is easy to get control dependencies wrong.
-> > +               Please see the "CONTROL DEPENDENCIES" section of
-> > +               Documentation/memory-barriers.txt for more details.
-> > +
-> > +       o       The pointers compared not-equal -and- the compiler does
-> 
-> add in "are " - The pointers compared are not-equal...
+>
+> I also told you that this was what I was going to do.  But... is it
+> really on to hold up such a large patch set which impacts virtually
+> everyone because _you_ don't have time to sort out your small special
+> requirements - no it is not, that's just fscking selfish.
+>
+> Anyway, I've had it with dealing with platform maintainers, I've yanked
+> this patch set, and I'm no longer planning to do anything with it -
+> platform maintainers have destroyed my will to get any of this series
+> into the kernel.
 
-Actually, "compared" is a verb here.  But that use is a bit obscure, so
-taking your suggestion as a bug report.  I changed it to read:
+no, i am trying to follow your suggestion to make patch set merged and
+l2 codes cleaned.
+i have been trying to follow your will until now, and from the beginning.
 
-	The pointers are not equal -and- the compiler does not have
-	enough information to deduce the value of the pointer.
+>
+> So, the L2 cache code is going to remain in its current state, and it's
+> going to rot because it's _FAR_ too much effort dealing with slow people
+> like yourselves, or people who want the series split up, or people who
+> whinge that there aren't any acks there (WELL GET OFF YOUR FAT BACKSIDES
+> AND SEND ME SOME IF YOU CARE ABOUT THIS - no, don't, I'm no longer pushing
+> this series.)
 
-Fair enough?
+people might be "selfish", but people might have some reasons to
+response slowly, like holiday or family issue.
+how about taking it easy? it doesn't prove you are not respected by
+platform maintainers.
 
-> > +               not have enough information to deduce the value of the
-> > +               pointer.  Note that the volatile cast in rcu_dereference()
-> > +               will normally prevent the compiler from knowing too much.
-> > +
-> > +o      Disable any value-speculation optimizations that your compiler
-> > +       might provide, especially if you are making use of feedback-based
-> > +       optimizations that take data collected from prior runs.  Such
-> > +       value-speculation optimizations reorder operations by design.
-> > +
-> > +       There is one exception to this rule:  Value-speculation
-> > +       optimizations that leverage the branch-prediction hardware are
-> > +       safe on strongly ordered systems (such as x86), but not on weakly
-> > +       ordered systems (such as ARM or Power).  Choose your compiler
-> > +       command-line options wisely!
-> > +
-> > +
-> > +EXAMPLE OF AMPLIFIED RCU-USAGE BUG
-> > +
-> > +Because updaters can run concurrently with RCU readers, RCU readers can
-> > +see stale and/or inconsistent values.  If RCU readers need fresh or
-> > +consistent values, which they sometimes do, they need to take proper
-> > +precautions.  To see this, consider the following code fragment:
-> > +
-> > +       struct foo {
-> > +               int a;
-> > +               int b;
-> > +               int c;
-> > +       };
-> > +       struct foo *gp1;
-> > +       struct foo *gp2;
-> > +
-> > +       void updater(void)
-> > +       {
-> > +               struct foo *p;
-> > +
-> > +               p = kmalloc(...);
-> > +               if (p == NULL)
-> > +                       deal_with_it();
-> > +               p->a = 42;  /* Each field in its own cache line. */
-> > +               p->b = 43;
-> > +               p->c = 44;
-> > +               rcu_assign_pointer(gp1, p);
-> > +               p->b = 143;
-> > +               p->c = 144;
-> > +               rcu_assign_pointer(gp2, p);
-> > +       }
-> > +
-> > +       void reader(void)
-> > +       {
-> > +               struct foo *p;
-> > +               struct foo *q;
-> > +               int r1, r2;
-> > +
-> > +               p = rcu_dereference(gp2);
-> > +               r1 = p->b;  /* Guaranteed to get 143. */
-> > +               q = rcu_dereference(gp1);
-> > +               if (p == q) {
-> > +                       /* The compiler decides that q->c is same as p->c. */
-> > +                       r2 = p->c; /* Could get 44 on weakly order system. */
-> > +               }
-> > +       }
-> > +
-> > +You might be surprised that the outcome (r1 == 143 && r2 == 44) is possible,
-> > +but you should not be.  After all, the updater might have been invoked
-> > +a second time between the time reader() loaded into "r1" and the time
-> > +that it loaded into "r2".  The fact that this same result can occur due
-> > +to some reordering from the compiler and CPUs is beside the point.
-> > +
-> > +But suppose that the reader needs a consistent view?
-> > +
-> > +Then one approach is to use locking, for example, as follows:
-> > +
-> > +       struct foo {
-> > +               int a;
-> > +               int b;
-> > +               int c;
-> > +               spinlock_t lock;
-> > +       };
-> > +       struct foo *gp1;
-> > +       struct foo *gp2;
-> > +
-> > +       void updater(void)
-> > +       {
-> > +               struct foo *p;
-> > +
-> > +               p = kmalloc(...);
-> > +               if (p == NULL)
-> > +                       deal_with_it();
-> > +               spin_lock(&p->lock);
-> > +               p->a = 42;  /* Each field in its own cache line. */
-> > +               p->b = 43;
-> > +               p->c = 44;
-> > +               spin_unlock(&p->lock);
-> > +               rcu_assign_pointer(gp1, p);
-> > +               spin_lock(&p->lock);
-> > +               p->b = 143;
-> > +               p->c = 144;
-> > +               spin_unlock(&p->lock);
-> > +               rcu_assign_pointer(gp2, p);
-> > +       }
-> > +
-> > +       void reader(void)
-> > +       {
-> > +               struct foo *p;
-> > +               struct foo *q;
-> > +               int r1, r2;
-> > +
-> > +               p = rcu_dereference(gp2);
-> > +               spin_lock(&p->lock);
-> > +               r1 = p->b;  /* Guaranteed to get 143. */
-> > +               q = rcu_dereference(gp1);
-> > +               if (p == q) {
-> > +                       /* The compiler decides that q->c is same as p->c. */
-> > +                       r2 = p->c; /* Could get 44 on weakly order system. */
-> > +               }
-> > +               spin_unlock(&p->lock);
-> > +       }
-> 
-> shouldn't the comment here reflect that r2 can never get 44 and only
-> can get 144 once you use a lock?
+>
+> This is the last time I'm going to ever try cleaning up any core ARM code.
+> Core ARM maintanence is impossible in this environment with arm-soc split
+> from core ARM stuff, because core ARM stuff /always/ impacts on SoC
+> specific code.  You can't get away from that.
+>
+> My position in this community has been made impossible and obsolete by
+> Linaro.  I'm at the point of walking away from this crap.
 
-Indeed it should, good catch, fixed!
+just fix the relationship and communication, that is good enough. you
+have done things so well, there is no reason to give up.
 
-I also need to check the load from gp2 for NULL, fixed that too.  (If
-gp2 is non-NULL, the later load from gp1 is guaranteed to be non-NULL.)
+>
+> --
+> FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+> improving, and getting towards what was expected from it.
 
-							Thanx, Paul
-
+-barry
