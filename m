@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445AbaD2NQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 09:16:11 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50899 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757417AbaD2NQI (ORCPT
+	id S1757477AbaD2NQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 09:16:21 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62487 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757458AbaD2NQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 09:16:08 -0400
-Message-ID: <535FA618.6080101@linaro.org>
-Date: Tue, 29 Apr 2014 15:16:08 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Alexander Shiyan <shc_work@mail.ru>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] clockevents: a couple of fixes for 3.15
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 29 Apr 2014 09:16:16 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
+ with the PM core
+To: Kevin Hilman <khilman@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <7hoazpdldx.fsf@paris.lan>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+	<7hoazpdldx.fsf@paris.lan>
+Date: Tue, 29 Apr 2014 14:16:10 +0100
+Message-Id: <20140429131610.29859C4094A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 25 Apr 2014 16:44:58 -0700, Kevin Hilman <khilman@linaro.org> wrote:
+> Geert Uytterhoeven <geert+renesas@glider.be> writes:
+> 
+> > When adding a device from DT, check if its clocks are suitable for Runtime
+> > PM, and register them with the PM core.
+> > If Runtime PM is disabled, just enable the clock.
+> >
+> > This allows the PM core to automatically manage gate clocks of devices for
+> > Runtime PM.
+> 
+> ...unless the device is already in an existing pm_domain, right?
+> 
+> I like this approach, and it extends nicely what we already do on
+> platforms using drivers/base/power/clock_ops.c into DT land.
+> 
+> My only concern is how this will interact if it's used along with
+> devices that have existing pm_domains.  I don't have any specific
+> concerns (yet, because it's Friday, and my brain is turing off), but it
+> just made me wonder if this will be potentially confusing.
 
-Hi Thomas,
+I have big concerns about this approach. First, it will only work if
+a clock is available at deivce creation time. The conversion of irq
+controllers to normal device drivers has already shown that is a bad
+idea.
 
-  * Lorenzo Pieralizi fixed an issue with the arch_arm_timer where the 
-C3STOP flag for all the arch can cause some trouble by setting the flag 
-only if the power domain is not always on
+I also don't like that it tries to set up every clock, but there is no
+guarantee that the driver will even use it. I would rather see this
+behaviour linked into the function that obtains the clock at driver
+.probe() time. That way it can handle deferred probe correctly and it
+only sets up clocks that are actually used by the driver.
 
-  * Alexander Shiyan fixed a compilation by changing the init function 
-to the right prototype
-
-Thanks
-   -- Daniel
-
-The following changes since commit 27630532ef5ead28b98cfe28d8f95222ef91c2b7:
-
-   tick-sched: Check tick_nohz_enabled in tick_nohz_switch_to_nohz() 
-(2014-04-15 20:26:58 +0200)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git 
-clockevents/3.15-fixes
-
-for you to fetch changes up to 9afa27ce9414c92e271b0d7eec937bd9f5565da5:
-
-   clocksource: nspire: Fix compiler warning (2014-04-29 15:06:43 +0200)
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-       clocksource: nspire: Fix compiler warning
-
-Lorenzo Pieralisi (1):
-       clocksource: arch_arm_timer: Fix age-old arch timer C3STOP 
-detection issue
-
-  .../devicetree/bindings/arm/arch_timer.txt         |    3 +++
-  drivers/clocksource/arm_arch_timer.c               |    6 +++++-
-  drivers/clocksource/zevio-timer.c                  |    7 ++++++-
-  3 files changed, 14 insertions(+), 2 deletions(-)
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+g.
