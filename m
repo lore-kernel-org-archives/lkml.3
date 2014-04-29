@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933848AbaD2Qhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:37:35 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33739 "EHLO
+	id S1758187AbaD2Qhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:37:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33749 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933140AbaD2Qhd (ORCPT
+	with ESMTP id S1756824AbaD2Qhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:37:33 -0400
+	Tue, 29 Apr 2014 12:37:39 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: Mark Brown <broonie@kernel.org>
 Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
@@ -15,9 +15,9 @@ Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
         Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel@pengutronix.de,
         Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 3/3] regulator: Add LTC3589 support
-Date: Tue, 29 Apr 2014 18:37:10 +0200
-Message-Id: <1398789430-23897-3-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 2/3] regulator: ltc3589: Add DT binding documentation
+Date: Tue, 29 Apr 2014 18:37:09 +0200
+Message-Id: <1398789430-23897-2-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
 References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
@@ -29,616 +29,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Linear Technology LTC3589, LTC3589-1,
-and LTC3589-2 8-output I2C voltage regulator ICs.
+This patch adds the device tree binding documentation for Linear
+Technology LTC3589, LTC3589-1, and LTC3589-2 8-port regulators.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/regulator/Kconfig   |   6 +
- drivers/regulator/Makefile  |   1 +
- drivers/regulator/ltc3589.c | 564 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 571 insertions(+)
- create mode 100644 drivers/regulator/ltc3589.c
+ .../devicetree/bindings/regulator/ltc3589.txt      | 99 ++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/regulator/ltc3589.txt
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 903eb37..5599a61 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -265,6 +265,12 @@ config REGULATOR_LP8788
- 	help
- 	  This driver supports LP8788 voltage regulator chip.
- 
-+config REGULATOR_LTC3589
-+	bool "LTC3589 8-output voltage regulator"
-+	help
-+	  This enables support for the LTC3589, LTC3589-1, and LTC3589-2
-+	  8-output regulators controlled via I2C.
-+
- config REGULATOR_MAX14577
- 	tristate "Maxim 14577 regulator"
- 	depends on MFD_MAX14577
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 12ef277..16d429b 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
- obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
- obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
-+obj-$(CONFIG_REGULATOR_LTC3589) += ltc3589.o
- obj-$(CONFIG_REGULATOR_MAX14577) += max14577.o
- obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
- obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
-diff --git a/drivers/regulator/ltc3589.c b/drivers/regulator/ltc3589.c
+diff --git a/Documentation/devicetree/bindings/regulator/ltc3589.txt b/Documentation/devicetree/bindings/regulator/ltc3589.txt
 new file mode 100644
-index 0000000..37e18dc
+index 0000000..4229a2e
 --- /dev/null
-+++ b/drivers/regulator/ltc3589.c
-@@ -0,0 +1,564 @@
-+/*
-+ * Linear Technology LTC3589,LTC3589-1 regulator support
-+ *
-+ * Copyright (c) 2014 Philipp Zabel <p.zabel@pengutronix.de>, Pengutronix
-+ *
-+ * See file CREDITS for list of people who contributed to this
-+ * project.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+#include <linux/i2c.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/of.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/of_regulator.h>
-+
-+#define DRIVER_NAME		"ltc3589"
-+
-+#define LTC3589_IRQSTAT		0x02
-+#define LTC3589_SCR1		0x07
-+#define LTC3589_OVEN		0x10
-+#define LTC3589_SCR2		0x12
-+#define LTC3589_PGSTAT		0x13
-+#define LTC3589_VCCR		0x20
-+#define LTC3589_CLIRQ		0x21
-+#define LTC3589_B1DTV1		0x23
-+#define LTC3589_B1DTV2		0x24
-+#define LTC3589_VRRCR		0x25
-+#define LTC3589_B2DTV1		0x26
-+#define LTC3589_B2DTV2		0x27
-+#define LTC3589_B3DTV1		0x29
-+#define LTC3589_B3DTV2		0x2a
-+#define LTC3589_L2DTV1		0x32
-+#define LTC3589_L2DTV2		0x33
-+
-+#define LTC3589_IRQSTAT_PGOOD_TIMEOUT	BIT(3)
-+#define LTC3589_IRQSTAT_UNDERVOLT_WARN	BIT(4)
-+#define LTC3589_IRQSTAT_UNDERVOLT_FAULT	BIT(5)
-+#define LTC3589_IRQSTAT_THERMAL_WARN	BIT(6)
-+#define LTC3589_IRQSTAT_THERMAL_FAULT	BIT(7)
-+
-+#define LTC3589_OVEN_SW1		BIT(0)
-+#define LTC3589_OVEN_SW2		BIT(1)
-+#define LTC3589_OVEN_SW3		BIT(2)
-+#define LTC3589_OVEN_BB_OUT		BIT(3)
-+#define LTC3589_OVEN_LDO2		BIT(4)
-+#define LTC3589_OVEN_LDO3		BIT(5)
-+#define LTC3589_OVEN_LDO4		BIT(6)
-+#define LTC3589_OVEN_SW_CTRL		BIT(7)
-+
-+#define LTC3589_VCCR_SW1_GO		BIT(0)
-+#define LTC3589_VCCR_SW2_GO		BIT(2)
-+#define LTC3589_VCCR_SW3_GO		BIT(4)
-+#define LTC3589_VCCR_LDO2_GO		BIT(6)
-+
-+enum ltc3589_variant {
-+	LTC3589,
-+	LTC3589_1,
-+	LTC3589_2,
-+};
-+
-+enum ltc3589_reg {
-+	LTC3589_SW1,
-+	LTC3589_SW2,
-+	LTC3589_SW3,
-+	LTC3589_BB_OUT,
-+	LTC3589_LDO1,
-+	LTC3589_LDO2,
-+	LTC3589_LDO3,
-+	LTC3589_LDO4,
-+	LTC3589_NUM_REGULATORS,
-+};
-+
-+struct ltc3589_regulator {
-+	struct regulator_desc desc;
-+
-+	/* External feedback voltage divider */
-+	unsigned int r1;
-+	unsigned int r2;
-+};
-+
-+struct ltc3589 {
-+	struct regmap *regmap;
-+	struct device *dev;
-+	enum ltc3589_variant variant;
-+	struct ltc3589_regulator regulator_descs[LTC3589_NUM_REGULATORS];
-+	struct regulator_dev *regulators[LTC3589_NUM_REGULATORS];
-+};
-+
-+static const int ltc3589_ldo4[] = {
-+	2800000, 2500000, 1800000, 3300000,
-+};
-+
-+static const int ltc3589_12_ldo4[] = {
-+	1200000, 1800000, 2500000, 3200000,
-+};
-+
-+static int ltc3589_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
-+{
-+	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
-+	int sel, shift;
-+
-+	if (unlikely(ramp_delay <= 0))
-+		return -EINVAL;
-+
-+	/* VRRCR slew rate offsets are the same as VCCR go bit offsets */
-+	shift = ffs(rdev->desc->apply_bit) - 1;
-+
-+	/* The slew rate can be set to 0.88, 1.75, 3.5, or 7 mV/uS */
-+	for (sel = 0; sel < 4; sel++) {
-+		if ((880 << sel) >= ramp_delay) {
-+			return regmap_update_bits(ltc3589->regmap,
-+						  LTC3589_VRRCR,
-+						  0x3 << shift, sel << shift);
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
-+static int ltc3589_set_suspend_voltage(struct regulator_dev *rdev, int uV)
-+{
-+	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
-+	int sel;
-+
-+	sel = regulator_map_voltage_linear(rdev, uV, uV);
-+	if (sel < 0)
-+		return sel;
-+
-+	/* DTV2 register follows right after the corresponding DTV1 register */
-+	return regmap_update_bits(ltc3589->regmap, rdev->desc->vsel_reg + 1,
-+				  rdev->desc->vsel_mask, sel);
-+}
-+
-+static int ltc3589_set_suspend_mode(struct regulator_dev *rdev,
-+				    unsigned int mode)
-+{
-+	struct ltc3589 *ltc3589 = rdev_get_drvdata(rdev);
-+	int mask, bit = 0;
-+
-+	/* VCCR reference selects are right next to the VCCR go bits */
-+	mask = rdev->desc->apply_bit << 1;
-+
-+	if (mode == REGULATOR_MODE_STANDBY)
-+		bit = mask;	/* Select DTV2 */
-+
-+	mask |= rdev->desc->apply_bit;
-+	bit |= rdev->desc->apply_bit;
-+	return regmap_update_bits(ltc3589->regmap, LTC3589_VCCR, mask, bit);
-+}
-+
-+static int ltc3589_list_voltage_fixed(struct regulator_dev *rdev,
-+				      unsigned int selector)
-+{
-+	if (selector)
-+		return -EINVAL;
-+
-+	return rdev->desc->fixed_uV;
-+}
-+
-+/* SW1, SW2, SW3, LDO2 */
-+static struct regulator_ops ltc3589_linear_regulator_ops = {
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.list_voltage = regulator_list_voltage_linear,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+	.set_ramp_delay = ltc3589_set_ramp_delay,
-+	.set_voltage_time_sel = regulator_set_voltage_time_sel,
-+	.set_suspend_voltage = ltc3589_set_suspend_voltage,
-+	.set_suspend_mode = ltc3589_set_suspend_mode,
-+};
-+
-+/* BB_OUT, LDO3 */
-+static struct regulator_ops ltc3589_fixed_regulator_ops = {
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.list_voltage = ltc3589_list_voltage_fixed,
-+};
-+
-+/* LDO1 */
-+static struct regulator_ops ltc3589_standby_regulator_ops = {
-+	.list_voltage = ltc3589_list_voltage_fixed,
-+};
-+
-+/* LDO4 */
-+static struct regulator_ops ltc3589_table_regulator_ops = {
-+	.enable = regulator_enable_regmap,
-+	.disable = regulator_disable_regmap,
-+	.is_enabled = regulator_is_enabled_regmap,
-+	.list_voltage = regulator_list_voltage_table,
-+	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel = regulator_get_voltage_sel_regmap,
-+};
-+
-+
-+#define LTC3589_REG(_name, _ops, en_bit, dtv1_reg, dtv_mask, go_bit)	\
-+	[LTC3589_ ## _name] = {						\
-+		.desc = {						\
-+			.name = #_name,					\
-+			.n_voltages = (dtv_mask) + 1,			\
-+			.min_uV = (go_bit) ? 362500 : 0,		\
-+			.uV_step = (go_bit) ? 12500 : 0,		\
-+			.fixed_uV = (dtv_mask) ? 0 : 800000,		\
-+			.ops = &ltc3589_ ## _ops ## _regulator_ops,	\
-+			.type = REGULATOR_VOLTAGE,			\
-+			.id = LTC3589_ ## _name,			\
-+			.owner = THIS_MODULE,				\
-+			.vsel_reg = (dtv1_reg),			\
-+			.vsel_mask = (dtv_mask),			\
-+			.apply_reg = (go_bit) ? LTC3589_VCCR : 0,	\
-+			.apply_bit = (go_bit),				\
-+			.enable_reg = (en_bit) ? LTC3589_OVEN : 0,	\
-+			.enable_mask = (en_bit),			\
-+		},							\
-+	}
-+
-+#define LTC3589_LINEAR_REG(_name, _dtv1)				\
-+	LTC3589_REG(_name, linear, LTC3589_OVEN_ ## _name,		\
-+		    LTC3589_ ## _dtv1, 0x1f,				\
-+		    LTC3589_VCCR_ ## _name ## _GO)
-+
-+#define LTC3589_FIXED_REG(_name) \
-+	LTC3589_REG(_name, fixed, LTC3589_OVEN_ ## _name, 0, 0, 0)
-+
-+static struct ltc3589_regulator ltc3589_regulators[LTC3589_NUM_REGULATORS] = {
-+	LTC3589_LINEAR_REG(SW1, B1DTV1),
-+	LTC3589_LINEAR_REG(SW2, B2DTV1),
-+	LTC3589_LINEAR_REG(SW3, B3DTV1),
-+	LTC3589_FIXED_REG(BB_OUT),
-+	LTC3589_REG(LDO1, standby, 0, 0, 0, 0),
-+	LTC3589_LINEAR_REG(LDO2, L2DTV1),
-+	LTC3589_FIXED_REG(LDO3),
-+	LTC3589_REG(LDO4, table, LTC3589_OVEN_LDO4, LTC3589_L2DTV2, 0x60, 0),
-+};
-+
-+#ifdef CONFIG_OF
-+static struct of_regulator_match ltc3589_matches[LTC3589_NUM_REGULATORS] = {
-+	{ .name = "sw1",    },
-+	{ .name = "sw2",    },
-+	{ .name = "sw3",    },
-+	{ .name = "bb-out", },
-+	{ .name = "ldo1",   }, /* standby */
-+	{ .name = "ldo2",   },
-+	{ .name = "ldo3",   },
-+	{ .name = "ldo4",   },
-+};
-+
-+static int ltc3589_parse_regulators_dt(struct ltc3589 *ltc3589)
-+{
-+	struct device *dev = ltc3589->dev;
-+	struct device_node *node;
-+	int i, ret;
-+
-+	node = of_find_node_by_name(dev->of_node, "regulators");
-+	if (!node) {
-+		dev_err(dev, "regulators node not found\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = of_regulator_match(dev, node, ltc3589_matches,
-+				 ARRAY_SIZE(ltc3589_matches));
-+	of_node_put(node);
-+	if (ret < 0) {
-+		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
-+		return ret;
-+	}
-+	if (ret != LTC3589_NUM_REGULATORS) {
-+		dev_err(dev, "Only %d regulators described in device tree\n",
-+			ret);
-+		return -EINVAL;
-+	}
-+
-+	/* Parse feedback voltage dividers. LDO3 and LDO4 don't have them */
-+	for (i = 0; i < LTC3589_LDO3; i++) {
-+		struct ltc3589_regulator *desc = &ltc3589->regulator_descs[i];
-+		struct device_node *np = ltc3589_matches[i].of_node;
-+		u32 vdiv[2];
-+
-+		ret = of_property_read_u32_array(np, "ltc,fb-voltage-divider",
-+						 vdiv, 2);
-+		if (ret) {
-+			dev_err(dev, "Failed to parse voltage divider: %d\n",
-+				ret);
-+			return ret;
-+		}
-+
-+		desc->r1 = vdiv[0];
-+		desc->r2 = vdiv[1];
-+	}
-+
-+	return 0;
-+}
-+
-+static inline struct regulator_init_data *match_init_data(int index)
-+{
-+	return ltc3589_matches[index].init_data;
-+}
-+
-+static inline struct device_node *match_of_node(int index)
-+{
-+	return ltc3589_matches[index].of_node;
-+}
-+#else
-+static inline int ltc3589_parse_regulators_dt(struct ltc3589 *ltc3589)
-+{
-+	return 0;
-+}
-+
-+static inline struct regulator_init_data *match_init_data(int index)
-+{
-+	return NULL;
-+}
-+
-+static inline struct device_node *match_of_node(int index)
-+{
-+	return NULL;
-+}
-+#endif
-+
-+static bool ltc3589_writeable_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case LTC3589_IRQSTAT:
-+	case LTC3589_SCR1:
-+	case LTC3589_OVEN:
-+	case LTC3589_SCR2:
-+	case LTC3589_VCCR:
-+	case LTC3589_CLIRQ:
-+	case LTC3589_B1DTV1:
-+	case LTC3589_B1DTV2:
-+	case LTC3589_VRRCR:
-+	case LTC3589_B2DTV1:
-+	case LTC3589_B2DTV2:
-+	case LTC3589_B3DTV1:
-+	case LTC3589_B3DTV2:
-+	case LTC3589_L2DTV1:
-+	case LTC3589_L2DTV2:
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static bool ltc3589_readable_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case LTC3589_IRQSTAT:
-+	case LTC3589_SCR1:
-+	case LTC3589_OVEN:
-+	case LTC3589_SCR2:
-+	case LTC3589_PGSTAT:
-+	case LTC3589_VCCR:
-+	case LTC3589_B1DTV1:
-+	case LTC3589_B1DTV2:
-+	case LTC3589_VRRCR:
-+	case LTC3589_B2DTV1:
-+	case LTC3589_B2DTV2:
-+	case LTC3589_B3DTV1:
-+	case LTC3589_B3DTV2:
-+	case LTC3589_L2DTV1:
-+	case LTC3589_L2DTV2:
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static bool ltc3589_volatile_reg(struct device *dev, unsigned int reg)
-+{
-+	switch (reg) {
-+	case LTC3589_IRQSTAT:
-+	case LTC3589_PGSTAT:
-+		return true;
-+	}
-+	return false;
-+}
-+
-+struct reg_default ltc3589_reg_defaults[] = {
-+	{ LTC3589_SCR1,   0x00 },
-+	{ LTC3589_OVEN,   0x00 },
-+	{ LTC3589_SCR2,   0x00 },
-+	{ LTC3589_VCCR,   0x00 },
-+	{ LTC3589_B1DTV1, 0x19 },
-+	{ LTC3589_B1DTV2, 0x19 },
-+	{ LTC3589_VRRCR,  0xff },
-+	{ LTC3589_B2DTV1, 0x19 },
-+	{ LTC3589_B2DTV2, 0x19 },
-+	{ LTC3589_B3DTV1, 0x19 },
-+	{ LTC3589_B3DTV2, 0x19 },
-+	{ LTC3589_L2DTV1, 0x19 },
-+	{ LTC3589_L2DTV2, 0x19 },
-+};
-+
-+static const struct regmap_config ltc3589_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.writeable_reg = ltc3589_writeable_reg,
-+	.readable_reg = ltc3589_readable_reg,
-+	.volatile_reg = ltc3589_volatile_reg,
-+	.max_register = LTC3589_L2DTV2,
-+	.reg_defaults = ltc3589_reg_defaults,
-+	.num_reg_defaults = ARRAY_SIZE(ltc3589_reg_defaults),
-+	.use_single_rw = true,
-+	.cache_type = REGCACHE_RBTREE,
-+};
-+
-+
-+static irqreturn_t ltc3589_isr(int irq, void *dev_id)
-+{
-+	struct ltc3589 *ltc3589 = dev_id;
-+	unsigned int i, irqstat, event;
-+
-+	regmap_read(ltc3589->regmap, LTC3589_IRQSTAT, &irqstat);
-+
-+	if (irqstat & LTC3589_IRQSTAT_THERMAL_WARN) {
-+		event = REGULATOR_EVENT_OVER_TEMP;
-+		for (i = 0; i < LTC3589_NUM_REGULATORS; i++)
-+			regulator_notifier_call_chain(ltc3589->regulators[i],
-+						      event, NULL);
-+	}
-+
-+	if (irqstat & LTC3589_IRQSTAT_UNDERVOLT_WARN) {
-+		event = REGULATOR_EVENT_UNDER_VOLTAGE;
-+		for (i = 0; i < LTC3589_NUM_REGULATORS; i++)
-+			regulator_notifier_call_chain(ltc3589->regulators[i],
-+						      event, NULL);
-+	}
-+
-+	/* Clear warning condition */
-+	regmap_write(ltc3589->regmap, LTC3589_CLIRQ, 0);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static inline unsigned int ltc3589_scale(unsigned int uV, u32 r1, u32 r2)
-+{
-+	uint64_t tmp;
-+	if (uV == 0)
-+		return 0;
-+	tmp = (uint64_t)uV * r1;
-+	do_div(tmp, r2);
-+	return uV + (unsigned int)tmp;
-+}
-+
-+static void ltc3589_apply_fb_voltage_divider(struct ltc3589_regulator *rdesc)
-+{
-+	struct regulator_desc *desc = &rdesc->desc;
-+
-+	if (!rdesc->r1 || !rdesc->r2)
-+		return;
-+
-+	desc->min_uV = ltc3589_scale(desc->min_uV, rdesc->r1, rdesc->r2);
-+	desc->uV_step = ltc3589_scale(desc->uV_step, rdesc->r1, rdesc->r2);
-+	desc->fixed_uV = ltc3589_scale(desc->fixed_uV, rdesc->r1, rdesc->r2);
-+}
-+
-+static int ltc3589_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	struct ltc3589_regulator *descs;
-+	struct ltc3589 *ltc3589;
-+	int i, ret;
-+
-+	ltc3589 = devm_kzalloc(dev, sizeof(*ltc3589), GFP_KERNEL);
-+	if (!ltc3589)
-+		return -ENOMEM;
-+
-+	i2c_set_clientdata(client, ltc3589);
-+	ltc3589->variant = id->driver_data;
-+	ltc3589->dev = dev;
-+
-+	descs = ltc3589->regulator_descs;
-+	memcpy(descs, ltc3589_regulators, sizeof(ltc3589_regulators));
-+	if (ltc3589->variant == LTC3589) {
-+		descs[LTC3589_LDO3].desc.fixed_uV = 1800000;
-+		descs[LTC3589_LDO4].desc.volt_table = ltc3589_ldo4;
-+	} else {
-+		descs[LTC3589_LDO3].desc.fixed_uV = 2800000;
-+		descs[LTC3589_LDO4].desc.volt_table = ltc3589_12_ldo4;
-+	}
-+
-+	ltc3589->regmap = devm_regmap_init_i2c(client, &ltc3589_regmap_config);
-+	if (IS_ERR(ltc3589->regmap)) {
-+		ret = PTR_ERR(ltc3589->regmap);
-+		dev_err(dev, "failed to initialize regmap: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = ltc3589_parse_regulators_dt(ltc3589);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0; i < LTC3589_NUM_REGULATORS; i++) {
-+		struct ltc3589_regulator *rdesc = &ltc3589->regulator_descs[i];
-+		struct regulator_desc *desc = &rdesc->desc;
-+		struct regulator_init_data *init_data;
-+		struct regulator_config config = { };
-+
-+		init_data = match_init_data(i);
-+
-+		if (i < LTC3589_LDO3)
-+			ltc3589_apply_fb_voltage_divider(rdesc);
-+
-+		config.dev = dev;
-+		config.init_data = init_data;
-+		config.driver_data = ltc3589;
-+		config.of_node = match_of_node(i);
-+
-+		ltc3589->regulators[i] = devm_regulator_register(dev, desc,
-+								 &config);
-+		if (IS_ERR(ltc3589->regulators[i])) {
-+			ret = PTR_ERR(ltc3589->regulators[i]);
-+			dev_err(dev, "failed to register regulator %s: %d\n",
-+				desc->name, ret);
-+			return ret;
-+		}
-+	}
-+
-+	ret = devm_request_threaded_irq(dev, client->irq, NULL, ltc3589_isr,
-+					IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+					client->name, ltc3589);
-+	if (ret) {
-+		dev_err(dev, "Failed to request IRQ: %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct i2c_device_id ltc3589_i2c_id[] = {
-+	{ "ltc3589",   LTC3589   },
-+	{ "ltc3589-1", LTC3589_1 },
-+	{ "ltc3589-2", LTC3589_2 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, ltc3589_i2c_id);
-+
-+static struct i2c_driver ltc3589_driver = {
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = ltc3589_probe,
-+	.id_table = ltc3589_i2c_id,
-+};
-+module_i2c_driver(ltc3589_driver);
-+
-+MODULE_AUTHOR("Philipp Zabel <p.zabel@pengutronix.de>");
-+MODULE_DESCRIPTION("Regulator driver for Linear Technology LTC3589(-1,2)");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("i2c:ltc3589");
++++ b/Documentation/devicetree/bindings/regulator/ltc3589.txt
+@@ -0,0 +1,99 @@
++Linear Technology LTC3589, LTC3589-1, and LTC3589-2 8-output regulators
++
++Required properties:
++- compatible: "ltc,ltc3589", "ltc,ltc3589-1" or "ltc,ltc3589-2"
++- reg: I2C slave address
++
++Required child node:
++- regulators: Contains eight regulator child nodes sw1, sw2, sw3, bb-out,
++  ldo1, ldo2, ldo3, and ldo4, specifying the initialization data as
++  documented in Documentation/devicetree/bindings/regulator/regulator.txt.
++
++Each regulator is defined using the standard binding for regulators. The
++nodes for sw1, sw2, sw3, bb-out, ldo1, and ldo2 additionally need to specify
++the resistor values of their external feedback voltage dividers:
++
++Required properties (not on ldo3, ldo4):
++- ltc,fb-voltage-divider: An array of two integers containing the resistor
++  values R1 and R2 of the feedback voltage divider in ohms.
++
++Regulators sw1, sw2, sw3, and ldo2 can regulate the feedback reference from
++0.3625 V to 0.75 V in 12.5 mV steps. The output voltage thus ranges between
++0.3625 * (1 + R1/R2) V and 0.75 * (1 + R1/R2) V. Regulators bb-out and ldo1
++have a fixed 0.8 V reference and thus output 0.8 * (1 + R1/R2) V. The ldo3
++regulator is fixed to 1.8 V on LTC3589 and to 2.8 V on LTC3589-1,2. The ldo4
++regulator can output between 1.8 V and 3.3 V on LTC3589 and between 1.2 V
++and 3.2 V on LTC3589-1,2 in four steps. The ldo1 standby regulator can not
++be disabled and thus should have the regulator-always-on property set.
++
++Example:
++
++	ltc3589: pmic@34 {
++		compatible = "ltc,ltc3589-1";
++		reg = <0x34>;
++
++		regulators {
++			sw1_reg: sw1 {
++				regulator-min-microvolt = <591930>;
++				regulator-max-microvolt = <1224671>;
++				ltc,fb-voltage-divider = <100000 158000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <704123>;
++				regulator-max-microvolt = <1456803>;
++				ltc,fb-voltage-divider = <180000 191000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3_reg: sw3 {
++				regulator-min-microvolt = <1341250>;
++				regulator-max-microvolt = <2775000>;
++				ltc,fb-voltage-divider = <270000 100000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			bb_out_reg: bb-out {
++				regulator-min-microvolt = <3387341>;
++				regulator-max-microvolt = <3387341>;
++				ltc,fb-voltage-divider = <511000 158000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo1_reg: ldo1 {
++				regulator-min-microvolt = <1306329>;
++				regulator-max-microvolt = <1306329>;
++				ltc,fb-voltage-divider = <100000 158000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo2_reg: ldo2 {
++				regulator-min-microvolt = <704123>;
++				regulator-max-microvolt = <1456806>;
++				ltc,fb-voltage-divider = <180000 191000>;
++				regulator-ramp-delay = <7000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo3_reg: ldo3 {
++				regulator-min-microvolt = <2800000>;
++				regulator-max-microvolt = <2800000>;
++				regulator-boot-on;
++			};
++
++			ldo4_reg: ldo4 {
++				regulator-min-microvolt = <1200000>;
++				regulator-max-microvolt = <3200000>;
++			};
++		};
++	};
 -- 
 1.9.1
 
