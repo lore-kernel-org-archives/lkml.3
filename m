@@ -1,144 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758193AbaD2QTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:19:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756224AbaD2QTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:19:09 -0400
-Date: Tue, 29 Apr 2014 18:19:07 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, jack <jack@suse.cz>,
-        hch <hch@infradead.org>, Viro <viro@zeniv.linux.org.uk>,
-        tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH V3 1/2] FS: Add generic data flush to fsync
-Message-ID: <20140429161907.GA29634@quack.suse.cz>
-References: <20140428231239.dbae4da4297c0b9230d9db4d@skynet.be>
+	id S1758238AbaD2QTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:19:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55517 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758212AbaD2QTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 12:19:36 -0400
+Date: Tue, 29 Apr 2014 12:19:34 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+Message-ID: <20140429121934.00ea4a2f@gandalf.local.home>
+In-Reply-To: <20140429120908.61ee947f@gandalf.local.home>
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+	<20140429100345.3f76a5bd@gandalf.local.home>
+	<alpine.LNX.2.00.1404291720440.16783@pobox.suse.cz>
+	<20140429120908.61ee947f@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140428231239.dbae4da4297c0b9230d9db4d@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-04-14 23:12:39, Fabian Frederick wrote:
-> This patch issues a flush in generic_file_fsync.
-> (Modern filesystems already do it)
-> 
-> -Behaviour can be reversed using /sys/devices/.../cache_type
-> -Filesystems can also call __generic_file_fsync with bool flush false
-  The patch looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+On Tue, 29 Apr 2014 12:09:08 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-								Honza
+> Can you reproduce your problem on different platforms, or is this just
+> one box that exhibits this behavior? If it's only one box, I'm betting
+> it has a BIOS doing nasty things.
 
-> 
-> Suggested-by: Jan Kara <jack@suse.cz>
-> Suggested-by: Christoph Hellwig <hch@infradead.org>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
-> V3: __generic_file_fsync = no flush
-> V2: No flag
-> V1: First version with MS_BARRIER flag
-> 
->  fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
->  include/linux/fs.h |  1 +
->  2 files changed, 34 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/libfs.c b/fs/libfs.c
-> index a184424..4877906 100644
-> --- a/fs/libfs.c
-> +++ b/fs/libfs.c
-> @@ -3,6 +3,7 @@
->   *	Library for filesystems writers.
->   */
->  
-> +#include <linux/blkdev.h>
->  #include <linux/export.h>
->  #include <linux/pagemap.h>
->  #include <linux/slab.h>
-> @@ -923,16 +924,19 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
->  EXPORT_SYMBOL_GPL(generic_fh_to_parent);
->  
->  /**
-> - * generic_file_fsync - generic fsync implementation for simple filesystems
-> + * __generic_file_fsync - generic fsync implementation for simple filesystems
-> + *
->   * @file:	file to synchronize
-> + * @start:	start offset in bytes
-> + * @end:	end offset in bytes (inclusive)
->   * @datasync:	only synchronize essential metadata if true
->   *
->   * This is a generic implementation of the fsync method for simple
->   * filesystems which track all non-inode metadata in the buffers list
->   * hanging off the address_space structure.
->   */
-> -int generic_file_fsync(struct file *file, loff_t start, loff_t end,
-> -		       int datasync)
-> +int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
-> +				 int datasync)
->  {
->  	struct inode *inode = file->f_mapping->host;
->  	int err;
-> @@ -952,10 +956,36 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
->  	err = sync_inode_metadata(inode, 1);
->  	if (ret == 0)
->  		ret = err;
-> +
->  out:
->  	mutex_unlock(&inode->i_mutex);
->  	return ret;
->  }
-> +EXPORT_SYMBOL(__generic_file_fsync);
-> +
-> +/**
-> + * generic_file_fsync - generic fsync implementation for simple filesystems
-> + *			with flush
-> + * @file:	file to synchronize
-> + * @start:	start offset in bytes
-> + * @end:	end offset in bytes (inclusive)
-> + * @datasync:	only synchronize essential metadata if true
-> + *
-> + */
-> +
-> +int generic_file_fsync(struct file *file, loff_t start, loff_t end,
-> +		       int datasync)
-> +{
-> +	struct inode *inode = file->f_mapping->host;
-> +	int err;
-> +
-> +	err = __generic_file_fsync(file, start, end, datasync);
-> +	if (err)
-> +		return err;
-> +
-> +	return blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
-> +
-> +}
->  EXPORT_SYMBOL(generic_file_fsync);
->  
->  /**
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 8780312..c3f46e4 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
->  extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
->  		const void __user *from, size_t count);
->  
-> +extern int __generic_file_fsync(struct file *, loff_t, loff_t, int);
->  extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
->  
->  extern int generic_check_addressable(unsigned, u64);
-> -- 
-> 1.8.4.5
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This box probably crashes on all kernels too. My NMI nesting changes
+did not fix a bug (well, it did as a side effect, see below). It was
+done to allow NMIs to use IRET so that we could remove stopmachine from
+ftrace, and instead have it use breakpoints (which return with IRET).
+
+The bug that was fixed by this was the ability to do stack traces
+(sysrq-t) from NMI context. Stack traces can page fault, and when I was
+debugging hard lock ups and having the NMI do a stack dump of all
+tasks, another NMI would trigger and corrupt the stack of the NMI doing
+the dumps. But that was something that would only be seen while
+debugging, and not something seen in normal operation.
+
+I don't see a bug to fix in the kernel. I see a bug to fix in the
+vendor's BIOS.
+
+-- Steve
