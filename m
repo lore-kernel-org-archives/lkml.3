@@ -1,128 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaD2XAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 19:00:18 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61737 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754653AbaD2XAP (ORCPT
+	id S1755633AbaD2XEN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 19:04:13 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:49899 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbaD2XEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 19:00:15 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] cpuidle / menu: Return error code if there are no suitable states
-Date: Wed, 30 Apr 2014 01:16:45 +0200
-Message-ID: <1516317.nEvPfS8aZ7@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2000825.kO1es8ShkW@vostro.rjw.lan>
-References: <2471963.urOyfY8mOG@vostro.rjw.lan> <535E3818.2040905@linaro.org> <2000825.kO1es8ShkW@vostro.rjw.lan>
+	Tue, 29 Apr 2014 19:04:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20140429214842.GL18016@ZenIV.linux.org.uk>
+References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+	<CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
+	<CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
+	<20140429181610.GJ18016@ZenIV.linux.org.uk>
+	<20140429191015.GK18016@ZenIV.linux.org.uk>
+	<20140429211851.GA32204@dastard>
+	<20140429214842.GL18016@ZenIV.linux.org.uk>
+Date: Tue, 29 Apr 2014 16:04:11 -0700
+X-Google-Sender-Auth: WwLSDWsfj7taJPwPhAhpxvDCGoI
+Message-ID: <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 01:28:03 AM Rafael J. Wysocki wrote:
-> On Monday, April 28, 2014 01:14:32 PM Daniel Lezcano wrote:
-> > On 04/27/2014 02:55 PM, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >
-> > > If there is a PM QoS latency limit and all of the sufficiently shallow
-> > > C-states are disabled, the cpuidle menu governor returns 0 which on
-> > > some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
-> > > if that C-state has been disabled.
-> > >
-> > > Fix the issue by modifying the menu governor to return an error code
-> > > in such situations.
-> > >
-> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > ---
-> > >   drivers/cpuidle/governors/menu.c |    2 +-
-> > >   include/linux/cpuidle.h          |    2 ++
-> > >   2 files changed, 3 insertions(+), 1 deletion(-)
-> > >
-> > > Index: linux-pm/drivers/cpuidle/governors/menu.c
-> > > ===================================================================
-> > > --- linux-pm.orig/drivers/cpuidle/governors/menu.c
-> > > +++ linux-pm/drivers/cpuidle/governors/menu.c
-> > > @@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
-> > >   		data->needs_update = 0;
-> > >   	}
-> > >
-> > > -	data->last_state_idx = 0;
-> > > +	data->last_state_idx = CPUIDLE_DRIVER_STATE_POLL;
-> > >
-> > >   	/* Special case when user has set very strict latency requirement */
-> > >   	if (unlikely(latency_req == 0))
-> > > Index: linux-pm/include/linux/cpuidle.h
-> > > ===================================================================
-> > > --- linux-pm.orig/include/linux/cpuidle.h
-> > > +++ linux-pm/include/linux/cpuidle.h
-> > > @@ -217,8 +217,10 @@ static inline int cpuidle_register_gover
-> > >
-> > >   #ifdef CONFIG_ARCH_HAS_CPU_RELAX
-> > >   #define CPUIDLE_DRIVER_STATE_START	1
-> > > +#define CPUIDLE_DRIVER_STATE_POLL	0
-> > >   #else
-> > >   #define CPUIDLE_DRIVER_STATE_START	0
-> > > +#define CPUIDLE_DRIVER_STATE_POLL	(-ENXIO)
-> > >   #endif
-> > >
-> > >   #endif /* _LINUX_CPUIDLE_H */
-> > 
-> > Hi Rafael,
-> > 
-> > CPUIDLE_DRIVER_STATE_START is only for x86. It introduces some confusion 
-> > in the code.
-> 
-> I won't disagree with that.
-> 
-> > As only two drivers are concerned by it, wouldn't make 
-> > sense to add the poll state to those driver directly instead of having 
-> > the code hacked around ? (eg. insert the poll state in the common 
-> > cpuidle code).
-> 
-> Well, what about initializing data->last_state_idx to
-> (CPUIDLE_DRIVER_STATE_START - 1) in menu_select() instead of introducing the
-> new symbol for the time being and getting rid of CPUIDLE_DRIVER_STATE_START
-> separately?
+On Tue, Apr 29, 2014 at 2:48 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> Ummm...  You mean, have d_lookup() et.al. fail on something that is on
+> a shrink list?
 
-Updated patch is appended for completness.
+So I tried to see if that would work just consider it dead by the time
+it hits the shrink list, and if somebody does a lookup on the dentry,
+fail on it and just allocate a new dentry and do a real lookup.
 
-Thanks!
+But at a minimum, we have "d_op->d_prune()" that would now be possibly
+be called for the old dentry *after* a new dentry has been allocated.
+Not to mention the inode not having been dropped. So it looks like a
+disaster where the filesystem now ends up having concurrent "live"
+dentries for the same entry.  Even if one of them is on its way out,
+it's still visible to the filesystem. That makes me very
+uncomfortable.
 
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: cpuidle / menu: Return (-1) if there are no suitable states
+I'm starting to think that Miklos' original patch (perhaps with the
+spinlock split to at least be one per superblock) is the most
+straightforward approach after all. It's annoying having to add locks
+here, but the whole pruning path should not be a hotpath, so maybe
+it's not actually a big deal.
 
-If there is a PM QoS latency limit and all of the sufficiently shallow
-C-states are disabled, the cpuidle menu governor returns 0 which on
-some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
-if that C-state has been disabled.
-
-Fix the issue by modifying the menu governor to return (-1) in such
-situations.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/cpuidle/governors/menu.c |    2 +-
- include/linux/cpuidle.h          |    2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-Index: linux-pm/drivers/cpuidle/governors/menu.c
-===================================================================
---- linux-pm.orig/drivers/cpuidle/governors/menu.c
-+++ linux-pm/drivers/cpuidle/governors/menu.c
-@@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
- 		data->needs_update = 0;
- 	}
- 
--	data->last_state_idx = 0;
-+	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
- 
- 	/* Special case when user has set very strict latency requirement */
- 	if (unlikely(latency_req == 0))
-
+               Linus
