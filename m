@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965247AbaD2WMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:12:55 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56912 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752537AbaD2WMy (ORCPT
+	id S965316AbaD2WTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:19:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:39827 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965300AbaD2WTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:12:54 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Disable interrupts during MSRs reading
-Date: Wed, 30 Apr 2014 00:29:23 +0200
-Message-ID: <1442595.xWVWXlLQjO@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <535FE55D.40500@semaphore.gr>
-References: <535FE55D.40500@semaphore.gr>
+	Tue, 29 Apr 2014 18:19:34 -0400
+Date: Tue, 29 Apr 2014 18:19:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Bharath Ravi <rbharath@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] tracing: Allow changing default ring buffer size for
+ ftrace instances.
+Message-ID: <20140429181929.01885052@gandalf.local.home>
+In-Reply-To: <CAHN2JJ8WmyPPnVyJJxFg-OFJwrb9c6VuG5bUhkM82hjd3nwU4g@mail.gmail.com>
+References: <CAHN2JJ_hOS=jfvGUZFt=mx5ymCOmJrUdP1ATnOXe-D9MvtgAMg@mail.gmail.com>
+	<20140425135219.3ad56e1b@gandalf.local.home>
+	<CAHN2JJ8WmyPPnVyJJxFg-OFJwrb9c6VuG5bUhkM82hjd3nwU4g@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 08:46:05 PM Stratos Karafotis wrote:
-> According to Intel 64 and IA-32 Architectures SDM, Volume 3,
-> Chapter 14.2, "Software needs to exercise care to avoid delays
-> between the two RDMSRs (for example interrupts)".
-> 
-> So, disable interrupts during reading MSRs IA32_APERF and IA32_MPERF.
-> Since the TSC is also takes place in the calculation include it in
-> the protected section. This should increase the accuracy of the
-> calculations.
-> 
-> Tested on Intel i7-3770 CPU @ 3.40GHz.
-> Benchmarks (Phoronix Linux compilation) show a slightly increase
-> in performance by ~0.1% and a decrease in power consumption by
-> ~0.13%.
-> 
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+On Tue, 29 Apr 2014 15:09:15 -0700
+Bharath Ravi <rbharath@google.com> wrote:
 
-This looks good to me, but I need Dirk Brandewie to review and comment
-all intel_pstate patches before I apply any of them.
+> We'd actually considered doing just that, in an initial version of the patch.
+> At the time, we'd decided in favour of allowing the user more explicit
+> control over the buffer size, rather than auto expanding it. (The
+> discussion on that is here:
+> https://lkml.org/lkml/2013/7/1/617)
+
+Yeah, I remember my rational :-)
+
+The thing is, I have been thinking more about it, and I'm now thinking
+it would be fine. But reading that email again, I may have convinced
+myself that it should have the option. Gah, I'm now arguing with myself!
+
+> 
+> We could go back to that though if you think that's okay, but I think
+> your previous reasoning still makes sense: it's useful for the user to
+> know if there will be an allocation failure before enabling tracing.
+
+Grumble. I need to think about this a bit more. I'm stretching myself a
+bit thin between different projects. I'll pull in you patches and play
+with it a bit and then come back with a decision.
 
 Thanks!
 
-> ---
-> 
-> I hope it's not too inappropriate to post test results in
-> conjunction with my previous patch about the change of calculation
-> method of next p-state (https://lkml.org/lkml/2014/4/27/100).
-> I used Phoronix benchmark - Linux Kernel Compilation 3.1.
-> Below the test results using turbostat (5 iterations):
-> 
-> Without 2 patches:
-> 
-> Ph. avg Time	Total time	PkgWatt		Total Energy
-> 	79.63	266.416		57.74		15382.85984
-> 	79.63	265.609		57.87		15370.79283
-> 	79.57	266.994		57.54		15362.83476
-> 	79.53	265.304		57.83		15342.53032
-> 	79.71	265.977		57.76		15362.83152
-> avg	79.61	266.06		57.74		15364.36985
-> 
-> With change calculation patch:
-> 
-> Ph. avg Time	Total time	PkgWatt		Total Energy
-> 	78.23	258.826		59.14		15306.96964
-> 	78.41	259.110		59.15		15326.35650
-> 	78.40	258.530		59.26		15320.48780
-> 	78.46	258.673		59.20		15313.44160
-> 	78.19	259.075		59.16		15326.87700
-> avg	78.34	258.842		59.18		15318.82650
-> 
-> With change calculation patch + this one
-> 
-> Ph. avg Time	Total time	PkgWatt		Total Energy
-> 	78.33	259.320		59.06		15315.43920
-> 	78.28	258.245		59.20		15288.10400
-> 	78.08	257.523		59.32		15276.26436
-> 	78.38	259.084		59.13		15319.63692
-> 	78.31	258.232		59.22		15292.49904
-> avg	78.27	258.480		59.18		15298.38870
-> 
-> 
->  drivers/cpufreq/intel_pstate.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 8e309db..95b3958 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -576,10 +576,13 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
->  {
->  	u64 aperf, mperf;
->  	unsigned long long tsc;
-> +	unsigned long flags;
->  
-> +	local_irq_save(flags);
->  	rdmsrl(MSR_IA32_APERF, aperf);
->  	rdmsrl(MSR_IA32_MPERF, mperf);
->  	tsc = native_read_tsc();
-> +	local_irq_restore(flags);
->  
->  	aperf = aperf >> FRAC_BITS;
->  	mperf = mperf >> FRAC_BITS;
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-- Steve
