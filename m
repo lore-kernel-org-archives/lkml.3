@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964862AbaD2Qd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:33:26 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:46667 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758102AbaD2QdX (ORCPT
+	id S964893AbaD2Qeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:34:50 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:41703 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933428AbaD2Qes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:33:23 -0400
+	Tue, 29 Apr 2014 12:34:48 -0400
+Message-ID: <535FD4A6.3050905@semaphore.gr>
+Date: Tue, 29 Apr 2014 19:34:46 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <535F69F8.8040707@linaro.org>
-References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
-	<1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
-	<1398443370-12668-2-git-send-email-daniel.thompson@linaro.org>
-	<20140425124530.52fd696c@gandalf.local.home>
-	<535E2C5A.9090702@linaro.org>
-	<CAMbhsRQfHCJ=hY=hyX2TJLRAArX7iAhDdxTkaP9hjC5nR5U5vA@mail.gmail.com>
-	<535F69F8.8040707@linaro.org>
-Date: Tue, 29 Apr 2014 09:33:22 -0700
-X-Google-Sender-Auth: gTBfsWVlL9BFl2C2nb25Yn11OXc
-Message-ID: <CAMbhsRQuoN3sqH2g2eCJMpXi5JAChqc3+XcXrk=37pQ4d3EYzg@mail.gmail.com>
-Subject: Re: [RFC v3 1/9] sysrq: Implement __handle_sysrq_nolock to avoid
- recursive locking in kdb
-From: Colin Cross <ccross@android.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Android Kernel Team <kernel-team@android.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: intel_pstate: Change the calculation of next
+ pstate
+References: <535D80C8.9090906@semaphore.gr> <CAKohpomhUk7RQ3YL3=wpVKSbK_oSkyYBRUZiqnHzWqrZ2DjRRA@mail.gmail.com>
+In-Reply-To: <CAKohpomhUk7RQ3YL3=wpVKSbK_oSkyYBRUZiqnHzWqrZ2DjRRA@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 1:59 AM, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> On 28/04/14 18:44, Colin Cross wrote:
->>>> Is that case documented somewhere in the code comments?
->>>
->>> Perhaps not near enough to the _nolock but the primary bit of comment is
->>> here (and in same file as kdb_sr).
->>> --- cut here ---
->>>  * kdb_main_loop - After initial setup and assignment of the
->>>  *      controlling cpu, all cpus are in this loop.  One cpu is in
->>>  *      control and will issue the kdb prompt, the others will spin
->>>  *      until 'go' or cpu switch.
->>> --- cut here ---
->>>
->>> The mechanism kgdb uses to quiesce other CPUs means other CPUs cannot be
->>> in irqsave critical sections.
->>>
->>>
+On 29/04/2014 07:58 πμ, Viresh Kumar wrote:
+> Cc'd Dirk,
+> 
+> On 28 April 2014 03:42, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> Currently the driver calculates the next pstate proportional to
+>> core_busy factor and reverse proportional to current pstate.
 >>
->> One of the advantages of FIQ debugger is that it can be triggered from
->> an FIQ (NMI for those in x86 land), and Jason and I have discussed
->> using FIQs for kgdb to allow interrupting cpus stuck in critical
->> sections.  If that gets implemented the above assumption will no
->> longer be correct.
->
-> Reviewing this I realized I missed one of the most critical points in
-> the above.
->
-> Today kdb, even if triggered by FIQ/NMI, would still be likely to wedge
-> waiting for the IPI interrupts to be delivered to other processors.
->
-> Did you and Jason discuss getting the active CPU to quiesce the other
-> processors using FIQ/NMI, or to allow the active CPU to timeout while
-> waiting for them the stop?
->
->
-> Daniel.
+>> Change the above method and calculate the next pstate independently
+>> of current pstate.
+> 
+> We must mention why the change is required.
+> 
 
-Yes, all cpus would have to get an FIQ/NMI.
+Hi Viresh,
+
+Actually, I can't say that it's required. :)
+I just believe that calculation of next p-state should be independent
+from current one. In my opinion we can't scale the load across different
+p-states, because it's not always equivalent.
+
+For example suppose a load of 100% because of a tight for loop in the
+current p-state. It will be also a 100% load in any other p-state.
+It will be wrong if we scale the load in the calculation formula
+according to the current p-state.
+
+I included the test results in the change log to point out an improvement
+because of this patch.
+
+I will enrich more the change log as you suggested.
+
+Thanks,
+Stratos Karafotis
+
