@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963AbaD2LoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:44:09 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45302 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933516AbaD2LoG (ORCPT
+	id S933881AbaD2Luv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:50:51 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:34763 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933759AbaD2Luu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:44:06 -0400
-Date: Tue, 29 Apr 2014 12:43:56 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "roy.franz@linaro.org" <roy.franz@linaro.org>,
-        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2 00/10] arm64: UEFI support
-Message-ID: <20140429114356.GK26088@console-pimps.org>
-References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
- <20140429102817.GE17007@arm.com>
+	Tue, 29 Apr 2014 07:50:50 -0400
+Date: Tue, 29 Apr 2014 07:50:46 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: "Matt W. Benjamin" <matt@linuxbox.com>
+Cc: Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        samba-technical@lists.samba.org, linux-nfs@vger.kernel.org,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Frank Filz" <ffilzlnx@mindspring.com>
+Subject: Re: OFD ("file private") locks and NFS
+Message-ID: <20140429075046.39fc9c3f@tlielax.poochiereds.net>
+In-Reply-To: <1482413734.4.1398771608019.JavaMail.root@thunderbeast.private.linuxbox.com>
+References: <20140429071153.176c7404@tlielax.poochiereds.net>
+	<1482413734.4.1398771608019.JavaMail.root@thunderbeast.private.linuxbox.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429102817.GE17007@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Pulling in Peter and Stephen)
+On Tue, 29 Apr 2014 07:40:08 -0400 (EDT)
+"Matt W. Benjamin" <matt@linuxbox.com> wrote:
 
-On Tue, 29 Apr, at 11:28:17AM, Catalin Marinas wrote:
+> Hi Jeff,
 > 
-> The patches look fine to me, they've been through several rounds of
-> review already. How do we propose these get merged as the series
-> contains both generic and arm64 patches? And there are dependencies
-> already in linux-next.
+> Something which came up on the last Ganesha conn call is that we have
+> a pretty strong need for some ability to wait on a set of locks, and perhaps
+> receive events.  Frank Filz believed that you had made a proposal which
+> would cover this.  Can you elaborate on that?
 > 
-> Are the EFI patches in -next pulled from some non-rebaseable branch?
+> Thanks,
+> 
+> Matt
+> 
 
-Peter suggsted a plan when he took the generic EFI stuff that's in tip
-(and hence currently in linux-next),
-
-  It doesn't hurt to inform Stephen, although I think it will simply fall
-  out automatically since he uses git to merge and git will recognize the
-  graph.
-
-  During the merge window, it means they should not push their patches
-  until Linus has accepted the precondition patches from the tip tree.
-  Since Ingo and I try to push most of the tip tree as early as possible
-  in the merge window, this is usually not a problem.
-
-So we currently have the prerequisites in tip/x86/efi, and assuming that
-this 10-patch series gets merged into a single branch somewhere, things
-should work automatically for linux-next.
-
-It may be prudent to negotiate a plan now for when the merge window
-opens because, as Peter mentions above, the stuff in tip/x86/efi needs
-to be merged by Linus first to avoid build breakage with the arm64
-stuff.
-
+No, there's no mechanism to wait on a set of locks from within the
+context of a single thread of execution or to receive "events". Again,
+that would be a new API beyond what I've been proposing over the last
+several months.
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Jeff Layton <jlayton@poochiereds.net>
