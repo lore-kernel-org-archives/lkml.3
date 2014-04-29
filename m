@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445AbaD2PLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 11:11:08 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:38060 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaD2PLF (ORCPT
+	id S1758005AbaD2PMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 11:12:20 -0400
+Received: from elasmtp-junco.atl.sa.earthlink.net ([209.86.89.63]:49907 "EHLO
+	elasmtp-junco.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757679AbaD2PMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 11:11:05 -0400
-Date: Tue, 29 Apr 2014 08:11:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-Message-ID: <20140429151100.GC8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
- <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
- <20140428231002.GO4430@linux.vnet.ibm.com>
- <1398732649.2970.89.camel@schen9-DESK>
+	Tue, 29 Apr 2014 11:12:18 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=Llqd0bt7gh5pZ7dy45JFwAO4BpplYAOonPD0j44r12Z4z0puyM7jtrsz4Zq2N7Ah;
+  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
+From: "Frank Filz" <ffilzlnx@mindspring.com>
+To: "'Jeff Layton'" <jlayton@poochiereds.net>,
+        "'Matt W. Benjamin'" <matt@linuxbox.com>
+Cc: "'Ganesha NFS List'" <nfs-ganesha-devel@lists.sourceforge.net>,
+        "'lkml'" <linux-kernel@vger.kernel.org>,
+        "'Linux-Fsdevel'" <linux-fsdevel@vger.kernel.org>,
+        "'Trond Myklebust'" <trond.myklebust@fys.uio.no>,
+        "'J. Bruce Fields'" <bfields@fieldses.org>,
+        "'Neil Brown'" <neilb@suse.de>, <samba-technical@lists.samba.org>,
+        <linux-nfs@vger.kernel.org>,
+        "'Michael Kerrisk \(man-pages\)'" <mtk.manpages@gmail.com>
+References: <20140429071153.176c7404@tlielax.poochiereds.net>	<1482413734.4.1398771608019.JavaMail.root@thunderbeast.private.linuxbox.com> <20140429075046.39fc9c3f@tlielax.poochiereds.net>
+In-Reply-To: <20140429075046.39fc9c3f@tlielax.poochiereds.net>
+Subject: RE: OFD ("file private") locks and NFS
+Date: Tue, 29 Apr 2014 08:11:27 -0700
+Message-ID: <030601cf63bd$4c635220$e529f660$@mindspring.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398732649.2970.89.camel@schen9-DESK>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042915-1542-0000-0000-0000016DB30F
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQJzfP5/iM0jCBuWFfdc+nT3hcVD3QGhoVKAASOVvQCZylYKUA==
+Content-Language: en-us
+X-Antivirus: avast! (VPS 140428-1, 04/28/2014), Outbound message
+X-Antivirus-Status: Clean
+X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4db240052a7283bb9188b66d86525844a0350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 71.236.153.111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 05:50:49PM -0700, Tim Chen wrote:
-> On Mon, 2014-04-28 at 16:10 -0700, Paul E. McKenney wrote:
+> On Tue, 29 Apr 2014 07:40:08 -0400 (EDT) "Matt W. Benjamin"
+> <matt@linuxbox.com> wrote:
 > 
-> > > +#ifdef CONFIG_SMP
-> > > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> > > +{
-> > > +	int retval;
-> > > +	struct task_struct *owner;
-> > > +
-> > > +	rcu_read_lock();
-> > > +	owner = ACCESS_ONCE(sem->owner);
-> > 
-> > OK, I'll bite...
-> > 
-> > Why ACCESS_ONCE() instead of rcu_dereference()?
+> > Hi Jeff,
+> >
+> > Something which came up on the last Ganesha conn call is that we have
+> > a pretty strong need for some ability to wait on a set of locks, and
+> > perhaps receive events.  Frank Filz believed that you had made a
+> > proposal which would cover this.  Can you elaborate on that?
+> >
+> > Thanks,
+> >
+> > Matt
+> >
 > 
-> We're using it as a speculative check on the sem->owner to see
-> if the owner is running on the cpu.  The rcu_read_lock
-> is used for ensuring that the owner->on_cpu memory is
-> still valid.
+> No, there's no mechanism to wait on a set of locks from within the context
+of
+> a single thread of execution or to receive "events". Again, that would be
+a
+> new API beyond what I've been proposing over the last several months.
 
-OK, so if we read complete garbage, all that happens is that we
-lose a bit of performance?  If so, I am OK with it as long as there
-is a comment (which Davidlohr suggested later in this thread).
+Some kind of facility to enable one user space thread to wait on multiple
+blocked locks would definitely be helpful to user space servers.
 
-							Thanx, Paul
+Our current plan is to have a pool of threads, and dispatch blocking locks
+to them. If that pool is exhausted, all further locks would be dispatched to
+a single thread that would poll for locks.
 
-> > (My first question was "where is the update side", but this is covered
-> > by task_struct allocation and deallocation.)
-> 
-> Tim
-> 
+Frank
+
 
