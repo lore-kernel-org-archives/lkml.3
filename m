@@ -1,45 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247AbaD2VVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 17:21:30 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58672 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755045AbaD2VV1 (ORCPT
+	id S1758430AbaD2VVj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 17:21:39 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40640 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756357AbaD2VVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 17:21:27 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Adam Williamson <awilliam@redhat.com>, Lan Tianyu <tianyu.lan@intel.com>,
-        mika.westerberg@linux.intel.com, lenb@kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [Patch V2 1/9] ACPICA: Executer: Fix buffer allocation issue for generic_serial_bus region field accesses.
-Date: Tue, 29 Apr 2014 23:37:57 +0200
-Message-ID: <3011387.grhlkC2GdR@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140429113128.GA3640@katana>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <8704550.LJW911OU1k@vostro.rjw.lan> <20140429113128.GA3640@katana>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 29 Apr 2014 17:21:36 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 0/4] Volatile Ranges (v14 - madvise reborn edition!)
+Date: Tue, 29 Apr 2014 14:21:19 -0700
+Message-Id: <1398806483-19122-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 01:31:28 PM Wolfram Sang wrote:
-> 
-> --3MwIy2ne0vdjdPXF
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> 
-> 
-> > The rest has been queued up for 3.16.
-> 
-> I also aim for 3.16, yet it may take 1 or 2 weeks more until I'll be
-> able to review the I2C part of those patches.
+Another few weeks and another volatile ranges patchset...
 
-That's fine, they can stay in my bleeding-edge branch till then.
+After getting the sense that the a major objection to the earlier
+patches was the introduction of a new syscall (and its somewhat
+strange dual length/purged-bit return values), I spent some time
+trying to rework the vma manipulations so we can be we won't fail
+mid-way through changing volatility (basically making it atomic).
+I think I have it working, and thus, there is no longer the
+need for a new syscall, and we can go back to using madvise()
+to set and unset pages as volatile.
+
+
+New changes are:
+----------------
+o Reworked vma manipulations to be be atomic
+o Converted back to using madvise() as syscall interface
+o Integrated fix from Minchan to avoid SIGBUS faulting race
+o Caught/fixed subtle use-after-free bug w/ vma merging
+o Lots of minor cleanups and comment improvements
+
+
+Still on the TODO list
+----------------------------------------------------
+o Sort out how best to do page accounting when the volatility
+  is tracked on a per-mm basis.
+o Revisit anonymous page aging on swapless systems
+o Draft up re-adding tmpfs/shm file volatility support
+
+
+Many thanks again to Minchan, Kosaki-san, Johannes, Jan, Rik,
+Hugh, and others for the great feedback and discussion at
+LSF-MM.
+
+thanks
+-john
+
+
+Volatile ranges provides a method for userland to inform the kernel
+that a range of memory is safe to discard (ie: can be regenerated)
+but userspace may want to try access it in the future.  It can be
+thought of as similar to MADV_DONTNEED, but that the actual freeing
+of the memory is delayed and only done under memory pressure, and the
+user can try to cancel the action and be able to quickly access any
+unpurged pages. The idea originated from Android's ashmem, but I've
+since learned that other OSes provide similar functionality.
+
+This functionality allows for a number of interesting uses. One such
+example is: Userland caches that have kernel triggered eviction under
+memory pressure. This allows for the kernel to "rightsize" userspace
+caches for current system-wide workload. Things like image bitmap
+caches, or rendered HTML in a hidden browser tab, where the data is
+not visible and can be regenerated if needed, are good examples.
+
+Both Chrome and Firefox already make use of volatile range-like
+functionality via the ashmem interface:
+https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t/rev/a32c32b24a34
+
+https://chromium.googlesource.com/chromium/src/base/+/47617a69b9a57796935e03d78931bd01b4806e70/memory/discardable_memory_allocator_android.cc
+
+
+The basic usage of volatile ranges is as so:
+1) Userland marks a range of memory that can be regenerated if
+necessary as volatile
+2) Before accessing the memory again, userland marks the memory as
+nonvolatile, and the kernel will provide notification if any pages in
+the range has been purged.
+
+If userland accesses memory while it is volatile, it will either
+get the value stored at that memory if there has been no memory
+pressure or the application will get a SIGBUS if the page has been
+purged.
+
+Reads or writes to the memory do not affect the volatility state of the
+pages.
+
+You can read more about the history of volatile ranges here (~reverse
+chronological order):
+https://lwn.net/Articles/592042/
+https://lwn.net/Articles/590991/
+http://permalink.gmane.org/gmane.linux.kernel.mm/98848
+http://permalink.gmane.org/gmane.linux.kernel.mm/98676
+https://lwn.net/Articles/522135/
+https://lwn.net/Kernel/Index/#Volatile_ranges
+
+
+Continuing from the last few releases, this revision is reduced in
+scope when compared to earlier attempts. I've only focused on handled
+volatility on anonymous memory, and we're storing the volatility in
+the VMA.  This may have performance implications compared with the
+earlier approach, but it does simplify the approach. I'm open to
+expanding functionality via flags arguments, but for now I'm wanting
+to keep focus on what the right default behavior should be and keep
+the use cases restricted to help get reviewer interest.
+
+Additionally, since we don't handle volatility on tmpfs files with this
+version of the patch, it is not able to be used to implement semantics
+similar to Android's ashmem. But since shared volatiltiy on files is
+more complex, my hope is to start small and hopefully grow from there.
+
+Again, much of the logic in this patchset is based on Minchan's earlier
+efforts, so I do want to make sure the credit goes to him for his major
+contribution!
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Keith Packard <keithp@keithp.com>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+
+John Stultz (4):
+  swap: Cleanup how special swap file numbers are defined
+  MADV_VOLATILE: Add MADV_VOLATILE/NONVOLATILE hooks and handle marking
+    vmas
+  MADV_VOLATILE: Add purged page detection on setting memory
+    non-volatile
+  MADV_VOLATILE: Add page purging logic & SIGBUS trap
+
+ include/linux/mm.h                     |   1 +
+ include/linux/mvolatile.h              |   7 +
+ include/linux/swap.h                   |  36 +++-
+ include/linux/swapops.h                |  10 +
+ include/uapi/asm-generic/mman-common.h |   5 +
+ mm/Makefile                            |   2 +-
+ mm/internal.h                          |   2 -
+ mm/madvise.c                           |  14 ++
+ mm/memory.c                            |   7 +
+ mm/mvolatile.c                         | 353 +++++++++++++++++++++++++++++++++
+ mm/rmap.c                              |   5 +
+ mm/vmscan.c                            |  12 ++
+ 12 files changed, 440 insertions(+), 14 deletions(-)
+ create mode 100644 include/linux/mvolatile.h
+ create mode 100644 mm/mvolatile.c
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.9.1
+
