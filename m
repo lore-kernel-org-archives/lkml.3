@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003AbaD2AMF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:12:05 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:50461 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaD2AMD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:12:03 -0400
-Message-ID: <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
-Date: Mon, 28 Apr 2014 17:11:59 -0700
-In-Reply-To: <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com>
-References: <535EA976.1080402@linux.vnet.ibm.com>
-	 <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com>
-	 <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
-	 <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com>
-	 <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org>
-	 <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1755325AbaD2AQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:16:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53322 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaD2AQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 20:16:16 -0400
+Message-ID: <535EEF10.1080602@zytor.com>
+Date: Mon, 28 Apr 2014 17:15:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrew Lutomirski <amluto@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: comex <comexk@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com>
+In-Reply-To: <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 16:57 -0700, Linus Torvalds wrote:
-> On Mon, Apr 28, 2014 at 4:11 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> >
-> > unuse_mm() leaves current->mm at NULL so we'd hear about it pretty
-> > quickly if a user task was running use_mm/unuse_mm.
+On 04/28/2014 05:02 PM, Andrew Lutomirski wrote:
 > 
-> Yes.
+> I'm compiling your branch.  In the mean time, two possibly stupid questions:
 > 
-> > I think so.  Maybe it's time to cook up a debug patch for Srivatsa to
-> > use?  Dump the vma cache when the bug hits, or wire up some trace
-> > points.  Or perhaps plain old printks - it seems to be happening pretty
-> > early in boot.
+> What's the assembly code in the double-fault entry for?
 > 
-> Well, I think Srivatsa has only seen it once, and wasn't able to
-> reproduce it, so we'd have to make it happen more first.
-> 
-> > Are there additional sanity checks we can perform at cache addition
-> > time?
-> 
-> I wouldn't really expect it to happen at cache addition time, since
-> that's really quite simple. There's only one caller of
-> vmacache_update(), namely find_vma(). And vmacache_update() does the
-> same sanity check that vmacache lookup does (ie check that the
-> passed-on mm is the current thread mm, and that we're not a kernel
-> thread).
 
-Agreed.
+It was easier for me to add it there than adding all the glue
+(prototypes and so on) to put it into C code... can convert it to C when
+it works.
 
-> I'd be more inclined to think it's a missing invalidate, but I can
-> only think of two reasons to invalidate:
-> 
->  - the vma itself went away from the mm, got free'd/reused, and so
-> vm_mm changes..
-> 
->    But then we'd have to remove it from the rb-tree, and both callers
-> of vma_rb_erase() do a vmacache_invalidate()
+> Have you tried hbreak in qemu?  I've had better luck with hbreak than
+> regular break in the past.
 
-Right, if this were the case, -next never would have allowed it.
+Yes, no real change.
 
->  - the mm of a thread changed
-> 
->    This is exec, use_mm(), and fork() (and fork really only just
-> because we copy the vmacache).
-> 
->    exec and fork do that "vmacache_flush(tsk)", which is why I was
-> looking at use_mm().
-
-Here's a patch to remove treating kthreads specially. Not sure how
-easily it would be to test since Srivatsa only ran into it once and I
-see no other users complaining.
-
-diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-index f802c2d..41445bb 100644
---- a/mm/mmu_context.c
-+++ b/mm/mmu_context.c
-@@ -4,6 +4,7 @@
-  */
- 
- #include <linux/mm.h>
-+#include <linux/vmacache.h>
- #include <linux/mmu_context.h>
- #include <linux/export.h>
- #include <linux/sched.h>
-@@ -29,6 +30,7 @@ void use_mm(struct mm_struct *mm)
-                tsk->active_mm = mm;
-        }
-        tsk->mm = mm;
-+       vmacache_flush(tsk);
-        switch_mm(active_mm, mm, tsk);
-        task_unlock(tsk);
- #ifdef finish_arch_post_lock_switch
-diff --git a/mm/vmacache.c b/mm/vmacache.c
-index 1037a3ba..04009d3 100644
---- a/mm/vmacache.c
-+++ b/mm/vmacache.c
-@@ -36,13 +36,10 @@ void vmacache_flush_all(struct mm_struct *mm)
-  * get_user_pages()->find_vma().  The vmacache is task-local and this
-  * task's vmacache pertains to a different mm (ie, its own).  There is
-  * nothing we can do here.
-- *
-- * Also handle the case where a kernel thread has adopted this mm via use_mm().
-- * That kernel thread's vmacache is not applicable to this mm.
-  */
- static bool vmacache_valid_mm(struct mm_struct *mm)
- {
--       return current->mm == mm && !(current->flags & PF_KTHREAD);
-+       return current->mm == mm;
- }
- 
- void vmacache_update(unsigned long addr, struct vm_area_struct *newvma)
+	-hpa
 
 
