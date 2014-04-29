@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800AbaD2IUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:20:52 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:56741 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932640AbaD2IUq (ORCPT
+	id S932879AbaD2IVF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:21:05 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:33375 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932640AbaD2IU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:20:46 -0400
+	Tue, 29 Apr 2014 04:20:59 -0400
 From: srinivas.kandagatla@linaro.org
 To: Russell King <linux@arm.linux.org.uk>, linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         linux-kernel@vger.kernel.org, agross@quicinc.com,
         linux-arm-msm@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH v1 08/11] mmc: mmci: Qcom fix MCICLK register settings.
-Date: Tue, 29 Apr 2014 09:20:37 +0100
-Message-Id: <1398759638-13299-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH v1 09/11] mmc: mmci: Add clock support for Qualcomm.
+Date: Tue, 29 Apr 2014 09:20:51 +0100
+Message-Id: <1398759651-13341-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1398759492-12970-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,96 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-MCICLK register layout is bit different to the standard pl180 register layout.
-Qcom SDCC controller some setup in MCICLK register to get it going. So this
-patch adds new setup and makes it specific to Qcom hw designer.
+MCICLK going to card bus is directly driven by the clock controller, so the
+driver has to set the required rates depending on the state of the card. This
+bit of support is very much similar to bypass mode but there is no such thing
+called bypass mode in MCICLK register of Qcom SD card controller. By default
+the clock is directly driven by the clk controller.
+
+This patch adds clock support for Qualcomm SDCC in the driver. This bit of
+code is conditioned on hw designer.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c |   36 ++++++++++++++++++++++++++++++------
- drivers/mmc/host/mmci.h |   21 +++++++++++++++++++++
- 2 files changed, 51 insertions(+), 6 deletions(-)
+ drivers/mmc/host/mmci.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 306e0c8..35aed38 100644
+index 35aed38..da135c0 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -326,13 +326,37 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
- 	/* Set actual clock for debug */
- 	host->mmc->actual_clock = host->cclk;
+@@ -290,7 +290,10 @@ static void mmci_set_clkreg(struct mmci_host *host, unsigned int desired)
+ 	host->cclk = 0;
  
--	if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
--		clk |= MCI_4BIT_BUS;
--	if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
--		clk |= MCI_ST_8BIT_BUS;
-+	if (host->hw_designer == AMBA_VENDOR_QCOM) {
-+		clk |= MCI_CLK_QCOM_FLOWENA;
-+		clk |= (MCI_CLK_QCOM_SEL_FEEDBACK_CLK <<
-+				MCI_CLK_QCOM_SEL_IN_SHIFT); /* feedback clk */
-+		if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
-+			clk |= MCI_CLK_QCOM_WIDEBUS_8;
-+		else if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
-+			clk |= MCI_CLK_QCOM_WIDEBUS_4;
-+		else
-+			clk |= MCI_CLK_QCOM_WIDEBUS_1;
+ 	if (desired) {
+-		if (desired >= host->mclk) {
 +
-+		if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50) {
-+			/* clear SELECT_IN field */
-+			clk &= ~(MCI_CLK_QCOM_SEL_MASK <<
-+					MCI_CLK_QCOM_SEL_IN_SHIFT);
-+			/* set DDR timing mode */
-+			clk |= (MCI_CLK_QCOM_SEL_DDR_MODE <<
-+					MCI_CLK_QCOM_SEL_IN_SHIFT);
++		if (host->hw_designer == AMBA_VENDOR_QCOM) {
++			host->cclk = host->mclk;
++		} else if (desired >= host->mclk) {
+ 			clk = MCI_CLK_BYPASS;
+ 			if (variant->st_clkdiv)
+ 				clk |= MCI_ST_UX500_NEG_EDGE;
+@@ -1371,6 +1374,19 @@ static void mmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	if (!ios->clock && variant->pwrreg_clkgate)
+ 		pwr &= ~MCI_PWR_ON;
+ 
++	if (ios->clock != host->mclk &&
++		host->hw_designer == AMBA_VENDOR_QCOM) {
++		/* Qcom MCLKCLK register does not define bypass bits */
++		int rc = clk_set_rate(host->clk, ios->clock);
++		if (rc < 0) {
++			dev_err(mmc_dev(host->mmc),
++				"Error setting clock rate (%d)\n", rc);
++		} else {
++			host->mclk = clk_get_rate(host->clk);
++			host->cclk = host->mclk;
 +		}
-+		clk |= (MCI_CLK_SDC4_MCLK_SEL_MCLK <<
-+				MCI_CLK_SDC4_MCLK_SEL_SHIFT);
- 
--	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
--		clk |= MCI_ST_UX500_NEG_EDGE;
-+	} else {
-+		if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_4)
-+			clk |= MCI_4BIT_BUS;
-+		if (host->mmc->ios.bus_width == MMC_BUS_WIDTH_8)
-+			clk |= MCI_ST_8BIT_BUS;
-+
-+		if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
-+			clk |= MCI_ST_UX500_NEG_EDGE;
 +	}
++
+ 	spin_lock_irqsave(&host->lock, flags);
  
- 	mmci_write_clkreg(host, clk);
- }
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 58b1b88..0a6de1c 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -31,6 +31,27 @@
- /* Modified PL180 on Versatile Express platform */
- #define MCI_ARM_HWFCEN		(1 << 12)
- 
-+/* Modified on Qualcomm Integrations */
-+#define MCI_CLK_QCOM_WIDEBUS_1	(0 << 10)
-+#define MCI_CLK_QCOM_WIDEBUS_4	(2 << 10)
-+#define MCI_CLK_QCOM_WIDEBUS_8	(3 << 10)
-+#define MCI_CLK_QCOM_FLOWENA	(1 << 12)
-+#define MCI_CLK_QCOM_INVERTOUT	(1 << 13)
-+
-+/* select in latch data and command */
-+#define MCI_CLK_QCOM_SEL_IN_SHIFT	(14)
-+#define MCI_CLK_QCOM_SEL_MASK		(0x3)
-+#define MCI_CLK_QCOM_SEL_RISING_EDGE	(1)
-+#define MCI_CLK_QCOM_SEL_FEEDBACK_CLK	(2)
-+#define MCI_CLK_QCOM_SEL_DDR_MODE	(3)
-+
-+/* mclk selection */
-+#define MCI_CLK_SDC4_MCLK_SEL_SHIFT	(23)
-+#define MCI_CLK_SDC4_MCLK_SEL_MASK	(0x3)
-+#define MCI_CLK_SDC4_MCLK_SEL_FB_CLK	(1)
-+#define MCI_CLK_SDC4_MCLK_SEL_MCLK	(2)
-+
-+
- #define MMCIARGUMENT		0x008
- #define MMCICOMMAND		0x00c
- #define MCI_CPSM_RESPONSE	(1 << 6)
+ 	mmci_set_clkreg(host, ios->clock);
+@@ -1611,7 +1627,8 @@ static int mmci_probe(struct amba_device *dev,
+ 	 * of course.
+ 	 */
+ 	if (plat->f_max)
+-		mmc->f_max = min(host->mclk, plat->f_max);
++		mmc->f_max = (host->hw_designer == AMBA_VENDOR_QCOM) ?
++				plat->f_max : min(host->mclk, plat->f_max);
+ 	else
+ 		mmc->f_max = min(host->mclk, fmax);
+ 	dev_dbg(mmc_dev(mmc), "clocking block at %u Hz\n", mmc->f_max);
 -- 
 1.7.9.5
 
