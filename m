@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710AbaD2Pao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 11:30:44 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57613 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757458AbaD2Pan convert rfc822-to-8bit (ORCPT
+	id S1757808AbaD2PeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 11:34:09 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44940 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356AbaD2PeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 11:30:43 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, mika.westerberg@linux.intel.com, awilliam@redhat.com,
-        lenb@kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [Patch V2 0/9] I2C ACPI operation region handler support
-Date: Tue, 29 Apr 2014 17:47:11 +0200
-Message-ID: <1527127.pmk7LiQ709@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <535F0666.1090409@intel.com>
-References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <43726986.W0L99n76oE@vostro.rjw.lan> <535F0666.1090409@intel.com>
+	Tue, 29 Apr 2014 11:34:07 -0400
+Date: Tue, 29 Apr 2014 17:34:01 +0200
+From: Robert Richter <rric@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 04/16] perf, mmap: Factor out perf_get_fd()
+Message-ID: <20140429153401.GK32718@rric.localhost>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+ <1396883078-25320-5-git-send-email-jean.pihet@linaro.org>
+ <20140422142759.GM11182@twins.programming.kicks-ass.net>
+ <20140425135413.GE32718@rric.localhost>
+ <20140425144301.GI11096@twins.programming.kicks-ass.net>
+ <20140425145205.GV13658@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425145205.GV13658@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 09:54:46 AM Lan Tianyu wrote:
-> On 2014年04月29日 06:51, Rafael J. Wysocki wrote:
-> > On Monday, April 28, 2014 10:27:39 PM Lan Tianyu wrote:
-> >> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
-> >> region. It allows ACPI aml code able to access such kind of devices to
-> >> implement some ACPI standard method.
-> >>
-> >> On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> >> i2c device to get battery info. So battery function depends on the I2C
-> >> operation region support. Here is the bug link.
-> >> https://bugzilla.kernel.org/show_bug.cgi?id=69011
-> >>
-> >> This patchset is to add I2C ACPI operation region handler support.
-> >>
-> >> Change Since V1:
-> >>        Fix some code style and memory leak issues in Patch 7
-> > 
-> > Is it the only patch that has changed from v1?
+On 25.04.14 16:52:05, Peter Zijlstra wrote:
+> But no, I don't think that helps, its still true that the moment you get
+> a fd another thread can immediately close(). That would drop the last
+> ref and free it, meanwhile perf_event_open() is happily poking at it.
 > 
-> 
-> I also remove a redundant semicolon in the PATCH 8. Sorry. I didn't
-> notice these patches are already in your tree. I will produce divergence
-> patches based on your bleeding-edge branch.
+> Now I think you could cure this by adding an extra ref before calling
+> your perf_get_fd() and dropping that extra ref at the end, where we used
+> to have fd_install().
 
-No need for that, I'll use the new versions.
+Yes, right. I have a solution now which increments the event's ref
+count before creating the file descriptor using try_get_event()/
+put_event().
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The patch also does not remove get_unused_fd_flags() and the err_fd
+error handler.
+
+Have an update already of a rebase version but still need to test it.
+
+Would it be ok to split the patch set and send in a first step only
+the first 4 patches that refactor the perf mmap code?
+
+Thanks,
+
+-Robert
