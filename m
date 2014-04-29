@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903AbaD2Rbn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:31:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933921AbaD2Rbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:31:41 -0400
-Message-ID: <535FE1DB.2060601@redhat.com>
-Date: Tue, 29 Apr 2014 13:31:07 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S964930AbaD2Rcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:32:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25703 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964907AbaD2Rcc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 13:32:32 -0400
+Date: Tue, 29 Apr 2014 20:32:21 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Seunghun Lee <waydi1@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: fix missing a blank line after
+ declarations
+Message-ID: <20140429173221.GE26890@mwanda>
+References: <1398790752-8067-1-git-send-email-waydi1@gmail.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Randy Dunlap <rdunlap@infradead.org>, Richard Weinberger <richard@nod.at>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <535AC91A.1070504@infradead.org> <535ACB0E.4070600@infradead.org> <20140427062650.GW4496@linux.vnet.ibm.com> <20140428135540.GA14661@linux.vnet.ibm.com> <535E8D14.7080405@infradead.org> <535E8E17.2050600@nod.at> <20140428200640.GG4430@linux.vnet.ibm.com> <535EBAE6.3080907@infradead.org> <20140428211535.GK4430@linux.vnet.ibm.com> <535F95FC.1020909@redhat.com> <20140429163604.GH8754@linux.vnet.ibm.com>
-In-Reply-To: <20140429163604.GH8754@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398790752-8067-1-git-send-email-waydi1@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 12:36 PM, Paul E. McKenney wrote:
-> On Tue, Apr 29, 2014 at 08:07:24AM -0400, Rik van Riel wrote:
->> On 04/28/2014 05:15 PM, Paul E. McKenney wrote:
->>> On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
->>>> On 04/28/14 13:06, Paul E. McKenney wrote:
->>
->>>>> Please see below for a patch against next-20140428 that makes this build
->>>>> for me.  This is derived from Rik's patch, my patch, and is consistent with
->>>>> Arnd's patch.
->>>>>
->>>>> 							Thanx, Paul
->>>>
->>>> Thnx, works for me.  Finally.
->>>
->>> Good!
->>>
->>> Rik, how would you like to proceed with this?
->>
->> I guess this fix should go into -mm?
+On Wed, Apr 30, 2014 at 01:59:12AM +0900, Seunghun Lee wrote:
+> This patch fixes "Missing a blank line after declarations" warnings.
 > 
-> Andrew dropped the original patch, so a consolidated patch is needed.
-> I believe that something like the following is what we ended up with.
-> Does this look right to you?
+> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
 
-That looks exactly like the one I have here :)
+Quite a few of these are false checkpatch.pl false positives.  Just
+ignore the false positives.
 
-Andrew, should I send you the two patches?
+regards,
+dan carpenter
 
--- 
-All rights reversed
