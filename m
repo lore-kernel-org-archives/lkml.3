@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008AbaD2MWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:22:44 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65472 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933447AbaD2MWl (ORCPT
+	id S934020AbaD2MYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:24:10 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:56331 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932982AbaD2MYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:22:41 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH 1/2] video: fbdev: Fix format string mismatch in wm8505fb.c
-Date: Tue, 29 Apr 2014 21:21:54 +0900
-Message-Id: <1398774115-15353-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.0.0.rc1
+	Tue, 29 Apr 2014 08:24:09 -0400
+Message-ID: <535F997B.3000500@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 17:52:19 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Michael Neuling <mikey@neuling.org>
+CC: avagin@openvz.org, roland@redhat.com, oleg@redhat.com,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add new ptrace request macros on PowerPC
+References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com> <533BD922.4070009@linux.vnet.ibm.com>	<535F4E10.2020300@linux.vnet.ibm.com> <CAEjGV6yi5YY95tM-HY4akN4BGXGn4chA8_sCaqvWx3HPSu2V3w@mail.gmail.com> <535F5BDE.2030309@linux.vnet.ibm.com> <CAEjGV6y8MRiCfRBtWjNfrwKMccROEAJw2rPVc_u+r=tAo2EcHQ@mail.gmail.com>
+In-Reply-To: <CAEjGV6y8MRiCfRBtWjNfrwKMccROEAJw2rPVc_u+r=tAo2EcHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042912-1396-0000-0000-000004C202C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix format string mismatch in contrast_show().
+On 04/29/2014 01:52 PM, Michael Neuling wrote:
+> That's not what that patch does. It shouldn't make any user visible changes
+> to DSCR or PPR.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/video/fbdev/wm8505fb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It may not when it runs uninterrupted but after the tracee process has stopped,
+thread.dscr reflects the default DSCR value as mentioned before. This can be
+proved by changing the "dscr_default" value in arch/powerpc/sysfs.c file.
 
-diff --git a/drivers/video/fbdev/wm8505fb.c b/drivers/video/fbdev/wm8505fb.c
-index 537d199..d2fafbb 100644
---- a/drivers/video/fbdev/wm8505fb.c
-+++ b/drivers/video/fbdev/wm8505fb.c
-@@ -162,7 +162,7 @@ static ssize_t contrast_show(struct device *dev,
- 	struct fb_info *info = dev_get_drvdata(dev);
- 	struct wm8505fb_info *fbi = to_wm8505fb_info(info);
- 
--	return sprintf(buf, "%d\n", fbi->contrast);
-+	return sprintf(buf, "%u\n", fbi->contrast);
- }
- 
- static ssize_t contrast_store(struct device *dev,
--- 
-2.0.0.rc1
+> 
+> Over syscall PPR and DSCR may change. Depending on your test case, that may
+> be your problem.
+
+I would guess when the tracee process stops for ptrace analysis, tm_reclaim or
+tm_recheckpoint path might be crossed which is causing this dscr_default value
+to go into thread_struct.
 
