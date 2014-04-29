@@ -1,65 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358AbaD2Hzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 03:55:48 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:37534 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402AbaD2Hzq (ORCPT
+	id S932759AbaD2H74 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 03:59:56 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42355 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678AbaD2H7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 03:55:46 -0400
-Message-ID: <535F5AFE.2050008@de.ibm.com>
-Date: Tue, 29 Apr 2014 09:55:42 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 29 Apr 2014 03:59:54 -0400
+Date: Tue, 29 Apr 2014 08:59:48 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com
+Subject: Re: [PATCH v2 2/2] mfd: max77693: handle IRQs using regmap
+Message-ID: <20140429075948.GB29462@lee--X1>
+References: <1398750527-20715-1-git-send-email-r.baldyga@samsung.com>
+ <1398750527-20715-3-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org
-CC: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v4] kvm/irqchip: Speed up KVM_SET_GSI_ROUTING
-References: <1398703176-17812-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1398703176-17812-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042907-0342-0000-0000-00000898CFF2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398750527-20715-3-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/04/14 18:39, Paolo Bonzini wrote:
-> From: Christian Borntraeger <borntraeger@de.ibm.com>
+> This patch modifies mfd driver to use regmap for handling interrupts.
+> It allows to simplify irq handling process. This modifications needed
+> to make small changes in function drivers, which use interrupts.
 > 
-> When starting lots of dataplane devices the bootup takes very long on
-> Christian's s390 with irqfd patches. With larger setups he is even
-> able to trigger some timeouts in some components.  Turns out that the
-> KVM_SET_GSI_ROUTING ioctl takes very long (strace claims up to 0.1 sec)
-> when having multiple CPUs.  This is caused by the  synchronize_rcu and
-> the HZ=100 of s390.  By changing the code to use a private srcu we can
-> speed things up.  This patch reduces the boot time till mounting root
-> from 8 to 2 seconds on my s390 guest with 100 disks.
-> 
-> Uses of hlist_for_each_entry_rcu, hlist_add_head_rcu, hlist_del_init_rcu
-> are fine because they do not have lockdep checks (hlist_for_each_entry_rcu
-> uses rcu_dereference_raw rather than rcu_dereference, and write-sides
-> do not do rcu lockdep at all).
-> 
-> Note that we're hardly relying on the "sleepable" part of srcu.  We just
-> want SRCU's faster detection of grace periods.
-> 
-> Testing was done by Andrew Theurer using NETPERF.  The difference between
-> results "before" and "after" the patch has mean -0.2% and standard deviation
-> 0.6%.  Using a paired t-test on the data points says that there is a 2.5%
-> probability that the patch is the cause of the performance difference
-> (rather than a random fluctuation).
-> 
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> ---
+>  drivers/extcon/extcon-max77693.c     |   3 +-
+>  drivers/mfd/Kconfig                  |   1 +
+>  drivers/mfd/Makefile                 |   2 +-
+>  drivers/mfd/max77693-irq.c           | 346 -----------------------------------
+>  drivers/mfd/max77693.c               | 151 ++++++++++++++-
+>  include/linux/mfd/max77693-private.h |  47 ++++-
+>  6 files changed, 191 insertions(+), 359 deletions(-)
+>  delete mode 100644 drivers/mfd/max77693-irq.c
 
-Thanks for moving that patch forward to the latest kernel version 
-(plus your fixes)
+Patch looks _mostly_ okay and the diffstat looks great.
 
-I can confirm that it still fixes the performance issue on s390.
+[...]
 
+> +static const struct regmap_irq max77693_led_irqs[] = {
+> +	{ .mask = LED_IRQ_FLED2_OPEN, },
+> +	{ .mask = LED_IRQ_FLED2_SHORT, },
+> +	{ .mask = LED_IRQ_FLED1_OPEN, },
+> +	{ .mask = LED_IRQ_FLED1_SHORT, },
+> +	{ .mask = LED_IRQ_MAX_FLASH, },
+> +};
+
+Tiny-nit: If you can line those '}'s up, that'd be great. :)
+
+Same below. You've already gone to the trouble with the '='s.
+
+/me likes straight lines.
+
+> +static const struct regmap_irq_chip max77693_led_irq_chip = {
+> +	.name                   = "max77693-led",
+> +	.status_base            = MAX77693_LED_REG_FLASH_INT,
+> +	.mask_base              = MAX77693_LED_REG_FLASH_INT_MASK,
+> +	.mask_invert            = false,
+> +	.num_regs               = 1,
+> +	.irqs                   = max77693_led_irqs,
+> +	.num_irqs               = ARRAY_SIZE(max77693_led_irqs),
+> +};
+> +
+> +static const struct regmap_irq max77693_topsys_irqs[] = {
+> +	{ .mask = TOPSYS_IRQ_T120C_INT, },
+> +	{ .mask = TOPSYS_IRQ_T140C_INT, },
+> +	{ .mask = TOPSYS_IRQ_LOWSYS_INT, },
+> +};
+
+[...]
+
+> +#define LED_IRQ_FLED2_OPEN		(0x1 << 0)
+> +#define LED_IRQ_FLED2_SHORT		(0x1 << 1)
+> +#define LED_IRQ_FLED1_OPEN		(0x1 << 2)
+> +#define LED_IRQ_FLED1_SHORT		(0x1 << 3)
+> +#define LED_IRQ_MAX_FLASH		(0x1 << 4)
+> +
+> +#define TOPSYS_IRQ_T120C_INT		(0x1 << 0)
+> +#define TOPSYS_IRQ_T140C_INT		(0x1 << 1)
+> +#define TOPSYS_IRQ_LOWSYS_INT		(0x1 << 3)
+> +
+> +#define CHG_IRQ_BYP_I			(0x1 << 0)
+> +#define CHG_IRQ_THM_I			(0x1 << 2)
+> +#define CHG_IRQ_BAT_I			(0x1 << 3)
+> +#define CHG_IRQ_CHG_I			(0x1 << 4)
+> +#define CHG_IRQ_CHGIN_I			(0x1 << 6)
+> +
+> +#define MUIC_IRQ_INT1_ADC		(0x1 << 0)
+> +#define MUIC_IRQ_INT1_ADC_LOW		(0x1 << 1)
+> +#define MUIC_IRQ_INT1_ADC_ERR		(0x1 << 2)
+> +#define MUIC_IRQ_INT1_ADC1K		(0x1 << 3)
+> +
+> +#define MUIC_IRQ_INT2_CHGTYP		(0x1 << 0)
+> +#define MUIC_IRQ_INT2_CHGDETREUN	(0x1 << 1)
+> +#define MUIC_IRQ_INT2_DCDTMR		(0x1 << 2)
+> +#define MUIC_IRQ_INT2_DXOVP		(0x1 << 3)
+> +#define MUIC_IRQ_INT2_VBVOLT		(0x1 << 4)
+> +#define MUIC_IRQ_INT2_VIDRM		(0x1 << 5)
+> +
+> +#define MUIC_IRQ_INT3_EOC		(0x1 << 0)
+> +#define MUIC_IRQ_INT3_CGMBC		(0x1 << 1)
+> +#define MUIC_IRQ_INT3_OVP		(0x1 << 2)
+> +#define MUIC_IRQ_INT3_MBCCHG_ERR	(0x1 << 3)
+> +#define MUIC_IRQ_INT3_CHG_ENABLED	(0x1 << 4)
+> +#define MUIC_IRQ_INT3_BAT_DET		(0x1 << 5)
+
+Use BIT() for these.
+
+> +
+> +
+
+One more '\n' than you need.
+
+[...]
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
