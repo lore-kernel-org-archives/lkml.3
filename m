@@ -1,178 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933678AbaD2Kro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:47:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46871 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933605AbaD2Krn (ORCPT
+	id S933687AbaD2Kt5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:49:57 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16058 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933543AbaD2Ktz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:47:43 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: rostedt@goodmis.org
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v2 2/2] fentry: x86, cleanup function_hook uses
-Date: Tue, 29 Apr 2014 12:47:37 +0200
-Message-Id: <1398768457-8308-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <535F5490.5020504@zytor.com>
-References: <535F5490.5020504@zytor.com>
+	Tue, 29 Apr 2014 06:49:55 -0400
+Date: Tue, 29 Apr 2014 11:50:02 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Message-ID: <20140429105002.GG2639@e103034-lin>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+ <15044031.LGKXdkz8J7@vostro.rjw.lan>
+ <20140426061744.GB1944@gmail.com>
+ <1586415.tT6O0p7OWR@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1586415.tT6O0p7OWR@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's define fentry_hook depending on CC_USING_FENTRY and use that
-macro all over. This saves some #ifdef's here and there.
+On Sun, Apr 27, 2014 at 02:23:24PM +0100, Rafael J. Wysocki wrote:
+> Still, I have a rather fundamental problem with the notion that performance
+> and energy efficiency are essentially at odds with each other, because quite
+> often they aren't.  What is good for performance is often good for energy
+> efficiency as well (like when it may be better to do a certain amount of work
+> quickly and then go idle instead of slowing down and taking more time to do
+> the work, because that time may turn out to be so long that energy used for
+> doing the work will actually be greater).  So while I'm all for acting on power
+> events, I'm also for being rather careful with that.
 
-We do not use the old macro function_hook since it is too generic.
-Hence we introduce fentry_hook which corresponds to what it is.
+As I wrote in my other reply in this thread, IMO we should distinguish
+between objectives and methods to optimize for objectives. Performance
+and energy efficiency are different objectives, but some methods might
+be useful for optimizing for both (such as race to idle in some
+scenarios on some platforms). Tuning knobs and power events shouldn't be
+assumed to directly control specific scheduling decisions, for example
+whether to race to idle or not. They should only mean that the scheduler
+should optimize for a specific goal. For example, a specific
+energy/performance trade-off.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <x86@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- arch/x86/include/asm/fentry.h    | 14 ++++++++++++++
- arch/x86/include/asm/ftrace.h    | 10 +++-------
- arch/x86/kernel/entry_64.S       | 15 +++++----------
- arch/x86/kernel/x8664_ksyms_64.c |  8 ++------
- 4 files changed, 24 insertions(+), 23 deletions(-)
- create mode 100644 arch/x86/include/asm/fentry.h
+> Moreover, in fact performance and energy efficiency are not the only factors
+> that need to be taken into account, there also is the maximum power draw (ie.
+> the rate of using energy) that can be sustained.  Arguably, all three of them
+> always matter, regardless of whether or not the system is on battery.
+> 
+> People often mentally translate energy efficiency into battery life, because
+> that's probably the most obvious case, but in fact it generally translates into
+> the cost of doing work (in therms of money or other things).  Going to battery
+> means something like "energy is now more valuable to me", but there may be other
+> events meaning the same (for example, energy may be cheaper in the night etc).
+> So it looks like we need a global mechanism to represent the current relative
+> value of energy to the user and to update it whenever something like "we're on
+> battery now" happens (other subsystems would benefit from that too IMO).
+> 
+> The same applies to the maximum sustainable power draw limit more or less.
+> While it generally changes between "on battery" and "on AC power", it may also
+> depend on other factors like the capacity of the available power supply for a
+> data center.
 
-diff --git a/arch/x86/include/asm/fentry.h b/arch/x86/include/asm/fentry.h
-new file mode 100644
-index 000000000000..febe8d272f0f
---- /dev/null
-+++ b/arch/x86/include/asm/fentry.h
-@@ -0,0 +1,14 @@
-+#ifndef ASM_FENTRY_H
-+#define ASM_FENTRY_H
-+
-+#ifdef CC_USING_FENTRY
-+# define fentry_hook	__fentry__
-+#else
-+# define fentry_hook	mcount
-+#endif
-+
-+#ifndef __ASSEMBLY__
-+extern void fentry_hook(void);
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* ASM_FENTRY_H */
-diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index 0525a8bdf65d..7df5477e26ec 100644
---- a/arch/x86/include/asm/ftrace.h
-+++ b/arch/x86/include/asm/ftrace.h
-@@ -1,6 +1,8 @@
- #ifndef _ASM_X86_FTRACE_H
- #define _ASM_X86_FTRACE_H
- 
-+#include <asm/fentry.h>
-+
- #ifdef __ASSEMBLY__
- 
- 	/* skip is set if the stack was already partially adjusted */
-@@ -35,11 +37,7 @@
- #endif
- 
- #ifdef CONFIG_FUNCTION_TRACER
--#ifdef CC_USING_FENTRY
--# define MCOUNT_ADDR		((long)(__fentry__))
--#else
--# define MCOUNT_ADDR		((long)(mcount))
--#endif
-+#define MCOUNT_ADDR		((long)(fentry_hook))
- #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
-@@ -47,9 +45,7 @@
- #endif
- 
- #ifndef __ASSEMBLY__
--extern void mcount(void);
- extern atomic_t modifying_ftrace_code;
--extern void __fentry__(void);
- 
- static inline unsigned long ftrace_call_adjust(unsigned long addr)
- {
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 43bb38951660..a3616e0a4e6c 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -52,6 +52,7 @@
- #include <asm/hw_irq.h>
- #include <asm/page_types.h>
- #include <asm/irqflags.h>
-+#include <asm/fentry.h>
- #include <asm/paravirt.h>
- #include <asm/ftrace.h>
- #include <asm/percpu.h>
-@@ -71,17 +72,11 @@
- 
- #ifdef CONFIG_FUNCTION_TRACER
- 
--#ifdef CC_USING_FENTRY
--# define function_hook	__fentry__
--#else
--# define function_hook	mcount
--#endif
--
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
--ENTRY(function_hook)
-+ENTRY(fentry_hook)
- 	retq
--END(function_hook)
-+END(fentry_hook)
- 
- /* skip is set if stack has been adjusted */
- .macro ftrace_caller_setup skip=0
-@@ -196,7 +191,7 @@ END(ftrace_regs_caller)
- 
- #else /* ! CONFIG_DYNAMIC_FTRACE */
- 
--ENTRY(function_hook)
-+ENTRY(fentry_hook)
- 	cmpl $0, function_trace_stop
- 	jne  ftrace_stub
- 
-@@ -230,7 +225,7 @@ trace:
- 	MCOUNT_RESTORE_FRAME
- 
- 	jmp ftrace_stub
--END(function_hook)
-+END(fentry_hook)
- #endif /* CONFIG_DYNAMIC_FTRACE */
- #endif /* CONFIG_FUNCTION_TRACER */
- 
-diff --git a/arch/x86/kernel/x8664_ksyms_64.c b/arch/x86/kernel/x8664_ksyms_64.c
-index 040681928e9d..ba9878e6ee8f 100644
---- a/arch/x86/kernel/x8664_ksyms_64.c
-+++ b/arch/x86/kernel/x8664_ksyms_64.c
-@@ -10,15 +10,11 @@
- #include <asm/pgtable.h>
- #include <asm/uaccess.h>
- #include <asm/desc.h>
--#include <asm/ftrace.h>
-+#include <asm/fentry.h>
- 
- #ifdef CONFIG_FUNCTION_TRACER
- /* mcount and __fentry__ are defined in assembly */
--#ifdef CC_USING_FENTRY
--EXPORT_SYMBOL(__fentry__);
--#else
--EXPORT_SYMBOL(mcount);
--#endif
-+EXPORT_SYMBOL(fentry_hook);
- #endif
- 
- EXPORT_SYMBOL(__get_user_1);
--- 
-1.9.2
-
+I haven't given maximum power draw much thought, but it is a third
+objective independent of energy efficiency even though methods for
+improving energy efficiency (such as disabling expensive DVFS states)
+might be useful for this as well.
