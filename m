@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234AbaD2QF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:05:28 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:41639 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757993AbaD2QFX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:05:23 -0400
-Message-ID: <535FCDBD.6080500@semaphore.gr>
-Date: Tue, 29 Apr 2014 19:05:17 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-doc@vger.kernel.org,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Simon Horman <horms@verge.net.au>, Sekhar Nori <nsekhar@ti.com>,
-        Samuel Ortiz <samuel@sortiz.org>
-Subject: Re: [PATCH v5 0/8] Introduce new cpufreq helper macros
-References: <535AC247.3070907@semaphore.gr> <CAKohpok-74uK5k-adxjmEy71=vF8V7MaBwdCD1Vb2ats7FHi_A@mail.gmail.com>
-In-Reply-To: <CAKohpok-74uK5k-adxjmEy71=vF8V7MaBwdCD1Vb2ats7FHi_A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S933004AbaD2QHv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:07:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55397 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756034AbaD2QHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 12:07:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,951,1389772800"; 
+   d="scan'208";a="503003241"
+Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20140429151100.GC8754@linux.vnet.ibm.com>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	 <20140428231002.GO4430@linux.vnet.ibm.com>
+	 <1398732649.2970.89.camel@schen9-DESK>
+	 <20140429151100.GC8754@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Apr 2014 09:00:05 -0700
+Message-ID: <1398787205.2970.90.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/04/2014 07:17 πμ, Viresh Kumar wrote:
-> On 26 April 2014 01:45, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> This patch set introduces two freq_table helper macros which
->> can be used for iteration over cpufreq_frequency_table and
->> makes the necessary changes to cpufreq core and drivers that
->> use such an iteration procedure.
->>
->> The motivation was a usage of common procedure to iterate over
->> cpufreq_frequency_table across all drivers and cpufreq core.
->>
->> This was tested on a x86_64 platform.
->> Most files compiled successfully but unfortunately I was not
->> able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c
->> due to lack of cross compiler.
->>
->> Changelog
->>
->> v4 -> v5
->>         - Fix warnings in printk format specifier for 32 bit
->>           architectures in freq_table.c, longhaul, pasemi, ppc_cbe
+On Tue, 2014-04-29 at 08:11 -0700, Paul E. McKenney wrote:
+> On Mon, Apr 28, 2014 at 05:50:49PM -0700, Tim Chen wrote:
+> > On Mon, 2014-04-28 at 16:10 -0700, Paul E. McKenney wrote:
+> > 
+> > > > +#ifdef CONFIG_SMP
+> > > > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> > > > +{
+> > > > +	int retval;
+> > > > +	struct task_struct *owner;
+> > > > +
+> > > > +	rcu_read_lock();
+> > > > +	owner = ACCESS_ONCE(sem->owner);
+> > > 
+> > > OK, I'll bite...
+> > > 
+> > > Why ACCESS_ONCE() instead of rcu_dereference()?
+> > 
+> > We're using it as a speculative check on the sem->owner to see
+> > if the owner is running on the cpu.  The rcu_read_lock
+> > is used for ensuring that the owner->on_cpu memory is
+> > still valid.
 > 
-> Doesn't look much has changed and so it stays as is:
+> OK, so if we read complete garbage, all that happens is that we
+> lose a bit of performance?  
+
+Correct.
+
+> If so, I am OK with it as long as there
+> is a comment (which Davidlohr suggested later in this thread).
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
+Yes, we should add some comments to clarify things.
 
-Thank you very much!
+Thanks.
+
+Tim
 
 
-Stratos Karafotis
