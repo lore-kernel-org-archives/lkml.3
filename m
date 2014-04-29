@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170AbaD2UmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 16:42:18 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:59677 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933267AbaD2UmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 16:42:18 -0400
-Date: Tue, 29 Apr 2014 16:42:17 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
-Message-ID: <20140429204217.GO14608@kvack.org>
-References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429184004.GB32521@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1758430AbaD2Uoz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 16:44:55 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:58597 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757898AbaD2Uox (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 16:44:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+Date: Tue, 29 Apr 2014 15:44:53 -0500
+Message-ID: <CAL_JsqJLhino_s+BhiApRYBtbUvyrn4KF0Zax7YKP_HYLye5gw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] of: Add vendor prefix for Linear Technology Corporation
+From: Rob Herring <robherring2@gmail.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 08:40:04PM +0200, Oleg Nesterov wrote:
-> 1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
->    or even rcu_dereference().
-> 
->    This mm has no users, nobody else can play with ->ioctx_table. Otherwise
->    the code is buggy anyway, if we need rcu_read_lock() in a loop because
->    ->ioctx_table can be updated then kfree(table) is obviously wrong.
-> 
-> 2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
->    munmap(), but another reason is that we simply can't do vm_munmap() unless
->    current->mm == mm and this is not true in general, the caller is mmput().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Your patch does not apply because it is whitespace damaged.  Please resend 
-and verify that it applies with 'git am'.
-
-		-ben
-
+On Tue, Apr 29, 2014 at 11:37 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Add Linear Technology Corporation to the list of device tree vendor prefixes.
+>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 > ---
->  fs/aio.c |   47 ++++++++++++++++++-----------------------------
->  1 files changed, 18 insertions(+), 29 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 12a3de0..5fd1fe7 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -777,40 +777,29 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
->   */
->  void exit_aio(struct mm_struct *mm)
->  {
-> -	struct kioctx_table *table;
-> -	struct kioctx *ctx;
-> -	unsigned i = 0;
-> -
-> -	while (1) {
-> -		rcu_read_lock();
-> -		table = rcu_dereference(mm->ioctx_table);
-> -
-> -		do {
-> -			if (!table || i >= table->nr) {
-> -				rcu_read_unlock();
-> -				rcu_assign_pointer(mm->ioctx_table, NULL);
-> -				if (table)
-> -					kfree(table);
-> -				return;
-> -			}
-> -
-> -			ctx = table->table[i++];
-> -		} while (!ctx);
-> +	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
-> +	int i;
->  
-> -		rcu_read_unlock();
-> +	if (!table)
-> +		return;
->  
-> +	for (i = 0; i < table->nr; ++i) {
-> +		struct kioctx *ctx = table->table[i];
->  		/*
-> -		 * We don't need to bother with munmap() here -
-> -		 * exit_mmap(mm) is coming and it'll unmap everything.
-> -		 * Since aio_free_ring() uses non-zero ->mmap_size
-> -		 * as indicator that it needs to unmap the area,
-> -		 * just set it to 0; aio_free_ring() is the only
-> -		 * place that uses ->mmap_size, so it's safe.
-> +		 * We don't need to bother with munmap() here - exit_mmap(mm)
-> +		 * is coming and it'll unmap everything. And we simply can't,
-> +		 * this is not necessarily our ->mm.
-> +		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
-> +		 * that it needs to unmap the area, just set it to 0.
->  		 */
-> -		ctx->mmap_size = 0;
-> -
-> -		kill_ioctx(mm, ctx);
-> +		if (ctx) {
-> +			ctx->mmap_size = 0;
-> +			kill_ioctx(mm, ctx);
-> +		}
->  	}
-> +
-> +	rcu_assign_pointer(mm->ioctx_table, NULL);
-> +	kfree(table);
->  }
->  
->  static void put_reqs_available(struct kioctx *ctx, unsigned nr)
-> -- 
-> 1.5.5.1
-> 
+>  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 0f01c9b..3d27991 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -65,6 +65,7 @@ lantiq        Lantiq Semiconductor
+>  lg     LG Corporation
+>  linux  Linux-specific binding
+>  lsi    LSI Corp. (LSI Logic)
+> +ltc    Linear Technology Corporation
 
--- 
-"Thought is the essence of where you are now."
+
+Following the use of stock symbols, this should be lltc. Is this already in use?
+
+Rob
+
+
+>  marvell        Marvell Technology Group Ltd.
+>  maxim  Maxim Integrated Products
+>  microchip      Microchip Technology Inc.
+> --
+> 1.9.1
+>
