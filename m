@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699AbaD2LDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:03:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40150 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaD2LDJ (ORCPT
+	id S933721AbaD2LFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:05:18 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:55206 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933596AbaD2LFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:03:09 -0400
-Date: Tue, 29 Apr 2014 14:02:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Oleg Drokin <oleg.drokin@intel.com>,
-        "John L. Hammond" <john.hammond@intel.com>
-Subject: Re: [PATCH 41/47] staging/lustre/llite: remove dead code
-Message-ID: <20140429110251.GC26890@mwanda>
-References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
- <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
+	Tue, 29 Apr 2014 07:05:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <7208467.nZIXMIfPji@wuerfel>
+References: <cover.1398735435.git.micky_ching@realsil.com.cn>
+	<7208467.nZIXMIfPji@wuerfel>
+Date: Tue, 29 Apr 2014 13:05:15 +0200
+Message-ID: <CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 01:07:05PM -0400, Oleg Drokin wrote:
-> From: "John L. Hammond" <john.hammond@intel.com>
-> 
-> In llite remove unused declarations, parameters, types, and unused,
-> get-only, or set-only structure members. Add static and const
-> qualifiers to declarations where possible.
-> 
-> Signed-off-by: John L. Hammond <john.hammond@intel.com>
-> Reviewed-on: http://review.whamcloud.com/9767
-> Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2675
-> Reviewed-by: Lai Siyao <lai.siyao@intel.com>
-> Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
-> Signed-off-by: Oleg Drokin <oleg.drokin@intel.com>
+On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
+> [hijacking the thread since it has the right Cc list already, sorry]
+>
+> I stumbled over this doing randconfig builds on linux-next
+>
+> 8<----------
+>
+> From c11f54f1e5ea0557e076867ca31c90bcb20e3e0c Mon Sep 17 00:00:00 2001
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Tue, 29 Apr 2014 11:41:40 +0200
+> Subject: [PATCH] mmc: rtsx: usb backend needs LED support
+>
+> Building the rtsx USB driver requires the LED classdev base
+> support, otherwise we get this build error:
+>
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+> :(.text+0x806708): undefined reference to `led_classdev_register'
+>
+> This adds an explicit dependency in Kconfig
 
-This is a random grab bag of changes to lots of files.  One thing per
-patch, etc, next time.
+I think the proper solution is to fix the dependency in the driver code instead.
 
-> diff --git a/drivers/staging/lustre/lustre/llite/dcache.c b/drivers/staging/lustre/lustre/llite/dcache.c
-> index 8b55080..7d520d8 100644
-> --- a/drivers/staging/lustre/lustre/llite/dcache.c
-> +++ b/drivers/staging/lustre/lustre/llite/dcache.c
-> @@ -69,8 +69,7 @@ static void ll_release(struct dentry *de)
->  		ll_intent_release(lld->lld_it);
->  		OBD_FREE(lld->lld_it, sizeof(*lld->lld_it));
->  	}
-> -	LASSERT(lld->lld_cwd_count == 0);
-> -	LASSERT(lld->lld_mnt_count == 0);
-> +
+There are already some ifdefs hackery for making it optional to use
+leds, apparently that's not working properly.
 
-I'm totally in favour of removing LASSERT() calls...  But is this a
-"set only" struct member?  It's totally unclear from the patch
-description.
+Kind regards
+Ulf Hansson
 
-> diff --git a/drivers/staging/lustre/lustre/llite/statahead.c b/drivers/staging/lustre/lustre/llite/statahead.c
-> index 51c5327..1b47774 100644
-> --- a/drivers/staging/lustre/lustre/llite/statahead.c
-> +++ b/drivers/staging/lustre/lustre/llite/statahead.c
-> @@ -1230,9 +1230,7 @@ do_it:
->  			 */
->  			ll_release_page(page, le32_to_cpu(dp->ldp_flags) &
->  					      LDF_COLLIDE);
-> -			sai->sai_in_readpage = 1;
->  			page = ll_get_dir_page(dir, pos, &chain);
-> -			sai->sai_in_readpage = 0;
->  		} else {
->  			LASSERT(le32_to_cpu(dp->ldp_flags) & LDF_COLLIDE);
->  			ll_release_page(page, 1);
-> @@ -1563,12 +1561,6 @@ int do_statahead_enter(struct inode *dir, struct dentry **dentryp,
->  			return entry ? 1 : -EAGAIN;
->  		}
->  
-> -		/* if statahead is busy in readdir, help it do post-work */
-> -		while (!ll_sa_entry_stated(entry) &&
-> -		       sai->sai_in_readpage &&
-> -		       !sa_received_empty(sai))
-> -			ll_post_statahead(sai);
-> -
->  		if (!ll_sa_entry_stated(entry)) {
->  			sai->sai_index_wait = entry->se_index;
->  			lwi = LWI_TIMEOUT_INTR(cfs_time_seconds(30), NULL,
-
-What is this change about really?  I've already waded through 1271 lines
-of random changes at this point and now I have to figure out what
-ll_post_statahead() does and why we don't need to call it now?
-
-Anyways, please explain this change.
-
-Btw, it's very easy to break up a patch into separate patches.  Use
-git citool.  Highlight the lines of code which make things static.
-Right click and select "Add highlighted lines to commit."  This patch
-has three Reviewed-by tags so you guys need to be pushing back on this
-kind of stuff, it's obviously outside of the "one thing per patch" rule.
-
-regards,
-dan carpenter
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 92d91fe..66aedf3 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+>  config MMC_REALTEK_USB
+>         tristate "Realtek USB SD/MMC Card Interface Driver"
+>         depends on MFD_RTSX_USB
+> +       depends on LEDS_CLASS
+>         help
+>           Say Y here to include driver code to support SD/MMC card interface
+>           of Realtek RTS5129/39 series card reader
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
