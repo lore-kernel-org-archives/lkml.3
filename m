@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757703AbaD2Ocd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:32:33 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:47397 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757796AbaD2ObO (ORCPT
+	id S1757988AbaD2Ocq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:32:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50922 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757972AbaD2Ocn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:31:14 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>, Dimitri Sivanich <sivanich@sgi.com>,
-        Hedi Berriche <hedi@sgi.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com
-Subject: [PATCH 2/3] proc: Provide access to /proc/interrupts from kdb
-Date: Tue, 29 Apr 2014 15:30:40 +0100
-Message-Id: <1398781841-15152-4-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398781841-15152-1-git-send-email-daniel.thompson@linaro.org>
-References: <1398781841-15152-1-git-send-email-daniel.thompson@linaro.org>
+	Tue, 29 Apr 2014 10:32:43 -0400
+Message-ID: <535FB808.3060608@canonical.com>
+Date: Tue, 29 Apr 2014 16:32:40 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Thomas Hellstrom <thellstrom@vmware.com>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        ccross@google.com, linux-media@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2 with seqcount v3] reservation: add suppport for
+ read-only access using rcu
+References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com> <534843EA.6060602@vmware.com> <534B9165.4000101@canonical.com> <534B921B.4080504@vmware.com> <5357A0DE.7030305@canonical.com>
+In-Reply-To: <5357A0DE.7030305@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The contents of /proc/interrupts is useful to diagnose problems during
-boot up or when the system becomes unresponsive (or at least it can be if
-failure is causes by interrupt problems). This command is also seen in
-out-of-tree debug systems such as Android's FIQ debugger.
-
-This change allows the file to be displayed from kdb.
-
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- fs/proc/interrupts.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/fs/proc/interrupts.c b/fs/proc/interrupts.c
-index a352d57..1f8eeaf 100644
---- a/fs/proc/interrupts.c
-+++ b/fs/proc/interrupts.c
-@@ -4,6 +4,7 @@
- #include <linux/irqnr.h>
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-+#include <linux/kdb.h>
- 
- /*
-  * /proc/interrupts
-@@ -45,9 +46,18 @@ static const struct file_operations proc_interrupts_operations = {
- 	.release	= seq_release,
- };
- 
-+#ifdef CONFIG_KGDB_KDB
-+static int kdb_interrupts(int argc, const char **argv)
-+{
-+	return kdb_print_seq_file(&int_seq_ops);
-+}
-+#endif
-+
- static int __init proc_interrupts_init(void)
- {
- 	proc_create("interrupts", 0, NULL, &proc_interrupts_operations);
-+	kdb_register("interrupts", kdb_interrupts, "",
-+		     "Show /proc/interrupts", 3);
- 	return 0;
- }
- fs_initcall(proc_interrupts_init);
--- 
-1.9.0
-
+op 23-04-14 13:15, Maarten Lankhorst schreef:
+> This adds 4 more functions to deal with rcu.
+>
+> reservation_object_get_fences_rcu() will obtain the list of shared
+> and exclusive fences without obtaining the ww_mutex.
+>
+> reservation_object_wait_timeout_rcu() will wait on all fences of the
+> reservation_object, without obtaining the ww_mutex.
+>
+> reservation_object_test_signaled_rcu() will test if all fences of the
+> reservation_object are signaled without using the ww_mutex.
+>
+> reservation_object_get_excl() is added because touching the fence_excl
+> member directly will trigger a sparse warning.
+>
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> ---
+> Using seqcount and fixing some lockdep bugs.
+> Changes since v2:
+> - Fix some crashes, remove some unneeded barriers when provided by seqcount writes
+> - Fix code to work correctly with sparse's RCU annotations.
+> - Create a global string for the seqcount lock to make lockdep happy.
+>
+> Can I get this version reviewed? If it looks correct I'll mail the full series
+> because it's intertwined with the TTM conversion to use this code.
+Ping, can anyone review this?
