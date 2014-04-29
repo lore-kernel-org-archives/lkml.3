@@ -1,68 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788AbaD2OPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:15:49 -0400
-Received: from numascale.com ([213.162.240.84]:57826 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757771AbaD2OPq convert rfc822-to-8bit (ORCPT
+	id S932794AbaD2OQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:16:18 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:45294 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757467AbaD2OQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:15:46 -0400
-X-Greylist: delayed 4058 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 10:15:46 EDT
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range capabilities
-From: Steffen Persvold <sp@numascale.com>
-In-Reply-To: <20140429102013.GA4726@pd.tnic>
-Date: Tue, 29 Apr 2014 06:07:46 -0700
-Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Robert Richter <rric@kernel.org>,
-        Myron Stowe <myron.stowe@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        linux-pci <linux-pci@vger.kernel.org>, kim.naru@amd.com,
-        Daniel J Blueman <daniel@numascale.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <3CFA7164-1352-467D-951E-C9F8F35F3163@numascale.com>
-References: <20140419025308.2408.51252.stgit@amt.stowe> <20140419025323.2408.88764.stgit@amt.stowe> <20140419135219.GC8109@pd.tnic> <20140420075936.GA19672@pd.tnic> <CAL-B5D1rJmf9vLSnV2izsXcbCu1idXsTsnSwoFRKFNTM7BnyfA@mail.gmail.com> <20140426091031.GA10166@pd.tnic> <CAErSpo4Jqo_opj=QqjcquS_6HqckZfP5-oQHkmY5FSAyyLNYMg@mail.gmail.com> <20140428214036.GA32143@pd.tnic> <20140429073309.GE10997@alberich> <20140429102013.GA4726@pd.tnic>
-To: Borislav Petkov <bp@suse.de>
-X-Mailer: Apple Mail (2.1874)
-X-OutGoing-Spam-Status: No, score=-2.9
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: sp+numascale.com/only user confirmed/virtual account not confirmed
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 29 Apr 2014 10:16:16 -0400
+X-AuditID: cbfec372-b7fe16d0000056bd-5c-535fb42fa132
+Date: Tue, 29 Apr 2014 07:16:10 -0700
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Brian Healy <healybrian@gmail.com>
+Cc: Antti Palosaari <crope@iki.fi>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for
+ rtl28xxu driver
+Message-id: <20140429071610.63ccdfae.m.chehab@samsung.com>
+In-reply-to: <20140428214000.GA9187@gmail.com>
+References: <CAGG=RuYdtfjJf5wKG92KdyKuG6AiBHp2_OSH8Wemi3yQOsouMQ@mail.gmail.com>
+ <CA+55aFzhydSCJqMLoUX59cLpiwbnoXtL524O5VtQ4-CVj8HxyA@mail.gmail.com>
+ <20140428214000.GA9187@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/hEF39LfHBBs++cFh8b37PZrHn9z5G
+	i8u75rBZ9GzYymrxqO8tuwOrx85Zd9k9Dn9dyOJxYsZvFo/Pm+QCWKK4bFJSczLLUov07RK4
+	MuasO8dScEKsYtGavSwNjB1CXYycHBICJhI/vh1nhrDFJC7cW8/WxcjFISSwhFGi+/AcFgin
+	mUni1OrpYFUsAqoSDdNbWUFsNgEjiVeNLWC2iICaxJJDrxhBGpgFTjFK3H/0A6ibg0NYIEbi
+	078UkBpeASuJXYveg9VzCuhJNJ/+CrVtL6NE/4MWRogznCRevZ7MBNEgKPFj8j0WEJtZQEti
+	87YmVghbXmLzmrfMExgFZiEpm4WkbBaSsgWMzKsYRUuLkwuKk9JzDfWKE3OLS/PS9ZLzczcx
+	QkK5aAfjsw1WhxgFOBiVeHgP9MYFC7EmlhVX5h5ilOBgVhLh3bgpPliINyWxsiq1KD++qDQn
+	tfgQIxMHp1QD4yq3OG9JJw2/aCGrvOhAk6p22faVy3+Ivl5070SBVuhhpk9b3GN+/Hguw9Ja
+	f2v97+krrjbzzPY57vbWcJfmd9bml4XTpmpx21xblfa79a6rfuvJTV/DD/Edf/P5A0dgkV/k
+	/nUPfx9IF6xU2pggeDei45y1K/PGRR3FAsmdN3/tFbiua21irsRSnJFoqMVcVJwIAHSywOVD	AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 Apr 2014, at 3:20 , Borislav Petkov <bp@suse.de> wrote:
+Em Mon, 28 Apr 2014 22:40:00 +0100
+Brian Healy <healybrian@gmail.com> escreveu:
 
-> On Tue, Apr 29, 2014 at 09:33:09AM +0200, Andreas Herrmann wrote:
->> I am sure, it's because some server systems had MMIO ECS access not
->> enabled in BIOS. I can't remember which systems were affected.
+> From: Brian Healy <healybrian@gmail.com>
+> To: Antti Palosaari <crope@iki.fi>, Mauro Carvalho Chehab <m.chehab@samsung.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Linux Media Mailing List <linux-media@vger.kernel.org>
+> Subject: Re: [PATCH] Kernel 3.15-rc2 : Peak DVB-T USB tuner device ids for rtl28xxu driver
+> Date: Mon, 28 Apr 2014 22:40:00 +0100
+> Sender: linux-media-owner@vger.kernel.org
+> User-Agent: Mutt/1.5.21 (2010-09-15)
 > 
-> Ok, now AMD people: what's the story with IO ECS, can we assume that on
-> everything after F10h, BIOS has a sensible MCFG and we can limit this to
-> F10h only? I like Bjorn's idea but we need to make sure a working MCFG
-> is ubiquitous.
+> On Sun, Apr 27, 2014 at 03:19:12PM -0700, Linus Torvalds wrote:
 > 
-> Which begs the real question: Suravee, why are you even touching IO ECS
-> provided F15h and later have a MCFG? Or, do they?
+> Hi Linus,
 > 
+> apologies, i've changed email clients in order to preserve the
+> formatting this time around. The patch is now included inline as an
+> attachment. I ran the script but noticed you've already cc'd the
+> appropriate people. 
+> 
+> Brian.
+> 
+> 
+> Resubmitting modified patch. It's purpose is to add the appropriate
+> device/usb ids for the "Peak DVT-B usb dongle" to the rtl28xxu.c driver.
+> 
+> Signed-off-by: Brian Healy <healybrian <at> gmail.com>
+> 
+> 
+> > Brian, please use
+> > 
+> >  ./scripts/get_maintainer -f drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> > 
+> > to get the proper people to send this to, so that it doesn't get lost
+> > in the flood in lkml.
+> > 
+> > The indentation of that new entry also seems to be suspect, in that it
+> > doesn't match the ones around it.
+> > 
+> > Quoting full email for context for people added.
+> > 
+> >              Linus
+> >   
+> 
+> diff --git a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> index 61d196e..b6e20cc 100644
+> --- a/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> +++ b/drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+> @@ -1499,6 +1499,8 @@ static const struct usb_device_id rtl28xxu_id_table[] = {
+>  		&rtl2832u_props, "Crypto ReDi PC 50 A", NULL) },
+>  	{ DVB_USB_DEVICE(USB_VID_KYE, 0x707f,
+>  		&rtl2832u_props, "Genius TVGo DVB-T03", NULL) },
+> +        { DVB_USB_DEVICE(USB_VID_KWORLD_2, 0xd395,
+> +                &rtl2832u_props, "Peak DVB-T USB", NULL) },
 
-Our experience with this is that Fam10h and later have a very well working MCFG setup, earlier generations not so much (hence IO ECS was needed).
+Patch is still a little odd, as you're using spaces for indenting, instead of
+tabs, but I can fix it with my scripts. Next time, please use tabs.
 
-Cheers,
-Steffen
+Also, specifically in the case of patches for linux-media, you don't need 
+to c/c me. Just send the patch to linux-media and to the driver maintainer
+(Antti, in this case).
 
+My workflow is to pick the patches from patchwork:
+	https://patchwork.linuxtv.org/patch/23792/
+after receiving Antti's ack.
+
+Alternatively, Antti may opt to put it on his git tree, sending it to me
+latter together of other patches he may have for the devices he maintains.
+
+>  
+>  	/* RTL2832P devices: */
+>  	{ DVB_USB_DEVICE(USB_VID_HANFTEK, 0x0131,
+
+Thanks,
+Mauro
