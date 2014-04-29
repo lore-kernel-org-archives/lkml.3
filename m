@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaD2Cgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:36:47 -0400
-Received: from ozlabs.org ([103.22.144.67]:54369 "EHLO ozlabs.org"
+	id S1752117AbaD2CiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:38:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12453 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731AbaD2Cgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:36:45 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
-Cc: benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
-        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
-        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Subject: Re: [PATCH V3 2/2] powerpc/pseries: init fault_around_order for pseries
-In-Reply-To: <1398675690-16186-3-git-send-email-maddy@linux.vnet.ibm.com>
-References: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com> <1398675690-16186-3-git-send-email-maddy@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 29 Apr 2014 11:48:40 +0930
-Message-ID: <877g686fpb.fsf@rustcorp.com.au>
+	id S1751495AbaD2CiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 22:38:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,948,1389772800"; 
+   d="scan'208";a="502638497"
+Message-ID: <535F108C.9010001@linux.intel.com>
+Date: Mon, 28 Apr 2014 19:38:04 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Andrew Lutomirski <amluto@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, comex <comexk@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com> <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com>
+In-Reply-To: <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Madhavan Srinivasan <maddy@linux.vnet.ibm.com> writes:
-> diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-> index 2db8cc6..c87e6b6 100644
-> --- a/arch/powerpc/platforms/pseries/setup.c
-> +++ b/arch/powerpc/platforms/pseries/setup.c
-> @@ -74,6 +74,8 @@ int CMO_SecPSP = -1;
->  unsigned long CMO_PageSize = (ASM_CONST(1) << IOMMU_PAGE_SHIFT_4K);
->  EXPORT_SYMBOL(CMO_PageSize);
->  
-> +extern unsigned int fault_around_order;
-> +
+On 04/28/2014 05:20 PM, Andrew Lutomirski wrote:
+> 
+> ldttest segfaults on 3.13 and 3.14 for me.  It reboots (triple fault?)
+> on your branch.  It even said this:
+> 
+> qemu-system-x86_64: 9pfs:virtfs_reset: One or more uncluncked fids
+> found during reset
+> 
+> I have no idea what an uncluncked fd is :)
+> 
 
-It's considered bad form to do this.  Put the declaration in linux/mm.h.
+It means 9p wasn't properly shut down.
 
-Thanks,
-Rusty.
-PS.  But we're getting there! :)
+	-hpa
+
