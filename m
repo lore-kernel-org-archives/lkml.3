@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268AbaD2TUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:20:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751837AbaD2TT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:19:59 -0400
-Date: Tue, 29 Apr 2014 15:19:10 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com, mhocko@suse.cz,
-        fengguang.wu@intel.com, mpatlasov@parallels.com
-Subject: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
-Message-ID: <20140429151910.53f740ef@annuminas.surriel.com>
-Organization: Red Hat, Inc.
+	id S965033AbaD2TVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:21:52 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:61482 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932759AbaD2TVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:21:51 -0400
+Date: Tue, 29 Apr 2014 15:21:48 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140429152148.5efd48f3@gandalf.local.home>
+In-Reply-To: <alpine.DEB.2.10.1404291407180.22490@vincent-weaver-1.umelst.maine.edu>
+References: <20140417142213.GA29338@gmail.com>
+	<alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu>
+	<20140417145418.GM11096@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu>
+	<20140418152314.GY11182@twins.programming.kicks-ass.net>
+	<20140418165958.GQ13658@twins.programming.kicks-ass.net>
+	<20140418171516.GR13658@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu>
+	<alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
+	<alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu>
+	<20140429085236.GO27561@twins.programming.kicks-ass.net>
+	<alpine.DEB.2.10.1404291407180.22490@vincent-weaver-1.umelst.maine.edu>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible for "limit - setpoint + 1" to equal zero, leading to a
-divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-working, so we need to actually test the divisor before calling div64.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: stable@vger.kernel.org
----
- mm/page-writeback.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index ef41349..2682516 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
- 					  unsigned long dirty,
- 					  unsigned long limit)
- {
-+	unsigned int divisor;
- 	long long pos_ratio;
- 	long x;
+On Tue, 29 Apr 2014 14:11:09 -0400 (EDT)
+Vince Weaver <vincent.weaver@maine.edu> wrote:
  
-+	divisor = limit - setpoint;
-+	if (!divisor)
-+		divisor = 1;
-+
- 	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
--		    limit - setpoint + 1);
-+		    divisor);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> I've actually given up on source code inspection to figure out what's 
+> going on in kernel/events/core.c.  What I do now is write simple test
+> cases and do an ftrace function trace.  The results are often surprising.
+
+You might want to remove this from the kernel/events/Makefile:
+
+
+ifdef CONFIG_FUNCTION_TRACER
+CFLAGS_REMOVE_core.o = -pg
+endif
+
+It will let you function trace more of what is happening.
+
+-- Steve
