@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933766AbaD2LQY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:16:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933004AbaD2LQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:16:22 -0400
-Date: Tue, 29 Apr 2014 13:15:51 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
- line workload
-Message-ID: <20140429111551.GC1148@krava.brq.redhat.com>
-References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
- <1398346054-3322-2-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398346054-3322-2-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757320AbaD2LTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:19:06 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42360 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaD2LTE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 07:19:04 -0400
+From: Xia Kaixu <kaixu.xia@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, arnd@arndb.de, kaixu.xia@linaro.org
+Subject: [PATCH 00/15] ASoC: Arnds randconfig fixes for ASoC
+Date: Tue, 29 Apr 2014 19:18:21 +0800
+Message-Id: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:27:33PM +0900, Namhyung Kim wrote:
+This patchset series addresses various bugs found and fixed by Arnd Bergmann
+whilst doing randconfig builds.
 
-SNIP
+My involvement has been to review, add/check the maintainers are correct
+and submit upstream to try and reduce the backlog.
 
-> -		rec->bytes_written / 24);
-> +out_child:
-> +	if (forks) {
-> +		int exit_status;
->  
-> -	return 0;
-> +		if (!child_finished)
-> +			kill(rec->evlist->workload.pid, SIGTERM);
+Best Regards,
 
-also while at it.. do we want to force SIGKILL in case we dont
-get any response for SIGTERM? so we dont get record hanging like
-for following program:
+Kaixu Xia
 
----
-#include <signal.h>
+Arnd Bergmann (11):
+  ASoC: CS42L51 and WM8962 codecs depend on INPUT
+  ASoC: davinci: add dependencies for SND_SOC_TLV320AIC3X
+  ASoC: SMDK_WM8580_PCM needs REGMAP_I2C
+  ASoC: samsung-idma: avoid 64-bit division
+  ASoC: nuc900: export nuc900_ac97_data
+  ASoC: RX-51 audio needs I2C
+  ASoC: UDA1380 needs I2C
+  ASoC: Atmel WM8904 codec support needs I2C
+  ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
+  ASoC: Amstrad E3 needs TTY support for codec
+  ASoC: pxa: remove mach header dependency
 
-static void sig_handler(int sig)
-{
-}
+Xia Kaixu (4):
+  ASoC: TTC DKB audio needs I2C
+  ASoC: Migo-R sound needs I2C
+  ASoC: TLV320AIC23 and Simtec Hermes audio need I2C
+  ASoC: WM0010 needs SPI
 
-int main(int argc, char **argv)
-{
-        signal(SIGINT, sig_handler);
-        signal(SIGTERM, sig_handler);
+ sound/arm/pxa2xx-pcm.c         |    2 ++
+ sound/arm/pxa2xx-pcm.h         |    3 +--
+ sound/soc/atmel/Kconfig        |    2 +-
+ sound/soc/codecs/Kconfig       |    8 ++++----
+ sound/soc/davinci/Kconfig      |   10 +++++-----
+ sound/soc/fsl/Kconfig          |    2 +-
+ sound/soc/nuc900/Kconfig       |    1 +
+ sound/soc/nuc900/nuc900-ac97.c |    1 +
+ sound/soc/omap/Kconfig         |    4 ++--
+ sound/soc/pxa/Kconfig          |    2 +-
+ sound/soc/pxa/pxa-ssp.c        |    2 --
+ sound/soc/pxa/pxa2xx-pcm.c     |    2 ++
+ sound/soc/samsung/Kconfig      |   22 ++++++++++------------
+ sound/soc/samsung/idma.c       |    2 +-
+ sound/soc/sh/Kconfig           |    2 +-
+ 15 files changed, 33 insertions(+), 32 deletions(-)
 
-        while (1) {}
+-- 
+1.7.9.5
 
-        return 0;
-}
----
-
-the change would go into separate patch of course,
-something like in patch below
-
-thanks,
-jirka
-
-
----
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 526edf5..a973ba5 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -479,9 +479,20 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- out_child:
- 	if (forks) {
- 		int exit_status;
-+		int zleep = 0;
-+
-+		while (!child_finished) {
-+			if (!zleep)
-+				kill(rec->evlist->workload.pid, SIGTERM);
-+			if (zleep == 2000) {
-+				pr_info("Child killed by SIGKILL.\n");
-+				kill(rec->evlist->workload.pid, SIGKILL);
-+				break;
-+			}
- 
--		if (!child_finished)
--			kill(rec->evlist->workload.pid, SIGTERM);
-+			usleep(1000);
-+			zleep++;
-+		}
- 
- 		wait(&exit_status);
- 
