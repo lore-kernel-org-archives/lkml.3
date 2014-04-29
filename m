@@ -1,142 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811AbaD2CX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:23:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45684 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbaD2CX5 (ORCPT
+	id S1754934AbaD2CYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:24:19 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45600 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597AbaD2CYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:23:57 -0400
-Message-ID: <535F0D37.3050301@infradead.org>
-Date: Mon, 28 Apr 2014 19:23:51 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 28 Apr 2014 22:24:16 -0400
+X-Sasl-enc: G8I7SrB5cdVqqmHraJtKPmqCEnMVg4laOL6imwWndNJI 1398738255
+Message-ID: <535F0D2D.9020103@fastmail.fm>
+Date: Tue, 29 Apr 2014 10:23:41 +0800
+From: Michalis Pappas <mpappas@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 7/7] x86: Add documentation for rd/wr fs/gs base
-References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-8-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1398723161-21968-8-git-send-email-andi@firstfloor.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 10/10] staging: gdm72xx: Removed task from TODO list
+References: <532BF9B0.2080008@fastmail.fm> <20140418225229.GA28077@kroah.com> <53534051.2020504@fastmail.fm> <53534116.3040705@fastmail.fm> <20140422093743.GC26890@mwanda> <53570BAA.3080709@fastmail.fm> <20140423080447.GS26890@mwanda> <53577E96.10106@fastmail.fm> <20140423090557.GU26890@mwanda> <20140423090904.GV26890@mwanda> <535F0866.2060207@fastmail.fm>
+In-Reply-To: <535F0866.2060207@fastmail.fm>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/14 15:12, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  Documentation/x86/fsgs.txt | 73 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 73 insertions(+)
->  create mode 100644 Documentation/x86/fsgs.txt
-> 
-> diff --git a/Documentation/x86/fsgs.txt b/Documentation/x86/fsgs.txt
-> new file mode 100644
-> index 0000000..0a1755f
-> --- /dev/null
-> +++ b/Documentation/x86/fsgs.txt
-> @@ -0,0 +1,73 @@
-> +
-> +Using FS and GS prefixes on x86_64-linux
-> +
-> +The x86 architecture supports segment prefixes per instruction to add an
-> +offset to an address.  On 64bit x86, these are mostly nops, except for FS
 
-                             64-bit
+Removed line related to replacement of kernel_thread with kthread,
+as issue was fixed on ff5e4a1d2702 ('Staging: gdm72xx: gdm_usb:
+fix deprecated function kernel_thread')
 
-> +and GS.
-> +
-> +This offers an efficient way to reference a global pointer.
-> +
-> +The compiler has to generate special code to use these base registers,
-> +or they can be accessed with inline assembler.
-> +
-> +	mov %gs:offset,%reg
-> +	mov %fs:offset,%reg
-> +
-> +FS is used to address the thread local segment (TLS), declared using
-> +__thread.  The compiler the automatically generates the correct prefixes and
+Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+---
+ drivers/staging/gdm72xx/TODO | 1 -
+ 1 file changed, 1 deletion(-)
 
-                           then
-
-> +relocations to access these values.
-> +
-> +FS is normally managed by the runtime code or the threading library.
-> +
-> +GS is freely available, but may need special (compiler or inline assembler)
-> +code to use.
-> +
-> +Traditionally 64bit FS and GS could be set by the arch_prctl system call
-
-                 64-bit
-
-> +
-> +	arch_prctl(ARCH_SET_GS, value)
-> +	arch_prctl(ARCH_SET_FS, value)
-> +
-> +[There was also an older method using modify_ldt(), inherited from 32bit,
-
-                                                                      32-bit,
-
-> +but this is not discussed here.]
-> +
-> +However using a syscall is problematic for user space threading libraries
-
-   However,
-
-> +that want to context switch in user space.
-> +
-> +Newer Intel CPUs (Ivy Bridge and later) added new instructions to directly
-> +access these registers quickly from user context
-> +
-> +	RDFSBASE %reg	read the FS base	(or _readfsbase_u64)
-> +	RDGSBASE %reg	read the GS base	(or _readgsbase_u64)
-> +
-> +	WRFSBASE %reg	write the FS base	(or _writefsbase_u64)
-> +	WRGSBASE %reg	write the GS base	(or _writegsbase_u64)
-> +
-> +The instructions are supported by the CPU when the "fsgsbase" string is shown in
-> +/proc/cpuinfo (or directly retrieved through the CPUID instruction).
-> +The instructions are only available to 64bit binaries.
-
-                                          64-bit
-
-> +
-> +However the kernel needs to explicitely enable these instructions, as it
-
-   However,                    explicitly
-
-> +may otherwise not correctly context switch the state. Newer Linux
-> +kernels enable this. When the kernel did not enable the instruction
-> +they will fault.
-> +
-> +An FSGSBASE enabled kernel can be detected by checking the AT_HWCAP2
-> +bitmask in the aux vector. When the HWCAP2_FSGSBASE bit is set the
-> +kernel supports RDFSGSBASE.
-> +
-> +	#include <sys/auxv.h>
-> +	#include <elf.h>
-> +
-> +	/* Will be eventually in asm/hwcap.h */
-> +	#define HWCAP2_FSGSBASE        (1 << 0)
-> +
-> +        unsigned val = getauxval(AT_HWCAP2);
-> +        if (val & HWCAP2_FSGSBASE) {
-> +                asm("wrgsbase %0" :: "r" (ptr));
-> +        }
-> +
-> +Another requirement is that the FS or GS selector has to be zero
-> +(is normally true unless changed explicitely)
-
-                                    explicitly).
-
-> +
-> +
-> +Andi Kleen
-> 
-
-
+diff --git a/drivers/staging/gdm72xx/TODO b/drivers/staging/gdm72xx/TODO
+index 5ab27fb..62d0cd6 100644
+--- a/drivers/staging/gdm72xx/TODO
++++ b/drivers/staging/gdm72xx/TODO
+@@ -1,3 +1,2 @@
+ TODO:
+-- Replace kernel_thread with kthread in gdm_usb.c
+ - Clean up coding style to meet kernel standard.
 -- 
-~Randy
+1.8.4
+
