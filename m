@@ -1,141 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893AbaD2Xzo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 19:55:44 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:38915 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474AbaD2Xzk (ORCPT
+	id S1752787AbaD2Xzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 19:55:51 -0400
+Received: from old-vorash.stgraber.org ([176.9.111.221]:41203 "EHLO
+	smtpout1.stgraber.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756069AbaD2Xzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 19:55:40 -0400
-Subject: [PATCH v2 2/2] x86/gart: Tidy messages and add bridge device info
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: David Airlie <airlied@linux.ie>, x86@kernel.org,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Tue, 29 Apr 2014 17:55:38 -0600
-Message-ID: <20140429235538.11112.41112.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140429235015.11112.79459.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140429235015.11112.79459.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Tue, 29 Apr 2014 19:55:47 -0400
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 19:55:47 EDT
+Date: Tue, 29 Apr 2014 19:47:40 -0400
+From: =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Marian Marinov <mm@1h.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lxc-devel <lxc-devel@lists.sourceforge.net>
+Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
+Message-ID: <20140429234739.GB2997@dakara>
+References: <535FADDA.2070803@1h.com>
+ <20140429183534.GB19325@thunk.org>
+ <20140429185251.GA27969@ubuntumail>
+ <53601E5B.5050004@1h.com>
+ <20140429220234.GC28410@ubuntumail>
+ <536026B3.1020905@1h.com>
+ <20140429222913.GD28410@ubuntumail>
+ <53602B84.1020304@mit.edu>
+ <536033A9.5070504@1h.com>
+ <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
+Content-Disposition: inline
+In-Reply-To: <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print the AGP bridge info the same way as the rest of the kernel, e.g.,
-"0000:00:04.0" instead of "00:04:00".
 
-Also print the AGP aperture address range the same way we print resources,
-and label it explicitly as a bus address range.
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-No functional change except the message changes.
+On Tue, Apr 29, 2014 at 04:22:55PM -0700, Andy Lutomirski wrote:
+> On Tue, Apr 29, 2014 at 4:20 PM, Marian Marinov <mm@1h.com> wrote:
+> > On 04/30/2014 01:45 AM, Andy Lutomirski wrote:
+> >>
+> >> On 04/29/2014 03:29 PM, Serge Hallyn wrote:
+> >>>
+> >>> Quoting Marian Marinov (mm-108MBtLGafw@public.gmane.org):
+> >>>>
+> >>>> On 04/30/2014 01:02 AM, Serge Hallyn wrote:
+> >>>>>
+> >>>>> Quoting Marian Marinov (mm-108MBtLGafw@public.gmane.org):
+> >>>>>>
+> >>>>>> On 04/29/2014 09:52 PM, Serge Hallyn wrote:
+> >>>>>>>
+> >>>>>>> Quoting Theodore Ts'o (tytso-3s7WtUTddSA@public.gmane.org):
+> >>>>>>>>
+> >>>>>>>> On Tue, Apr 29, 2014 at 04:49:14PM +0300, Marian Marinov wrote:
+> >>>>>>>>>
+> >>>>>>>>>
+> >>>>>>>>> I'm proposing a fix to this, by replacing the
+> >>>>>>>>> capable(CAP_LINUX_IMMUTABLE)
+> >>>>>>>>> check with ns_capable(current_cred()->user_ns,
+> >>>>>>>>> CAP_LINUX_IMMUTABLE).
+> >>>>>>>>
+> >>>>>>>>
+> >>>>>>>> Um, wouldn't it be better to simply fix the capable() function?
+> >>>>>>>>
+> >>>>>>>> /**
+> >>>>>>>>   * capable - Determine if the current task has a superior
+> >>>>>>>> capability in effect
+> >>>>>>>>   * @cap: The capability to be tested for
+> >>>>>>>>   *
+> >>>>>>>>   * Return true if the current task has the given superior
+> >>>>>>>> capability currently
+> >>>>>>>>   * available for use, false if not.
+> >>>>>>>>   *
+> >>>>>>>>   * This sets PF_SUPERPRIV on the task if the capability is
+> >>>>>>>> available on the
+> >>>>>>>>   * assumption that it's about to be used.
+> >>>>>>>>   */
+> >>>>>>>> bool capable(int cap)
+> >>>>>>>> {
+> >>>>>>>>         return ns_capable(&init_user_ns, cap);
+> >>>>>>>> }
+> >>>>>>>> EXPORT_SYMBOL(capable);
+> >>>>>>>>
+> >>>>>>>> The documentation states that it is for "the current task", and I
+> >>>>>>>> can't imagine any use case, where user namespaces are in effect,
+> >>>>>>>> where
+> >>>>>>>> using init_user_ns would ever make sense.
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> the init_user_ns represents the user_ns owning the object, not the
+> >>>>>>> subject.
+> >>>>>>>
+> >>>>>>> The patch by Marian is wrong.  Anyone can do 'clone(CLONE_NEWUSER=
+)',
+> >>>>>>> setuid(0), execve, and end up satisfying
+> >>>>>>> 'ns_capable(current_cred()->userns,
+> >>>>>>> CAP_SYS_IMMUTABLE)' by definition.
+> >>>>>>>
+> >>>>>>> So NACK to that particular patch.  I'm not sure, but IIUC it shou=
+ld
+> >>>>>>> be
+> >>>>>>> safe to check against the userns owning the inode?
+> >>>>>>>
+> >>>>>>
+> >>>>>> So what you are proposing is to replace
+> >>>>>> 'ns_capable(current_cred()->userns, CAP_SYS_IMMUTABLE)' with
+> >>>>>> 'inode_capable(inode, CAP_SYS_IMMUTABLE)' ?
+> >>>>>>
+> >>>>>> I agree that this is more sane.
+> >>>>>
+> >>>>>
+> >>>>> Right, and I think the two operations you're looking at seem sane
+> >>>>> to allow.
+> >>>>
+> >>>>
+> >>>> If you are ok with this patch, I will fix all file systems and send
+> >>>> patches.
+> >>>
+> >>>
+> >>> Sounds good, thanks.
+> >>>
+> >>>> Signed-off-by: Marian Marinov <mm-NV7Lj0SOnH0@public.gmane.org>
+> >>>
+> >>>
+> >>> Acked-by: Serge E. Hallyn
+> >>> <serge.hallyn-GeWIH/nMZzLQT0dZR+AlfA@public.gmane.org>
+> >>
+> >>
+> >> Wait, what?
+> >>
+> >> Inodes aren't owned by user namespaces; they're owned by users.  And a=
+ny
+> >> user can arrange to have a user namespace in which they pass an
+> >> inode_capable check on any inode that they own.
+> >>
+> >> Presumably there's a reason that CAP_SYS_IMMUTABLE is needed.  If this
+> >> gets merged, then it would be better to just drop CAP_SYS_IMMUTABLE
+> >> entirely.
+> >
+> >
+> > The problem I'm trying to solve is this:
+> >
+> > container with its own user namespace and CAP_SYS_IMMUTABLE should be a=
+ble
+> > to use chattr on all files witch this container has access to.
+> >
+> > Unfortunately with the capable(CAP_SYS_IMMUTABLE) check this is not wor=
+king.
+> >
+> > With the proposed two fixes CAP_SYS_IMMUTABLE started working in the
+> > container.
+> >
+> > The first solution got its user namespace from the currently running pr=
+ocess
+> > and the second gets its user namespace from the currently opened inode.
+> >
+> > So what would be the best solution in this case?
+>=20
+> I'd suggest adding a mount option like fs_owner_uid that names a uid
+> that owns, in the sense of having unlimited access to, a filesystem.
+> Then anyone with caps on a namespace owned by that uid could do
+> whatever.
+>=20
+> Eric?
+>=20
+> --Andy
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/aperture_64.c |   39 ++++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+The most obvious problem I can think of with "do whatever" is that this
+will likely include mknod of char and block devices which you can then
+chown/chmod as you wish and use to access any devices on the system from
+an unprivileged container.
+This can however be mitigated by using the devices cgroup controller.
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index b11edf2b656d..6e2283423887 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -77,13 +77,13 @@ static u32 __init allocate_aperture(void)
- 	addr = memblock_find_in_range(GART_MIN_ADDR, GART_MAX_ADDR,
- 				      aper_size, aper_size);
- 	if (!addr) {
--		pr_err("Cannot allocate aperture memory hole (%lx,%uK)\n",
--		       addr, aper_size>>10);
-+		pr_err("Cannot allocate aperture memory hole [mem %#010lx-%#010lx] (%uKB)\n",
-+		       addr, addr + aper_size - 1, aper_size >> 10);
- 		return 0;
- 	}
- 	memblock_reserve(addr, aper_size);
--	pr_info("Mapping aperture over %d KB of RAM @ %lx\n", aper_size >> 10,
--		addr);
-+	pr_info("Mapping aperture over RAM [mem %#010%lx-%#010lx] (%uKB)\n",
-+		addr, addr + aper_size - 1, aper_size >> 10);
- 	register_nosave_region(addr >> PAGE_SHIFT,
- 			       (addr+aper_size) >> PAGE_SHIFT);
- 
-@@ -127,10 +127,11 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
- 	u64 aper;
- 	u32 old_order;
- 
--	pr_info("AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
-+	pr_info("pci 0000:%02x:%02x:%02x: AGP bridge\n", bus, slot, func);
- 	apsizereg = read_pci_config_16(bus, slot, func, cap + 0x14);
- 	if (apsizereg == 0xffffffff) {
--		pr_err("APSIZE in AGP bridge unreadable\n");
-+		pr_err("pci 0000:%02x:%02x.d: APSIZE unreadable\n",
-+		       bus, slot, func);
- 		return 0;
- 	}
- 
-@@ -154,16 +155,18 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
- 	 * On some sick chips, APSIZE is 0. It means it wants 4G
- 	 * so let double check that order, and lets trust AMD NB settings:
- 	 */
--	pr_info("Aperture from AGP @ %Lx old size %u MB\n",
--		aper, 32 << old_order);
-+	pr_info("pci 0000:%02x:%02x.%d: AGP aperture [bus addr %#010Lx-%#010Lx] (old size %uMB)\n",
-+		bus, slot, func, aper, aper + (32ULL << (old_order + 20)) - 1,
-+		32 << old_order);
- 	if (aper + (32ULL<<(20 + *order)) > 0x100000000ULL) {
--		pr_info("Aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
--			32 << *order, apsizereg);
-+		pr_info("pci 0000:%02x:%02x.%d: AGP aperture size %uMB (APSIZE %#x) is not right, using settings from NB\n",
-+			bus, slot, func, 32 << *order, apsizereg);
- 		*order = old_order;
- 	}
- 
--	pr_info("Aperture from AGP @ %Lx size %u MB (APSIZE %x)\n", aper,
--		32 << *order, apsizereg);
-+	pr_info("pci 0000:%02x:%02x.%d: AGP aperture [bus addr %#010Lx-%#010Lx] (%uMB, APSIZE %#x)\n",
-+		bus, slot, func, aper, aper + (32ULL << (*order + 20)) - 1,
-+		32ULL << *order, apsizereg);
- 
- 	if (!aperture_valid(aper, (32*1024*1024) << *order, 32<<20))
- 		return 0;
-@@ -311,7 +314,8 @@ void __init early_gart_iommu_check(void)
- 		if (e820_any_mapped(aper_base, aper_base + aper_size,
- 				    E820_RAM)) {
- 			/* reserve it, so we can reuse it in second kernel */
--			pr_info("update e820 for GART\n");
-+			pr_info("e820: reserve [mem %#010Lx-%#010Lx] for GART\n",
-+				aper_base, aper_base + aper_size - 1);
- 			e820_add_region(aper_base, aper_size, E820_RESERVED);
- 			update_e820();
- 		}
-@@ -396,8 +400,9 @@ int __init gart_iommu_hole_init(void)
- 			aper_base = read_pci_config(bus, slot, 3, AMD64_GARTAPERTUREBASE) & 0x7fff;
- 			aper_base <<= 25;
- 
--			pr_info("Node %d: aperture @ %Lx size %u MB\n",
--				node, aper_base, aper_size >> 20);
-+			pr_info("Node %d: aperture [bus addr %#010Lx-%#010Lx] (%uMB)\n",
-+				node, aper_base, aper_base + aper_size - 1,
-+				aper_size >> 20);
- 			node++;
- 
- 			if (!aperture_valid(aper_base, aper_size, 64<<20)) {
-@@ -408,7 +413,7 @@ int __init gart_iommu_hole_init(void)
- 					if (!no_iommu &&
- 					    max_pfn > MAX_DMA32_PFN &&
- 					    !printed_gart_size_msg) {
--						pr_err("you are using iommu with agp, but GART size is less than 64M\n");
-+						pr_err("you are using iommu with agp, but GART size is less than 64MB\n");
- 						pr_err("please increase GART size in your BIOS setup\n");
- 						pr_err("if BIOS doesn't have that option, contact your HW vendor!\n");
- 						printed_gart_size_msg = 1;
-@@ -449,7 +454,7 @@ out:
- 		   fallback_aper_force) {
- 		pr_info("Your BIOS doesn't leave a aperture memory hole\n");
- 		pr_info("Please enable the IOMMU option in the BIOS setup\n");
--		pr_info("This costs you %d MB of RAM\n",
-+		pr_info("This costs you %dMB of RAM\n",
- 			32 << fallback_aper_order);
- 
- 		aper_order = fallback_aper_order;
+You also probably wouldn't want any unprivileged user from the host to
+find a way to access that mounted filesytem but so long as you do the
+mount in a separate mountns and don't share uids between the host and
+the container, that should be fine too.
 
+--=20
+St=E9phane Graber
+Ubuntu developer
+http://www.ubuntu.com
+
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTYDobAAoJEMY4l01keS1nJeYP/iFczk0Mv1FrXYFKC5AyEQYZ
+p+Bl6eBQAPKly0Xno8lvr4RuhWMnAWCsBJpvdmLvrPdPBCFc3ac2QsMVDztXlND4
+W5pLKkkLoRjVrgFUyUQnE8fhUB9zI7tg51a2tluekFtMH79nN60ehk96A0kdRUpa
+enVn5ABNX6r+66JE7ZnXC6LwWqUIr6WBM4Ca8qK71tL9Vj/DHf0dwzeaEGacYKHl
+gjtRjSkD8map0CMy6oMrN5FVq65Bq9zeqcj6GxziDQx6lVVxuF4MmMWuYFRqbMSG
+BOcT/h17gsf782+4KmfVHcy1t3z+caF899j0rqhoP85QXTVZU5WKDO3em8K0uQ9j
+nDy6U/yoEyhY/ran0cCEtXlQMeGK+E9PzKjOi72z0xxbPS0xMA1ZBh+as4TuJe1m
+9elY3V/5p+bdoOiKLF/gWHJ4HRn8wWp5MDh0yHb0aR7McUJvyjSh+vTot+dN7Gi9
+F9+Ir2EaJQqgfxe/NcToMOcdnx5el3NTJp2dlL76tuYCTtEuG2+1XFVLceIG+kei
+MK+w7WI88eqSR/SzvCEXAMph4RM9/4kiBD6fN80TbwZ7CNif6E0Op5mDhFavnsQB
+L60VUo1tEcK8vfUeYkrCnmH2PRQqJYFJk5LMghZtIubUuyZx8DSqj6ZknSmuCXKo
+QQQycmQNXvPI74bZVdMs
+=IHYL
+-----END PGP SIGNATURE-----
+
+--MfFXiAuoTsnnDAfZ--
