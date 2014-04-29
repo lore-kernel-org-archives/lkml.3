@@ -1,102 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926AbaD2AZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:25:25 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:57108 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932707AbaD2AZO (ORCPT
+	id S933058AbaD2AZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:25:49 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52531 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932707AbaD2AZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:25:14 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvVLACLxXlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEFJxMcIxAIAxUDCSUPBSUDBxoTiEDJAhcWhUSIfweEOQSZC5YiKw
-Date: Tue, 29 Apr 2014 10:24:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 10/22] richacl: In-memory representation and helper
- functions
-Message-ID: <20140429002457.GS15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1398615293-22931-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398615293-22931-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Apr 2014 20:25:46 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/45] torture: Add batch headers "--dryrun sched"
+Date: Mon, 28 Apr 2014 17:24:51 -0700
+Message-Id: <1398731133-18925-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042900-1344-0000-0000-00000134E87D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 09:44:41PM +0530, Aneesh Kumar K.V wrote:
-> From: Andreas Gruenbacher <agruen@kernel.org>
-> 
-> A richacl consists of an NFSv4 acl and an owner, group, and other mask.
-> These three masks correspond to the owner, group, and other file
-> permission bits, but they contain NFSv4 permissions instead of POSIX
-> permissions.
-> 
-> Each entry in the NFSv4 acl applies to the file owner (OWNER@), the
-> owning group (GROUP@), literally everyone (EVERYONE@), or to a specific
-> uid or gid.
-> 
-> As in the standard POSIX file permission model, each process is the
-> owner, group, or other file class.  A richacl grants a requested access
-> only if the NFSv4 acl in the richacl grants the access (according to the
-> NFSv4 permission check algorithm), and the file mask that applies to the
-> process includes the requested permissions.
-> 
-> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-....
-> +
-> +/**
-> + * richace_is_same_identifier  -  are both identifiers the same?
-> + */
-> +int
-> +richace_is_same_identifier(const struct richace *a, const struct richace *b)
-> +{
-> +#define WHO_FLAGS (ACE4_SPECIAL_WHO | ACE4_IDENTIFIER_GROUP)
-> +	if ((a->e_flags & WHO_FLAGS) != (b->e_flags & WHO_FLAGS))
-> +		return 0;
-> +	return a->e_id == b->e_id;
-> +#undef WHO_FLAGS
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Ugh.
+This commit makes the output of "--dryrun sched" more user-friendly,
+clearly indicating the batch starts.
 
-....
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ tools/testing/selftests/rcutorture/bin/kvm.sh | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> +#define richacl_for_each_entry(_ace, _acl) \
-> +	for (_ace = _acl->a_entries; \
-> +	     _ace != _acl->a_entries + _acl->a_count; \
-> +	     _ace++)
-> +
-> +#define richacl_for_each_entry_reverse(_ace, _acl) \
-> +	for (_ace = _acl->a_entries + _acl->a_count - 1; \
-> +	     _ace != _acl->a_entries - 1; \
-> +	     _ace--)
-
-somewhat lacking in ()...
-
-> +/* Flag values defined by rich-acl */
-> +#define ACL4_MASKED			0x80
-> +
-> +#define ACL4_VALID_FLAGS (			\
-> +		ACL4_MASKED)
-> +
-> +/* e_type values */
-> +#define ACE4_ACCESS_ALLOWED_ACE_TYPE	0x0000
-> +#define ACE4_ACCESS_DENIED_ACE_TYPE	0x0001
-> +/*#define ACE4_SYSTEM_AUDIT_ACE_TYPE	0x0002*/
-> +/*#define ACE4_SYSTEM_ALARM_ACE_TYPE	0x0003*/
-
-What's with all the commented out types?
-
-Cheers,
-
-Dave.
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index 37a60ef70df3..740676255c6a 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -379,7 +379,8 @@ then
+ elif test "$dryrun" = sched
+ then
+ 	# Extract the test run schedule from the script.
+-	egrep 'start batch|Starting build\.' $T/script |
++	egrep 'Start batch|Starting build\.' $T/script |
++		grep -v ">>" |
+ 		sed -e 's/:.*$//' -e 's/^echo //'
+ 	exit 0
+ else
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.1.5
+
