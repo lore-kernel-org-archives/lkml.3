@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965094AbaD2TSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:18:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57930 "EHLO mx1.redhat.com"
+	id S1758268AbaD2TUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:20:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63838 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697AbaD2TSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:18:51 -0400
-Date: Tue, 29 Apr 2014 20:40:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table once
-	and avoid rcu_read_lock()
-Message-ID: <20140429184004.GB32521@redhat.com>
-References: <20140429183915.GA32513@redhat.com>
+	id S1751837AbaD2TT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:19:59 -0400
+Date: Tue, 29 Apr 2014 15:19:10 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com, mhocko@suse.cz,
+        fengguang.wu@intel.com, mpatlasov@parallels.com
+Subject: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+Message-ID: <20140429151910.53f740ef@annuminas.surriel.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429183915.GA32513@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
-   or even rcu_dereference().
+It is possible for "limit - setpoint + 1" to equal zero, leading to a
+divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+working, so we need to actually test the divisor before calling div64.
 
-   This mm has no users, nobody else can play with ->ioctx_table. Otherwise
-   the code is buggy anyway, if we need rcu_read_lock() in a loop because
-   ->ioctx_table can be updated then kfree(table) is obviously wrong.
-
-2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
-   munmap(), but another reason is that we simply can't do vm_munmap() unless
-   current->mm == mm and this is not true in general, the caller is mmput().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: stable@vger.kernel.org
 ---
- fs/aio.c |   47 ++++++++++++++++++-----------------------------
- 1 files changed, 18 insertions(+), 29 deletions(-)
+ mm/page-writeback.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 12a3de0..5fd1fe7 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -777,40 +777,29 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
-  */
- void exit_aio(struct mm_struct *mm)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index ef41349..2682516 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+ 					  unsigned long dirty,
+ 					  unsigned long limit)
  {
--	struct kioctx_table *table;
--	struct kioctx *ctx;
--	unsigned i = 0;
--
--	while (1) {
--		rcu_read_lock();
--		table = rcu_dereference(mm->ioctx_table);
--
--		do {
--			if (!table || i >= table->nr) {
--				rcu_read_unlock();
--				rcu_assign_pointer(mm->ioctx_table, NULL);
--				if (table)
--					kfree(table);
--				return;
--			}
--
--			ctx = table->table[i++];
--		} while (!ctx);
-+	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
-+	int i;
++	unsigned int divisor;
+ 	long long pos_ratio;
+ 	long x;
  
--		rcu_read_unlock();
-+	if (!table)
-+		return;
- 
-+	for (i = 0; i < table->nr; ++i) {
-+		struct kioctx *ctx = table->table[i];
- 		/*
--		 * We don't need to bother with munmap() here -
--		 * exit_mmap(mm) is coming and it'll unmap everything.
--		 * Since aio_free_ring() uses non-zero ->mmap_size
--		 * as indicator that it needs to unmap the area,
--		 * just set it to 0; aio_free_ring() is the only
--		 * place that uses ->mmap_size, so it's safe.
-+		 * We don't need to bother with munmap() here - exit_mmap(mm)
-+		 * is coming and it'll unmap everything. And we simply can't,
-+		 * this is not necessarily our ->mm.
-+		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
-+		 * that it needs to unmap the area, just set it to 0.
- 		 */
--		ctx->mmap_size = 0;
--
--		kill_ioctx(mm, ctx);
-+		if (ctx) {
-+			ctx->mmap_size = 0;
-+			kill_ioctx(mm, ctx);
-+		}
- 	}
++	divisor = limit - setpoint;
++	if (!divisor)
++		divisor = 1;
 +
-+	rcu_assign_pointer(mm->ioctx_table, NULL);
-+	kfree(table);
- }
- 
- static void put_reqs_available(struct kioctx *ctx, unsigned nr)
--- 
-1.5.5.1
-
-
+ 	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+-		    limit - setpoint + 1);
++		    divisor);
+ 	pos_ratio = x;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
