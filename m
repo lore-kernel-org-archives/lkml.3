@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564AbaD2KAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:00:25 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47790 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933516AbaD2KAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:00:21 -0400
-Date: Tue, 29 Apr 2014 11:00:23 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
-Message-ID: <20140429100023.GF2639@e103034-lin>
-References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
- <20140428102819.GG27561@twins.programming.kicks-ass.net>
- <535E3673.8020606@linaro.org>
- <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
+	id S933579AbaD2KCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:02:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11284 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933515AbaD2KC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 06:02:28 -0400
+Date: Tue, 29 Apr 2014 18:03:52 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
+Message-ID: <20140429100352.GD2016@darkstar.nay.redhat.com>
+References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
+ <20140425115345.GC26088@console-pimps.org>
+ <20140426072821.GA2286@darkstar.redhat.com>
+ <20140429094539.GD26088@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
+In-Reply-To: <20140429094539.GD26088@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 12:11:47AM +0100, Rafael J. Wysocki wrote:
-> On Monday, April 28, 2014 01:07:31 PM Daniel Lezcano wrote:
-
-[...]
-
-> > I'm really wondering if the cgroup couldn't be a good solution:
+On 04/29/14 at 10:45am, Matt Fleming wrote:
+> On Sat, 26 Apr, at 03:28:21PM, Dave Young wrote:
 > > 
-> > Amit pointed the conflict about the power vs performance with some 
-> > applications. We want to have for example a game to run fast performance 
-> > and some other application to save power.
+> > There's other kernel messages without appending ,keep.
+> > 
+> > Also console=ttyS0 does not work with earlyprintk=efi,keep, removing
+> > ,keep it works well.
 > 
-> You can't save power.
-> 
-> Power is the energy flow *rate*.  It's like speed, so how can you save it?
-> 
-> If you talk about saving in this context, please always talk about energy as
-> well, because that's what we want to save.
-> 
-> This means that positioning power against performance doesn't make any sense
-> whatsoever.  You could try to position energy efficiency (that is, the relative
-> cost of doing work in terms of energy) against performance, but even that is
-> questionable, because, as I said in one of the previous messages, what is good
-> for performance is often good for energy efficiency too (think about race to
-> idle for example).
-> 
-> In other words, you want to have a knob whose both ends may happen to mean
-> the same thing.  Wouldn't that be a little odd?
-> 
-> In my opinion it would be much better to have a knob representing the current
-> relative value of energy to the user (which may depend on things like whether
-> or not the system is on battery etc) and meaning how far we need to go with
-> energy saving efforts.
+> Try console=efi
 
-I agree, more or less. I think of performance and energy awareness as
-optimization objectives. If we only care about performance we are
-dealing with a single-objective optimization problem. We do what it
-takes to get the best possible performance without considering energy at
-all. Energy awareness is IMO as multi-objective optimization problem. We
-want to save energy, but do so without sacrificing too much performance.
-What "too much" is depends on the scenario (application).
+With console=efi, it also hangs the screen is not readable. When I add both console=efi
+and console=ttyS0, in serial console output looks like it hangs while mounting rootfs. 
+On screen it's same as console=efi only case.
 
-Energy efficiency and performance are different objectives, but I agree
-that the means to get better energy efficiency might be the same as
-those to get better performance in some cases. IMO, energy awareness is
-not a big switch to turn on specific scheduling mechanics (or other
-mechnaics in the kernel) such as task packing and disabling expensive
-DVFS states, it is about changing the scheduling optimization objective
-to include energy in the scheduling decisions. That is, try to save
-energy for the current scenario. That includes race to idle if that is
-the best way for the particular application and platform/system
-topology.
+I justed tested on qemu.
 
 > 
-> So if that knob is 0, we'll do things that are known-good for performance.
-> If it is 1, we'll do some extra effort to save enery as well possibly at
-> a small expense of performance if that's necessary.  If it is 100, we'll do
-> all we can to save as much energy as possible without caring about performance
-> at all.
+> > > > Actually efi earlyprintk is using __init functions such as early_ioremap etc.
+> > > > Thus efi earlyconsole can not be kept.
+> > >  
+> > > Urgh, good point, that's a bug. However I'm sure I've had this working
+> > > in the past and have in fact used it to debug stuff.
+> > > 
+> > > Could you try and fix this up so it works with 'keep'?
+> > 
+> > Will do. I want use ioremap when it is available but it's hard to decide
+> > where to add the code.
+> > 
+> > I'm thinking to do below:
+> > 1. ioremap the whole framebuffer like: efi_fb = ioremap(lfb_base, lfb_size) in the
+> >    function efi_enter_virtual_mode because ioremap should be usable then.
+> > 
+> > 2. add two functions for earlyprintk use (scrollup, write, etc.) 
+> > __init_refok void * get_vaddr(unsigned long start, unsigned long len)
+> > {
+> > 	unsigned long base;
+> > 
+> > 	base = boot_params.screen_info.lfb_base;
+> > 	if (efi_fb)
+> > 		return (efi_fb + start - base);
+> > 	else
+> > 		return early_ioremap(start, len);
+> > }
+> > 
+> > __init_refok void put_vaddr(void *addr, unsigned long len)
+> > {
+> > 	if (!efi_fb)
+> > 		early_iounmap(addr, len);
+> > }
+> > 
+> > But it does not sound good to add the ioremap in enter virtual mode funtion.   
+> > 
+> > Please help if you have any other better idea.
 > 
-> And it doesn't even have to be scheduler-specific, it very well may be global.
+> I would just replace the existing calls to early_ioremap() with
+> efi_ioremap() and implement it like so (all in
+> arch/x86/platform/efi/early_printk.c),
+> 
+> static void *efi_ioremap(resource_size_t phys_addr, unsigned long size)
+> {
+> 	if (system_state == SYSTEM_BOOTING)
+> 		return early_ioremap(phys_addr, size);
+> 
+> 	return ioremap(phys_addr, size);
+> }
+> 
+> At least I think SYSTEM_BOOTING is the correct way to figure out when to
+> use early_ioremap(), I'm open to other suggestions though.
 
-I like the idea of knob representing the weight of energy awareness.
-Whether it should be global, per task, or per cgroup I'm not sure about.
+I also thought about this before, but I remember it hangs before system state
+changing.
+
+The flow is like below, I added some debug printk, only the ones before free_initmem()
+shows in log. Thus I guess this will not work. But I can have a try. 
+        kernel_init_freeable();
+        /* need to finish all async __init code before freeing the memory */
+        async_synchronize_full();
+        free_initmem();
+        mark_rodata_ro();
+        system_state = SYSTEM_RUNNING; 
+
+Thanks
+Dave
