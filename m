@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491AbaD2HHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 03:07:15 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:58881 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211AbaD2HHN (ORCPT
+	id S1755884AbaD2HJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 03:09:24 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46946 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930AbaD2HJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 03:07:13 -0400
-X-Google-Original-From: Lad Prabhakar <prabhakar.csengg@gmail.com
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Olof Johansson <olof@lixom.net>, Tony Prisk <linux@prisktech.co.nz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2] ARM: configs: drop CONFIG_COMMON_CLK_DEBUG
-Date: Tue, 29 Apr 2014 12:37:04 +0530
-Message-Id: <1398755224-7530-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 29 Apr 2014 03:09:23 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tj@kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, devicetree@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH 1/1] ahci: st: Provide DT bindings for ST's SATA implementation
+Date: Tue, 29 Apr 2014 08:09:11 +0100
+Message-Id: <1398755351-31794-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-
-this patch removes COMMON_CLK_DEBUG config option
-from defconfig file as this config option is obsolete.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: devicetree@vger.kernel.org
+Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- Changes for v2:
- a> Dropped imx defconfig files as suggested by Shawn.
- 
- arch/arm/configs/integrator_defconfig   |    1 -
- arch/arm/configs/keystone_defconfig     |    1 -
- arch/arm/configs/sunxi_defconfig        |    1 -
- arch/arm/configs/vt8500_v6_v7_defconfig |    1 -
- 4 files changed, 4 deletions(-)
+ Documentation/devicetree/bindings/ata/ahci-st.txt | 31 +++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/ata/ahci-st.txt
 
-diff --git a/arch/arm/configs/integrator_defconfig b/arch/arm/configs/integrator_defconfig
-index 5bae195..c1f5adc 100644
---- a/arch/arm/configs/integrator_defconfig
-+++ b/arch/arm/configs/integrator_defconfig
-@@ -73,7 +73,6 @@ CONFIG_LEDS_TRIGGER_HEARTBEAT=y
- CONFIG_LEDS_TRIGGER_CPU=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_PL030=y
--CONFIG_COMMON_CLK_DEBUG=y
- CONFIG_EXT2_FS=y
- CONFIG_VFAT_FS=y
- CONFIG_TMPFS=y
-diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
-index ec9a41d..f682648 100644
---- a/arch/arm/configs/keystone_defconfig
-+++ b/arch/arm/configs/keystone_defconfig
-@@ -146,7 +146,6 @@ CONFIG_USB_DWC3_VERBOSE=y
- CONFIG_KEYSTONE_USB_PHY=y
- CONFIG_DMADEVICES=y
- CONFIG_TI_EDMA=y
--CONFIG_COMMON_CLK_DEBUG=y
- CONFIG_MEMORY=y
- CONFIG_TI_AEMIF=y
- CONFIG_EXT4_FS=y
-diff --git a/arch/arm/configs/sunxi_defconfig b/arch/arm/configs/sunxi_defconfig
-index b5df4a5..28287ae 100644
---- a/arch/arm/configs/sunxi_defconfig
-+++ b/arch/arm/configs/sunxi_defconfig
-@@ -62,7 +62,6 @@ CONFIG_LEDS_GPIO=y
- CONFIG_LEDS_TRIGGERS=y
- CONFIG_LEDS_TRIGGER_HEARTBEAT=y
- CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_TMPFS=y
- CONFIG_NFS_FS=y
-diff --git a/arch/arm/configs/vt8500_v6_v7_defconfig b/arch/arm/configs/vt8500_v6_v7_defconfig
-index f052017..9e7a256 100644
---- a/arch/arm/configs/vt8500_v6_v7_defconfig
-+++ b/arch/arm/configs/vt8500_v6_v7_defconfig
-@@ -73,7 +73,6 @@ CONFIG_LEDS_TRIGGERS=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_VT8500=y
- CONFIG_DMADEVICES=y
--CONFIG_COMMON_CLK_DEBUG=y
- # CONFIG_IOMMU_SUPPORT is not set
- CONFIG_PWM=y
- CONFIG_PWM_VT8500=y
+diff --git a/Documentation/devicetree/bindings/ata/ahci-st.txt b/Documentation/devicetree/bindings/ata/ahci-st.txt
+new file mode 100644
+index 0000000..1b69fa9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/ahci-st.txt
+@@ -0,0 +1,31 @@
++STMicroelectronics STi SATA controller
++
++This binding describes a SATA device.
++
++Required properties:
++ - compatible	   : Must be "st,ahci"
++ - reg		   : Physical base addresses and length of register sets
++ - interrupts	   : Interrupt associated with the SATA device
++ - interrupt-names :   Associated name must be; "hostc"
++ - resets	   : The power-down and soft-reset lines of SATA IP
++ - reset-names	   :   Associated names must be; "pwr-dwn" and "sw-rst"
++ - clocks	   : The phandle for the clock
++ - clock-names	   :   Associated name must be; "ahci_clk"
++ - phys		   : The phandle for the PHY device
++ - phy-names	   :   Associated name must be; "ahci_phy"
++
++Example:
++
++	sata0: sata@fe380000 {
++		compatible      = "st,ahci";
++		reg             = <0xfe380000 0x1000>;
++		interrupts      = <GIC_SPI 157 IRQ_TYPE_NONE>;
++		interrupt-names = "hostc";
++		phys	        = <&miphy365x_phy MIPHY_PORT_0 MIPHY_TYPE_SATA>;
++		phy-names       = "ahci_phy";
++		resets	        = <&powerdown STIH416_SATA0_POWERDOWN>,
++				  <&softreset STIH416_SATA0_SOFTRESET>;
++		reset-names     = "pwr-dwn", "sw-rst";
++		clocks	        = <&CLK_S_ICN_REG_0>;
++		clock-names     = "ahci_clk";
++	};
 -- 
-1.7.9.5
+1.8.3.2
 
