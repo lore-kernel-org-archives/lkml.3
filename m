@@ -1,100 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaD2GHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:07:11 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:8738 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851AbaD2GHJ (ORCPT
+	id S1755227AbaD2GJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:09:22 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33964 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754915AbaD2GJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:07:09 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-b4-535f418a3851
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Jimmy Li'" <coder.liss@gmail.com>
-Cc: "'Jonathan Cameron'" <jic23@kernel.org>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Lars-Peter Clausen'" <lars@metafoo.de>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Monam Agarwal'" <monamagarwal123@gmail.com>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20140429055544.GA23599@gmail.com>
-In-reply-to: <20140429055544.GA23599@gmail.com>
-Subject: Re: [PATCH] staging:iio:ad2s1210 fix a leak when device removed
-Date: Tue, 29 Apr 2014 15:07:04 +0900
-Message-id: <001401cf6371$3e98cf90$bbca6eb0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9jb66rjj8ZWOU5Rn+UNP4LK1u3rAAAEGrw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t8zQ90ux/hgg8fHFS12//3KYrHnzC92
-	i+bF69ksLi+8xGrxoGkVk8WSyfNZLeYdecdicXnXHDaL5t8bGC1O/ulldODyuLfvMIvHzll3
-	2T02repk87hzbQ+bx/65a9g9lrw5xOrRt2UVo8fnTXIBHFFcNimpOZllqUX6dglcGQt7/rMW
-	dHJUvF//mLWB8TZbFyMHh4SAicTNlYFdjJxAppjEhXvr2UBsIYFljBJb9qRCxE0k2h5dZexi
-	5AKKL2KUuL3oLhuE85tR4sTsD8wgVWwCahJfvhxmB7FFBFQlXvQdA+tgFnjAJHF2xRd2iLF6
-	EosebGYBsTkF9CVWbf8CdoWwgIfE3dcWICYLUO+RvcIgFbwCthKNSyezQtiCEj8m3wPrZBbQ
-	kli/8zgThC0vsXnNW2aIX9QlHv3VhbjASOLE35nsECUiEvtevAO7RkJgJofElrdHwWayCAhI
-	fJt8iAWiV1Zi0wFmiH8lJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4oTkovMtIr
-	TswtLs1L10vOz93ECIn6vh2MNw9YH2JMBlo/kVlKNDkfmDTySuINjc2MLExNTI2NzC3NSBNW
-	Eudd9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj5gvxoAje4PPiah/PzL+vdC8m1ueZ
-	wayOrq19vZO3R74KW3ftcuHs+d+47/jFW4b472ZJC9qfmJmz5d/7w+unFx1e1f6jWITvVUnP
-	z7xr5/YePBMRyXmZ5/j8K7vazu07Lfzx3aVNO/35HGNNzHMeXOLTEjt0x/rFzK6bFs3vtlyy
-	zjs061VTjBJLcUaioRZzUXEiAKBeMyQQAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDKsWRmVeSWpSXmKPExsVy+t9jAd1Ox/hgg0W9oha7/35lsdhz5he7
-	RfPi9WwWlxdeYrV40LSKyWLJ5PmsFvOOvGOxuLxrDptF8+8NjBYn//QyOnB53Nt3mMVj56y7
-	7B6bVnWyedy5tofNY//cNeweS94cYvXo27KK0ePzJrkAjqgGRpuM1MSU1CKF1Lzk/JTMvHRb
-	Je/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoCuVFMoSc0qBQgGJxcVK+naYJoSGuOla
-	wDRG6PqGBMH1GBmggYR1jBkLe/6zFnRyVLxf/5i1gfE2WxcjJ4eEgIlE26OrjBC2mMSFe+uB
-	4lwcQgKLGCVuL7oL5fxmlDgx+wMzSBWbgJrEly+H2UFsEQFViRd9xxhBipgFHjBJnF3xBSwh
-	JKAnsejBZhYQm1NAX2LV9i9Akzg4hAU8JO6+tgAxWYB6j+wVBqngFbCVaFw6mRXCFpT4Mfke
-	WCezgJbE+p3HmSBseYnNa94yg7RKCKhLPPqrC3GBkcSJvzPZIUpEJPa9eMc4gVFoFpJJs5BM
-	moVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBKeVZ1I7GFc2WBxiFOBgVOLh
-	NYiKCxZiTSwrrsw9xCjBwawkwptvFR8sxJuSWFmVWpQfX1Sak1p8iDEZ6M+JzFKiyfnAlJdX
-	Em9obGJmZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyX3CKdau/tCZX/
-	pLU3M2+JfvubiM4tOmvFuj/O2Dp1ef+NRcKchv9XRHvGMP/fUlO2MHRTWWXRxbtPwuKE7Wfp
-	L33psHDvxMvRW3Yadds/0IhVV5tWvWF19bs5M9fq58gvn5vp8HN11eNNLvI9DrtU1y02cORb
-	yHNAx2cBq81Ug+IrLk8XZ99XYinOSDTUYi4qTgQADWIdF28DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 29 Apr 2014 02:09:19 -0400
+Message-ID: <535F41D8.90002@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 11:38:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Meelis Roos <mroos@linux.ee>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] cpufreq: Catch double invocations of cpufreq_freq_transition_begin/end
+References: <20140428185331.28755.899.stgit@srivatsabhat.in.ibm.com> <20140428185507.28755.6483.stgit@srivatsabhat.in.ibm.com> <CAKohpomaJ0ubnzzQ7AwAd6z+Zm085i+UwB7XMa=si7qthZdgZg@mail.gmail.com>
+In-Reply-To: <CAKohpomaJ0ubnzzQ7AwAd6z+Zm085i+UwB7XMa=si7qthZdgZg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042906-5564-0000-0000-00000D678B86
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 2:56 PM, Jimmy Li wrote:
+On 04/29/2014 10:21 AM, Viresh Kumar wrote:
+> Nice effort.
+>
+
+Thanks! :-)
+ 
+> On 29 April 2014 00:25, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> Now all such drivers have been fixed, but debugging this issue was not
+>> very straight-forward (even lockdep didn't catch this). So let us add a
+>> debug infrastructure to the cpufreq core to catch such issues more easily
+>> in the future.
 > 
-> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
-> ---
->  drivers/staging/iio/resolver/ad2s1210.c |    1 +
->  1 file changed, 1 insertion(+)
+> BUT, I am not sure if we really need it :(
 > 
-> diff --git a/drivers/staging/iio/resolver/ad2s1210.c b/drivers/staging/iio/resolver/ad2s1210.c
-> index 7fbaba4..3d6e123 100644
-> --- a/drivers/staging/iio/resolver/ad2s1210.c
-> +++ b/drivers/staging/iio/resolver/ad2s1210.c
-> @@ -716,6 +716,7 @@ static int ad2s1210_remove(struct spi_device *spi)
+> I think we just got into the 'barrier' stuff as we had some doubts about it
+> earlier and were quite sure that nothing else could go wrong. Otherwise
+> the only problem could have been present was the second queuing
+> from the same thread. And we will surely get stuck if that happens and
+> we can't just miss that error..
 > 
->  	iio_device_unregister(indio_dev);
->  	ad2s1210_free_gpios(iio_priv(indio_dev));
-> +	devm_iio_device_free(&spi->dev, indio_dev);
 
-NAK.
+Yeah, and we _did_ hit that hang, but it was not at all intuitive at first
+as to what was going wrong. Worse, even lockdep is not in a position to catch
+such scenarios. So it definitely doesn't hurt to add a small infrastructure
+to catch such issues in the future, IMHO.
 
-In ad2s1210_probe(),devm_iio_device_alloc() was already used.
-So, when ad2s1210_remove() is called, iio_device_free() will
-be called automatically. So, the leak never happens.
+Besides, if we can add features for users, surely we can also add some
+non-intrusive debug code for ourselves too, to make our lives easier, right? :-)
+I'm sure we deserve that privilege ;-)
 
-If you want to know about devm_* functions, please refer 
-to the following.
+Regards,
+Srivatsa S. Bhat
 
-  Documentation/driver-model/devres.txt
-
-Best regards,
-Jingoo Han
-> 
->  	return 0;
->  }
-> --
-> 1.7.9.5
+>> Scenario 1: (Deadlock-free)
+>> ----------
+>>
+>>          Task A                                         Task B
+>>
+>>     /* 1st freq transition */
+>>     Invoke _begin() {
+>>             ...
+>>             ...
+>>     }
+>>
+>>     Change the frequency
+>>
+>>                                                 Got interrupt for successful
+>>                                                 change of frequency.
+>>
+>>                                                 /* 1st freq transition */
+>>                                                 Invoke _end() {
+>>                                                         ...
+>>                                                         ...
+>>     /* 2nd freq transition */                           ...
+>>     Invoke _begin() {                                   ...
+>>             ... //waiting for B                         ...
+>>             ... //to finish _end()              }
+>>             ...
+>>             ...
+>>     }
+>>
+>>
+>> This scenario is actually deadlock-free because Task A can wait inside the
+>> second call to _begin() without self-deadlocking, because it is the
+>> responsibility of Task B to finish the first sequence by invoking the
+>> corresponding _end().
+>>
+>> By setting the value of 'transition_task' again explicitly in _end(), we
+>> ensure that the code won't print a false-positive warning in this case.
+>>
+>> However the same code successfully catches the following deadlock-prone
+>> scenario even in ASYNC_NOTIFICATION drivers:
+>>
+>> Scenario 2: (Deadlock-prone)
+>> ----------
+>>
+>>          Task A                                         Task B
+>>
+>>     /* 1st freq transition */
+>>     Invoke _begin() {
+>>             ...
+>>             ...
+>>     }
+>>
+>>     /* 2nd freq transition */
+>>     Invoke _begin() {
+>>             ...
+>>             ...
+>>     }
+>>
+>>     Change the frequency
+>>
+>>
+>> Here the bug is that Task A called the second _begin() *before* actually
+>> performing the 1st frequency transition. In other words, it failed to set
+>> Task B in motion for the 1st frequency transition, and hence it will
+>> self-deadlock. This is very similar to the case of drivers which do
+>> synchronous notification, and hence the debug infrastructure developed
+>> in this patch can catch this scenario easily.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  drivers/cpufreq/cpufreq.c |   12 ++++++++++++
+>>  include/linux/cpufreq.h   |    1 +
+>>  2 files changed, 13 insertions(+)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index abda660..2c99a6c 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -354,6 +354,10 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+>>  void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+>>                 struct cpufreq_freqs *freqs)
+>>  {
+>> +
+>> +       /* Catch double invocations of _begin() which lead to self-deadlock */
+>> +       WARN_ON(current == policy->transition_task);
+>> +
+>>  wait:
+>>         wait_event(policy->transition_wait, !policy->transition_ongoing);
+>>
+>> @@ -365,6 +369,7 @@ wait:
+>>         }
+>>
+>>         policy->transition_ongoing = true;
+>> +       policy->transition_task = current;
+>>
+>>         spin_unlock(&policy->transition_lock);
+>>
+>> @@ -378,9 +383,16 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+>>         if (unlikely(WARN_ON(!policy->transition_ongoing)))
+>>                 return;
+>>
+>> +       /*
+>> +        * The task invoking _end() could be different from the one that
+>> +        * invoked the _begin(). So set ->transition_task again here
+>> +        * explicity.
+>> +        */
+>> +       policy->transition_task = current;
+>>         cpufreq_notify_post_transition(policy, freqs, transition_failed);
+>>
+>>         policy->transition_ongoing = false;
+>> +       policy->transition_task = NULL;
+>>
+>>         wake_up(&policy->transition_wait);
+>>  }
+>> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+>> index 5ae5100..8f44d79 100644
+>> --- a/include/linux/cpufreq.h
+>> +++ b/include/linux/cpufreq.h
+>> @@ -110,6 +110,7 @@ struct cpufreq_policy {
+>>         bool                    transition_ongoing; /* Tracks transition status */
+>>         spinlock_t              transition_lock;
+>>         wait_queue_head_t       transition_wait;
+>> +       struct task_struct      *transition_task; /* Task which is doing the transition */
+>>  };
+>>
+>>  /* Only for ACPI */
+>>
 
