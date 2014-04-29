@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227AbaD2I20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:28:26 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:38189 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757054AbaD2I2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:28:22 -0400
-Message-ID: <535F610F.6090705@linux.vnet.ibm.com>
-Date: Tue, 29 Apr 2014 13:51:35 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        davidlohr@hp.com, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
-References: <535EA976.1080402@linux.vnet.ibm.com> <20140429000031.GA4284@redhat.com>
-In-Reply-To: <20140429000031.GA4284@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042908-3568-0000-0000-000005666B96
+	id S932731AbaD2Idu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:33:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaD2Ids (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 04:33:48 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] perf tests: Add static build make test
+Date: Tue, 29 Apr 2014 10:33:33 +0200
+Message-Id: <1398760413-7574-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 05:30 AM, Dave Jones wrote:
-> On Tue, Apr 29, 2014 at 12:48:14AM +0530, Srivatsa S. Bhat wrote:
->  > Hi,
->  > 
->  > I hit this during boot on v3.15-rc3, just once so far.
->  > Subsequent reboots went fine, and a few quick runs of multi-
->  > threaded ebizzy also didn't recreate the problem.
->  > 
->  > The kernel I was running was v3.15-rc3 + some totally
->  > unrelated cpufreq patches.
-> 
-> Could you post those patches somewhere ?
-> They may not be directly related to the code in the trace, but if
-> they are randomly corrupting memory, maybe that would explain things ?
->
+Adding test for building static perf build into the automated
+suite. Also available via following commands:
 
-Why post them just 'somewhere'? I posted them on LKML! :-)
+  $ make -f tests/make make_static
+  - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.7u5MlB4njo LDFLAGS=-static
+  $ make -f tests/make make_static_O
+  - make_static_O: cd . && make -f Makefile O=/tmp/tmp.Ay6r3wEmtX DESTDIR=/tmp/tmp.vK0KQwO0Vi LDFLAGS=-static
 
-This is the patchset I was testing:  :-)
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/tests/make | 2 ++
+ 1 file changed, 2 insertions(+)
 
-https://lkml.org/lkml/2014/4/28/473
-
-Regards,
-Srivatsa S. Bhat
-
+diff --git a/tools/perf/tests/make b/tools/perf/tests/make
+index 5daeae1..2f92d6e 100644
+--- a/tools/perf/tests/make
++++ b/tools/perf/tests/make
+@@ -46,6 +46,7 @@ make_install_man    := install-man
+ make_install_html   := install-html
+ make_install_info   := install-info
+ make_install_pdf    := install-pdf
++make_static         := LDFLAGS=-static
+ 
+ # all the NO_* variable combined
+ make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
+@@ -87,6 +88,7 @@ run += make_install_bin
+ # run += make_install_info
+ # run += make_install_pdf
+ run += make_minimal
++run += make_static
+ 
+ ifneq ($(call has,ctags),)
+ run += make_tags
+-- 
+1.8.3.1
 
