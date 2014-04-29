@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaD2MzC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:55:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52499 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842AbaD2MzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:55:00 -0400
-Date: Tue, 29 Apr 2014 14:54:57 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Roman Gushchin <klamm@yandex-team.ru>
-Cc: Greg Thelen <gthelen@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
-Message-ID: <20140429125457.GG15058@dhcp22.suse.cz>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <10861398700008@webcorp2f.yandex-team.ru>
- <xr938uqoa8ei.fsf@gthelen.mtv.corp.google.com>
- <7441398768618@webcorp2f.yandex-team.ru>
+	id S1754956AbaD2M4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:56:07 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17727 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754486AbaD2M4F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:56:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19fyaxsQ9dJmlSmGzKfie1npjVRlcYXZ9o=
+X-DKIM: OpenDKIM Filter v2.0.1 titan D7828567125
+Date: Tue, 29 Apr 2014 08:55:54 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] irqchip: mvebu: fixes for v3.15
+Message-ID: <20140429125554.GH28159@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7441398768618@webcorp2f.yandex-team.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-04-14 14:50:18, Roman Gushchin wrote:
-> 29.04.2014, 11:42, "Greg Thelen" <gthelen@google.com>:
-> > On Mon, Apr 28 2014, Roman Gushchin <klamm@yandex-team.ru> wrote:
-> >
-> >>  28.04.2014, 16:27, "Michal Hocko" <mhocko@suse.cz>:
-> >>>  The series is based on top of the current mmotm tree. Once the series
-> >>>  gets accepted I will post a patch which will mark the soft limit as
-> >>>  deprecated with a note that it will be eventually dropped. Let me know
-> >>>  if you would prefer to have such a patch a part of the series.
-> >>>
-> >>>  Thoughts?
-> >>  Looks good to me.
-> >>
-> >>  The only question is: are there any ideas how the hierarchy support
-> >>  will be used in this case in practice?
-> >>  Will someone set low limit for non-leaf cgroups? Why?
-> >>
-> >>  Thanks,
-> >>  Roman
-> >
-> > I imagine that a hosting service may want to give X MB to a top level
-> > memcg (/a) with sub-jobs (/a/b, /a/c) which may(not) have their own
-> > low-limits.
+Thomas,
 
-I would expect the limit would be set on leaf nodes most of the time
-because intermediate nodes have charges inter-mixed with charges from
-children so it is not entirely clear who to protect.
-On the on the other hand I can imagine that the higher level node might
-get some portion of memory by an admin without any way to set the limit
-down the hierarchy for its user as described by Greg.
+Here's a small round of fixes that we need in a stable topic branch as a
+part of a larger fix to the mvebu pcie/mbus driver.  These have been in
+-next for a week or so.
 
-> > Examples:
-> >
-> > case_1) only set low limit on /a.  /a/b and /a/c may overcommit /a's
-> >         memory (b.limit_in_bytes + c.limit_in_bytes > a.limit_in_bytes).
-> >
-> > case_2) low limits on all memcg.  But not overcommitting low_limits
-> >         (b.low_limit_in_in_bytes + c.low_limit_in_in_bytes <=
-> >         a.low_limit_in_in_bytes).
-> 
-> Thanks!
-> 
-> With use_hierarchy turned on it looks perfectly usable.
+Please pull.
 
-use_hierarchy is becoming the default and we even complain about deeper
-directory structures without it being enabled.
+thx,
 
--- 
-Michal Hocko
-SUSE Labs
+Jason.
+
+
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+
+are available in the git repository at:
+
+  git://git.infradead.org/linux-mvebu.git tags/mvebu-irqchip-fixes-3.15
+
+for you to fetch changes up to ff3c664505bf8a8334bca5045e87b85cfe4d2277:
+
+  irqchip: armada-370-xp: Fix releasing of MSIs (2014-04-20 19:14:34 +0000)
+
+----------------------------------------------------------------
+mvebu irqchip ifxes for v3.15
+
+ - armada-370-xp
+
+    - fix invalid cast (signed to unsigned)
+    - add ->check_device() msi_chip op
+    - fix releasing of MSIs
+
+----------------------------------------------------------------
+Neil Greatorex (1):
+      irqchip: armada-370-xp: Fix releasing of MSIs
+
+Thomas Petazzoni (2):
+      irqchip: armada-370-xp: fix invalid cast of signed value into unsigned variable
+      irqchip: armada-370-xp: implement the ->check_device() msi_chip operation
+
+ drivers/irqchip/irq-armada-370-xp.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
