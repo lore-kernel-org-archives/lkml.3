@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500AbaD2Jpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 05:45:46 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34010 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933000AbaD2Jpp (ORCPT
+	id S933527AbaD2JqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 05:46:15 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:63650 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaD2JqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 05:45:45 -0400
-Date: Tue, 29 Apr 2014 10:45:39 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org
-Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
-Message-ID: <20140429094539.GD26088@console-pimps.org>
-References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
- <20140425115345.GC26088@console-pimps.org>
- <20140426072821.GA2286@darkstar.redhat.com>
+	Tue, 29 Apr 2014 05:46:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: micky_ching@realsil.com.cn
+Cc: chris@printf.net, ulf.hansson@linaro.org, lee.jones@linaro.org,
+        sameo@linux.intel.com, gregkh@linuxfoundation.org,
+        dan.carpenter@oracle.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Subject: [PATCH] mmc: rtsx: usb backend needs LED support
+Date: Tue, 29 Apr 2014 11:45:59 +0200
+Message-ID: <7208467.nZIXMIfPji@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <cover.1398735435.git.micky_ching@realsil.com.cn>
+References: <cover.1398735435.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140426072821.GA2286@darkstar.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:aPgRi+NySk7AI7kRDLdfyVMWwvGIIu1pINuJOi7cUX0
+ buEaIUd4NaADW6k04LWLYynHkfyablCA7iSfuATL48nI3ovY4T
+ iBdU+0csRdx0JZBSWxwfRI1OVuCAzoZsVQ3kz/VHeTA8azJJu8
+ P1C+NOTt4e5pBWAP/AUNezCtTauMS7GrlZ7nc3P/KVaX+kt18Q
+ hsAVQcVzyl3Rr0xSUQ+35bA5vdakIfG4BrlwTjqOaJ/pf7JWQi
+ khngJVR2IceC0KJS6JDf1e6Cvo0hs/L2zAMv5mbH2y3b5WiuvQ
+ ty3S9PS0UQQwnM4IZiN9Wp2ka/1oMvAvNz+E6jz8AHQCW7lWrk
+ ypzT92UPzDB8VUjQonkM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Apr, at 03:28:21PM, Dave Young wrote:
-> 
-> There's other kernel messages without appending ,keep.
-> 
-> Also console=ttyS0 does not work with earlyprintk=efi,keep, removing
-> ,keep it works well.
+[hijacking the thread since it has the right Cc list already, sorry]
 
-Try console=efi
+I stumbled over this doing randconfig builds on linux-next
 
-> > > Actually efi earlyprintk is using __init functions such as early_ioremap etc.
-> > > Thus efi earlyconsole can not be kept.
-> >  
-> > Urgh, good point, that's a bug. However I'm sure I've had this working
-> > in the past and have in fact used it to debug stuff.
-> > 
-> > Could you try and fix this up so it works with 'keep'?
-> 
-> Will do. I want use ioremap when it is available but it's hard to decide
-> where to add the code.
-> 
-> I'm thinking to do below:
-> 1. ioremap the whole framebuffer like: efi_fb = ioremap(lfb_base, lfb_size) in the
->    function efi_enter_virtual_mode because ioremap should be usable then.
-> 
-> 2. add two functions for earlyprintk use (scrollup, write, etc.) 
-> __init_refok void * get_vaddr(unsigned long start, unsigned long len)
-> {
-> 	unsigned long base;
-> 
-> 	base = boot_params.screen_info.lfb_base;
-> 	if (efi_fb)
-> 		return (efi_fb + start - base);
-> 	else
-> 		return early_ioremap(start, len);
-> }
-> 
-> __init_refok void put_vaddr(void *addr, unsigned long len)
-> {
-> 	if (!efi_fb)
-> 		early_iounmap(addr, len);
-> }
-> 
-> But it does not sound good to add the ioremap in enter virtual mode funtion.   
-> 
-> Please help if you have any other better idea.
+8<----------
 
-I would just replace the existing calls to early_ioremap() with
-efi_ioremap() and implement it like so (all in
-arch/x86/platform/efi/early_printk.c),
+>From c11f54f1e5ea0557e076867ca31c90bcb20e3e0c Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 29 Apr 2014 11:41:40 +0200
+Subject: [PATCH] mmc: rtsx: usb backend needs LED support
 
-static void *efi_ioremap(resource_size_t phys_addr, unsigned long size)
-{
-	if (system_state == SYSTEM_BOOTING)
-		return early_ioremap(phys_addr, size);
+Building the rtsx USB driver requires the LED classdev base
+support, otherwise we get this build error:
 
-	return ioremap(phys_addr, size);
-}
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+:(.text+0x806480): undefined reference to `led_classdev_unregister'
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+:(.text+0x806708): undefined reference to `led_classdev_register'
 
-At least I think SYSTEM_BOOTING is the correct way to figure out when to
-use early_ioremap(), I'm open to other suggestions though.
+This adds an explicit dependency in Kconfig
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 92d91fe..66aedf3 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+ config MMC_REALTEK_USB
+ 	tristate "Realtek USB SD/MMC Card Interface Driver"
+ 	depends on MFD_RTSX_USB
++	depends on LEDS_CLASS
+ 	help
+ 	  Say Y here to include driver code to support SD/MMC card interface
+ 	  of Realtek RTS5129/39 series card reader
+
