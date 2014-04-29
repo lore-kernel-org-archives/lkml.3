@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965012AbaD2Toh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:44:37 -0400
-Received: from fujitsu24.fnanic.fujitsu.com ([192.240.6.14]:41761 "EHLO
-	fujitsu24.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932491AbaD2Tof convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:44:35 -0400
-From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-To: Rik van Riel <riel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "sandeen@redhat.com" <sandeen@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "jweiner@redhat.com" <jweiner@redhat.com>,
-        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "fengguang.wu@intel.com" <fengguang.wu@intel.com>,
-        "mpatlasov@parallels.com" <mpatlasov@parallels.com>
-Date: Tue, 29 Apr 2014 12:43:54 -0700
-Subject: RE: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
-Thread-Topic: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
-Thread-Index: Ac9j4ALT4O1+nPD9RjeKUHfRkIP4nQAAz2qQ
-Message-ID: <6B2BA408B38BA1478B473C31C3D2074E31D4C5C3BB@SV-EXCHANGE1.Corp.FC.LOCAL>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-In-Reply-To: <20140429151910.53f740ef@annuminas.surriel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-29_05:2014-04-29,2014-04-29,1970-01-01 signatures=0
+	id S965123AbaD2TpM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:45:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57315 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965044AbaD2TpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:45:10 -0400
+Date: Tue, 29 Apr 2014 15:45:08 -0400 (EDT)
+Message-Id: <20140429.154508.1310732534931361787.davem@davemloft.net>
+To: reksio@newterm.pl
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] Driver for Beckhoff CX5020 EtherCAT master
+ module.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140428053658.GA20916@newterm.pl>
+References: <20140428053658.GA20916@newterm.pl>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Apr 2014 12:45:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Darek Marcinkiewicz <reksio@newterm.pl>
+Date: Mon, 28 Apr 2014 07:36:58 +0200
 
-
-> -----Original Message-----
-> From: Rik van Riel [mailto:riel@redhat.com]
-> Sent: Tuesday, April 29, 2014 3:19 PM
-> To: linux-kernel@vger.kernel.org
-> Cc: linux-mm@kvack.org; sandeen@redhat.com; akpm@linux-foundation.org; jweiner@redhat.com; Motohiro Kosaki JP;
-> mhocko@suse.cz; fengguang.wu@intel.com; mpatlasov@parallels.com
-> Subject: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
-> 
-> It is possible for "limit - setpoint + 1" to equal zero, leading to a divide by zero error. Blindly adding 1 to "limit - setpoint" is not working,
-> so we need to actually test the divisor before calling div64.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Cc: stable@vger.kernel.org
-
-Fairly obvious fix.
-
-Acked-by: KOSAKI Motohiro <Kosaki.motohiro@jp.fujitsu.com>
-
-
-> ---
->  mm/page-writeback.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c index ef41349..2682516 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
->  					  unsigned long dirty,
->  					  unsigned long limit)
->  {
-> +	unsigned int divisor;
->  	long long pos_ratio;
->  	long x;
-> 
-> +	divisor = limit - setpoint;
-> +	if (!divisor)
-> +		divisor = 1;
+> +void *ec_bh_alloc_dma_mem(struct bh_priv *priv,
+> +			     int channel,
+> +			     u8 **buf,
+> +			     dma_addr_t *phys,
+> +			     dma_addr_t *phys_buf,
+> +			     size_t *len) {
+> +	u32 mask;
+> +	int offset = channel * DMA_CHAN_SIZE + DMA_CHAN_OFFSET;
 > +
->  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-> -		    limit - setpoint + 1);
-> +		    divisor);
->  	pos_ratio = x;
->  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> +	iowrite32(0xffffffff, priv->dma_io + offset);
+> +
+> +	mask = ioread32(priv->dma_io + offset);
+> +	mask &= 0xfffffffc;
+> +	dev_info(PRIV_TO_DEV(priv),
+> +		 "Read mask %x for channel %d\n",
+> +		 mask, channel);
+> +	*len = ~mask + 1;
+> +
+> +	dev_info(PRIV_TO_DEV(priv),
+> +		 "Allocating %d bytes for channel %d",
+> +		 (int)*len, channel);
+> +	*buf = pci_alloc_consistent(priv->dev,
+> +				    *len * 2,
+> +				    phys_buf);
+
+This is really confusing, the log message says that it allocates
+"*len" bytes, but actually you are allocating "*len * 2" bytes as
+per the arguments you are passing into pci_alloc_consistent.
+
+Either one or the other is wrong, and if "*len * 2" is the correct
+size then it should be explained why you're doubling this value
+but providing just plain "*len" to the caller.
+
+All of these *len values seem to be doubled over and over again,
+in the memset() calls, in the pci_free_consistent() calls during
+resource release on probe error and driver shutdown.
+
+Why not just assign X * 2 to *len and get rid of this doubling all
+over the place?
