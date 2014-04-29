@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965381AbaD2WWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:22:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50959 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083AbaD2WWP (ORCPT
+	id S1757270AbaD2WWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:22:44 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51371 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756381AbaD2WWl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:22:15 -0400
-Date: Tue, 29 Apr 2014 15:21:31 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        Jean Delvare <jdelvare@suse.de>, Guenter Roeck <linux@roeck-us.net>,
-        lm-sensors@lm-sensors.org, Liam Girdwood <lgirdwood@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>
-Message-ID: <20140429222131.GO15125@sirena.org.uk>
-References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
- <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
+	Tue, 29 Apr 2014 18:22:41 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: powernow-k8: Fix checkpatch warnings
+Date: Wed, 30 Apr 2014 00:39:11 +0200
+Message-ID: <4780344.RfsAca3Qz3@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5357C5E0.1070207@semaphore.gr>
+References: <5356DB92.1060600@semaphore.gr> <2606012.9SjvfKiI5Z@vostro.rjw.lan> <5357C5E0.1070207@semaphore.gr>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Vy1A5eXR7jld12ZH"
-Content-Disposition: inline
-In-Reply-To: <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
-X-Cookie: You are magnetic in your bearing.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 12.104.145.3
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 02/10] mfd: vexpress: Convert custom func API to regmap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, April 23, 2014 04:53:36 PM Stratos Karafotis wrote:
+> On 23/04/2014 01:37 μμ, Rafael J. Wysocki wrote:
+> > On Wednesday, April 23, 2014 12:13:54 AM Stratos Karafotis wrote:
+> >> Fix the following checkpatch warnings:
+> > 
+> > In addition to comments from Viresh, I have a general one.
+> > 
+> > Some of the checkpatch.pl warnings are not worth fixing at all ->
+> > 
+> >> - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
+> >> - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
+> >> - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
+> >> - WARNING: quoted string split across lines
+> >> - WARNING: line over 80 characters
+> > 
+> > -> and the "line over 80 characters" ones are outright wrong in many cases,
+> > so please don't "fix" them.
+> > 
+> 
+> Hi Rafael,
+> 
+> Thanks for your comments!
+> 
+> Could you please clarify if you want me to drop the entire patch or
+> send it only with the changes about the last warning found ("no spaces
+> at the start of a line)?
+> 
+> Also, I would like to take the opportunity and ask a question. :)
+> 
+> Reading the code, sometimes, I find some minor formatting issues.
+> Like the checkpatch warnings or unnecessary parentheses and braces.
+> 
+> For example the line bellow:
+> 		if ((freq < policy->min) || (freq > policy->max))
+> 
+> I know that this is not actually an issue and a patch with such changes
+> is (somehow) a noise for the maintainers. But, should it be "fixed" or not?
 
---Vy1A5eXR7jld12ZH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It should be cleaned up generally, so if you have the time and you're willing
+to do such things, please do them.
 
-On Mon, Apr 28, 2014 at 06:57:49PM +0100, Pawel Moll wrote:
+That said things like lines in excess of 80 characters may stay as they are.
 
-> Components of the Versatile Express platform (configuration
-> microcontrollers on motherboard and daughterboards in particular)
-> talk to each other over a custom configuration bus. They
-> provide miscellaneous functions (from clock generator control
-> to energy sensors) which are represented as platform devices
+Thanks!
 
-Acked-by: Mark Brown <broonie@linaro.org>
 
---Vy1A5eXR7jld12ZH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTYCXkAAoJELSic+t+oim9meEQAJISu52vfboXBUHxI1ipL4jT
-tjCvzAx1VLcVlUgWjuxwdIMYhszOQwjvp8j5/KFJ3LmZ4G7b99PlZAhMUeaDkD0G
-IY15zj/yPelhUuMhLMwFCJrO4AXM3FltAhpxDf+RKsWPEpMzJ3rT4aR0/Fl/dXQ3
-QsNGSKUi3RknT+fXoYb0Kr2GDJxIgi9fty/aIsNG7nZA4OqB3tex9w/8uPf1rN6G
-g21ryh7YAp6o3r2146S9kiY0dYxByLRJ1pDHJYoRcOzh9YZwNIQFsQACCXhVzoP7
-WiA4h8e76AW327/Fe78X7AEHQ+jfdP9wcWC7OYfRySukwzsO8QpFX6gsrYU0p2Vj
-fpPDLiTtd6V0bSm2G8pMxrcAZq3YJKd4mN0lO4zaKitrdAvUD4AxbASt6ODFzMxp
-ejQk+mZdBO5/gl9uE6B8aK+RqDQ6hPICVWo7O4UMMkBITfLxG5XX8XUmKBoTS4sC
-SZ9cnxBJlwbCgavRpylR9qx0GLxzC6spfp8hmerJRvc84T1VBM3Ef61uvmC5naBV
-eTFs6lr1FD/uih11n29WCwDNmaF4N2Mw6R3ezuC7oW/DaadIk44p1yE0opr/3o5f
-w+IgUgz7bOfLFvKUefiA6LefigY3llgHG4zBXxCBgkraaFIFIn5mertQH5qeWvF2
-m9LFUk74mADNNTKUsNq1
-=kkiV
------END PGP SIGNATURE-----
-
---Vy1A5eXR7jld12ZH--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
