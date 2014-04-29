@@ -1,77 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018AbaD2RpQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:45:16 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52007 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933326AbaD2RpO (ORCPT
+	id S964915AbaD2RqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:46:10 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:41928 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933326AbaD2RqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:45:14 -0400
-Date: Tue, 29 Apr 2014 10:45:08 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Richard Weinberger <richard@nod.at>,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140429174508.GI8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140427062650.GW4496@linux.vnet.ibm.com>
- <20140428135540.GA14661@linux.vnet.ibm.com>
- <535E8D14.7080405@infradead.org>
- <535E8E17.2050600@nod.at>
- <20140428200640.GG4430@linux.vnet.ibm.com>
- <535EBAE6.3080907@infradead.org>
- <20140428211535.GK4430@linux.vnet.ibm.com>
- <535F95FC.1020909@redhat.com>
- <20140429163604.GH8754@linux.vnet.ibm.com>
- <535FE1DB.2060601@redhat.com>
+	Tue, 29 Apr 2014 13:46:08 -0400
+Message-ID: <535FE55D.40500@semaphore.gr>
+Date: Tue, 29 Apr 2014 20:46:05 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535FE1DB.2060601@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042917-0928-0000-0000-00000191AE4F
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: intel_pstate: Disable interrupts during MSRs reading
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 01:31:07PM -0400, Rik van Riel wrote:
-> On 04/29/2014 12:36 PM, Paul E. McKenney wrote:
-> > On Tue, Apr 29, 2014 at 08:07:24AM -0400, Rik van Riel wrote:
-> >> On 04/28/2014 05:15 PM, Paul E. McKenney wrote:
-> >>> On Mon, Apr 28, 2014 at 01:32:38PM -0700, Randy Dunlap wrote:
-> >>>> On 04/28/14 13:06, Paul E. McKenney wrote:
-> >>
-> >>>>> Please see below for a patch against next-20140428 that makes this build
-> >>>>> for me.  This is derived from Rik's patch, my patch, and is consistent with
-> >>>>> Arnd's patch.
-> >>>>>
-> >>>>> 							Thanx, Paul
-> >>>>
-> >>>> Thnx, works for me.  Finally.
-> >>>
-> >>> Good!
-> >>>
-> >>> Rik, how would you like to proceed with this?
-> >>
-> >> I guess this fix should go into -mm?
-> > 
-> > Andrew dropped the original patch, so a consolidated patch is needed.
-> > I believe that something like the following is what we ended up with.
-> > Does this look right to you?
-> 
-> That looks exactly like the one I have here :)
+According to Intel 64 and IA-32 Architectures SDM, Volume 3,
+Chapter 14.2, "Software needs to exercise care to avoid delays
+between the two RDMSRs (for example interrupts)".
 
-That is reassuring.  ;-)
+So, disable interrupts during reading MSRs IA32_APERF and IA32_MPERF.
+Since the TSC is also takes place in the calculation include it in
+the protected section. This should increase the accuracy of the
+calculations.
 
-							Thanx, Paul
+Tested on Intel i7-3770 CPU @ 3.40GHz.
+Benchmarks (Phoronix Linux compilation) show a slightly increase
+in performance by ~0.1% and a decrease in power consumption by
+~0.13%.
 
-> Andrew, should I send you the two patches?
-> 
-> -- 
-> All rights reversed
-> 
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
 
+I hope it's not too inappropriate to post test results in
+conjunction with my previous patch about the change of calculation
+method of next p-state (https://lkml.org/lkml/2014/4/27/100).
+I used Phoronix benchmark - Linux Kernel Compilation 3.1.
+Below the test results using turbostat (5 iterations):
+
+Without 2 patches:
+
+Ph. avg Time	Total time	PkgWatt		Total Energy
+	79.63	266.416		57.74		15382.85984
+	79.63	265.609		57.87		15370.79283
+	79.57	266.994		57.54		15362.83476
+	79.53	265.304		57.83		15342.53032
+	79.71	265.977		57.76		15362.83152
+avg	79.61	266.06		57.74		15364.36985
+
+With change calculation patch:
+
+Ph. avg Time	Total time	PkgWatt		Total Energy
+	78.23	258.826		59.14		15306.96964
+	78.41	259.110		59.15		15326.35650
+	78.40	258.530		59.26		15320.48780
+	78.46	258.673		59.20		15313.44160
+	78.19	259.075		59.16		15326.87700
+avg	78.34	258.842		59.18		15318.82650
+
+With change calculation patch + this one
+
+Ph. avg Time	Total time	PkgWatt		Total Energy
+	78.33	259.320		59.06		15315.43920
+	78.28	258.245		59.20		15288.10400
+	78.08	257.523		59.32		15276.26436
+	78.38	259.084		59.13		15319.63692
+	78.31	258.232		59.22		15292.49904
+avg	78.27	258.480		59.18		15298.38870
+
+
+ drivers/cpufreq/intel_pstate.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+index 8e309db..95b3958 100644
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -576,10 +576,13 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
+ {
+ 	u64 aperf, mperf;
+ 	unsigned long long tsc;
++	unsigned long flags;
+ 
++	local_irq_save(flags);
+ 	rdmsrl(MSR_IA32_APERF, aperf);
+ 	rdmsrl(MSR_IA32_MPERF, mperf);
+ 	tsc = native_read_tsc();
++	local_irq_restore(flags);
+ 
+ 	aperf = aperf >> FRAC_BITS;
+ 	mperf = mperf >> FRAC_BITS;
+-- 
+1.9.0
