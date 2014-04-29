@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934083AbaD2UKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 16:10:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60665 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933500AbaD2UKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 16:10:08 -0400
-Date: Tue, 29 Apr 2014 22:10:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        linux-man <linux-man@vger.kernel.org>, Eric Paris <eparis@redhat.com>,
-        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: fanotify API: FMODE_NONOTIFY, FMODE_EXEC, FMODE_NOCMTIME
-Message-ID: <20140429201006.GD29634@quack.suse.cz>
-References: <CAKgNAkiq+yA7_tnvCVXemFy6P5F0eMccw18-GdqFthuzagvF5Q@mail.gmail.com>
+	id S934094AbaD2UQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 16:16:48 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:36946 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932910AbaD2UQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 16:16:46 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: bug: acpi ata_bay dock reminds undocked
+Date: Tue, 29 Apr 2014 22:16:41 +0200
+User-Agent: KMail/1.13.7 (Linux/3.15.0-031500rc3-generic; KDE/4.12.3; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkiq+yA7_tnvCVXemFy6P5F0eMccw18-GdqFthuzagvF5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart2836586.KoBJUF4ueo";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404292216.41256@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+--nextPart2836586.KoBJUF4ueo
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Tue 29-04-14 15:29:12, Michael Kerrisk (man-pages) wrote:
-> Can you offer any insight on Heinrich's question, below?
-> 
-> On Sun, Apr 13, 2014 at 4:05 PM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
-> > On 06.04.2014 14:18, Michael Kerrisk (man-pages) wrote:
-> >>>
-> >>> ==
-> >>> >
-> >>> >  >> I notice that the FDs returned by read()s from the FAN FD have the
-> >>> >  >> FMODE_NONOTIFY flag (fcntl(F_GETFL)) flag set. If you know what
-> >>> > that's
-> >>> >  >> about, it would be good to say something about. But, if not, do not
-> >>> >  >> worry--just place a FIXME in the page source of fanotify(7)
-> >>> >
-> >>> >Fixed in fanotify.7
-> >>> >If the listener accesses the file through the file descriptor provided
-> >>> >no additional events are created.
-> >>
-> >> Ahh -- thanks for filling in that piece. I see that you refer to
-> >> fcntl(2) when discussing that flag. But fcntl(2) does not
-> >> mention that flag. I would rather see an explanation of this flag
-> >> in the fanotify pages.
-> >>
-> >
-> > I wrote a small test program and found:
-> >
-> > The flag FMODE_NONOTIFY can be read by function fcntl from userspace.
-> > int flag = fcntl(fd, F_GETFL)
-> >
-> > In include/uapi/asm-generic/fcntl.h I found the following comment:
-> >
-> > /*
-> >  * FMODE_EXEC is 0x20
-> >  * FMODE_NONOTIFY is 0x1000000
-> >  * These cannot be used by userspace O_* until internal and external open
-> >  * flags are split.
-> >  * -Eric Paris
-> >  */
-> >
-> > The definition of FMODE_NONOTIFY is in include/linux/fs.h but this
-> > include is only used to compile the Kernel and not supposed to be used by
-> > userspace.
-> >
-> > I think it is quite annoying that fcntl can return a flag that is not
-> > described in the manpage of fcntl and that is not defined in fcntl.h.
-> >
-> > But FMODE_NONOTIFY is not the only flag:
-> >
-> > I was able to pass
-> > 0x20 (FMODE_EXEC), and
-> > 0x800 (FMODE_NOCMTIME)
-> > to fanotify_init and received them as flag in the file descriptors for the
-> > fanotify events.
-> > I wonder why fanotify_init does not check import parameter event_f_flags and
-> > return an error if any inappropriate value is set.
-  It seems to me fanotify_init() should really check event_f_flags have
-only valid flags set. In particular exclude FMODE_EXEC, FMODE_NOCMTIME, or
-FMODE_NONOTIFY.
+Hello,
 
-> > Should I put this into the BUGS section?
-> >
-> > Should the name of the flag FMODE_NONOTIFY be mentioned at all in the man
-> > pages?
-> >
-> > Or should we write:
-> >
-> > .I fd
-> > This is an open file descriptor for the object being accessed or
-> > .B FAN_NOFD
-> > if a queue overflow occurred.
-> > The file descriptor can be used to access the contents of the monitored file
-> > or
-> > directory.
-> > It has an internal flag set, that suppresses fanotify event generation.
-> > Hence when the receiver of the fanotify event accesses the notified file or
-> > directory using this file descriptor no additional events will be created.
-> > The reading application is responsible for closing the file descriptor.
-  So this is what I would prefer. Just mention the file descriptor does not
-generate new events. I would even go as far as masking kernel internal
-flags like FMODE_EXEC or FMODE_NONOTIFY from the result of F_GETFL. What do
-you think Al?
+I have problem with sysfs entry docked
 
-								Honza
+/sys/bus/platform/devices/dock.0/docked
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+for my media bay DVD drive on notebook Dell Latitude E6440.
+
+After booting linux kernel docked is set to 1 (which is correct,=20
+DVD hw is inserted into sata dock). When I undock it via sysfs=20
+entry
+
+/sys/bus/platform/devices/dock.0/undock
+
+then kernel remove DVD device from system (no /dev/sr0 anymore)=20
+and docked sysfs entry is set to 0.
+
+When I press eject button on DVD drive, I hear some spin up and=20
+kernel detect DVD device again (also udev create /dev/sr0). But=20
+docked sysfs entry remains set to 0. It will never be set back to=20
+1 - only after reboot.
+
+So this looks like bug somewhere and probably in linux acpi dock=20
+driver... Do you know to solve this problem? More applications=20
+checking docked sysfs entry for dock presence and returning 0=20
+will mislead them.
+
+Here is some info from sysfs about dock:
+
+$ grep "" /sys/bus/platform/devices/dock.0/*
+/sys/bus/platform/devices/dock.0/docked:0
+/sys/bus/platform/devices/dock.0/flags:32
+/sys/bus/platform/devices/dock.0/modalias:acpi:LNXIOBAY:
+/sys/bus/platform/devices/dock.0/type:ata_bay
+/sys/bus/platform/devices/dock.0/uevent:MODALIAS=3Dacpi:LNXIOBAY:
+
+If you need some more info let me know. I would be happy to have=20
+working docked sysfs entry.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart2836586.KoBJUF4ueo
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlNgCKkACgkQi/DJPQPkQ1ITegCfdBVqg3M+onjtWXinn27oU1SN
+/kcAn2lLsPdGgUaBje+kEDIoSKeZobQs
+=WHKs
+-----END PGP SIGNATURE-----
+
+--nextPart2836586.KoBJUF4ueo--
