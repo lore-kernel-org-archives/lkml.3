@@ -1,93 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaD2NGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 09:06:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52828 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751540AbaD2NF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 09:05:58 -0400
-Date: Tue, 29 Apr 2014 15:05:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
-        Petr Mladek <pmladek@suse.cz>
-Subject: 64bit x86: NMI nesting still buggy?
-Message-ID: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757140AbaD2NG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 09:06:58 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55245 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661AbaD2NG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 09:06:56 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2] cpufreq: Catch double invocations of
+ cpufreq_freq_transition_begin/end
+To: rjw@rjwysocki.net, mroos@linux.ee, viresh.kumar@linaro.org
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Tue, 29 Apr 2014 18:36:03 +0530
+Message-ID: <20140429130506.7052.54268.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042913-7014-0000-0000-000004CFAAF3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Some cpufreq drivers were redundantly invoking the _begin() and _end()
+APIs around frequency transitions, and this double invocation (one from
+the cpufreq core and the other from the cpufreq driver) used to result
+in a self-deadlock, leading to system hangs during boot. (The _begin()
+API makes contending callers wait until the previous invocation is
+complete. Hence, the cpufreq driver would end up waiting on itself!).
 
-so while debugging some hard-to-explain hangs in the past, we have been 
-going around in circles around the NMI nesting disaster, and I tend to 
-believe that Steven's fixup (for most part introduced in 3f3c8b8c ("x86: 
-Add workaround to NMI iret woes")) makes the race *much* smaller, but it 
-doesn't fix it completely (it basically reduces the race to a few 
-instructions in first_nmi which are doing the stack preparatory work).
+Now all such drivers have been fixed, but debugging this issue was not
+very straight-forward (even lockdep didn't catch this). So let us add a
+debug infrastructure to the cpufreq core to catch such issues more easily
+in the future.
 
-According to 38.4 of [1], when SMM mode is entered while the CPU is 
-handling NMI, the end result might be that upon exit from SMM, NMIs will 
-be re-enabled and latched NMI delivered as nested [2].
+We add a new field called 'transition_task' to the policy structure, to keep
+track of the task which is performing the frequency transition. Using this
+field, we make note of this task during _begin() and print a warning if we
+find a case where the same task is calling _begin() again, before completing
+the previous frequency transition using the corresponding _end().
 
-This is handled well by playing the frame-saving and flag-setting games in 
-`first_nmi' / `nested_nmi' / `repeat_nmi' (and that also works flawlessly 
-in cases exception or breakpoint triggers some time later during NMI 
-handling when all the 'nested' setup has been done).
+We have left out ASYNC_NOTIFICATION drivers from this debug infrastructure
+for 2 reasons:
 
-There is unfortunately small race window, which, I believe, is not covered 
-by this.
+1. At the moment, we have no way to avoid a particular scenario where this
+   debug infrastructure can emit false-positive warnings for such drivers.
+   The scenario is depicted below:
 
-	- 1st NMI triggers
-	- SMM is entered very shortly afterwards, even before `first_nmi' 
-	  was able to do its job
-	- 2nd NMI is latched
-	- SMM exits with NMIs re-enabled (see [2]) and 2nd NMI triggers
-	- 2nd NMI gets handled properly, exits with iret
-	- iret returns to the place where 1st NMI was interrupted, but 
-	  the return address on the stack where iret from 1st NMI should 
-	  eventually return to is gone, and the 'saved/copy' locations of 
-	  the stack don't contain the correct frame either
 
-The race is very small and it's hard to trigger SMM in a deterministic 
-way, so it's probably very difficult to trigger. But I wouldn't be 
-surprised if it'd trigger ocassionally in the wild, and the resulting 
-problems were never root-caused (as the problem is very rare, not 
-reproducible, probably doesn't happen on the same system more than once in 
-a lifetime).
+         Task A						Task B
 
-We were not able to come up with any other fix than avoiding using IST 
-completely on x86_64, and instead going back to stack switching in 
-software -- the same way 32bit x86 does.
+    /* 1st freq transition */
+    Invoke _begin() {
+            ...
+            ...
+    }
 
-So basically, I have two questions:
+    Change the frequency
 
-(1) is the above analysis correct? (if not, why?)
-(2) if it is correct, is there any other option for fix than avoiding 
-    using IST for exception stack switching, and having kernel do the 
-    legacy task switching (the same way x86_32 is doing)?
+    /* 2nd freq transition */
+    Invoke _begin() {
+	    ...	//waiting for B to
+            ... //finish _end() for
+	    ... //the 1st transition
+	    ...	      |				Got interrupt for successful
+	    ...	      |				change of frequency (1st one).
+	    ...       |
+	    ...	      |				/* 1st freq transition */
+	    ...	      |				Invoke _end() {
+	    ...	      |					...
+	    ...	      V				}
+	    ...
+	    ...
+    }
 
-[1] http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-manual-325462.pdf
+   This scenario is actually deadlock-free because, once Task A changes the
+   frequency, it is Task B's responsibility to invoke the corresponding
+   _end() for the 1st frequency transition. Hence it is perfectly legal for
+   Task A to go ahead and attempt another frequency transition in the meantime.
+   (Of course it won't be able to proceed until Task B finishes the 1st _end(),
+   but this doesn't cause a deadlock or a hang).
 
-[2] 	"A special case can occur if an SMI handler nests inside an NMI 
-	 handler and then another NMI occurs. During NMI interrupt 
-	 handling, NMI interrupts are disabled, so normally NMI interrupts 
- 	 are serviced and completed with an IRET instruction one at a 
-	 time. When the processor enters SMM while executing an NMI 
-	 handler, the processor saves the SMRAM state save map but does 
-	 not save the attribute to keep NMI interrupts disabled. 
-	 Potentially, an NMI could be latched (while in SMM or upon exit) 
-	 and serviced upon exit of SMM even though the previous NMI  
-	 handler has still not completed."
+   The debug infrastructure cannot handle this scenario and will treat it as
+   a deadlock and print a warning. To avoid this, we exclude such drivers
+   from the purview of this code.
 
--- 
-Jiri Kosina
-SUSE Labs
+2. Luckily, we don't _need_ this infrastructure for ASYNC_NOTIFICATION drivers
+   at all! The cpufreq core does not automatically invoke the _begin() and
+   _end() APIs during frequency transitions in such drivers. Thus, the driver
+   alone is responsible for invoking _begin()/_end() and hence there shouldn't
+   be any conflicts which lead to double invocations. So, we can skip these
+   drivers, since the probability that such drivers will hit this problem is
+   extremely low, as outlined above.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+v2: Removed the coverage of ASYNC_NOTIFICATION drivers, in order to avoid
+false-positives.
+
+ drivers/cpufreq/cpufreq.c |    7 +++++++
+ include/linux/cpufreq.h   |    1 +
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index abda660..afcac67 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -354,6 +354,11 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+ void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+ 		struct cpufreq_freqs *freqs)
+ {
++
++	/* Catch double invocations of _begin() which lead to self-deadlock */
++	WARN_ON(!(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION)
++				&& current == policy->transition_task);
++
+ wait:
+ 	wait_event(policy->transition_wait, !policy->transition_ongoing);
+ 
+@@ -365,6 +370,7 @@ wait:
+ 	}
+ 
+ 	policy->transition_ongoing = true;
++	policy->transition_task = current;
+ 
+ 	spin_unlock(&policy->transition_lock);
+ 
+@@ -381,6 +387,7 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+ 	cpufreq_notify_post_transition(policy, freqs, transition_failed);
+ 
+ 	policy->transition_ongoing = false;
++	policy->transition_task = NULL;
+ 
+ 	wake_up(&policy->transition_wait);
+ }
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5ae5100..8f44d79 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -110,6 +110,7 @@ struct cpufreq_policy {
+ 	bool			transition_ongoing; /* Tracks transition status */
+ 	spinlock_t		transition_lock;
+ 	wait_queue_head_t	transition_wait;
++	struct task_struct	*transition_task; /* Task which is doing the transition */
+ };
+ 
+ /* Only for ACPI */
+
