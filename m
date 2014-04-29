@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933570AbaD2KcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:32:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57835 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaD2KcV (ORCPT
+	id S933612AbaD2KeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:34:08 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34490 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004AbaD2KeG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:32:21 -0400
-Date: Tue, 29 Apr 2014 12:32:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        NFS <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH/RFC] SCHED: allow wait_on_bit functions to support a
- timeout.
-Message-ID: <20140429103217.GQ27561@twins.programming.kicks-ass.net>
-References: <20140429194406.06c580b8@notabene.brown>
+	Tue, 29 Apr 2014 06:34:06 -0400
+Date: Tue, 29 Apr 2014 11:34:00 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6 3/5] devicetree: bindings: Document Krait cache error
+ interrupts
+Message-ID: <20140429103400.GB22015@e102568-lin.cambridge.arm.com>
+References: <1396641450-12854-1-git-send-email-sboyd@codeaurora.org>
+ <1396641450-12854-4-git-send-email-sboyd@codeaurora.org>
+ <20140408153925.GJ30077@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20140408153925.GJ30077@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Apr 2014 10:34:16.0381 (UTC) FILETIME=[921026D0:01CF6396]
+X-MC-Unique: 114042911340400801
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20140429194406.06c580b8@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 07:44:06PM +1000, NeilBrown wrote:
+On Tue, Apr 08, 2014 at 04:39:25PM +0100, Borislav Petkov wrote:
+> On Fri, Apr 04, 2014 at 12:57:28PM -0700, Stephen Boyd wrote:
+> > The Krait L1/L2 error reporting hardware is made up a per-CPU
+> > interrupt for the L1 cache and a SPI interrupt for the L2.
+> > 
+> > Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+> > Cc: Mark Rutland <mark.rutland@arm.com>
+> > Cc: Kumar Gala <galak@codeaurora.org>
+> > Cc: <devicetree@vger.kernel.org>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  Documentation/devicetree/bindings/arm/cache.txt | 48 ++++++++++++++++++++++++-
+> >  1 file changed, 47 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/arm/cache.txt b/Documentation/devicetree/bindings/arm/cache.txt
+> > index b90fcc7c53cf..d7357e777399 100644
+> > --- a/Documentation/devicetree/bindings/arm/cache.txt
+> > +++ b/Documentation/devicetree/bindings/arm/cache.txt
 > 
+> Right, that's http://www.spinics.net/lists/arm-kernel/msg308540.html
 > 
-> It is currently not possible for various wait_on_bit functions to
-> implement a timeout.
-> While the "action" function that is called to do the waiting could
-> certainly use schedule_timeout(), there is no way to carry forward the
-> remaining timeout after a false wake-up.
-> As false-wakeups a clearly possible at least due to possible
-> hash collisions in bit_waitqueue(), this is a real problem.
-> 
-> The 'action' function is currently passed a pointer to the word
-> containing the bit being waited on.  Of the 27 currently defined
-> action functions, zero of them use this pointer.
-> So changing it to something else will be a little noisy but will have
-> no immediate effect.
-> 
-> This patch changes the 'action' function to take a pointer to the
-> "struct wait_bit_key", which contains a pointer to the word
-> containing the bit so nothing is really lost.
-> 
-> It also adds a 'private' field to "struct wait_bit_key", which is
-> initialized to zero.
-> 
-> An action function can now implement a timeout with something like
-> 
-> static int timed_out_waiter(struct wait_bit_key *key)
-> {
-> 	unsigned long waited;
-> 	if (key->private == 0) {
-> 		key->private = jiffies;
-> 		if (key->private == 0)
-> 			key->private -= 1;
-> 	}
-> 	waited = jiffies - key->private;
-> 	if (waited > 10 * HZ)
-> 		return -EAGAIN;
-> 	schedule_timeout(waited - 10 * HZ);
-> 	return 0;
-> }
-> 
-> If any other need for context in a waiter were found it would be easy
-> to use ->private for some other purpose, or even extend "struct
-> wait_bit_key".
-> 
-> My particular need is to support timeouts in nfs_release_page() to
-> avoid deadlocks with loopback mounted NFS.
+> So whoever picks those patches up, Lorenzo's doc needs to be in his tree
+> first too.
 
-So I'm sure I'm not getting it; but why is all the wait_bit crap so
-entirely different from the normal wait stuff?
+Sorry for the delay in replying. Those cache bindings need an ACK to get
+merged, and were introduced so that idle states can retrieve power domain
+information for caches. I am going to revive the idle bindings thread
+to see what we can/should merge of these bindings as things stand, I
+really hope this won't block the series any further, otherwise we can
+rework the patches so that this series can get in first, or simplify my
+series to allow both to get merged as soon as possible without compromising
+future requirements.
 
-Surely something like:
-
-	wait_event_timeout(&wq, test_bit(bit, word), timeout);
-
-Is pretty much the same, no? The only thing that's different is the wake
-function, but surely we can thread that into there somehow without all
-this silly repetition.
-
-Furthermore, I count about 23 action functions, of which there appear to
-be only like 4 actual variants. Surely such repetition sucks arse and
-should be avoided?
-
+Thanks,
+Lorenzo
 
