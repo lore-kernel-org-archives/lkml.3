@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565AbaD2VS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 17:18:58 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:32468 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752002AbaD2VS5 (ORCPT
+	id S1755718AbaD2VTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 17:19:21 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62262 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755591AbaD2VTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 17:18:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnZMACoWYFN5LEcvPGdsb2JhbABZgwaIRKN/AQEBBZl3gSMXAwEBAQE4NYIlAQEFOhwjEAgDGAklDwUlAwcaE4hAyVcXFoU/iHoHgySBFQSZD5YmKw
-Date: Wed, 30 Apr 2014 07:18:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140429211851.GA32204@dastard>
-References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
- <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
- <20140429181610.GJ18016@ZenIV.linux.org.uk>
- <20140429191015.GK18016@ZenIV.linux.org.uk>
+	Tue, 29 Apr 2014 17:19:19 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: bug: acpi ata_bay dock reminds undocked
+Date: Tue, 29 Apr 2014 23:35:42 +0200
+Message-ID: <13218778.k5mvMTodWa@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <201404292300.01782@pali>
+References: <201404292216.41256@pali> <2146960.E8Lje2UBps@vostro.rjw.lan> <201404292300.01782@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429191015.GK18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="nextPart11394900.mOVLXGJphv"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 08:10:15PM +0100, Al Viro wrote:
-> On Tue, Apr 29, 2014 at 07:16:10PM +0100, Al Viro wrote:
-> > On Tue, Apr 29, 2014 at 08:03:24PM +0200, Miklos Szeredi wrote:
-> > 
-> > > Introducing a new per-sb lock should be OK.
-> > > 
-> > > Another idea, which could have subtler effects, is simply not to kill
-> > > a dentry that is on the shrink list (indicated by
-> > > DCACHE_SHRINK_LIST), since it's bound to get killed anyway.  But
-> > > that's a change in behaviour...
-> > 
-> > Umm...  You mean, if final dput() finds dentry already on shrink list,
-> > just leave it there and return?  Might get really painful - the code
-> > that knows it's holding the last reference to already unhashed dentry
-> > might get a nasty surprise when dput() returns before it's killed off.
-> 
-> I wonder if we could have dput() side of thinks check if we are on the
-> shrink list, mark it "I'll be killing it anyway" and go ahead without
-> removal from the shrink list and instead of freeing mark it "I'm done
-> with it".  With shrink_dentry_list(), on the other hand, checking for those
-> marks, treating the former as "just move it to private list and keep
-> going".  After the list of victims is dealt with, keep picking dentries
-> from the second list, wait for them to get the second mark and do actual
-> freeing.  That ought to avoid any extra locks and preserve all ordering,
-> except for that of kmem_cache_free(), AFAICS...
-> 
-> Comments?
 
-Seems like it would work, but it seems fragile to me - I'm
-wondering how we can ensure that the private shrink list
-manipulations can be kept private.
+--nextPart11394900.mOVLXGJphv
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
-We have a similar situation with the inode cache (private shrink
-list) but the I_FREEING flag is set the entire time the inode is on
-the shrink list. Any new hash lookup or attempt to grab the inode
-that occurs while I_FREEING is set fails, so perhaps dentries also
-need a well defined "being torn down and freed" state where new
-references cannot be taken even though the dentry can still be
-found...
+On Tuesday, April 29, 2014 11:00:01 PM Pali Roh=C3=A1r wrote:
+> On Tuesday 29 April 2014 22:55:07 Rafael J. Wysocki wrote:
+> > Which kernel version(s) have you tried?
+>=20
+> 3.15-rc3
 
-Cheers,
+Does it work with 3.14(.x) by chance?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+=2D-=20
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+--nextPart11394900.mOVLXGJphv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJTYBs0AAoJEILEb/54YlRxAE0QAJsR2UIGWz3YZmTgE6Y19N66
+IR1em607oLjHt+w4vJOqLg7ucAMtrWSl6lmpkRYw+XyziQeBQHppOoQnGzdXaf9Z
+ZQWIa3RVcwbohYiZ65ng5O6Zn4ldE6bDnS3ha7/G8ePmHDy86YaORCc/CQ13lKsP
+kFdOp0QtJPCo/pu0Zr+6JmtTY6vlB+I0tdUWYZi6g6m78VsN7MboCi54KjHwYw3t
+YC3il8ve2yPC2yfjSWTDr1gBOiqrJzFfhhH2+YMbI91pEMwpk4shUcK4oaZqujiA
+49SfRdb/Bqy9qkmf4YeKLBU5AyqQyVtyZU7xziQj5ehg7xNs5oi7MdCj2dWU89Vy
+55oTun+N3gHxQNN6H0B32FgqXxLQbBKLhqo4CcZ0KHPX/QXCYtR5jgoyF12oEL6b
+ZmK3EFQrTFTpOysbMHXX0WMq8Oncek5dbt2106hxGyjxwDLnsJS3w1E49tckN1NU
+Di16eiXwtFzRmHNzyOg1OHi0cleMGvP1gL1bOXAudmLNK1I36zH5unKftm+mrOdb
+j1W8wyeDiBZ+QYczbX8uvREH18sIWedpb8+dsjWGgOw9Rv5+/2ZFdM/JG2vyQ0+s
+wK9CPULvExiRIz/f8/zF3TnsJAyBm7DblRz4aCSM8rA4p8ajtf2RXYGvAJeS5O7r
+8im36ZS3ZA1fDDQS6sZL
+=CQSG
+-----END PGP SIGNATURE-----
+
+--nextPart11394900.mOVLXGJphv--
+
