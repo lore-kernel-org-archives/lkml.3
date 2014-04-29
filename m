@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932731AbaD2Idu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:33:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26977 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971AbaD2Ids (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:33:48 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] perf tests: Add static build make test
-Date: Tue, 29 Apr 2014 10:33:33 +0200
-Message-Id: <1398760413-7574-1-git-send-email-jolsa@kernel.org>
+	id S932951AbaD2Ie4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:34:56 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62624 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932739AbaD2Iey (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 04:34:54 -0400
+From: Chase Southwood <chase.southwood@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Chase Southwood <chase.southwood@gmail.com>
+Subject: [PATCH 3/6 v2] staging: comedi: addi_apci_1564: board has 32 digital inputs
+Date: Tue, 29 Apr 2014 03:34:23 -0500
+Message-Id: <1398760463-18638-1-git-send-email-chase.southwood@gmail.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398562623-5727-1-git-send-email-chase.southwood@gmail.com>
+References: <1398562623-5727-1-git-send-email-chase.southwood@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding test for building static perf build into the automated
-suite. Also available via following commands:
+This board always has 32 digital inputs. Remove the test when
+initializing the subdevice.
 
-  $ make -f tests/make make_static
-  - make_static: cd . && make -f Makefile DESTDIR=/tmp/tmp.7u5MlB4njo LDFLAGS=-static
-  $ make -f tests/make make_static_O
-  - make_static_O: cd . && make -f Makefile O=/tmp/tmp.Ay6r3wEmtX DESTDIR=/tmp/tmp.vK0KQwO0Vi LDFLAGS=-static
+Also, since this board is the only one supported by this driver,
+remove the boardinfo about the digital inputs and just use the
+data directly in the subdevice init.
 
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 ---
- tools/perf/tests/make | 2 ++
- 1 file changed, 2 insertions(+)
+2: Changed incorrect title.
 
-diff --git a/tools/perf/tests/make b/tools/perf/tests/make
-index 5daeae1..2f92d6e 100644
---- a/tools/perf/tests/make
-+++ b/tools/perf/tests/make
-@@ -46,6 +46,7 @@ make_install_man    := install-man
- make_install_html   := install-html
- make_install_info   := install-info
- make_install_pdf    := install-pdf
-+make_static         := LDFLAGS=-static
+ drivers/staging/comedi/drivers/addi_apci_1564.c | 26 +++++++++----------------
+ 1 file changed, 9 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+index c84e17c..fe42f9d 100644
+--- a/drivers/staging/comedi/drivers/addi_apci_1564.c
++++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+@@ -20,8 +20,6 @@ static const struct addi_board apci1564_boardtypes[] = {
+ 		.i_Timer		= 1,
+ 		.interrupt		= apci1564_interrupt,
+ 		.reset			= apci1564_reset,
+-		.di_config		= apci1564_di_config,
+-		.di_bits		= apci1564_di_insn_bits,
+ 		.do_config		= apci1564_do_config,
+ 		.do_bits		= apci1564_do_insn_bits,
+ 		.do_read		= apci1564_do_read,
+@@ -115,21 +113,15 @@ static int apci1564_auto_attach(struct comedi_device *dev,
  
- # all the NO_* variable combined
- make_minimal        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1
-@@ -87,6 +88,7 @@ run += make_install_bin
- # run += make_install_info
- # run += make_install_pdf
- run += make_minimal
-+run += make_static
- 
- ifneq ($(call has,ctags),)
- run += make_tags
+ 	/*  Allocate and Initialise DI Subdevice Structures */
+ 	s = &dev->subdevices[2];
+-	if (devpriv->s_EeParameters.i_NbrDiChannel) {
+-		s->type = COMEDI_SUBD_DI;
+-		s->subdev_flags = SDF_READABLE | SDF_GROUND | SDF_COMMON;
+-		s->n_chan = devpriv->s_EeParameters.i_NbrDiChannel;
+-		s->maxdata = 1;
+-		s->len_chanlist =
+-			devpriv->s_EeParameters.i_NbrDiChannel;
+-		s->range_table = &range_digital;
+-		s->insn_config = this_board->di_config;
+-		s->insn_read = this_board->di_read;
+-		s->insn_write = this_board->di_write;
+-		s->insn_bits = this_board->di_bits;
+-	} else {
+-		s->type = COMEDI_SUBD_UNUSED;
+-	}
++	s->type = COMEDI_SUBD_DI;
++	s->subdev_flags = SDF_READABLE;
++	s->n_chan = 32;
++	s->maxdata = 1;
++	s->len_chanlist = 32;
++	s->range_table = &range_digital;
++	s->insn_config = apci1564_di_config;
++	s->insn_bits = apci1564_di_insn_bits;
++
+ 	/*  Allocate and Initialise DO Subdevice Structures */
+ 	s = &dev->subdevices[3];
+ 	if (devpriv->s_EeParameters.i_NbrDoChannel) {
 -- 
-1.8.3.1
+1.9.0
 
