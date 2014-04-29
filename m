@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720AbaD2OMP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:12:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65445 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757701AbaD2OMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:12:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,951,1389772800"; 
-   d="scan'208";a="522994938"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] tools/perf: remove yet another strtoull()
-Date: Tue, 29 Apr 2014 17:12:07 +0300
-Message-Id: <1398780727-8776-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.9.2
+	id S1757042AbaD2OOX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:14:23 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62528 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaD2OOV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 10:14:21 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
+ devicetree binding
+To: Josh Cartwright <joshc@codeaurora.org>, Tien Hock Loh <thloh@altera.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com,
+        Mark Rutland <mark.rutland@arm.com>, ijc+devicetree@hellion.org.uk,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        dinguyen@altera.com, "lftan@altera.com" <lftan@altera.com>
+In-Reply-To: <20140407171115.GA3956@joshc.qualcomm.com>
+References: <1393842463-5206-1-git-send-email-thloh@altera.com>
+	<20140307151455.GI18529@joshc.qualcomm.com>
+	<CAOLUe6aspffO1PUjKWW7ejpbxnYtb+RKRQrK=y30kuF7KXUUhA@mail.gmail.com>
+	<CAOLUe6aPWmkJJSiBLL8tmw2MNfpaeLpSp3CSwP1u7q+qXxCh9Q@mail.gmail.com>
+	<20140407171115.GA3956@joshc.qualcomm.com>
+Date: Tue, 29 Apr 2014 15:14:14 +0100
+Message-Id: <20140429141414.BDD82C40992@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
- tools/perf/util/util.c | 22 +---------------------
- 1 file changed, 1 insertion(+), 21 deletions(-)
+On Mon, 7 Apr 2014 12:11:15 -0500, Josh Cartwright <joshc@codeaurora.org> wrote:
+> On Mon, Apr 07, 2014 at 04:00:43PM +0800, Tien Hock Loh wrote:
+> > On Wed, Mar 19, 2014 at 6:09 PM, Tien Hock Loh <thloh@altera.com> wrote:
+> > > On Fri, Mar 7, 2014 at 11:14 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
+> > >> On Mon, Mar 03, 2014 at 06:27:43PM +0800, thloh@altera.com wrote:
+> > >>> From: Tien Hock Loh <thloh@altera.com>
+> [..]
+> > >>> +     altera_gc->mapped_irq = irq_of_parse_and_map(node, 0);
+> > >>>
+> > >>
+> > >> platform_get_irq(pdev, 0);
+> > >>
+> > > OK.
+> > >
+> >
+> > platform_get_irq doesn't create the irq mapping which is needed by the
+> > driver. Since this driver is targeted at using of, should I be using
+> > irq_of_parse_and_map or should I still redo the codes with
+> > platform_get_irq and irq_create_mapping? I think the latter would be
+> > introducing code redundancy. Please advice.
+> 
+> Yes, it is technically true that platform_get_irq() doesn't do the
+> mapping directly, but that's because the mapping is setup earlier, when
+> of_device_alloc() (drivers/of/platform.c) allocates resources for your
+> platform device.
+> 
+> Calling irq_of_parse_and_map() should be unnecessary.
 
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 9f66549..77360e1 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -203,17 +203,6 @@ size_t hex_width(u64 v)
- 	return n;
- }
- 
--static int hex(char ch)
--{
--	if ((ch >= '0') && (ch <= '9'))
--		return ch - '0';
--	if ((ch >= 'a') && (ch <= 'f'))
--		return ch - 'a' + 10;
--	if ((ch >= 'A') && (ch <= 'F'))
--		return ch - 'A' + 10;
--	return -1;
--}
--
- /*
-  * While we find nice hex chars, build a long_val.
-  * Return number of chars processed.
-@@ -221,17 +210,8 @@ static int hex(char ch)
- int hex2u64(const char *ptr, u64 *long_val)
- {
- 	const char *p = ptr;
--	*long_val = 0;
--
--	while (*p) {
--		const int hex_val = hex(*p);
- 
--		if (hex_val < 0)
--			break;
--
--		*long_val = (*long_val << 4) | hex_val;
--		p++;
--	}
-+	*long_val = strtoull(ptr, &p, 16);
- 
- 	return p - ptr;
- }
--- 
-1.9.2
+In the latest mainline, platform_get_irq() now does the mapping when
+using an IRQ specified in the device tree.
+
+g.
 
