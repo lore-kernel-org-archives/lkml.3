@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaD2Cp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:45:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54484 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696AbaD2Cp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:45:57 -0400
-Message-ID: <535F1226.7000609@zytor.com>
-Date: Mon, 28 Apr 2014 19:44:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752099AbaD2CrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:47:06 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:36866 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaD2CrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 22:47:04 -0400
+X-Originating-IP: 50.43.32.211
+Date: Mon, 28 Apr 2014 19:46:49 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 0/3] Documentation changes for 3.16
+Message-ID: <20140429024649.GA8465@thin>
+References: <20140428233013.GA10816@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Lutomirski <amluto@gmail.com>
-CC: comex <comexk@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com> <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com> <535F108C.9010001@linux.intel.com>
-In-Reply-To: <535F108C.9010001@linux.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140428233013.GA10816@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 07:38 PM, H. Peter Anvin wrote:
-> On 04/28/2014 05:20 PM, Andrew Lutomirski wrote:
->>
->> ldttest segfaults on 3.13 and 3.14 for me.  It reboots (triple fault?)
->> on your branch.  It even said this:
->>
->> qemu-system-x86_64: 9pfs:virtfs_reset: One or more uncluncked fids
->> found during reset
->>
->> I have no idea what an uncluncked fd is :)
->>
+On Mon, Apr 28, 2014 at 04:30:13PM -0700, Paul E. McKenney wrote:
+> Hello!
 > 
-> It means 9p wasn't properly shut down.
+> This series provides a few documentation updates:
 > 
+> 1.	Update sysfs patch for rcu_cpu_stall_suppress, courtesy of
+> 	Kirill Tkhai.
+> 
+> 2.	Add a rcu_dereference.txt file documenting the proper care
+> 	and feeding of rcu_dereference() return values.
+> 
+> 3.	Update the list of RCU API members in whatisRCU.txt.
 
-(A "fid" is like the 9p version of a file descriptor.  Sort of.)
+For all three:
 
-	-hpa
-
-
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
