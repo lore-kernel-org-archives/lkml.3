@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933993AbaD2MPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:15:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51622 "EHLO mx2.suse.de"
+	id S964824AbaD2MQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:16:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15812 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933447AbaD2MPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:15:34 -0400
-Date: Tue, 29 Apr 2014 14:15:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Peter Chiang <pchiang@nvidia.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 0/3] memcg: minor ->mm_owner fix/cleanups
-Message-ID: <20140429121531.GF15058@dhcp22.suse.cz>
-References: <20140428151926.GA20729@redhat.com>
+	id S933447AbaD2MQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:16:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,951,1389772800"; 
+   d="scan'208";a="530415590"
+Date: Tue, 29 Apr 2014 08:16:35 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
+        bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 19/22] vfs: Cache richacl in struct inode
+Message-ID: <20140429121635.GC5929@linux.intel.com>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20140429005203.GT15995@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140428151926.GA20729@redhat.com>
+In-Reply-To: <20140429005203.GT15995@dastard>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-04-14 17:19:26, Oleg Nesterov wrote:
-> Andrew,
+On Tue, Apr 29, 2014 at 10:52:04AM +1000, Dave Chinner wrote:
+> >  #ifdef CONFIG_FSNOTIFY
+> > @@ -240,10 +246,19 @@ void __destroy_inode(struct inode *inode)
+> >  	}
+> >  
+> >  #ifdef CONFIG_FS_POSIX_ACL
+> > -	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+> > -		posix_acl_release(inode->i_acl);
+> > -	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
+> > -		posix_acl_release(inode->i_default_acl);
+> > +	if (IS_POSIXACL(inode)) {
+> > +		if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+> > +			posix_acl_release(inode->i_acl);
+> > +		if (inode->i_default_acl &&
+> > +		    inode->i_default_acl != ACL_NOT_CACHED)
+> > +			posix_acl_release(inode->i_default_acl);
+> > +	}
+> > +#endif
+> > +#ifdef CONFIG_FS_RICHACL
+> > +	if (IS_RICHACL(inode)) {
+> > +		if (inode->i_richacl && inode->i_richacl != ACL_NOT_CACHED)
+> > +			richacl_put(inode->i_richacl);
+> > +	}
+> >  #endif
 > 
-> You applied the last (4th) memcg-kill-config_mm_owner.patch, but other
-> patches in this thread were ignored. Hopefully thi is because I sent
-> them chaotically.
+> 	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+> 		acl_release(inode->i_acl);
+> 
+> And all the mess of working out what acl needs releasing get taken
+> out of of this code.
 
-All of them are queued AFAICS. I do not know where those emails are
-archived so i've bounced them to you off-list.
+Let's go further and have the API simply:
 
-> Let me resend 1-3 in case you missed them. Acked by Michal.
-> 
-> Oleg.
-> 
->  init/main.c   |    1 -
->  kernel/exit.c |   18 +++++++++++-------
->  2 files changed, 11 insertions(+), 8 deletions(-)
-> 
+	inode_acl_release(inode);
 
--- 
-Michal Hocko
-SUSE Labs
+with inode_acl_release looking something like:
+
+	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+		acl_release(inode->i_acl);
+	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
+		acl_release(inode->i_default_acl);
