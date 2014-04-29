@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433AbaD2JSq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 05:18:46 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.29.28]:35696 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194AbaD2JSj (ORCPT
+	id S933409AbaD2JSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 05:18:44 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.29.24]:43760 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698AbaD2JSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Apr 2014 05:18:39 -0400
 From: Peter Feuerer <peter@piie.net>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Feuerer <peter@piie.net>, Zhang Rui <rui.zhang@intel.com>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH v2 4/4] acerhdf: Use bang-bang thermal governor
-Date: Tue, 29 Apr 2014 11:17:57 +0200
-Message-Id: <1398763077-5542-5-git-send-email-peter@piie.net>
+Cc: Peter Feuerer <peter@piie.net>, Andreas Mohr <andi@lisas.de>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH v2 1/4] acerhdf: Adding support for "manual mode"
+Date: Tue, 29 Apr 2014 11:17:54 +0200
+Message-Id: <1398763077-5542-2-git-send-email-peter@piie.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398763077-5542-1-git-send-email-peter@piie.net>
 References: <1398561815-22033-1-git-send-email-peter@piie.net>
@@ -23,147 +23,252 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acerhdf has been doing an on-off fan control using hysteresis by
-post-manipulating the outcome of thermal subsystem trip point handling.
-This patch enables acerhdf to use the bang-bang governor, which is
-intended for on-off controlled fans.
+Some Acer models require an additional command to turn off the fan after
+bios mode has been enabled.  Adding new section in bios table to allow
+support for those models, by writing an extra "manual mode" register.
 
-CC: Zhang Rui <rui.zhang@intel.com>
 Cc: Andreas Mohr <andi@lisas.de>
 Cc: Borislav Petkov <bp@suse.de>
 Signed-off-by: Peter Feuerer <peter@piie.net>
 ---
- drivers/platform/x86/Kconfig   |  2 +-
- drivers/platform/x86/acerhdf.c | 48 +++++++++++++++++++++++++++++++++++-------
- 2 files changed, 41 insertions(+), 9 deletions(-)
+ drivers/platform/x86/acerhdf.c | 187 +++++++++++++++++++++++------------------
+ 1 file changed, 103 insertions(+), 84 deletions(-)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 27df2c5..0c15d89 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -38,7 +38,7 @@ config ACER_WMI
- 
- config ACERHDF
- 	tristate "Acer Aspire One temperature and fan driver"
--	depends on THERMAL && ACPI
-+	depends on ACPI && THERMAL_GOV_BANG_BANG
- 	---help---
- 	  This is a driver for Acer Aspire One netbooks. It allows to access
- 	  the temperature sensor and to control the fan.
 diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-index 176edbd..f3884f9 100644
+index f94467c..dd63e93 100644
 --- a/drivers/platform/x86/acerhdf.c
 +++ b/drivers/platform/x86/acerhdf.c
 @@ -50,7 +50,7 @@
   */
  #undef START_IN_KERNEL_MODE
  
--#define DRV_VER "0.5.30"
-+#define DRV_VER "0.5.31"
+-#define DRV_VER "0.5.26"
++#define DRV_VER "0.5.29"
  
  /*
   * According to the Atom N270 datasheet,
-@@ -135,8 +135,8 @@ struct bios_settings_t {
- 	const char *vendor;
- 	const char *product;
- 	const char *version;
--	unsigned char fanreg;
--	unsigned char tempreg;
-+	u8 fanreg;
-+	u8 tempreg;
- 	struct fancmd cmd;
- 	int mcmd_enable;
+@@ -119,6 +119,17 @@ struct fancmd {
+ 	u8 cmd_auto;
  };
-@@ -259,6 +259,17 @@ static const struct bios_settings_t bios_tbl[] = {
  
- static const struct bios_settings_t *bios_cfg __read_mostly;
- 
-+/*
-+ * this struct is used to instruct thermal layer to use bang_bang instead of
-+ * default governor for acerhdf
-+ */
-+static struct thermal_zone_params acerhdf_zone_params = {
-+	.governor_name = "bang_bang",
-+	.no_hwmon = 0,
-+	.num_tbps = 0,
-+	.tbp = 0,
++struct manualcmd {
++	u8 mreg;
++	u8 moff;
 +};
 +
- static int acerhdf_get_temp(int *temp)
- {
- 	u8 read_temp;
-@@ -436,6 +447,17 @@ static int acerhdf_get_trip_type(struct thermal_zone_device *thermal, int trip,
- {
- 	if (trip == 0)
- 		*type = THERMAL_TRIP_ACTIVE;
-+	if (trip == 1)
-+		*type = THERMAL_TRIP_CRITICAL;
++/* default register and command to disable fan in manual mode */
++static const struct manualcmd mcmd = {
++	.mreg = 0x94,
++	.moff = 0xff,
++};
 +
-+	return 0;
-+}
-+
-+static int acerhdf_get_trip_hyst(struct thermal_zone_device *thermal, int trip,
-+				 unsigned long *temp)
-+{
-+	if (trip == 0)
-+		*temp = fanon - fanoff;
- 
- 	return 0;
- }
-@@ -445,6 +467,8 @@ static int acerhdf_get_trip_temp(struct thermal_zone_device *thermal, int trip,
- {
- 	if (trip == 0)
- 		*temp = fanon;
-+	else if (trip == 1)
-+		*temp = ACERHDF_TEMP_CRIT;
- 
- 	return 0;
- }
-@@ -464,8 +488,10 @@ static struct thermal_zone_device_ops acerhdf_dev_ops = {
- 	.get_mode = acerhdf_get_mode,
- 	.set_mode = acerhdf_set_mode,
- 	.get_trip_type = acerhdf_get_trip_type,
-+	.get_trip_hyst = acerhdf_get_trip_hyst,
- 	.get_trip_temp = acerhdf_get_trip_temp,
- 	.get_crit_temp = acerhdf_get_crit_temp,
-+	.notify = NULL,
+ /* BIOS settings */
+ struct bios_settings_t {
+ 	const char *vendor;
+@@ -127,105 +138,107 @@ struct bios_settings_t {
+ 	unsigned char fanreg;
+ 	unsigned char tempreg;
+ 	struct fancmd cmd;
++	int mcmd_enable;
  };
  
- 
-@@ -516,9 +542,7 @@ static int acerhdf_set_cur_state(struct thermal_cooling_device *cdev,
- 	}
- 
- 	if (state == 0) {
--		/* turn fan off only if below fanoff temperature */
--		if ((cur_state == ACERHDF_FAN_AUTO) &&
--		    (cur_temp < fanoff))
-+		if (cur_state == ACERHDF_FAN_AUTO)
- 			acerhdf_change_fanstate(ACERHDF_FAN_OFF);
- 	} else {
- 		if (cur_state == ACERHDF_FAN_OFF)
-@@ -696,12 +720,20 @@ static int acerhdf_register_thermal(void)
- 	if (IS_ERR(cl_dev))
- 		return -EINVAL;
- 
--	thz_dev = thermal_zone_device_register("acerhdf", 1, 0, NULL,
--					      &acerhdf_dev_ops, NULL, 0,
-+	thz_dev = thermal_zone_device_register("acerhdf", 2, 0, NULL,
-+					      &acerhdf_dev_ops,
-+					      &acerhdf_zone_params, 0,
- 					      (kernelmode) ? interval*1000 : 0);
- 	if (IS_ERR(thz_dev))
- 		return -EINVAL;
- 
-+	if (strcmp(thz_dev->governor->name,
-+				acerhdf_zone_params.governor_name)) {
-+		pr_err("Didn't get thermal governor %s, perhaps not compiled into thermal subsystem.\n",
-+				acerhdf_zone_params.governor_name);
-+		return -EINVAL;
-+	}
 +
- 	return 0;
+ /* Register addresses and values for different BIOS versions */
+ static const struct bios_settings_t bios_tbl[] = {
+ 	/* AOA110 */
+-	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00} },
+-	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
+-	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0x00} },
+-	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x00} },
+-	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x00} },
+-	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x00} },
++	{"Acer", "AOA110", "v0.3109", 0x55, 0x58, {0x1f, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3114", 0x55, 0x58, {0x1f, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3301", 0x55, 0x58, {0xaf, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3304", 0x55, 0x58, {0xaf, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3305", 0x55, 0x58, {0xaf, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3307", 0x55, 0x58, {0xaf, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3308", 0x55, 0x58, {0x21, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3309", 0x55, 0x58, {0x21, 0x00}, 0},
++	{"Acer", "AOA110", "v0.3310", 0x55, 0x58, {0x21, 0x00}, 0},
+ 	/* AOA150 */
+-	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x00} },
+-	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AOA150", "v0.3114", 0x55, 0x58, {0x1f, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3301", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3305", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3307", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3308", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3309", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AOA150", "v0.3310", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	/* LT1005u */
+-	{"Acer", "LT-10Q", "v0.3310", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "LT-10Q", "v0.3310", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	/* Acer 1410 */
+-	{"Acer", "Aspire 1410", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	/* Acer 1810xx */
+-	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3113", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3115", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3117", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3119", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v0.3120", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v1.3204", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3113", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3115", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3117", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3119", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v0.3120", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v1.3204", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v1.3303", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v1.3308", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v1.3310", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810TZ", "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1810T",  "v1.3314", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	/* Acer 531 */
+-	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00} },
+-	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00} },
++	{"Acer", "AO531h", "v0.3104", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AO531h", "v0.3201", 0x55, 0x58, {0x20, 0x00}, 0},
++	{"Acer", "AO531h", "v0.3304", 0x55, 0x58, {0x20, 0x00}, 0},
+ 	/* Acer 751 */
+-	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00} },
++	{"Acer", "AO751h", "V0.3212", 0x55, 0x58, {0x21, 0x00}, 0},
+ 	/* Acer 1825 */
+-	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1825PTZ", "V1.3118", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Acer", "Aspire 1825PTZ", "V1.3127", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	/* Acer TravelMate 7730 */
+-	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00} },
++	{"Acer", "TravelMate 7730G", "v0.3509", 0x55, 0x58, {0xaf, 0x00}, 0},
+ 	/* Gateway */
+-	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00} },
+-	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00} },
+-	{"Gateway", "LT31",   "v1.3103",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Gateway", "LT31",   "v1.3201",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Gateway", "LT31",   "v1.3302",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Gateway", "LT31",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00} },
++	{"Gateway", "AOA110", "v0.3103",  0x55, 0x58, {0x21, 0x00}, 0},
++	{"Gateway", "AOA150", "v0.3103",  0x55, 0x58, {0x20, 0x00}, 0},
++	{"Gateway", "LT31",   "v1.3103",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Gateway", "LT31",   "v1.3201",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Gateway", "LT31",   "v1.3302",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Gateway", "LT31",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00}, 0},
+ 	/* Packard Bell */
+-	{"Packard Bell", "DOA150",  "v0.3104",  0x55, 0x58, {0x21, 0x00} },
+-	{"Packard Bell", "DOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00} },
+-	{"Packard Bell", "AOA110",  "v0.3105",  0x55, 0x58, {0x21, 0x00} },
+-	{"Packard Bell", "AOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00} },
+-	{"Packard Bell", "ENBFT",   "V1.3118",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "ENBFT",   "V1.3127",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v1.3303",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3120",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3108",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3113",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3115",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3117",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v0.3119",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMU",   "v1.3204",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMA",   "v1.3201",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMA",   "v1.3302",  0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTMA",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00} },
+-	{"Packard Bell", "DOTVR46", "v1.3308",  0x55, 0x58, {0x9e, 0x00} },
++	{"Packard Bell", "DOA150",  "v0.3104",  0x55, 0x58, {0x21, 0x00}, 0},
++	{"Packard Bell", "DOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00}, 0},
++	{"Packard Bell", "AOA110",  "v0.3105",  0x55, 0x58, {0x21, 0x00}, 0},
++	{"Packard Bell", "AOA150",  "v0.3105",  0x55, 0x58, {0x20, 0x00}, 0},
++	{"Packard Bell", "ENBFT",   "V1.3118",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "ENBFT",   "V1.3127",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v1.3303",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3120",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3108",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3113",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3115",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3117",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v0.3119",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMU",   "v1.3204",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMA",   "v1.3201",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMA",   "v1.3302",  0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTMA",   "v1.3303t", 0x55, 0x58, {0x9e, 0x00}, 0},
++	{"Packard Bell", "DOTVR46", "v1.3308",  0x55, 0x58, {0x9e, 0x00}, 0},
+ 	/* pewpew-terminator */
+-	{"", "", "", 0, 0, {0, 0} }
++	{"", "", "", 0, 0, {0, 0}, 0}
+ };
+ 
+ static const struct bios_settings_t *bios_cfg __read_mostly;
+@@ -275,6 +288,12 @@ static void acerhdf_change_fanstate(int state)
+ 	fanstate = state;
+ 
+ 	ec_write(bios_cfg->fanreg, cmd);
++
++	if (bios_cfg->mcmd_enable && state == ACERHDF_FAN_OFF) {
++		if (verbose)
++			pr_notice("turning off fan manually\n");
++		ec_write(mcmd.mreg, mcmd.moff);
++	}
  }
  
+ static void acerhdf_check_param(struct thermal_zone_device *thermal)
 -- 
 1.9.2
 
