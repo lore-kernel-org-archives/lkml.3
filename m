@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaD2MxO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:53:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20361 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaD2MxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:53:13 -0400
-Date: Tue, 29 Apr 2014 14:52:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH] vmacache: change vmacache_find() to always check ->vm_mm
-Message-ID: <20140429125255.GA13934@redhat.com>
-References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net> <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com> <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org> <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com> <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net> <535F78A8.80403@linux.vnet.ibm.com>
+	id S1753328AbaD2Mxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:53:32 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37408 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbaD2Mxa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:53:30 -0400
+Date: Tue, 29 Apr 2014 13:53:25 +0100
+From: Javi Merino <javi.merino@arm.com>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: checkpatch: false positives when parsing trace includes
+Message-ID: <20140429125324.GA30689@e102654-lin.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Apr 2014 12:53:40.0893 (UTC) FILETIME=[0BB364D0:01CF63AA]
+X-MC-Unique: 114042913532811201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <535F78A8.80403@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29, Srivatsa S. Bhat wrote:
->
-> I guess I'll hold off on testing this fix until I get to reproduce
-> the bug more reliably..
+Hi,
 
-perhaps the patch below can help a bit?
+checkpatch complains about the spaces before the close parenthesis in
+trace events:
 
--------------------------------------------------------------------------------
-Subject: [PATCH] vmacache: change vmacache_find() to always check ->vm_mm
+ERROR: space prohibited before that close parenthesis ')'
+#94: FILE: include/trace/events/thermal.h:14:
++               __field(unsigned int,  freq      )
 
-If ->vmacache was corrupted it would be better to detect and report
-the problem asap, check vma->vm_mm before vm_start/vm_end.
+However, in that directory, that's actually the norm, not the
+exception:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- mm/vmacache.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+$ git grep '__field(' include/trace/events/ | grep -P '[ \t]+\)' | wc -l
+1284
+$ git grep '__field(' include/trace/events/ | wc -l
+1783
+$
 
-diff --git a/mm/vmacache.c b/mm/vmacache.c
-index d4224b3..952a324 100644
---- a/mm/vmacache.c
-+++ b/mm/vmacache.c
-@@ -81,9 +81,10 @@ struct vm_area_struct *vmacache_find(struct mm_struct *mm, unsigned long addr)
- 	for (i = 0; i < VMACACHE_SIZE; i++) {
- 		struct vm_area_struct *vma = current->vmacache[i];
- 
--		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
-+		if (vma) {
- 			BUG_ON(vma->vm_mm != mm);
--			return vma;
-+			if (vma->vm_start <= addr && vma->vm_end > addr)
-+				return vma;
- 		}
- 	}
- 
--- 
-1.5.5.1
+More than 70% of the __field() entries *have* spaces before the close
+parenthesis.  Should checkpatch make an exception for this directory
+and not flag it as an error?
 
+Cheers,
+Javi
 
