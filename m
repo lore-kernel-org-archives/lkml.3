@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758619AbaD2VrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 17:47:21 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:40218 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaD2VrU (ORCPT
+	id S1758631AbaD2Vsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 17:48:47 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46542 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbaD2Vsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 17:47:20 -0400
+	Tue, 29 Apr 2014 17:48:46 -0400
+Date: Tue, 29 Apr 2014 22:48:42 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140429214842.GL18016@ZenIV.linux.org.uk>
+References: <20140429160139.GA3113@tucsk.piliscsaba.szeredi.hu>
+ <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
+ <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
+ <20140429181610.GJ18016@ZenIV.linux.org.uk>
+ <20140429191015.GK18016@ZenIV.linux.org.uk>
+ <20140429211851.GA32204@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20140429211128.GF29634@quack.suse.cz>
-References: <CAOMZO5Bb3P20S15Hi8fKO1r8-JOQa3j8GekNBiABVb9XXN0hZw@mail.gmail.com>
-	<20140429211128.GF29634@quack.suse.cz>
-Date: Tue, 29 Apr 2014 18:47:19 -0300
-Message-ID: <CAOMZO5B8xedf_skGekzKP8kG=4BQj8eom6xvEypqnuQbf9wBUA@mail.gmail.com>
-Subject: Re: Warning from kernel/printk/printk.c in linux-next
-From: Fabio Estevam <festevam@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429211851.GA32204@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 6:11 PM, Jan Kara <jack@suse.cz> wrote:
->   Hello,
->
-> On Tue 29-04-14 13:33:17, Fabio Estevam wrote:
->> I am running linux-next 20140429 on a mx6 board (ARM 32-bit) and after commit
->> 5dc90cb49691755faa ("printk: enable interrupts before calling
->> console_trylock_for_printk()") I get the following warning:
->   Thanks for report. Attached patch should fix the problem I hope.
+On Wed, Apr 30, 2014 at 07:18:51AM +1000, Dave Chinner wrote:
 
-Thanks, I don't get the warning with your patch applied:
+> Seems like it would work, but it seems fragile to me - I'm
+> wondering how we can ensure that the private shrink list
+> manipulations can be kept private.
+> 
+> We have a similar situation with the inode cache (private shrink
+> list) but the I_FREEING flag is set the entire time the inode is on
+> the shrink list. Any new hash lookup or attempt to grab the inode
+> that occurs while I_FREEING is set fails, so perhaps dentries also
+> need a well defined "being torn down and freed" state where new
+> references cannot be taken even though the dentry can still be
+> found...
 
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Ummm...  You mean, have d_lookup() et.al. fail on something that is on
+a shrink list?
