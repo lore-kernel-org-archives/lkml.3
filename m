@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053AbaD2HWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 03:22:03 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:41785 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967AbaD2HVz (ORCPT
+	id S1756000AbaD2HWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 03:22:00 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:39151 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931AbaD2HVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 03:21:55 -0400
+	Tue, 29 Apr 2014 03:21:53 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH 3/4] ARM: DT: STi: Add DT node for MiPHY365x
-Date: Tue, 29 Apr 2014 08:21:33 +0100
-Message-Id: <1398756095-32542-4-git-send-email-lee.jones@linaro.org>
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 2/4] phy: miphy365x: Add MiPHY365x header file for DT x Driver defines
+Date: Tue, 29 Apr 2014 08:21:32 +0100
+Message-Id: <1398756095-32542-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398756095-32542-1-git-send-email-lee.jones@linaro.org>
 References: <1398756095-32542-1-git-send-email-lee.jones@linaro.org>
@@ -21,95 +21,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MiPHY365x is a Generic PHY which can serve various SATA or PCIe
-devices. It has 2 ports which it can use for either; both SATA, both
-PCIe or one of each in any configuration.
+This provides the shared header file which will be reference from both
+the MiPHY365x driver and its associated Device Tree node(s).
 
-Cc: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
 Acked-by: Mark Rutland <mark.rutland@arm.com>
 Acked-by: Alexandre Torgue <alexandre.torgue@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/stih416-b2020-revE.dts | 22 ++++++++++++++++++++++
- arch/arm/boot/dts/stih416-b2020.dts      |  6 ++++++
- arch/arm/boot/dts/stih416.dtsi           | 14 ++++++++++++++
- 3 files changed, 42 insertions(+)
- create mode 100644 arch/arm/boot/dts/stih416-b2020-revE.dts
+ include/dt-bindings/phy/phy-miphy365x.h | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+ create mode 100644 include/dt-bindings/phy/phy-miphy365x.h
 
-diff --git a/arch/arm/boot/dts/stih416-b2020-revE.dts b/arch/arm/boot/dts/stih416-b2020-revE.dts
+diff --git a/include/dt-bindings/phy/phy-miphy365x.h b/include/dt-bindings/phy/phy-miphy365x.h
 new file mode 100644
-index 0000000..23fdaf7
+index 0000000..8757c02
 --- /dev/null
-+++ b/arch/arm/boot/dts/stih416-b2020-revE.dts
-@@ -0,0 +1,22 @@
++++ b/include/dt-bindings/phy/phy-miphy365x.h
+@@ -0,0 +1,25 @@
 +/*
-+ * Copyright (C) 2014 STMicroelectronics Limited.
-+ * Author: Lee Jones <lee.jones@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * publishhed by the Free Software Foundation.
++ * This header provides constants for the phy framework
++ * based on the STMicroelectronics miphy365x.
 + */
-+/dts-v1/;
-+#include "stih416.dtsi"
-+#include "stih41x-b2020.dtsi"
-+/ {
-+        model = "STiH416 B2020 REV-E";
-+	compatible = "st,stih416-b2020", "st,stih416";
++#ifndef _DT_BINDINGS_PHY_MIPHY
++#define _DT_BINDINGS_PHY_MIPHY
 +
-+	soc {
-+		miphy365x_phy: miphy365x@fe382000 {
-+			st,pcie-tx-pol-inv;
-+			st,sata-gen = <3>;
-+		};
-+	};
-+};
-diff --git a/arch/arm/boot/dts/stih416-b2020.dts b/arch/arm/boot/dts/stih416-b2020.dts
-index 276f28d..172f222 100644
---- a/arch/arm/boot/dts/stih416-b2020.dts
-+++ b/arch/arm/boot/dts/stih416-b2020.dts
-@@ -13,4 +13,10 @@
- 	model = "STiH416 B2020";
- 	compatible = "st,stih416", "st,stih416-b2020";
- 
-+	soc {
-+		miphy365x_phy: miphy365x@fe382000 {
-+			st,pcie-tx-pol-inv;
-+			st,sata-gen = <3>;
-+		};
-+	};
- };
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 78746d2..00b217a 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -9,6 +9,8 @@
- #include "stih41x.dtsi"
- #include "stih416-clock.dtsi"
- #include "stih416-pinctrl.dtsi"
++/* Supports 16 ports without a datatype change (u8 & 0xF0). */
++#define MIPHY_PORT_0			0
++#define MIPHY_PORT_1			1
++#define MIPHY_PORT_2			2
++#define MIPHY_PORT_3			3
 +
-+#include <dt-bindings/phy/phy-miphy365x.h>
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/reset-controller/stih416-resets.h>
- / {
-@@ -224,5 +226,17 @@
- 
- 			status = "disabled";
- 		};
++/* Supports 16 types without a datatype change (u8 & 0x0F). */
++#define MIPHY_TYPE_SHIFT		4
++#define MIPHY_TYPE_SATA			(0 << MIPHY_TYPE_SHIFT)
++#define MIPHY_TYPE_PCIE			(1 << MIPHY_TYPE_SHIFT)
++#define MIPHY_TYPE_USB			(2 << MIPHY_TYPE_SHIFT)
 +
-+		miphy365x_phy: miphy365x@fe382000 {
-+			compatible      = "st,miphy365x-phy";
-+			reg        	= <0xfe382000 0x100>,
-+					  <0xfe38a000 0x100>,
-+					  <0xfe394000 0x100>,
-+					  <0xfe804000 0x100>;
-+			reg-names  	= "sata0", "sata1", "pcie0", "pcie1";
++#define MIPHY_SATA_PORT0		(MIPHY_TYPE_SATA) | (MIPHY_PORT_0)
++#define MIPHY_SATA_PORT1		(MIPHY_TYPE_SATA) | (MIPHY_PORT_1)
++#define MIPHY_PCIE_PORT0		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_0)
++#define MIPHY_PCIE_PORT1		(MIPHY_TYPE_PCIE) | (MIPHY_PORT_1)
 +
-+			#phy-cells 	= <2>;
-+			st,syscfg  	= <&syscfg_rear>;
-+		};
- 	};
- };
++#endif /* _DT_BINDINGS_PHY_MIPHY */
 -- 
 1.8.3.2
 
