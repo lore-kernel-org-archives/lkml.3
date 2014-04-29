@@ -1,227 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094AbaD2ALA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:11:00 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:65102 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaD2AK6 (ORCPT
+	id S1756003AbaD2AMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:12:05 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:50461 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaD2AMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:10:58 -0400
-Subject: [PATCH] PCI: Remove unnecessary __ref annotations
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 28 Apr 2014 18:10:55 -0600
-Message-ID: <20140429001054.30927.32908.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 28 Apr 2014 20:12:03 -0400
+Message-ID: <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>, Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 28 Apr 2014 17:11:59 -0700
+In-Reply-To: <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com>
+References: <535EA976.1080402@linux.vnet.ibm.com>
+	 <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com>
+	 <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com>
+	 <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
+	 <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com>
+	 <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org>
+	 <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some PCI functions used to be marked __devinit.  When CONFIG_HOTPLUG was
-not set, these functions were discarded after boot.  A few callers of these
-__devinit functions were marked __ref to indicate that they could safely
-call the __devinit functions even though the callers were not __devinit.
+On Mon, 2014-04-28 at 16:57 -0700, Linus Torvalds wrote:
+> On Mon, Apr 28, 2014 at 4:11 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >
+> > unuse_mm() leaves current->mm at NULL so we'd hear about it pretty
+> > quickly if a user task was running use_mm/unuse_mm.
+> 
+> Yes.
+> 
+> > I think so.  Maybe it's time to cook up a debug patch for Srivatsa to
+> > use?  Dump the vma cache when the bug hits, or wire up some trace
+> > points.  Or perhaps plain old printks - it seems to be happening pretty
+> > early in boot.
+> 
+> Well, I think Srivatsa has only seen it once, and wasn't able to
+> reproduce it, so we'd have to make it happen more first.
+> 
+> > Are there additional sanity checks we can perform at cache addition
+> > time?
+> 
+> I wouldn't really expect it to happen at cache addition time, since
+> that's really quite simple. There's only one caller of
+> vmacache_update(), namely find_vma(). And vmacache_update() does the
+> same sanity check that vmacache lookup does (ie check that the
+> passed-on mm is the current thread mm, and that we're not a kernel
+> thread).
 
-But CONFIG_HOTPLUG and __devinit are now gone, and the need for the __ref
-annotations is also gone, so remove them.  Relevant historical commits:
+Agreed.
 
-  54b956b90360 Remove __dev* markings from init.h
-  a8e4b9c101ae PCI: add generic pci_hp_add_bridge()
-  0ab2b57f8db8 PCI: fix section mismatch warning in pci_scan_child_bus
-  451124a7cc6c PCI: fix 4x section mismatch warnings
+> I'd be more inclined to think it's a missing invalidate, but I can
+> only think of two reasons to invalidate:
+> 
+>  - the vma itself went away from the mm, got free'd/reused, and so
+> vm_mm changes..
+> 
+>    But then we'd have to remove it from the rb-tree, and both callers
+> of vma_rb_erase() do a vmacache_invalidate()
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/hotplug-pci.c              |    2 +-
- drivers/pci/hotplug/acpiphp_glue.c     |    2 +-
- drivers/pci/hotplug/cpci_hotplug_pci.c |    2 +-
- drivers/pci/hotplug/shpchp_pci.c       |    2 +-
- drivers/pci/pci.h                      |    8 ++++----
- drivers/pci/probe.c                    |    8 ++++----
- drivers/pci/setup-bus.c                |   25 ++++++++++++-------------
- 7 files changed, 24 insertions(+), 25 deletions(-)
+Right, if this were the case, -next never would have allowed it.
 
-diff --git a/drivers/pci/hotplug-pci.c b/drivers/pci/hotplug-pci.c
-index 6258dc260d9f..c68366cee6b7 100644
---- a/drivers/pci/hotplug-pci.c
-+++ b/drivers/pci/hotplug-pci.c
-@@ -4,7 +4,7 @@
+>  - the mm of a thread changed
+> 
+>    This is exec, use_mm(), and fork() (and fork really only just
+> because we copy the vmacache).
+> 
+>    exec and fork do that "vmacache_flush(tsk)", which is why I was
+> looking at use_mm().
+
+Here's a patch to remove treating kthreads specially. Not sure how
+easily it would be to test since Srivatsa only ran into it once and I
+see no other users complaining.
+
+diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+index f802c2d..41445bb 100644
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -4,6 +4,7 @@
+  */
+ 
+ #include <linux/mm.h>
++#include <linux/vmacache.h>
+ #include <linux/mmu_context.h>
  #include <linux/export.h>
- #include "pci.h"
- 
--int __ref pci_hp_add_bridge(struct pci_dev *dev)
-+int pci_hp_add_bridge(struct pci_dev *dev)
- {
- 	struct pci_bus *parent = dev->bus;
- 	int pass, busnr, start = parent->busn_res.start;
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 0238a02b4cb3..bb945e33b1ec 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -500,7 +500,7 @@ static int acpiphp_rescan_slot(struct acpiphp_slot *slot)
-  * This function should be called per *physical slot*,
-  * not per each slot object in ACPI namespace.
+ #include <linux/sched.h>
+@@ -29,6 +30,7 @@ void use_mm(struct mm_struct *mm)
+                tsk->active_mm = mm;
+        }
+        tsk->mm = mm;
++       vmacache_flush(tsk);
+        switch_mm(active_mm, mm, tsk);
+        task_unlock(tsk);
+ #ifdef finish_arch_post_lock_switch
+diff --git a/mm/vmacache.c b/mm/vmacache.c
+index 1037a3ba..04009d3 100644
+--- a/mm/vmacache.c
++++ b/mm/vmacache.c
+@@ -36,13 +36,10 @@ void vmacache_flush_all(struct mm_struct *mm)
+  * get_user_pages()->find_vma().  The vmacache is task-local and this
+  * task's vmacache pertains to a different mm (ie, its own).  There is
+  * nothing we can do here.
+- *
+- * Also handle the case where a kernel thread has adopted this mm via use_mm().
+- * That kernel thread's vmacache is not applicable to this mm.
   */
--static void __ref enable_slot(struct acpiphp_slot *slot)
-+static void enable_slot(struct acpiphp_slot *slot)
+ static bool vmacache_valid_mm(struct mm_struct *mm)
  {
- 	struct pci_dev *dev;
- 	struct pci_bus *bus = slot->bus;
-diff --git a/drivers/pci/hotplug/cpci_hotplug_pci.c b/drivers/pci/hotplug/cpci_hotplug_pci.c
-index 8c1464851768..b238a1a28372 100644
---- a/drivers/pci/hotplug/cpci_hotplug_pci.c
-+++ b/drivers/pci/hotplug/cpci_hotplug_pci.c
-@@ -250,7 +250,7 @@ int cpci_led_off(struct slot* slot)
-  * Device configuration functions
-  */
- 
--int __ref cpci_configure_slot(struct slot *slot)
-+int cpci_configure_slot(struct slot *slot)
- {
- 	struct pci_dev *dev;
- 	struct pci_bus *parent;
-diff --git a/drivers/pci/hotplug/shpchp_pci.c b/drivers/pci/hotplug/shpchp_pci.c
-index 2bf69fe1926c..18209ebc0979 100644
---- a/drivers/pci/hotplug/shpchp_pci.c
-+++ b/drivers/pci/hotplug/shpchp_pci.c
-@@ -34,7 +34,7 @@
- #include "../pci.h"
- #include "shpchp.h"
- 
--int __ref shpchp_configure_device(struct slot *p_slot)
-+int shpchp_configure_device(struct slot *p_slot)
- {
- 	struct pci_dev *dev;
- 	struct controller *ctrl = p_slot->ctrl;
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 6bd082299e31..fe233a3099cf 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -201,11 +201,11 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 		    struct resource *res, unsigned int reg);
- int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
- void pci_configure_ari(struct pci_dev *dev);
--void __ref __pci_bus_size_bridges(struct pci_bus *bus,
-+void __pci_bus_size_bridges(struct pci_bus *bus,
- 			struct list_head *realloc_head);
--void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
--				      struct list_head *realloc_head,
--				      struct list_head *fail_head);
-+void __pci_bus_assign_resources(const struct pci_bus *bus,
-+				struct list_head *realloc_head,
-+				struct list_head *fail_head);
- 
- /**
-  * pci_ari_enabled - query ARI forwarding status
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index ef09f5f2fe6c..fe89a982a3da 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -719,7 +719,7 @@ add_dev:
- 	return child;
+-       return current->mm == mm && !(current->flags & PF_KTHREAD);
++       return current->mm == mm;
  }
  
--struct pci_bus *__ref pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev, int busnr)
-+struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev, int busnr)
- {
- 	struct pci_bus *child;
- 
-@@ -1369,7 +1369,7 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	WARN_ON(ret < 0);
- }
- 
--struct pci_dev *__ref pci_scan_single_device(struct pci_bus *bus, int devfn)
-+struct pci_dev *pci_scan_single_device(struct pci_bus *bus, int devfn)
- {
- 	struct pci_dev *dev;
- 
-@@ -1958,7 +1958,7 @@ EXPORT_SYMBOL(pci_scan_bus);
-  *
-  * Returns the max number of subordinate bus discovered.
-  */
--unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
-+unsigned int pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
- {
- 	unsigned int max;
- 	struct pci_bus *bus = bridge->subordinate;
-@@ -1981,7 +1981,7 @@ unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
-  *
-  * Returns the max number of subordinate bus discovered.
-  */
--unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
-+unsigned int pci_rescan_bus(struct pci_bus *bus)
- {
- 	unsigned int max;
- 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 138bdd6393be..d219d44709b2 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1113,8 +1113,7 @@ handle_done:
- 	;
- }
- 
--void __ref __pci_bus_size_bridges(struct pci_bus *bus,
--			struct list_head *realloc_head)
-+void __pci_bus_size_bridges(struct pci_bus *bus, struct list_head *realloc_head)
- {
- 	struct pci_dev *dev;
- 	unsigned long mask, prefmask;
-@@ -1178,15 +1177,15 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
- 	}
- }
- 
--void __ref pci_bus_size_bridges(struct pci_bus *bus)
-+void pci_bus_size_bridges(struct pci_bus *bus)
- {
- 	__pci_bus_size_bridges(bus, NULL);
- }
- EXPORT_SYMBOL(pci_bus_size_bridges);
- 
--void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
--				      struct list_head *realloc_head,
--				      struct list_head *fail_head)
-+void __pci_bus_assign_resources(const struct pci_bus *bus,
-+				struct list_head *realloc_head,
-+				struct list_head *fail_head)
- {
- 	struct pci_bus *b;
- 	struct pci_dev *dev;
-@@ -1218,15 +1217,15 @@ void __ref __pci_bus_assign_resources(const struct pci_bus *bus,
- 	}
- }
- 
--void __ref pci_bus_assign_resources(const struct pci_bus *bus)
-+void pci_bus_assign_resources(const struct pci_bus *bus)
- {
- 	__pci_bus_assign_resources(bus, NULL, NULL);
- }
- EXPORT_SYMBOL(pci_bus_assign_resources);
- 
--static void __ref __pci_bridge_assign_resources(const struct pci_dev *bridge,
--					 struct list_head *add_head,
--					 struct list_head *fail_head)
-+static void __pci_bridge_assign_resources(const struct pci_dev *bridge,
-+					  struct list_head *add_head,
-+					  struct list_head *fail_head)
- {
- 	struct pci_bus *b;
- 
-@@ -1304,9 +1303,9 @@ enum release_type {
-  * try to release pci bridge resources that is from leaf bridge,
-  * so we can allocate big new one later
-  */
--static void __ref pci_bus_release_bridge_resources(struct pci_bus *bus,
--						   unsigned long type,
--						   enum release_type rel_type)
-+static void pci_bus_release_bridge_resources(struct pci_bus *bus,
-+					     unsigned long type,
-+					     enum release_type rel_type)
- {
- 	struct pci_dev *dev;
- 	bool is_leaf_bridge = true;
+ void vmacache_update(unsigned long addr, struct vm_area_struct *newvma)
+
 
