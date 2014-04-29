@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453AbaD2BgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 21:36:23 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:36686 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486AbaD2BgV (ORCPT
+	id S1755113AbaD2Bga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 21:36:30 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58513 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754532AbaD2Bg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 21:36:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140428092523.GS26890@mwanda>
-References: <1398530635-3813-1-git-send-email-navin.patidar@gmail.com>
-	<20140428092523.GS26890@mwanda>
-Date: Tue, 29 Apr 2014 07:06:21 +0530
-Message-ID: <CAPV97yfs_8EG2Q_inGd+jx-_v_11F0VireugD6d=Z=SvRX5juQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8188eu: Use USB subsystem functions to check
- endpoint type
-From: navin patidar <navin.patidar@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 28 Apr 2014 21:36:28 -0400
+Message-ID: <1398735385.2419.69.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: PATCH: mvsas: add support for Supermicro AOC-SAS2LP-MV8
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Xiangliang Yu <yuxiangl@marvell.com>
+Cc: Jan Kasprzak <kas@fi.muni.cz>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Apr 2014 18:36:25 -0700
+In-Reply-To: <F766E4F80769BD478052FB6533FA745D4F6368598F@SC-VEXCH4.marvell.com>
+References: <20140428145201.GG29712@fi.muni.cz>
+	 <F766E4F80769BD478052FB6533FA745D4F6368598F@SC-VEXCH4.marvell.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 2:55 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Apr 26, 2014 at 10:13:55PM +0530, navin patidar wrote:
->> Use inline functions provided by USB subsystem to check endpoint type,
->> instead of macros implemented by driver to do the same.
->>
->> Unnecessary debugging messages are also removed.
->>
->
-> I like both these changes but they would have been so much easier to
-> review if you deleted the debugging messagese in [patch 1/2] and then
-> changed the endpoint functions in [patch 2/2].
->
->> @@ -183,60 +143,36 @@ static struct dvobj_priv *usb_dvobj_init(struct usb_interface *usb_intf)
->>       pdvobjpriv->nr_endpoint = piface_desc->bNumEndpoints;
->>
->>       for (i = 0; i < pdvobjpriv->nr_endpoint; i++) {
->> +
->
-> Don't put a blank line here, btw.
->
->> +             int ep_num;
->>               phost_endp = phost_iface->endpoint + i;
->
-> Anyway, please resend because it needs to be broken into two patches.
+On Mon, 2014-04-28 at 18:16 -0700, Xiangliang Yu wrote:
+> Hi, Jan
+> I think below change may be better:
+> { PCI_VDEVICE(MARVELL_EXT, 0x9485), chip_9485 },
 
-dan, I just did that.
+Ben Hutchings already submitted a patch for this twice, which I cc'd you
+on:
 
-regards,
-navin patidar
+http://marc.info/?t=139277203900003
+
+will you ack it?  PCI_VDEVICE() is a sort of take it or leave it macro.
+It's not important and it will look untidy and a bit confusing having a
+mix of open coding and macros, so I'd say convert all or none.
+
+James
+
+
+> > Add support for the AOC-SAS2LP-MV8 SAS-2 controller from SuperMicro.
+> > This controller has subdevice id 0x9485 instead of 0x9480, and apparently
+> > this simple patch is the only thing needed to make it work.
+> > 
+> > # lspci -vn
+> > [...]
+> > 03:00.0 0104: 1b4b:9485 (rev 03)
+> > 	Subsystem: 1b4b:9485
+> > 	Flags: bus master, fast devsel, latency 0, IRQ 24
+> > 	Memory at feba0000 (64-bit, non-prefetchable) [size=128K]
+> > 	Memory at febc0000 (64-bit, non-prefetchable) [size=256K]
+> > 	Expansion ROM at feb90000 [disabled] [size=64K]
+> > 	Capabilities: [40] Power Management version 3
+> > 	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+> > 	Capabilities: [70] Express Endpoint, MSI 00
+> > 	Capabilities: [100] Advanced Error Reporting
+> > 	Capabilities: [140] Virtual Channel
+> > 	Kernel driver in use: mvsas
+> > 	Kernel modules: mvsas
+> > 
+> > Signed-off-by: Jan Kasprzak <kas@fi.muni.cz>
+> > 
+> > diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+> > index 5ff978b..eacee48 100644
+> > --- a/drivers/scsi/mvsas/mv_init.c
+> > +++ b/drivers/scsi/mvsas/mv_init.c
+> > @@ -728,6 +728,15 @@ static struct pci_device_id mvs_pci_table[] = {
+> >  		.class_mask	= 0,
+> >  		.driver_data	= chip_9485,
+> >  	},
+> > +	{
+> > +		.vendor		= PCI_VENDOR_ID_MARVELL_EXT,
+> > +		.device		= 0x9485,
+> > +		.subvendor	= PCI_ANY_ID,
+> > +		.subdevice	= 0x9485,
+> > +		.class		= 0,
+> > +		.class_mask	= 0,
+> > +		.driver_data	= chip_9485,
+> > +	},
+> >  	{ PCI_VDEVICE(OCZ, 0x1021), chip_9485}, /* OCZ RevoDrive3 */
+> >  	{ PCI_VDEVICE(OCZ, 0x1022), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact
+> > model unknown) */
+> >  	{ PCI_VDEVICE(OCZ, 0x1040), chip_9485}, /* OCZ RevoDrive3/zDriveR4 (exact
+> > model unknown) */
+> > 
+> > --
+> > | Jan "Yenya" Kasprzak  <kas at {fi.muni.cz - work | yenya.net - private}> |
+> > | New GPG 4096R/A45477D5 - see http://www.fi.muni.cz/~kas/pgp-rollover.txt |
+> > | http://www.fi.muni.cz/~kas/    Journal: http://www.fi.muni.cz/~kas/blog/
+> > |
+> >   There's clearly a balance between "octopus merges are fine" and "Christ,
+> >   that's not an octopus, that's a Cthulhu merge".         --Linus Torvalds
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
