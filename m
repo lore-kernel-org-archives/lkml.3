@@ -1,93 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623AbaD2W24 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:28:56 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63603 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987AbaD2W2y (ORCPT
+	id S1758202AbaD2W3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:29:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53310 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756637AbaD2W3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:28:54 -0400
-Date: Tue, 29 Apr 2014 15:27:57 -0700
-From: Mark Rutland <mark.rutland@arm.com>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v1] serial: uart: add hw flow control support
- configuration
-Message-ID: <20140429222756.GA2382@flaeskesteg>
-References: <1398792122-18592-1-git-send-email-m-karicheri2@ti.com>
+	Tue, 29 Apr 2014 18:29:18 -0400
+Date: Tue, 29 Apr 2014 22:29:13 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Marian Marinov <mm@1h.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, containers@lists.linux-foundation.org,
+        LXC development mailing-list 
+	<lxc-devel@lists.linuxcontainers.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
+Message-ID: <20140429222913.GD28410@ubuntumail>
+References: <535FADDA.2070803@1h.com>
+ <20140429183534.GB19325@thunk.org>
+ <20140429185251.GA27969@ubuntumail>
+ <53601E5B.5050004@1h.com>
+ <20140429220234.GC28410@ubuntumail>
+ <536026B3.1020905@1h.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398792122-18592-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <536026B3.1020905@1h.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Quoting Marian Marinov (mm@1h.com):
+> On 04/30/2014 01:02 AM, Serge Hallyn wrote:
+> >Quoting Marian Marinov (mm@1h.com):
+> >>On 04/29/2014 09:52 PM, Serge Hallyn wrote:
+> >>>Quoting Theodore Ts'o (tytso@mit.edu):
+> >>>>On Tue, Apr 29, 2014 at 04:49:14PM +0300, Marian Marinov wrote:
+> >>>>>
+> >>>>>I'm proposing a fix to this, by replacing the capable(CAP_LINUX_IMMUTABLE)
+> >>>>>check with ns_capable(current_cred()->user_ns, CAP_LINUX_IMMUTABLE).
+> >>>>
+> >>>>Um, wouldn't it be better to simply fix the capable() function?
+> >>>>
+> >>>>/**
+> >>>>  * capable - Determine if the current task has a superior capability in effect
+> >>>>  * @cap: The capability to be tested for
+> >>>>  *
+> >>>>  * Return true if the current task has the given superior capability currently
+> >>>>  * available for use, false if not.
+> >>>>  *
+> >>>>  * This sets PF_SUPERPRIV on the task if the capability is available on the
+> >>>>  * assumption that it's about to be used.
+> >>>>  */
+> >>>>bool capable(int cap)
+> >>>>{
+> >>>>	return ns_capable(&init_user_ns, cap);
+> >>>>}
+> >>>>EXPORT_SYMBOL(capable);
+> >>>>
+> >>>>The documentation states that it is for "the current task", and I
+> >>>>can't imagine any use case, where user namespaces are in effect, where
+> >>>>using init_user_ns would ever make sense.
+> >>>
+> >>>the init_user_ns represents the user_ns owning the object, not the
+> >>>subject.
+> >>>
+> >>>The patch by Marian is wrong.  Anyone can do 'clone(CLONE_NEWUSER)',
+> >>>setuid(0), execve, and end up satisfying 'ns_capable(current_cred()->userns,
+> >>>CAP_SYS_IMMUTABLE)' by definition.
+> >>>
+> >>>So NACK to that particular patch.  I'm not sure, but IIUC it should be
+> >>>safe to check against the userns owning the inode?
+> >>>
+> >>
+> >>So what you are proposing is to replace 'ns_capable(current_cred()->userns, CAP_SYS_IMMUTABLE)' with
+> >>'inode_capable(inode, CAP_SYS_IMMUTABLE)' ?
+> >>
+> >>I agree that this is more sane.
+> >
+> >Right, and I think the two operations you're looking at seem sane
+> >to allow.
+> 
+> If you are ok with this patch, I will fix all file systems and send patches.
 
-On Tue, Apr 29, 2014 at 06:22:02PM +0100, Murali Karicheri wrote:
-> 8250 uart driver currently supports only software assisted hw flow
-> control. The software assisted hw flow control maintains a hw_stopped
-> flag in the tty structure to stop and start transmission and use modem
-> status interrupt for the event to drive the handshake signals. This is
-> not needed if hw has flow control capabilities. This patch adds a
-> DT attribute for enabling hw flow control for a uart port. Also skip
-> stop and start if this flag is present in flag field of the port
-> structure.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> 
-> CC: Rob Herring <robh+dt@kernel.org>
-> CC: Pawel Moll <pawel.moll@arm.com> 
-> CC: Mark Rutland <mark.rutland@arm.com>
-> CC: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> CC: Kumar Gala <galak@codeaurora.org>
-> CC: Randy Dunlap <rdunlap@infradead.org>
-> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> CC: Jiri Slaby <jslaby@suse.cz>
-> CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Sounds good, thanks.
+
+> Signed-off-by: Marian Marinov <mm@yuhu.biz>
+
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+
 > ---
->  - Fixed brackets around port->flags & UPF_HARD_FLOW as per comments 
->  .../devicetree/bindings/serial/of-serial.txt       |    2 ++
->  drivers/tty/serial/8250/8250_core.c                |    6 ++++--
->  drivers/tty/serial/of_serial.c                     |    4 ++++
->  drivers/tty/serial/serial_core.c                   |   12 +++++++++---
->  4 files changed, 19 insertions(+), 5 deletions(-)
+>  fs/ext4/ioctl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
-> index 1928a3e..123de01 100644
-> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
-> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-> @@ -37,6 +37,8 @@ Optional properties:
->  - auto-flow-control: one way to enable automatic flow control support. The
->    driver is allowed to detect support for the capability even without this
->    property.
-> +- hw-flow-control: this enables pure hw flow control and no software
-> +  intervention needed.
-
->From the wording of the commit message, I believe this would be better worded
-something like:
-
-- hw-flow-control: the hardware has flow control capability.
-
-While the OS needs to know that flow control is present if it wishes to make
-use of it, whether or not the OS does so is not a matter for the binding.
-
-It might also be better worded as "has-hw-flow-control", which would make that
-distinction clearer.
-
-Otherwise this looks fine to me.
-
-Thanks,
-Mark.
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index d011b69..9418634 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -265,7 +265,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>                  * This test looks nicer. Thanks to Pauline Middelink
+>                  */
+>                 if ((flags ^ oldflags) & (EXT4_APPEND_FL | EXT4_IMMUTABLE_FL)) {
+> -                   if (!capable(CAP_LINUX_IMMUTABLE))
+> +                 if (!inode_capable(inode, CAP_LINUX_IMMUTABLE))
+>                                 goto flags_out;
+>                 }
+> 
+> ---
+> 1.8.4
+> 
+> Marian
+> 
+> 
+> >
+> >thanks,
+> >-serge
+> >
+> 
+> 
+> -- 
+> Marian Marinov
+> Founder & CEO of 1H Ltd.
+> Jabber/GTalk: hackman@jabber.org
+> ICQ: 7556201
+> Mobile: +359 886 660 270
