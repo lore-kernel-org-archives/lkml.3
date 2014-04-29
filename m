@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123AbaD2TpM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:45:12 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57315 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965044AbaD2TpK (ORCPT
+	id S965142AbaD2Trq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:47:46 -0400
+Received: from ip-78-45-166-173.net.upcbroadband.cz ([78.45.166.173]:56017
+	"EHLO moskyto.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965044AbaD2Trp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:45:10 -0400
-Date: Tue, 29 Apr 2014 15:45:08 -0400 (EDT)
-Message-Id: <20140429.154508.1310732534931361787.davem@davemloft.net>
-To: reksio@newterm.pl
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] Driver for Beckhoff CX5020 EtherCAT master
- module.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140428053658.GA20916@newterm.pl>
-References: <20140428053658.GA20916@newterm.pl>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 29 Apr 2014 12:45:09 -0700 (PDT)
+	Tue, 29 Apr 2014 15:47:45 -0400
+Date: Tue, 29 Apr 2014 21:47:41 +0200
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: Jan Moskyto Matejka <mq@suse.cz>, Roger Luethi <rl@hellgate.ch>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: via-rhine: fix compiler warning
+Message-ID: <20140429194741.GA30899@moskyto.dyndns.org>
+References: <1398792971-10379-1-git-send-email-mq@suse.cz>
+ <CABjd4Yxj12O7pi2kiqjO+YYU_D=Gdx98yNz6XE4tCX=sL2eYxg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Disposition: inline
+In-Reply-To: <CABjd4Yxj12O7pi2kiqjO+YYU_D=Gdx98yNz6XE4tCX=sL2eYxg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Darek Marcinkiewicz <reksio@newterm.pl>
-Date: Mon, 28 Apr 2014 07:36:58 +0200
 
-> +void *ec_bh_alloc_dma_mem(struct bh_priv *priv,
-> +			     int channel,
-> +			     u8 **buf,
-> +			     dma_addr_t *phys,
-> +			     dma_addr_t *phys_buf,
-> +			     size_t *len) {
-> +	u32 mask;
-> +	int offset = channel * DMA_CHAN_SIZE + DMA_CHAN_OFFSET;
-> +
-> +	iowrite32(0xffffffff, priv->dma_io + offset);
-> +
-> +	mask = ioread32(priv->dma_io + offset);
-> +	mask &= 0xfffffffc;
-> +	dev_info(PRIV_TO_DEV(priv),
-> +		 "Read mask %x for channel %d\n",
-> +		 mask, channel);
-> +	*len = ~mask + 1;
-> +
-> +	dev_info(PRIV_TO_DEV(priv),
-> +		 "Allocating %d bytes for channel %d",
-> +		 (int)*len, channel);
-> +	*buf = pci_alloc_consistent(priv->dev,
-> +				    *len * 2,
-> +				    phys_buf);
+--Kj7319i9nmIyA2yE
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is really confusing, the log message says that it allocates
-"*len" bytes, but actually you are allocating "*len * 2" bytes as
-per the arguments you are passing into pci_alloc_consistent.
+On Tue, Apr 29, 2014 at 10:09:01PM +0400, Alexey Charkov wrote:
+> 2014-04-29 21:36 GMT+04:00 Jan Moskyto Matejka <mq@suse.cz>:
+> > Fixed different size cast warning:
+> >
+> >         drivers/net/ethernet/via/via-rhine.c: In function =E2=80=98rhin=
+e_init_one_platform=E2=80=99:
+> >         drivers/net/ethernet/via/via-rhine.c:1132:13: warning: cast fro=
+m pointer to integer of different size [-Wpointer-to-int-cast]
+> >           revision =3D (u32)match->data;
+> >                      ^
+>=20
+> Looks like the same would apply to e.g. drivers/clk/samsung/clk.c and
+> maybe some others... Also, a number of drivers cast OF data from (void
+> *) to (int) or (unsigned int) - isn't this also problematic on 64bit?
 
-Either one or the other is wrong, and if "*len * 2" is the correct
-size then it should be explained why you're doubling this value
-but providing just plain "*len" to the caller.
+Some of them are, some not, sometimes nobody knows. If it were up to me,
+I would personally put a single comment "this throws a compilation
+warning because this and that" at every place where the warning is
+thrown and is to be ignored.
 
-All of these *len values seem to be doubled over and over again,
-in the memset() calls, in the pci_free_consistent() calls during
-resource release on probe error and driver shutdown.
+So I do fix almost every warning of this kind I come across. Better to
+have that fixed than to believe that the warning is harmless (as this
+probably really was).
 
-Why not just assign X * 2 to *len and get rid of this doubling all
-over the place?
+I'm just running a script that checks the tree for new build warnings
+and then analysing the script's output ... and sometimes it's worth
+fixing, sometimes not.
+
+		Moskyto
+
+--Kj7319i9nmIyA2yE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTYAHcAAoJEDFERKcRJ1aplv4P/2vjstPxLRfFCH7js66MNwn3
+4WlIglmvH0nMs/MPSLhqikNEeJossnAE0K5eMGMUV3aIPpKIUq5Z+xUVpDN67Nwn
+EWI5zzOG7do+9W8uGXlA76a/++jksMk1Pzpi2azKns93JTsTYwDk2/nXmAsgxiKf
+u6TRA0SYi3hb5+urmZ7HERuadp8Kc/e+ffzY1JfxJX1c+686RHP02BKbE0iPjOMd
+S6Igt0Nl6ZdbMeHD4hZMPKiTOsSGadmQaQnLI0K3bQviMqKEC6W2tsZxOj3KOTu5
+gOYtWHvat6cRj+fyueiONDXcNtvwTHfojxdntF/W4NqgCNAemkTrMHaH8aXm52On
+i+6E20sgGaAe8QcZsYF8By9eTlhuqONkmuTXGJCXuK/xHlTSJWmxnq58NVvPZbMS
+dE1Bzvs7jwJpFAcjWY1G3mImYU50P6K8uxL3qg0JFEhwVfoUqByRCTs/PrT2jiUS
+tMs1bynVh4onu5jCfWWYvs0MBMXugDNCPZbk2FWiXjMk/3DTp00qeV8CWhxfeh4O
+dCyB1ejnqfRl9WZl2YhMsPUT9oCzYNhUsiKYrBE6dpWDXh+53AIc/H2fZJ2Q4mA5
+cxxkvQMCVy9hkVXQvklGIFHYSDV2+NrUypCelaCa9imf1l3TbAUeE6oppAQWU7F2
+V/vofrShPxfgt4hGnpRY
+=e31A
+-----END PGP SIGNATURE-----
+
+--Kj7319i9nmIyA2yE--
