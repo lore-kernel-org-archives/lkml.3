@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965114AbaD2UfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 16:35:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49842 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964940AbaD2UfS (ORCPT
+	id S965136AbaD2Uip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 16:38:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52524 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933837AbaD2Uin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 16:35:18 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: Jungseok Lee <jays.lee@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>, kgene.kim@samsung.com,
-        steve.capper@linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, ilho215.lee@samsung.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com
-Subject: Re: [PATCH v4 1/7] arm64: Use pr_* instead of printk
-References: <000101cf6367$c4c219f0$4e464dd0$@samsung.com>
-Date: Tue, 29 Apr 2014 13:35:23 -0700
-In-Reply-To: <000101cf6367$c4c219f0$4e464dd0$@samsung.com> (Jungseok Lee's
-	message of "Tue, 29 Apr 2014 13:59:14 +0900")
-Message-ID: <vnkwsioveuwk.fsf@mitchelh-linux.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Tue, 29 Apr 2014 16:38:43 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Pali =?ISO-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: bug: acpi ata_bay dock reminds undocked
+Date: Tue, 29 Apr 2014 22:55:07 +0200
+Message-ID: <2146960.E8Lje2UBps@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <201404292216.41256@pali>
+References: <201404292216.41256@pali>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; boundary="nextPart3466449.zvxKlzqO1L"; micalg="pgp-sha256"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28 2014 at 09:59:14 PM, Jungseok Lee <jays.lee@samsung.com> wrote:
-> This patch fixed the following checkpatch complaint as using pr_*
-> instead of printk.
->
-> WARNING: printk() should include KERN_ facility level
->
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
-> ---
->  arch/arm64/kernel/traps.c |   14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-> index 7ffaddd..0484e81 100644
-> --- a/arch/arm64/kernel/traps.c
-> +++ b/arch/arm64/kernel/traps.c
-> @@ -65,7 +65,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
->  	fs = get_fs();
->  	set_fs(KERNEL_DS);
->  
-> -	printk("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-> +	pr_emerg("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
 
-Currently this printk is being called with lvl=KERN_EMERG or lvl="". In
-the case of lvl=KERN_EMERG leaving lvl in is redundant. In the case of
-lvl="" this is a behavioral change (printing to a different log
-level). Was this intended?
+--nextPart3466449.zvxKlzqO1L
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="utf-8"
 
->  
->  	for (first = bottom & ~31; first < top; first += 32) {
->  		unsigned long p;
-> @@ -83,7 +83,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
->  					sprintf(str + i * 9, " ????????");
->  			}
->  		}
-> -		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
-> +		pr_emerg("%s%04lx:%s\n", lvl, first & 0xffff, str);
+On Tuesday, April 29, 2014 10:16:41 PM Pali Roh=C3=A1r wrote:
+> Hello,
 
-Ditto
+Hi,
 
->  	}
->  
->  	set_fs(fs);
-> @@ -124,7 +124,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
->  			break;
->  		}
->  	}
-> -	printk("%sCode: %s\n", lvl, str);
-> +	pr_emerg("%sCode: %s\n", lvl, str);
+> I have problem with sysfs entry docked
+>=20
+> /sys/bus/platform/devices/dock.0/docked
+>=20
+> for my media bay DVD drive on notebook Dell Latitude E6440.
+>=20
+> After booting linux kernel docked is set to 1 (which is correct,=20
+> DVD hw is inserted into sata dock). When I undock it via sysfs=20
+> entry
+>=20
+> /sys/bus/platform/devices/dock.0/undock
+>=20
+> then kernel remove DVD device from system (no /dev/sr0 anymore)=20
+> and docked sysfs entry is set to 0.
+>=20
+> When I press eject button on DVD drive, I hear some spin up and=20
+> kernel detect DVD device again (also udev create /dev/sr0). But=20
+> docked sysfs entry remains set to 0. It will never be set back to=20
+> 1 - only after reboot.
+>=20
+> So this looks like bug somewhere and probably in linux acpi dock=20
+> driver... Do you know to solve this problem? More applications=20
+> checking docked sysfs entry for dock presence and returning 0=20
+> will mislead them.
+>=20
+> Here is some info from sysfs about dock:
+>=20
+> $ grep "" /sys/bus/platform/devices/dock.0/*
+> /sys/bus/platform/devices/dock.0/docked:0
+> /sys/bus/platform/devices/dock.0/flags:32
+> /sys/bus/platform/devices/dock.0/modalias:acpi:LNXIOBAY:
+> /sys/bus/platform/devices/dock.0/type:ata_bay
+> /sys/bus/platform/devices/dock.0/uevent:MODALIAS=3Dacpi:LNXIOBAY:
+>=20
+> If you need some more info let me know. I would be happy to have=20
+> working docked sysfs entry.
 
-Ditto. Also called with with lvl=KERN_INFO.
+Which kernel version(s) have you tried?
 
 
-Mitch
+=2D-=20
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
+--nextPart3466449.zvxKlzqO1L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAABCAAGBQJTYBGwAAoJEILEb/54YlRxhA8P/0gWehTXbcK3dPOCJ19saRCq
+HrX7zl77Kw9R74Gzc7LQguEFXxT0DkXbEGVE40UCfTxPpjfJhM2mvb2WPZk1pbwM
+UwWbAVPH3T7wbFDwICgo3GPt22cOtOhLHBoIV5YbrIVTGRTXSj7k+DhlEDL4ths8
+YVKxUKLpVos3Xlejq1getGTkc2T9oAkoO4sgJBegbpRCIx+uwEAvuX/DBS7Uu8Nk
+F1mxcVL6ps5sXCFjfuL4fP6Bbkhc60UyN2NpCoulqRtED5IEN8THWvvEJVUkv3g6
+mPdYV69w/mdXW/mf64hGPGFs+veE+iSzYjKrBQHJShZtyqtYrRJftVuebYFGv4z/
+xONm5JCWqpZqm4OG0AkIgyFxxs9v5TxUGkCrBd9XGzEpPlYJ1t2W6YkxMZyTyo1W
+RruvcFgbhCa5XZ7GVBk0fhQgSeaaS62Y7xIVbJvzbgH8HzkOYGQJfoC47BfEhdaq
+LOy3V4h1OtRMDQnZ0OEdqd4CSQoU0m32UwGJnAiAWWLfv6o2NOuIgwSaVTsjtYCq
+as+uwUfnCgbUwRCTPaatR+9yJqhWLYyBC/w0HF3vcJd48Tx3kK8VTl4yL27BPE05
+OhW18YRJFUdXN5IGlenGh3zYEOpwGoTNLaH+oe5KoSvVyqzNVDlCDCLlHnTrC6gk
+ECX9ENXVHxU76SnrfjI3
+=RhLV
+-----END PGP SIGNATURE-----
+
+--nextPart3466449.zvxKlzqO1L--
+
