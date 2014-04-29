@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaD2ESy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 00:18:54 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:58965
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1754324AbaD2ESV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 00:18:21 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:36524
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754372AbaD2ESX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 00:18:23 -0400
+	id S1752917AbaD2ESU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 00:18:20 -0400
+X-Greylist: delayed 47025 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 00:18:19 EDT
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>
 CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv2 2/4] pwm: ftm-pwm: Clean up the code.
-Date: Tue, 29 Apr 2014 11:33:47 +0800
-Message-ID: <1398742429-10399-3-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCHv2 0/4] FTM PWM adds regmap and endianness support.
+Date: Tue, 29 Apr 2014 11:33:45 +0800
+Message-ID: <1398742429-10399-1-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1398742429-10399-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1398742429-10399-1-git-send-email-Li.Xiubo@freescale.com>
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(50466002)(74502001)(36756003)(92566001)(46102001)(83322001)(77156001)(6806004)(85852003)(83072002)(44976005)(47776003)(19580405001)(101416001)(48376002)(19580395003)(81342001)(20776003)(92726001)(80022001)(87936001)(50986999)(50226001)(80976001)(77982001)(4396001)(81542001)(89996001)(77096999)(31966008)(86362001)(88136002)(76482001)(99396002)(93916002)(62966002)(87286001)(79102001)(76176999);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB499;H:tx30smr01.am.freescale.net;FPR:6F7570EF.1EBD62E.3FF698BC.99960AA0.201C6;MLV:sfv;PTR:gate-tx3.freescale.com;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(47776003)(48376002)(81342001)(50226001)(89996001)(83072002)(81542001)(93916002)(86362001)(99396002)(77982001)(79102001)(36756003)(20776003)(76482001)(85852003)(77156001)(31966008)(46102001)(74502001)(50466002)(87936001)(80022001)(4396001)(80976001)(77096999)(50986999)(62966002)(92726001)(6806004)(101416001)(83322001)(19580395003)(87286001)(44976005)(88136002)(92566001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB504;H:tx30smr01.am.freescale.net;FPR:3417476C.21FD1449.71E51B92.8241AB2.2017E;MLV:sfv;PTR:gate-tx3.freescale.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Forefront-PRVS: 0196A226D1
@@ -26,60 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch intends to prepare for converting to direct regmap
-API usage.
+Convert to direct regmap API usage. Since the regmap core has already
+support rich endianness modes of device, this patch convert to direct
+regmap API usage, preparing to support big endianness for LS1 SoC.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/pwm/pwm-fsl-ftm.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+Using the regmag framework will be more easy to support the endiannesses
+switching of one same device driver on different SoCs.
 
-diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
-index 420169e..4a4ad58 100644
---- a/drivers/pwm/pwm-fsl-ftm.c
-+++ b/drivers/pwm/pwm-fsl-ftm.c
-@@ -21,11 +21,10 @@
- #include <linux/slab.h>
- 
- #define FTM_SC		0x00
--#define FTM_SC_CLK_MASK	0x3
--#define FTM_SC_CLK_SHIFT	3
--#define FTM_SC_CLK(c)	(((c) + 1) << FTM_SC_CLK_SHIFT)
-+#define FTM_SC_CLK_MASK_SHIFT	3
-+#define FTM_SC_CLK_MASK	(3 << FTM_SC_CLK_MASK_SHIFT)
-+#define FTM_SC_CLK(c)	(((c) + 1) << FTM_SC_CLK_MASK_SHIFT)
- #define FTM_SC_PS_MASK	0x7
--#define FTM_SC_PS_SHIFT	0
- 
- #define FTM_CNT		0x04
- #define FTM_MOD		0x08
-@@ -258,7 +257,7 @@ static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 		}
- 
- 		val = readl(fpc->base + FTM_SC);
--		val &= ~(FTM_SC_PS_MASK << FTM_SC_PS_SHIFT);
-+		val &= ~FTM_SC_PS_MASK;
- 		val |= fpc->clk_ps;
- 		writel(val, fpc->base + FTM_SC);
- 		writel(period - 1, fpc->base + FTM_MOD);
-@@ -305,7 +304,7 @@ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
- 
- 	/* select counter clock source */
- 	val = readl(fpc->base + FTM_SC);
--	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
-+	val &= ~FTM_SC_CLK_MASK;
- 	val |= FTM_SC_CLK(fpc->cnt_select);
- 	writel(val, fpc->base + FTM_SC);
- 
-@@ -357,7 +356,7 @@ static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
- 
- 	/* no users left, disable PWM counter clock */
- 	val = readl(fpc->base + FTM_SC);
--	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
-+	val &= ~FTM_SC_CLK_MASK;
- 	writel(val, fpc->base + FTM_SC);
- 
- 	clk_disable_unprepare(fpc->clk[FSL_PWM_CLK_CNTEN]);
+The endianness scenarios are:
+SoC     |  CPU   | FTM-PWM | 'big-endian' property is needed?
+--------|--------|---------|---------------------------------
+Vybird  |  LE    |   LE    |     No
+LS1     |  LE    |   BE    |     Yes
+LS2     |  LE    |   LE    |     No
+
+
+
+Changes in V2:
+- Adds detail descriptions of these patches.
+
+
+Xiubo Li (4):
+  Documentation: Add 'big-endian' property for FTM PWM.
+  pwm: ftm-pwm: Clean up the code.
+  pwm: ftm-pwm: Convert to direct regmap API usage.
+  pwm: ftm-pwm: Add big-endian support
+
+ .../devicetree/bindings/pwm/pwm-fsl-ftm.txt        | 12 ++-
+ drivers/pwm/pwm-fsl-ftm.c                          | 96 ++++++++++++----------
+ 2 files changed, 64 insertions(+), 44 deletions(-)
+
 -- 
 1.8.4
 
