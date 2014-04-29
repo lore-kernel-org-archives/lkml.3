@@ -1,38 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaEBJ3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:29:08 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:49287 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaEBJ3F (ORCPT
+	id S1751853AbaEBJaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:30:03 -0400
+Received: from 95-181-56-74.goodline.info ([95.181.56.74]:39813 "EHLO
+	mail.42.fskn.gov.ru" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530AbaEBJaA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:29:05 -0400
-Message-ID: <5363655D.6020408@gmail.com>
-Date: Fri, 02 May 2014 11:29:01 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 2 May 2014 05:30:00 -0400
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mtk.manpages@gmail.com, Randy Dunlap <rdunlap@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [patch] timer_stats, doc: Readout of /proc/timer_stats doesn't disable
- sampling
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: RE.: Your Attention...
+To: Recipients <CMBCL-Supini.Thrunkul@chinamail.com>
+From: "Miss. Supini Thrunkul" <CMBCL-Supini.Thrunkul@chinamail.com>
+Date: Wed, 30 Apr 2014 00:26:49 +0100
+Reply-To: CMBCL-Supini.Thrunkul@asia.com
+Message-Id: <20140429232554.230AE9E59E3D@mail.42.fskn.gov.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Kerrisk <mtk.manpages@gmail.com>
+Hello,
 
-Some simple testing shows that reading from /proc/timer_stats
-does not disable sampling. Looking back over past source code,
-it appears that it never did.
+I am Miss. Supini Thrunkul from China Misheng bank,I need your cooperation to transfer $47.3 million US Dollars to any trusted account within your control.
 
-Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Please contact me for more details. 
 
+Sincerely Yours,
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Miss. Supini Thrunkul
+Chief Financial Officer
+Head Foreign Operation Dept.
+China Misheng Bank, China
+Phone: +86 1056955728
