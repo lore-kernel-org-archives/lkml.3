@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851AbaD2ICt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:02:49 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:38315 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884AbaD2ICr (ORCPT
+	id S932929AbaD2IDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:03:05 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48310 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932862AbaD2IC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:02:47 -0400
-Date: Tue, 29 Apr 2014 09:02:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: chris@printf.net, ulf.hansson@linaro.org, sameo@linux.intel.com,
-        gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, rogerable@realtek.com,
-        wei_wang@realsil.com.cn
-Subject: Re: [PATCH 0/2] mmc: rtsx: revert support for mmc async request
-Message-ID: <20140429080240.GC29462@lee--X1>
-References: <cover.1398735435.git.micky_ching@realsil.com.cn>
+	Tue, 29 Apr 2014 04:02:59 -0400
+Message-ID: <535F5C7F.3000608@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 13:32:07 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <cover.1398735435.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
+References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042908-8878-0000-0000-00000C2C4E73
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
+On 04/29/2014 04:09 AM, Davidlohr Bueso wrote:
+> Adding Oleg.
 > 
-> The commit <mmc: rtsx: add support for pre_req and post_req> have some problem,
-> using mutex_unlock() in atomic context, spinlock deadlock, it is hard to fix
-> these problem, and better to use a new method. So just remove it.
+> On Mon, 2014-04-28 at 14:55 -0700, Linus Torvalds wrote:
+>> On Mon, Apr 28, 2014 at 2:20 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>>>
+>>> That said, the bug does seem to be that some path doesn't invalidate
+>>> the vmacache sufficiently, or something inserts a vmacache entry into
+>>> the current process when looking up a remote process or whatever.
+>>> Davidlohr, ideas?
+>>
+>> Maybe we missed some use_mm() call. That will change the current mm
+>> without flushing the vma cache. The code considers kernel threads to
+>> be bad targets for vma caching for this reason (and perhaps others),
+>> but maybe we missed something.
+>>
+>> I wonder if we should just invalidate the vma cache in use_mm(), and
+>> remote the "kernel tasks are special" check.
+>>
+>> Srivatsa, are you doing something peculiar on that system that would
+>> trigger this? I see some kdump failures in the log, anything else?
 > 
-> The commit <mmc: rtsx: modify error handle and remove smatch warnings> depends
-> on the previous patch. And mainly fix some problem for the previous patch. So
-> need remove.
+> Is this perhaps a KVM guest? fwiw I see CONFIG_KVM_ASYNC_PF=y which is a
+> user of use_mm().
 > 
-> Micky Ching (2):
->   mmc: rtsx: Revert "mmc: rtsx: modify error handle and remove smatch
->     warnings"
->   mmc: rtsx: Revert "mmc: rtsx: add support for pre_req and post_req"
-> 
->  drivers/mfd/rtsx_pcr.c            |  132 ++++-------
->  drivers/mmc/host/rtsx_pci_sdmmc.c |  459 +++++++------------------------------
->  include/linux/mfd/rtsx_common.h   |    1 -
->  include/linux/mfd/rtsx_pci.h      |    6 -
->  4 files changed, 124 insertions(+), 474 deletions(-)
 
-Just to clarify, what commit did you base these changes on? Have you
-tested to ensure everything works as it should with these two
-reversions?
+No, this is just running baremetal on x86. I copied the kernel config
+of a distro kernel and reused it.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards,
+Srivatsa S. Bhat
+
