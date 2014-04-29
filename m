@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933700AbaD2Ku1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:50:27 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:53557 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933543AbaD2KuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:50:25 -0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Greg Thelen <gthelen@google.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <xr938uqoa8ei.fsf@gthelen.mtv.corp.google.com>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz> <10861398700008@webcorp2f.yandex-team.ru> <xr938uqoa8ei.fsf@gthelen.mtv.corp.google.com>
-Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+	id S933670AbaD2K51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:57:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57075 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932384AbaD2K50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 06:57:26 -0400
+Date: Tue, 29 Apr 2014 12:56:54 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
+ line workload
+Message-ID: <20140429105654.GB1148@krava.brq.redhat.com>
+References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+ <1398346054-3322-2-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Message-Id: <7441398768618@webcorp2f.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Tue, 29 Apr 2014 14:50:18 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398346054-3322-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-29.04.2014, 11:42, "Greg Thelen" <gthelen@google.com>:
-> On Mon, Apr 28 2014, Roman Gushchin <klamm@yandex-team.ru> wrote:
->
->> š28.04.2014, 16:27, "Michal Hocko" <mhocko@suse.cz>:
->>> šThe series is based on top of the current mmotm tree. Once the series
->>> šgets accepted I will post a patch which will mark the soft limit as
->>> šdeprecated with a note that it will be eventually dropped. Let me know
->>> šif you would prefer to have such a patch a part of the series.
->>>
->>> šThoughts?
->> šLooks good to me.
->>
->> šThe only question is: are there any ideas how the hierarchy support
->> šwill be used in this case in practice?
->> šWill someone set low limit for non-leaf cgroups? Why?
->>
->> šThanks,
->> šRoman
->
-> I imagine that a hosting service may want to give X MB to a top level
-> memcg (/a) with sub-jobs (/a/b, /a/c) which may(not) have their own
-> low-limits.
->
-> Examples:
->
-> case_1) only set low limit on /a. š/a/b and /a/c may overcommit /a's
-> ššššššššmemory (b.limit_in_bytes + c.limit_in_bytes > a.limit_in_bytes).
->
-> case_2) low limits on all memcg. šBut not overcommitting low_limits
-> šššššššš(b.low_limit_in_in_bytes + c.low_limit_in_in_bytes <=
-> šššššššša.low_limit_in_in_bytes).
+On Thu, Apr 24, 2014 at 10:27:33PM +0900, Namhyung Kim wrote:
 
-Thanks!
+SNIP
 
-With use_hierarchy turned on it looks perfectly usable.
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-record.c |  121 ++++++++++++++++++-------------------------
+>  1 file changed, 51 insertions(+), 70 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index eb524f91bffe..b1523d8a6191 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -152,26 +152,6 @@ static void sig_handler(int sig)
+>  	signr = sig;
+
+looks like there's no use for 'signr' now.. could be removed
+
+>  }
+>  
+> -static void record__sig_exit(int exit_status __maybe_unused, void *arg)
+> -{
+> -	struct record *rec = arg;
+> -	int status;
+> -
+> -	if (rec->evlist->workload.pid > 0) {
+> -		if (!child_finished)
+> -			kill(rec->evlist->workload.pid, SIGTERM);
+> -
+> -		wait(&status);
+> -		if (WIFSIGNALED(status))
+> -			psignal(WTERMSIG(status), rec->progname);
+> -	}
+> -
+> -	if (signr == -1 || signr == SIGUSR1)
+> -		return;
+> -
+> -	signal(signr, SIG_DFL);
+
+I was wondering what was this one for and found:
+
+  perf_counter tools: Propagate signals properly
+  commit f7b7c26e01e51fe46097e11f179dc71ce7950084
+  Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+  Date:   Wed Jun 10 15:55:59 2009 +0200
+
+but I dont think we need to do that
+
+thanks,
+jirka
