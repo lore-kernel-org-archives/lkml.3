@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640AbaD2GrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:47:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56909 "EHLO
+	id S932690AbaD2GrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:47:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56919 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaD2GrA (ORCPT
+	with ESMTP id S932101AbaD2GrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:47:00 -0400
-Date: Mon, 28 Apr 2014 23:46:27 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-a26ca6716a6c683f40bd676cea7e89704653b98d@git.kernel.org>
-Cc: eranian@google.com, acme@redhat.com, mingo@kernel.org, jolsa@kernel.org,
+	Tue, 29 Apr 2014 02:47:04 -0400
+Date: Mon, 28 Apr 2014 23:46:39 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-cddcef607782966f1601808c17fe9c4c5f79f9f4@git.kernel.org>
+Cc: eranian@google.com, mingo@kernel.org, jolsa@kernel.org,
         a.p.zijlstra@chello.nl, efault@gmx.de, acme@kernel.org,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, dzickus@redhat.com, hpa@zytor.com,
         paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
         adrian.hunter@intel.com
-Reply-To: mingo@kernel.org, acme@redhat.com, eranian@google.com,
-        jolsa@kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        acme@kernel.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, dzickus@redhat.com,
-        hpa@zytor.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, adrian.hunter@intel.com
-In-Reply-To: <1397490723-1992-4-git-send-email-jolsa@redhat.com>
-References: <1397490723-1992-4-git-send-email-jolsa@redhat.com>
+Reply-To: mingo@kernel.org, eranian@google.com, jolsa@kernel.org,
+        a.p.zijlstra@chello.nl, efault@gmx.de, acme@kernel.org,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, dzickus@redhat.com, hpa@zytor.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        adrian.hunter@intel.com
+In-Reply-To: <1397490723-1992-5-git-send-email-jolsa@redhat.com>
+References: <1397490723-1992-5-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Reference count map_groups objects
-Git-Commit-ID: a26ca6716a6c683f40bd676cea7e89704653b98d
+Subject: [tip:perf/core] perf tools:
+  Share map_groups among threads of the same group
+Git-Commit-ID: cddcef607782966f1601808c17fe9c4c5f79f9f4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -39,19 +40,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a26ca6716a6c683f40bd676cea7e89704653b98d
-Gitweb:     http://git.kernel.org/tip/a26ca6716a6c683f40bd676cea7e89704653b98d
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 25 Mar 2014 15:26:44 -0300
+Commit-ID:  cddcef607782966f1601808c17fe9c4c5f79f9f4
+Gitweb:     http://git.kernel.org/tip/cddcef607782966f1601808c17fe9c4c5f79f9f4
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Wed, 9 Apr 2014 20:54:29 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 28 Apr 2014 13:43:26 +0200
+CommitDate: Mon, 28 Apr 2014 13:43:33 +0200
 
-perf tools: Reference count map_groups objects
+perf tools: Share map_groups among threads of the same group
 
-We will share it among threads in the same process.
-Adding map_groups__get/map_groups__put interface for that.
+Sharing map groups within all process threads. This way
+there's only one copy of mmap info and it's reachable
+from any thread within the process.
 
-Signed-off-by: Arnaldo Carvalho de Melo <acme@kernel.org>
+Original-patch-by: Arnaldo Carvalho de Melo <acme@kernel.org>
 Acked-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -64,74 +66,135 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1397490723-1992-4-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1397490723-1992-5-git-send-email-jolsa@redhat.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/map.c    | 7 +++++++
- tools/perf/util/map.h    | 9 +++++++++
- tools/perf/util/thread.c | 2 +-
- 3 files changed, 17 insertions(+), 1 deletion(-)
+ tools/perf/util/machine.c | 11 +++++++++++
+ tools/perf/util/thread.c  | 48 ++++++++++++++++++++++++++++++++++-------------
+ tools/perf/util/thread.h  |  1 +
+ 3 files changed, 47 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index ae4c5e1..ba5f5c0c 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -323,6 +323,7 @@ void map_groups__init(struct map_groups *mg)
- 		INIT_LIST_HEAD(&mg->removed_maps[i]);
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index a53cd0b..98ec56d 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -316,6 +316,17 @@ static struct thread *__machine__findnew_thread(struct machine *machine,
+ 		rb_link_node(&th->rb_node, parent, p);
+ 		rb_insert_color(&th->rb_node, &machine->threads);
+ 		machine->last_match = th;
++
++		/*
++		 * We have to initialize map_groups separately
++		 * after rb tree is updated.
++		 *
++		 * The reason is that we call machine__findnew_thread
++		 * within thread__init_map_groups to find the thread
++		 * leader and that would screwed the rb tree.
++		 */
++		if (thread__init_map_groups(th, machine))
++			return NULL;
  	}
- 	mg->machine = NULL;
-+	mg->refcnt = 1;
- }
  
- static void maps__delete(struct rb_root *maps)
-@@ -374,6 +375,12 @@ void map_groups__delete(struct map_groups *mg)
- 	free(mg);
- }
- 
-+void map_groups__put(struct map_groups *mg)
-+{
-+	if (--mg->refcnt == 0)
-+		map_groups__delete(mg);
-+}
-+
- void map_groups__flush(struct map_groups *mg)
- {
- 	int type;
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 1073e2d..d6445b2 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -59,11 +59,20 @@ struct map_groups {
- 	struct rb_root	 maps[MAP__NR_TYPES];
- 	struct list_head removed_maps[MAP__NR_TYPES];
- 	struct machine	 *machine;
-+	int		 refcnt;
- };
- 
- struct map_groups *map_groups__new(void);
- void map_groups__delete(struct map_groups *mg);
- 
-+static inline struct map_groups *map_groups__get(struct map_groups *mg)
-+{
-+	++mg->refcnt;
-+	return mg;
-+}
-+
-+void map_groups__put(struct map_groups *mg);
-+
- static inline struct kmap *map__kmap(struct map *map)
- {
- 	return (struct kmap *)(map + 1);
+ 	return th;
 diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index dc51d16..b501848 100644
+index b501848..2fde0d5 100644
 --- a/tools/perf/util/thread.c
 +++ b/tools/perf/util/thread.c
-@@ -50,7 +50,7 @@ void thread__delete(struct thread *thread)
- {
- 	struct comm *comm, *tmp;
+@@ -8,6 +8,22 @@
+ #include "debug.h"
+ #include "comm.h"
  
++int thread__init_map_groups(struct thread *thread, struct machine *machine)
++{
++	struct thread *leader;
++	pid_t pid = thread->pid_;
++
++	if (pid == thread->tid) {
++		thread->mg = map_groups__new();
++	} else {
++		leader = machine__findnew_thread(machine, pid, pid);
++		if (leader)
++			thread->mg = map_groups__get(leader->mg);
++	}
++
++	return thread->mg ? 0 : -1;
++}
++
+ struct thread *thread__new(pid_t pid, pid_t tid)
+ {
+ 	char *comm_str;
+@@ -15,10 +31,6 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	struct thread *thread = zalloc(sizeof(*thread));
+ 
+ 	if (thread != NULL) {
+-		thread->mg = map_groups__new();
+-		if (thread->mg == NULL)
+-			goto out_free;
+-
+ 		thread->pid_ = pid;
+ 		thread->tid = tid;
+ 		thread->ppid = -1;
+@@ -40,8 +52,6 @@ struct thread *thread__new(pid_t pid, pid_t tid)
+ 	return thread;
+ 
+ err_thread:
 -	map_groups__delete(thread->mg);
-+	map_groups__put(thread->mg);
- 	thread->mg = NULL;
- 	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
- 		list_del(&comm->list);
+-out_free:
+ 	free(thread);
+ 	return NULL;
+ }
+@@ -126,9 +136,26 @@ void thread__insert_map(struct thread *thread, struct map *map)
+ 	map_groups__insert(thread->mg, map);
+ }
+ 
++static int thread__clone_map_groups(struct thread *thread,
++				    struct thread *parent)
++{
++	int i;
++
++	/* This is new thread, we share map groups for process. */
++	if (thread->pid_ == parent->pid_)
++		return 0;
++
++	/* But this one is new process, copy maps. */
++	for (i = 0; i < MAP__NR_TYPES; ++i)
++		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
++			return -ENOMEM;
++
++	return 0;
++}
++
+ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ {
+-	int i, err;
++	int err;
+ 
+ 	if (parent->comm_set) {
+ 		const char *comm = thread__comm_str(parent);
+@@ -140,13 +167,8 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
+ 		thread->comm_set = true;
+ 	}
+ 
+-	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
+-			return -ENOMEM;
+-
+ 	thread->ppid = parent->tid;
+-
+-	return 0;
++	return thread__clone_map_groups(thread, parent);
+ }
+ 
+ void thread__find_cpumode_addr_location(struct thread *thread,
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index bee1eb0..3c0c272 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -30,6 +30,7 @@ struct machine;
+ struct comm;
+ 
+ struct thread *thread__new(pid_t pid, pid_t tid);
++int thread__init_map_groups(struct thread *thread, struct machine *machine);
+ void thread__delete(struct thread *thread);
+ static inline void thread__exited(struct thread *thread)
+ {
