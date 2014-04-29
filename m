@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaD2EiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 00:38:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55249 "EHLO mail.zytor.com"
+	id S1751814AbaD2Ers (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 00:47:48 -0400
+Received: from ozlabs.org ([103.22.144.67]:36697 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839AbaD2Eh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 00:37:59 -0400
-Message-ID: <535F2C66.9090902@zytor.com>
-Date: Mon, 28 Apr 2014 21:36:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andrew Lutomirski <amluto@gmail.com>
-CC: comex <comexk@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com> <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com> <535F108C.9010001@linux.intel.com> <535F205F.9040101@zytor.com>
-In-Reply-To: <535F205F.9040101@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1750753AbaD2Erq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 00:47:46 -0400
+Date: Tue, 29 Apr 2014 14:47:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
+Message-Id: <20140429144740.0666b2b6ff4c7c6f02a4b301@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Apr_2014_14_47_40_+1000_qi0SJln5SAQFGkT3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 08:45 PM, H. Peter Anvin wrote:
-> 
-> OK, so I found a bug in ldttest.c -- it sets CS to an LDT segment, but
-> it never sets SS to an LDT segment.  This means that it should really
-> have zero footprint versus the espfix code, and implies that we instead
-> have another bug involved.  Why the espfix code should have any effect
-> whatsoever is a mystery, however... if it indeed does?
-> 
-> I have uploaded a fixed ldttest.c, but it seems we might be chasing more
-> than that...
-> 
+--Signature=_Tue__29_Apr_2014_14_47_40_+1000_qi0SJln5SAQFGkT3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With the test fixed, the bug was easy to find: we can't compare against
-__KERNEL_DS in the doublefault handler, because both SS and the image on
-the stack have the stack segment set to zero (NULL).
+Hi Andrew,
 
-With that both ldttest and run16 pass with the doublefault code, even
-with randomization turned back on.
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/vmacache.c between commit 50f5aa8a9b24 ("mm: don't pointlessly use
+BUG_ON() for sanity check") from Linus' tree and commit 8beba5473820
+("mm,vmacache: add debug data") from the akpm-current tree.
 
-I have pushed out the fix.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-There are still things that need fixing: we need to go through the
-espfix path even when returning from NMI/MC (which fortunately can't
-nest with taking an NMI/MC on the espfix path itself, since in that case
-we will have been interrupted while running in the kernel with a kernel
-stack.)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-(Cc: Rostedt because of the NMI issue.)
+diff --cc mm/vmacache.c
+index 1037a3bab505,61c38ae9f54b..000000000000
+--- a/mm/vmacache.c
++++ b/mm/vmacache.c
+@@@ -81,12 -93,11 +93,14 @@@ struct vm_area_struct *vmacache_find(st
+  	for (i =3D 0; i < VMACACHE_SIZE; i++) {
+  		struct vm_area_struct *vma =3D current->vmacache[i];
+ =20
+ -		if (vma && vma->vm_start <=3D addr && vma->vm_end > addr) {
+ -			BUG_ON(vma->vm_mm !=3D mm);
+ +		if (!vma)
+ +			continue;
+ +		if (WARN_ON_ONCE(vma->vm_mm !=3D mm))
+ +			break;
+- 		if (vma->vm_start <=3D addr && vma->vm_end > addr)
+++		if (vma->vm_start <=3D addr && vma->vm_end > addr) {
++ 			count_vm_vmacache_event(VMACACHE_FIND_HITS);
+  			return vma;
++ 		}
+  	}
+ =20
+  	return NULL;
 
-	-hpa
+--Signature=_Tue__29_Apr_2014_14_47_40_+1000_qi0SJln5SAQFGkT3
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTXy7wAAoJEMDTa8Ir7ZwVlXYP/0IBe2CCiSqCE1BjbUWIYm9J
+lMxs7D7i3i3O6VdlEr+KoNLF0WSHl1/27ilq2HSRDFyh6oLCGmQz1MGcOUS61gpB
+3Hemql0sjFmnYGPgV0vznHIDRI2o7i1TvbCHtvFLsHH7DlS7KQCuZNmvmAq2mQlH
+PTKt4zjQm3PB6C2iJAlv197SihtEVh/nbrS8/Rchtkqln+JX8d8JK1NDu/u02LTX
+oYNmudEAn4dovmGXAXkmlEyPAwRSBaxaOdwe+88n2//eV8UTuJ+o7HJGCVgSvgPK
+AGgDe1DPh0EsTHn9Cf09I413WBUNkryCIdk6yhOp8996Misk8gtKXnzvglp0uGk2
+Zcxpc39+R80O0JSSMigdcczCRb7vPgWMhENT80QBwu7kIZ87eLmi62RPT7IRitPT
+SjtDI7u0qTflbNbW+IodTC1mFOyIsDh5jpn5LjO0i8bxDtf7rftiE3uIDuazEVt0
+xIPgVwzMfUHjdA82+0UZUHpReLA61ddG9xDxTJZ9lsFLuTLulqmgwQas0b31dswr
+m44kVh+V2fwTFzlhl/PpXypoO5e4SYQBjeotMX2McNag2SVA+GBn/ZQL10ktYyOz
+zjbjc40e/R2t83tNjd5mJzbB998yaVEUkcfckKNlFv/LxHhhN5RqzO9yjHL3T/JO
+yfwaFBNjgyQ0/qRajltL
+=e9s8
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Apr_2014_14_47_40_+1000_qi0SJln5SAQFGkT3--
