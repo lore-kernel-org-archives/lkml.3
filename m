@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaD2Drf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 23:47:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4553 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754441AbaD2Dre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 23:47:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,948,1389772800"; 
-   d="scan'208";a="502660947"
-Message-ID: <535F20D3.1050407@linux.intel.com>
-Date: Mon, 28 Apr 2014 20:47:31 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754349AbaD2D4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 23:56:24 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44530 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964AbaD2D4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 23:56:23 -0400
+Message-ID: <535F21E0.9020305@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 09:22:00 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Andrew Lutomirski <amluto@gmail.com>
-CC: comex <comexk@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <535EDEC5.7030209@zytor.com> <535EDF67.3090501@linux.intel.com> <CAObL_7HVOjpgp0=Ot9ih2tb6x7xv6MGstu-Krad+rrO4cVqyTg@mail.gmail.com> <CAObL_7FZRji6ivcVvTQ4r=KULCA760fr_wKqkjaYKGL=KLOQRA@mail.gmail.com> <535F108C.9010001@linux.intel.com> <535F205F.9040101@zytor.com>
-In-Reply-To: <535F205F.9040101@zytor.com>
+To: Jason Low <jason.low2@hp.com>
+CC: Preeti Murthy <preeti.lkml@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Alex Shi <alex.shi@linaro.org>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>
+Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
+ whenever newidle balance is attempted
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com> <1398303035-18255-2-git-send-email-jason.low2@hp.com> <5358E417.8090503@linux.vnet.ibm.com> <20140424120415.GS11096@twins.programming.kicks-ass.net> <20140424124438.GT13658@twins.programming.kicks-ass.net> <1398358417.3509.11.camel@j-VirtualBox> <20140424171453.GZ11096@twins.programming.kicks-ass.net> <5359EDDB.4060409@linux.vnet.ibm.com> <20140425094331.GF26782@laptop.programming.kicks-ass.net> <1398455654.2102.29.camel@j-VirtualBox> <CAM4v1pMj8KqPG3gebA6ykU92fzWhDVCAzw6fUpVGgGNcruDd0A@mail.gmail.com> <1398708274.2009.19.camel@j-VirtualBox>
+In-Reply-To: <1398708274.2009.19.camel@j-VirtualBox>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042903-1344-0000-0000-000001358BBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 08:45 PM, H. Peter Anvin wrote:
+On 04/28/2014 11:34 PM, Jason Low wrote:
+> On Sun, 2014-04-27 at 14:01 +0530, Preeti Murthy wrote:
+>> Hi Jason, Peter,
+>>
+>> The below patch looks good to me except for one point.
+>>
+>> In idle_balance() the below code snippet does not look right:
+>>
+>> - if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+>> - /*
+>> - * We are going idle. next_balance may be set based on
+>> - * a busy processor. So reset next_balance.
+>> - */
+>> +out:
+>> + /* Move the next balance forward */
+>> + if (time_after(this_rq->next_balance, next_balance))
+>>   this_rq->next_balance = next_balance;
+>> - }
+>>
+>> By not checking this_rq->next_balance against jiffies,
+>> we might end up not updating this parameter when it
+>> has expired.
+>>
+>> So shouldn't it be:
+>>
+>> if (time_after(jiffies, this_rq->next_balance) ||
+>>            time_after(this_rq->next_balance, next_balance))
+>>     this_rq->next_balance = next_balance;
 > 
-> OK, so I found a bug in ldttest.c -- it sets CS to an LDT segment, but
-> it never sets SS to an LDT segment.  This means that it should really
-> have zero footprint versus the espfix code, and implies that we instead
-> have another bug involved.  Why the espfix code should have any effect
-> whatsoever is a mystery, however... if it indeed does?
+> Hi Preeti,
 > 
-> I have uploaded a fixed ldttest.c, but it seems we might be chasing more
-> than that...
+> If jiffies is after this_rq->next_balance, doesn't that mean that it's
+> actually due for a periodic balance and we wouldn't need to modify it?
+> In rebalance_domains(), we do load_balance if time_after_eq(jiffies,
+> sd->last_balance + interval).
+
+Right. So I missed the point that we don't really have a problem with
+the rq->next_balance being expired. It will anyway ensure that in the
+next call to rebalance_domains() load balancing will be done and that is
+all we want. Thanks for pointing it out.
+
+Regards
+Preeti U Murthy
 > 
-
-In particular, I was already wondered how we avoid an "upside down
-swapgs" with a #GP on IRET.  The answer might be that we don't...
-
-	-hpa
-
+>>
+>> Besides this:
+>> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> 
+> Thanks for the review.
+> 
 
