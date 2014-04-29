@@ -1,74 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824AbaD2MQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:16:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15812 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933447AbaD2MQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:16:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,951,1389772800"; 
-   d="scan'208";a="530415590"
-Date: Tue, 29 Apr 2014 08:16:35 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, agruen@kernel.org,
-        bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 19/22] vfs: Cache richacl in struct inode
-Message-ID: <20140429121635.GC5929@linux.intel.com>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20140429005203.GT15995@dastard>
+	id S964850AbaD2MUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:20:16 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:54206 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933447AbaD2MUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:20:14 -0400
+Message-ID: <535F98F3.8070101@gmail.com>
+Date: Tue, 29 Apr 2014 14:20:03 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429005203.GT15995@dastard>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jeff Layton <jlayton@poochiereds.net>
+CC: mtk.manpages@gmail.com, NeilBrown <neilb@suse.de>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        Suresh Jayaraman <sjayaraman@suse.de>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Christoph Hellwig <hch@infradead.org>,
+        linux-nfs <linux-nfs@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>
+Subject: Re: flock() and NFS [Was: Re: [PATCH] locks: rename file-private
+ locks to file-description locks]
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>	<20140421140246.GB26358@brightrain.aerifal.cx>	<535529FA.8070709@gmail.com>	<20140421161004.GC26358@brightrain.aerifal.cx>	<5355644C.7000801@gmail.com>	<20140421184640.GD26358@brightrain.aerifal.cx>	<535573E0.9080106@gmail.com>	<20140421155520.3b33fbef@ipyr.poochiereds.net>	<53558A73.3010602@samba.org>	<5355F60C.8010004@gmail.com>	<20140427145125.21e7e6c6@notabene.brown>	<535CCAD2.4060304@gmail.com>	<20140427200431.426c98d1@notabene.brown>	<CAKgNAkgv5NqDRUNu0XtSABqmctd7=rpMMEYhhDQNzPssZuU5bA@mail.gmail.com>	<20140428072845.67f48d8e@notabene.brown>	<535F6BC4.2090601@gmail.com>	<20140429192458.641ebf1d@notabene.brown>	<535F76A4.4090208@gmail.com> <20140429073454.220572a8@tlielax.poochiereds.net>
+In-Reply-To: <20140429073454.220572a8@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 10:52:04AM +1000, Dave Chinner wrote:
-> >  #ifdef CONFIG_FSNOTIFY
-> > @@ -240,10 +246,19 @@ void __destroy_inode(struct inode *inode)
-> >  	}
-> >  
-> >  #ifdef CONFIG_FS_POSIX_ACL
-> > -	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-> > -		posix_acl_release(inode->i_acl);
-> > -	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
-> > -		posix_acl_release(inode->i_default_acl);
-> > +	if (IS_POSIXACL(inode)) {
-> > +		if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-> > +			posix_acl_release(inode->i_acl);
-> > +		if (inode->i_default_acl &&
-> > +		    inode->i_default_acl != ACL_NOT_CACHED)
-> > +			posix_acl_release(inode->i_default_acl);
-> > +	}
-> > +#endif
-> > +#ifdef CONFIG_FS_RICHACL
-> > +	if (IS_RICHACL(inode)) {
-> > +		if (inode->i_richacl && inode->i_richacl != ACL_NOT_CACHED)
-> > +			richacl_put(inode->i_richacl);
-> > +	}
-> >  #endif
+On 04/29/2014 01:34 PM, Jeff Layton wrote:
+> On Tue, 29 Apr 2014 11:53:40 +0200
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
 > 
-> 	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-> 		acl_release(inode->i_acl);
+>> On 04/29/2014 11:24 AM, NeilBrown wrote:
+>>> On Tue, 29 Apr 2014 11:07:16 +0200 "Michael Kerrisk (man-pages)"
+>>> <mtk.manpages@gmail.com> wrote:
+>>>
+>>>> On 04/27/2014 11:28 PM, NeilBrown wrote:
+>>>>> On Sun, 27 Apr 2014 13:11:33 +0200 "Michael Kerrisk (man-pages)"
+>>>>> <mtk.manpages@gmail.com> wrote:
+>>>>>
+>>>>>> On Sun, Apr 27, 2014 at 12:04 PM, NeilBrown <neilb@suse.de> wrote:
+>>>>>>> On Sun, 27 Apr 2014 11:16:02 +0200 "Michael Kerrisk (man-pages)"
+>>>>>>> <mtk.manpages@gmail.com> wrote:
+>>>>>>>
+>>>>>>>> [Trimming some folk from CC, and adding various NFS people]
+>>>>>>>>
+>>>>>>>> On 04/27/2014 06:51 AM, NeilBrown wrote:
+>>>>>>>>
+>>>>>>>> [...]
+>>>>>>>>
+>>>>>>>>> Note to Michael: The text
+>>>>>>>>>    flock() does not lock files over NFS.
+>>>>>>>>> in flock(2) is no longer accurate.  The reality is ... complex.
+>>>>>>>>> See nfs(5), and search for "local_lock".
+>>>>>>>>
+>>>>>>>> Ahhh -- I see:
+>>>>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=5eebde23223aeb0ad2d9e3be6590ff8bbfab0fc2
+>>>>>>>>
+>>>>>>>> Thanks for the heads up.
+>>>>>>>>
+>>>>>>>> Just in general, it would be great if the flock(2) and fcntl(2) man pages
+>>>>>>>> contained correct details for NFS, of course. So, for example, if there
+>>>>>>>> are any current gotchas for NFS and fcntl() byte-range locking, I'd like
+>>>>>>>> to add those to the fcntl(2) man page.
+>>>>>>>
+>>>>>>> The only peculiarities I can think of are:
+>>>>>>>  - With NFS, locking or unlocking a region forces a flush of any cached data
+>>>>>>>    for that file (or maybe for the region of the file).  I'm not sure if this
+>>>>>>>    is worth mentioning.
+>>>>>>
+>>>>>> I agree that it's probably not necessary to mention.
+>>>>>>
+>>>>>>>  - With NFSv4 the client can lose a lock if it is out of contact with the
+>>>>>>>    server for a period of time.  When this happens, any IO to the file by a
+>>>>>>>    process which "thinks" it holds a lock will fail until that process closes
+>>>>>>>    and re-opens the file.
+>>>>>>>    This behaviour is since 3.12.  Prior to that the client might lose and
+>>>>>>>    regain the lock without ever knowing thus potentially risking corruption
+>>>>>>>    (but only if client and server lost contact for an extended period).
+>>>>>>
+>>>>>> Do you have a pointer for that commit to 3.12?
+>>>>>>
+>>>>>
+>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=ef1820f9be27b6ad158f433ab38002ab8131db4d
+>>>>>
+>>>>> did most of the work while  the subsequent commit
+>>>>>
+>>>>> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f6de7a39c181dfb8a2c534661a53c73afb3081cd
+>>>>>
+>>>>> changed some details, added some documentation, and inverted the default
+>>>>> behaviour.
+>>>>
+>>>> Thanks for that detail. What do you think of the following text for the 
+>>>> fcntl(2) man page:
+>>>>
+>>>>        Before  Linux 3.12, if an NFS client is out of contact with the
+>>>>        server for a period of time, it might lose and  regain  a  lock
+>>>>        without  ever  being  aware  of the fact.  This scenario poten‐
+>>>>        tially risks  data  corruption,  since  another  process  might
+>>>>        acquire  a lock in the intervening period and perform file I/O.
+>>>>        Since Linux 3.12, if the client loses contact with the  server,
+>>>>        any I/O to the file by a process which "thinks" it holds a lock
+>>>>        will fail until that process closes and reopens  the  file.   A
+>>>>        kernel  parameter,  nfs.recover_lost_locks,  can be set to 1 to
+>>>>        obtain the pre-3.12 behavior, whereby the client  will  attempt
+>>>>        to  recover  lost  locks when contact is reestablished with the
+>>>>        server.  Because of the attendant risk of data corruption, this
+>>>>        parameter defaults to 0 (disabled).
+>>>>
+>>>
+>>> Mostly good.
+>>>
+>>> I'm just a little concerned about "if the client loses contact with the
+>>> server" in the middle there.  It is no longer qualified and it isn't clear
+>>> that the "for a period of time" qualification still applied.  And we should
+>>> probably quantify the period of time - which defaults to 90 seconds.
+>>> I don't remember just now the difference between
+>>>    /proc/fs/nfsd/nfsv4{lease,grace}time
+>>> but this 90 seconds is one of those.
+>>>
+>>> Also this is NFSv4 specific.  With NFSv3 the failure mode is the reverse.  If
+>>> the server loses contact with a client then any lock stays in place
+>>> indefinitely ("why can't I read my mail"... I remember it well).
+>>>
+>>>   Before Linux 3.12, if an NFSv4 client loses contact with the server
+>>>   (defined as more than 90 seconds with no communication), it might lose
+>>>   and regain ....
+>>
+>> Thanks, Neil. Changed as you suggest. I'd quite like to mention
+>> which of /proc/fs/nfsd/nfsv4{lease,grace}time is relevant here. I had a 
+>> quick scan, but could not determine it with complete confidence. My suspicion, 
+>> looking at fs/lockd/svcproc.c and fs/lockd/grace.c::locks_in_grace()
+>> is that it is /proc/fs/nfsd/nfsv4gracetime that is relevant here. Can anyone
+>> confirm?
+>>
 > 
-> And all the mess of working out what acl needs releasing get taken
-> out of of this code.
+> The difference here is subtle. The gracetime is how long after a reboot
+> should knfsd allow clients to reclaim state (and deny the creation of
+> new locks and opens). The leasetime is how long the NFSv4 lease period
+> is. There is a relationship between the two that's illustrated in the
+> comments above write_gracetime:
+> 
+> /**
+>  * write_gracetime - Set or report current NFSv4 grace period time
+>  *
+>  * As above, but sets the time of the NFSv4 grace period.
+>  *
+>  * Note this should never be set to less than the *previous*
+>  * lease-period time, but we don't try to enforce this.  (In the common
+>  * case (a new boot), we don't know what the previous lease time was
+>  * anyway.)
+>  */
+> 
+> The value you're interested in here is the nfsv4leasetime. If the
+> client doesn't renew its lease within that period, then it's subject to
+> the server giving up on it and dropping any state that it holds on that
+> clients' behalf.
+> 
+> Note that this is not a firm timeout. The server runs a job
+> periodically to clean out expired stateful objects, and it's likely
+> that there is some time (maybe even up to another whole lease period)
+> between when the timeout expires and the job actually runs. If the
+> client gets a RENEW in there within that window, its lease will be
+> renewed and its state preserved.
+> 
+> Also note that all of the above just applies to the Linux knfsd. There
+> are many other servers in the field and they have different rules for
+> dropping state held by clients that have gone AWOL.
 
-Let's go further and have the API simply:
+Thanks for the detailed explanation, Jeff. I've updated the draft text to
+mention nfsv4gracetime. I won't add the subtleties you mention above
+(but they'll go into the commit message).
 
-	inode_acl_release(inode);
+The text is now:
 
-with inode_acl_release looking something like:
+   Record locking and NFS
+       Before  Linux  3.12,  if an NFSv4 client loses contact with the
+       server for a period of time (defined as more  than  90  seconds
+       with no communication), it might lose and regain a lock without
+       ever being aware of the fact.  (The period of time after  which
+       contact is assumed lost is defined by /proc/fs/nfsd/nfsv4lease‐
+       time, which expresses the period in seconds.  The default value
+       for  this  file  is  90.)  This scenario potentially risks data
+       corruption, since another process might acquire a lock  in  the
+       intervening period and perform file I/O.
 
-	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
-		acl_release(inode->i_acl);
-	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
-		acl_release(inode->i_default_acl);
+       Since  Linux  3.12,  if  an NFSv4 client loses contact with the
+       server, any I/O to the file by  a  process  which  "thinks"  it
+       holds  a  lock  will fail until that process closes and reopens
+       the file.  A kernel parameter, nfs.recover_lost_locks,  can  be
+       set  to  1  to obtain the pre-3.12 behavior, whereby the client
+       will attempt to recover lost locks  when  contact  is  reestab‐
+       lished  with the server.  Because of the attendant risk of data
+       corruption, this parameter defaults to 0 (disabled).
+
+Cheers,
+
+Michael
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
