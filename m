@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaD2M4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:56:07 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:17727 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754486AbaD2M4F (ORCPT
+	id S1755325AbaD2M5H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:57:07 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:39248 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952AbaD2M5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:56:05 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19fyaxsQ9dJmlSmGzKfie1npjVRlcYXZ9o=
-X-DKIM: OpenDKIM Filter v2.0.1 titan D7828567125
-Date: Tue, 29 Apr 2014 08:55:54 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] irqchip: mvebu: fixes for v3.15
-Message-ID: <20140429125554.GH28159@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 29 Apr 2014 08:57:04 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 01/10] of: Keep track of populated platform devices
+To: Rob Herring <robherring2@gmail.com>, Pawel Moll <pawel.moll@arm.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+In-Reply-To: <CAL_JsqJxWoxNL=P0SJm+Q1rTRGTpMkzmzTJDbFq2P1vPH4XxZQ@mail.gmail.com>
+References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
+	<1398707877-22596-2-git-send-email-pawel.moll@arm.com>
+	<CAL_JsqJxWoxNL=P0SJm+Q1rTRGTpMkzmzTJDbFq2P1vPH4XxZQ@mail.gmail.com>
+Date: Tue, 29 Apr 2014 13:56:57 +0100
+Message-Id: <20140429125657.65910C4089D@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Mon, 28 Apr 2014 13:02:28 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> On Mon, Apr 28, 2014 at 12:57 PM, Pawel Moll <pawel.moll@arm.com> wrote:
+> > In "Device Tree powered" systems, platform devices are usually
+> > massively populated with of_platform_populate() call, executed
+> > at some level of initcalls, either by generic architecture
+> > or by platform-specific code.
+> >
+> > There are situations though where certain devices must be
+> > created (and bound with drivers) before all the others.
+> > This presents a challenge, as devices created explicitly
+> > would be created again by of_platform_populate().
+> >
+> > This patch tries to solve that issue in a generic way,
+> > adding a "populated" flag for a DT node description.
+> > Once set, this device will never be created again via
+> > of_* API, so of_platform_populate() will skip such nodes
+> > (and its children) in a similar way to the non-available
+> > ones.
+> >
+> > Cc: devicetree@vger.kernel.org
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> > ---
+> >  drivers/of/platform.c | 10 ++++++++--
+> >  include/linux/of.h    |  1 +
+> >  2 files changed, 9 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > index 404d1da..0ae757a 100644
+> > --- a/drivers/of/platform.c
+> > +++ b/drivers/of/platform.c
+> > @@ -204,7 +204,8 @@ static struct platform_device *of_platform_device_create_pdata(
+> >  {
+> >         struct platform_device *dev;
+> >
+> > -       if (!of_device_is_available(np))
+> > +       if (!of_device_is_available(np) ||
+> > +                       of_node_check_flag(np, OF_POPULATED))
+> 
+> This and the amba case should be a test_and_set operation to avoid a
+> race condition.
 
-Here's a small round of fixes that we need in a stable topic branch as a
-part of a larger fix to the mvebu pcie/mbus driver.  These have been in
--next for a week or so.
+Yes. It is an unlikely condition at the time that Pawel is handling, but
+it should also work for later calls to of_platform_populate() which may
+happen at runtime and in parallel.
 
-Please pull.
-
-thx,
-
-Jason.
-
-
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-
-are available in the git repository at:
-
-  git://git.infradead.org/linux-mvebu.git tags/mvebu-irqchip-fixes-3.15
-
-for you to fetch changes up to ff3c664505bf8a8334bca5045e87b85cfe4d2277:
-
-  irqchip: armada-370-xp: Fix releasing of MSIs (2014-04-20 19:14:34 +0000)
-
-----------------------------------------------------------------
-mvebu irqchip ifxes for v3.15
-
- - armada-370-xp
-
-    - fix invalid cast (signed to unsigned)
-    - add ->check_device() msi_chip op
-    - fix releasing of MSIs
-
-----------------------------------------------------------------
-Neil Greatorex (1):
-      irqchip: armada-370-xp: Fix releasing of MSIs
-
-Thomas Petazzoni (2):
-      irqchip: armada-370-xp: fix invalid cast of signed value into unsigned variable
-      irqchip: armada-370-xp: implement the ->check_device() msi_chip operation
-
- drivers/irqchip/irq-armada-370-xp.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+g.
