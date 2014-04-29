@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124AbaD2I1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:27:50 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:59546 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756782AbaD2I1r (ORCPT
+	id S1757190AbaD2I2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:28:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13210 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824AbaD2I2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 04:27:47 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-4b-535f62826449
+	Tue, 29 Apr 2014 04:28:19 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-06-535f62a1ff64
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Daniel Lezcano'" <daniel.lezcano@linaro.org>
 Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
@@ -15,40 +15,40 @@ Cc: "'Thomas Gleixner'" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "'Magnus Damm'" <damm@opensource.se>
 References: <002c01cf6384$781c57b0$68550710$%han@samsung.com>
 In-reply-to: <002c01cf6384$781c57b0$68550710$%han@samsung.com>
-Subject: [PATCH 3/4] clocksource: sh_mtu2: remove unnecessary OOM messages
-Date: Tue, 29 Apr 2014 17:27:46 +0900
-Message-id: <002f01cf6384$e62522a0$b26f67e0$%han@samsung.com>
+Subject: [PATCH 4/4] clocksource: sh_tmu: remove unnecessary OOM messages
+Date: Tue, 29 Apr 2014 17:28:17 +0900
+Message-id: <003001cf6384$f8b02500$ea106f00$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9jhHgACh38PpSJS1ewNnY0fIuPzwAAFX4g
+Thread-index: Ac9jhHgACh38PpSJS1ewNnY0fIuPzwAAG9pQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zY92mpPhgg38f9SzuP77FZDHvs6zF
-	5YWXWC0u75rDZrF501RmB1aPO9f2sHm8O3eO3WPlj0vsHn1bVjF6fN4kF8AaxWWTkpqTWZZa
-	pG+XwJXx+YBHwU/Wig+XExsY37B0MXJwSAiYSHTNSO9i5AQyxSQu3FvP1sXIxSEksIxR4n/z
-	MmaIhInEsbtL2UFsIYFFjBJd9xwgin4zSux9eR0swSagJvHly2EwW0TAQOL16d/sIEXMApMY
-	Ja5dXcgI0W0rMeHETTYQm1PATmLOkX1gtrCAl8T0fZtYQWwWAVWJqf1/wep5gernr22AsgUl
-	fky+xwJiMwtoSazfeZwJwpaX2LzmLTPEN+oSj/7qQtxgJNHV9AeqRERi34t3jCD3SAhcYpdY
-	N3krO8QuAYlvkw9BQ0JWYtMBqIclJQ6uuMEygVFiFpLNs5BsnoVk8ywkKxYwsqxiFE0tSC4o
-	TkovMtQrTswtLs1L10vOz93ECInR3h2Mtw9YH2JMBlo/kVlKNDkfGON5JfGGxmZGFqYmpsZG
-	5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCYFy1bvNlE/uLdc0Vr23q/
-	avptdBVwD+i5eLLzsMuBpFM7j7Mdvb+ohcvkfPzX+MOJm6YtWm32MVrJhvlom+PkYx+l9+X8
-	UtNX6FJjPddw92rG++ub0xiWlPv923S/uaNtSZzhgoMN/Qdz11Z/fda08+wkTdEa1/3r1+Z+
-	YjByn8VmIKwaJ++sxFKckWioxVxUnAgARumasOcCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jAd2mpPhgg59ztC3uP77FZDHvs6zF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zY92FSfHBBlPvGVvcf3yLyWLeZ1mL
+	ywsvsVpc3jWHzWLzpqnMDqwed67tYfN4d+4cu8fKH5fYPfq2rGL0+LxJLoA1issmJTUnsyy1
+	SN8ugSvjzYotbAWfWCt+77rC3MD4lKWLkYNDQsBE4vw+mS5GTiBTTOLCvfVsXYxcHEICyxgl
+	lj++zQpTc+FNGER8EaPEmvYDjBDOb0aJ/5t+MIN0swmoSXz5cpgdxBYRMJB4ffo3O0gRs8Ak
+	RolrVxcygiSEBGwlJpy4yQZicwrYScw5sg/MFhbwlHh+9QFYDYuAqsT+lWfAhvIC1W9cd5oJ
+	whaU+DH5HguIzSygJbF+53EmCFteYvOat8wQl6pLPPqrC3GDkcSxw3+gykUk9r14B3a0hMA9
+	don//1exQewSkPg2+RA0JGQlNh1ghoSEpMTBFTdYJjBKzEKyeRaSzbOQbJ6FZMUCRpZVjKKp
+	BckFxUnpRcZ6xYm5xaV56XrJ+bmbGCFx2r+D8e4B60OMyUDrJzJLiSbnA+M8ryTe0NjMyMLU
+	xNTYyNzSjDRhJXHe+w+TgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwNnNz1czUcKhYsCSf
+	LWCWunWd3s6XUWt5+vY7G3CslPmh6DT37ePbgvMEg0RTE2tvG1x15vOXjBFWY/iyrtsznOXW
+	2tlXNN7seR+S5d3QMOlBy1oGXWs3iznvj3sqfjB0yp3EHXE4q8E7vueN16H0wxFSd9k3sj0K
+	ODlDvF9skdnim0Kf5/xSYinOSDTUYi4qTgQASUrfAOkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd2FSfHBBmu6DSzuP77FZDHvs6zF
 	5YWXWC0u75rDZrF501RmB1aPO9f2sHm8O3eO3WPlj0vsHn1bVjF6fN4kF8Aa1cBok5GamJJa
 	pJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0XEmhLDGnFCgUkFhc
-	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8fmAR8FP1ooPlxMbGN+wdDFyckgImEgcu7uU
-	HcIWk7hwbz0biC0ksIhRouueQxcjF5D9m1Fi78vrYEVsAmoSX74cBrNFBAwkXp/+zQ5SxCww
-	iVHi2tWFjBDdthITTtwEm8QpYCcx58g+MFtYwEti+r5NrCA2i4CqxNT+v2D1vED189c2QNmC
-	Ej8m3wO7jllAS2L9zuNMELa8xOY1b5m7GDmALlWXePRXF+IGI4mupj9QJSIS+168Y5zAKDQL
-	yaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCU8AzqR2MKxssDjEK
-	cDAq8fAaRMUFC7EmlhVX5h5ilOBgVhLhzbeKDxbiTUmsrEotyo8vKs1JLT7EmAz06ERmKdHk
-	fGB6yiuJNzQ2MTOyNDKzMDIxNydNWEmc90CrdaCQQHpiSWp2ampBahHMFiYOTqkGRv2UY+Ze
-	k3RD3rOsDuE/t/fdchFVse9rHvu2H/ew239/sauC9IvPsayCkZZCe+Om37nsr2z2J2HCqoXb
-	BH/k5EzJZjUTDzg0NfRyWtCMtZ/EJgkrOd3kdfzs5yGw62DRGbE9FxKyFDYvDv8d+GNqTFKo
-	1R9LQxbrBHu7hft/CD/yvXR1XVESrxJLcUaioRZzUXEiAHGzX+dFAwAA
+	rKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8WbFFraCT6wVv3ddYW5gfMrSxcjBISFgInHh
+	TVgXIyeQKSZx4d56ti5GLg4hgUWMEmvaDzBCOL8ZJf5v+sEMUsUmoCbx5cthdhBbRMBA4vXp
+	3+wgRcwCkxglrl1dyAiSEBKwlZhw4iYbiM0pYCcx58g+MFtYwFPi+dUHYDUsAqoS+1eeARvK
+	C1S/cd1pJghbUOLH5HssIDazgJbE+p3HmSBseYnNa94yQ1ytLvHory7EDUYSxw7/gSoXkdj3
+	4h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZwGnknv
+	YFzVYHGIUYCDUYmHtyMmLliINbGsuDL3EKMEB7OSCG++VXywEG9KYmVValF+fFFpTmrxIcZk
+	oEcnMkuJJucDU1ReSbyhsYmZkaWRmYWRibk5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBK
+	NTAKiBqVzS0r8y/Q23ql3vbvtZwXvxr1Z/F5Nd5f8ulJy7ynGxeGMP9Onl2Vs267h5OQdVjY
+	s/f/9zHzaVTOmM79weXfq7tH+JX2xfqsfsOZIXNeUG69/4Pzi+axS51eut6b50p/fa6eR+WN
+	hPNbKuR8nZzmspf8Mb+0rD7pevf1mXNCyhO+bFRQYinOSDTUYi4qTgQAUsyT9UcDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,14 +61,14 @@ duplicate the MM subsystem generic OOM message.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/clocksource/sh_mtu2.c |    4 +---
+ drivers/clocksource/sh_tmu.c |    4 +---
  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/clocksource/sh_mtu2.c b/drivers/clocksource/sh_mtu2.c
-index e30d76e..e6bee62 100644
---- a/drivers/clocksource/sh_mtu2.c
-+++ b/drivers/clocksource/sh_mtu2.c
-@@ -349,10 +349,8 @@ static int sh_mtu2_probe(struct platform_device *pdev)
+diff --git a/drivers/clocksource/sh_tmu.c b/drivers/clocksource/sh_tmu.c
+index ecd7b60..b62f28c 100644
+--- a/drivers/clocksource/sh_tmu.c
++++ b/drivers/clocksource/sh_tmu.c
+@@ -514,10 +514,8 @@ static int sh_tmu_probe(struct platform_device *pdev)
  	}
  
  	p = kmalloc(sizeof(*p), GFP_KERNEL);
@@ -78,7 +78,7 @@ index e30d76e..e6bee62 100644
  		return -ENOMEM;
 -	}
  
- 	ret = sh_mtu2_setup(p, pdev);
+ 	ret = sh_tmu_setup(p, pdev);
  	if (ret) {
 -- 
 1.7.10.4
