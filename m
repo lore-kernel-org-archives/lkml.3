@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953AbaD2S2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 14:28:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42448 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932491AbaD2S2r (ORCPT
+	id S1758130AbaD2Sbu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 14:31:50 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52049 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756785AbaD2Sbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 14:28:47 -0400
-Date: Tue, 29 Apr 2014 15:28:15 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency for
- M25P80)
-Message-ID: <20140429182815.GA28069@arch.cereza>
-References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
- <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
- <535A8FC9.8040707@wwwdotorg.org>
- <20140429172227.GB11657@arch.cereza>
- <20140429174849.GO28159@titan.lakedaemon.net>
+	Tue, 29 Apr 2014 14:31:49 -0400
+Date: Tue, 29 Apr 2014 19:31:31 +0100
+From: Dave Martin <Dave.Martin@arm.com>
+To: Joel Fernandes <agnel.joel@gmail.com>
+Cc: Joel Fernandes <joelf@ti.com>, Nishanth Menon <nm@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary
+ CPU
+Message-ID: <20140429183131.GF3582@e103592.cambridge.arm.com>
+References: <1398191506-3741-1-git-send-email-joelf@ti.com>
+ <20140428164348.GA14354@e103592.cambridge.arm.com>
+ <535E8DC2.4010504@ti.com>
+ <535E8E2D.1020708@ti.com>
+ <20140429091725.GA3582@e103592.cambridge.arm.com>
+ <D49C397D-1ABD-4882-B3F5-94F359D7552B@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140429174849.GO28159@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <D49C397D-1ABD-4882-B3F5-94F359D7552B@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 29, Jason Cooper wrote:
-> On Tue, Apr 29, 2014 at 02:22:27PM -0300, Ezequiel Garcia wrote:
-> > On Apr 25, Stephen Warren wrote:
-> > > On 04/17/2014 01:21 AM, Brian Norris wrote:
-> > > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
-> > > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
-> > > > relevant defconfigs.
-> > > > 
-> > > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+On Tue, Apr 29, 2014 at 05:36:30PM +0100, Joel Fernandes wrote:
+
+[...]
+
+> >> Sorry what I meant is, say its of Type function. What tells the firmware
+> >> to switch to THUMB?
+> >> 
+> >> What's typically done is a boot address register is written by the
+> >> kernel, and the firmware jumps to it after WFE.
+> > 
+> > Using ENTRY(x) ... ENDPROC(x) causes the symbol seen by the linker
+> > for x to have the Thumb bit set if the code is Thumb.
+> > 
+> > This means that any reference the linker fixes up for that symbol
+> > will have the Thumb bit set appropriately.  This applies to any kind
+> > of reference, so code in another file that takes the address of the
+> > symbol and then passes that address to the firmware should result in the
+> > firmware getting an address with the Thumb bit.
+> > 
+> > From the firmware's point of view it just gets a raw address, but
+> > the Thumb bit will now be set.  The firmware still needs to handle
+> > this correctly when jumping, but from the look of the code this may
+> > already work on omap3/4.  It would be interesting to know whether it
+> > works on omap5.
 > 
-> Excuse my ignorance of the history of this bug, but shouldn't this be
-> solved in the Kconfig logic?  Since when do we solve config symbol
-> dependency bugs in the defconfigs?
-> 
+> Thanks a lot for the explanation. That makes perfect sense. I will try it and let you know if it works on OMAP5.
 
-Long story short: it was decided that select'ing this new symbol was not
-appropriate. Instead, it must be explicitly selected by the user, hence
-the defconfig fix.
+ARM/thumb interworking making perfect sense?  I'll have to frame that
+and put it on the wall :)
 
-The full story: https://lkml.org/lkml/2014/4/17/45
+objdump and nm conveniently mask off the Thumb bit from all function
+addresses they print out, but if you show the symbols using readelf
+instead you'll see addresses with bit 0 set for Thumb functions.
 
-And in particular: https://lkml.org/lkml/2014/4/21/425
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+
+It's possible that the firmware still doesn't handle branching to Thumb
+correctly, but if it does it would be nice to remove the requirement to
+build an odd piece of a Thumb-2 kernel in ARM.
+
+Cheers
+---Dave
