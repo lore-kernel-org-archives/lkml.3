@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881AbaD2Luv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:50:51 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34763 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759AbaD2Luu (ORCPT
+	id S933907AbaD2Lzu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:55:50 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36507 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933447AbaD2Lzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:50:50 -0400
-Date: Tue, 29 Apr 2014 07:50:46 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: "Matt W. Benjamin" <matt@linuxbox.com>
-Cc: Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        samba-technical@lists.samba.org, linux-nfs@vger.kernel.org,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Frank Filz" <ffilzlnx@mindspring.com>
-Subject: Re: OFD ("file private") locks and NFS
-Message-ID: <20140429075046.39fc9c3f@tlielax.poochiereds.net>
-In-Reply-To: <1482413734.4.1398771608019.JavaMail.root@thunderbeast.private.linuxbox.com>
-References: <20140429071153.176c7404@tlielax.poochiereds.net>
-	<1482413734.4.1398771608019.JavaMail.root@thunderbeast.private.linuxbox.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Apr 2014 07:55:49 -0400
+From: Xia Kaixu <kaixu.xia@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: alsa-devel@alsa-project.org, broonie@kernel.org, lrg@slimlogic.co.uk,
+        linaro-kernel@lists.linaro.org, arnd@arndb.de, kaixu.xia@linaro.org
+Subject: [PATCH 00/15] ASoC: Arnds randconfig fixes for ASoC
+Date: Tue, 29 Apr 2014 19:55:17 +0800
+Message-Id: <1398772517-19953-1-git-send-email-kaixu.xia@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 07:40:08 -0400 (EDT)
-"Matt W. Benjamin" <matt@linuxbox.com> wrote:
+This patchset series addresses various bugs found and fixed by Arnd Bergmann
+whilst doing randconfig builds.
 
-> Hi Jeff,
-> 
-> Something which came up on the last Ganesha conn call is that we have
-> a pretty strong need for some ability to wait on a set of locks, and perhaps
-> receive events.  Frank Filz believed that you had made a proposal which
-> would cover this.  Can you elaborate on that?
-> 
-> Thanks,
-> 
-> Matt
-> 
+My involvement has been to review, add/check the maintainers are correct
+and submit upstream to try and reduce the backlog.
 
-No, there's no mechanism to wait on a set of locks from within the
-context of a single thread of execution or to receive "events". Again,
-that would be a new API beyond what I've been proposing over the last
-several months.
+Best Regards,
+
+Kaixu Xia
+
+Arnd Bergmann (11):
+  ASoC: CS42L51 and WM8962 codecs depend on INPUT
+  ASoC: davinci: add dependencies for SND_SOC_TLV320AIC3X
+  ASoC: SMDK_WM8580_PCM needs REGMAP_I2C
+  ASoC: samsung-idma: avoid 64-bit division
+  ASoC: nuc900: export nuc900_ac97_data
+  ASoC: RX-51 audio needs I2C
+  ASoC: UDA1380 needs I2C
+  ASoC: Atmel WM8904 codec support needs I2C
+  ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
+  ASoC: Amstrad E3 needs TTY support for codec
+  ASoC: pxa: remove mach header dependency
+
+Xia Kaixu (4):
+  ASoC: TTC DKB audio needs I2C
+  ASoC: Migo-R sound needs I2C
+  ASoC: TLV320AIC23 and Simtec Hermes audio need I2C
+  ASoC: WM0010 needs SPI
+
+ sound/arm/pxa2xx-pcm.c         |    2 ++
+ sound/arm/pxa2xx-pcm.h         |    3 +--
+ sound/soc/atmel/Kconfig        |    2 +-
+ sound/soc/codecs/Kconfig       |    8 ++++----
+ sound/soc/davinci/Kconfig      |   10 +++++-----
+ sound/soc/fsl/Kconfig          |    2 +-
+ sound/soc/nuc900/Kconfig       |    1 +
+ sound/soc/nuc900/nuc900-ac97.c |    1 +
+ sound/soc/omap/Kconfig         |    4 ++--
+ sound/soc/pxa/Kconfig          |    2 +-
+ sound/soc/pxa/pxa-ssp.c        |    2 --
+ sound/soc/pxa/pxa2xx-pcm.c     |    2 ++
+ sound/soc/samsung/Kconfig      |   22 ++++++++++------------
+ sound/soc/samsung/idma.c       |    2 +-
+ sound/soc/sh/Kconfig           |    2 +-
+ 15 files changed, 33 insertions(+), 32 deletions(-)
+
 -- 
-Jeff Layton <jlayton@poochiereds.net>
+1.7.9.5
+
