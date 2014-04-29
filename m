@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaD2LTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:19:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42571 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794AbaD2LTo (ORCPT
+	id S1757547AbaD2LTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:19:54 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39129 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757533AbaD2LTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:19:44 -0400
-Date: Tue, 29 Apr 2014 13:19:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH v3 2/3] perf record: Propagate exit status of a command
- line workload
-Message-ID: <20140429111939.GP11096@twins.programming.kicks-ass.net>
-References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
- <1398346054-3322-2-git-send-email-namhyung@kernel.org>
- <20140429105654.GB1148@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429105654.GB1148@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 29 Apr 2014 07:19:51 -0400
+From: Xia Kaixu <kaixu.xia@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, arnd@arndb.de, kaixu.xia@linaro.org,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 08/15] ASoC: TTC DKB audio needs I2C 
+Date: Tue, 29 Apr 2014 19:18:29 +0800
+Message-Id: <1398770316-19715-9-git-send-email-kaixu.xia@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 12:56:54PM +0200, Jiri Olsa wrote:
-> 
->   perf_counter tools: Propagate signals properly
->   commit f7b7c26e01e51fe46097e11f179dc71ce7950084
->   Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
->   Date:   Wed Jun 10 15:55:59 2009 +0200
-> 
-> but I dont think we need to do that
+From: Arnd Bergmann <arnd@arndb.de>
 
-But but but, then you're re-introducing that fail again? That no good.
+The missing dependency can lead to build errors, so
+make it explicit in Kconfig.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Philipp Zabel <philipp.zabel@gmail.com>
+Cc: Paul Parsons <lost.distance@yahoo.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: alsa-devel@alsa-project.org
+Cc: linux-arm-kernel@lists.infradead.org
+---
+ sound/soc/pxa/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/pxa/Kconfig b/sound/soc/pxa/Kconfig
+index 6473052..6acb225 100644
+--- a/sound/soc/pxa/Kconfig
++++ b/sound/soc/pxa/Kconfig
+@@ -140,7 +140,7 @@ config SND_PXA910_SOC
+ 
+ config SND_SOC_TTC_DKB
+ 	bool "SoC Audio support for TTC DKB"
+-	depends on SND_PXA910_SOC && MACH_TTC_DKB
++	depends on SND_PXA910_SOC && MACH_TTC_DKB && I2C=y
+ 	select PXA_SSP
+ 	select SND_PXA_SOC_SSP
+ 	select SND_MMP_SOC
+-- 
+1.7.9.5
+
