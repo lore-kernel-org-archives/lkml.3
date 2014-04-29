@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355AbaD2AhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:37:16 -0400
-Received: from ozlabs.org ([103.22.144.67]:54998 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173AbaD2AhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:37:10 -0400
-Date: Tue, 29 Apr 2014 10:37:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chao Yu <chao2.yu@samsung.com>
-Subject: linux-next: manual merge of the vfs tree with the f2fs tree
-Message-Id: <20140429103703.efca943550755ccb0ed875eb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_"
+	id S1757451AbaD2Ahz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:37:55 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:59671 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932941AbaD2AZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 20:25:46 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        oleg@redhat.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 02/45] torture: Remove obsolete builddir options
+Date: Mon, 28 Apr 2014 17:24:50 -0700
+Message-Id: <1398731133-18925-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20140429002455.GA15461@linux.vnet.ibm.com>
+ <1398731133-18925-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042900-0928-0000-0000-0000018D1356
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Hi Al,
+The --builddir and --relbuilddir options were initially intended to handle
+parallel tests.  However, since commit 43e38ab3d518 (Enable concurrent
+rcutorture runs), the script manages multiple build directories as
+needed for parallel testing.  This commit therefore removes these two
+obsolete options.
 
-Today's linux-next merge of the vfs tree got a conflict in fs/f2fs/file.c
-between commit adeb670f1fee ("f2fs: introduce f2fs_seek_block to support
-SEEK_{DATA, HOLE} in llseek") from the f2fs tree and commits 8eb02141b8a6
-("switch simple generic_file_aio_read() users to ->read_iter()") and
-e6552301fb08 ("write_iter variants of {__,}generic_file_aio_write()")
-from the vfs tree.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ tools/testing/selftests/rcutorture/bin/kvm.sh | 16 ----------------
+ 1 file changed, 16 deletions(-)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index 5a78cbf55f06..37a60ef70df3 100644
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -38,7 +38,6 @@ dur=30
+ dryrun=""
+ KVM="`pwd`/tools/testing/selftests/rcutorture"; export KVM
+ PATH=${KVM}/bin:$PATH; export PATH
+-builddir="${KVM}/b1"
+ RCU_INITRD="$KVM/initrd"; export RCU_INITRD
+ RCU_KMAKE_ARG=""; export RCU_KMAKE_ARG
+ TORTURE_SUITE=rcu
+@@ -53,7 +52,6 @@ kversion=""
+ usage () {
+ 	echo "Usage: $scriptname optional arguments:"
+ 	echo "       --bootargs kernel-boot-arguments"
+-	echo "       --builddir absolute-pathname"
+ 	echo "       --buildonly"
+ 	echo "       --configs \"config-file list\""
+ 	echo "       --cpus N"
+@@ -67,7 +65,6 @@ usage () {
+ 	echo "       --no-initrd"
+ 	echo "       --qemu-args qemu-system-..."
+ 	echo "       --qemu-cmd qemu-system-..."
+-	echo "       --relbuilddir relative-pathname"
+ 	echo "       --results absolute-pathname"
+ 	echo "       --torture rcu"
+ 	exit 1
+@@ -81,12 +78,6 @@ do
+ 		RCU_BOOTARGS="$2"
+ 		shift
+ 		;;
+-	--builddir)
+-		checkarg --builddir "(absolute pathname)" "$#" "$2" '^/' '^error'
+-		builddir=$2
+-		gotbuilddir=1
+-		shift
+-		;;
+ 	--buildonly)
+ 		RCU_BUILDONLY=1; export RCU_BUILDONLY
+ 		;;
+@@ -146,13 +137,6 @@ do
+ 		RCU_QEMU_CMD="$2"; export RCU_QEMU_CMD
+ 		shift
+ 		;;
+-	--relbuilddir)
+-		checkarg --relbuilddir "(relative pathname)" "$#" "$2" '^[^/]*$' '^--'
+-		relbuilddir=$2
+-		gotrelbuilddir=1
+-		builddir=${KVM}/${relbuilddir}
+-		shift
+-		;;
+ 	--results)
+ 		checkarg --results "(absolute pathname)" "$#" "$2" '^/' '^error'
+ 		resdir=$2
+-- 
+1.8.1.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/f2fs/file.c
-index b9f4fbf5c07e,e4ba4b93f96a..000000000000
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@@ -802,11 -678,11 +802,11 @@@ long f2fs_compat_ioctl(struct file *fil
-  #endif
- =20
-  const struct file_operations f2fs_file_operations =3D {
- -	.llseek		=3D generic_file_llseek,
- +	.llseek		=3D f2fs_llseek,
-- 	.read		=3D do_sync_read,
-- 	.write		=3D do_sync_write,
-- 	.aio_read	=3D generic_file_aio_read,
-- 	.aio_write	=3D generic_file_aio_write,
-+ 	.read		=3D new_sync_read,
-+ 	.write		=3D new_sync_write,
-+ 	.read_iter	=3D generic_file_read_iter,
-+ 	.write_iter	=3D generic_file_write_iter,
-  	.open		=3D generic_file_open,
-  	.mmap		=3D f2fs_file_mmap,
-  	.fsync		=3D f2fs_sync_file,
-
---Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTXvQ0AAoJEMDTa8Ir7ZwVt+MP/AxLH1yUhfigWUpj88HhkNgW
-Iiv2Zyr1Z2Ky06Iu5qGE+hlLc2gN9xcqLFK/lC4U+Xh4DCggo0+DvL5OhUjNTMMG
-ZspWcU9ugkZz7/QJP/bfzubBk0zPCj7Q7bnHdSCg1F2oD/LwkZturJ+hq7A0A8we
-MdFnQCO04bUimdP0czyK7yOIG1bYLZVs03Zbk2u7bQPTJFjXLDcpn8b7qDHb1lZE
-nuJfjqS+rYA4/Wo6SuMW8foQ61bvweSG3pV4/Vy1ZosGFn/P70G3ENSU79gpFl78
-FGl5QNsQGuYaQKe2TEMl72hFAr02a/bs2/aHczc23dYnrzob3s6klrRykuRofpWC
-0MhC36OfimUy56OUmF4uwppVq/zqGMsf5jjiC9JYx58Mv2yPdJaOFNXaJE79Zi/s
-HU+H6abgrWV6THlVbazlQh7gpipmbElndcVqKUnqfobDGlvDo65N44S01PPEjNNy
-MqsMywOPiv283DLSfSbHt+0oDyhFbWLSrcZIHKP2BNUrrUT0qZ0Co4se12eESD5d
-vMHqf1tiebQqigb+8AzAgQdMd8Puttr0Zs+Up03MwGLMVhIRUU3cI1Jje035Exkv
-PJE6fT7PxolNUF+GAhKs/wVHYCPNfaxfMUDQ0f6zMJh3BhT/bW2spbaBcLx2+9rn
-pzYXym1ZpGs+GDhPMJh6
-=DFvG
------END PGP SIGNATURE-----
-
---Signature=_Tue__29_Apr_2014_10_37_03_+1000_W7sbrYXuhzot3eL_--
