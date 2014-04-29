@@ -1,45 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933977AbaD2MlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 08:41:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933248AbaD2MlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 08:41:08 -0400
-Date: Tue, 29 Apr 2014 14:40:53 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Linux MM <linux-mm@kvack.org>,
+	id S1751878AbaD2Mq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:46:56 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:53033 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaD2Mqz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 08:46:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
-Message-ID: <20140429124053.GA11878@redhat.com>
-References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <1398724754.25549.35.camel@buesod1.americas.hpqcorp.net> <CA+55aFz0jrk-O9gq9VQrFBeWTpLt_5zPt9RsJO9htrqh+nKTfA@mail.gmail.com> <20140428161120.4cad719dc321e3c837db3fd6@linux-foundation.org> <CA+55aFwLSW3V76Y_O37Y8r_yaKQ+y0VMk=6SEEBpeFfGzsJUKA@mail.gmail.com> <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
+Date: Tue, 29 Apr 2014 14:46:43 +0200
+Message-ID: <20686823.1FvTzs9RAn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com>
+References: <cover.1398735435.git.micky_ching@realsil.com.cn> <7208467.nZIXMIfPji@wuerfel> <CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398730319.25549.40.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:CSkuh64mNeJqSBS6z9iCu7CW2xzNP4HHVO4orYigLFn
+ ZbMQ9ZhZxKNlTpeEbvM+daTw4tM+LGPeZxwrIdvRGNomZOndIq
+ PdY9+yoZaHKt741eF0Iwl0XL4HHgFjFi6Hy7wTV1NGAduPSzIJ
+ 4tJ0VhlreH7Zrhgd1kH4rj2lSEMoKgLJYAQVmblAF+Noi17y6Z
+ 74JUo81k2Uq4ePff9i7aXVXiUVsha5q2TqTuoYa9fGO43MiBfy
+ c/jPXS1BRhk/8NT7EvdVExyCDz3kXf8rqkJB8vVYB+XsqZuJRi
+ NHHDntBrF88kN82yrzkFTpyV6Yzkfdd+uDfMIC6SSQVUtOEk/L
+ OdOV94RZ9RwfmxJxyTOA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28, Davidlohr Bueso wrote:
->
-> @@ -29,6 +30,7 @@ void use_mm(struct mm_struct *mm)
->                 tsk->active_mm = mm;
->         }
->         tsk->mm = mm;
-> +       vmacache_flush(tsk);
+On Tuesday 29 April 2014 13:05:15 Ulf Hansson wrote:
+> On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
+> > drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+> > :(.text+0x806480): undefined reference to `led_classdev_unregister'
+> > drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+> > :(.text+0x806708): undefined reference to `led_classdev_register'
+> >
+> > This adds an explicit dependency in Kconfig
+> 
+> I think the proper solution is to fix the dependency in the driver code instead.
+> 
+> There are already some ifdefs hackery for making it optional to use
+> leds, apparently that's not working properly.
+> 
 
-But this can't help, we need to do this in unuse_mm(). And we can race
-with vmacache_flush_all() which relies on mmap_sem.
+Ah, right, I misinterpreted the bug. Here is a new version:
 
-But perhaps WARN_ON(tsk->mm) at the start makes sense...
+8<---------
+>From 5b5588f8c9b8ded8b296fd32d87b2d118e548a29 Mon Sep 17 00:00:00 2001
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Tue, 29 Apr 2014 11:41:40 +0200
+Subject: [PATCH] mmc: rtsx: usb backend needs LED support
 
-Oleg.
+Building the rtsx USB driver uses the LED classdev base
+support if available, but that fails if the classdev
+is a module and the MMC driver is built-in, leading to this
+link error.
+
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+:(.text+0x806480): undefined reference to `led_classdev_unregister'
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+:(.text+0x806708): undefined reference to `led_classdev_register'
+
+This adds an explicit dependency in Kconfig to ensure that
+the MMC driver has to be a module if LEDS_CLASS is a module,
+but still allows it to be built-in if LEDS_CLASS is either
+disabled or built-in.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 92d91fe..68da9b8 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+ config MMC_REALTEK_USB
+ 	tristate "Realtek USB SD/MMC Card Interface Driver"
+ 	depends on MFD_RTSX_USB
++	depends on m || LEDS_CLASS!=m
+ 	help
+ 	  Say Y here to include driver code to support SD/MMC card interface
+ 	  of Realtek RTS5129/39 series card reader
 
