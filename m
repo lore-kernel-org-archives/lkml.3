@@ -1,234 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaD2GJl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:09:41 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:60359 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978AbaD2GJk (ORCPT
+	id S1755343AbaD2GKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:10:31 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:56935 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaD2GKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:09:40 -0400
+	Tue, 29 Apr 2014 02:10:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140429032354.GA13445@core.coreip.homeip.net>
-References: <20140429032354.GA13445@core.coreip.homeip.net>
-Date: Tue, 29 Apr 2014 08:09:39 +0200
-Message-ID: <CANq1E4T9_ckVWzrpxf+x1YBbVMekXpQpqo8ta6da+zrwPPOanw@mail.gmail.com>
-Subject: Re: [PATCH] Input: implement managed polled input devices
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alexander Shiyan <shc_work@mail.ru>
+In-Reply-To: <001301cf636e$f6032f70$e2098e50$@samsung.com>
+References: <000601cf636b$3c2b39b0$b481ad10$@samsung.com>
+	<CAOh2x=nzLNDe+vL5UvKkaRMDT7M+U9jG4HLHavS2ksmiOE_G+w@mail.gmail.com>
+	<001301cf636e$f6032f70$e2098e50$@samsung.com>
+Date: Tue, 29 Apr 2014 11:40:29 +0530
+Message-ID: <CAKohpo=w61naPGUHqMaF2zUWsSuV_9Rb0rhj2uf0TPbNRe_gRA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PM / OPP: Use list_for_each_entry_reverse instead of list_for_each_entry
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 29 April 2014 11:20, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+> -> You are right. But 5440 cpufreq driver write an index number instead of
+> clk divider value
+> for change DVFS. And our another(will submit) also write an index number for
+> changing DVFS.
+> As you said, order of table shouldn't matter at all in cpufreq layer. Then,
+> could this can be applied?
 
-On Tue, Apr 29, 2014 at 5:23 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Managed resources are becoming more and more popular in drivers. Let's
-> implement managed polled input devices, to complement managed regular input
-> devices.
->
-> Similarly to managed regular input devices only one new call
-> devm_input_allocate_polled_device() is added and the rest of APIs is
-> modified to work with both managed and non-managed devices.
->
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/input-polldev.c | 113 +++++++++++++++++++++++++++++++++++++++++-
->  include/linux/input-polldev.h |   3 ++
->  2 files changed, 115 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
-> index 4b19190..27961fc 100644
-> --- a/drivers/input/input-polldev.c
-> +++ b/drivers/input/input-polldev.c
-> @@ -176,6 +176,90 @@ struct input_polled_dev *input_allocate_polled_device(void)
->  }
->  EXPORT_SYMBOL(input_allocate_polled_device);
->
-> +struct input_polled_devres {
-> +       struct input_polled_dev *polldev;
-> +};
-> +
-> +static int devm_input_polldev_match(struct device *dev, void *res, void *data)
-> +{
-> +       struct input_polled_devres *devres = res;
-> +
-> +       return devres->polldev == data;
-> +}
-> +
-> +static void devm_input_polldev_release(struct device *dev, void *res)
-> +{
-> +       struct input_polled_devres *devres = res;
-> +       struct input_polled_dev *polldev = devres->polldev;
-> +
-> +       dev_dbg(dev, "%s: dropping reference/freeing %s\n",
-> +               __func__, dev_name(&polldev->input->dev));
-> +
-> +       input_put_device(polldev->input);
-> +       kfree(polldev);
-> +}
-> +
-> +static void devm_input_polldev_unregister(struct device *dev, void *res)
-> +{
-> +       struct input_polled_devres *devres = res;
-> +       struct input_polled_dev *polldev = devres->polldev;
-> +
-> +       dev_dbg(dev, "%s: unregistering device %s\n",
-> +               __func__, dev_name(&polldev->input->dev));
-> +       input_unregister_device(polldev->input);
-> +
-> +       /*
-> +        * Note that we are still holding extra reference to the input
-> +        * device so it will stick around until devm_input_polldev_release()
-> +        * is called.
-> +        */
-> +}
-> +
-> +/**
-> + * devm_input_allocate_polled_device - allocate managed polled device
-> + * @dev: device owning the polled device being created
-> + *
-> + * Returns prepared &struct input_polled_dev or %NULL.
-> + *
-> + * Managed polled input devices do not need to be explicitly unregistered
-> + * or freed as it will be done automatically when owner device unbinds
-> + * from * its driver (or binding fails). Once such managed polled device
-> + * is allocated, it is ready to be set up and registered in the same
-> + * fashion as regular polled input devices (using
-> + * input_register_polled_device() function).
-> + *
-> + * If you want to manually unregister and free such managed polled devices,
-> + * it can be still done by calling input_unregister_polled_device() and
-> + * input_free_polled_device(), although it is rarely needed.
-> + *
-> + * NOTE: the owner device is set up as parent of input device and users
-> + * should not override it.
-> + */
-> +struct input_polled_dev *devm_input_allocate_polled_device(struct device *dev)
-> +{
-> +       struct input_polled_dev *polldev;
-> +       struct input_polled_devres *devres;
-> +
-> +       devres = devres_alloc(devm_input_polldev_release, sizeof(*devres),
-> +                             GFP_KERNEL);
-> +       if (!devres)
-> +               return NULL;
-> +
-> +       polldev = input_allocate_polled_device();
-> +       if (!polldev) {
-> +               devres_free(devres);
-> +               return NULL;
-> +       }
-> +
-> +       polldev->input->dev.parent = dev;
-> +       polldev->devres_managed = true;
-> +
-> +       devres->polldev = polldev;
-> +       devres_add(dev, devres);
-> +
-> +       return polldev;
-> +}
-> +
->  /**
->   * input_free_polled_device - free memory allocated for polled device
->   * @dev: device to free
-> @@ -186,7 +270,12 @@ EXPORT_SYMBOL(input_allocate_polled_device);
->  void input_free_polled_device(struct input_polled_dev *dev)
->  {
->         if (dev) {
-> -               input_free_device(dev->input);
-> +               if (dev->devres_managed)
-> +                       WARN_ON(devres_destroy(dev->input->dev.parent,
-> +                                               devm_input_polldev_release,
-> +                                               devm_input_polldev_match,
-> +                                               dev));
-> +               input_put_device(dev->input);
->                 kfree(dev);
->         }
->  }
-> @@ -204,9 +293,19 @@ EXPORT_SYMBOL(input_free_polled_device);
->   */
->  int input_register_polled_device(struct input_polled_dev *dev)
->  {
-> +       struct input_polled_devres *devres = NULL;
->         struct input_dev *input = dev->input;
->         int error;
->
-> +       if (dev->devres_managed) {
-> +               devres = devres_alloc(devm_input_polldev_unregister,
-> +                                     sizeof(*devres), GFP_KERNEL);
-> +               if (!devres)
-> +                       return -ENOMEM;
-> +
-> +               devres->polldev = dev;
+These two patches aren't going to fly I believe. Depending on the order
+of table for setting hardware is inviting trouble.
 
-Your error-paths in this function _must_ free "devres" via devres_free().
+> In our case, We want to use index 0 for P0 and index 1 for P1.....
 
-With this fixed:
-  Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
-> +       }
-> +
->         input_set_drvdata(input, dev);
->         INIT_DELAYED_WORK(&dev->work, input_polled_device_work);
->
-> @@ -233,6 +332,12 @@ int input_register_polled_device(struct input_polled_dev *dev)
->          */
->         input_get_device(input);
->
-> +       if (dev->devres_managed) {
-> +               dev_dbg(input->dev.parent, "%s: registering %s with devres.\n",
-> +                       __func__, dev_name(&input->dev));
-> +               devres_add(input->dev.parent, devres);
-> +       }
-> +
->         return 0;
->  }
->  EXPORT_SYMBOL(input_register_polled_device);
-> @@ -247,6 +352,12 @@ EXPORT_SYMBOL(input_register_polled_device);
->   */
->  void input_unregister_polled_device(struct input_polled_dev *dev)
->  {
-> +       if (dev->devres_managed)
-> +               WARN_ON(devres_destroy(dev->input->dev.parent,
-> +                                       devm_input_polldev_unregister,
-> +                                       devm_input_polldev_match,
-> +                                       dev));
-> +
->         input_unregister_device(dev->input);
->  }
->  EXPORT_SYMBOL(input_unregister_polled_device);
-> diff --git a/include/linux/input-polldev.h b/include/linux/input-polldev.h
-> index ce0b724..2465182 100644
-> --- a/include/linux/input-polldev.h
-> +++ b/include/linux/input-polldev.h
-> @@ -48,9 +48,12 @@ struct input_polled_dev {
->
->  /* private: */
->         struct delayed_work work;
-> +
-> +       bool devres_managed;
->  };
->
->  struct input_polled_dev *input_allocate_polled_device(void);
-> +struct input_polled_dev *devm_input_allocate_polled_device(struct device *dev);
->  void input_free_polled_device(struct input_polled_dev *dev);
->  int input_register_polled_device(struct input_polled_dev *dev);
->  void input_unregister_polled_device(struct input_polled_dev *dev);
-> --
-> 1.9.0
->
->
-> --
-> Dmitry
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+What I would recommend is, use .driver_data field to hold what has to
+be written to hardware for any frequency. And then simply use
+driver_data instead of index.
