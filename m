@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303AbaD2Tgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:36:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11364 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878AbaD2Tgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:36:47 -0400
-Date: Tue, 29 Apr 2014 15:36:15 -0400
-From: Rik van Riel <riel@redhat.com>
-To: n-horiguchi@ah.jp.nec.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
-        peterz@infradead.org, mgorman@suse.de, dave.hansen@intel.com,
-        sunil.k.pandey@intel.com
-Subject: [PATCH -v2] mm,numa: remove BUG_ON in __handle_mm_fault
-Message-ID: <20140429153615.2d72098e@annuminas.surriel.com>
-In-Reply-To: <1398799576-9pfzypnu@n-horiguchi@ah.jp.nec.com>
-References: <20140425144147.679a7608@annuminas.surriel.com>
-	<1398799576-9pfzypnu@n-horiguchi@ah.jp.nec.com>
-Organization: Red Hat, Inc.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758358AbaD2Tme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:42:34 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:59837 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754316AbaD2Tmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:42:32 -0400
+From: Alexey Charkov <alchark@gmail.com>
+To: linus.walleij@linaro.org, linux@prisktech.co.nz,
+        linux-kernel@vger.kernel.org
+Cc: Alexey Charkov <alchark@gmail.com>
+Subject: [PATCH] pinctrl: vt8500: Ensure value reg is updated when setting direction
+Date: Tue, 29 Apr 2014 23:42:00 +0400
+Message-Id: <1398800520-18135-1-git-send-email-alchark@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter pointed out we can do this slightly simpler, since we already
-have a test for pmd_trans_huge(*pmd) below...
+Current code only touches the direction register when setting direction
+to output, which breaks logic like
 
----8<---
+echo high > /sys/class/gpio/gpio0/direction
 
-Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
-mmap_sem held for reading, which means a pmd can be instantiated
-and turned into a numa one while __handle_mm_fault is examining
-the value of old_pmd.
+which is expected to also set the value. This patch also adds a call
+to update the value register when setting direction to output.
 
-If that happens, __handle_mm_fault should just return and let
-the page fault retry, instead of throwing an oops. This is
-handled by the test for pmd_trans_huge(*pmd) below.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
-Cc: stable@kernel.org
+Signed-off-by: Alexey Charkov <alchark@gmail.com>
 ---
- mm/memory.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/pinctrl/vt8500/pinctrl-wmt.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index d0f0bef..9c2dc65 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3900,9 +3900,6 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		}
- 	}
+diff --git a/drivers/pinctrl/vt8500/pinctrl-wmt.c b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+index 9802b67..2c61281 100644
+--- a/drivers/pinctrl/vt8500/pinctrl-wmt.c
++++ b/drivers/pinctrl/vt8500/pinctrl-wmt.c
+@@ -523,17 +523,6 @@ static int wmt_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
+ 		return GPIOF_DIR_IN;
+ }
  
--	/* THP should already have been handled */
--	BUG_ON(pmd_numa(*pmd));
+-static int wmt_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+-{
+-	return pinctrl_gpio_direction_input(chip->base + offset);
+-}
 -
- 	/*
- 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
- 	 * run pte_offset_map on the pmd, if an huge pmd could
+-static int wmt_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+-				     int value)
+-{
+-	return pinctrl_gpio_direction_output(chip->base + offset);
+-}
+-
+ static int wmt_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct wmt_pinctrl_data *data = dev_get_drvdata(chip->dev);
+@@ -568,6 +557,18 @@ static void wmt_gpio_set_value(struct gpio_chip *chip, unsigned offset,
+ 		wmt_clearbits(data, reg_data_out, BIT(bit));
+ }
+ 
++static int wmt_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_gpio_direction_input(chip->base + offset);
++}
++
++static int wmt_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
++				     int value)
++{
++	wmt_gpio_set_value(chip, offset, value);
++	return pinctrl_gpio_direction_output(chip->base + offset);
++}
++
+ static struct gpio_chip wmt_gpio_chip = {
+ 	.label = "gpio-wmt",
+ 	.owner = THIS_MODULE,
+-- 
+1.9.1
+
