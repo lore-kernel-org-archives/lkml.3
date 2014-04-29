@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933801AbaD2R3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 13:29:13 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:37817 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529AbaD2R3M (ORCPT
+	id S964818AbaD2R3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 13:29:44 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:28478 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932529AbaD2R3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 13:29:12 -0400
-Date: Tue, 29 Apr 2014 20:28:58 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mateusz Guzik <mguzik@redhat.com>
-Cc: Takashi Iwai <tiwai@suse.de>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, Laurent Navet <laurent.navet@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: line6: fix possible overrun
-Message-ID: <20140429172858.GD26890@mwanda>
-References: <1398532162-23006-1-git-send-email-laurent.navet@gmail.com>
- <20140426204704.GB17562@mguzik.redhat.com>
- <20140426213137.GM26890@mwanda>
- <20140426215945.GC17562@mguzik.redhat.com>
- <20140427173932.GP26890@mwanda>
- <20140427200042.GA23846@mguzik.redhat.com>
- <20140427224425.GQ26890@mwanda>
- <s5h38gw9or4.wl%tiwai@suse.de>
- <20140429152616.GA2316@mguzik.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429152616.GA2316@mguzik.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 29 Apr 2014 13:29:43 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIWAD3gX1NbsnvL/2dsb2JhbABZgwZPq0wFAQEBBAGZcwICgSQXdIJTExwjGIECJBOIRQHJPYVViHqEQAEDjwCKDwGKd4drgzM7
+Date: Tue, 29 Apr 2014 19:31:46 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 2/2] mm/slub.c: convert vnsprintf-static to va_format
+Message-Id: <20140429193146.34df9d8cfb14e436f9020eae@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have two options:
-1) Do we risk introducing new truncation bugs.
-2) Do we risk breaking the driver because we didn't catch every
-   truncation bug.
+Inspired by Joe Perches suggestion in ntfs logging clean-up.
 
-Truncation bugs here are very low impact and probably no one would even
-notice.  That's how not worried I am about truncation bugs in this
-context.  It's also unlikely that we will introduce any new truncation
-bugs.
+Cc: Christoph Lameter <cl@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ mm/slub.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-Breaking the driver is very serious.  But on the other hand as soon as
-you proposed introducing an -EINVAL, I reviewed the driver and found the
-places which would break when the code was changed.  As a result of my
-review then the likely hood of breakage is now low.
-
-In other words both options are probably fine.  If someone is able to
-test the -EINVAL change then I would be happy to have it.
-
-regards,
-dan carpenter
+diff --git a/mm/slub.c b/mm/slub.c
+index 66ee34f..4991c44 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -581,28 +581,30 @@ static void print_page_info(struct page *page)
+ 
+ static void slab_bug(struct kmem_cache *s, char *fmt, ...)
+ {
++	struct va_format vaf;
+ 	va_list args;
+-	char buf[100];
+ 
+ 	va_start(args, fmt);
+-	vsnprintf(buf, sizeof(buf), fmt, args);
+-	va_end(args);
++	vaf.fmt = fmt;
++	vaf.va = &args;
+ 	pr_err("=============================================================================\n");
+-	pr_err("BUG %s (%s): %s\n", s->name, print_tainted(), buf);
++	pr_err("BUG %s (%s): %pV\n", s->name, print_tainted(), &vaf);
+ 	pr_err("-----------------------------------------------------------------------------\n\n");
+ 
+ 	add_taint(TAINT_BAD_PAGE, LOCKDEP_NOW_UNRELIABLE);
++	va_end(args);
+ }
+ 
+ static void slab_fix(struct kmem_cache *s, char *fmt, ...)
+ {
++	struct va_format vaf;
+ 	va_list args;
+-	char buf[100];
+ 
+ 	va_start(args, fmt);
+-	vsnprintf(buf, sizeof(buf), fmt, args);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	pr_err("FIX %s: %pV\n", s->name, &vaf);
+ 	va_end(args);
+-	pr_err("FIX %s: %s\n", s->name, buf);
+ }
+ 
+ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
+-- 
+1.8.4.5
 
