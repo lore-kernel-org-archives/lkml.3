@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693AbaD2OoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:44:21 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:38620 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaD2OoT (ORCPT
+	id S1757883AbaD2Opm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:45:42 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34982 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757819AbaD2Opk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:44:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140429131332.GA7049@kroah.com>
-References: <1398774909-13649-1-git-send-email-grant.likely@linaro.org> <20140429131332.GA7049@kroah.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 29 Apr 2014 15:43:53 +0100
-X-Google-Sender-Auth: 6dYpLFjvqRO3ErPvEz0r-k8wlPw
-Message-ID: <CACxGe6ttEonR5iESqbYeBgVx_kU48tTD3t_QYD1-8Gf2gi3yew@mail.gmail.com>
-Subject: Re: [PATCH v4] drivercore: deferral race condition fix
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Tue, 29 Apr 2014 10:45:40 -0400
+Date: Tue, 29 Apr 2014 15:45:06 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jungseok Lee <jays.lee@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@kernel.org>, Stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
+Subject: Re: [PATCH v4 3/7] arm64: Introduce a kernel configuration option
+ for VA_BITS
+Message-ID: <20140429144506.GK17007@arm.com>
+References: <000301cf6367$ca12e150$5e38a3f0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000301cf6367$ca12e150$5e38a3f0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 2:13 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Apr 29, 2014 at 01:35:09PM +0100, Grant Likely wrote:
->> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
->> when all modules loaded but some driver still stuck in the deferred list
->> and there is a need for external event to kick the deferred queue to probe
->> these drivers.
-[...]
->> Hi Greg,
->>
->> This change needs to go into 3.15. I've got this patch in the
->> devicetree/merge branch of my tree and can ask Linus to pull it directly
->> if you would like.
->
-> Sure, that would be fine:
->
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Tue, Apr 29, 2014 at 05:59:23AM +0100, Jungseok Lee wrote:
+> +config ARM64_VA_BITS
+> +	int "Virtual address space size"
+> +	range 39 39 if ARM64_4K_PAGES && ARM64_3_LEVELS
+> +	range 42 42 if ARM64_64K_PAGES && ARM64_2_LEVELS
+> +	help
+> +	  This feature is determined by a combination of page size and
+> +	  level of translation tables.
 
-Thanks Greg
+OK, so you are doing the VA bits selection already. But see my other
+email about setting only exposing this and hiding the number of levels
+(though number of levels can be mentioned in the help).
 
-I'll give it a few days in linux-next and then ask Linus to pull.
-
-g.
+-- 
+Catalin
