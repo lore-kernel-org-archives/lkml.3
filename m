@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470AbaD2KAF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 06:00:05 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45804 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaD2KAC (ORCPT
+	id S933564AbaD2KAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 06:00:25 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47790 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933516AbaD2KAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 06:00:02 -0400
-Message-ID: <535F77E8.2040000@linux.vnet.ibm.com>
-Date: Tue, 29 Apr 2014 15:29:04 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 29 Apr 2014 06:00:21 -0400
+Date: Tue, 29 Apr 2014 11:00:23 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Message-ID: <20140429100023.GF2639@e103034-lin>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+ <20140428102819.GG27561@twins.programming.kicks-ass.net>
+ <535E3673.8020606@linaro.org>
+ <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Davidlohr Bueso <davidlohr@hp.com>, Hugh Dickins <hughd@google.com>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [BUG] kernel BUG at mm/vmacache.c:85!
-References: <535EA976.1080402@linux.vnet.ibm.com> <CA+55aFxgW0fS=6xJsKP-WiOUw=aiCEvydj+pc+zDF8Pvn4v+Jw@mail.gmail.com> <CA+55aFzXAnTzfNL-bfUFnu15=4Z9HNigoo-XyjmwRvAWX_xz0A@mail.gmail.com> <alpine.LSU.2.11.1404281500180.2861@eggly.anvils> <1398723290.25549.20.camel@buesod1.americas.hpqcorp.net> <CA+55aFwGjYS7PqsD6A-q+Yp9YZmiM6mB4MUYmfR7ro02poxxCQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwGjYS7PqsD6A-q+Yp9YZmiM6mB4MUYmfR7ro02poxxCQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042909-1396-0000-0000-000004C19D1B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5275186.Hb1xxV4ZWO@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 03:55 AM, Linus Torvalds wrote:
-> On Mon, Apr 28, 2014 at 3:14 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->>
->> I think that returning some stale/bogus vma is causing those segfaults
->> in udev. It shouldn't occur in a normal scenario. What puzzles me is
->> that it's not always reproducible. This makes me wonder what else is
->> going on...
+On Tue, Apr 29, 2014 at 12:11:47AM +0100, Rafael J. Wysocki wrote:
+> On Monday, April 28, 2014 01:07:31 PM Daniel Lezcano wrote:
+
+[...]
+
+> > I'm really wondering if the cgroup couldn't be a good solution:
+> > 
+> > Amit pointed the conflict about the power vs performance with some 
+> > applications. We want to have for example a game to run fast performance 
+> > and some other application to save power.
 > 
-> I've replaced the BUG_ON() with a WARN_ON_ONCE(), and made it be
-> unconditional (so you don't have to trigger the range check).
+> You can't save power.
 > 
-> That might make it show up earlier and easier (and hopefully closer to
-> the place that causes it). Maybe that makes it easier for Srivatsa to
-> reproduce this. It doesn't make *my* machine do anything different,
-> though.
+> Power is the energy flow *rate*.  It's like speed, so how can you save it?
 > 
-> Srivatsa? It's in current -git.
+> If you talk about saving in this context, please always talk about energy as
+> well, because that's what we want to save.
 > 
+> This means that positioning power against performance doesn't make any sense
+> whatsoever.  You could try to position energy efficiency (that is, the relative
+> cost of doing work in terms of energy) against performance, but even that is
+> questionable, because, as I said in one of the previous messages, what is good
+> for performance is often good for energy efficiency too (think about race to
+> idle for example).
+> 
+> In other words, you want to have a knob whose both ends may happen to mean
+> the same thing.  Wouldn't that be a little odd?
+> 
+> In my opinion it would be much better to have a knob representing the current
+> relative value of energy to the user (which may depend on things like whether
+> or not the system is on battery etc) and meaning how far we need to go with
+> energy saving efforts.
 
-I tried this, but still nothing so far. I rebooted 10-20 times, and also
-tried multiple runs of multi-threaded ebizzy and kernel compilations,
-but none of this hit the warning.
+I agree, more or less. I think of performance and energy awareness as
+optimization objectives. If we only care about performance we are
+dealing with a single-objective optimization problem. We do what it
+takes to get the best possible performance without considering energy at
+all. Energy awareness is IMO as multi-objective optimization problem. We
+want to save energy, but do so without sacrificing too much performance.
+What "too much" is depends on the scenario (application).
 
-Is there anything more specific I can run to increase the chances of
-hitting this? I guess a test-case might be too much to ask since I'm
-the first one hitting this, but if anybody has suggestions of scenarios
-which have a higher likelihood of hitting this (like running multi-
-threaded workloads or whatever), I could probably give it a try as well.
+Energy efficiency and performance are different objectives, but I agree
+that the means to get better energy efficiency might be the same as
+those to get better performance in some cases. IMO, energy awareness is
+not a big switch to turn on specific scheduling mechanics (or other
+mechnaics in the kernel) such as task packing and disabling expensive
+DVFS states, it is about changing the scheduling optimization objective
+to include energy in the scheduling decisions. That is, try to save
+energy for the current scenario. That includes race to idle if that is
+the best way for the particular application and platform/system
+topology.
 
-Thank you!
+> 
+> So if that knob is 0, we'll do things that are known-good for performance.
+> If it is 1, we'll do some extra effort to save enery as well possibly at
+> a small expense of performance if that's necessary.  If it is 100, we'll do
+> all we can to save as much energy as possible without caring about performance
+> at all.
+> 
+> And it doesn't even have to be scheduler-specific, it very well may be global.
 
-Regards,
-Srivatsa S. Bhat
-
+I like the idea of knob representing the weight of energy awareness.
+Whether it should be global, per task, or per cgroup I'm not sure about.
