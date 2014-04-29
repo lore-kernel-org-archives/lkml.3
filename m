@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaD2Cez (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 22:34:55 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:59778 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaD2Cey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 22:34:54 -0400
-Date: Mon, 28 Apr 2014 19:34:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH] Input: remove race when instantiating polled device
- attributes
-Message-ID: <20140429023449.GA13078@core.coreip.homeip.net>
+	id S1752576AbaD2Cgr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 22:36:47 -0400
+Received: from ozlabs.org ([103.22.144.67]:54369 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731AbaD2Cgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 22:36:45 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org,
+        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
+        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
+        peterz@infradead.org, mingo@kernel.org, dave.hansen@intel.com,
+        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
+Subject: Re: [PATCH V3 2/2] powerpc/pseries: init fault_around_order for pseries
+In-Reply-To: <1398675690-16186-3-git-send-email-maddy@linux.vnet.ibm.com>
+References: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com> <1398675690-16186-3-git-send-email-maddy@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 29 Apr 2014 11:48:40 +0930
+Message-ID: <877g686fpb.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Polled device's attributes controlling polling rate and whether polling is
-enabled are attached to input device. We should have device core
-instantiate them for us, so that they are created by the time new device
-notification is sent to userspace, instead of doing it ourselves
-afterwards.
+Madhavan Srinivasan <maddy@linux.vnet.ibm.com> writes:
+> diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+> index 2db8cc6..c87e6b6 100644
+> --- a/arch/powerpc/platforms/pseries/setup.c
+> +++ b/arch/powerpc/platforms/pseries/setup.c
+> @@ -74,6 +74,8 @@ int CMO_SecPSP = -1;
+>  unsigned long CMO_PageSize = (ASM_CONST(1) << IOMMU_PAGE_SHIFT_4K);
+>  EXPORT_SYMBOL(CMO_PageSize);
+>  
+> +extern unsigned int fault_around_order;
+> +
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/input-polldev.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+It's considered bad form to do this.  Put the declaration in linux/mm.h.
 
-diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
-index 7f161d9..4b19190 100644
---- a/drivers/input/input-polldev.c
-+++ b/drivers/input/input-polldev.c
-@@ -147,6 +147,11 @@ static struct attribute_group input_polldev_attribute_group = {
- 	.attrs = sysfs_attrs
- };
- 
-+static const struct attribute_group *input_polldev_attribute_groups[] = {
-+	&input_polldev_attribute_group,
-+	NULL
-+};
-+
- /**
-  * input_allocate_polled_device - allocate memory for polled device
-  *
-@@ -204,24 +209,21 @@ int input_register_polled_device(struct input_polled_dev *dev)
- 
- 	input_set_drvdata(input, dev);
- 	INIT_DELAYED_WORK(&dev->work, input_polled_device_work);
-+
- 	if (!dev->poll_interval)
- 		dev->poll_interval = 500;
- 	if (!dev->poll_interval_max)
- 		dev->poll_interval_max = dev->poll_interval;
-+
- 	input->open = input_open_polled_device;
- 	input->close = input_close_polled_device;
- 
-+	input->dev.groups = input_polldev_attribute_groups;
-+
- 	error = input_register_device(input);
- 	if (error)
- 		return error;
- 
--	error = sysfs_create_group(&input->dev.kobj,
--				   &input_polldev_attribute_group);
--	if (error) {
--		input_unregister_device(input);
--		return error;
--	}
--
- 	/*
- 	 * Take extra reference to the underlying input device so
- 	 * that it survives call to input_unregister_polled_device()
-@@ -245,9 +247,6 @@ EXPORT_SYMBOL(input_register_polled_device);
-  */
- void input_unregister_polled_device(struct input_polled_dev *dev)
- {
--	sysfs_remove_group(&dev->input->dev.kobj,
--			   &input_polldev_attribute_group);
--
- 	input_unregister_device(dev->input);
- }
- EXPORT_SYMBOL(input_unregister_polled_device);
--- 
-1.9.0
-
-
--- 
-Dmitry
+Thanks,
+Rusty.
+PS.  But we're getting there! :)
