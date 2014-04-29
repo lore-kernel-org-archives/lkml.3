@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965236AbaD2WLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:11:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35111 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965218AbaD2WLU (ORCPT
+	id S965247AbaD2WMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:12:55 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56912 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752537AbaD2WMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:11:20 -0400
-Date: Tue, 29 Apr 2014 15:11:17 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Dempsky <mdempsky@chromium.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Julien Tinnes <jln@chromium.org>,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH v4] ptrace: Fix fork event messages across pid
- namespaces
-Message-Id: <20140429151117.c724bd49f20d4a323abd708c@linux-foundation.org>
-In-Reply-To: <1398802858-13624-1-git-send-email-mdempsky@chromium.org>
-References: <1396492005-23811-1-git-send-email-mdempsky@chromium.org>
-	<1398802858-13624-1-git-send-email-mdempsky@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Apr 2014 18:12:54 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: intel_pstate: Disable interrupts during MSRs reading
+Date: Wed, 30 Apr 2014 00:29:23 +0200
+Message-ID: <1442595.xWVWXlLQjO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <535FE55D.40500@semaphore.gr>
+References: <535FE55D.40500@semaphore.gr>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 13:20:58 -0700 Matthew Dempsky <mdempsky@chromium.org> wrote:
-
-> When tracing a process in another pid namespace, it's important for
-> fork event messages to contain the child's pid as seen from the
-> tracer's pid namespace, not the parent's.  Otherwise, the tracer won't
-> be able to correlate the fork event with later SIGTRAP signals it
-> receives from the child.
+On Tuesday, April 29, 2014 08:46:05 PM Stratos Karafotis wrote:
+> According to Intel 64 and IA-32 Architectures SDM, Volume 3,
+> Chapter 14.2, "Software needs to exercise care to avoid delays
+> between the two RDMSRs (for example interrupts)".
 > 
-> We still risk a race condition if a ptracer from a different pid
-> namespace attaches after we compute the pid_t value.  However, sending
-> a bogus fork event message in this unlikely scenario is still a vast
-> improvement over the status quo where we always send bogus fork event
-> messages to debuggers in a different pid namespace than the forking
-> process.
+> So, disable interrupts during reading MSRs IA32_APERF and IA32_MPERF.
+> Since the TSC is also takes place in the calculation include it in
+> the protected section. This should increase the accuracy of the
+> calculations.
+> 
+> Tested on Intel i7-3770 CPU @ 3.40GHz.
+> Benchmarks (Phoronix Linux compilation) show a slightly increase
+> in performance by ~0.1% and a decrease in power consumption by
+> ~0.13%.
+> 
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 
-More Oleg review would be nice, please ;)
+This looks good to me, but I need Dirk Brandewie to review and comment
+all intel_pstate patches before I apply any of them.
 
-> @@ -129,6 +130,36 @@ static inline void ptrace_event(int event, unsigned long message)
->  }
+Thanks!
+
+> ---
+> 
+> I hope it's not too inappropriate to post test results in
+> conjunction with my previous patch about the change of calculation
+> method of next p-state (https://lkml.org/lkml/2014/4/27/100).
+> I used Phoronix benchmark - Linux Kernel Compilation 3.1.
+> Below the test results using turbostat (5 iterations):
+> 
+> Without 2 patches:
+> 
+> Ph. avg Time	Total time	PkgWatt		Total Energy
+> 	79.63	266.416		57.74		15382.85984
+> 	79.63	265.609		57.87		15370.79283
+> 	79.57	266.994		57.54		15362.83476
+> 	79.53	265.304		57.83		15342.53032
+> 	79.71	265.977		57.76		15362.83152
+> avg	79.61	266.06		57.74		15364.36985
+> 
+> With change calculation patch:
+> 
+> Ph. avg Time	Total time	PkgWatt		Total Energy
+> 	78.23	258.826		59.14		15306.96964
+> 	78.41	259.110		59.15		15326.35650
+> 	78.40	258.530		59.26		15320.48780
+> 	78.46	258.673		59.20		15313.44160
+> 	78.19	259.075		59.16		15326.87700
+> avg	78.34	258.842		59.18		15318.82650
+> 
+> With change calculation patch + this one
+> 
+> Ph. avg Time	Total time	PkgWatt		Total Energy
+> 	78.33	259.320		59.06		15315.43920
+> 	78.28	258.245		59.20		15288.10400
+> 	78.08	257.523		59.32		15276.26436
+> 	78.38	259.084		59.13		15319.63692
+> 	78.31	258.232		59.22		15292.49904
+> avg	78.27	258.480		59.18		15298.38870
+> 
+> 
+>  drivers/cpufreq/intel_pstate.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 8e309db..95b3958 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -576,10 +576,13 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
+>  {
+>  	u64 aperf, mperf;
+>  	unsigned long long tsc;
+> +	unsigned long flags;
 >  
->  /**
-> + * ptrace_event_pid - possibly stop for a ptrace event notification
-> + * @event:	%PTRACE_EVENT_* value to report
-> + * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
-> + *
-> + * Check whether @event is enabled and, if so, report @event and @pid
-> + * to the ptrace parent.  @pid is reported as the pid_t seen from the
-> + * the ptrace parent's pid namespace.
-> + *
-> + * Called without locks.
-> + */
-> +static inline void ptrace_event_pid(int event, struct pid *pid)
-> +{
-> +	/*
-> +	 * FIXME: There's a potential race if a ptracer in a different pid
-> +	 * namespace than parent attaches between computing message below and
-> +	 * and when we acquire tasklist_lock in ptrace_stop().
-> +	 */
+> +	local_irq_save(flags);
+>  	rdmsrl(MSR_IA32_APERF, aperf);
+>  	rdmsrl(MSR_IA32_MPERF, mperf);
+>  	tsc = native_read_tsc();
+> +	local_irq_restore(flags);
+>  
+>  	aperf = aperf >> FRAC_BITS;
+>  	mperf = mperf >> FRAC_BITS;
+> 
 
-Well that's a scary comment.  If we're going to leave the code in this
-state then please carefully describe (within this comment) the
-*consequences* of the race.  Does the kernel crash?  Give away your ssh
-keys?  If not then what.  
-
-And how would userspace recognize and/or recover from the race?
-
-> +	unsigned long message = 0;
-> +	struct pid_namespace *ns;
-> +
-> +	rcu_read_lock();
-> +	ns = task_active_pid_ns(rcu_dereference(current->parent));
-> +	if (ns)
-> +		message = pid_nr_ns(pid, ns);
-> +	rcu_read_unlock();
-> +
-> +	ptrace_event(event, message);
-> +}
->
-> ...
->
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
