@@ -1,162 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965193AbaD2WJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 18:09:39 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:50489 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965162AbaD2WJh (ORCPT
+	id S965236AbaD2WLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 18:11:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35111 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965218AbaD2WLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 18:09:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140425135219.3ad56e1b@gandalf.local.home>
-References: <CAHN2JJ_hOS=jfvGUZFt=mx5ymCOmJrUdP1ATnOXe-D9MvtgAMg@mail.gmail.com>
- <20140425135219.3ad56e1b@gandalf.local.home>
-From: Bharath Ravi <rbharath@google.com>
-Date: Tue, 29 Apr 2014 15:09:15 -0700
-Message-ID: <CAHN2JJ8WmyPPnVyJJxFg-OFJwrb9c6VuG5bUhkM82hjd3nwU4g@mail.gmail.com>
-Subject: Re: [PATCH v2] tracing: Allow changing default ring buffer size for
- ftrace instances.
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
+	Tue, 29 Apr 2014 18:11:20 -0400
+Date: Tue, 29 Apr 2014 15:11:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matthew Dempsky <mdempsky@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [RESEND PATCH v4] ptrace: Fix fork event messages across pid
+ namespaces
+Message-Id: <20140429151117.c724bd49f20d4a323abd708c@linux-foundation.org>
+In-Reply-To: <1398802858-13624-1-git-send-email-mdempsky@chromium.org>
+References: <1396492005-23811-1-git-send-email-mdempsky@chromium.org>
+	<1398802858-13624-1-git-send-email-mdempsky@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We'd actually considered doing just that, in an initial version of the patch.
-At the time, we'd decided in favour of allowing the user more explicit
-control over the buffer size, rather than auto expanding it. (The
-discussion on that is here:
-https://lkml.org/lkml/2013/7/1/617)
+On Tue, 29 Apr 2014 13:20:58 -0700 Matthew Dempsky <mdempsky@chromium.org> wrote:
 
-We could go back to that though if you think that's okay, but I think
-your previous reasoning still makes sense: it's useful for the user to
-know if there will be an allocation failure before enabling tracing.
+> When tracing a process in another pid namespace, it's important for
+> fork event messages to contain the child's pid as seen from the
+> tracer's pid namespace, not the parent's.  Otherwise, the tracer won't
+> be able to correlate the fork event with later SIGTRAP signals it
+> receives from the child.
+> 
+> We still risk a race condition if a ptracer from a different pid
+> namespace attaches after we compute the pid_t value.  However, sending
+> a bogus fork event message in this unlikely scenario is still a vast
+> improvement over the status quo where we always send bogus fork event
+> messages to debuggers in a different pid namespace than the forking
+> process.
 
-What are your thoughts?
-Bharath Ravi |  rbharath@google.com
+More Oleg review would be nice, please ;)
 
+> @@ -129,6 +130,36 @@ static inline void ptrace_event(int event, unsigned long message)
+>  }
+>  
+>  /**
+> + * ptrace_event_pid - possibly stop for a ptrace event notification
+> + * @event:	%PTRACE_EVENT_* value to report
+> + * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
+> + *
+> + * Check whether @event is enabled and, if so, report @event and @pid
+> + * to the ptrace parent.  @pid is reported as the pid_t seen from the
+> + * the ptrace parent's pid namespace.
+> + *
+> + * Called without locks.
+> + */
+> +static inline void ptrace_event_pid(int event, struct pid *pid)
+> +{
+> +	/*
+> +	 * FIXME: There's a potential race if a ptracer in a different pid
+> +	 * namespace than parent attaches between computing message below and
+> +	 * and when we acquire tasklist_lock in ptrace_stop().
+> +	 */
 
-On Fri, Apr 25, 2014 at 10:52 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 14 Feb 2014 15:29:57 -0800
-> Bharath Ravi <rbharath@google.com> wrote:
+Well that's a scary comment.  If we're going to leave the code in this
+state then please carefully describe (within this comment) the
+*consequences* of the race.  Does the kernel crash?  Give away your ssh
+keys?  If not then what.  
+
+And how would userspace recognize and/or recover from the race?
+
+> +	unsigned long message = 0;
+> +	struct pid_namespace *ns;
+> +
+> +	rcu_read_lock();
+> +	ns = task_active_pid_ns(rcu_dereference(current->parent));
+> +	if (ns)
+> +		message = pid_nr_ns(pid, ns);
+> +	rcu_read_unlock();
+> +
+> +	ptrace_event(event, message);
+> +}
 >
->> Hi Steven,
->>
->> Does this version of the patch look reasonable?
->
-> Sorry, your email got buried in my TODO list :-/
->
-> Anyway, what about if we make new instances act like the original
-> buffer does on start up? That is, have it start out as a minimum buffer
-> with an "expanded" attribute.
->
-> # cd /sys/kernel/debug/tracing/instances
-> # mkdir foo
-> # cd foo
-> # cat buffer_size_kb
-> 7 (expanded: 1408)
-> # echo 1 > events/enable
-> # cat buffer_size_kb
-> 1408
->
-> This way if you don't want to waste a lot of buffer size when creating
-> a new instance, you can simply change the size after creation.
->
-> How's that sound?
->
-> -- Steve
->
->
->> --
->> Bharath Ravi |  rbharath@google.com
->>
->>
->> On Thu, Jan 23, 2014 at 11:37 AM, Bharath Ravi <rbharath@google.com> wrote:
->> >
->> > It is often memory efficient to start instances off with a smaller ring
->> > buffer size than the current default. This is particularly true on
->> > systems with many cores, or when multiple ftrace instances are created,
->> > where the current (higher) default value results in allocation failures.
->> >
->> > The global trace buffer allows initialization with a minimal (1 byte)
->> > size, to save memory using a "ring_buffer_expanded" flag. To allow
->> > instances a similar capability, trace option named "expand-new-buffers"
->> > is added. If set to true, ftrace instances created will be initialized
->> > with ring buffers of the default size. If set to false, the buffers will
->> > be initialized with a size of 1 byte. By default, the expand_new_buffers
->> > flag is true.
->> >
->> > Tested: Booted into a kernel with these changes, verified reading and
->> > writing the new trace_option. Ensured that new ftrace instances created
->> > used the appropriate size while initializing their ring buffers.
->> >
->> > Signed-off-by: Bharath Ravi <rbharath@google.com>
->> > ---
->> >  kernel/trace/trace.c | 13 ++++++++++---
->> >  kernel/trace/trace.h |  1 +
->> >  2 files changed, 11 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> > index 9d20cd9..c17c12f 100644
->> > --- a/kernel/trace/trace.c
->> > +++ b/kernel/trace/trace.c
->> > @@ -410,7 +410,8 @@ static inline void trace_access_lock_init(void)
->> >  unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
->> >         TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
->> >         TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
->> > -       TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
->> > +       TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION |
->> > +       TRACE_EXPAND_NEW_BUFFERS;
->> >
->> >  static void tracer_tracing_on(struct trace_array *tr)
->> >  {
->> > @@ -753,6 +754,7 @@ static const char *trace_options[] = {
->> >         "irq-info",
->> >         "markers",
->> >         "function-trace",
->> > +       "expand-new-buffers",
->> >         NULL
->> >  };
->> >
->> > @@ -5930,7 +5932,7 @@ static int allocate_trace_buffers(struct trace_array *tr, int size)
->> >  static int new_instance_create(const char *name)
->> >  {
->> >         struct trace_array *tr;
->> > -       int ret;
->> > +       int ret, ring_buffer_size;
->> >
->> >         mutex_lock(&trace_types_lock);
->> >
->> > @@ -5961,7 +5963,12 @@ static int new_instance_create(const char *name)
->> >         INIT_LIST_HEAD(&tr->systems);
->> >         INIT_LIST_HEAD(&tr->events);
->> >
->> > -       if (allocate_trace_buffers(tr, trace_buf_size) < 0)
->> > +       /* allocate memory only if buffers are to be expanded */
->> > +       if (trace_flags & TRACE_EXPAND_NEW_BUFFERS)
->> > +               ring_buffer_size = trace_buf_size;
->> > +       else
->> > +               ring_buffer_size = 1
->> > +       if (allocate_trace_buffers(tr, ring_buffer_size) < 0)
->> >                 goto out_free_tr;
->> >
->> >         tr->dir = debugfs_create_dir(name, trace_instance_dir);
->> > diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
->> > index ea189e0..15ddbf4 100644
->> > --- a/kernel/trace/trace.h
->> > +++ b/kernel/trace/trace.h
->> > @@ -888,6 +888,7 @@ enum trace_iterator_flags {
->> >         TRACE_ITER_IRQ_INFO             = 0x800000,
->> >         TRACE_ITER_MARKERS              = 0x1000000,
->> >         TRACE_ITER_FUNCTION             = 0x2000000,
->> > +       TRACE_EXPAND_NEW_BUFFERS        = 0x4000000,
->> >  };
->> >
->> >  /*
->> > --
->> > 1.8.5.3
->> >
+> ...
 >
