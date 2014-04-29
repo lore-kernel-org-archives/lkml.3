@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853AbaD2Ogd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:36:33 -0400
-Received: from mail.siteground.com ([67.19.240.234]:49602 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaD2Ogc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:36:32 -0400
-X-Greylist: delayed 2832 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 10:36:32 EDT
-Message-ID: <535FADDA.2070803@1h.com>
-Date: Tue, 29 Apr 2014 16:49:14 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1757903AbaD2Oh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:37:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33759 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757458AbaD2Oh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 10:37:27 -0400
+Message-ID: <535FB8E8.1060905@zytor.com>
+Date: Tue, 29 Apr 2014 07:36:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: containers@lists.linux-foundation.org,
-        LXC development mailing-list 
-	<lxc-devel@lists.linuxcontainers.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Matt Fleming <matt@console-pimps.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2 00/10] arm64: UEFI support
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org> <20140429102817.GE17007@arm.com> <20140429114356.GK26088@console-pimps.org>
+In-Reply-To: <20140429114356.GK26088@console-pimps.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-when using user namespaces I found a bug in the capability checks done by ioctl.
+On 04/29/2014 04:43 AM, Matt Fleming wrote:
+> (Pulling in Peter and Stephen)
+> 
+> On Tue, 29 Apr, at 11:28:17AM, Catalin Marinas wrote:
+>>
+>> The patches look fine to me, they've been through several rounds of
+>> review already. How do we propose these get merged as the series
+>> contains both generic and arm64 patches? And there are dependencies
+>> already in linux-next.
+>>
+>> Are the EFI patches in -next pulled from some non-rebaseable branch?
+> 
+> Peter suggsted a plan when he took the generic EFI stuff that's in tip
+> (and hence currently in linux-next),
+> 
+>   It doesn't hurt to inform Stephen, although I think it will simply fall
+>   out automatically since he uses git to merge and git will recognize the
+>   graph.
+> 
+>   During the merge window, it means they should not push their patches
+>   until Linus has accepted the precondition patches from the tip tree.
+>   Since Ingo and I try to push most of the tip tree as early as possible
+>   in the merge window, this is usually not a problem.
+> 
+> So we currently have the prerequisites in tip/x86/efi, and assuming that
+> this 10-patch series gets merged into a single branch somewhere, things
+> should work automatically for linux-next.
+> 
+> It may be prudent to negotiate a plan now for when the merge window
+> opens because, as Peter mentions above, the stuff in tip/x86/efi needs
+> to be merged by Linus first to avoid build breakage with the arm64
+> stuff.
 
-If someone tries to use chattr +i while in a different user namespace it will get the following:
+Whomever is going to push the arm64 stuff just needs to be aware of this
+constraint.  Again, since we tend to push -tip very early in the merge
+window, unless there are problems or late additions, this is unlikely to
+be a problem in any way.
 
-ioctl(3, EXT2_IOC_SETFLAGS, 0x7fffa4fedacc) = -1 EPERM (Operation not permitted)
-
-I'm proposing a fix to this, by replacing the capable(CAP_LINUX_IMMUTABLE) check with 
-ns_capable(current_cred()->user_ns, CAP_LINUX_IMMUTABLE).
-
-If you agree I can send patches for all filesystems.
-
-I'm proposing the following patch:
-
----
-  fs/ext4/ioctl.c | 2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index d011b69..25683d0 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -265,7 +265,7 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-                  * This test looks nicer. Thanks to Pauline Middelink
-                  */
-                 if ((flags ^ oldflags) & (EXT4_APPEND_FL | EXT4_IMMUTABLE_FL)) {
--                       if (!capable(CAP_LINUX_IMMUTABLE))
-+                       if (!ns_capable(current_cred()->user_ns, CAP_LINUX_IMMUTABLE))
-                                 goto flags_out;
-                 }
-
--- 
-1.8.4
+	-hpa
 
 
--- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
