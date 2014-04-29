@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730AbaD2Gtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:49:49 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39376 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420AbaD2Gtr (ORCPT
+	id S1755642AbaD2HCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 03:02:23 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33364 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755551AbaD2HCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:49:47 -0400
-X-Google-Original-From: Lad Prabhakar <prabhakar.csengg@gmail.com
-From: Lad Prabhakar <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] media: davinci_vpfe: dm365_resizer: fix sparse warning
-Date: Tue, 29 Apr 2014 12:19:34 +0530
-Message-Id: <1398754174-6892-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 29 Apr 2014 03:02:22 -0400
+Message-ID: <535F4E10.2020300@linux.vnet.ibm.com>
+Date: Tue, 29 Apr 2014 12:30:32 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: mikey@neuling.org, avagin@openvz.org, oleg@redhat.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        roland@redhat.com
+Subject: Re: [PATCH 0/3] Add new ptrace request macros on PowerPC
+References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com> <533BD922.4070009@linux.vnet.ibm.com>
+In-Reply-To: <533BD922.4070009@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042907-5564-0000-0000-00000D67C560
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On 04/02/2014 03:02 PM, Anshuman Khandual wrote:
+> On 04/02/2014 12:32 PM, Anshuman Khandual wrote:
+>> 	This patch series adds new ELF note sections which are used to
+>> create new ptrace request macros for various transactional memory and
+>> miscellaneous registers on PowerPC. Please find the test case exploiting
+>> the new ptrace request macros and it's results on a POWER8 system.
+>>
+>> RFC: https://lkml.org/lkml/2014/4/1/292
+>>
+>> ============================== Results ==============================
+>> -------TM specific SPR------
+>> TM TFHAR: 100009dc
+>> TM TEXASR: de000001ac000001
+>> TM TFIAR: c00000000003f386
+>> TM CH ORIG_MSR: 900000050000f032
+>> TM CH TAR: 6
+>> TM CH PPR: c000000000000
+>> TM CH DSCR: 1
+>> -------TM checkpointed GPR-----
+>> TM CH GPR[0]: 1000097c
+>> TM CH GPR[1]: 5
+>> TM CH GPR[2]: 6
+>> TM CH GPR[7]: 1
+>> TM CH NIP: 100009dc
+>> TM CH LINK: 1000097c
+>> TM CH CCR: 22000422
+>> -------TM running GPR-----
+>> TM RN GPR[0]: 1000097c
+>> TM RN GPR[1]: 7
+>> TM RN GPR[2]: 8
+>> TM RN GPR[7]: 5
+>> TM RN NIP: 100009fc
+>> TM RN LINK: 1000097c
+>> TM RN CCR: 2000422
+>> -------TM running FPR-----
+>> TM RN FPR[0]: 1002d3a3780
+>> TM RN FPR[1]: 7
+>> TM RN FPR[2]: 8
+>> TM RN FPSCR: 0
+>> -------TM checkpointed FPR-----
+>> TM CH FPR[0]: 1002d3a3780
+>> TM CH FPR[1]: 5
+>> TM CH FPR[2]: 6
+>> TM CH FPSCR: 0
+>> -------Running miscellaneous registers-------
+> TM RN DSCR: 0
+> 
+> There is a problem in here which I forgot to mention. The running DSCR value
+> comes from thread->dscr component of the target process. While we are inside the
+> transaction (which is the case here as we are stuck at "b ." instruction and
+> have not reached TEND) thread->dscr should have the running value of the DSCR
+> register at that point of time. Here we expect the DSCR value to be 5 instead
+> of 0 as shown in the output above. During the tests when I moved the "b ." after
+> TEND, the thread->dscr gets the value of 5 while all check pointed reg values are
+> thrown away. I believe there is some problem in the way thread->dscr context
+> is saved away inside the TM section. Will look into this problem further and
+> keep informed.
 
-this patch fixes following sparse warning,
-dm365_resizer.c:223:1: warning: symbol 'resizer_calculate_resize_ratios' was not declared. Should it be static?
-dm365_resizer.c:313:5: warning: symbol 'resizer_configure_output_win' was not declared. Should it be static?
+Reason behind this inconsistent DSCR register value is because of the following commit
+where the kernel reverts the DSCR register into a default value to avoid running with
+the user set value for a long time, thus preventing any potential performance degradation.
+Same reason applies to the PPR register as well. So its not a problem but an expected
+behaviour.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/staging/media/davinci_vpfe/dm365_resizer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+commit e9bdc3d6143d1c4b8d8ce5231fc958268331f983
+Author: Michael Neuling <mikey@neuling.org>
+Date:   Thu Sep 26 13:29:09 2013 +1000
 
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_resizer.c b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-index 8e13bd4..8828d6c 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
-@@ -219,7 +219,7 @@ configure_resizer_out_params(struct vpfe_resizer_device *resizer, int index,
-  * @resizer: Pointer to VPFE resizer subdevice.
-  * @index: index RSZ_A-resizer-A RSZ_B-resizer-B.
-  */
--void
-+static void
- resizer_calculate_resize_ratios(struct vpfe_resizer_device *resizer, int index)
- {
- 	struct resizer_params *param = &resizer->config;
-@@ -310,7 +310,7 @@ resizer_calculate_sdram_offsets(struct vpfe_resizer_device *resizer, int index)
- 	return 0;
- }
- 
--int resizer_configure_output_win(struct vpfe_resizer_device *resizer)
-+static int resizer_configure_output_win(struct vpfe_resizer_device *resizer)
- {
- 	struct resizer_params *param = &resizer->config;
- 	struct vpfe_rsz_output_spec output_specs;
--- 
-1.7.9.5
+    powerpc/tm: Switch out userspace PPR and DSCR sooner
+
+    When we do a treclaim or trecheckpoint we end up running with userspace
+    PPR and DSCR values.  Currently we don't do anything special to avoid
+    running with user values which could cause a severe performance
+    degradation.
+
+    This patch moves the PPR and DSCR save and restore around treclaim and
+    trecheckpoint so that we run with user values for a much shorter period.
+    More care is taken with the PPR as it's impact is greater than the DSCR.
+
+    This is similar to user exceptions, where we run HTM_MEDIUM early to
+    ensure that we don't run with a userspace PPR values in the kernel.
 
