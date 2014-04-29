@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491AbaD2ODv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 10:03:51 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:63829 "EHLO
+	id S933248AbaD2OGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 10:06:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:23542 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757454AbaD2ODu (ORCPT
+	by vger.kernel.org with ESMTP id S932647AbaD2OGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 10:03:50 -0400
-Date: Tue, 29 Apr 2014 10:03:45 -0400
+	Tue, 29 Apr 2014 10:06:54 -0400
+Date: Tue, 29 Apr 2014 10:06:52 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, x86@kernel.org,
         Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
@@ -18,9 +18,10 @@ Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
         Petr Mladek <pmladek@suse.cz>
 Subject: Re: 64bit x86: NMI nesting still buggy?
-Message-ID: <20140429100345.3f76a5bd@gandalf.local.home>
-In-Reply-To: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+Message-ID: <20140429100652.56c8c07f@gandalf.local.home>
+In-Reply-To: <535FA920.9080503@linux.intel.com>
 References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz>
+	<535FA920.9080503@linux.intel.com>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,26 +32,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 15:05:55 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+On Tue, 29 Apr 2014 06:29:04 -0700
+"H. Peter Anvin" <hpa@linux.intel.com> wrote:
 
+ 
+> > [2] 	"A special case can occur if an SMI handler nests inside an NMI 
+> > 	 handler and then another NMI occurs. During NMI interrupt 
+> > 	 handling, NMI interrupts are disabled, so normally NMI interrupts 
+> >  	 are serviced and completed with an IRET instruction one at a 
+> > 	 time. When the processor enters SMM while executing an NMI 
+> > 	 handler, the processor saves the SMRAM state save map but does 
+> > 	 not save the attribute to keep NMI interrupts disabled. 
+> > 	 Potentially, an NMI could be latched (while in SMM or upon exit) 
+> > 	 and serviced upon exit of SMM even though the previous NMI  
+> > 	 handler has still not completed."
+> 
+> I believe [2] only applies if there is an IRET executing inside the SMM
+> handler, which should not normally be the case.  It might also have been
+> addressed since that was written, but I don't know.
 
-> According to 38.4 of [1], when SMM mode is entered while the CPU is 
-> handling NMI, the end result might be that upon exit from SMM, NMIs will 
-> be re-enabled and latched NMI delivered as nested [2].
-
-Note, if this were true, then the x86_64 hardware would be extremely
-buggy. That's because NMIs are not made to be nested. If SMM's come in
-during an NMI and re-enables the NMI, then *all* software would break.
-That would basically make NMIs useless.
-
-The only time I've ever witness problems (and I stress NMIs all the
-time), is when the NMI itself does a fault. Which my patch set handles
-properly. I've also stressed this on boxes that do have SMIs and SMMs.
-
-Now, you can have a bad BIOS that does re-enable NMIs from SMMs or
-SMIs, but then you need to take that up with your vendor.
+Bad behaving BIOS? But I'm sure there's no such thing ;-)
 
 -- Steve
-
 
