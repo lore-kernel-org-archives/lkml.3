@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964893AbaD2Qeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 12:34:50 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:41703 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933428AbaD2Qes (ORCPT
+	id S933696AbaD2Qfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 12:35:41 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:47813 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933155AbaD2Qfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 12:34:48 -0400
-Message-ID: <535FD4A6.3050905@semaphore.gr>
-Date: Tue, 29 Apr 2014 19:34:46 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 29 Apr 2014 12:35:39 -0400
+Date: Tue, 29 Apr 2014 17:35:19 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "roy.franz@linaro.org" <roy.franz@linaro.org>,
+        "ard.biesheuvel@linaro.org" <ard.biesheuvel@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2 00/10] arm64: UEFI support
+Message-ID: <20140429163517.GA18644@localhost>
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+ <20140429102817.GE17007@arm.com>
+ <20140429114356.GK26088@console-pimps.org>
+ <20140429134726.GH17007@arm.com>
+ <20140429144713.GL26088@console-pimps.org>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: intel_pstate: Change the calculation of next
- pstate
-References: <535D80C8.9090906@semaphore.gr> <CAKohpomhUk7RQ3YL3=wpVKSbK_oSkyYBRUZiqnHzWqrZ2DjRRA@mail.gmail.com>
-In-Reply-To: <CAKohpomhUk7RQ3YL3=wpVKSbK_oSkyYBRUZiqnHzWqrZ2DjRRA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429144713.GL26088@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/04/2014 07:58 πμ, Viresh Kumar wrote:
-> Cc'd Dirk,
+On Tue, Apr 29, 2014 at 03:47:13PM +0100, Matt Fleming wrote:
+> On Tue, 29 Apr, at 02:47:28PM, Catalin Marinas wrote:
+> > Given that Leif's series contains both generic efi and arm64 patches,
+> > what's your preference for merging them? I'm happy to add my ack and
+> > they go via your tree (or the other way around).
 > 
-> On 28 April 2014 03:42, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> Currently the driver calculates the next pstate proportional to
->> core_busy factor and reverse proportional to current pstate.
->>
->> Change the above method and calculate the next pstate independently
->> of current pstate.
+> I'm happy either way, though if I take them through my tree (and
+> subsequently through tip) you won't have to worry about the merge window
+> rigmarole, which is a plus.
 > 
-> We must mention why the change is required.
-> 
+> So, eveyone happy for me to take these with Catalin's Acked-by?
 
-Hi Viresh,
+Fine by me. Just in case I haven't stated it explicitly for this series:
 
-Actually, I can't say that it's required. :)
-I just believe that calculation of next p-state should be independent
-from current one. In my opinion we can't scale the load across different
-p-states, because it's not always equivalent.
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-For example suppose a load of 100% because of a tight for loop in the
-current p-state. It will be also a 100% load in any other p-state.
-It will be wrong if we scale the load in the calculation formula
-according to the current p-state.
+Thanks.
 
-I included the test results in the change log to point out an improvement
-because of this patch.
-
-I will enrich more the change log as you suggested.
-
-Thanks,
-Stratos Karafotis
-
+-- 
+Catalin
