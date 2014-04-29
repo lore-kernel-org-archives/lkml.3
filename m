@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaD2GUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 02:20:08 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:62795 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaD2GUH (ORCPT
+	id S1755351AbaD2GaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 02:30:00 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:51263 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763AbaD2G36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 02:20:07 -0400
+	Tue, 29 Apr 2014 02:29:58 -0400
+Date: Tue, 29 Apr 2014 14:29:50 +0800
+From: Jimmy Li <coder.liss@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Jonathan Cameron'" <jic23@kernel.org>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Lars-Peter Clausen'" <lars@metafoo.de>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Monam Agarwal'" <monamagarwal123@gmail.com>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:iio:ad2s1210 fix a leak when device removed
+Message-ID: <20140429062950.GA24666@gmail.com>
+References: <20140429055544.GA23599@gmail.com>
+ <001401cf6371$3e98cf90$bbca6eb0$%han@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20140429061417.GJ16451@dragon>
-References: <1398504922-9223-1-git-send-email-prabhakar.csengg@gmail.com> <20140429061417.GJ16451@dragon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 29 Apr 2014 11:49:35 +0530
-Message-ID: <CA+V-a8vnha1Pk7pJ0nRizk=A+b-w_bAyS6E+32dPimSBCMg-Dg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: configs: drop CONFIG_COMMON_CLK_DEBUG
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Olof Johansson <olof@lixom.net>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Tony Prisk <linux@prisktech.co.nz>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001401cf6371$3e98cf90$bbca6eb0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 11:44 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> On Sat, Apr 26, 2014 at 03:05:22PM +0530, Lad Prabhakar wrote:
->> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
->>
->> this patch removes COMMON_CLK_DEBUG config option
->> from defconfig file as this config option is obsolete.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>  arch/arm/configs/imx_v4_v5_defconfig    |    1 -
->>  arch/arm/configs/imx_v6_v7_defconfig    |    1 -
-> ...
->>  arch/arm/configs/mxs_defconfig          |    1 -
->
-> Please drop these 3 files from your patch.  The obsolete
-> COMMON_CLK_DEBUG option has been removed from two of them on my branch
-> by savedefconfig, and we will address the remaining one in another
-> patch.
->
-OK will post the updated patch dropping these 3 files.
+On Tue, Apr 29, 2014 at 03:07:04PM +0900, Jingoo Han wrote:
+> On Tuesday, April 29, 2014 2:56 PM, Jimmy Li wrote:
+> > 
+> > Signed-off-by: Jimmy Li <coder.liss@gmail.com>
+> > ---
+> >  drivers/staging/iio/resolver/ad2s1210.c |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/staging/iio/resolver/ad2s1210.c b/drivers/staging/iio/resolver/ad2s1210.c
+> > index 7fbaba4..3d6e123 100644
+> > --- a/drivers/staging/iio/resolver/ad2s1210.c
+> > +++ b/drivers/staging/iio/resolver/ad2s1210.c
+> > @@ -716,6 +716,7 @@ static int ad2s1210_remove(struct spi_device *spi)
+> > 
+> >  	iio_device_unregister(indio_dev);
+> >  	ad2s1210_free_gpios(iio_priv(indio_dev));
+> > +	devm_iio_device_free(&spi->dev, indio_dev);
+> 
+> NAK.
+> 
+> In ad2s1210_probe(),devm_iio_device_alloc() was already used.
+> So, when ad2s1210_remove() is called, iio_device_free() will
+> be called automatically. So, the leak never happens.
+> 
+> If you want to know about devm_* functions, please refer 
+> to the following.
+> 
+>   Documentation/driver-model/devres.txt
 
-Regards,
---Prabhakar Lad
+Thank you for your reply,
+
+I understand it now, just ignore this patch.
+
+> 
+> Best regards,
+> Jingoo Han
+> > 
+> >  	return 0;
+> >  }
+> > --
+> > 1.7.9.5
+> 
