@@ -1,123 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965079AbaD2TSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:18:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:28630 "EHLO mga01.intel.com"
+	id S965094AbaD2TSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:18:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57930 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751697AbaD2TSM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:18:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,952,1389772800"; 
-   d="scan'208";a="523197207"
-From: "Hammond, John" <john.hammond@intel.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Oleg Drokin <green@linuxhacker.ru>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: RE: [PATCH 41/47] staging/lustre/llite: remove dead code
-Thread-Topic: [PATCH 41/47] staging/lustre/llite: remove dead code
-Thread-Index: AQHPYjtVN2vLXpLMk02K9lmYPZNH7Zso5gMAgAASaZA=
-Date: Tue, 29 Apr 2014 19:16:54 +0000
-Message-ID: <C6D48C5819337145905EDC9DB164E6971EDC4A18@fmsmsx120.amr.corp.intel.com>
-References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
- <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
- <20140429110251.GC26890@mwanda>
-In-Reply-To: <20140429110251.GC26890@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.107]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751697AbaD2TSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 15:18:51 -0400
+Date: Tue, 29 Apr 2014 20:40:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin LaHaise <bcrl@kvack.org>, Kent Overstreet <kmo@daterainc.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table once
+	and avoid rcu_read_lock()
+Message-ID: <20140429184004.GB32521@redhat.com>
+References: <20140429183915.GA32513@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429183915.GA32513@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Tuesday, April 29, 2014 6:03 AM
-> To: Oleg Drokin
-> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org;
-> devel@driverdev.osuosl.org; Drokin, Oleg; Hammond, John
-> Subject: Re: [PATCH 41/47] staging/lustre/llite: remove dead code
-> 
-> On Sun, Apr 27, 2014 at 01:07:05PM -0400, Oleg Drokin wrote:
-> > From: "John L. Hammond" <john.hammond@intel.com>
-> >
-> > In llite remove unused declarations, parameters, types, and unused,
-> > get-only, or set-only structure members. Add static and const
-> > qualifiers to declarations where possible.
-> >
-...
-> 
-> This is a random grab bag of changes to lots of files.  One thing per
-> patch, etc, next time.
+1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
+   or even rcu_dereference().
 
-OK, granted. But some guidance would be welcome here. For clean-up work like this, do you want a patch that const-corrects one function, a patch that const corrects all functions in a file, or a patch that const corrects all functions in a module? Is it OK to do const and static correction in the same change? Is it OK to do const, static, and dead-code in a single file?
+   This mm has no users, nobody else can play with ->ioctx_table. Otherwise
+   the code is buggy anyway, if we need rcu_read_lock() in a loop because
+   ->ioctx_table can be updated then kfree(table) is obviously wrong.
 
-> > diff --git a/drivers/staging/lustre/lustre/llite/dcache.c
-> b/drivers/staging/lustre/lustre/llite/dcache.c
-> > index 8b55080..7d520d8 100644
-> > --- a/drivers/staging/lustre/lustre/llite/dcache.c
-> > +++ b/drivers/staging/lustre/lustre/llite/dcache.c
-> > @@ -69,8 +69,7 @@ static void ll_release(struct dentry *de)
-> >  		ll_intent_release(lld->lld_it);
-> >  		OBD_FREE(lld->lld_it, sizeof(*lld->lld_it));
-> >  	}
-> > -	LASSERT(lld->lld_cwd_count == 0);
-> > -	LASSERT(lld->lld_mnt_count == 0);
-> > +
-> 
-> I'm totally in favour of removing LASSERT() calls...  But is this a
-> "set only" struct member?  It's totally unclear from the patch
-> description.
+2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
+   munmap(), but another reason is that we simply can't do vm_munmap() unless
+   current->mm == mm and this is not true in general, the caller is mmput().
 
-Actually it's get only. I can label what's what in the commit messages.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/aio.c |   47 ++++++++++++++++++-----------------------------
+ 1 files changed, 18 insertions(+), 29 deletions(-)
 
-> > diff --git a/drivers/staging/lustre/lustre/llite/statahead.c
-> b/drivers/staging/lustre/lustre/llite/statahead.c
-> > index 51c5327..1b47774 100644
-> > --- a/drivers/staging/lustre/lustre/llite/statahead.c
-> > +++ b/drivers/staging/lustre/lustre/llite/statahead.c
-> > @@ -1230,9 +1230,7 @@ do_it:
-> >  			 */
-> >  			ll_release_page(page, le32_to_cpu(dp->ldp_flags) &
-> >  					      LDF_COLLIDE);
-> > -			sai->sai_in_readpage = 1;
-> >  			page = ll_get_dir_page(dir, pos, &chain);
-> > -			sai->sai_in_readpage = 0;
-> >  		} else {
-> >  			LASSERT(le32_to_cpu(dp->ldp_flags) & LDF_COLLIDE);
-> >  			ll_release_page(page, 1);
-> > @@ -1563,12 +1561,6 @@ int do_statahead_enter(struct inode *dir, struct
-> dentry **dentryp,
-> >  			return entry ? 1 : -EAGAIN;
-> >  		}
-> >
-> > -		/* if statahead is busy in readdir, help it do post-work */
-> > -		while (!ll_sa_entry_stated(entry) &&
-> > -		       sai->sai_in_readpage &&
-> > -		       !sa_received_empty(sai))
-> > -			ll_post_statahead(sai);
-> > -
-> >  		if (!ll_sa_entry_stated(entry)) {
-> >  			sai->sai_index_wait = entry->se_index;
-> >  			lwi = LWI_TIMEOUT_INTR(cfs_time_seconds(30), NULL,
-> 
-> What is this change about really?  I've already waded through 1271 lines
-> of random changes at this point and now I have to figure out what
-> ll_post_statahead() does and why we don't need to call it now?
-> 
-> Anyways, please explain this change.
+diff --git a/fs/aio.c b/fs/aio.c
+index 12a3de0..5fd1fe7 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -777,40 +777,29 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
+  */
+ void exit_aio(struct mm_struct *mm)
+ {
+-	struct kioctx_table *table;
+-	struct kioctx *ctx;
+-	unsigned i = 0;
+-
+-	while (1) {
+-		rcu_read_lock();
+-		table = rcu_dereference(mm->ioctx_table);
+-
+-		do {
+-			if (!table || i >= table->nr) {
+-				rcu_read_unlock();
+-				rcu_assign_pointer(mm->ioctx_table, NULL);
+-				if (table)
+-					kfree(table);
+-				return;
+-			}
+-
+-			ctx = table->table[i++];
+-		} while (!ctx);
++	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
++	int i;
+ 
+-		rcu_read_unlock();
++	if (!table)
++		return;
+ 
++	for (i = 0; i < table->nr; ++i) {
++		struct kioctx *ctx = table->table[i];
+ 		/*
+-		 * We don't need to bother with munmap() here -
+-		 * exit_mmap(mm) is coming and it'll unmap everything.
+-		 * Since aio_free_ring() uses non-zero ->mmap_size
+-		 * as indicator that it needs to unmap the area,
+-		 * just set it to 0; aio_free_ring() is the only
+-		 * place that uses ->mmap_size, so it's safe.
++		 * We don't need to bother with munmap() here - exit_mmap(mm)
++		 * is coming and it'll unmap everything. And we simply can't,
++		 * this is not necessarily our ->mm.
++		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
++		 * that it needs to unmap the area, just set it to 0.
+ 		 */
+-		ctx->mmap_size = 0;
+-
+-		kill_ioctx(mm, ctx);
++		if (ctx) {
++			ctx->mmap_size = 0;
++			kill_ioctx(mm, ctx);
++		}
+ 	}
++
++	rcu_assign_pointer(mm->ioctx_table, NULL);
++	kfree(table);
+ }
+ 
+ static void put_reqs_available(struct kioctx *ctx, unsigned nr)
+-- 
+1.5.5.1
 
-It looks like this change got squished together with something else when it was pushed to staging. I've asked to Oleg check. In the original change, sai_in_readpage was never set. Hence it was easy to see that the if statement was dead code. Sorry for the confusion.
-
-Best,
-
-John
 
