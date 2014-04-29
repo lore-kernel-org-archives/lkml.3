@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965065AbaD2TRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 15:17:44 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:56962
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751697AbaD2TRn (ORCPT
+	id S965079AbaD2TSN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 15:18:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28630 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697AbaD2TSM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 15:17:43 -0400
-Date: Tue, 29 Apr 2014 14:17:40 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: tracing: Replace __get_cpu_var uses with this_cpu_ptr
-Message-ID: <alpine.DEB.2.10.1404291415560.18364@gentwo.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 Apr 2014 15:18:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,952,1389772800"; 
+   d="scan'208";a="523197207"
+From: "Hammond, John" <john.hammond@intel.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Oleg Drokin <green@linuxhacker.ru>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Drokin, Oleg" <oleg.drokin@intel.com>
+Subject: RE: [PATCH 41/47] staging/lustre/llite: remove dead code
+Thread-Topic: [PATCH 41/47] staging/lustre/llite: remove dead code
+Thread-Index: AQHPYjtVN2vLXpLMk02K9lmYPZNH7Zso5gMAgAASaZA=
+Date: Tue, 29 Apr 2014 19:16:54 +0000
+Message-ID: <C6D48C5819337145905EDC9DB164E6971EDC4A18@fmsmsx120.amr.corp.intel.com>
+References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
+ <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
+ <20140429110251.GC26890@mwanda>
+In-Reply-To: <20140429110251.GC26890@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.107]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace uses of &__get_cpu_var for address calculation with this_cpu_ptr.
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Tuesday, April 29, 2014 6:03 AM
+> To: Oleg Drokin
+> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org;
+> devel@driverdev.osuosl.org; Drokin, Oleg; Hammond, John
+> Subject: Re: [PATCH 41/47] staging/lustre/llite: remove dead code
+> 
+> On Sun, Apr 27, 2014 at 01:07:05PM -0400, Oleg Drokin wrote:
+> > From: "John L. Hammond" <john.hammond@intel.com>
+> >
+> > In llite remove unused declarations, parameters, types, and unused,
+> > get-only, or set-only structure members. Add static and const
+> > qualifiers to declarations where possible.
+> >
+...
+> 
+> This is a random grab bag of changes to lots of files.  One thing per
+> patch, etc, next time.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Christoph Lameter <cl@linux.com>
+OK, granted. But some guidance would be welcome here. For clean-up work like this, do you want a patch that const-corrects one function, a patch that const corrects all functions in a file, or a patch that const corrects all functions in a module? Is it OK to do const and static correction in the same change? Is it OK to do const, static, and dead-code in a single file?
 
-Index: linux/include/linux/kprobes.h
-===================================================================
---- linux.orig/include/linux/kprobes.h	2014-04-28 13:09:07.228660946 -0500
-+++ linux/include/linux/kprobes.h	2014-04-28 13:09:07.224661022 -0500
-@@ -356,7 +356,7 @@
+> > diff --git a/drivers/staging/lustre/lustre/llite/dcache.c
+> b/drivers/staging/lustre/lustre/llite/dcache.c
+> > index 8b55080..7d520d8 100644
+> > --- a/drivers/staging/lustre/lustre/llite/dcache.c
+> > +++ b/drivers/staging/lustre/lustre/llite/dcache.c
+> > @@ -69,8 +69,7 @@ static void ll_release(struct dentry *de)
+> >  		ll_intent_release(lld->lld_it);
+> >  		OBD_FREE(lld->lld_it, sizeof(*lld->lld_it));
+> >  	}
+> > -	LASSERT(lld->lld_cwd_count == 0);
+> > -	LASSERT(lld->lld_mnt_count == 0);
+> > +
+> 
+> I'm totally in favour of removing LASSERT() calls...  But is this a
+> "set only" struct member?  It's totally unclear from the patch
+> description.
 
- static inline struct kprobe_ctlblk *get_kprobe_ctlblk(void)
- {
--	return (&__get_cpu_var(kprobe_ctlblk));
-+	return this_cpu_ptr(&kprobe_ctlblk);
- }
+Actually it's get only. I can label what's what in the commit messages.
 
- int register_kprobe(struct kprobe *p);
-Index: linux/kernel/trace/ftrace.c
-===================================================================
---- linux.orig/kernel/trace/ftrace.c	2014-04-28 13:09:07.228660946 -0500
-+++ linux/kernel/trace/ftrace.c	2014-04-28 13:09:07.224661022 -0500
-@@ -817,7 +817,7 @@
+> > diff --git a/drivers/staging/lustre/lustre/llite/statahead.c
+> b/drivers/staging/lustre/lustre/llite/statahead.c
+> > index 51c5327..1b47774 100644
+> > --- a/drivers/staging/lustre/lustre/llite/statahead.c
+> > +++ b/drivers/staging/lustre/lustre/llite/statahead.c
+> > @@ -1230,9 +1230,7 @@ do_it:
+> >  			 */
+> >  			ll_release_page(page, le32_to_cpu(dp->ldp_flags) &
+> >  					      LDF_COLLIDE);
+> > -			sai->sai_in_readpage = 1;
+> >  			page = ll_get_dir_page(dir, pos, &chain);
+> > -			sai->sai_in_readpage = 0;
+> >  		} else {
+> >  			LASSERT(le32_to_cpu(dp->ldp_flags) & LDF_COLLIDE);
+> >  			ll_release_page(page, 1);
+> > @@ -1563,12 +1561,6 @@ int do_statahead_enter(struct inode *dir, struct
+> dentry **dentryp,
+> >  			return entry ? 1 : -EAGAIN;
+> >  		}
+> >
+> > -		/* if statahead is busy in readdir, help it do post-work */
+> > -		while (!ll_sa_entry_stated(entry) &&
+> > -		       sai->sai_in_readpage &&
+> > -		       !sa_received_empty(sai))
+> > -			ll_post_statahead(sai);
+> > -
+> >  		if (!ll_sa_entry_stated(entry)) {
+> >  			sai->sai_index_wait = entry->se_index;
+> >  			lwi = LWI_TIMEOUT_INTR(cfs_time_seconds(30), NULL,
+> 
+> What is this change about really?  I've already waded through 1271 lines
+> of random changes at this point and now I have to figure out what
+> ll_post_statahead() does and why we don't need to call it now?
+> 
+> Anyways, please explain this change.
 
- 	local_irq_save(flags);
+It looks like this change got squished together with something else when it was pushed to staging. I've asked to Oleg check. In the original change, sai_in_readpage was never set. Hence it was easy to see that the if statement was dead code. Sorry for the confusion.
 
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
+Best,
 
-@@ -848,7 +848,7 @@
- 	unsigned long flags;
+John
 
- 	local_irq_save(flags);
--	stat = &__get_cpu_var(ftrace_profile_stats);
-+	stat = this_cpu_ptr(&ftrace_profile_stats);
- 	if (!stat->hash || !ftrace_profile_enabled)
- 		goto out;
-
-Index: linux/kernel/trace/trace.c
-===================================================================
---- linux.orig/kernel/trace/trace.c	2014-04-28 13:09:07.228660946 -0500
-+++ linux/kernel/trace/trace.c	2014-04-28 13:09:07.228660946 -0500
-@@ -1728,7 +1728,7 @@
- 	 */
- 	barrier();
- 	if (use_stack == 1) {
--		trace.entries		= &__get_cpu_var(ftrace_stack).calls[0];
-+		trace.entries		= this_cpu_ptr(ftrace_stack.calls);
- 		trace.max_entries	= FTRACE_STACK_MAX_ENTRIES;
-
- 		if (regs)
