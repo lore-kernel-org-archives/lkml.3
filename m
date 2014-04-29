@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907AbaD2Lzu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:55:50 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36507 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933447AbaD2Lzt (ORCPT
+	id S933951AbaD2MCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 08:02:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55664 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933447AbaD2MCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:55:49 -0400
-From: Xia Kaixu <kaixu.xia@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: alsa-devel@alsa-project.org, broonie@kernel.org, lrg@slimlogic.co.uk,
-        linaro-kernel@lists.linaro.org, arnd@arndb.de, kaixu.xia@linaro.org
-Subject: [PATCH 00/15] ASoC: Arnds randconfig fixes for ASoC
-Date: Tue, 29 Apr 2014 19:55:17 +0800
-Message-Id: <1398772517-19953-1-git-send-email-kaixu.xia@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 29 Apr 2014 08:02:50 -0400
+Date: Tue, 29 Apr 2014 05:03:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alexander Naumann <alexandernaumann@gmx.de>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: Patchset for kernel 3.10 (fixing lockup in printk)
+Message-ID: <20140429120340.GA32696@kroah.com>
+References: <535F9015.5090309@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535F9015.5090309@gmx.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset series addresses various bugs found and fixed by Arnd Bergmann
-whilst doing randconfig builds.
+On Tue, Apr 29, 2014 at 01:42:13PM +0200, Alexander Naumann wrote:
+> Hallo all,
+> 
+> attached to this mail you will find a couple of patches fixing one bug I
+> have with kernel 3.10 (all subreleases).
+> These patches have been developed originally by Jan Kara (jack@suse.cz,
+> I guess you
+> know him better than I do) for kernel 3.13 and can be found here:
+> https://lkml.org/lkml/2014/3/25/343
+> I just have backported them to kernel 3.10.
 
-My involvement has been to review, add/check the maintainers are correct
-and submit upstream to try and reduce the backlog.
+Patches have to be accepted into Linus's kernel tree before I can accept
+them into any stable kernel release.  Please see the kernel file,
+Documentation/stable_kernel_rules.txt for the details on how this all
+works.
 
-Best Regards,
+Once the patches get merged, please let us know what the git commit ids
+they are in Linus's tree and I will be glad to queue them up.
 
-Kaixu Xia
+thanks,
 
-Arnd Bergmann (11):
-  ASoC: CS42L51 and WM8962 codecs depend on INPUT
-  ASoC: davinci: add dependencies for SND_SOC_TLV320AIC3X
-  ASoC: SMDK_WM8580_PCM needs REGMAP_I2C
-  ASoC: samsung-idma: avoid 64-bit division
-  ASoC: nuc900: export nuc900_ac97_data
-  ASoC: RX-51 audio needs I2C
-  ASoC: UDA1380 needs I2C
-  ASoC: Atmel WM8904 codec support needs I2C
-  ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
-  ASoC: Amstrad E3 needs TTY support for codec
-  ASoC: pxa: remove mach header dependency
-
-Xia Kaixu (4):
-  ASoC: TTC DKB audio needs I2C
-  ASoC: Migo-R sound needs I2C
-  ASoC: TLV320AIC23 and Simtec Hermes audio need I2C
-  ASoC: WM0010 needs SPI
-
- sound/arm/pxa2xx-pcm.c         |    2 ++
- sound/arm/pxa2xx-pcm.h         |    3 +--
- sound/soc/atmel/Kconfig        |    2 +-
- sound/soc/codecs/Kconfig       |    8 ++++----
- sound/soc/davinci/Kconfig      |   10 +++++-----
- sound/soc/fsl/Kconfig          |    2 +-
- sound/soc/nuc900/Kconfig       |    1 +
- sound/soc/nuc900/nuc900-ac97.c |    1 +
- sound/soc/omap/Kconfig         |    4 ++--
- sound/soc/pxa/Kconfig          |    2 +-
- sound/soc/pxa/pxa-ssp.c        |    2 --
- sound/soc/pxa/pxa2xx-pcm.c     |    2 ++
- sound/soc/samsung/Kconfig      |   22 ++++++++++------------
- sound/soc/samsung/idma.c       |    2 +-
- sound/soc/sh/Kconfig           |    2 +-
- 15 files changed, 33 insertions(+), 32 deletions(-)
-
--- 
-1.7.9.5
-
+greg k-h
