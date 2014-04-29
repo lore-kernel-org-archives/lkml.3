@@ -1,65 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803AbaD2Auz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Apr 2014 20:50:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49526 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473AbaD2Auy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Apr 2014 20:50:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,948,1389772800"; 
-   d="scan'208";a="502602205"
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20140428231002.GO4430@linux.vnet.ibm.com>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	 <20140428231002.GO4430@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Apr 2014 17:50:49 -0700
-Message-ID: <1398732649.2970.89.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756895AbaD2AwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Apr 2014 20:52:13 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:9064 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756190AbaD2AwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Apr 2014 20:52:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvdLAAH3XlN5LEcvPGdsb2JhbABZgwaIRKNZAQEBBZl2gRoXAwEBAQE4NYIlAQEEAScTHCMFCwgDFQMJJQ8FJQMHGhOIOQfJAhcWhUSIfweEOQSNGotxh1uORys
+Date: Tue, 29 Apr 2014 10:52:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 19/22] vfs: Cache richacl in struct inode
+Message-ID: <20140429005203.GT15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398615293-22931-20-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 16:10 -0700, Paul E. McKenney wrote:
-
-> > +#ifdef CONFIG_SMP
-> > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> > +{
-> > +	int retval;
-> > +	struct task_struct *owner;
-> > +
-> > +	rcu_read_lock();
-> > +	owner = ACCESS_ONCE(sem->owner);
+On Sun, Apr 27, 2014 at 09:44:50PM +0530, Aneesh Kumar K.V wrote:
+> From: Andreas Gruenbacher <agruen@kernel.org>
 > 
-> OK, I'll bite...
+> Cache richacls in struct inode so that this doesn't have to be done
+> individually in each filesystem.
 > 
-> Why ACCESS_ONCE() instead of rcu_dereference()?
-
-We're using it as a speculative check on the sem->owner to see
-if the owner is running on the cpu.  The rcu_read_lock
-is used for ensuring that the owner->on_cpu memory is
-still valid.
-
+> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/inode.c              | 25 ++++++++++++++++++-----
+>  include/linux/fs.h      | 12 +++++++++--
+>  include/linux/richacl.h | 53 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 83 insertions(+), 7 deletions(-)
 > 
-> (My first question was "where is the update side", but this is covered
-> by task_struct allocation and deallocation.)
+> diff --git a/fs/inode.c b/fs/inode.c
+> index f96d2a6f88cc..b96a16d5c653 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/buffer_head.h> /* for inode_has_buffers */
+>  #include <linux/ratelimit.h>
+>  #include <linux/list_lru.h>
+> +#include <linux/richacl.h>
+>  #include "internal.h"
+>  
+>  /*
+> @@ -185,7 +186,12 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+>  	inode->i_mapping = mapping;
+>  	INIT_HLIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
+>  #ifdef CONFIG_FS_POSIX_ACL
+> -	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
+> +	if (IS_POSIXACL(inode))
+> +		inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
+> +#endif
+> +#ifdef CONFIG_FS_RICHACL
+> +	if (IS_RICHACL(inode))
+> +		inode->i_richacl = ACL_NOT_CACHED;
+>  #endif
 
-Tim
+That's just plain wrong. i think this is what Christoph didn't like.
+An inode can have either a POSIX ACL or a RICH ACL, so there is no
+need for multiple pointers in the inode for them.
 
+>  
+>  #ifdef CONFIG_FSNOTIFY
+> @@ -240,10 +246,19 @@ void __destroy_inode(struct inode *inode)
+>  	}
+>  
+>  #ifdef CONFIG_FS_POSIX_ACL
+> -	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+> -		posix_acl_release(inode->i_acl);
+> -	if (inode->i_default_acl && inode->i_default_acl != ACL_NOT_CACHED)
+> -		posix_acl_release(inode->i_default_acl);
+> +	if (IS_POSIXACL(inode)) {
+> +		if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+> +			posix_acl_release(inode->i_acl);
+> +		if (inode->i_default_acl &&
+> +		    inode->i_default_acl != ACL_NOT_CACHED)
+> +			posix_acl_release(inode->i_default_acl);
+> +	}
+> +#endif
+> +#ifdef CONFIG_FS_RICHACL
+> +	if (IS_RICHACL(inode)) {
+> +		if (inode->i_richacl && inode->i_richacl != ACL_NOT_CACHED)
+> +			richacl_put(inode->i_richacl);
+> +	}
+>  #endif
+
+	if (inode->i_acl && inode->i_acl != ACL_NOT_CACHED)
+		acl_release(inode->i_acl);
+
+And all the mess of working out what acl needs releasing get taken
+out of of this code.
+
+> index 22d85798b520..95df64d21e55 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -492,6 +492,7 @@ static inline int mapping_writably_mapped(struct address_space *mapping)
+>  #endif
+>  
+>  struct posix_acl;
+> +struct richacl;
+>  #define ACL_NOT_CACHED ((void *)(-1))
+>  
+>  #define IOP_FASTPERM	0x0001
+> @@ -510,10 +511,17 @@ struct inode {
+>  	kgid_t			i_gid;
+>  	unsigned int		i_flags;
+>  
+> +	union {
+>  #ifdef CONFIG_FS_POSIX_ACL
+> -	struct posix_acl	*i_acl;
+> -	struct posix_acl	*i_default_acl;
+> +		struct {
+> +			struct posix_acl *i_acl;
+> +			struct posix_acl *i_default_acl;
+> +		};
+>  #endif
+> +#ifdef CONFIG_FS_RICHACL
+> +		struct richacl	*i_richacl;
+> +#endif
+> +	};
+
+>  
+>  	const struct inode_operations	*i_op;
+>  	struct super_block	*i_sb;
+> diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+> index 88f95d78b897..a7db341e4ee9 100644
+> --- a/include/linux/richacl.h
+> +++ b/include/linux/richacl.h
+> @@ -191,6 +191,59 @@ richacl_put(struct richacl *acl)
+>  		kfree(acl);
+>  }
+>  
+> +#ifdef CONFIG_FS_RICHACL
+> +static inline struct richacl *get_cached_richacl(struct inode *inode)
+> +{
+> +	struct richacl **p, *acl;
+> +
+> +	p = &inode->i_richacl;
+> +	acl = ACCESS_ONCE(*p);
+> +	if (acl) {
+> +		spin_lock(&inode->i_lock);
+> +		acl = *p;
+> +		if (acl != ACL_NOT_CACHED)
+> +			acl = richacl_get(acl);
+> +		spin_unlock(&inode->i_lock);
+> +	}
+> +	return acl;
+> +}
+> +
+> +static inline void set_cached_richacl(struct inode *inode,
+> +				      struct richacl *acl)
+> +{
+> +	struct richacl *old = NULL;
+> +	spin_lock(&inode->i_lock);
+> +	old = inode->i_richacl;
+> +	inode->i_richacl = richacl_get(acl);
+> +	spin_unlock(&inode->i_lock);
+> +	if (old != ACL_NOT_CACHED)
+> +		richacl_put(old);
+> +}
+> +
+> +static inline void forget_cached_richacl(struct inode *inode)
+> +{
+> +	struct richacl *old = NULL;
+> +	spin_lock(&inode->i_lock);
+> +	old = inode->i_richacl;
+> +	inode->i_richacl = ACL_NOT_CACHED;
+> +	spin_unlock(&inode->i_lock);
+> +	if (old != ACL_NOT_CACHED)
+> +		richacl_put(old);
+> +}
+> +
+> +static inline int negative_cached_richacl(struct inode *inode)
+> +{
+> +	struct richacl **p, *acl;
+> +
+> +	p = &inode->i_richacl;
+> +	acl = ACCESS_ONCE(*p);
+> +	if (acl)
+> +		return 0;
+> +	return 1;
+> +}
+> +
+> +#endif
+
+This is all just copy-and-paste from the posix_acl code with the RCU
+path-walk awareness removed from it. There should only be a single
+RCU aware version of these functions that does not care what type of
+ACL is in use.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
