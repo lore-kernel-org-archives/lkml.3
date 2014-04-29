@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965148AbaD2Uls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 16:41:48 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:51783 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267AbaD2Ulq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 16:41:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU40p-e8mqZKzaGg6nTuPdep3inRdpQtNu5txPOJ6Aw-Q@mail.gmail.com>
-References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
-	<1397859600-11507-4-git-send-email-robherring2@gmail.com>
-	<CAE9FiQVp5u-jF_xjCu68BgbZ=e0D508tn_-auoiT6cbkYtX8Og@mail.gmail.com>
-	<CAL_JsqKiYmCNGrkiwS7m-OAt3rHZBq_yNGycen-AojbV-7famg@mail.gmail.com>
-	<CAE9FiQVdwumX7Dsmt8NJhw4uWsj2sjUKaKS1wJQujW1fn1szLw@mail.gmail.com>
-	<CAL_Jsq+uNunqfsvPNxZLQQ3y1ay_XMZKb4c=HNWvKtwuiZGQ0g@mail.gmail.com>
-	<CAE9FiQU40p-e8mqZKzaGg6nTuPdep3inRdpQtNu5txPOJ6Aw-Q@mail.gmail.com>
-Date: Tue, 29 Apr 2014 15:41:45 -0500
-Message-ID: <CAL_JsqKCJvYSrFSBVCfijLhZEojm29JCY8ubQV1eAoyCCZDRZA@mail.gmail.com>
-Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-From: Rob Herring <robherring2@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
+	id S965170AbaD2UmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 16:42:18 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:59677 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933267AbaD2UmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 16:42:18 -0400
+Date: Tue, 29 Apr 2014 16:42:17 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
+Message-ID: <20140429204217.GO14608@kvack.org>
+References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429184004.GB32521@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 1:22 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Tue, Apr 29, 2014 at 8:16 AM, Rob Herring <robherring2@gmail.com> wrote:
->> On Mon, Apr 28, 2014 at 9:56 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Mon, Apr 28, 2014 at 4:24 PM, Rob Herring <robherring2@gmail.com> wrote:
->>>> On Sat, Apr 26, 2014 at 1:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>>>
->>>> Thanks for finding these. I missed them in my build tests. This should fix them:
->>>>
->>>> diff --git a/drivers/tty/serial/8250/8250_early.c
->>>> b/drivers/tty/serial/8250/8250_early.c
->>>> index e83c9db..2094c3b 100644
->>>> --- a/drivers/tty/serial/8250/8250_early.c
->>>> +++ b/drivers/tty/serial/8250/8250_early.c
->>>> @@ -156,6 +156,11 @@ static int __init early_serial8250_setup(struct
->>>> earlycon_device *device,
->>>>  EARLYCON_DECLARE(uart8250, early_serial8250_setup);
->>>>  EARLYCON_DECLARE(uart, early_serial8250_setup);
->>>>
->>>> +int __init setup_early_serial8250_console(char *cmdline)
->>>> +{
->>>> +       return setup_earlycon(cmdline, "uart8250", early_serial8250_setup);
->>>> +}
->>>> +
->>>>  int serial8250_find_port_for_earlycon(void)
->>>>  {
->>>>         struct earlycon_device *device = early_device;
->>>
->>> that only handle "uart8250,", may need to add more lines to handle "uart,"
->>
->>
->> That is on purpose because the only 2 users use uart8250. I consider
->> this a legacy interface and use of "uart" is horrible because there
->> are lots of uarts which are not 8250.
->>
->> Rob
->>
->>>
->>> +int __init setup_early_serial8250_console(char *cmdline)
->>> +{
->>> +       char *options;
->>> +       options = strstr(cmdline, "uart8250,");
->>> +       if (options)
->>> +               return setup_earlycon(cmdline, "uart8250",
->>> early_serial8250_setup);
->>> +
->>> +       options = strstr(cmdline, "uart,");
->>> +       if (options)
->>> +              return setup_earlycon(cmdline, "uart", early_serial8250_setup);
->>> +
->>> +      return 0;
->>> +}
->
-> You want to obsolete "console=uart,io,0x3f8,115200n8" ?
->
->  Let's check with Andrew. He suggested to use uart and uart8250 at that time.
+On Tue, Apr 29, 2014 at 08:40:04PM +0200, Oleg Nesterov wrote:
+> 1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
+>    or even rcu_dereference().
+> 
+>    This mm has no users, nobody else can play with ->ioctx_table. Otherwise
+>    the code is buggy anyway, if we need rcu_read_lock() in a loop because
+>    ->ioctx_table can be updated then kfree(table) is obviously wrong.
+> 
+> 2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
+>    munmap(), but another reason is that we simply can't do vm_munmap() unless
+>    current->mm == mm and this is not true in general, the caller is mmput().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-No, that is not what I'm saying. For the 2 callers of
-setup_early_serial8250_console which are crafting a console string
-from firmware data, they can and do use uart8250. I don't expect this
-mechanism for setting up early console to expand to other users. The
-whole point of this series is to allow any uart to be supported for
-earlycon. For anyone using the kernel command line, both uart and
-uart8250 are still supported.
+Your patch does not apply because it is whitespace damaged.  Please resend 
+and verify that it applies with 'git am'.
 
-Rob
+		-ben
+
+> ---
+>  fs/aio.c |   47 ++++++++++++++++++-----------------------------
+>  1 files changed, 18 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 12a3de0..5fd1fe7 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -777,40 +777,29 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
+>   */
+>  void exit_aio(struct mm_struct *mm)
+>  {
+> -	struct kioctx_table *table;
+> -	struct kioctx *ctx;
+> -	unsigned i = 0;
+> -
+> -	while (1) {
+> -		rcu_read_lock();
+> -		table = rcu_dereference(mm->ioctx_table);
+> -
+> -		do {
+> -			if (!table || i >= table->nr) {
+> -				rcu_read_unlock();
+> -				rcu_assign_pointer(mm->ioctx_table, NULL);
+> -				if (table)
+> -					kfree(table);
+> -				return;
+> -			}
+> -
+> -			ctx = table->table[i++];
+> -		} while (!ctx);
+> +	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
+> +	int i;
+>  
+> -		rcu_read_unlock();
+> +	if (!table)
+> +		return;
+>  
+> +	for (i = 0; i < table->nr; ++i) {
+> +		struct kioctx *ctx = table->table[i];
+>  		/*
+> -		 * We don't need to bother with munmap() here -
+> -		 * exit_mmap(mm) is coming and it'll unmap everything.
+> -		 * Since aio_free_ring() uses non-zero ->mmap_size
+> -		 * as indicator that it needs to unmap the area,
+> -		 * just set it to 0; aio_free_ring() is the only
+> -		 * place that uses ->mmap_size, so it's safe.
+> +		 * We don't need to bother with munmap() here - exit_mmap(mm)
+> +		 * is coming and it'll unmap everything. And we simply can't,
+> +		 * this is not necessarily our ->mm.
+> +		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
+> +		 * that it needs to unmap the area, just set it to 0.
+>  		 */
+> -		ctx->mmap_size = 0;
+> -
+> -		kill_ioctx(mm, ctx);
+> +		if (ctx) {
+> +			ctx->mmap_size = 0;
+> +			kill_ioctx(mm, ctx);
+> +		}
+>  	}
+> +
+> +	rcu_assign_pointer(mm->ioctx_table, NULL);
+> +	kfree(table);
+>  }
+>  
+>  static void put_reqs_available(struct kioctx *ctx, unsigned nr)
+> -- 
+> 1.5.5.1
+> 
+
+-- 
+"Thought is the essence of where you are now."
