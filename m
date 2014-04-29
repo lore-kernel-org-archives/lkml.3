@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610AbaD2IQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 04:16:17 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:42726 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756327AbaD2IQO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756633AbaD2IQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 04:16:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:32996 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756336AbaD2IQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Apr 2014 04:16:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,949,1389772800"; 
+   d="scan'208";a="530308843"
+Date: Tue, 29 Apr 2014 11:16:09 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: wsa@the-dreams.de, rjw@rjwysocki.net, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch V2 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
+Message-ID: <20140429081609.GF1684@lahna.fi.intel.com>
+References: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-1-git-send-email-tianyu.lan@intel.com>
+ <1398695268-28645-10-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825E1F6C5@P3PWEX4MB008.ex4.secureserver.net>
-References: <1398562558-5354-1-git-send-email-chase.southwood@gmail.com>
-	<1398562711-6313-1-git-send-email-chase.southwood@gmail.com>
-	<DC148C5AA1CEBA4E87973D432B1C2D8825E1F6C5@P3PWEX4MB008.ex4.secureserver.net>
-Date: Tue, 29 Apr 2014 03:16:13 -0500
-Message-ID: <CA+jnaaU4PxXgRFrLOdgaXxs0cG6ypG2h=TzaUMa7BPmmZ516kQ@mail.gmail.com>
-Subject: Re: [PATCH 6/6] staging: comedi: addi_apci_2032: remove use of devpriv->s_EeParameters
-From: Chase Southwood <chase.southwood@gmail.com>
-To: Hartley Sweeten <HartleyS@visionengravers.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398695268-28645-10-git-send-email-tianyu.lan@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hartley,
+On Mon, Apr 28, 2014 at 10:27:48PM +0800, Lan Tianyu wrote:
+> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
+> removing I2C ACPI operation region and ACPI AML code accessing.
+> So make i2c core built-in if CONFIG_I2C_ACPI is set.
+> 
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+>  drivers/i2c/Kconfig  | 17 ++++++++++++++++-
+>  drivers/i2c/Makefile |  2 +-
+>  include/linux/i2c.h  |  2 +-
+>  3 files changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+> index 7b7ea32..c670d49 100644
+> --- a/drivers/i2c/Kconfig
+> +++ b/drivers/i2c/Kconfig
+> @@ -2,7 +2,9 @@
+>  # I2C subsystem configuration
+>  #
+>  
+> -menuconfig I2C
+> +menu "I2C support"
+> +
+> +config I2C
+>  	tristate "I2C support"
+>  	select RT_MUTEXES
+>  	---help---
+> @@ -21,6 +23,17 @@ menuconfig I2C
+>  	  This I2C support can also be built as a module.  If so, the module
+>  	  will be called i2c-core.
+>  
+> +config I2C_ACPI
+> +	bool "I2C ACPI support"
+> +	select I2C
+> +	depends on ACPI
+> +	default y
+> +	help
+> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
+> +	  provides I2C slave devices' information to enumerate these devices.
+> +	  This option also allows ACPI AML code to access I2C slave devices
+> +	  via I2C ACPI operation region to fulfill ACPI method.
 
-Ah geez...my brain got all tangled looking at old git commits for
-other addi-data drivers.  I apologize for this silly mistake.  I'll
-fix that title and send a new version of the patchset tomorrow.
+I would prefer something like:
 
-Thanks,
-Chase
+Say Y here if you want to enable ACPI I2C support. This includes support
+for automatic enumeration of I2C slave devices and support for ACPI I2C
+Operation Regions. Operation Regions allow firmware (BIOS) code to
+access I2C slave devices, such as smart batteries through an I2C host
+controller driver.
 
-On Mon, Apr 28, 2014 at 12:59 PM, Hartley Sweeten
-<HartleyS@visionengravers.com> wrote:
-> On Saturday, April 26, 2014 6:39 PM, Chase Southwood wrote:
->> This driver no longer reads the eeprom to find the board specific data,
->> all the necessary data is in the boardinfo. Use the boardinfo directly
->> instead of passing through devpriv->s_EeParameters.
->>
->> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
->> Cc: Ian Abbott <abbotti@mev.co.uk>
->> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
->
-> Chase,
->
-> The subject does not match the patch.
->
-> Regards,
-> Hartley
+But it is really up to you so,
+
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
