@@ -1,131 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801AbaD2LGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 07:06:14 -0400
-Received: from tundra.namei.org ([65.99.196.166]:53245 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596AbaD2LGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 07:06:11 -0400
-Date: Tue, 29 Apr 2014 21:06:20 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: linux-security-module@vger.kernel.org
-cc: linux-kernel@vger.kernel.org, lwn@lwn.net,
-        Linux Security Summit Program Committee 
-	<lss-pc@ext.namei.org>
-Subject: [ANNOUNCE] Linux Security Summit 2014 -- CFP
-Message-ID: <alpine.LRH.2.02.1404292106060.7667@tundra.namei.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S964838AbaD2LKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 07:10:36 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21987 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933004AbaD2LKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 07:10:35 -0400
+Date: Tue, 29 Apr 2014 12:09:50 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH v2 0/7] Generic serial earlycon
+Message-ID: <20140429110950.GF17007@arm.com>
+References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-==========================================================================
-                 ANNOUNCEMENT AND CALL FOR PARTICIPATION
+On Fri, Apr 18, 2014 at 11:19:53PM +0100, Rob Herring wrote:
+> Rob Herring (7):
+>   x86: move FIX_EARLYCON_MEM kconfig into x86
+>   tty/serial: add generic serial earlycon
+>   tty/serial: convert 8250 to generic earlycon
+>   tty/serial: pl011: add generic earlycon support
+>   tty/serial: add arm/arm64 semihosting earlycon
+>   arm64: enable FIX_EARLYCON_MEM kconfig
+>   arm64: remove arch specific earlyprintk
 
-                       LINUX SECURITY SUMMIT 2014
-                             18-19 AUGUST
-                           CHICAGO, IL, USA
-==========================================================================
+The series looks fine, you can add:
 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-DESCRIPTION
-
-  The Linux Security Summit (LSS) is a technical forum for collaboration
-  between Linux developers, researchers, and end users.  Its primary aim
-  is to foster community efforts in analyzing and solving Linux security
-  challenges.
-
-  The format of the summit will be:
-  
-    * Refereed presentations
-    * Discussion topics
-    * Subsystem reports
-    * Breakout development sessions 
-
-
-WEB SITE
-
-  http://kernsec.org/wiki/index.php/Linux_Security_Summit_2014
-
-
-DATES / LOCATION
-
-  The Linux Security Summit for 2014 will be held across 18 and 19 August
-  in Chicago, IL, USA.  It will be co-located with LinuxCon, as well
-  as the Linux Kernel Summit
- 
-  Note that Linux Security Summit attendees and speakers must be registered
-  to attend LinuxCon.  See the LinuxCon site for details on registration,
-  travel, and accommodation:
-  
-    https://events.linuxfoundation.org/events/linuxcon
-
-  The Linux Security Summit CFP is now open, and will close on 6th June.
-  
-  Accepted speakers will be notified by 15th of June.
-
-
-WHO SHOULD ATTEND
-
-  The event is open to all registered LinuxCon attendees.
-  
-  You do not have to be a "security person" to attend -- we're seeking a
-  diverse range of attendees, and welcome the participation of general
-  developers, researchers, operations, and end-users.
-
-
-CALL FOR PARTICIPATION
-
-  The program committee currently seeks proposals for:
-
-  * Refereed Presentations:
-      45 minutes in length, including at least 10 minutes of discussion.
-      Papers are encouraged.
-
-  * Discussion Topics:
-      30 minutes in length.
- 
-  Topic areas include, but are not limited to:
-  
-    * System hardening
-    * Access control
-    * Cryptography
-    * Integrity control
-    * Hardware security
-    * Networking
-    * Storage
-    * Virtualization
-    * Desktop
-    * Tools
-    * Management
-    * Case studies
-    * Emerging technologies, threats & techniques 
-    
-  Proposals should be submitted in plain text via email to the program
-  committee at:  lss-pc (_at_) ext.namei.org
-
-  Abstracts should be approximately 150 words in total.
-
-
-PROGRAM COMMITTEE
-
-  The Linux Security Summit for 2014 is organized by:
-
-    * James Morris, Oracle
-    * Serge Hallyn, Canonical
-    * Paul Moore, Red Hat
-    * Stephen Smalley, NSA
-    * Joshua Brindle, Quark Security
-    * Herbert Xu, Red Hat
-    * John Johansen, Canonical
-    * Kees Cook, Google
-    * Casey Schaufler, Intel
-    * Mimi Zohar, IBM
-
-  The program committee may be contacted as a group via email:
-
-     lss-pc (_at_) ext.namei.org
-   
-
+BTW, are you merging all of them via some other tree or would prefer me
+to take the arm64-specific patches?
