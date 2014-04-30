@@ -1,119 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306AbaD3Oed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:34:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52342 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759215AbaD3Oav (ORCPT
+	id S964933AbaD3OgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:36:11 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:37061 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933466AbaD3OgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:30:51 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [RFC 10/16] kgr: kthreads support
-Date: Wed, 30 Apr 2014 16:30:43 +0200
-Message-Id: <1398868249-26169-11-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+	Wed, 30 Apr 2014 10:36:08 -0400
+Message-ID: <53610936.6020902@traphandler.com>
+Date: Wed, 30 Apr 2014 16:31:18 +0200
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Reply-To: jjhiblot@traphandler.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Tim Niemeyer <tim.niemeyer@corscience.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Robert Nelson <robertcnelson@gmail.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        airlied@linux.ie, robdclark@gmail.com, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] DRM driver for the ATMEL High end LCD controller
+References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>	 <1398267396.4295.59.camel@herbert.er.corscience.de>	 <5359000C.50005@free-electrons.com> <1398343612.4295.66.camel@herbert.er.corscience.de>
+In-Reply-To: <1398343612.4295.66.camel@herbert.er.corscience.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wake up kthreads so that they cycle through kgr_task_safe either
-by explicit call to it or implicitly via kthread_should_stop. This
-ensures nobody should use the old version of the code and kgraft core
-can push everybody to use the new version by switching to the fast
-path.
+Hi Tim,
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- arch/x86/include/asm/kgr.h |  2 +-
- kernel/kgr.c               | 25 +++++++++++++++----------
- 2 files changed, 16 insertions(+), 11 deletions(-)
+On 04/24/2014 02:46 PM, Tim Niemeyer wrote:
+> 
+> Hi Boris
+> 
+> Am Donnerstag, den 24.04.2014, 14:14 +0200 schrieb Boris BREZILLON:
+>> Hi Tim,
+>>
+>> On 23/04/2014 17:36, Tim Niemeyer wrote:
+>>> Hi Jean-Jacques,
+>>>
+>>> Am Freitag, den 18.04.2014, 11:45 +0200 schrieb Jean-Jacques Hiblot:
+>>>> Hi,
+>>>>
+>>>> this patch serie implements a simple DRM driver for the ATMEL High end LCD
+>>>> controller found in the SAMA5 familly. It's based on the tilcdc driver.
+>>>> It uses the cma_helper for memory and fbdev stuff.
+>>>> Your comments are welcome !
+>>> I applied your and Robert's patches on a 3.15-rc2 kernel and tried the
+>>> framebuffer device on the sama5d31-ek. Seems to work.
+>>>
+>>>> Supported features:
+>>>> * the base layer (the main framebuffer)
+>>> Tested to show a little tux png, but it's appearing only after 
+>>> 'echo 0 > /sys/devices/ahb.1/apb.2/f0030000.hlcdc/graphics/fb0/rotate'
+>>> is there missing some initializing?
+>>
+>> Could you try to apply this http://code.bulix.org/f01kvh-86117 ?
+> I can't see any difference with that.
+> 
+> I used fbv to display the tux. With CONFIG_FRAMEBUFFER_CONSOLE=n the
+> display stays with a small atmel logo and u-Boot version information. If
+> i set CONFIG_FRAMEBUFFER_CONSOLE=y, the display is black after kernel
+> start and fbv just works as expected.
+> 
+I've been able to reproduce the problem. After some digging, I found
+that trigerring a hotplug event with drm_kms_helper_hotplug_event() to
+trigger a detection of the connectors at the end of atmel_hlcdc_load()
+solves the issue. I don't know if this is a proper way to fix it though.
 
-diff --git a/arch/x86/include/asm/kgr.h b/arch/x86/include/asm/kgr.h
-index 172f7b966bb5..49daa46243fc 100644
---- a/arch/x86/include/asm/kgr.h
-+++ b/arch/x86/include/asm/kgr.h
-@@ -13,7 +13,7 @@ static void _new_function ##_stub_slow (unsigned long ip, unsigned long parent_i
- {									\
- 	struct kgr_loc_caches *c = ops->private;			\
- 									\
--	if (task_thread_info(current)->kgr_in_progress && current->mm) {\
-+	if (task_thread_info(current)->kgr_in_progress) {		\
- 		pr_info("kgr: slow stub: calling old code at %lx\n",	\
- 				c->old);				\
- 		regs->ip = c->old + MCOUNT_INSN_SIZE;			\
-diff --git a/kernel/kgr.c b/kernel/kgr.c
-index 5e9a07faddb9..ea63e857a78a 100644
---- a/kernel/kgr.c
-+++ b/kernel/kgr.c
-@@ -42,11 +42,7 @@ static bool kgr_still_patching(void)
- 
- 	read_lock(&tasklist_lock);
- 	for_each_process(p) {
--		/*
--		 * TODO
--		 *   kernel thread codepaths not supported and silently ignored
--		 */
--		if (task_thread_info(p)->kgr_in_progress && p->mm) {
-+		if (task_thread_info(p)->kgr_in_progress) {
- 			pr_info("pid %d (%s) still in kernel after timeout\n",
- 					p->pid, p->comm);
- 			failed = true;
-@@ -94,13 +90,23 @@ static void kgr_work_fn(struct work_struct *work)
- 	mutex_unlock(&kgr_in_progress_lock);
- }
- 
--static void kgr_mark_processes(void)
-+static void kgr_handle_processes(void)
- {
- 	struct task_struct *p;
- 
- 	read_lock(&tasklist_lock);
--	for_each_process(p)
-+	for_each_process(p) {
- 		task_thread_info(p)->kgr_in_progress = true;
-+
-+		/* wake up kthreads, they will clean the progress flag */
-+		if (!p->mm) {
-+			/*
-+			 * this is incorrect for kthreads waiting still for
-+			 * their first wake_up.
-+			 */
-+			wake_up_process(p);
-+		}
-+	}
- 	read_unlock(&tasklist_lock);
- }
- 
-@@ -237,8 +243,7 @@ static int kgr_patch_code(const struct kgr_patch_fun *patch_fun, bool final)
-  * kgr_start_patching -- the entry for a kgraft patch
-  * @patch: patch to be applied
-  *
-- * Start patching of code that is neither running in IRQ context nor
-- * kernel thread.
-+ * Start patching of code that is not running in IRQ context.
-  */
- int kgr_start_patching(const struct kgr_patch *patch)
- {
-@@ -276,7 +281,7 @@ int kgr_start_patching(const struct kgr_patch *patch)
- 	kgr_patch = patch;
- 	mutex_unlock(&kgr_in_progress_lock);
- 
--	kgr_mark_processes();
-+	kgr_handle_processes();
- 
- 	/*
- 	 * give everyone time to exit kernel, and check after a while
--- 
-1.9.2
 
+> Best Regards,
+> Tim
+> 
+>> Best Regards,
+>>
+>> Boris
+>>
+>>>
+>>>> * a simple panel
+>>>> * a backlight driver
+>>> Tested to set brightness to 0, 20 and 255. Works.
+>>>
+>>> Thanks for your work.
+>>>
+>>> Best Regards
+>>> Tim
+>>>
+>>>> * structure to 'easily' add other connectors (it comes from the tilcdc)
+>>>>
+>>>> On the todo list:
+>>>> * support overlays as drm_planes
+>>>> * support for the hardware cursor
+>>>> * support for the SiI9022 HDMI connector (present on sama5d36ek)
+>>>>
+>>>>
+>>>> Jean-Jacques Hiblot (3):
+>>>>   atmel: drm: added drm driver for the atmel hlcd controller
+>>>>   atmel: drm: dt: Added DT entry for the atmel hlcdc found in the sama5
+>>>>   atmel: dt: Add supports for the lcdc support on the sama5d36ek
+>>>>
+>>>>  arch/arm/boot/dts/sama5d36ek.dts                   |  27 +-
+>>>>  arch/arm/boot/dts/sama5d3_lcd.dtsi                 |  11 +
+>>>>  drivers/gpu/drm/Kconfig                            |   2 +
+>>>>  drivers/gpu/drm/Makefile                           |   1 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/Kconfig                |  13 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/Makefile               |  12 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc.h          | 771 +++++++++++++++++++++
+>>>>  .../gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.c    |  92 +++
+>>>>  .../gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.h    |  25 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c     | 702 +++++++++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.c      | 586 ++++++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.h      | 124 ++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_ovl.h      | 190 +++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.c    | 459 ++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.h    |  28 +
+>>>>  15 files changed, 3042 insertions(+), 1 deletion(-)
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/Kconfig
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/Makefile
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_ovl.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.h
+>>>>
+>>>> --
+>>>> 1.9.1
+>>>>
+>>>>
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+> 
+> 
