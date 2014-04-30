@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964843AbaD3Lsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:48:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48854 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758496AbaD3Lsx (ORCPT
+	id S964891AbaD3LtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:49:10 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12897 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933271AbaD3Lsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:48:53 -0400
-Date: Wed, 30 Apr 2014 04:48:31 -0700
-From: tip-bot for Jiri Bohac <tipbot@zytor.com>
-Message-ID: <tip-98a01e779f3c66b0b11cd7e64d531c0e41c95762@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, dstownse@us.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, jbohac@suse.cz, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, dstownse@us.ibm.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, jbohac@suse.cz
-In-Reply-To: <20140418152310.GA13654@midget.suse.cz>
-References: <20140418152310.GA13654@midget.suse.cz>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] timer: Prevent overflow in apply_slack
-Git-Commit-ID: 98a01e779f3c66b0b11cd7e64d531c0e41c95762
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Wed, 30 Apr 2014 07:48:54 -0400
+Message-ID: <1398858529.24255.3.camel@hornet>
+Subject: Re: [PATCH 01/10] of: Keep track of populated platform devices
+From: Pawel Moll <pawel.moll@arm.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 30 Apr 2014 12:48:49 +0100
+In-Reply-To: <20140429125657.65910C4089D@trevor.secretlab.ca>
+References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
+	 <1398707877-22596-2-git-send-email-pawel.moll@arm.com>
+	 <CAL_JsqJxWoxNL=P0SJm+Q1rTRGTpMkzmzTJDbFq2P1vPH4XxZQ@mail.gmail.com>
+	 <20140429125657.65910C4089D@trevor.secretlab.ca>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  98a01e779f3c66b0b11cd7e64d531c0e41c95762
-Gitweb:     http://git.kernel.org/tip/98a01e779f3c66b0b11cd7e64d531c0e41c95762
-Author:     Jiri Bohac <jbohac@suse.cz>
-AuthorDate: Fri, 18 Apr 2014 17:23:11 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 30 Apr 2014 13:46:17 +0200
+On Tue, 2014-04-29 at 13:56 +0100, Grant Likely wrote:
+> > > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> > > index 404d1da..0ae757a 100644
+> > > --- a/drivers/of/platform.c
+> > > +++ b/drivers/of/platform.c
+> > > @@ -204,7 +204,8 @@ static struct platform_device *of_platform_device_create_pdata(
+> > >  {
+> > >         struct platform_device *dev;
+> > >
+> > > -       if (!of_device_is_available(np))
+> > > +       if (!of_device_is_available(np) ||
+> > > +                       of_node_check_flag(np, OF_POPULATED))
+> > 
+> > This and the amba case should be a test_and_set operation to avoid a
+> > race condition.
+> 
+> Yes. It is an unlikely condition at the time that Pawel is handling, but
+> it should also work for later calls to of_platform_populate() which may
+> happen at runtime and in parallel.
 
-timer: Prevent overflow in apply_slack
+Sure thing, will fix.
 
-On architectures with sizeof(int) < sizeof (long), the
-computation of mask inside apply_slack() can be undefined if the
-computed bit is > 32.
+Thanks!
 
-E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
+Pawel
 
-expires_limit = 0x20000000e
-bit = 33
-mask = (1 << 33) - 1  /* undefined */
-
-On x86, mask becomes 1 and and the slack is not applied properly.
-On s390, mask is -1, expires is set to 0 and the timer fires immediately.
-
-Use 1UL << bit to solve that issue.
-
-Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/20140418152310.GA13654@midget.suse.cz
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
----
- kernel/timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 87bd529..3bb01a3 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -838,7 +838,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
- 
- 	bit = find_last_bit(&mask, BITS_PER_LONG);
- 
--	mask = (1 << bit) - 1;
-+	mask = (1UL << bit) - 1;
- 
- 	expires_limit = expires_limit & ~(mask);
- 
