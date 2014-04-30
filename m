@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381AbaD3QSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:18:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17712 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759347AbaD3QSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:18:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,959,1389772800"; 
-   d="scan'208";a="531394635"
-Message-ID: <5361224C.80702@linux.intel.com>
-Date: Wed, 30 Apr 2014 09:18:20 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1759402AbaD3QTu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:19:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16591 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaD3QTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:19:48 -0400
+Date: Wed, 30 Apr 2014 19:19:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        devel@acpica.org,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
+Message-ID: <20140430161927.GW4963@mwanda>
+References: <20140430150844.GA10621@mwanda>
+ <CAGXu5jL+VLb_+ZJd6-L5P+Bdxmw+i7j2cLyPOT4rwfE6iqHuRA@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Lutomriski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dirk Hohndel <dirk@hohndel.org>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        comex <comexk@gmail.com>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH] x86-64, espfix: Don't leak bits 31:16 of %esp returning
- to 16-bit stack
-References: <1398816946-3351-1-git-send-email-hpa@linux.intel.com> <20140430103822.GD23736@pd.tnic>
-In-Reply-To: <20140430103822.GD23736@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jL+VLb_+ZJd6-L5P+Bdxmw+i7j2cLyPOT4rwfE6iqHuRA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 03:38 AM, Borislav Petkov wrote:
+On Wed, Apr 30, 2014 at 08:33:21AM -0700, Kees Cook wrote:
+> On Wed, Apr 30, 2014 at 8:08 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> > +#if CONFIG_DEBUG_STRICT_SLOW_STRCPY_CHECKS
+> > +#define strcpy(dest, src) do {                                         \
+> > +       int len = __compiletime_size(dest);                             \
+> > +       if (len > 1 && strlen(src) >= len)                              \
+> > +               WARN_ONCE(1, "strcpy() overflow copying \"%s\"\n", src);        \
 > 
-> What will happen more likely and thus more often - our "simulated" #DF
-> or a real one? Judging by the order of the tests, you're saying: the
-> simulated one. :-)
+> This should probably BUG. An overflowing strcpy shouldn't be allowed
+> to continue.
+
+I was worried about false positives.
+
+Speaking of false positives the STRICT checks on copy_from_user() have
+been disabled for a year now because of a three year old GCC bug.  I
+wonder if the GCC people realize the security impact it has.  See
+commit 2fb0815c9ee6 ('gcc4: disable __compiletime_object_size for GCC
+4.6+') and http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48880
+
+> > +config DEBUG_STRICT_SLOW_STRCPY_CHECKS
+> > +       bool "Strict checks for strcpy() overflows"
+> > +       depends on DEBUG_KERNEL
+> > +       help
+> > +         Enabling this option adds some extra sanity checks when strcpy() is
+> > +         called().  This will slow down the kernel a bit.
 > 
-> Otherwise, push the __KERNEL_CS test up?
-> 
+> Isn't this an entirely compile-time check? I would expect it to be
+> entirely optimized by the compiler. In fact, could this be turned into
+> a build failure instead?
 
-Doesn't matter, really: do_double_fault is unconditionally fatal.
+No.  The problem is when we don't know the size of the src string.  Also
+if GCC is able to find the compile time size of both the src and
+dest string then Smatch and other static checkers are able to as well so
+I'm not very concerned about that case because we already catch them.
 
-	-hpa
-
+regards,
+dan carpenter
 
