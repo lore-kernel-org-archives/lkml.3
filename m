@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946110AbaD3XOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 19:14:17 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:50636 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaD3XOP (ORCPT
+	id S1759648AbaD3XOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 19:14:20 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56154 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751565AbaD3XOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Apr 2014 19:14:15 -0400
+Date: Thu, 1 May 2014 00:13:07 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jim Quinlan <jim2101024@gmail.com>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "mike.turquette@linaro.org" <mike.turquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Linux common clock framework: device with many clocks
+Message-ID: <20140430231307.GA10250@e106331-lin.cambridge.arm.com>
+References: <CANCKTBuOK41=ZxHcDRthc0uc81-nDr_66veeQvUDNjsKq85OSw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
-References: <20140430160345.GP18016@ZenIV.linux.org.uk>
-	<CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
-	<20140430183650.GQ18016@ZenIV.linux.org.uk>
-	<CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
-	<20140430190227.GR18016@ZenIV.linux.org.uk>
-	<20140430195918.GS18016@ZenIV.linux.org.uk>
-	<CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
-	<20140430203823.GT18016@ZenIV.linux.org.uk>
-	<CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
-	<20140430211206.GU18016@ZenIV.linux.org.uk>
-	<20140430221238.GV18016@ZenIV.linux.org.uk>
-	<CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
-Date: Wed, 30 Apr 2014 16:14:14 -0700
-X-Google-Sender-Auth: 5hZwzOgmjRsKRB0zJpZx1JBqSDw
-Message-ID: <CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANCKTBuOK41=ZxHcDRthc0uc81-nDr_66veeQvUDNjsKq85OSw@mail.gmail.com>
+Thread-Topic: [RFC] Linux common clock framework: device with many clocks
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 4:04 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> Let me go talk to the paravirt people. Maybe they don't need this, and
-> I don't know exactly *how* they use that lock pointer after the unlock
-> in the "kick waiters" part. Maybe it's all good.
+Hi,
 
-.. looking at current users (xen and kvm) it does in fact look all
-good. Yes, we "kick" possible waiters after the unlock, but the lock
-itself is not touched by that, it just uses the pointer to the lock as
-a way to figure out who to kick.
+On Wed, Apr 30, 2014 at 09:39:11PM +0100, Jim Quinlan wrote:
+> In most examples of .dtsi files I have perused, a device is associated with
+> typically one clock, maybe two.  In the SoC I'm working on, some devices
+> need to turn off multiple clocks for PM, as many as 13.   The driver gets
+> the clocks from the device tree, and when the driver wants to turn off
+> clocks to the device, it loops through all 13 clocks.
+> 
+> I'm wondering if is possible to abstract a group of many clocks into one
+> "software clock". Invoking clk_disable() on said software clock would
+> effect the iteration of clk_disable() on all 13 of the clocks it governs.
+>  Enabling would effect clk_enable() on all 13.  This would make the driver
+> writer's life a little simpler.
+> 
+> I've looked at the Linux Common Clock Framework, and it doesn't really
+> accommodate multiple active parents as it's somewhat contrary to its
+> design.  Also, playing with the innards of clk.c is ill-advised.  Should I
+> just stick to putting iteration over the clocks in all my drivers, or is
+> there a better way?
 
-In fact, I kind of knew that, but had forgotten. We very much depend
-on spin_unlock being safe wrt immediate deleton already: the
-"completion" code very much depends on it. It does a "spin_unlock()"
-to release the completion, and it can get reused immediately (it might
-be on the stack, it might be in some data structure that gets freed).
+This doesn't strike me as a DT issue. The DT should describe all the
+clocks that a given block takes, and the representation of said clocks
+in the DT is completely separate matter from the management of said
+clocks in any given driver.
 
-So I'd suggest removing that whole RCU thing, because it should be
-safe to unlock something that can go away immediately. We'd have huge
-problems elsewhere if it wasn't safe.
+If you want a helpful abstraction for combining clocks for management
+purposes you'd be better off talking to Mike Turquette (CC'd), as he's
+in charge of the common clock framework.
 
-               Linus
+Cheers,
+Mark.
