@@ -1,136 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964913AbaD3NHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:07:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44738 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933638AbaD3NHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:07:09 -0400
-From: Jan Moskyto Matejka <mq@suse.cz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jan Moskyto Matejka <mq@suse.cz>
-Subject: [PATCH] [linux-next] serial: sc16is7xx: fix defined-but-not-used warnings
-Date: Wed, 30 Apr 2014 15:07:04 +0200
-Message-Id: <1398863224-19900-1-git-send-email-mq@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
+	id S933727AbaD3NIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:08:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64994 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933195AbaD3NIa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:08:30 -0400
+Date: Wed, 30 Apr 2014 14:08:14 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Antonios Motakis <a.motakis@virtualopensystems.com>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "tech@virtualopensystems.com" <tech@virtualopensystems.com>,
+        "a.rigo@virtualopensystems.com" <a.rigo@virtualopensystems.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
+        "kim.phillips@freescale.com" <kim.phillips@freescale.com>,
+        "stuart.yoder@freescale.com" <stuart.yoder@freescale.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [RFC PATCH v5 03/11] VFIO_IOMMU_TYPE1 for platform bus devices
+ on ARM
+Message-ID: <20140430130814.GB15719@arm.com>
+References: <1398700371-20096-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1398700371-20096-4-git-send-email-a.motakis@virtualopensystems.com>
+ <1398703421.24318.262.camel@ul30vt.home>
+ <20140428191920.GC22135@arm.com>
+ <1398715690.24318.321.camel@ul30vt.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398715690.24318.321.camel@ul30vt.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/tty/serial/sc16is7xx.c:1060:12: warning: 'sc16is7xx_probe' defined but not used [-Wunused-function]
- static int sc16is7xx_probe(struct device *dev,
-            ^
-drivers/tty/serial/sc16is7xx.c:1176:12: warning: 'sc16is7xx_remove' defined but not used [-Wunused-function]
- static int sc16is7xx_remove(struct device *dev)
-            ^
-drivers/tty/serial/sc16is7xx.c:1215:29: warning: 'regcfg' defined but not used [-Wunused-variable]
- static struct regmap_config regcfg = {
-                             ^
+On Mon, Apr 28, 2014 at 09:08:10PM +0100, Alex Williamson wrote:
+> On Mon, 2014-04-28 at 20:19 +0100, Will Deacon wrote:
+> > Please excuse any ignorance on part here (I'm not at all familiar with the
+> > Intel IOMMU), but shouldn't this really be a property of the interrupt
+> > controller itself? On ARM with GICv3, there is a separate block called the
+> > ITS (interrupt translation service) which is part of the interrupt
+> > controller. The ITS provides a doorbell page which the SMMU can map into a
+> > guest operating system to provide MSI for passthrough devices, but this
+> > isn't something the SMMU is aware of -- it will just see the iommu_map
+> > request for a non-cacheable mapping.
+> 
+> I don't know the history of why this is an IOMMU domain capability on
+> x86, it's sort of a paradox.  An MSI from a device is conceptually just
+> a DMA write and is therefore logically co-located in the IOMMU hardware,
+> but x86 doesn't allow it to be mapped via the IOMMU API interfaces.  For
+> compatibility, interrupt remapping support is buried deep in the
+> request_irq interface and effectively invisible other than having this
+> path to query it.  Therefore this flag is effectively just saying "MSI
+> isolation support is present and enabled".  IOW, the host is protected
+> from interrupt injection attacks from malicious devices.  If there is
+> some property of your platform that makes this always the case, then the
+> IOMMU driver can always export this capability as true.
 
-Fixed these warnings by #ifdef-ing them to CONFIG_REGMAP_I2C and
-recursively #ifdef-ing also some other functions that got defined but not used.
+Thanks for the explanation. On ARM, the SMMU does indeed see the MSI write
+just like a normal write, so it can be mapped via iommu_map() to point at
+the interrupt controller doorbell page. I guess that means we can enable
+this capability for all MSI-capable devices upstream of the SMMU, providing
+that the IRQ controller doesn't have any horrible quirks.
 
-Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
----
- drivers/tty/serial/sc16is7xx.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+> With PCI, MSI is configured via spec defined configuration space
+> registers, so we emulate these registers and prevent user access to them
+> so that we don't need to allow the user a way to setup an interrupt
+> remapping entry.  It's done for them via request_irq.
+> 
+> IIRC, the Freescale devices have a limited number of MSI pages and can
+> therefore create some instances with isolation while others may require
+> sharing.  In that case I would expect this flag to indicate whether the
+> domain has an exclusive or shared page.
+> 
+> In any case, I suspect keying on the bus_type here is not the correct
+> way to go.  Thanks,
 
-diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
-index 7206a64..bd76277 100644
---- a/drivers/tty/serial/sc16is7xx.c
-+++ b/drivers/tty/serial/sc16is7xx.c
-@@ -389,6 +389,7 @@ static const struct sc16is7xx_devtype sc16is762_devtype = {
- 	.nr_uart	= 2,
- };
- 
-+#ifdef CONFIG_REGMAP_I2C
- static bool sc16is7xx_regmap_volatile(struct device *dev, unsigned int reg)
- {
- 	switch (reg >> SC16IS7XX_REG_SHIFT) {
-@@ -418,6 +419,7 @@ static bool sc16is7xx_regmap_precious(struct device *dev, unsigned int reg)
- 
- 	return false;
- }
-+#endif
- 
- static int sc16is7xx_set_baud(struct uart_port *port, int baud)
- {
-@@ -466,6 +468,7 @@ static int sc16is7xx_set_baud(struct uart_port *port, int baud)
- 	return DIV_ROUND_CLOSEST(clk / 16, div);
- }
- 
-+#ifdef CONFIG_REGMAP_I2C
- static void sc16is7xx_handle_rx(struct uart_port *port, unsigned int rxlen,
- 				unsigned int iir)
- {
-@@ -588,7 +591,9 @@ static void sc16is7xx_handle_tx(struct uart_port *port)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(port);
- }
-+#endif
- 
-+#ifdef CONFIG_REGMAP_I2C
- static void sc16is7xx_port_irq(struct sc16is7xx_port *s, int portno)
- {
- 	struct uart_port *port = &s->p[portno].port;
-@@ -651,6 +656,7 @@ static void sc16is7xx_wq_proc(struct work_struct *ws)
- 	sc16is7xx_handle_tx(&one->port);
- 	mutex_unlock(&s->mutex);
- }
-+#endif
- 
- static void sc16is7xx_stop_tx(struct uart_port* port)
- {
-@@ -716,6 +722,7 @@ static unsigned int sc16is7xx_get_mctrl(struct uart_port *port)
- 	return TIOCM_DSR | TIOCM_CAR;
- }
- 
-+#ifdef CONFIG_REGMAP_I2C
- static void sc16is7xx_md_proc(struct work_struct *ws)
- {
- 	struct sc16is7xx_one *one = to_sc16is7xx_one(ws, md_work);
-@@ -725,6 +732,7 @@ static void sc16is7xx_md_proc(struct work_struct *ws)
- 			      (one->port.mctrl & TIOCM_LOOP) ?
- 				      SC16IS7XX_MCR_LOOP_BIT : 0);
- }
-+#endif
- 
- static void sc16is7xx_set_mctrl(struct uart_port *port, unsigned int mctrl)
- {
-@@ -1006,6 +1014,7 @@ static const struct uart_ops sc16is7xx_ops = {
- 	.pm		= sc16is7xx_pm,
- };
- 
-+#ifdef CONFIG_REGMAP_I2C
- #ifdef CONFIG_GPIOLIB
- static int sc16is7xx_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
-@@ -1200,6 +1209,7 @@ static int sc16is7xx_remove(struct device *dev)
- 
- 	return ret;
- }
-+#endif
- 
- static const struct of_device_id __maybe_unused sc16is7xx_dt_ids[] = {
- 	{ .compatible = "nxp,sc16is740",	.data = &sc16is74x_devtype, },
-@@ -1212,6 +1222,7 @@ static const struct of_device_id __maybe_unused sc16is7xx_dt_ids[] = {
- };
- MODULE_DEVICE_TABLE(of, sc16is7xx_dt_ids);
- 
-+#ifdef CONFIG_REGMAP_I2C
- static struct regmap_config regcfg = {
- 	.reg_bits = 7,
- 	.pad_bits = 1,
-@@ -1221,7 +1232,6 @@ static struct regmap_config regcfg = {
- 	.precious_reg = sc16is7xx_regmap_precious,
- };
- 
--#ifdef CONFIG_REGMAP_I2C
- static int sc16is7xx_i2c_probe(struct i2c_client *i2c,
- 			       const struct i2c_device_id *id)
- {
--- 
-1.8.4.5
+Agreed, I was more intrigued by the meaning of the flag.
 
+Thanks,
+
+Will
