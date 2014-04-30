@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945968AbaD3RwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:52:05 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:50125 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945934AbaD3RwD (ORCPT
+	id S1945936AbaD3Rwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:52:37 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:56384 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbaD3Rwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:52:03 -0400
-Date: Wed, 30 Apr 2014 10:51:57 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robherring2@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        dev@linux-sunxi.org
-Subject: Re: [PATCH v3 1/9] mtd: nand: define struct nand_timings
-Message-ID: <20140430175157.GB2497@norris-Latitude-E6410>
-References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
- <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com>
+	Wed, 30 Apr 2014 13:52:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394647664-8258-2-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
+References: <53554CDA.1060806@mentor.com> <5357EABB.3070400@zytor.com>
+ <5357F310.8090600@mentor.com> <CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 30 Apr 2014 10:52:14 -0700
+Message-ID: <CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
+Subject: Re: randomized placement of x86_64 vdso
+To: Kees Cook <keescook@google.com>
+Cc: Nathan Lynch <Nathan_Lynch@mentor.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+On Wed, Apr 30, 2014 at 10:47 AM, Kees Cook <keescook@google.com> wrote:
+> On Wed, Apr 23, 2014 at 10:06 AM, Nathan Lynch <Nathan_Lynch@mentor.com> wrote:
+>> On 04/23/2014 11:30 AM, H. Peter Anvin wrote:
+>>> On 04/21/2014 09:52 AM, Nathan Lynch wrote:
+>>>> Hi x86/vdso people,
+>>>>
+>>>> I've been working on adding a vDSO to 32-bit ARM, and Kees suggested I
+>>>> look at x86_64's algorithm for placing the vDSO at a randomized offset
+>>>> above the stack VMA.  I found that when the stack top occupies the
+>>>> last slot in the PTE (is that the right term?), the vdso_addr routine
+>>>> returns an address below mm->start_stack, equivalent to
+>>>> (mm->start_stack & PAGE_MASK).  For instance if mm->start_stack is
+>>>> 0x7fff3ffffc96, vdso_addr returns 0x7fff3ffff000.
+>>>>
+>>>> Since the address returned is always already occupied by the stack,
+>>>> get_unmapped_area detects the collision and falls back to
+>>>> vm_unmapped_area.  This results in the vdso being placed in the
+>>>> address space next to libraries etc.  While this is generally
+>>>> unnoticeable and doesn't break anything, it does mean that the vdso is
+>>>> placed below the stack when there is actually room above the stack.
+>>>> To me it also seems uncomfortably close to placing the vdso in the way
+>>>> of downward expansion of the stack.
+>>>>
+>>>> I don't have a patch because I'm not sure what the algorithm should
+>>>> be, but thought I would bring it up as vdso_addr doesn't seem to be
+>>>> behaving as intended in all cases.
+>>>>
+>>>
+>>> If the stack occupies the last possible page, how can you say there is
+>>> "space above the stack"?
+>>
+>> Sorry for being unclear.  I probably am getting terminology wrong.  What
+>> I'm trying to express is that if the stack top is in the last page of
+>> its last-level page table (which may be the last possible page, but
+>> that's not really the interesting case), vdso_addr returns an address
+>> below mm->start_stack.
+>
+> It seems like this is avoidable, then? From your example, it seems
+> like we lose the separated randomization in this case, but we don't
+> need to? Do you have a suggestion for what could be done to fix this?
 
-On Wed, Mar 12, 2014 at 07:07:36PM +0100, Boris BREZILLON wrote:
-> Define a struct containing the standard NAND timings as described in NAND
-> datasheets.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->  include/linux/mtd/nand.h |   49 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 49 insertions(+)
-> 
-> diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-> index 389b3c5..f3ff3a3 100644
-> --- a/include/linux/mtd/nand.h
-> +++ b/include/linux/mtd/nand.h
-> @@ -846,4 +846,53 @@ static inline bool nand_is_slc(struct nand_chip *chip)
->  {
->  	return chip->bits_per_cell == 1;
->  }
-> +
-> +/**
-> + * struct nand_sdr_timings - SDR NAND chip timings
-> + *
-> + * This struct defines the timing requirements of a SDR NAND chip.
-> + * These informations can be found in every NAND datasheets and the timings
-> + * meaning are described in the ONFI specifications:
-> + * www.onfi.org/~/media/ONFI/specs/onfi_3_1_spec.pdf‎ (chapter 4.15 Timing
+I don't understand why the vDSO should be special here.  Either the
+standard logic for randomizing the placement of DSOs is good, in which
+case it should be good for the vDSO too, or I think we should fix it
+for everything.
 
-Can you remove the unicode U+200E character?
-
-> + * Parameters)
-
-Please document the units for these fields here. It looks like you're
-using picoseconds.
-
-> + *
-> + */
-> +
-
-Extra blank line.
-
-> +struct nand_sdr_timings {
-> +	u32 tALH_min;
-> +	u32 tADL_min;
-> +	u32 tALS_min;
-> +	u32 tAR_min;
-> +	u32 tCEA_max;
-> +	u32 tCEH_min;
-> +	u32 tCH_min;
-> +	u32 tCHZ_max;
-> +	u32 tCLH_min;
-> +	u32 tCLR_min;
-> +	u32 tCLS_min;
-> +	u32 tCOH_min;
-> +	u32 tCS_min;
-> +	u32 tDH_min;
-> +	u32 tDS_min;
-> +	u32 tFEAT_max;
-> +	u32 tIR_min;
-> +	u32 tITC_max;
-> +	u32 tRC_min;
-> +	u32 tREA_max;
-> +	u32 tREH_min;
-> +	u32 tRHOH_min;
-> +	u32 tRHW_min;
-> +	u32 tRHZ_max;
-> +	u32 tRLOH_min;
-> +	u32 tRP_min;
-> +	u32 tRR_min;
-> +	u64 tRST_max;
-> +	u32 tWB_max;
-> +	u32 tWC_min;
-> +	u32 tWH_min;
-> +	u32 tWHR_min;
-> +	u32 tWP_min;
-> +	u32 tWW_min;
-> +};
-> +
->  #endif /* __LINUX_MTD_NAND_H */
-
-Brian
+--Andy
