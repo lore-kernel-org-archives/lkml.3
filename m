@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989AbaD3ONt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:13:49 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:51505 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751602AbaD3ONs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:13:48 -0400
-Message-ID: <1398867224.24255.22.camel@hornet>
-Subject: Re: [PATCH 02/10] mfd: vexpress: Convert custom func API to regmap
-From: Pawel Moll <pawel.moll@arm.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>
-Date: Wed, 30 Apr 2014 15:13:44 +0100
-In-Reply-To: <20140430135855.GO29462@lee--X1>
-References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
-	 <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
-	 <20140430135855.GO29462@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1759078AbaD3OQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:16:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53527 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759010AbaD3OQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 10:16:07 -0400
+Date: Wed, 30 Apr 2014 16:15:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] aio: ioctx_table/rcu_read_lock cleanups
+Message-ID: <20140430141552.GA18539@redhat.com>
+References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com> <20140429204217.GO14608@kvack.org> <20140429212222.GA28959@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429212222.GA28959@kvack.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 14:58 +0100, Lee Jones wrote:
-> MFD diffstat looks great and the changes look sensible:
->   Acked-by: Lee Jones <lee.jones@linaro.org>
+On 04/29, Benjamin LaHaise wrote:
+>
+> Whoops, it's not whitespace damange, but rather that it doesn't apply with
+> the other changes that are queued up in the aio-next tree.  You can find a
+> copy of that tree at git://git.kvack.org/~bcrl/aio-next.git .  The change
+> that conflicts is an additional parameter to kill_ioctx().
 
-Thanks!
+Please see v2. Rebased, added another untested cleanup.
 
-> I guess someone will need to create a branch for us all to pull from.
-> I'm happy to do it if needs be.
+Kent, it seems that you agree at least with 1/2, I'll appreciate your ack ;)
 
-I was thinking that, with enough acks (and I'm counting on one from you
-for "[PATCH 04/10] mfd: vexpress: Define the device as MFD cells" :-),
-merging the whole series (or at least patches 1-4 and 7-8) through
-arm-soc tree would be the simplest option. I have no problem with the
-independent bits (clk, clocksource, hwmon and the mfd/HBI change) going
-through appropriate subsystems.
+And it seems that we can kill mm->ioctx_lock, with the minimal complications
+we can move it into kioctx_table, but this is minor.
 
-Paweł
+Oleg.
 
