@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934061AbaD3QbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:31:04 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38065 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933742AbaD3QbB (ORCPT
+	id S934105AbaD3QcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:32:22 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:46293 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934073AbaD3QcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:31:01 -0400
-Date: Wed, 30 Apr 2014 09:30:41 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: rydberg@euromail.se, balbi@ti.com, dmurphy@ti.com, mugunthanvnm@ti.com,
-        nsekhar@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 1/7] Input: pixcir_i2c_ts: Use devres managed resource
- allocations
-Message-ID: <20140430163041.GB13624@core.coreip.homeip.net>
-References: <1398861392-8959-1-git-send-email-rogerq@ti.com>
- <1398861392-8959-2-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398861392-8959-2-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Apr 2014 12:32:21 -0400
+Message-ID: <1398875537.2618.9.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+Date: Wed, 30 Apr 2014 09:32:17 -0700
+In-Reply-To: <20140430092136.GD11096@twins.programming.kicks-ass.net>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	 <20140430092136.GD11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
-
-On Wed, Apr 30, 2014 at 03:36:26PM +0300, Roger Quadros wrote:
-
->  static int pixcir_i2c_ts_remove(struct i2c_client *client)
-> @@ -198,10 +194,8 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
->  
->  	tsdata->exiting = true;
->  	mb();
-> -	free_irq(client->irq, tsdata);
->  
->  	input_unregister_device(tsdata->input);
-
-There is no need to call input_unregister_device for managed input
-devices.
-
-> -	kfree(tsdata);
->  
->  	return 0;
->  }
-> -- 
-> 1.8.3.2
+On Wed, 2014-04-30 at 11:21 +0200, Peter Zijlstra wrote:
+> On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
+> > +#ifdef CONFIG_SMP
 > 
+> > +#else
+> > +static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
+> > +{
+> > +	return false;
+> > +}
+> > +#endif
+> 
+> On the mutex side we guard this with MUTEX_SPIN_ON_OWNER, do we want to
+> use that here too?
 
-Thanks.
+I thought of it, but hated adding mutex naming to rwsem code -- we
+already do it for cpu_relax() thanks to s390.
 
--- 
-Dmitry
+MUTEX_SPIN_ON_OWNER depends on SMP && !DEBUG_MUTEXES.
+Right now rwsem optimistic spinning depends on SMP && RWSEM_XCHGADD_ALGORITHM.
+
+It might sense to add RWSEM_SPIN_ON_OWNER to encapsulate what we already
+have. I don't think we want DEBUG_MUTEX dependencies in rwsems. Would
+you accept such thing?
+
+Thanks,
+Davidlohr
+
