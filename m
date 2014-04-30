@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965100AbaD3WLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 18:11:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53033 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243AbaD3WLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 18:11:02 -0400
-Date: Thu, 1 May 2014 00:10:58 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
-        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
-        Petr Mladek <pmladek@suse.cz>
-Subject: Re: 64bit x86: NMI nesting still buggy?
-In-Reply-To: <535FA920.9080503@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1405010008420.10908@pobox.suse.cz>
-References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz> <535FA920.9080503@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1759446AbaD3WMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 18:12:42 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49554 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaD3WMl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 18:12:41 -0400
+Date: Wed, 30 Apr 2014 23:12:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140430221238.GV18016@ZenIV.linux.org.uk>
+References: <20140430160345.GP18016@ZenIV.linux.org.uk>
+ <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+ <20140430183650.GQ18016@ZenIV.linux.org.uk>
+ <CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+ <20140430190227.GR18016@ZenIV.linux.org.uk>
+ <20140430195918.GS18016@ZenIV.linux.org.uk>
+ <CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
+ <20140430203823.GT18016@ZenIV.linux.org.uk>
+ <CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
+ <20140430211206.GU18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430211206.GU18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014, H. Peter Anvin wrote:
-
-> > [2] 	"A special case can occur if an SMI handler nests inside an NMI 
-> > 	 handler and then another NMI occurs. During NMI interrupt 
-> > 	 handling, NMI interrupts are disabled, so normally NMI interrupts 
-> >  	 are serviced and completed with an IRET instruction one at a 
-> > 	 time. When the processor enters SMM while executing an NMI 
-> > 	 handler, the processor saves the SMRAM state save map but does 
-> > 	 not save the attribute to keep NMI interrupts disabled. 
-> > 	 Potentially, an NMI could be latched (while in SMM or upon exit) 
-> > 	 and serviced upon exit of SMM even though the previous NMI  
-> > 	 handler has still not completed."
+On Wed, Apr 30, 2014 at 10:12:06PM +0100, Al Viro wrote:
+> On Wed, Apr 30, 2014 at 01:57:05PM -0700, Linus Torvalds wrote:
+> > On Wed, Apr 30, 2014 at 1:38 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > We do not (and cannot) call dentry_kill() with rcu_read_lock held - it can
+> > > trigger any amount of IO, for one thing.  We can take it around the
+> > > couple of places where do that spin_unlock(&dentry->d_lock) (along with
+> > > setting DCACHE_RCUACCESS) - that's what I'd been refering to.
+> > 
+> > Just the last spin_unlock() would be the case that matters, if the
+> > spin_unlock() is done on something that could be freed immediately and
+> > the lock protects and is inside the entity that gets freed.
 > 
-> I believe [2] only applies if there is an IRET executing inside the SMM
-> handler, which should not normally be the case.  It might also have been
-> addressed since that was written, but I don't know.
+> *nod*
+> 
+> There are two such spin_unlock (handover from shrink_dentry_list() to
+> dput() and the opposite one), but they are all that needs protection -
+> ->d_flags update is outside the rcu-critical area.  I really wonder
+> if we *can* get there without DCACHE_RCUACCESS having been set, though;
+> dentry would have to be
+> 	* picked into shrink list (i.e. have had zero refcount at some point)
+> 	* never had been through __d_rehash()
+> shrink_dentry_list() definitely counts on that being impossible, and it
+> probably is, but I'm feeling seriously paranoid about the whole area.
+> I'll finish grepping through the tree and probably drop setting
+> DCACHE_RCUACCESS from the patch - either that, or set it in d_shrink_add()
+> it it turns out that it is possible and shrink_dentry_list() is fucked...
 
-Is there any chance that Intel would reveal what's behind this paragraph 
-and how likely it is to expect such BIOSes in the wild?
+OK, it really can't happen.  The proof is more convoluted than I'd like it,
+but it's solid enough, so setting that flag in dentry_kill() handover cases
+wasn't needed.  I've just pushed the whole thing to vfs.git#for-linus;
+review and testing would be very welcome.  I can repost it one more time,
+but the only difference compared to the last variant in this thread is not
+bothering with DCACHE_RCUACCESS.
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+It has survived LTP tests, going through xfstests now...
