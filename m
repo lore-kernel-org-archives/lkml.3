@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933363AbaD3LI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:08:27 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:53451 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932509AbaD3LIZ (ORCPT
+	id S933539AbaD3LI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:08:29 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:53375 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702AbaD3LI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:08:25 -0400
-Subject: [PATCH v1.0 8/16] arcmsr: Replace calling
- arcmsr_hbb_enable_driver_mode
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 19:08:18 +0800
-Message-ID: <1398856098.6930.31.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 07:08:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398681899-20782-1-git-send-email-ch.naveen@samsung.com>
+References: <1398681899-20782-1-git-send-email-ch.naveen@samsung.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Wed, 30 Apr 2014 16:38:05 +0530
+Message-ID: <CAHfPSqDc=WYzdkuJuCY6uQQbcZQQ5SuD+kOfy-aymFL1v7=csg@mail.gmail.com>
+Subject: Re: [PATCH 0/7 v8] crypto:s5p-sss: Add Device tree and Exynos support
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: linux-crypto@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Vladimir Zapolskiy <vzapolskiy@gmail.com>, herbert@gondor.apana.org.au,
+        cpgs@samsung.com, t.figa@samsung.com, davem@davemloft.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+Hello All,
 
-Replacing call arcmsr_hbb_enable_driver_mode by in-line code.
+On 28 April 2014 16:14, Naveen Krishna Chatradhi <ch.naveen@samsung.com> wrote:
+> SSS module on Exynos4210, Exynos5250 and Exynos5420 SoCs has added
+> features to the one on S5PV210. However with minor changes the s5p-sss.c
+> driver can be reused to support SSS modules on Exynos4 and 5 SoCs.
+>
+> This patch set
+> 1. Adds device tree support to the s5p-sss.c driver and Documentation
+> 2. Adds code to support SSS module on Exynos4 and 5 SoCs
+> 3. Adds variant struct to handle the differences in SSS modules
+> 4. Adds clk_prepare/clk_unprepare clocks to the s5p-sss.c driver
+>
+> Note: Compatible "exynos4210-secss" should work for Exynos4412 and
+>       Exynos5260 (Exynos5260, for which ARCH code is under review)
+> I couldn't test on Exynos4412 and Exynos4210 boards, Should be able to
+> test with addition of DT node and clocks support.
+>
+> These patches are under review at
+> https://lkml.org/lkml/2014/2/17/124
+>
+> Naveen Krishna Chatradhi (7):
+>   crypto:s5p-sss: Use platform_get_irq() instead of _byname()
+>   crypto:s5p-sss: Kconfig: Let Exynos SoCs select SSS driver
+>   crypto:s5p-sss: Look for the next request in the queue
+>   crypto:s5p-sss: Add device tree support
+>   crypto:s5p-sss: Add support for SSS module on Exynos
+>   crypto:s5p-sss: validate iv before memcpy
+>   crypto:s5p-sss: Use clk_prepare/clk_unprepare
+>
+>  .../devicetree/bindings/crypto/samsung-sss.txt     |   35 +++++
+>  drivers/crypto/Kconfig                             |    6 +-
+>  drivers/crypto/s5p-sss.c                           |  145 +++++++++++++++-----
+>  3 files changed, 150 insertions(+), 36 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/crypto/samsung-sss.txt
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+Can we get this series merged in.
+Its has got reviewed and re-based several times and got acked by a
+couple of seniors.
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:10:46.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:11:32.000000000 +0800
-@@ -906,17 +906,6 @@ static uint8_t arcmsr_abort_allcmd(struc
- 	return rtnval;
- }
- 
--static bool arcmsr_hbb_enable_driver_mode(struct AdapterControlBlock *pacb)
--{
--	struct MessageUnit_B *reg = pacb->pmuB;
--	writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
--	if (!arcmsr_hbb_wait_msgint_ready(pacb)) {
--		printk(KERN_ERR "arcmsr%d: can't set driver mode. \n", pacb->host->host_no);
--		return false;
--	}
--    	return true;
--}
--
- static void arcmsr_pci_unmap_dma(struct CommandControlBlock *ccb)
- {
- 	struct scsi_cmnd *pcmd = ccb->pcmd;
-@@ -2729,7 +2718,12 @@ static int arcmsr_iop_confirm(struct Ada
- 			timeout \n",acb->host->host_no);
- 			return 1;
- 		}
--		arcmsr_hbb_enable_driver_mode(acb);
-+		writel(ARCMSR_MESSAGE_START_DRIVER_MODE, reg->drv2iop_doorbell);
-+		if (!arcmsr_hbb_wait_msgint_ready(acb)) {
-+			pr_err("arcmsr%d: can't set driver mode.\n",
-+				acb->host->host_no);
-+			return 1;
-+		}
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
+Thanks,
+>
+> --
+> 1.7.9.5
+>
 
 
+
+-- 
+Shine bright,
+(: Nav :)
