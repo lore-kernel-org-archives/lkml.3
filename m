@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001AbaD3JP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:15:26 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:51739 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758636AbaD3JPU (ORCPT
+	id S933110AbaD3JTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:19:43 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:37908 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698AbaD3JTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:15:20 -0400
-Date: Wed, 30 Apr 2014 11:15:15 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
-References: <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
- <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
- <20140429181610.GJ18016@ZenIV.linux.org.uk>
- <20140429191015.GK18016@ZenIV.linux.org.uk>
- <20140429211851.GA32204@dastard>
- <20140429214842.GL18016@ZenIV.linux.org.uk>
- <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+	Wed, 30 Apr 2014 05:19:41 -0400
+Date: Wed, 30 Apr 2014 10:19:35 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "angus.clark@st.com" <angus.clark@st.com>,
+        "Ezequiel Garcia (ezequiel.garcia@free-electrons.com)" 
+	<ezequiel.garcia@free-electrons.com>
+Subject: Re: [RFC 43/47] mtd: nand: stm_nand_bch: read and write functions
+ (BCH)
+Message-ID: <20140430091935.GI29462@lee--X1>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <1395735604-26706-44-git-send-email-lee.jones@linaro.org>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB5CC7@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EAB5CC7@DBDE04.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 07:56:13PM -0700, Linus Torvalds wrote:
-> On Tue, Apr 29, 2014 at 7:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >From: Lee Jones [mailto:lee.jones@linaro.org]
 > >
-> > OK, aggregate diff follows, more readable splitup (3 commits) attached.
-> > It seems to survive beating here; testing, review and comments are
-> > welcome.
+> >Helper function for bch_mtd_read() and bch_mtd_write() to handle
+> >multi-page or non-aligned reads and writes respectively.
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> >---
 > 
-> Miklos, did you have some particular load that triggered this, or was
-> it just some reports? It would be really good to get this patch some
-> stress-testing.
-> 
-> I like how the patch removes more lines than it adds, but apart from
-> that it's hard to read the patch (even the split-out ones) and say
-> anything more about it. I think this needs a *lot* of testing.
+> I think below code is duplicate of nand_do_read_ops() and nand_do_write_ops()
+> in nand_base.c. If you could just populate chip->ecc.read_page and
+> chip->ecc.write_page much of this could be avoided.
 
-IBM is triggering this with the host01 test from the LTP suite.  I haven't yet
-tried to reproduce it.
+chip->ecc.read_page and chip->ecc.write_page now populated.
 
-Thanks,
-Miklos
+> Also, you need to break your bch_read_page() into given generic NAND
+> driver interfaces chip->ecc.calculate(), chip->ecc.correct() ...
+
+Our h/w calculates and corrects automatically.  No need for
+intervention.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
