@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490AbaD3KQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:16:05 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:52710
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751702AbaD3KQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:16:04 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] regmap: Fix possible ZERO_SIZE_PTR pointer dereferencing error.
-Date: Wed, 30 Apr 2014 17:31:08 +0800
-Message-ID: <1398850268-22258-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(84676001)(83072002)(62966002)(92726001)(85852003)(89996001)(77156001)(47776003)(74502001)(87936001)(76482001)(87286001)(88136002)(80022001)(36756003)(74662001)(31966008)(50226001)(79102001)(46102001)(92566001)(81542001)(99396002)(20776003)(77096999)(80976001)(19580395003)(19580405001)(86362001)(2009001)(93916002)(97736001)(81342001)(48376002)(44976005)(50466002)(77982001)(83322001)(101416001)(50986999)(6806004);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB512;H:tx30smr01.am.freescale.net;FPR:74BFD35C.30E82621.F9D62958.8BD60AD1.2018B;MLV:sfv;PTR:ErrorRetry;MX:1;A:1;LANG:en;
+	id S1758180AbaD3KSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:18:48 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11080 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330AbaD3KSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 06:18:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 30 Apr 2014 03:09:23 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Sai Gurrappadi <sgurrappadi@nvidia.com>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tick: Don't clear idle and iowait sums on CPU down
+Date: Wed, 30 Apr 2014 13:18:34 +0300
+Message-ID: <1398853114-27544-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Forefront-PRVS: 0197AFBD92
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we cannot make sure the 'len = pair_size * num_regs' will always
-be none zero from the users, and then if 'num_regs' equals to zero by
-mistake or other reasons, the kzalloc() will return ZERO_SIZE_PTR, which
-equals to ((void *)16).
+From: Sai Gurrappadi <sgurrappadi@nvidia.com>
 
-So this patch fix this with just doing the 'len' zero check before calling
-kzalloc().
+NOHZ related per-cpu data is cleared on CPU down. This was introduced by
+4b0c0f294 "tick: Cleanup NOHZ per cpu data on cpu down" which breaks
+/proc/stats because the idle and iowait sums are now non-monotonic
+across a CPU down/up cycle.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Fix this by not clearing the idle_sleeptime and iowait_sleeptime fields
+on CPU down.
+
+Signed-off-by: Sai Gurrappadi <sgurrappadi@nvidia.com>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/base/regmap/regmap.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/time/tick-sched.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 18d193f..4ef7a24 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1685,6 +1685,9 @@ static int _regmap_raw_multi_reg_write(struct regmap *map,
- 	size_t pair_size = reg_bytes + pad_bytes + val_bytes;
- 	size_t len = pair_size * num_regs;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index c12c006..2cd27ec 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -1164,6 +1164,17 @@ void tick_setup_sched_timer(void)
+ #endif /* HIGH_RES_TIMERS */
  
-+	if (!len)
-+		return -EINVAL;
+ #if defined CONFIG_NO_HZ_COMMON || defined CONFIG_HIGH_RES_TIMERS
 +
- 	buf = kzalloc(len, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
++static inline void clear_tick_sched(struct tick_sched *ts)
++{
++	ktime_t idle_sleeptime = ts->idle_sleeptime;
++	ktime_t iowait_sleeptime = ts->iowait_sleeptime;
++
++	memset(ts, 0, sizeof(*ts));
++	ts->idle_sleeptime = idle_sleeptime;
++	ts->iowait_sleeptime = iowait_sleeptime;
++}
++
+ void tick_cancel_sched_timer(int cpu)
+ {
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+@@ -1173,7 +1184,7 @@ void tick_cancel_sched_timer(int cpu)
+ 		hrtimer_cancel(&ts->sched_timer);
+ # endif
+ 
+-	memset(ts, 0, sizeof(*ts));
++	clear_tick_sched(ts);
+ }
+ #endif
+ 
 -- 
-1.8.4
+1.7.7.rc0.72.g4b5ea.dirty
 
