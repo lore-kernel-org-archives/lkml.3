@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945923AbaD3RgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:36:16 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:59033 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422723AbaD3RgP (ORCPT
+	id S1945954AbaD3Rgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:36:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42297 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422723AbaD3Rgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:36:15 -0400
-MIME-Version: 1.0
-Date: Wed, 30 Apr 2014 10:36:14 -0700
-Message-ID: <CACRpkdbgPaLjgQU5htJYzn-45MyxyqiQpcinr9nzmfp=8hf3Mw@mail.gmail.com>
-Subject: [GIT PULL] pinctrl fixes for the v3.15-rc series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Apr 2014 13:36:47 -0400
+Date: Wed, 30 Apr 2014 13:36:45 -0400 (EDT)
+Message-Id: <20140430.133645.1431735801141049226.davem@davemloft.net>
+To: kys@microsoft.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on
+ the send path
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1398878071-21307-1-git-send-email-kys@microsoft.com>
+References: <1398878071-21307-1-git-send-email-kys@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 30 Apr 2014 10:36:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Wed, 30 Apr 2014 10:14:31 -0700
 
-here is a small set of pin control fixes for the v3.15 series.
-All are individual driver fixes and quite self-contained. One
-of them tagged for stable.
+> We send packets using a copy-free mechanism (this is the Guest to Host transport
+> via VMBUS). While this is obviously optimal for large packets,
+> it may not be optimal for small packets. Hyper-V host supports
+> a second mechanism for sending packets that is "copy based". We implement that
+> mechanism in this patch.
+> 
+> In this version of the patch I have addressed a comment from David Miller.
+> 
+> With this patch (and all of the other offload and VRSS patches), we are now able
+> to almost saturate a 10G interface between Linux VMs on Hyper-V
+> on different hosts - close to  9 Gbps as measured via iperf.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 
-Please pull it in!
-
-Yours,
-Linus Walleij
-
-
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
-
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.15-3
-
-for you to fetch changes up to 0c66c5628bbb5e96360032440f53a6cb6f8973d0:
-
-  sh-pfc: r8a7791: Fix definition of MOD_SEL3 (2014-04-23 16:09:53 +0200)
-
-----------------------------------------------------------------
-Pin control fixes for v3.15:
-
-- Signedness bug in the TB10x
-
-- GPIO inversion fix for the AS3722
-
-- Clear pending pin interrups enabled in the bootloader in the
-  pinctrl-single driver
-
-- Minor pin definition fixes for the PFC/Renesas driver
-
-----------------------------------------------------------------
-Andrew Bresticker (1):
-      pinctrl: as3722: fix handling of GPIO invert bit
-
-Christian Ruppert (1):
-      pinctrl/TB10x: Fix signedness bug
-
-Guido Piasenza (1):
-      sh-pfc: r8a7790: Fix definition of IPSR5
-
-Phil Edworthy (1):
-      sh-pfc: r8a7791: Fix definition of MOD_SEL3
-
-Tony Lindgren (1):
-      pinctrl: single: Clear pin interrupts enabled by bootloader
-
- drivers/pinctrl/pinctrl-as3722.c     | 17 +++++++++++------
- drivers/pinctrl/pinctrl-single.c     | 13 +++++++++++++
- drivers/pinctrl/pinctrl-tb10x.c      |  3 +--
- drivers/pinctrl/sh-pfc/pfc-r8a7790.c |  3 +--
- drivers/pinctrl/sh-pfc/pfc-r8a7791.c |  2 +-
- 5 files changed, 27 insertions(+), 11 deletions(-)
+Applied.
