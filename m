@@ -1,120 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965149AbaD3UOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:14:54 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:34498 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965044AbaD3UOx (ORCPT
+	id S1422728AbaD3UQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:16:06 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20643 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422664AbaD3UQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:14:53 -0400
+	Wed, 30 Apr 2014 16:16:02 -0400
+Date: Wed, 30 Apr 2014 23:15:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
+Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
+Message-ID: <20140430201529.GX4963@mwanda>
+References: <20140430150844.GA10621@mwanda>
+ <1507574.Y0KFKOdI6F@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+SjerA5eH0pt3T8EG7C2hoYPqiB-f4U7gxeHM-e4huiw@mail.gmail.com>
-References: <53554CDA.1060806@mentor.com> <5357EABB.3070400@zytor.com>
- <5357F310.8090600@mentor.com> <CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
- <CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
- <CAGXu5j+96t-AgFj6cy1L1cOLM54nkiiWnpiqWgFemBaP80cR6Q@mail.gmail.com>
- <CALCETrV3remZK=MgNH83rsgMfmikfGXZj0-x1z0v4MrNAy8=Hg@mail.gmail.com> <CAGXu5j+SjerA5eH0pt3T8EG7C2hoYPqiB-f4U7gxeHM-e4huiw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 30 Apr 2014 13:14:32 -0700
-Message-ID: <CALCETrXd7aGOQ1KO2KP0=6p0vLHFagGe-tmdcoSSbnZMX3Jw_Q@mail.gmail.com>
-Subject: Re: randomized placement of x86_64 vdso
-To: Kees Cook <keescook@google.com>
-Cc: Nathan Lynch <Nathan_Lynch@mentor.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1507574.Y0KFKOdI6F@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 1:05 PM, Kees Cook <keescook@google.com> wrote:
-> On Wed, Apr 30, 2014 at 11:30 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Apr 30, 2014 at 11:13 AM, Kees Cook <keescook@google.com> wrote:
->>> On Wed, Apr 30, 2014 at 10:52 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Wed, Apr 30, 2014 at 10:47 AM, Kees Cook <keescook@google.com> wrote:
->>>>> On Wed, Apr 23, 2014 at 10:06 AM, Nathan Lynch <Nathan_Lynch@mentor.com> wrote:
->>>>>> On 04/23/2014 11:30 AM, H. Peter Anvin wrote:
->>>>>>> On 04/21/2014 09:52 AM, Nathan Lynch wrote:
->>>>>>>> Hi x86/vdso people,
->>>>>>>>
->>>>>>>> I've been working on adding a vDSO to 32-bit ARM, and Kees suggested I
->>>>>>>> look at x86_64's algorithm for placing the vDSO at a randomized offset
->>>>>>>> above the stack VMA.  I found that when the stack top occupies the
->>>>>>>> last slot in the PTE (is that the right term?), the vdso_addr routine
->>>>>>>> returns an address below mm->start_stack, equivalent to
->>>>>>>> (mm->start_stack & PAGE_MASK).  For instance if mm->start_stack is
->>>>>>>> 0x7fff3ffffc96, vdso_addr returns 0x7fff3ffff000.
->>>>>>>>
->>>>>>>> Since the address returned is always already occupied by the stack,
->>>>>>>> get_unmapped_area detects the collision and falls back to
->>>>>>>> vm_unmapped_area.  This results in the vdso being placed in the
->>>>>>>> address space next to libraries etc.  While this is generally
->>>>>>>> unnoticeable and doesn't break anything, it does mean that the vdso is
->>>>>>>> placed below the stack when there is actually room above the stack.
->>>>>>>> To me it also seems uncomfortably close to placing the vdso in the way
->>>>>>>> of downward expansion of the stack.
->>>>>>>>
->>>>>>>> I don't have a patch because I'm not sure what the algorithm should
->>>>>>>> be, but thought I would bring it up as vdso_addr doesn't seem to be
->>>>>>>> behaving as intended in all cases.
->>>>>>>>
->>>>>>>
->>>>>>> If the stack occupies the last possible page, how can you say there is
->>>>>>> "space above the stack"?
->>>>>>
->>>>>> Sorry for being unclear.  I probably am getting terminology wrong.  What
->>>>>> I'm trying to express is that if the stack top is in the last page of
->>>>>> its last-level page table (which may be the last possible page, but
->>>>>> that's not really the interesting case), vdso_addr returns an address
->>>>>> below mm->start_stack.
->>>>>
->>>>> It seems like this is avoidable, then? From your example, it seems
->>>>> like we lose the separated randomization in this case, but we don't
->>>>> need to? Do you have a suggestion for what could be done to fix this?
->>>>
->>>> I don't understand why the vDSO should be special here.  Either the
->>>> standard logic for randomizing the placement of DSOs is good, in which
->>>> case it should be good for the vDSO too, or I think we should fix it
->>>> for everything.
->>>
->>> The issue is specific to the vdso randomizing-near-the-stack code;
->>> regular mmap randomization is operating correctly. The reason for
->>> randomizing stack, vdso, and mmap separately is to avoid correlation
->>> of leaked offsets in one to the other regions.
->>
->> I understand why the offset from the stack to the vDSO should be
->> randomized, and why the offset from the stack to, say, glibc should be
->> randomized.  What I don't get is why the offset from glibc to the vDSO
->> should be randomized but the offset from glibc to openssl should be
->> deterministic.  Or am I misunderstanding?
->
-> Sure, I agree. In a perfect world, every DSO would have unrelated
-> offsets. Ignoring that for the moment, my take on this is that stack,
-> vDSO, and mmap have their locations tracked/exposed separately (SP
-> register, AUXV, and syscall return respectively). As such, they should
-> have separate randomization to avoid having any one method lead to the
-> discovery of all the offsets (i.e. the vDSO location is communicated
-> to the process in a different way than other DSOs that come into the
-> process via the mmap syscall).
->
-> As for per-mmap randomization, I would love this, but no one has
-> proposed algorithms that aren't worse than single base offset
-> randomization. This is especially true under 32-bit where attempting
-> to balance the randomization against fragmentation just leads to
-> non-random locations under certain situations/processes/DSOs, etc. It
-> could be worth revisiting this for 64-bit, but I feel like it's not a
-> high priority.
+On Wed, Apr 30, 2014 at 09:49:23PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, April 30, 2014 06:08:44 PM Dan Carpenter wrote:
+> > There are sometimes where we know that we are doing an strcpy() into a
+> > fixed length buffer.  In those cases, we could verify that the strcpy()
+> > doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
+> > if you want to check for that.  The downside is that it makes strcpy
+> > slower.
+> > 
+> > I introduced __compiletime_size() to make this work.  It returns the
+> > size of the destination buffer or zero if the size isn't known.  The
+> > __compiletime_object_size() is similar but if you pass it a struct
+> > member then it returns the size of everything from there to the end of
+> > the struct.  Another difference is __compiletime_object_size() returns
+> > -1 for unknown sizes.
+> > 
+> > If you pass a char pointer to __compiletime_size() then it returns zero.
+> > 
+> > The strcpy() check ignores buffers with just one byte because people
+> > often use those for variable length strings at the end of a struct.
+> > 
+> > I have tested this patch lightly and created some bugs for it to detect
+> > but I have not detected any real life overflows.
+> > 
+> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> > 
+> > diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
+> > index e863dd5..5e0fc2b 100644
+> > --- a/include/acpi/platform/acenv.h
+> > +++ b/include/acpi/platform/acenv.h
+> 
+> This is an ACPICA header and changes to it need to be submitted to the ACPICA
+> maintainers (as per MAINTAINERS).  We only get ACPICA changes from the
+> upstream project (except for really special situations).
 
-I think that the offending vDSO randomization code doesn't even run on 32-bit.
+Ok.  I should have added Robert and Lv to the CC list.  My guess is
+that the (void) is needed to avoid compile warnings but it's needed for
+us to avoid compile breakage with this change.
 
-If anyone wants to fix this up (do something intelligent on 32-bit and
-do something more intelligent on 64-bit), it might be easier if based
-on my vdso cleanups
-(https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=vdso/cleanups).
- The code in question is a lot less twisted with those patches
-applied.
+Anyway, I'll wait for a couple days and resend that bit broken out.
 
---Andy
+regards,
+dan carpenter
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> 
+> > @@ -320,7 +320,7 @@
+> >  #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
+> >  #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
+> >  #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
+> > -#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
+> > +#define ACPI_STRCPY(d,s)        strcpy((d), (s))
+> >  #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
+> >  #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
+> >  #define ACPI_STRCMP(d,s)        strcmp((d), (s))
+> 
+> Thanks!
+> 
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
