@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623AbaD3KYY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:24:24 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57860 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758126AbaD3KYX (ORCPT
+	id S1758670AbaD3KZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:25:24 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:33461 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756331AbaD3KZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:24:23 -0400
-Message-ID: <5360CF57.9050202@linaro.org>
-Date: Wed, 30 Apr 2014 12:24:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 30 Apr 2014 06:25:22 -0400
+Message-ID: <5360CF8A.5010809@gmail.com>
+Date: Wed, 30 Apr 2014 15:55:14 +0530
+From: Arun Kumar K <arunkk.samsung@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Alexander Shiyan <shc_work@mail.ru>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] cpuidle: new driver for Cirrus Logic for 3.16
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+CC: devicetree@vger.kernel.org, k.debski@samsung.com, kgene.kim@samsung.com,
+        p.paneri@samsung.com, jg1.han@samsung.com,
+        linux-kernel@vger.kernel.org, kishon@ti.com, stern@rowland.harvard.edu,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] ARM: dts: Add usb2phy support on exynos5420
+References: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com> <1398848110-6152-4-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1398848110-6152-4-git-send-email-gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vivek,
 
-Hi Rafael,
+On 04/30/14 14:25, Vivek Gautam wrote:
+> Add required device node for usb2phy to let enable USB 2.0
+> support.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+> index cfa3755..16b860a 100644
+> --- a/arch/arm/boot/dts/exynos5420.dtsi
+> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+> @@ -737,4 +737,14 @@
+>  		clock-names = "secss";
+>  		samsung,power-domain = <&g2d_pd>;
+>  	};
+> +
+> +	phy@12130000 {
 
-this pull request is based on top 3.15-rc3
+As we will be changing over to reference-based updation of nodes in the
+board dts files, it would be good to add node reference also while
+adding new nodes. Like : usb_phy: phy@12130000 {
 
-  * Alexander Shiyan added a new driver for the Cirrus Logic clps711x
+Regards
+Arun
 
-Thanks
-   -- Daniel
-
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
-
-   Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
-
-are available in the git repository at:
-
-   git://git.linaro.org/people/daniel.lezcano/linux.git cpuidle/3.16
-
-for you to fetch changes up to 7c7f8f7f2c6bf078874e5de35d7e2c66467fc664:
-
-   ARM: clps711x: Add cpuidle driver (2014-04-30 01:33:02 +0200)
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-       ARM: clps711x: Add cpuidle driver
-
-  drivers/cpuidle/Kconfig.arm        |    6 ++++
-  drivers/cpuidle/Makefile           |    1 +
-  drivers/cpuidle/cpuidle-clps711x.c |   64 
-++++++++++++++++++++++++++++++++++++
-  3 files changed, 71 insertions(+)
-  create mode 100644 drivers/cpuidle/cpuidle-clps711x.c
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> +		compatible = "samsung,exynos5250-usb2-phy";
+> +		reg = <0x12130000 0x100>;
+> +		clocks = <&clock CLK_USBH20>, <&clock CLK_SCLK_USBPHY300>;
+> +		clock-names = "phy", "ref";
+> +		#phy-cells = <1>;
+> +		samsung,sysreg-phandle = <&sysreg_system_controller>;
+> +		samsung,pmureg-phandle = <&pmu_system_controller>;
+> +	};
+>  };
+> 
