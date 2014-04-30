@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759634AbaD3Wd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 18:33:56 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:43591 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaD3Wdz (ORCPT
+	id S1946104AbaD3WkO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 18:40:14 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60542 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1945984AbaD3WkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 18:33:55 -0400
-Date: Wed, 30 Apr 2014 15:33:39 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dwmw2@infradead.org,
-        galak@codeaurora.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        linux@arm.linux.org.uk, grygorii.strashko@ti.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        m-karicheri2@ti.com, Warner Losh <imp@bsdimp.com>
-Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for
- keystone-nand
-Message-ID: <20140430223339.GF2497@norris-Latitude-E6410>
-References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com>
- <532B4C36.8060405@ti.com>
- <5343F0D6.2010804@ti.com>
- <20140416070833.GA5512@norris-Latitude-E6410>
- <534E51BF.9050508@ti.com>
- <535E5AF5.2020203@ti.com>
+	Wed, 30 Apr 2014 18:40:12 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: peterz@infradead.org, mingo@elte.hu, amit.kucheria@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it out
+Date: Thu, 01 May 2014 00:56:41 +0200
+Message-ID: <2735426.75qSjG3M6Y@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2783362.8r7SvVhudq@vostro.rjw.lan>
+References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org> <2783362.8r7SvVhudq@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535E5AF5.2020203@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 09:43:17AM -0400, Santosh Shilimkar wrote:
-> On Wednesday 16 April 2014 05:47 AM, Ivan Khoronzhuk wrote:
-> > On 04/16/2014 10:08 AM, Brian Norris wrote:
-> >> On Tue, Apr 08, 2014 at 03:51:34PM +0300, Ivan Khoronzhuk wrote:
-> >>> Could you pick up subj patch?
-> >> Pushed to l2-mtd.git. Is it critical this goes in for 3.15? It's
-> >> currently queued for -next (3.16).
-> >>
-> 
-> [..]
-> 
+On Thursday, May 01, 2014 12:47:25 AM Rafael J. Wysocki wrote:
+> On Wednesday, April 30, 2014 02:01:02 PM Daniel Lezcano wrote:
+> > Encapsulate the large portion of cpuidle_idle_call inside another
+> > function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
+> > Also that is benefitial for the clarity of the code as it removes
+> > a nested indentation level.
 > > 
-> > This is a critical fix and it should be for 3.15.
-> Ping. 3.15-rc3 is already out and I still see this fix merged
-> yet.
+> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> 
+> Well, this conflicts with
+> 
+> https://patchwork.kernel.org/patch/4071541/
+> 
+> which you haven't commented on and I still want cpuidle_select() to be able to
+> return negative values because of
+> 
+> https://patchwork.kernel.org/patch/4089631/
+> 
+> (and I have one more patch on top of these two that requires this).
 
-OK, cherry-picked to linux-mtd.git with the intention of sending to
-Linus soon.
+Moreover (along the lines of Nico said) after https://patchwork.kernel.org/patch/4071541/
+we actually don't need the #ifdef CONFIG_CPU_IDLE in your patch, because cpuidle_select()
+for CONFIG_CPU_IDLE unset is a static inline returning a negative number and the compiler
+should optimize out the blocks that depend on it being non-negative.
 
-Regards,
-Brian
+Thanks!
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
