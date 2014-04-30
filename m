@@ -1,43 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101AbaD3IDs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:03:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38081 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757347AbaD3ICA (ORCPT
+	id S1758065AbaD3IEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:04:20 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43148 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaD3IEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:02:00 -0400
-Date: Wed, 30 Apr 2014 11:01:49 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 41/47] staging/lustre/llite: remove dead code
-Message-ID: <20140430080149.GG26890@mwanda>
-References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru>
- <1398618431-29757-42-git-send-email-green@linuxhacker.ru>
- <20140429110251.GC26890@mwanda>
- <DAD2A56A-3ABC-49C6-BA21-95CD95BF805F@linuxhacker.ru>
+	Wed, 30 Apr 2014 04:04:16 -0400
+Message-ID: <5360AE74.7050100@parallels.com>
+Date: Wed, 30 Apr 2014 12:04:04 +0400
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DAD2A56A-3ABC-49C6-BA21-95CD95BF805F@linuxhacker.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Rik van Riel <riel@redhat.com>, <linux-kernel@vger.kernel.org>
+CC: <linux-mm@kvack.org>, <sandeen@redhat.com>, <akpm@linux-foundation.org>,
+        <jweiner@redhat.com>, <kosaki.motohiro@jp.fujitsu.com>,
+        <mhocko@suse.cz>, <fengguang.wu@intel.com>
+Subject: Re: [PATCH] mm,writeback: fix divide by zero in pos_ratio_polynom
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+In-Reply-To: <20140429151910.53f740ef@annuminas.surriel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.30.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 11:21:48PM -0400, Oleg Drokin wrote:
-> I can rediff this patch with this particular part dropped if there are
-> any concerns and it's possible to reintegrate it in a changed form.
+Hi Rik!
 
-No no.  I knew that Greg had already merged this stuff by the time I got
-around to reviewing it.  It was just some bonus grumbling after the
-fact.
+On 04/29/2014 11:19 PM, Rik van Riel wrote:
+> It is possible for "limit - setpoint + 1" to equal zero, leading to a
+> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+> working, so we need to actually test the divisor before calling div64.
 
-regards,
-dan carpenter
+The patch looks correct, but I'm afraid it can hide an actual bug in a 
+caller of pos_ratio_polynom(). The latter is not intended for setpoint > 
+limit. All callers take pains to ensure that setpoint <= limit. Look, 
+for example, at global_dirty_limits():
+
+ >     if (background >= dirty)
+ >        background = dirty / 2;
+
+If you ever encountered "limit - setpoint + 1" equal zero, it may be 
+worthy to investigate how you came to setpoint greater than limit.
+
+Thanks,
+Maxim
+
+>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+>   mm/page-writeback.c | 7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index ef41349..2682516 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+>   					  unsigned long dirty,
+>   					  unsigned long limit)
+>   {
+> +	unsigned int divisor;
+>   	long long pos_ratio;
+>   	long x;
+>   
+> +	divisor = limit - setpoint;
+> +	if (!divisor)
+> +		divisor = 1;
+> +
+>   	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+> -		    limit - setpoint + 1);
+> +		    divisor);
+>   	pos_ratio = x;
+>   	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+>   	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
 
