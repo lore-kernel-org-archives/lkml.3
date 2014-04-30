@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489AbaD3TSk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:18:40 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:18066 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758938AbaD3TSj (ORCPT
+	id S1759506AbaD3TTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:19:11 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:43902 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759165AbaD3TTJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:18:39 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlMGAIlLYVNXQ3IO/2dsb2JhbABZgwbFcIEgF3SCZhwjGIECJBOIRQHJSI5RhEABA48TihMBkmuDMzs
-Date: Wed, 30 Apr 2014 21:18:36 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Seth Jennings <sjennings@variantweb.net>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] MM/ZBUD: make size unsigned like unique callsite
-Message-Id: <20140430211836.a6ab920079485e8d1cc01121@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 15:19:09 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Dinh Nguyen <dinguyen@altera.com>, "ZY - pavel" <pavel@denx.de>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1398379669.14881.2.camel@linux-builds1>
+Cc: dinh.linux@gmail.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <1397481336-5592-1-git-send-email-dinguyen@altera.com>
+ <20140424152133.GA23032@amd.pavel.ucw.cz>
+ <1398379669.14881.2.camel@linux-builds1>
+Message-ID: <20140430191902.5718.91761@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: socfpga: fix clock driver for 3.15
+Date: Wed, 30 Apr 2014 12:19:02 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zbud_alloc is only called by zswap_frontswap_store with unsigned int len.
-Change function parameter + update  >= 0 check.
+Quoting Dinh Nguyen (2014-04-24 15:47:49)
+> Hi Mike,
+> 
+> On Thu, 2014-04-24 at 17:21 +0200, ZY - pavel wrote:
+> > Hi!
+> > 
+> > > commit [1771b10d6 clk: respect the clock dependencies in of_clk_init]
+> > > exposed a flaw in the socfpga clock driver and prevents the platform
+> > > from booting on 3.15-rc1.
+> > > 
+> > > Because the "altr,clk-mgr" is not really a clock, it should not be using
+> > > CLK_OF_DECLARE, instead we should be mapping the clk-mgr's base address
+> > > one of the functional clock init function. Use the socfpga_pll_init function
+> > > to map the clk_mgr_base_addr as this clock should always be initialized first.
+> > > 
+> > > Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
+> > 
+> > Works for me, thanks!
+> >                                                                       Pavel
+> > 
+> > Tested-by: Pavel Machek <pavel@denx.de>
+> > 
+> 
+> I'm hoping you can queued this up for one of the 3.15-rc.
 
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- include/linux/zbud.h | 2 +-
- mm/zbud.c            | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+I took this in a few days ago but forgot to reply. It's in clk-fixes for
+the next batch.
 
-diff --git a/include/linux/zbud.h b/include/linux/zbud.h
-index 2571a5c..13af0d4 100644
---- a/include/linux/zbud.h
-+++ b/include/linux/zbud.h
-@@ -11,7 +11,7 @@ struct zbud_ops {
- 
- struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops);
- void zbud_destroy_pool(struct zbud_pool *pool);
--int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-+int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
- 	unsigned long *handle);
- void zbud_free(struct zbud_pool *pool, unsigned long handle);
- int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
-diff --git a/mm/zbud.c b/mm/zbud.c
-index 9451361..01df13a 100644
---- a/mm/zbud.c
-+++ b/mm/zbud.c
-@@ -247,7 +247,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
-  * gfp arguments are invalid or -ENOMEM if the pool was unable to allocate
-  * a new page.
-  */
--int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
-+int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
- 			unsigned long *handle)
- {
- 	int chunks, i, freechunks;
-@@ -255,7 +255,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
- 	enum buddy bud;
- 	struct page *page;
- 
--	if (size <= 0 || gfp & __GFP_HIGHMEM)
-+	if (!size || (gfp & __GFP_HIGHMEM))
- 		return -EINVAL;
- 	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED - CHUNK_SIZE)
- 		return -ENOSPC;
--- 
-1.9.1
+Regards,
+Mike
 
+> 
+> Thanks,
+> Dinh
+> 
+> 
