@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768AbaD3GhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 02:37:25 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63690 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752391AbaD3GhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 02:37:21 -0400
+	id S1757845AbaD3Ghu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 02:37:50 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:52209
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757457AbaD3Ght (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 02:37:49 -0400
+Date: Wed, 30 Apr 2014 13:39:29 +0800
+From: Huang Shijie <b32955@freescale.com>
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Marek Vasut <marex@denx.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        <linux-mtd@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        "Shawn Guo" <shawn.guo@freescale.com>
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
+ for M25P80)
+Message-ID: <20140430053926.GA9673@localhost>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+ <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+ <535A8FC9.8040707@wwwdotorg.org>
+ <20140429190603.GB9418@norris-Latitude-E6410>
 MIME-Version: 1.0
-In-Reply-To: <5345333D.4080505@saftware.de>
-References: <1396967856-27470-1-git-send-email-t.stanislaws@samsung.com>
-	<1396967856-27470-2-git-send-email-t.stanislaws@samsung.com>
-	<534506B1.4040908@samsung.com>
-	<5345333D.4080505@saftware.de>
-Date: Wed, 30 Apr 2014 12:07:19 +0530
-Message-ID: <CAPdUM4OOaaP2byJa+MgksAaDtsffwqTYT-obfVEBsRxjy_vKrg@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] phy: Add exynos-simple-phy driver
-From: Rahul Sharma <r.sh.open@gmail.com>
-To: Andreas Oberritter <obi@saftware.de>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        sunil joshi <joshi@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140429190603.GB9418@norris-Latitude-E6410>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(24454002)(51704005)(50986999)(97756001)(74662001)(74502001)(76176999)(33656001)(31966008)(1411001)(81542001)(77096999)(54356999)(76482001)(101416001)(33716001)(46406003)(46102001)(80976001)(81342001)(83072002)(99396002)(57986002)(92566001)(92726001)(85852003)(87936001)(50466002)(83506001)(44976005)(83322001)(80022001)(23726002)(6806004)(20776003)(47776003)(79102001)(77982001)(42262001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB339;H:tx30smr01.am.freescale.net;FPR:;MLV:sfv;PTR:gate-tx3.freescale.com;A:1;MX:1;LANG:en;
+X-Forefront-PRVS: 0197AFBD92
+Authentication-Results: spf=none (sender IP is 192.88.168.1)
+ smtp.mailfrom=shijie.huang@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+On Tue, Apr 29, 2014 at 12:06:03PM -0700, Brian Norris wrote:
+> OK, I'll try to split it up. Is ARM unique in tracking defconfigs in
+> separate trees? I assume MIPS, PowerPC, and Blackfin won't require the
+> same splitting? I'd like to avoid 31 patches when <20 could suffice.
+> 
+> I'll also rebase on linux-next. I think there may be a few conflicts.
+Hi Brian:
+  If we need to split the patch, please keep the mxs_defconfig and 
+  imx_v6_v7_defconfig in a single patch,
+  Shawn will review and merge or ack that patch.
 
-I have tested your patches for exynos5250 and 5420. Works fine. Are
-you planning to post v3? If you want I can share hand with you for v3.
-
-Regards,
-Rahul Sharma
-
-On 9 April 2014 17:17, Andreas Oberritter <obi@saftware.de> wrote:
-> Hello Andrzej,
->
-> On 09.04.2014 10:37, Andrzej Hajda wrote:
->>> +static int exynos_phy_probe(struct platform_device *pdev)
->>> +{
->>> +    const struct of_device_id *of_id = of_match_device(
->>> +            of_match_ptr(exynos_phy_of_match), &pdev->dev);
->>> +    const u32 *offsets = of_id->data;
->>> +    int count;
->>> +    struct device *dev = &pdev->dev;
->>> +    struct phy **phys;
->>> +    struct resource *res;
->>> +    void __iomem *regs;
->>> +    int i;
->>> +    struct phy_provider *phy_provider;
->>> +
->>> +    /* count number of phys to create */
->>> +    for (count = 0; offsets[count] != ~0; ++count)
->>> +            ;
->>
->> count = ARRAY_SIZE(offsets) - 1;
->
-> u32 *offsets is not an array.
->
-> Regards,
-> Andreas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  thanks
+  Huang Shijie
