@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933027AbaD3Izj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:55:39 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:40026 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758147AbaD3Izc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:55:32 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        stern@rowland.harvard.edu, kishon@ti.com, k.debski@samsung.com,
-        jg1.han@samsung.com, p.paneri@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v8 1/4] ARM: dts: Add sysreg sytem controller node to exynos5250 and exynos5420
-Date: Wed, 30 Apr 2014 14:25:07 +0530
-Message-Id: <1398848110-6152-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com>
-References: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com>
+	id S1758460AbaD3Izu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:55:50 -0400
+Received: from mx0b-0016ce01.pphosted.com ([67.231.156.153]:11746 "EHLO
+	mx0b-0016ce01.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758177AbaD3Izr convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 04:55:47 -0400
+From: Anil Gurumurthy <Anil.Gurumurthy@qlogic.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Sudarsana Kalluru <Sudarsana.Kalluru@qlogic.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "ldv-project@linuxtesting.org" <ldv-project@linuxtesting.org>
+Subject: RE: [PATCH v2] [SCSI] bfa: allocate memory with GFP_ATOMIC in
+ spinlock context
+Thread-Topic: [PATCH v2] [SCSI] bfa: allocate memory with GFP_ATOMIC in
+ spinlock context
+Thread-Index: AQHPWtwQ2OF5nVH2Bk2uSx3T954hL5sp7fzg
+Date: Wed, 30 Apr 2014 08:55:21 +0000
+Message-ID: <20B1A3CBD98F3845B3F5F56D8597EF59F84A96@avmb2.qlogic.org>
+References: <1397807922-21722-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1397807922-21722-1-git-send-email-khoroshilov@ispras.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=nai engine=5600 definitions=7423 signatures=670425
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=1 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1402240000 definitions=main-1404300145
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds sysreg-syscon node to exynos5250 and exynos5420 device
-tree, to access System Register's registers using syscon driver.
+Thanks for the patch.
+Acked-by: Anil Gurumurthy <anil.gurumurthy@qlogic.com>
 
-Signed-off-by: Kamil Debski <k.debski@samsung.com>
-[gautam.vivek@samsung.com: Split this syreg-syscon dts entry from
-dts: Add usb2phy to Exynos 5250 patch]
-[gautam.vivek@samsung.com: added similar syscon entry for exynos5420]
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+-----Original Message-----
+From: Alexey Khoroshilov [mailto:khoroshilov@ispras.ru]
+Sent: 18 April 2014 13:29
+To: Anil Gurumurthy; Sudarsana Kalluru
+Cc: Alexey Khoroshilov; James E.J. Bottomley; linux-scsi; linux-kernel; ldv-project@linuxtesting.org
+Subject: [PATCH v2] [SCSI] bfa: allocate memory with GFP_ATOMIC in spinlock context
+
+bfa_fcb_pbc_vport_create() is called only from bfa_fcs_pbc_vport_init(), that is called only from bfad_drv_start() with bfad_lock spinlock held.
+So the patch replaces GFP_KERNEL with GFP_ATOMIC to avoid sleeping in atomic spinlock context.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
+ drivers/scsi/bfa/bfad.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Changes from v7:
-None
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c index cc0fbcdc5192..7593b7c1d336 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -507,7 +507,7 @@ bfa_fcb_pbc_vport_create(struct bfad_s *bfad, struct bfi_pbc_vport_s pbc_vport)
+        struct bfad_vport_s   *vport;
+        int rc;
 
- arch/arm/boot/dts/exynos5250.dtsi |    5 +++++
- arch/arm/boot/dts/exynos5420.dtsi |    5 +++++
- 2 files changed, 10 insertions(+)
+-       vport = kzalloc(sizeof(struct bfad_vport_s), GFP_KERNEL);
++       vport = kzalloc(sizeof(struct bfad_vport_s), GFP_ATOMIC);
+        if (!vport) {
+                bfa_trc(bfad, 0);
+                return;
+--
+1.8.3.2
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 3742331..70f0cd5 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -175,6 +175,11 @@
- 		reg = <0x10040000 0x5000>;
- 	};
- 
-+	sysreg_system_controller: syscon@10050000 {
-+		compatible = "samsung,exynos5250-sys", "syscon";
-+		reg = <0x10050000 0x5000>;
-+	};
-+
- 	watchdog@101D0000 {
- 		compatible = "samsung,exynos5250-wdt";
- 		reg = <0x101D0000 0x100>;
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index c3a9a66..cfa3755 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -675,6 +675,11 @@
- 		reg = <0x10040000 0x5000>;
- 	};
- 
-+	sysreg_system_controller: syscon@10050000 {
-+		compatible = "samsung,exynos5420-sys", "syscon";
-+		reg = <0x10050000 0x5000>;
-+	};
-+
- 	tmu_cpu0: tmu@10060000 {
- 		compatible = "samsung,exynos5420-tmu";
- 		reg = <0x10060000 0x100>;
--- 
-1.7.10.4
 
+________________________________
+
+This message and any attached documents contain information from QLogic Corporation or its wholly-owned subsidiaries that may be confidential. If you are not the intended recipient, you may not read, copy, distribute, or use this information. If you have received this transmission in error, please notify the sender immediately by reply e-mail and then delete this message.
