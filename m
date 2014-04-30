@@ -1,96 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965100AbaD3Uph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:45:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759042AbaD3Upf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:45:35 -0400
-Date: Wed, 30 Apr 2014 16:42:55 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: [PATCH v5] mm,writeback: fix divide by zero in pos_ratio_polynom
-Message-ID: <20140430164255.7a753a8e@cuia.bos.redhat.com>
-In-Reply-To: <20140430131353.fa9f49604ea39425bc93c24a@linux-foundation.org>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-	<5360C9E7.6010701@jp.fujitsu.com>
-	<20140430093035.7e7226f2@annuminas.surriel.com>
-	<20140430134826.GH4357@dhcp22.suse.cz>
-	<20140430104114.4bdc588e@cuia.bos.redhat.com>
-	<20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-	<53614F3C.8020009@redhat.com>
-	<20140430123526.bc6a229c1ea4addad1fb483d@linux-foundation.org>
-	<20140430160218.442863e0@cuia.bos.redhat.com>
-	<20140430131353.fa9f49604ea39425bc93c24a@linux-foundation.org>
-Organization: Red Hat, Inc
+	id S965142AbaD3UqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:46:08 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59357 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424AbaD3UqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:46:05 -0400
+Message-ID: <53616168.7010007@kernel.org>
+Date: Wed, 30 Apr 2014 21:47:36 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
+        grundler@chromium.org, t.figa@samsung.com
+Subject: Re: [PATCH 4/5 v3] iio: exynos_adc: do a soft reset in case of timeout
+References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com> <1398850015-17761-5-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1398850015-17761-5-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 13:13:53 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On 30/04/14 10:26, Naveen Krishna Chatradhi wrote:
+> Do a soft reset software if a timeout happens.
+> This is applicable only for ADC_V2.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+Applied to the togreg branch of iio.git
 
-> This was a consequence of 64->32 truncation and it can't happen any
-> more, can it?
-
-Andrew, this is cleaner indeed :)
-
-Masayoshi-san, does the bug still happen with this version, or does
-this fix the problem?
-
----8<---
-
-Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
-
-It is possible for "limit - setpoint + 1" to equal zero, after
-getting truncated to a 32 bit variable, and resulting in a divide
-by zero error.
-
-Using the fully 64 bit divide functions avoids this problem.
-
-Also uninline pos_ratio_polynom, at Andrew's request.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- mm/page-writeback.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index ef41349..a4317da 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -593,14 +593,14 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
-  * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
-  *     => fast response on large errors; small oscillation near setpoint
-  */
--static inline long long pos_ratio_polynom(unsigned long setpoint,
-+static long long pos_ratio_polynom(unsigned long setpoint,
- 					  unsigned long dirty,
- 					  unsigned long limit)
- {
- 	long long pos_ratio;
- 	long x;
- 
--	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-+	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
- 		    limit - setpoint + 1);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-@@ -842,7 +842,7 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
- 	x_intercept = bdi_setpoint + span;
- 
- 	if (bdi_dirty < x_intercept - span / 4) {
--		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
-+		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
- 				    x_intercept - bdi_setpoint + 1);
- 	} else
- 		pos_ratio /= 4;
+Thanks,
+> ---
+> Changes since v2:
+> None
+> Changes since v1:
+> None
+> v0:
+> This change is a part of the patch reviewed at https://lkml.org/lkml/2013/11/5/92
+>
+>   drivers/iio/adc/exynos_adc.c |   50 ++++++++++++++++++++++--------------------
+>   1 file changed, 26 insertions(+), 24 deletions(-)
+>
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index 939aaf7..eddc58e 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -112,6 +112,30 @@ static inline unsigned int exynos_adc_get_version(struct platform_device *pdev)
+>   	return (unsigned int)match->data;
+>   }
+>
+> +static void exynos_adc_hw_init(struct exynos_adc *info)
+> +{
+> +	u32 con1, con2;
+> +
+> +	if (info->version == ADC_V2) {
+> +		con1 = ADC_V2_CON1_SOFT_RESET;
+> +		writel(con1, ADC_V2_CON1(info->regs));
+> +
+> +		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+> +			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
+> +		writel(con2, ADC_V2_CON2(info->regs));
+> +
+> +		/* Enable interrupts */
+> +		writel(1, ADC_V2_INT_EN(info->regs));
+> +	} else {
+> +		/* set default prescaler values and Enable prescaler */
+> +		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+> +
+> +		/* Enable 12-bit ADC resolution */
+> +		con1 |= ADC_V1_CON_RES;
+> +		writel(con1, ADC_V1_CON(info->regs));
+> +	}
+> +}
+> +
+>   static int exynos_read_raw(struct iio_dev *indio_dev,
+>   				struct iio_chan_spec const *chan,
+>   				int *val,
+> @@ -149,6 +173,8 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>   	timeout = wait_for_completion_timeout
+>   			(&info->completion, EXYNOS_ADC_TIMEOUT);
+>   	if (timeout == 0) {
+> +		dev_warn(&indio_dev->dev, "Conversion timed out! Resetting\n");
+> +		exynos_adc_hw_init(info);
+>   		ret = -ETIMEDOUT;
+>   	} else {
+>   		*val = info->value;
+> @@ -230,30 +256,6 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
+>   	return 0;
+>   }
+>
+> -static void exynos_adc_hw_init(struct exynos_adc *info)
+> -{
+> -	u32 con1, con2;
+> -
+> -	if (info->version == ADC_V2) {
+> -		con1 = ADC_V2_CON1_SOFT_RESET;
+> -		writel(con1, ADC_V2_CON1(info->regs));
+> -
+> -		con2 = ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+> -			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0);
+> -		writel(con2, ADC_V2_CON2(info->regs));
+> -
+> -		/* Enable interrupts */
+> -		writel(1, ADC_V2_INT_EN(info->regs));
+> -	} else {
+> -		/* set default prescaler values and Enable prescaler */
+> -		con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+> -
+> -		/* Enable 12-bit ADC resolution */
+> -		con1 |= ADC_V1_CON_RES;
+> -		writel(con1, ADC_V1_CON(info->regs));
+> -	}
+> -}
+> -
+>   static int exynos_adc_probe(struct platform_device *pdev)
+>   {
+>   	struct exynos_adc *info = NULL;
+>
 
