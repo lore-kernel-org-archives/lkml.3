@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965114AbaD3VEe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:04:34 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:51001 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaD3VEc (ORCPT
+	id S965175AbaD3VFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:05:45 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62378 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933552AbaD3VFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:04:32 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 30 Apr 2014 17:08:00 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140430184437.GH17778@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1404301701260.15279@vincent-weaver-1.umelst.maine.edu>
-References: <20140418165958.GQ13658@twins.programming.kicks-ass.net> <20140418171516.GR13658@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
- <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 30 Apr 2014 17:05:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: lenb@kernel.org, katoh@mikage.ne.jp, smf.linux@ntlworld.com,
+        jiang.liu@linux.intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] ACPI/Processor: Fix failure of loading acpi-cpufreq driver
+Date: Wed, 30 Apr 2014 23:22:15 +0200
+Message-ID: <4080464.bVVYp2L7f0@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1398843993-26942-1-git-send-email-tianyu.lan@intel.com>
+References: <1398843993-26942-1-git-send-email-tianyu.lan@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014, Peter Zijlstra wrote:
-
+On Wednesday, April 30, 2014 03:46:33 PM Lan Tianyu wrote:
+> According commit d640113fe(ACPI: processor: fix acpi_get_cpuid for UP
+> processor),  Bios may not provide _MAT or MADT tables and acpi_get_apicid()
+> always returns -1. For these cases, original code will pass apic_id with
+> vaule of -1 to acpi_map_cpuid() and it will check the acpi_id. If acpi_id
+> is equal to zero, ignores apic_id and return zero for CPU0.
 > 
-> Vince, could you add the below to whatever tracing muck you already
-> have?
+> Commit b981513(ACPI / scan: bail out early if failed to parse APIC
+> ID for CPU) changed the behavior. Return ENODEV when find apic_id is
+> less than zero after calling acpi_get_apicid(). This causes acpi-cpufreq
+> driver fails to be loaded on some machines. This patch is to fix it.
 > 
-> After staring at your traces all day with Thomas, we have doubts about
-> the refcount integrity.
+> Reference:https://bugzilla.kernel.org/show_bug.cgi?id=73781
+> Cc: stable@vger.kernel.org v3.14
+> Reported-and-tested-by: KATO Hiroshi <katoh@mikage.ne.jp>
+> Reported-and-tested-by: Stuart Foster <smf.linux@ntlworld.com>
+> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> ---
+> Change since V1:
+> 	Add a check for pr->apic_id in the acpi_processor_hotadd_init()
+> to avoid invalid memory access.
 
-I've been staring at traces all day too.  Will try your patch tomorrow.
-
->From my staring, what looks like is happening in the trace is:
-
-task_sched_in in parent adds our freed (but alive in child) event:
-	perf_fuzzer-2517  [001]   215.228165: bprint:               perf_swevent_add: VMW add_rcu: 0xffff880036cbb000
-This adds the event to the swevent_hlist
+Queued up for the next pull request, thanks!
 
 
-the child is in the process of exiting, eventually frees the event
-     perf_fuzzer-3634  [006]   215.228250: function:             perf_release
-     perf_fuzzer-3634  [006]   215.228250: function:             perf_event_release_kernel
-     perf_fuzzer-3634  [006]   215.228251: function:                perf_group_detach
-     perf_fuzzer-3634  [006]   215.228251: function:                   perf_event__header_size
-     perf_fuzzer-3634  [006]   215.228251: function:                perf_remove_from_context
+>  drivers/acpi/acpi_processor.c | 7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..b06f5f5 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -170,6 +170,9 @@ static int acpi_processor_hotadd_init(struct acpi_processor *pr)
+>  	acpi_status status;
+>  	int ret;
+>  
+> +	if (pr->apic_id == -1)
+> +		return -ENODEV;
+> +
+>  	status = acpi_evaluate_integer(pr->handle, "_STA", NULL, &sta);
+>  	if (ACPI_FAILURE(status) || !(sta & ACPI_STA_DEVICE_PRESENT))
+>  		return -ENODEV;
+> @@ -260,10 +263,8 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  	}
+>  
+>  	apic_id = acpi_get_apicid(pr->handle, device_declaration, pr->acpi_id);
+> -	if (apic_id < 0) {
+> +	if (apic_id < 0)
+>  		acpi_handle_debug(pr->handle, "failed to get CPU APIC ID.\n");
+> -		return -ENODEV;
+> -	}
+>  	pr->apic_id = apic_id;
+>  
+>  	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> 
 
-	Which then does
-        list_del_event()
-        event->state=PERF_EVENT_STATE_OFF;
-
-Soon after the parent does task_sched_out
-	which gets to event_sched_out()
-	which hits 
-		if (event->state != PERF_EVENT_STATE_ACTIVE)
-			return;
-	So it never hits the
-		event->pmu->del(event, 0);
-
-	We need to get the value off the hlist.
-
-This analysis is probably wrong though because if it's as simple as that 
-above then I'm not sure why it isn't easier to hit the bug.
-
-Vince
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
