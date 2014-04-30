@@ -1,78 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759631AbaD3Vsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:48:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32012 "EHLO mx1.redhat.com"
+	id S1759656AbaD3Vs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:48:56 -0400
+Received: from mx3.wp.pl ([212.77.101.9]:27477 "EHLO mx3.wp.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752219AbaD3Vsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:48:45 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthias Bayer <thematthiasbayer@gmail.com>
-Subject: [PATCH] HID: core: fix computation of the report size
-Date: Wed, 30 Apr 2014 17:48:40 -0400
-Message-Id: <1398894520-30407-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1759638AbaD3Vsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 17:48:52 -0400
+Message-ID: <53616E31.3050404@wp.pl>
+Date: Wed, 30 Apr 2014 23:42:09 +0200
+From: Andrzej Hajda <andrzej.hajda@wp.pl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrzej Hajda <a.hajda@samsung.com>
+CC: open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        David Airlie <airlied@linux.ie>, Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Tomasz Stansislawski <t.stanislaws@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [RFC PATCH 0/4] drivers/base: Generic framework for tracking
+ internal interfaces
+References: <1398866574-27001-1-git-send-email-a.hajda@samsung.com> <20140430154914.GA898@kroah.com>
+In-Reply-To: <20140430154914.GA898@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
+X-WP-SPAM: NO 0000000 [kRMH]                               
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The extra seven bits are only required when allocating the report buffer.
-We can not use those extra bytes for the length of the report in the
-generic implementation of .request because the device might (will) refuse
-the set_report command.
-This has been verified on the Atmel touchpad found on the Samsung Ativ 9
-plus, which uses hid-multitouch and HID over I2C. Without this fix, the
-device refuses to switch to the multitouch mode, and it becomes unresponsive
-from the user point of view.
+Hi Greg,
 
-Actually, this has been discussed during the initial submission of the
-commit 4fa5a7f76cc7b6ac87f57741edd2b124851d119f, see
-https://patchwork.kernel.org/patch/3621751/
+Thanks for comments. I CC Laurent, I hope it could be interesting for 
+him also.
 
-Unfortunately, I completely forgot about it later.
+Greg Kroah-Hartman wrote, On 30.04.2014 17:49:
+> On Wed, Apr 30, 2014 at 04:02:50PM +0200, Andrzej Hajda wrote:
+>> Generic framework for tracking internal interfaces
+>> ==================================================
+>>
+>> Summary
+>> -------
+>>
+>> interface_tracker is a generic framework which allows to track appearance
+>> and disappearance of different interfaces provided by kernel/driver code inside
+>> the kernel. Examples of such interfaces: clocks, phys, regulators, drm_panel...
+>> Interface is specified by a pair of object pointer and interface type. Object
+>> type depends on interface type, for example interface type drm_panel determines
+>> that object is a device_node. Object pointer is used to distinguish different
+>> interfaces of the same type and should identify object the interface is bound to.
+>> For example it could be DT node, struct device,...
+>>
+>> The framework provides two functions for interface providers which should be
+>> called just after interface becomes available or just before interface
+>> removal. Interface consumers can register callback which will be called
+>> when requested interface changes its state, if during callback registration
+>> the interface is already up, notification will be sent also.
+>>
+>> The framework allows nesting calls, for example it is possible to signal one
+>> interface in tracker callback of another interface. It is done by putting
+>> every request into the queue. If the queue is empty before adding
+>> the request, the queue will be processed after, if there is already another
+>> request in the queue it means the queue is already processed by different
+>> thread so no additional action is required. With this pattern only spinlock
+>> is necessary to protect the queue. However in case of removal of either
+>> callback or interface caller should be sure that his request has been
+>> processed so framework waits until the queue becomes empty, it is done using
+>> completion mechanism.
+>>
+>> The framework functions should not be called in atomic context. Callbacks
+>> should be aware that they can be called in any time between registration and
+>> de-registration, so they should use synchronization mechanisms carefully.
+>> Callbacks should also avoid to perform time consuming tasks, the framework
+>> serializes them, so it could stall other callbacks.
+>>
+>> Use cases
+>> ---------
+>>
+>> The interface is very generic, there are many situations it can be useful:
+>>
+>> 1. Replacement for subsystem specific methods of publishing/unpublishing
+>> interfaces. Currently many frameworks allows only querying for presence of given
+>> interface. In such cases client can defer probing or implement interface
+>> polling, which is usually subobtimal. Additionally subsystems often do not
+>> provide methods to signal to the consumers that they are about to be destroyed.
+>>
+>> 2. Monitoring for different interfaces provided by the same object. An example
+>> should explain it better. Lets assume in device tree drm crtc device node have
+>> video link to another node, so it knows only that there is something connected
+>> to its RGB output. It can be a RGB panel (drm_panel framework), it can be an
+>> image enhancer (SoC specific framework) or it can be some signal converter
+>> (drm_encoder, drm_bridge, drm_encoder_slave...). Driver have only phandle to
+>> another node. Currently it is difficult to handle such situations in a generic
+>> way. interface_tracker should make it simple: crtc should monitor all supported
+>> interface types that appears at the device_node pointed by the phandle.
+>>
+>> Potential use cases
+>> -------------------
+>>
+>> Points mentioned above were the reasons for writing this framework. During
+>> development I have realized that this framework can be also useful for other
+>> tasks.
+>>
+>> 3. Replacement for deferred probing - if for some reason driver do not wants to
+>> defer but it requires given resources it can use interface_tracker. It should be
+>> possible to create an helper which will wait for appearance of all interfaces
+>> from a given list, and 'continue' probe only when all resources becomes
+>> available.
+>>
+>> 4. Replacement or helper for subsystem specific solutions:
+>> - V4L2 subdev async registration,
+>> - component framework.
+>> Both frameworks solves a problem of tracking sub-components (un-)registration
+>> by master device, it should be possible to do the same with interface_tracker
+>> framework. Some additional helpers can be convienent to make the implementation
+>> easier.
+>>
+>> 5. Cure the situation with sysfs 'unbind' property. Currently many drivers are
+>> providers of different resources/interfaces: regulators, clocks, phys,
+>> V4L2 subdevs, ... They are usually protected from module unloading by getting
+>> module reference, but there is no protection from driver unbinding using sysfs
+>> method: echo 'device' >/sys/bus/.../drivers/.../unbind. After unbind consumer
+>> stays with the pointer to non-existing object, next time it tries to use it
+>> system usually crashes. interface_tracker do not add any protection, but it adds
+>> a way to signal to the consumer that given resource will disappear. It allows
+>> to handle such situations more gently.
+>>
+>> Potential issues/extensions
+>> ---------------------------
+>>
+>> 1. Scalability - the framework serializes all tasks and callbacks. In case there
+>> are no many users it should not be a problem. If the number of users grows there
+>> are different options to consider:
+>> - run callbacks in parallel, I guess async_schedule_domain can be helpfull,
+>> - partition trackers, for example per interface types - different interface
+>>    types will use different internal queues/lists.
+>>
+>> 2. Complication of code - asynchronous programming usually seems to be more
+>> complicated. Adding some helpers could make it less painfull.
+>>
+>> 3. Object comparison - currently object pointers are compared by value, it could
+>> be desirable to allow also other ways of comparison, for example string
+>> comparison. It is not a problem to extend the framework.
+>>
+>> TODO
+>> ----
+>>
+>> 1. Testing - the patchset have not been tested yet with multiple users.
+>
+> That's not good :)
 
-Reported-by: Matthias Bayer <thematthiasbayer@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+I would treat this series as a real RFC, with code which can be easily 
+tested by volunteers but as for RFC I am asking for comments if the idea 
+is OK and the patchset have chances to be accepted.
+Anyway, I have performed some basic tests and it works :)
 
-Hi Jiri,
+>
+> What's wrong with the existing container code in the driver core, or the
+> component code?  Shouldn't either of those work properly for you?  Or
+> the managed token interface being proposed, how does that tie in here?
 
-can you schedule this fix for 3.15?
+Container code seems to solve very specific problem, not really relevant 
+to this patchset. The component code would solve a very specific part of 
+problems this framework solves as described in use cases above. On the 
+other side problems which components solves are
+solvable with this framework.
 
-Fortunately, the device required some ACPI changes, so it was not seen at all
-in 3.13 and before. I am not sure of the status of 3.14, but it is definitively
-not working in 3.15.
+Managed token interface is about sharing 'named' resources it is not 
+connected with interface tracking.
 
-Cheers,
-Benjamin
+>
+>> 2. Add tracker support in other frameworks - currently there is only drm_panel.
+>>     I plan also to add something more complicated, for example use it in
+>>     exynos_drm to track components. If there is positive feedback I can try
+>>     to add also other frameworks.
+>> 3. devm_* registration.
+>> 4. Helpers - as the situation 'wait for number interfaces before continue'
+>>     seems to be quite common, some helper to easy handling it could be useful.
+>>
+>> Final remarks
+>> -------------
+>>
+>> Primarily I have planned notifications for DRM panels. Next I have realized
+>> something similar would be necessary for drm_bridge. Discussions with other
+>> developers showed to me that it could be useful in many other areas. I am not
+>> sure if other developers agree with adding it to things like regulators, clocks,
+>> phys, but I will be glad if it can be used at least with drm_panel.
+>
+> Shouldn't the component code handle your DRM panels today?
 
- drivers/hid/hid-core.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+I should correct my last sentence to this:
+I will be glad if it can be used at least with video interfaces, ie. 
+drm_panel, video encoders/bridges, image enhancers.
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 963a8da..e0f6753 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1253,7 +1253,8 @@ EXPORT_SYMBOL_GPL(hid_output_report);
- 
- static int hid_report_len(struct hid_report *report)
- {
--	return ((report->size - 1) >> 3) + 1 + (report->id > 0) + 7;
-+	/* equivalent to DIV_ROUND_UP(report->size, 8) + !!(report->id > 0) */
-+	return ((report->size - 1) >> 3) + 1 + (report->id > 0);
- }
- 
- /*
-@@ -1266,7 +1267,7 @@ u8 *hid_alloc_report_buf(struct hid_report *report, gfp_t flags)
- 	 * of implement() working on 8 byte chunks
- 	 */
- 
--	int len = hid_report_len(report);
-+	int len = hid_report_len(report) + 7;
- 
- 	return kmalloc(len, flags);
- }
--- 
-1.9.0
+The main problem with component framework is that componentization 
+significantly changes every driver and changes it in a way which is not 
+compatible with traditional drivers, so devices which are intended to 
+work with different DRM masters are hard to componentize if some of DRMs 
+are componentized and some not.
+
+If you look at interface_tracker framework it achieves the same goal
+as componentization without even touching panel drivers, look at 2nd 
+patch of the patchset - it adds interface_tracker support for all panels 
+with 7 lines of code in drm_panel framework and of course the
+change is backward compatible.
+Adding interface_tracker support to the 'master' requires more work:
+1. registration of the callback.
+2. unregistration of the callback.
+3. the callback code.
+But it is still much less than in case of components.
+
+And interface_tracker framework allows much more, as I described in "Use 
+cases" and "Potential use cases" sections.
+
+Regards
+Andrzej
+
+>
+> thanks,
+>
+> greg k-h
+>
 
