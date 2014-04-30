@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946076AbaD3Qpd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:45:33 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:33175 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759392AbaD3QpU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:45:20 -0400
+	id S1946012AbaD3Qr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:47:29 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:35834 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945910AbaD3Qr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:47:27 -0400
+Date: Wed, 30 Apr 2014 18:44:41 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/15] ARM: dts: kirkwood: consolidate common pinctrl
+ settings
+Message-ID: <20140430164441.GB3082@lunn.ch>
+References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com>
+ <20140430164236.GC12944@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <1398848110-6152-5-git-send-email-gautam.vivek@samsung.com>
-References: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com>
-	<1398848110-6152-5-git-send-email-gautam.vivek@samsung.com>
-Date: Wed, 30 Apr 2014 22:15:19 +0530
-Message-ID: <CAK9yfHzxLei60hFQges6Vk0nzRUjLDdC3io8FHrT0zkuU65vgA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM: dts: Add usb 2.0 support on exynos5420
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Praveen Paneri <p.paneri@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430164236.GC12944@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 April 2014 14:25, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Add required device node for ehci and ohci controllers to
-> enable USB 2.0 support.
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos5420.dtsi |   36 +++++++++++++++++++++++++++++++++++-
->  1 file changed, 35 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-> index 16b860a..392d340 100644
-> --- a/arch/arm/boot/dts/exynos5420.dtsi
-> +++ b/arch/arm/boot/dts/exynos5420.dtsi
-> @@ -738,7 +738,41 @@
->                 samsung,power-domain = <&g2d_pd>;
->         };
->
-> -       phy@12130000 {
-> +       usb@12110000 {
-> +               compatible = "samsung,exynos4210-ehci";
-> +               reg = <0x12110000 0x100>;
-> +               interrupts = <0 71 0>;
-> +
-> +               clocks = <&clock CLK_USBH20>;
-> +               clock-names = "usbhost";
-> +               #address-cells = <1>;
-> +               #size-cells = <0>;
-> +               port@0 {
-> +                       reg = <0>;
-> +                       phys = <&usb2_phy_gen 1>;
-> +                       phy-names = "host";
-> +                       status = "ok";
-s/ok/okay
+On Wed, Apr 30, 2014 at 10:42:36AM -0600, Jason Gunthorpe wrote:
+> On Wed, Apr 30, 2014 at 02:56:34PM +0200, Sebastian Hesselbarth wrote:
+> > All SoCs have the same pinctrl setting for NAND, UART0/1, SPI, TWSI0,
+> > and GBE1. Move it to the common pinctrl node that we now have.
+> 
+> There are two possible choices for UART0, UART1, and SPI on kirkwood..
+> 
+> For instance I use this on my board:
+> 
+>                                 pmx_spi0: pmx-spi0 {
+>                                         marvell,pins = "mpp7", "mpp10", "mpp11", "mpp12";
+>                                         marvell,function = "spi";
+>                                 };
+> 
+> vs
+> 
+> > +
+> > +			pmx_spi: pmx-spi {
+> > +				marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3";
+> > +				marvell,function = "spi";
+> > +			};
+> 
+> It looks like all the boards in the kernel use the same choice, so it
+> makes some sense to consolidate, but I assume a board file can
+> override the marvell,pins?
 
-> +               };
-> +       };
-> +
-> +       usb@12120000 {
-> +               compatible = "samsung,exynos4210-ohci";
-> +               reg = <0x12120000 0x100>;
-> +               interrupts = <0 71 0>;
-> +
-> +               clocks = <&clock CLK_USBH20>;
-> +               clock-names = "usbhost";
-> +               #address-cells = <1>;
-> +               #size-cells = <0>;
-> +               port@0 {
-> +                       reg = <0>;
-> +                       phys = <&usb2_phy_gen 1>;
-> +                       phy-names = "host";
-> +                       status = "ok";
+Hi Jason
 
-ditto
+Yes, the board can override it, see patch 10/15 for an example.
 
--- 
-With warm regards,
-Sachin
+     Andrew
