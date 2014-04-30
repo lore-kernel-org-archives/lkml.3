@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246AbaD3Ihn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:37:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45459 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbaD3Ihl (ORCPT
+	id S1757778AbaD3Ik3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:40:29 -0400
+Received: from yotta.elopez.com.ar ([31.220.24.173]:40419 "EHLO
+	yotta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaD3Ik1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:37:41 -0400
-Message-ID: <5360B646.6070208@ti.com>
-Date: Wed, 30 Apr 2014 11:37:26 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 30 Apr 2014 04:40:27 -0400
+Message-ID: <5360B6D9.7070409@elopez.com.ar>
+Date: Wed, 30 Apr 2014 05:39:53 -0300
+From: =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-CC: Richard Weinberger <richard@nod.at>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] video: mmp: Remove references to CPU_MMP3
-References: <1397561044.1985.47.camel@x220>
-In-Reply-To: <1397561044.1985.47.camel@x220>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="bs5kbLTL7pWQpU80hAa7Ocmi3mpE9XRxD"
+To: =?UTF-8?B?0JDQu9C10LrRgdCw0L3QtNGAINCR0LXRgNGB0LXQvdC10LI=?= 
+	<bay@hackerdom.ru>
+CC: linux-sunxi@googlegroups.com, mturquette@linaro.org,
+        maxime.ripard@free-electrons.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] sunxi: make gate clock getable by name
+References: <fa26ae07-b4ee-4730-b626-9724a51e7122@googlegroups.com>
+In-Reply-To: <fa26ae07-b4ee-4730-b626-9724a51e7122@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bs5kbLTL7pWQpU80hAa7Ocmi3mpE9XRxD
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On 15/04/14 14:24, Paul Bolle wrote:
-> From: Richard Weinberger <richard@nod.at>
->=20
-> References to the Kconfig symbol CPU_MMP3 were added to the tree since
-> v3.6. But that Kconfig symbol has never been part of the tree. So get
-> rid of these references.
->=20
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+El 30/04/14 05:25, Александр Берсенев escribió:
+> This patch enables to use devm_clk_get function to get gate clocks by name.
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+>
+> diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+> index 31584ee..3617681 100644
+> --- a/drivers/clk/sunxi/clk-sunxi.c
+> +++ b/drivers/clk/sunxi/clk-sunxi.c
+> @@ -1048,6 +1048,8 @@ static void __init sunxi_gates_clk_setup(struct
+> device_node *node,
+>       reg + 4 * (i/32), i % 32,
+>       0, &clk_lock);
+> WARN_ON(IS_ERR(clk_data->clks[i]));
+> +if (!IS_ERR(clk_data->clks[i]))
+> +clk_register_clkdev(clk_data->clks[i], clk_name, NULL);
+> j++;
+> }
 
-Thanks, queued this and the 2/2 patch for 3.16.
+What are you trying to achieve here? Do you want to use devm_clk_get on 
+your driver? If so, you just need to list the clock your device needs on 
+its device tree node, like for example
 
- Tomi
+device: blah@0f0.... {
+        ....
+        clocks = <&gate 12>, <&clock>, <&whatever>;
+        clock-names = "module", "ref", "sample";
+}
 
+And then you can pass "module", "ref" or "sample" to devm_clk_get to get 
+the respective clock.
 
+Cheers,
 
---bs5kbLTL7pWQpU80hAa7Ocmi3mpE9XRxD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTYLZGAAoJEPo9qoy8lh71xb8QAIiFgaj7AZacQLg9sF/lJyGZ
-uDT0Wkchg4hsDF9NahSmXOd8E337E9wYQfsqeyNE9B4ZCLPJUqZx4PXKF6A76dCk
-m2ho0Xau2HdqJtXuuY7kp05o6q5WMG0TktRrnS7V6lCMgl81M0V3e0Rd3RaQt9El
-P/UuLmtyY63hbqjzgRl71XG28kZqhtvwHAZin9+R7kPe1w1TO/h2J4LUmPkrUzgT
-OP+/aFTiClqddiFJowOmM4dTJxpWe43LCiYmERwnyQ71IxJ4OgJqRiTv2s5tjnkG
-68yj/FzgXBXgoLQ1uAHHphlJ8cHA5g5oVBQ101kxWVSExBqeKkMnxFlrKbxAjXFN
-sg5BMTwZxwqo0bDvxODchZQzIqNZAhZ8hLPbHxGN69Y0/Clw7quT6fh+oUi0U/WM
-xHw4t9Tp/DoGKJl1QoxIe8mY60FKsINPFwZhuL90iHwBkPs6fN7UbgYCPKVBpBl8
-tdUc50jOFZG6IC7SEU6Xy01NPU/cHnBqVnHCfC15FiYKbp/oeNuIvdvMSiCV7mEw
-M5k2hbhje3cg0iHTzwgbn/tEnZNMNdrUWr1EfLD8opTdcw1RJ33IBA9gu6wEnCQR
-34XqqloteijddR0zxnaZxE4yOaEWnkWgomNRAZUgWY8Y/RZLQBpPH2gRIqJ+poFR
-4maBJeisc55GvD9Myh1g
-=+IGp
------END PGP SIGNATURE-----
-
---bs5kbLTL7pWQpU80hAa7Ocmi3mpE9XRxD--
+Emilio
