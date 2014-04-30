@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945914AbaD3Ssg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:48:36 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:36091 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929AbaD3Ssf (ORCPT
+	id S965021AbaD3Svb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:51:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32446 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaD3Sva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:48:35 -0400
-Date: Wed, 30 Apr 2014 11:48:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] unicore32: About toolchain issues and source code.
-Message-ID: <20140430184804.GA5733@roeck-us.net>
-References: <53604E82.1040407@gmail.com>
+	Wed, 30 Apr 2014 14:51:30 -0400
+Date: Wed, 30 Apr 2014 21:51:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Subject: Re: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the
+ send path
+Message-ID: <20140430185116.GH26890@mwanda>
+References: <1398878071-21307-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53604E82.1040407@gmail.com>
+In-Reply-To: <1398878071-21307-1-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 09:14:42AM +0800, Chen Gang wrote:
-> Hello Maintainers:
-> 
->   - Toolchain information:
-> 
->     root@gchen:/upstream/toolchain/binutils/gas# /upstream/toolchain/unicore32/pi3dian14-beyondmind/prebuilt/linux-x86/toolchain/uc4-1.0-beta-hard-RHELAS4/bin/unicore32-linux-gcc -v
->     Using built-in specs.
->     Target: unicore32-linux
->     Configured with: /home/ghb/trunk/gcc-4.4.2/configure --target=unicore32-linux --prefix=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4 --enable-clocale=gnu --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-languages=c,c++,fortran --disable-multilib --disable-libstdcxx-pch --with-headers=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4/unicore32-linux/include --with-pkgversion=UC4_1.0-beta_20100415
->     Thread model: posix
->     gcc version 4.4.2 (UC4_1.0-beta_20100415) 
+On Wed, Apr 30, 2014 at 10:14:31AM -0700, K. Y. Srinivasan wrote:
+> +	/* Setup state for managing the send buffer. */
+> +	net_device->map_words = DIV_ROUND_UP(net_device->send_section_cnt,
+> +					     BITS_PER_LONG);
+> +
+> +	net_device->send_section_map =
+> +		kzalloc(net_device->map_words * sizeof(ulong), GFP_KERNEL);
+> +	if (net_device->send_section_map == NULL)
+> +		goto cleanup;
 
-That is an old version of the toolchain. Latest version I can find is 1.0.5.
-Google for "unicore32 toolchain" or pick it up from
-	http://mprc.pku.edu.cn/~guanxuetao/linux/uc4-1.0.5-hard.tgz
+I told you about this returning success bug if kmalloc() fails but you
+didn't fix it.
 
-Having said that, I don't find a single kernel version (3.2 and later)
-which builds unicore32:defconfig. Wonder if that architecture is still
-supported (or if there is some secret to get it compiled.
+> +
+>  	goto exit;
+>  
+>  cleanup:
+> -	netvsc_destroy_recv_buf(net_device);
+> +	netvsc_destroy_buf(net_device);
+>  
+>  exit:
+>  	return ret;
 
-Build results are at http://server.roeck-us.net:8010/builders.
-
-Guenter
+regards,
+dan carpenter
