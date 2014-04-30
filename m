@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaD3BLi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 21:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12829 "EHLO mx1.redhat.com"
+	id S1754747AbaD3BOc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 21:14:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43448 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677AbaD3BLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 21:11:35 -0400
-Date: Wed, 30 Apr 2014 09:12:50 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Matt Fleming <matt@console-pimps.org>, matt.fleming@intel.com,
-        hpa@zytor.com, akpm@linux-foundation.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
-Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
-Message-ID: <20140430011250.GB1959@darkstar.redhat.com>
-References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
- <20140425115345.GC26088@console-pimps.org>
- <20140426072821.GA2286@darkstar.redhat.com>
- <20140429094539.GD26088@console-pimps.org>
- <alpine.DEB.2.02.1404291217380.6261@ionos.tec.linutronix.de>
+	id S1750805AbaD3BOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 21:14:30 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1398820239-1890-1-git-send-email-behanw@converseincode.com>
+References: <1398820239-1890-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1404291217380.6261@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] mbcache: LLVMLinux: Remove double calculation from mbcache
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 29 Apr 2014 18:13:29 -0700
+To: behanw@converseincode.com, viro@zeniv.linux.org.uk
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, dwmw2@infradead.org,
+        Mark Charlebois <charlebm@gmail.com>
+Message-ID: <a54957c1-4825-4265-8126-4565168fe8c6@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/14 at 12:21pm, Thomas Gleixner wrote:
-> On Tue, 29 Apr 2014, Matt Fleming wrote:
-> > I would just replace the existing calls to early_ioremap() with
-> > efi_ioremap() and implement it like so (all in
-> > arch/x86/platform/efi/early_printk.c),
-> > 
-> > static void *efi_ioremap(resource_size_t phys_addr, unsigned long size)
-> > {
-> > 	if (system_state == SYSTEM_BOOTING)
-> > 		return early_ioremap(phys_addr, size);
-> > 
-> > 	return ioremap(phys_addr, size);
-> > }
-> > 
-> > At least I think SYSTEM_BOOTING is the correct way to figure out when to
-> > use early_ioremap(), I'm open to other suggestions though.
-> 
-> ioremap() is available after paging_init() has been called.
-> 
-> Just x86 has this extra bits so you can use early_ioremap/unmap
-> _AFTER_ paging_init(). No idea why, but probably to cope with some
-> brilliant init calls which run pre and post paging_init().
+I suspect this will generate FP instructions on x86 which will corrupt user space state.  This is thus a critical bug!!
 
-Good idea, will use an initcall function for this purpose.
-Thanks a lot.
-Dave
+On April 29, 2014 6:10:39 PM PDT, behanw@converseincode.com wrote:
+>From: Mark Charlebois <charlebm@gmail.com>
+>
+>The call to __builtin_log2 presumes there is a
+>double log2(double x) function defined in the kernel.
+>
+>The call to hash_log is a call to hash_64 which is
+>defined in include/linux/hash.h
+>
+>static __always_inline u64 hash_64(u64 val, unsigned int bits)
+>
+>That means that __builtin_log2(NR_BG_LOCKS) is converting
+>NR_BG_LOCKS to a double and returning a double and then that
+>is converted to an unsigned int.
+>
+>Using ilog2 is much more appropriate and efficient.
+>
+>Another side effect of using __builtin_log2 is that is uses
+>__aeabi_* functions for ARM that require linking with libgcc.a.
+>
+>Author: Mark Charlebois <charlebm@gmail.com>
+>Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+>Signed-off-by: Behan Webster <behanw@converseincode.com>
+>---
+> fs/mbcache.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/fs/mbcache.c b/fs/mbcache.c
+>index bf166e3..2c0752b 100644
+>--- a/fs/mbcache.c
+>+++ b/fs/mbcache.c
+>@@ -93,7 +93,7 @@
+> 
+> #define MB_CACHE_WRITER ((unsigned short)~0U >> 1)
+> 
+>-#define MB_CACHE_ENTRY_LOCK_BITS	__builtin_log2(NR_BG_LOCKS)
+>+#define MB_CACHE_ENTRY_LOCK_BITS	ilog2(NR_BG_LOCKS)
+> #define	MB_CACHE_ENTRY_LOCK_INDEX(ce)			\
+> 	(hash_long((unsigned long)ce, MB_CACHE_ENTRY_LOCK_BITS))
+> 
+
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
