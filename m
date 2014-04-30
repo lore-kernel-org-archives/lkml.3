@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813AbaD3NMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:12:22 -0400
-Received: from fallback7.mail.ru ([94.100.176.135]:55192 "EHLO
-	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933552AbaD3NMV (ORCPT
+	id S933860AbaD3NNC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:13:02 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:33007 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933552AbaD3NNA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:12:21 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?SmFuIE1vc2t5dG8gTWF0ZWprYQ==?= <mq@suse.cz>
-Cc: =?UTF-8?B?R3JlZyBLcm9haC1IYXJ0bWFu?= <gregkh@linuxfoundation.org>,
-        =?UTF-8?B?SmlyaSBTbGFieQ==?= <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gW2xpbnV4LW5leHRdIHNlcmlhbDogc2MxNmlzN3h4OiBm?=
- =?UTF-8?B?aXggZGVmaW5lZC1idXQtbm90LXVzZWQgd2FybmluZ3M=?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [5.18.98.0]
-Date: Wed, 30 Apr 2014 17:10:03 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1398863403.902420096@f316.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <1398863224-19900-1-git-send-email-mq@suse.cz>
-References: <1398863224-19900-1-git-send-email-mq@suse.cz>
+	Wed, 30 Apr 2014 09:13:00 -0400
+Date: Wed, 30 Apr 2014 14:12:24 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jungseok Lee <jays.lee@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        "steve.capper@linaro.org" <steve.capper@linaro.org>,
+        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
+Subject: Re: [PATCH v4 4/7] arm64: Add a description on 48-bit address space
+ with 4KB pages
+Message-ID: <20140430131224.GD31220@arm.com>
+References: <000401cf6367$cc461500$64d23f00$@samsung.com>
+ <20140429144759.GL17007@arm.com>
+ <008e01cf643f$3e67eff0$bb37cfd0$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <008e01cf643f$3e67eff0$bb37cfd0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3UDCW3S007696
 
-Wed, 30 Apr 2014 15:07:04 +0200 Ğ¾Ñ‚ Jan Moskyto Matejka <mq@suse.cz>:
-> drivers/tty/serial/sc16is7xx.c:1060:12: warning: 'sc16is7xx_probe' defined but not used [-Wunused-function]
->  static int sc16is7xx_probe(struct device *dev,
->             ^
-> drivers/tty/serial/sc16is7xx.c:1176:12: warning: 'sc16is7xx_remove' defined but not used [-Wunused-function]
->  static int sc16is7xx_remove(struct device *dev)
->             ^
-> drivers/tty/serial/sc16is7xx.c:1215:29: warning: 'regcfg' defined but not used [-Wunused-variable]
->  static struct regmap_config regcfg = {
->                              ^
+On Wed, Apr 30, 2014 at 07:41:40AM +0100, Jungseok Lee wrote:
+> On Tuesday, April 29, 2014 11:48 PM, Catalin Marinas wrote:
+> > On Tue, Apr 29, 2014 at 05:59:27AM +0100, Jungseok Lee wrote:
+> > > --- a/Documentation/arm64/memory.txt
+> > > +++ b/Documentation/arm64/memory.txt
+> > > @@ -8,10 +8,11 @@ This document describes the virtual memory layout
+> > > used by the AArch64  Linux kernel. The architecture allows up to 4
+> > > levels of translation  tables with a 4KB page size and up to 3 levels with a 64KB page size.
+> > >
+> > > -AArch64 Linux uses 3 levels of translation tables with the 4KB page
+> > > -configuration, allowing 39-bit (512GB) virtual addresses for both
+> > > user -and kernel. With 64KB pages, only 2 levels of translation tables
+> > > are -used but the memory layout is the same.
+> > > +AArch64 Linux uses 3 levels and 4 levels of translation tables with
+> > > +the 4KB page configuration, allowing 39-bit (512GB) and 48-bit
+> > > +(256TB) virtual addresses, respectively, for both user and kernel.
+> > > +With 64KB pages, only 2 levels of translation tables are used but the
+> > > +memory layout is the same.
+> > 
+> > Any reason why we couldn't use 48-bit address space with 64K pages (implying 3 levels)?
 > 
-> Fixed these warnings by #ifdef-ing them to CONFIG_REGMAP_I2C and
-> recursively #ifdef-ing also some other functions that got defined but not used.
+> No technical reason.
+> Since 64K+3levels is not implemented in this set, I didn't add it.
 > 
-> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-> ---
->  drivers/tty/serial/sc16is7xx.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
+> Should 64K+3levels be prepared in this patchset?
 > 
-> diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
-> index 7206a64..bd76277 100644
-> --- a/drivers/tty/serial/sc16is7xx.c
-> +++ b/drivers/tty/serial/sc16is7xx.c
-> @@ -389,6 +389,7 @@ static const struct sc16is7xx_devtype sc16is762_devtype = {
->  	.nr_uart	= 2,
->  };
->  
-> +#ifdef CONFIG_REGMAP_I2C
->  static bool sc16is7xx_regmap_volatile(struct device *dev, unsigned int reg)
+> > > -AArch64 Linux memory layout with 64KB pages:
+> > > +AArch64 Linux memory layout with 4KB pages + 4 levels:
+> > > +
+> > > +Start			End			Size		Use
+> > > +-----------------------------------------------------------------------
+> > > +0000000000000000	0000ffffffffffff	 256TB		user
+> > > +
+> > > +ffff000000000000	ffff7bfffffeffff	~124TB		vmalloc
+> > 
+> > BTW, maybe as a separate patch we should change the "end" to be exclusive. It becomes harder to modify
+> > (I've been through this a few times already ;)) and even follow the changes.
+> 
+> Does "exclusive" mean that 0000ffffffffffff is changed to 0001000000000000?
+> Or Does it mean that "End" column is dropped?
 
-No. This is not a good way.
-The Kconfig  should be patched for dependency of I2C.
+Not dropped but changed to 0001.... (the kernel already prints the
+memory layout in a similar way).
 
----
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Catalin
