@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941AbaD3Miq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:38:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52552 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758893AbaD3Mgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:36:46 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
-        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v3 1/7] Input: pixcir_i2c_ts: Use devres managed resource allocations
-Date: Wed, 30 Apr 2014 15:36:26 +0300
-Message-ID: <1398861392-8959-2-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398861392-8959-1-git-send-email-rogerq@ti.com>
-References: <1398861392-8959-1-git-send-email-rogerq@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1758944AbaD3Mjx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:39:53 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:49580 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757058AbaD3Mjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 08:39:52 -0400
+Message-ID: <1398861590.18460.7.camel@x220>
+Subject: Re: [PATCH] [linux-next] [staging] rtl8821ae: fixed
+ defined-not-used warning
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jan Moskyto Matejka <mq@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark@einon.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 Apr 2014 14:39:50 +0200
+In-Reply-To: <1398860143-2676-1-git-send-email-mq@suse.cz>
+References: <1398860143-2676-1-git-send-email-mq@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 30 Apr 2014 12:39:50.0574 (UTC) FILETIME=[473484E0:01CF6471]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_() and friends for allocating memory, input device
-and IRQ.
+On Wed, 2014-04-30 at 14:15 +0200, Jan Moskyto Matejka wrote:
+> --- a/drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c
+> +++ b/drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c
+> @@ -503,6 +503,7 @@ static void halbtc8192e2ant_querybt_info(struct btc_coexist *btcoexist)
+>  	btcoexist->btc_fill_h2c(btcoexist, 0x61, 1, h2c_parameter);
+>  }
+>  
+> +#if (BT_AUTO_REPORT_ONLY_8192E_2ANT != 0)
+>  static bool halbtc8192e2ant_iswifi_status_changed(struct btc_coexist *btcoexist)
+>  {
+>  	static bool pre_wifi_busy;
+> @@ -534,6 +535,7 @@ static bool halbtc8192e2ant_iswifi_status_changed(struct btc_coexist *btcoexist)
+>  
+>  	return false;
+>  }
+> +#endif
+>  
+>  static void halbtc8192e2ant_update_btlink_info(struct btc_coexist *btcoexist)
+>  {
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
----
- drivers/input/touchscreen/pixcir_i2c_ts.c | 36 +++++++++++++------------------
- 1 file changed, 15 insertions(+), 21 deletions(-)
+The output of 
+    git grep BT_AUTO_REPORT_ONLY_8192E_2ANT next-20140430
 
-diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 02392d2..45bc2d1 100644
---- a/drivers/input/touchscreen/pixcir_i2c_ts.c
-+++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -130,6 +130,7 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- {
- 	const struct pixcir_ts_platform_data *pdata =
- 			dev_get_platdata(&client->dev);
-+	struct device *dev = &client->dev;
- 	struct pixcir_i2c_ts_data *tsdata;
- 	struct input_dev *input;
- 	int error;
-@@ -139,12 +140,14 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
--	tsdata = kzalloc(sizeof(*tsdata), GFP_KERNEL);
--	input = input_allocate_device();
--	if (!tsdata || !input) {
--		dev_err(&client->dev, "Failed to allocate driver data!\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+	tsdata = devm_kzalloc(dev, sizeof(*tsdata), GFP_KERNEL);
-+	if (!tsdata)
-+		return -ENOMEM;
-+
-+	input = devm_input_allocate_device(dev);
-+	if (!input) {
-+		dev_err(&client->dev, "Failed to allocate input device\n");
-+		return -ENOMEM;
- 	}
- 
- 	tsdata->client = client;
-@@ -165,29 +168,22 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 
- 	input_set_drvdata(input, tsdata);
- 
--	error = request_threaded_irq(client->irq, NULL, pixcir_ts_isr,
--				     IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
--				     client->name, tsdata);
-+	error = devm_request_threaded_irq(dev, client->irq, NULL, pixcir_ts_isr,
-+					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+					  client->name, tsdata);
- 	if (error) {
--		dev_err(&client->dev, "Unable to request touchscreen IRQ.\n");
--		goto err_free_mem;
-+		dev_err(dev, "failed to request irq %d\n", client->irq);
-+		return error;
- 	}
- 
- 	error = input_register_device(input);
- 	if (error)
--		goto err_free_irq;
-+		return error;
- 
- 	i2c_set_clientdata(client, tsdata);
- 	device_init_wakeup(&client->dev, 1);
- 
- 	return 0;
--
--err_free_irq:
--	free_irq(client->irq, tsdata);
--err_free_mem:
--	input_free_device(input);
--	kfree(tsdata);
--	return error;
- }
- 
- static int pixcir_i2c_ts_remove(struct i2c_client *client)
-@@ -198,10 +194,8 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
- 
- 	tsdata->exiting = true;
- 	mb();
--	free_irq(client->irq, tsdata);
- 
- 	input_unregister_device(tsdata->input);
--	kfree(tsdata);
- 
- 	return 0;
- }
--- 
-1.8.3.2
+is
+    next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#if (BT_AUTO_REPORT_ONLY_8192E_2ANT == 1)
+    next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#if (BT_AUTO_REPORT_ONLY_8192E_2ANT == 0)
+    next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#if (BT_AUTO_REPORT_ONLY_8192E_2ANT == 0)
+    next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.h:#define     BT_AUTO_REPORT_ONLY_8192E_2ANT                  0
+
+So it seems that some trivial cleaning up is possible. Ie, drop the
+#define and drop the three tests that are either always true or always
+false. Is there a reason not to do that cleaning up?
+
+
+Paul Bolle
 
