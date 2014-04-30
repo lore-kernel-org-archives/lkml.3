@@ -1,80 +1,648 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303AbaD3APQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 20:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39772 "EHLO mx1.redhat.com"
+	id S1757371AbaD3APv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 20:15:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24570 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754324AbaD3APO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 20:15:14 -0400
-Date: Tue, 29 Apr 2014 20:14:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
-        davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        tglx@linutronix.de
-Subject: Re: [3.15-rc3] rtmutex-debug assertion.
-Message-ID: <20140430001432.GA32142@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
-	davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
-	tglx@linutronix.de
-References: <20140429151655.GA14277@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140429151655.GA14277@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754667AbaD3APt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 20:15:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,954,1389772800"; 
+   d="scan'208";a="523450787"
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, Andrew Lutomriski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dirk Hohndel <dirk@hohndel.org>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        comex <comexk@gmail.com>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Subject: [PATCH] x86-64, espfix: Don't leak bits 31:16 of %esp returning to 16-bit stack
+Date: Tue, 29 Apr 2014 17:15:46 -0700
+Message-Id: <1398816946-3351-1-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 11:16:55AM -0400, Dave Jones wrote:
- > Just hit this while fuzzing the futex() syscall.
- > 
- > 
- > WARNING: CPU: 2 PID: 6202 at kernel/locking/rtmutex-debug.c:151 debug_rt_mutex_proxy_unlock+0x4e/0x60()
- > DEBUG_LOCKS_WARN_ON(!rt_mutex_owner(lock))
- > Modules linked in:
- >  tun fuse ipt_ULOG nfnetlink bnep can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can_raw can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm xfs libcrc32c btusb bluetooth snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_timer snd microcode serio_raw pcspkr usb_debug 6lowpan_iphc rfkill shpchp ptp pps_core soundcore
- > CPU: 2 PID: 6202 Comm: trinity-c63 Not tainted 3.15.0-rc3+ #201
- >  0000000000000009 00000000de725d52 ffff880099befbd8 ffffffff92746dad
- >  ffff880099befc20 ffff880099befc10 ffffffff9206d46d ffff88020951c010
- >  ffff88009d718000 ffff88009d718000 ffffc90011408680 ffffc90011408688
- > Call Trace:
- >  [<ffffffff92746dad>] dump_stack+0x4e/0x7a
- >  [<ffffffff9206d46d>] warn_slowpath_common+0x7d/0xa0
- >  [<ffffffff9206d4ec>] warn_slowpath_fmt+0x5c/0x80
- >  [<ffffffff920c533e>] debug_rt_mutex_proxy_unlock+0x4e/0x60
- >  [<ffffffff920c4d77>] rt_mutex_proxy_unlock+0x17/0x40
- >  [<ffffffff920ead7a>] free_pi_state+0x6a/0xb0
- >  [<ffffffff920eade0>] unqueue_me_pi+0x20/0x40
- >  [<ffffffff920ebfc2>] futex_lock_pi.isra.18+0x262/0x3f0
- >  [<ffffffff92096910>] ? hrtimer_get_res+0x50/0x50
- >  [<ffffffff920edb2c>] do_futex+0x2ec/0xb60
- >  [<ffffffff92349897>] ? debug_smp_processor_id+0x17/0x20
- >  [<ffffffff920bf3ee>] ? put_lock_stats.isra.23+0xe/0x30
- >  [<ffffffff920bf756>] ? lock_release_holdtime.part.24+0xe6/0x160
- >  [<ffffffff920a3cdd>] ? get_parent_ip+0xd/0x50
- >  [<ffffffff9275698b>] ? preempt_count_sub+0x6b/0xf0
- >  [<ffffffff92751f51>] ? _raw_spin_unlock+0x31/0x50
- >  [<ffffffff920ee420>] SyS_futex+0x80/0x180
- >  [<ffffffff9275b0e4>] tracesys+0xdd/0xe2
+This is intended as a final RFC for testing and flames^Wcomments
+before I add this to -tip.
 
-This is trickier to reproduce than it first seemed, as logging slows
-things down so much.  But after a few hours, it logged that the
-call that triggered this was..
+Linus, this is technically a (functionality) regression fix.  Will you
+want this for 3.15?
 
-futex(uaddr=0x7f55ff8c4000, op=0x6, val=0x200000006223800b, utime=0x7f55ff8c4000, uaddr2=0x7f55ff8c4000, val3=-123)
+---------->8--------
 
-Those addresses come from an mmap we made on startup..
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  This
+causes some 16-bit software to break, but it also leaks kernel state
+to user space.  We have a software workaround for that ("espfix") for
+the 32-bit kernel, but it relies on a nonzero stack segment base which
+is not available in 32-bit mode.
 
-[init] mapping[3]: (zeropage PROT_READ | PROT_WRITE) 0x7f55ff8c4000 (1MB)
+In checkin:
 
-op = FUTEX_LOCK_PI
+    b3b42ac2cbae x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-val seems to be garbage.
+we "solved" this by forbidding 16-bit segments on 64-bit kernels, with
+the logic that 16-bit support is crippled on 64-bit kernels anyway (no
+V86 support), but it turns out that people are doing stuff like
+running old Win16 binaries under Wine and expect it to work.
 
-I'll do another run, just to see if it's always the same set of values,
-but it's going to probably take an overnight run.
+This works around this by creating percpu "ministacks", each of which
+is mapped 2^16 times 64K apart.  When we detect that the return SS is
+on the LDT, we copy the IRET frame to the ministack and use the
+relevant alias to return to userspace.  The ministacks are mapped
+readonly, so if the IRET fault we promote #GP to #DF which is an IST
+vector and thus has its own stack; we then do the fixup in the #DF
+handler.
 
-	Dave
+(Making #GP an IST exception would make the msr_safe functions unsafe
+in NMI/MC context, and quite possibly have other effects.)
+
+Special thanks to:
+
+- Andy Lutomirski, for the suggestion of using very small stack slots
+  and copy (as opposed to map) the IRET frame there, and for the
+  suggestion to mark them readonly and let the fault promote to #DF.
+- Konrad Wilk for paravirt fixup and testing.
+- Borislav Petkov for testing help and useful comments.
+
+This is technically a fix for a functionality regression.
+
+Reported-by: Brian Gerst <brgerst@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Lutomriski <amluto@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dirk Hohndel <dirk@hohndel.org>
+Cc: Arjan van de Ven <arjan.van.de.ven@intel.com>
+Cc: comex <comexk@gmail.com>
+Cc: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ Documentation/x86/x86_64/mm.txt         |   2 +
+ arch/x86/include/asm/pgtable_64_types.h |   2 +
+ arch/x86/include/asm/setup.h            |   3 +
+ arch/x86/kernel/Makefile                |   1 +
+ arch/x86/kernel/entry_64.S              |  73 +++++++++++-
+ arch/x86/kernel/espfix_64.c             | 203 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/ldt.c                   |  11 --
+ arch/x86/kernel/smpboot.c               |   7 ++
+ arch/x86/mm/dump_pagetables.c           |  44 +++++--
+ init/main.c                             |   4 +
+ 10 files changed, 324 insertions(+), 26 deletions(-)
+ create mode 100644 arch/x86/kernel/espfix_64.c
+
+diff --git a/Documentation/x86/x86_64/mm.txt b/Documentation/x86/x86_64/mm.txt
+index c584a51add15..afe68ddbe6a4 100644
+--- a/Documentation/x86/x86_64/mm.txt
++++ b/Documentation/x86/x86_64/mm.txt
+@@ -12,6 +12,8 @@ ffffc90000000000 - ffffe8ffffffffff (=45 bits) vmalloc/ioremap space
+ ffffe90000000000 - ffffe9ffffffffff (=40 bits) hole
+ ffffea0000000000 - ffffeaffffffffff (=40 bits) virtual memory map (1TB)
+ ... unused hole ...
++ffffff0000000000 - ffffff7fffffffff (=39 bits) %esp fixup stacks
++... unused hole ...
+ ffffffff80000000 - ffffffffa0000000 (=512 MB)  kernel text mapping, from phys 0
+ ffffffffa0000000 - ffffffffff5fffff (=1525 MB) module mapping space
+ ffffffffff600000 - ffffffffffdfffff (=8 MB) vsyscalls
+diff --git a/arch/x86/include/asm/pgtable_64_types.h b/arch/x86/include/asm/pgtable_64_types.h
+index c883bf726398..7166e25ecb57 100644
+--- a/arch/x86/include/asm/pgtable_64_types.h
++++ b/arch/x86/include/asm/pgtable_64_types.h
+@@ -61,6 +61,8 @@ typedef struct { pteval_t pte; } pte_t;
+ #define MODULES_VADDR    (__START_KERNEL_map + KERNEL_IMAGE_SIZE)
+ #define MODULES_END      _AC(0xffffffffff000000, UL)
+ #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
++#define ESPFIX_PGD_ENTRY _AC(-2, UL)
++#define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
+ 
+ #define EARLY_DYNAMIC_PAGE_TABLES	64
+ 
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index 9264f04a4c55..9e3be3329a7e 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -57,6 +57,9 @@ extern void x86_ce4100_early_setup(void);
+ static inline void x86_ce4100_early_setup(void) { }
+ #endif
+ 
++extern void init_espfix_bsp(void);
++extern void init_espfix_ap(void);
++
+ #ifndef _SETUP
+ 
+ /*
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index f4d96000d33a..1cc3789d99d9 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
++obj-$(CONFIG_X86_64)	+= espfix_64.o
+ obj-$(CONFIG_SYSFS)	+= ksysfs.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c3628bf2..bffaa986cafc 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -58,6 +58,7 @@
+ #include <asm/asm.h>
+ #include <asm/context_tracking.h>
+ #include <asm/smap.h>
++#include <asm/pgtable_types.h>
+ #include <linux/err.h>
+ 
+ /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
+@@ -1040,8 +1041,16 @@ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+ irq_return:
++	/*
++	 * Are we returning to a stack segment from the LDT?  Note: in
++	 * 64-bit mode SS:RSP on the exception stack is always valid.
++	 */
++	testb $4,(SS-RIP)(%rsp)
++	jnz irq_return_ldt
++
++irq_return_iret:
+ 	INTERRUPT_RETURN
+-	_ASM_EXTABLE(irq_return, bad_iret)
++	_ASM_EXTABLE(irq_return_iret, bad_iret)
+ 
+ #ifdef CONFIG_PARAVIRT
+ ENTRY(native_iret)
+@@ -1049,6 +1058,30 @@ ENTRY(native_iret)
+ 	_ASM_EXTABLE(native_iret, bad_iret)
+ #endif
+ 
++irq_return_ldt:
++	pushq_cfi %rax
++	pushq_cfi %rdi
++	SWAPGS
++	movq PER_CPU_VAR(espfix_waddr),%rdi
++	movq %rax,(0*8)(%rdi)	/* RAX */
++	movq (2*8)(%rsp),%rax	/* RIP */
++	movq %rax,(1*8)(%rdi)
++	movq (3*8)(%rsp),%rax	/* CS */
++	movq %rax,(2*8)(%rdi)
++	movq (4*8)(%rsp),%rax	/* RFLAGS */
++	movq %rax,(3*8)(%rdi)
++	movq (6*8)(%rsp),%rax	/* SS */
++	movq %rax,(5*8)(%rdi)
++	movq (5*8)(%rsp),%rax	/* RSP */
++	movq %rax,(4*8)(%rdi)
++	andl $0xffff0000,%eax
++	popq_cfi %rdi
++	orq PER_CPU_VAR(espfix_stack),%rax
++	SWAPGS
++	movq %rax,%rsp
++	popq_cfi %rax
++	jmp irq_return_iret
++
+ 	.section .fixup,"ax"
+ bad_iret:
+ 	/*
+@@ -1110,9 +1143,41 @@ ENTRY(retint_kernel)
+ 	call preempt_schedule_irq
+ 	jmp exit_intr
+ #endif
+-
+ 	CFI_ENDPROC
+ END(common_interrupt)
++
++	/*
++	 * If IRET takes a fault on the espfix stack, then we
++	 * end up promoting it to a doublefault.  In that case,
++	 * modify the stack to make it look like we just entered
++	 * the #GP handler from user space, similar to bad_iret.
++	 */
++	ALIGN
++__do_double_fault:
++	XCPT_FRAME 1 RDI+8
++	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
++	sarq $PGDIR_SHIFT,%rax
++	cmpl $ESPFIX_PGD_ENTRY,%eax
++	jne do_double_fault		/* No, just deliver the fault */
++	cmpl $__KERNEL_CS,CS(%rdi)
++	jne do_double_fault
++	movq RIP(%rdi),%rax
++	cmpq $irq_return_iret,%rax
++#ifdef CONFIG_PARAVIRT
++	je 1f
++	cmpq $native_iret,%rax
++#endif
++	jne do_double_fault		/* This shouldn't happen... */
++1:
++	movq PER_CPU_VAR(kernel_stack),%rax
++	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
++	movq %rax,RSP(%rdi)
++	movq $0,(%rax)			/* Missing (lost) #GP error code */
++	movq $general_protection,RIP(%rdi)
++	retq
++	CFI_ENDPROC
++END(__do_double_fault)
++
+ /*
+  * End of kprobes section
+  */
+@@ -1314,7 +1379,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault do_double_fault
++paranoiderrorentry double_fault __do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+@@ -1601,7 +1666,7 @@ error_sti:
+  */
+ error_kernelspace:
+ 	incl %ebx
+-	leaq irq_return(%rip),%rcx
++	leaq irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+ 	je error_swapgs
+ 	movl %ecx,%eax	/* zero extend */
+diff --git a/arch/x86/kernel/espfix_64.c b/arch/x86/kernel/espfix_64.c
+new file mode 100644
+index 000000000000..b1b5ae21a73e
+--- /dev/null
++++ b/arch/x86/kernel/espfix_64.c
+@@ -0,0 +1,203 @@
++/* ----------------------------------------------------------------------- *
++ *
++ *   Copyright 2014 Intel Corporation; author: H. Peter Anvin
++ *
++ *   This file is part of the Linux kernel, and is made available under
++ *   the terms of the GNU General Public License version 2 or (at your
++ *   option) any later version; incorporated herein by reference.
++ *
++ * ----------------------------------------------------------------------- */
++
++/*
++ * The IRET instruction, when returning to a 16-bit segment, only
++ * restores the bottom 16 bits of the user space stack pointer.  This
++ * causes some 16-bit software to break, but it also leaks kernel state
++ * to user space.
++ *
++ * This works around this by creating percpu "ministacks", each of which
++ * is mapped 2^16 times 64K apart.  When we detect that the return SS is
++ * on the LDT, we copy the IRET frame to the ministack and use the
++ * relevant alias to return to userspace.  The ministacks are mapped
++ * readonly, so if the IRET fault we promote #GP to #DF which is an IST
++ * vector and thus has its own stack; we then do the fixup in the #DF
++ * handler.
++ *
++ * This file sets up the ministacks and the related page tables.  The
++ * actual ministack invocation is in entry_64.S.
++ */
++
++#include <linux/init.h>
++#include <linux/init_task.h>
++#include <linux/kernel.h>
++#include <linux/percpu.h>
++#include <linux/gfp.h>
++#include <linux/random.h>
++#include <asm/pgtable.h>
++#include <asm/pgalloc.h>
++#include <asm/setup.h>
++
++/*
++ * Note: we only need 6*8 = 48 bytes for the espfix stack, but round
++ * it up to a cache line to avoid unnecessary sharing.
++ */
++#define ESPFIX_STACK_SIZE	(8*8UL)
++#define ESPFIX_STACKS_PER_PAGE	(PAGE_SIZE/ESPFIX_STACK_SIZE)
++
++/* There is address space for how many espfix pages? */
++#define ESPFIX_PAGE_SPACE	(1UL << (PGDIR_SHIFT-PAGE_SHIFT-16))
++
++#define ESPFIX_MAX_CPUS		(ESPFIX_STACKS_PER_PAGE * ESPFIX_PAGE_SPACE)
++#if CONFIG_NR_CPUS > ESPFIX_MAX_CPUS
++# error "Need more than one PGD for the ESPFIX hack"
++#endif
++
++#define PGALLOC_GFP (GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO)
++
++/* This contains the *bottom* address of the espfix stack */
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_stack);
++DEFINE_PER_CPU_READ_MOSTLY(unsigned long, espfix_waddr);
++
++/* Initialization mutex - should this be a spinlock? */
++static DEFINE_MUTEX(espfix_init_mutex);
++
++/* Page allocation bitmap - each page serves ESPFIX_STACKS_PER_PAGE CPUs */
++#define ESPFIX_MAX_PAGES  DIV_ROUND_UP(CONFIG_NR_CPUS, ESPFIX_STACKS_PER_PAGE)
++static void *espfix_pages[ESPFIX_MAX_PAGES];
++
++static __page_aligned_bss pud_t espfix_pud_page[PTRS_PER_PUD]
++	__aligned(PAGE_SIZE);
++
++static unsigned int page_random, slot_random;
++
++/*
++ * This returns the bottom address of the espfix stack for a specific CPU.
++ * The math allows for a non-power-of-two ESPFIX_STACK_SIZE, in which case
++ * we have to account for some amount of padding at the end of each page.
++ */
++static inline unsigned long espfix_base_addr(unsigned int cpu)
++{
++	unsigned long page, slot;
++	unsigned long addr;
++
++	page = (cpu / ESPFIX_STACKS_PER_PAGE) ^ page_random;
++	slot = (cpu + slot_random) % ESPFIX_STACKS_PER_PAGE;
++	addr = (page << PAGE_SHIFT) + (slot * ESPFIX_STACK_SIZE);
++	addr = (addr & 0xffffUL) | ((addr & ~0xffffUL) << 16);
++	addr += ESPFIX_BASE_ADDR;
++	return addr;
++}
++
++#define PTE_STRIDE        (65536/PAGE_SIZE)
++#define ESPFIX_PTE_CLONES (PTRS_PER_PTE/PTE_STRIDE)
++#define ESPFIX_PMD_CLONES PTRS_PER_PMD
++#define ESPFIX_PUD_CLONES (65536/(ESPFIX_PTE_CLONES*ESPFIX_PMD_CLONES))
++
++#define PGTABLE_PROT	  ((_KERNPG_TABLE & ~_PAGE_RW) | _PAGE_NX)
++
++static void init_espfix_random(void)
++{
++	unsigned long rand;
++
++	/*
++	 * This is run before the entropy pools are initialized,
++	 * but this is hopefully better than nothing.
++	 */
++	if (!arch_get_random_long(&rand)) {
++		/* The constant is an arbitrary large prime */
++		rdtscll(rand);
++		rand *= 0xc345c6b72fd16123UL;
++	}
++
++	slot_random = rand % ESPFIX_STACKS_PER_PAGE;
++	page_random = (rand / ESPFIX_STACKS_PER_PAGE)
++		& (ESPFIX_PAGE_SPACE - 1);
++}
++
++void __init init_espfix_bsp(void)
++{
++	pgd_t *pgd_p;
++	pteval_t ptemask;
++
++	ptemask = __supported_pte_mask;
++
++	/* Install the espfix pud into the kernel page directory */
++	pgd_p = &init_level4_pgt[pgd_index(ESPFIX_BASE_ADDR)];
++	pgd_populate(&init_mm, pgd_p, (pud_t *)espfix_pud_page);
++
++	/* Randomize the locations */
++	init_espfix_random();
++
++	/* The rest is the same as for any other processor */
++	init_espfix_ap();
++}
++
++void init_espfix_ap(void)
++{
++	unsigned int cpu, page;
++	unsigned long addr;
++	pud_t pud, *pud_p;
++	pmd_t pmd, *pmd_p;
++	pte_t pte, *pte_p;
++	int n;
++	void *stack_page;
++	pteval_t ptemask;
++
++	/* We only have to do this once... */
++	if (likely(this_cpu_read(espfix_stack)))
++		return;		/* Already initialized */
++
++	cpu = smp_processor_id();
++	addr = espfix_base_addr(cpu);
++	page = cpu/ESPFIX_STACKS_PER_PAGE;
++
++	/* Did another CPU already set this up? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (likely(stack_page))
++		goto done;
++
++	mutex_lock(&espfix_init_mutex);
++
++	/* Did we race on the lock? */
++	stack_page = ACCESS_ONCE(espfix_pages[page]);
++	if (stack_page)
++		goto unlock_done;
++
++	ptemask = __supported_pte_mask;
++
++	pud_p = &espfix_pud_page[pud_index(addr)];
++	pud = *pud_p;
++	if (!pud_present(pud)) {
++		pmd_p = (pmd_t *)__get_free_page(PGALLOC_GFP);
++		pud = __pud(__pa(pmd_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pud(&init_mm, __pa(pmd_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PUD_CLONES; n++)
++			set_pud(&pud_p[n], pud);
++	}
++
++	pmd_p = pmd_offset(&pud, addr);
++	pmd = *pmd_p;
++	if (!pmd_present(pmd)) {
++		pte_p = (pte_t *)__get_free_page(PGALLOC_GFP);
++		pmd = __pmd(__pa(pte_p) | (PGTABLE_PROT & ptemask));
++		paravirt_alloc_pmd(&init_mm, __pa(pte_p) >> PAGE_SHIFT);
++		for (n = 0; n < ESPFIX_PMD_CLONES; n++)
++			set_pmd(&pmd_p[n], pmd);
++	}
++
++	pte_p = pte_offset_kernel(&pmd, addr);
++	stack_page = (void *)__get_free_page(GFP_KERNEL);
++	pte = __pte(__pa(stack_page) | (__PAGE_KERNEL_RO & ptemask));
++	paravirt_alloc_pte(&init_mm, __pa(stack_page) >> PAGE_SHIFT);
++	for (n = 0; n < ESPFIX_PTE_CLONES; n++)
++		set_pte(&pte_p[n*PTE_STRIDE], pte);
++
++	/* Job is done for this CPU and any CPU which shares this page */
++	ACCESS_ONCE(espfix_pages[page]) = stack_page;
++
++unlock_done:
++	mutex_unlock(&espfix_init_mutex);
++done:
++	this_cpu_write(espfix_stack, addr);
++	this_cpu_write(espfix_waddr, (unsigned long)stack_page
++		       + (addr & ~PAGE_MASK));
++}
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index af1d14a9ebda..ebc987398923 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,17 +229,6 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
+-	/*
+-	 * On x86-64 we do not support 16-bit segments due to
+-	 * IRET leaking the high bits of the kernel stack address.
+-	 */
+-#ifdef CONFIG_X86_64
+-	if (!ldt_info.seg_32bit) {
+-		error = -EINVAL;
+-		goto out_unlock;
+-	}
+-#endif
+-
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 34826934d4a7..61a5350850fb 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -244,6 +244,13 @@ static void notrace start_secondary(void *unused)
+ 	check_tsc_sync_target();
+ 
+ 	/*
++	 * Enable the espfix hack for this CPU
++	 */
++#ifdef CONFIG_X86_64
++	init_espfix_ap();
++#endif
++
++	/*
+ 	 * We need to hold vector_lock so there the set of online cpus
+ 	 * does not change while we are assigning vectors to cpus.  Holding
+ 	 * this lock ensures we don't half assign or remove an irq from a cpu.
+diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
+index 20621d753d5f..c6d4c1fe7004 100644
+--- a/arch/x86/mm/dump_pagetables.c
++++ b/arch/x86/mm/dump_pagetables.c
+@@ -30,12 +30,14 @@ struct pg_state {
+ 	unsigned long start_address;
+ 	unsigned long current_address;
+ 	const struct addr_marker *marker;
++	unsigned long lines;
+ 	bool to_dmesg;
+ };
+ 
+ struct addr_marker {
+ 	unsigned long start_address;
+ 	const char *name;
++	unsigned long max_lines;
+ };
+ 
+ /* indices for address_markers; keep sync'd w/ address_markers below */
+@@ -46,6 +48,7 @@ enum address_markers_idx {
+ 	LOW_KERNEL_NR,
+ 	VMALLOC_START_NR,
+ 	VMEMMAP_START_NR,
++	ESPFIX_START_NR,
+ 	HIGH_KERNEL_NR,
+ 	MODULES_VADDR_NR,
+ 	MODULES_END_NR,
+@@ -68,6 +71,7 @@ static struct addr_marker address_markers[] = {
+ 	{ PAGE_OFFSET,		"Low Kernel Mapping" },
+ 	{ VMALLOC_START,        "vmalloc() Area" },
+ 	{ VMEMMAP_START,        "Vmemmap" },
++	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
+ 	{ __START_KERNEL_map,   "High Kernel Mapping" },
+ 	{ MODULES_VADDR,        "Modules" },
+ 	{ MODULES_END,          "End Modules" },
+@@ -182,7 +186,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		      pgprot_t new_prot, int level)
+ {
+ 	pgprotval_t prot, cur;
+-	static const char units[] = "KMGTPE";
++	static const char units[] = "BKMGTPE";
+ 
+ 	/*
+ 	 * If we have a "break" in the series, we need to flush the state that
+@@ -197,6 +201,7 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		st->current_prot = new_prot;
+ 		st->level = level;
+ 		st->marker = address_markers;
++		st->lines = 0;
+ 		pt_dump_seq_printf(m, st->to_dmesg, "---[ %s ]---\n",
+ 				   st->marker->name);
+ 	} else if (prot != cur || level != st->level ||
+@@ -208,17 +213,24 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		/*
+ 		 * Now print the actual finished series
+ 		 */
+-		pt_dump_seq_printf(m, st->to_dmesg,  "0x%0*lx-0x%0*lx   ",
+-				   width, st->start_address,
+-				   width, st->current_address);
+-
+-		delta = (st->current_address - st->start_address) >> 10;
+-		while (!(delta & 1023) && unit[1]) {
+-			delta >>= 10;
+-			unit++;
++		if (!st->marker->max_lines ||
++		    st->lines < st->marker->max_lines) {
++			pt_dump_seq_printf(m, st->to_dmesg, 
++					   "0x%0*lx-0x%0*lx   ",
++					   width, st->start_address,
++					   width, st->current_address);
++
++			delta = st->current_address - st->start_address;
++			while (!(delta & 1023) && unit[1]) {
++				delta >>= 10;
++				unit++;
++			}
++			pt_dump_cont_printf(m, st->to_dmesg, "%9lu%c ",
++					    delta, *unit);
++			printk_prot(m, st->current_prot, st->level,
++				    st->to_dmesg);
+ 		}
+-		pt_dump_cont_printf(m, st->to_dmesg, "%9lu%c ", delta, *unit);
+-		printk_prot(m, st->current_prot, st->level, st->to_dmesg);
++		st->lines++;
+ 
+ 		/*
+ 		 * We print markers for special areas of address space,
+@@ -226,7 +238,17 @@ static void note_page(struct seq_file *m, struct pg_state *st,
+ 		 * This helps in the interpretation.
+ 		 */
+ 		if (st->current_address >= st->marker[1].start_address) {
++			if (st->marker->max_lines &&
++			    st->lines > st->marker->max_lines) {
++				unsigned long nskip =
++					st->lines - st->marker->max_lines;
++				pt_dump_seq_printf(m, st->to_dmesg,
++						   "... %lu entr%s skipped ... \n",
++						   nskip,
++						   nskip == 1 ? "y" : "ies");
++			}
+ 			st->marker++;
++			st->lines = 0;
+ 			pt_dump_seq_printf(m, st->to_dmesg, "---[ %s ]---\n",
+ 					   st->marker->name);
+ 		}
+diff --git a/init/main.c b/init/main.c
+index 9c7fd4c9249f..70fc00e7db06 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -617,6 +617,10 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
++#ifdef CONFIG_X86_64
++	/* Should be run before the first non-init thread is created */
++	init_espfix_bsp();
++#endif
+ 	thread_info_cache_init();
+ 	cred_init();
+ 	fork_init(totalram_pages);
+-- 
+1.9.0
 
