@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758979AbaD3Mlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:41:44 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:40956 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758884AbaD3Mln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:41:43 -0400
-X-IronPort-AV: E=Sophos;i="4.97,958,1389744000"; 
-   d="scan'208";a="126282370"
-Message-ID: <5360EF70.20202@citrix.com>
-Date: Wed, 30 Apr 2014 13:41:20 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S964937AbaD3Mmf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:42:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:45406 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758768AbaD3Mmc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 08:42:32 -0400
+Message-Id: <20140430124231.304968038@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 30 Apr 2014 08:41:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 3/4] tracing: Break out of tracing_wait_pipe() before wait_pipe() is
+ called
+References: <20140430124153.334527053@goodmis.org>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 7/9] x86: skip check for spurious faults for non-present
- faults
-References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com> <1397571337-20409-8-git-send-email-david.vrabel@citrix.com>
-In-Reply-To: <1397571337-20409-8-git-send-email-david.vrabel@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0003-tracing-Break-out-of-tracing_wait_pipe-before-wait_p.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/04/14 15:15, David Vrabel wrote:
-> If a fault on a kernel address is due to a non-present page, then it
-> cannot be the result of stale TLB entry from a protection change (RO
-> to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
-> skipped.
-> 
-> This avoids spurious_fault() oopsing in some cases if the pagetables
-> it attempts to walk are not accessible.  This obscures the location of
-> the original fault.
-> 
-> This also fixes a crash with Xen PV guests when they access entries in
-> the M2P corresponding to device MMIO regions.  The M2P is mapped
-> (read-only) by Xen into the kernel address space of the guest and this
-> mapping may contains holes for non-RAM regions.  Read faults will
-> result in calls to spurious_fault(), but because the page tables for
-> the M2P mappings are not accessible by the guest the pagetable walk
-> would fault.
-> 
-> This was not normally a problem as MMIO mappings would not normally
-> result in a M2P lookup because of the use of the _PAGE_IOMAP bit the
-> PTE.  However, removing the _PAGE_IOMAP bit requires M2P lookups for
-> MMIO mappings as well.
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
-> x86 maintainers, this is a prerequisite for removing Xen's usage of
-> _PAGE_IOMAP so I think this is best merged via the Xen tree.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Peter, any opinion on this patch?
+When reading from trace_pipe, if tracing is off but nothing was read
+it should block. If something is read and tracing is off, then EOF
+is returned. If tracing is on and there's nothing to read, it will block.
 
-David
+But because the check of whether tracing is off and something was read
+is done after the block on the pipe, it is hit or miss if the EOF is
+returned or not leading to inconsistent behavior.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index cb41e98..e058c60 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4237,15 +4237,6 @@ static int tracing_wait_pipe(struct file *filp)
+ 			return -EAGAIN;
+ 		}
+ 
+-		mutex_unlock(&iter->mutex);
+-
+-		iter->trace->wait_pipe(iter);
+-
+-		mutex_lock(&iter->mutex);
+-
+-		if (signal_pending(current))
+-			return -EINTR;
+-
+ 		/*
+ 		 * We block until we read something and tracing is disabled.
+ 		 * We still block if tracing is disabled, but we have never
+@@ -4257,6 +4248,15 @@ static int tracing_wait_pipe(struct file *filp)
+ 		 */
+ 		if (!tracing_is_on() && iter->pos)
+ 			break;
++
++		mutex_unlock(&iter->mutex);
++
++		iter->trace->wait_pipe(iter);
++
++		mutex_lock(&iter->mutex);
++
++		if (signal_pending(current))
++			return -EINTR;
+ 	}
+ 
+ 	return 1;
+-- 
+1.8.5.3
+
+
