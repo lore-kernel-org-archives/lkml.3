@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905AbaD3HLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 03:11:24 -0400
-Received: from ozlabs.org ([103.22.144.67]:47966 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273AbaD3HLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 03:11:22 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Zhangjie \(HZ\)" <zhangjie14@huawei.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net, linville@tuxdriver.com, jeffrey.t.kirsher@intel.com,
-        mst@redhat.com, jasowang@redhat.com, qinchuanyu@huawei.com,
-        liuyongan@huawei.com, zhangjie14@huawei.com, zhaoshenglong@huawei.com
-Subject: Re: [PATCH net-next] virtio-net: Set needed_headroom for virtio-net when VIRTIO_F_ANY_LAYOUT is true
-In-Reply-To: <535F824A.5060804@huawei.com>
-References: <535F824A.5060804@huawei.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 30 Apr 2014 11:14:10 +0930
-Message-ID: <87iopr4mmt.fsf@rustcorp.com.au>
+	id S1756071AbaD3HOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 03:14:34 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:36913
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751078AbaD3HOa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 03:14:30 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Richard Cochran <richardcochran@gmail.com>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mpa@pengutronix.de" <mpa@pengutronix.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv3 0/2] add DT endianness binding support
+Thread-Topic: [PATCHv3 0/2] add DT endianness binding support
+Thread-Index: AQHPZDUF+VrCuYtw30GGn/JfYi/ZCJspvgoAgAAAsJA=
+Date: Wed, 30 Apr 2014 07:14:08 +0000
+Message-ID: <334a9f7420ca466b9011f0c0ae53abda@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1398833029-29546-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140430071011.GA7312@netboy>
+In-Reply-To: <20140430071011.GA7312@netboy>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0197AFBD92
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(164054003)(80022001)(74662001)(76482001)(83322001)(92566001)(76576001)(20776003)(81542001)(85852003)(2656002)(81342001)(74502001)(31966008)(80976001)(86362001)(1411001)(558084003)(54356999)(99396002)(77982001)(46102001)(87936001)(50986999)(99286001)(79102001)(101416001)(76176999)(74316001)(77096999)(33646001)(83072002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:B2E5D964.9C106C1B.4AE39197.40E0B2B0.20078;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Zhangjie (HZ)" <zhangjie14@huawei.com> writes:
-> This is a small supplement for commit e7428e95a06fb516fac1308bd0e176e27c0b9287
-> ("virtio-net: put virtio-net header inline with data"). TCP packages have
-> enough room to put virtio-net header in, but UDP packages do not. By
-> setting dev->needed_headroom for virtio-net device, UDP packages could have
-> enough room.
->
-> For UDP packages, sk_buff is alloced in fun __ip_append_data. The size is
-> "alloclen + hh_len + 15", and "hh_len = LL_RESERVED_SPACE(rt-dst.dev);".
-> The Macro is defined as follows:
-> #define LL_RESERVED_SPACE(dev) \
->      ((((dev)->hard_header_len+(dev)->needed_headroom)\
->      &~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
-> By default, for UDP packages, after skb is allocated, only 16 bytes
-> reserved. And 2 bytes remained after mac header is set. That is not enough
-> to put virtio-net header in. If we set dev->needed_headroom to 12 or 10
-> (according to mergeable_rx_bufs is on or off ), more room can be reserved.
-> Then there is enough room for UDP packages to put the header in.
 
-Seems like a no-brainer.  Good find!
+> Subject: Re: [PATCHv3 0/2] add DT endianness binding support
+> 
+> Shouldn't this go to the arm list and rmk for review, too?
+> 
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Well, yes, I forgot it.
+
+Should I resend them ?
 
 Thanks,
-Rusty.
 
 
-
->
-> test result list as below:
-> guest and host: suse11sp3, netperf, intel 2.4GHz
-> +-------+---------+---------+---------+---------+
-> |       |   old             |   new             |
-> +-------+---------+---------+---------+---------+
-> | UDP   |  Gbit/s | pps     |  Gbit/s | pps     |
-> | 64    |  0.57   | 692232  |  0.61   | 742420  |
-> | 256   |  1.60   | 686860  |  1.71   | 733331  |
-> | 512   |  2.92   | 674576  |  3.07   | 710446  |
-> | 1024  |  4.99   | 598977  |  5.17   | 620821  |
-> | 1460  |  5.68   | 483757  |  7.16   | 610519  |
-> | 4096  |  6.98   | 637468  |  7.21   | 658471  |
-> +-------+---------+---------+---------+---------+
->
-> Signed-off-by: Zhang Jie <zhangjie14@huawei.com>
-> ---
->  drivers/net/virtio_net.c | 7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 8a852b5..b852bb3 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1724,6 +1724,13 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->  		vi->has_cvq = true;
->
-> +	if (vi->any_header_sg) {
-> +		if (vi->mergeable_rx_bufs)
-> +			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
-> +		else
-> +			dev->needed_headroom = sizeof(struct virtio_net_hdr);
-> +	}
-> +
->  	/* Use single tx/rx queue pair as default */
->  	vi->curr_queue_pairs = 1;
->  	vi->max_queue_pairs = max_queue_pairs;
-> -- 
-> 1.9.0.msysgit.0
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Thanks,
+> Richard
