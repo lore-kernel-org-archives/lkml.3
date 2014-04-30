@@ -1,273 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758756AbaD3LKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:10:12 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:60218 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758427AbaD3LJz (ORCPT
+	id S1758788AbaD3LLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:11:33 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:50921 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758427AbaD3LLb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:09:55 -0400
-Message-ID: <5360D9E5.9080206@gmail.com>
-Date: Wed, 30 Apr 2014 13:09:25 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Dario Faggioli <raistlin@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        linux-man@vger.kernel.org
-Subject: Re: sched_{set,get}attr() manpage
-References: <20131217122720.950475833@infradead.org> <20131217123352.692059839@infradead.org> <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com> <20140121153851.GZ31570@twins.programming.kicks-ass.net> <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com> <20140214161929.GL27965@twins.programming.kicks-ass.net> <53020C9D.1050208@gmail.com> <20140428081858.GX13658@twins.programming.kicks-ass.net> <535FA467.2070403@gmail.com> <20140429160441.GU11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140429160441.GU11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 07:11:31 -0400
+X-AuditID: cbfec373-b7f236d000004b34-09-5360da62b1fa
+Date: Wed, 30 Apr 2014 04:11:27 -0700
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: =?UTF-8?B?0JDQu9C10LrRgdCw0L3QtNGAINCR0LXRgNGB0LXQvdC10LI=?= 
+	<bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, maxime.ripard@free-electrons.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, sean@mess.org,
+        james.hogan@imgtec.com, david@hardeman.nu, srinivas.kandagatla@st.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 02/03] ARM: sunxi: Add driver for sunxi IR controller
+Message-id: <20140430041127.450b913f.m.chehab@samsung.com>
+In-reply-to: <3881d16f-578a-417b-8a55-ea9bad5af206@googlegroups.com>
+References: <d641a69a-01b4-443d-b121-48d13f46ee03@googlegroups.com>
+ <3881d16f-578a-417b-8a55-ea9bad5af206@googlegroups.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t/hYN2kWwnBBjd3y1vcvidgcfHIOnaL
+	+UfOsVoc+LOD0eLdvBfMFpseX2O1uLxrDptFz4atrBa/Hx1jt9i6aS+zReveI+wWC59+Z7GY
+	8qyX1YHX48mmi4weeyaeZPM4snsuo8eJ+13MHj07zzB6bFrVyeZx59oeNo/NS+o9lryx9nj6
+	Yy+zx+dNcgHcUVw2Kak5mWWpRfp2CVwZ7+4cZyp4HVfRc8avgfGidxcjJ4eEgInE5lOPWCFs
+	MYkL99azgdhCAksYJZovuHYxcgHZzUwSH2f2gBWxCKhK/L6zmh3EZhMwknjV2AIWFxEIlZh4
+	5yI7SAOzwCkmiXULbrKAJIQFfCRaj91lArF5BawkJm3eBdbMKeAi8WjBFaBtHEAbaiVOtZpB
+	HOEk8er1ZKhyQYkfk++BjWEWUJeYNG8RM4StLfHk3QXWCYwCs5CUzUJSNgtJ2QJG5lWMoqXF
+	yQXFSem5RnrFibnFpXnpesn5uZsYIVFVvIPxxQarQ4wCHIxKPLwCW+ODhVgTy4orcw8xSnAw
+	K4nwzjmaECzEm5JYWZValB9fVJqTWnyIkYmDU6qBscyWaeZSRYO0I/x7WY7+ZUhdU3Q9n0dG
+	b276B+Vlx3RksosW/2wSZKlcnTCtbp3fxe3X7DNPnei1Ln9+wivjs/z0M1Yue0u8rrZ38Kxe
+	5c6gHf1eYQtngnv63Hj+HwKShRsn3MxsNbg2t+birJeaZzk5kn4o9AdNeyKe1H2GTdxfIWbV
+	lU3KSizFGYmGWsxFxYkAozLsv4gCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Em Wed, 30 Apr 2014 03:58:18 -0700 (PDT)
+Александр Берсенев <bay@hackerdom.ru> escreveu:
 
-Thanks for the revision. More comments below. Could you revise in 
-the light of those comments, and hopefully also after feedback from 
-Juri and Dario?
+> [PATCH v4 02/03] ARM: sunxi: Add driver for sunxi IR controller
+> 
+> This patch adds driver for sunxi IR controller.
+> It is based on Alexsey Shestacov's work based on the original driver 
+> supplied by Allwinner.
+> 
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+> 
+> diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+> index 8fbd377..9427fad 100644
+> --- a/drivers/media/rc/Kconfig
+> +++ b/drivers/media/rc/Kconfig
+> @@ -343,4 +343,14 @@ config RC_ST
+>  
+>   If you're not sure, select N here.
+>  
+> +config IR_SUNXI
+> +    tristate "SUNXI IR remote control"
+> +    depends on RC_CORE
+> +    depends on ARCH_SUNXI
+> +    ---help---
+> +      Say Y if you want to use sunXi internal IR Controller
+> +
+> +      To compile this driver as a module, choose M here: the module will
+> +      be called sunxi-ir.
+> +
+>  endif #RC_DEVICES
+> diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+> index f8b54ff..93cdbe9 100644
+> --- a/drivers/media/rc/Makefile
+> +++ b/drivers/media/rc/Makefile
+> @@ -32,4 +32,5 @@ obj-$(CONFIG_IR_GPIO_CIR) += gpio-ir-recv.o
+>  obj-$(CONFIG_IR_IGUANA) += iguanair.o
+>  obj-$(CONFIG_IR_TTUSBIR) += ttusbir.o
+>  obj-$(CONFIG_RC_ST) += st_rc.o
+> +obj-$(CONFIG_IR_SUNXI) += sunxi-ir.o
+>  obj-$(CONFIG_IR_IMG) += img-ir/
+> diff --git a/drivers/media/rc/sunxi-ir.c b/drivers/media/rc/sunxi-ir.c
+> new file mode 100644
+> index 0000000..f051d94
+> --- /dev/null
+> +++ b/drivers/media/rc/sunxi-ir.c
+> @@ -0,0 +1,303 @@
+> +/*
+> + * Driver for Allwinner sunXi IR controller
+> + *
+> + * Copyright (C) 2014 Alexsey Shestacov <wingrime@linux-sunxi.org>
+> + * Copyright (C) 2014 Alexander Bersenev <bay@hackerdom.ru>
+> + *
+> + * Based on sun5i-ir.c:
+> + * Copyright (C) 2007-2012 Daniel Wang
+> + * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/module.h>
+> +#include <linux/of_platform.h>
+> +#include <media/rc-core.h>
+> +
+> +#define SUNXI_IR_DEV "sunxi-ir"
+> +
+> +/* Registers */
+> +/* IR Control */
+> +#define SUNXI_IR_CTL_REG      0x00
+> +/* Rx Config */
+> +#define SUNXI_IR_RXCTL_REG    0x10
+> +/* Rx Data */
+> +#define SUNXI_IR_RXFIFO_REG   0x20
+> +/* Rx Interrupt Enable */
+> +#define SUNXI_IR_RXINT_REG    0x2C
+> +/* Rx Interrupt Status */
+> +#define SUNXI_IR_RXSTA_REG    0x30
+> +/* IR Sample Config */
+> +#define SUNXI_IR_CIR_REG      0x34
+> +
+> +/* Bit Definition of IR_RXINTS_REG Register */
+> +#define SUNXI_IR_RXINTS_RXOF  BIT(0) /* Rx FIFO Overflow */
+> +#define SUNXI_IR_RXINTS_RXPE  BIT(1) /* Rx Packet End */
+> +#define SUNXI_IR_RXINTS_RXDA  BIT(4) /* Rx FIFO Data Available */
+> +/* Hardware supported fifo size */
+> +#define SUNXI_IR_FIFO_SIZE    16
+> +/* How much messages in fifo triggers IRQ */
+> +#define SUNXI_IR_FIFO_TRIG    8
+> +/* Required frequency for IR0 or IR1 clock in CIR mode */
+> +#define SUNXI_IR_BASE_CLK     8000000
+> +/* Frequency after IR internal divider  */
+> +#define SUNXI_IR_CLK          (SUNXI_IR_BASE_CLK / 64)
+> +/* Sample period in ns */
+> +#define SUNXI_IR_SAMPLE       (1000000000ul / SUNXI_IR_CLK)
+> +/* Filter threshold in samples  */
+> +#define SUNXI_IR_RXFILT       1
+> +/* Idle Threshold in samples */
+> +#define SUNXI_IR_RXIDLE       20
+> +/* Time after which device stops sending data in ms */
+> +#define SUNXI_IR_TIMEOUT      120
+> +
+> +struct sunxi_ir {
+> + spinlock_t      ir_lock;
+> + struct rc_dev   *rc;
+> + void __iomem    *base;
+> + int             irq;
+> + struct clk      *clk;
+> + struct clk      *apb_clk;
+> + const char      *map_name;
+> +};
 
-On 04/29/2014 06:04 PM, Peter Zijlstra wrote:
-> On Tue, Apr 29, 2014 at 03:08:55PM +0200, Michael Kerrisk (man-pages) wrote:
-> 
-> Juri, Dario, Can you have a look at the 2nd part; I'm not at all sure I
-> got the activate/release the right way around.
-> 
-> My current thinking was that we activate first, and then release it to
-> go run. But googling the terms only confused me more. I suppose its one
-> of those things that's not actually _that_ well defined. And I hope the
-> ASCII art actually clarifies things better than the terms used.
-> 
->> [1] A page describing the sched_setattr() and sched_getattr() APIs
-> 
-> NAME
-> 	sched_setattr, sched_getattr - set and get scheduling policy/attributes
-> 
-> SYNOPSIS
-> 	#include <sched.h>
-> 
-> 	struct sched_attr {
-> 		u32 size;
-> 		u32 sched_policy;
-> 		u64 sched_flags;
-> 
-> 		/* SCHED_NORMAL, SCHED_BATCH */
-> 		s32 sched_nice;
-> 
-> 		/* SCHED_FIFO, SCHED_RR */
-> 		u32 sched_priority;
-> 
-> 		/* SCHED_DEADLINE */
-> 		u64 sched_runtime;
-> 		u64 sched_deadline;
-> 		u64 sched_period;
-> 	};
-> 
-> 	int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
-> 
-> 	int sched_getattr(pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags);
-> 
-> DESCRIPTION
-> 	sched_setattr() sets both the scheduling policy and the
-> 	associated attributes for the process whose ID is specified in
-> 	pid.
-> 
-> 	sched_setattr() replaces sched_setscheduler(), sched_setparam(),
-> 	nice() and some of setpriority().
-> 
-> 	If pid equals zero, the scheduling policy and attributes
-> 	of the calling process will be set.  The interpretation of the
-> 	argument attr depends on the selected policy.  Currently, Linux
-> 	supports the following "normal" (i.e., non-real-time) scheduling
-> 	policies:
-> 
-> 	SCHED_OTHER	the standard "fair" time-sharing policy;
-> 
-> 	SCHED_BATCH	for "batch" style execution of processes; and
-> 
-> 	SCHED_IDLE	for running very low priority background jobs.
-> 
-> 	The following "real-time" policies are also supported, for
-> 	special time-critical applications that need precise control
-> 	over the way in which runnable processes are selected for
-> 	execution:
-> 
-> 	SCHED_FIFO	a static priority first-in, first-out policy;
-> 
-> 	SCHED_RR	a static priority round-robin policy; and
-> 
-> 	SCHED_DEADLINE	a dynamic priority deadline policy.
-> 
-> 	The semantics of each of these policies are detailed in
-> 	sched(7).
-> 
-> 	sched_attr::size must be set to the size of the structure, as in
-> 	sizeof(struct sched_attr), if the provided structure is smaller
-> 	than the kernel structure, any additional fields are assumed
-> 	'0'. If the provided structure is larger than the kernel
-> 	structure, the kernel verifies all additional fields are '0' if
-> 	not the syscall will fail with -E2BIG.
-> 
-> 	sched_attr::sched_policy the desired scheduling policy.
-> 
-> 	sched_attr::sched_flags additional flags that can influence
-> 	scheduling behaviour. Currently as per Linux kernel 3.14:
-> 
-> 		SCHED_FLAG_RESET_ON_FORK - resets the scheduling policy
-> 		to: (struct sched_attr){ .sched_policy = SCHED_OTHER, }
-> 		on fork().
-> 
-> 	is the only supported flag.
-> 
-> 	sched_attr::sched_nice should only be set for SCHED_OTHER,
-> 	SCHED_BATCH, the desired nice value [-20,19], see sched(7).
-> 
-> 	sched_attr::sched_priority should only be set for SCHED_FIFO,
-> 	SCHED_RR, the desired static priority [1,99], see sched(7).
-> 
-> 	sched_attr::sched_runtime
-> 	sched_attr::sched_deadline
-> 	sched_attr::sched_period should only be set for SCHED_DEADLINE
-> 	and are the traditional sporadic task model parameters, see
-> 	sched(7).
+Still badly indented. Maybe your emailer is mangling whitespaces.
 
-So, are there fields expressed in some unit (presumably microseconds)?
-Best to mention that here.
+The best is to use git send-email to send the patches.
 
-> 	The flags argument should be 0.
-> 
-> 	sched_getattr() queries the scheduling policy currently applied
-> 	to the process identified by pid.
-> 
-> 	Similar to sched_setattr(), sched_getattr() replaces
-> 	sched_getscheduler(), sched_getparam() and some of
-> 	getpriority().
-> 
-> 	If pid equals zero, the policy of the calling process will be
-> 	retrieved.
-> 
-> 	The size argument should reflect the size of struct sched_attr
-> 	as known to userspace. The kernel fills out sched_attr::size to
-> 	the size of its sched_attr structure. If the user provided
-> 	structure is larger, additional fields are not touched. If the
-> 	user provided structure is smaller, but the kernel needs to
-> 	return values outside the provided space, the syscall will fail
-> 	with -E2BIG.
-> 
-> 	The flags argument should be 0.
-> 
-> 	The other sched_attr fields are filled out as described in
-> 	sched_setattr().
-> 
-> RETURN VALUE
-> 	On success, sched_setattr() and sched_getattr() return 0. On
-> 	error, -1 is returned, and errno is set appropriately.
-> 
-> ERRORS
->        EINVAL The scheduling policy is not one  of  the  recognized  policies,
->               param is NULL, or param does not make sense for the selected
-> 	      policy.
-> 
->        EPERM  The calling process does not have appropriate privileges.
-> 
->        ESRCH  The process whose ID is pid could not be found.
-> 
->        E2BIG  The provided storage for struct sched_attr is either too
->               big, see sched_setattr(), or too small, see sched_getattr().
-> 
->        EBUSY  SCHED_DEADLINE admission control failure, see sched(7).
-> 
-> NOTES
->        While the text above (and in sched_setscheduler(2)) talks about
->        processes, in actual fact these system calls are thread specific.
-> 
->> [2] A piece of text describing the SCHED_DEADLINE policy, which I can
->> drop into sched(7).
-> 
->     SCHED_DEADLINE: Sporadic task model deadline scheduling
->        SCHED_DEADLINE is an implementation of GEDF (Global Earliest
->        Deadline First) with additional CBS (Constant Bandwidth Server).
-> 
->        A sporadic task is on that has a sequence of jobs, where each job
->        is activated at most once per period [us]. Each job will have an
->        absolute deadline relative to its activation before which it must
->        finish its execution, and it shall at no time run longer
->        than runtime [us] after its release.
-> 
->               activation/wakeup       absolute deadline
->               |        release        |
->               v        v              v
->        -------x--------x--------------x--------x-------
->                        |<- Runtime -->|
->               |<---------- Deadline ->|
->               |<---------- Period  ----------->|
-> 
->        This gives: runtime <= (rel) deadline <= period.
+Also, please c/c linux-media ML for the entire patch series, as, in general,
+we generally merge all patches via one tree (typically, the tree to where the
+real driver will be merged - in this case, the media tree), after getting
+the needed acks from DT and arm subarch maintainers (when applicable).
 
-So, the 'sched_deadline' field in the 'sched_attr' expresses the release
-deadline? (I had initially thought it was the "absolute deadline".
-Could you make this clearer in the text please.
+I'll do a better review after the whitespace fixups.
 
->        The CBS guarantees that tasks that over-run their specified
->        runtime are throttled and do not affect the correct performance
->        of other SCHED_DEADLINE tasks.
+Regards,
+Mauro
+
+> +
+> +static irqreturn_t sunxi_ir_irq(int irqno, void *dev_id)
+> +{
+> + unsigned long status;
+> + unsigned char dt;
+> + unsigned int cnt, rc;
+> + struct sunxi_ir *ir = dev_id;
+> + DEFINE_IR_RAW_EVENT(rawir);
+> +
+> + spin_lock_irq(&ir->ir_lock);
+> +
+> + status = readl(ir->base + SUNXI_IR_RXSTA_REG);
+> +
+> + /* clean all pending statuses */
+> + writel(status | 0xff, ir->base + SUNXI_IR_RXSTA_REG);
+> +
+> + if (status & SUNXI_IR_RXINTS_RXDA) {
+> + /* How much messages in fifo */
+> + rc  = (status >> 8) & 0x3f;
+> + /* Sanity check */
+> + rc = rc > SUNXI_IR_FIFO_SIZE ? SUNXI_IR_FIFO_SIZE : rc;
+> + /* if we have data */
+> + for (cnt = 0; cnt < rc; cnt++) {
+> + /* for each bit in fifo */
+> + dt = readb(ir->base + SUNXI_IR_RXFIFO_REG);
+> + rawir.pulse = (dt & 0x80) != 0;
+> + rawir.duration = (dt & 0x7f) * SUNXI_IR_SAMPLE;
+> + ir_raw_event_store_with_filter(ir->rc, &rawir);
+> + }
+> + }
+> +
+> + if (status & SUNXI_IR_RXINTS_RXOF)
+> + ir_raw_event_reset(ir->rc);
+> + else if (status & SUNXI_IR_RXINTS_RXPE) {
+> + ir_raw_event_set_idle(ir->rc, true);
+> + ir_raw_event_handle(ir->rc);
+> + }
+> +
+> + spin_unlock_irq(&ir->ir_lock);
+> +
+> + return IRQ_HANDLED;
+> +}
+> +
+> +
+> +static int sunxi_ir_probe(struct platform_device *pdev)
+> +{
+> + int ret = 0;
+> + unsigned long tmp = 0;
+> +
+> + struct device *dev = &pdev->dev;
+> + struct device_node *dn = dev->of_node;
+> + struct resource *res;
+> + struct sunxi_ir *ir;
+> +
+> + ir = devm_kzalloc(dev, sizeof(struct sunxi_ir), GFP_KERNEL);
+> + if (!ir)
+> + return -ENOMEM;
+> +
+> + /* Clock */
+> + ir->apb_clk = devm_clk_get(dev, "apb");
+> + if (IS_ERR(ir->apb_clk)) {
+> + dev_err(dev, "failed to get a apb clock.\n");
+> + return -EINVAL;
+> + }
+> + ir->clk = devm_clk_get(dev, "ir");
+> + if (IS_ERR(ir->clk)) {
+> + dev_err(dev, "failed to get a ir clock.\n");
+> + return -EINVAL;
+> + }
+> +
+> + ret = clk_set_rate(ir->clk, SUNXI_IR_BASE_CLK);
+> + if (ret) {
+> + dev_err(dev, "set ir base clock failed!\n");
+> + return -EINVAL;
+> + }
+> +
+> + if (clk_prepare_enable(ir->apb_clk)) {
+> + dev_err(dev, "try to enable apb_ir_clk failed\n");
+> + return -EINVAL;
+> + }
+> +
+> + if (clk_prepare_enable(ir->clk)) {
+> + dev_err(dev, "try to enable ir_clk failed\n");
+> + ret = -EINVAL;
+> + goto exit_clkdisable_apb_clk;
+> + }
+> +
+> + /* IO */
+> + res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> + ir->base = devm_ioremap_resource(dev, res);
+> + if (IS_ERR(ir->base)) {
+> + dev_err(dev, "failed to map registers\n");
+> + ret = -ENOMEM;
+> + goto exit_clkdisable_clk;
+> + }
+> +
+> + /* IRQ */
+> + ir->irq = platform_get_irq(pdev, 0);
+> + if (ir->irq < 0) {
+> + dev_err(dev, "no irq resource\n");
+> + ret = -EINVAL;
+> + goto exit_clkdisable_clk;
+> + }
+> +
+> + ret = devm_request_irq(dev, ir->irq, sunxi_ir_irq, 0, SUNXI_IR_DEV, ir);
+> + if (ret) {
+> + dev_err(dev, "failed request irq\n");
+> + ret = -EINVAL;
+> + goto exit_clkdisable_clk;
+> + }
+> +
+> + ir->rc = rc_allocate_device();
+> +
+> + if (!ir->rc) {
+> + dev_err(dev, "failed to allocate device\n");
+> + ret = -ENOMEM;
+> + goto exit_clkdisable_clk;
+> + }
+> +
+> + ir->rc->priv = ir;
+> + ir->rc->input_name = SUNXI_IR_DEV;
+> + ir->rc->input_phys = "sunxi-ir/input0";
+> + ir->rc->input_id.bustype = BUS_HOST;
+> + ir->rc->input_id.vendor = 0x0001;
+> + ir->rc->input_id.product = 0x0001;
+> + ir->rc->input_id.version = 0x0100;
+> + ir->map_name = of_get_property(dn, "linux,rc-map-name", NULL);
+> + ir->rc->map_name = ir->map_name ?: RC_MAP_EMPTY;
+> + ir->rc->dev.parent = dev;
+> + ir->rc->driver_type = RC_DRIVER_IR_RAW;
+> + rc_set_allowed_protocols(ir->rc, RC_BIT_ALL);
+> + ir->rc->rx_resolution = SUNXI_IR_SAMPLE;
+> + ir->rc->timeout = MS_TO_NS(SUNXI_IR_TIMEOUT);
+> + ir->rc->driver_name = SUNXI_IR_DEV;
+> +
+> + ret = rc_register_device(ir->rc);
+> + if (ret) {
+> + dev_err(dev, "failed to register rc device\n");
+> + ret = -EINVAL;
+> + goto exit_free_dev;
+> + }
+> +
+> + platform_set_drvdata(pdev, ir);
+> +
+> + /* Enable CIR Mode */
+> + writel(0x3 << 4, ir->base+SUNXI_IR_CTL_REG);
+> +
+> + /* Config IR Sample Register */
+> + /* Fsample = clk */
+> + tmp = 0;
+> + /* Set Filter Threshold */
+> + tmp |= (SUNXI_IR_RXFILT & 0x3f) << 2;
+> + /* Set Idle Threshold */
+> + tmp |= (SUNXI_IR_RXIDLE & 0xff) << 8;
+> + writel(tmp, ir->base + SUNXI_IR_CIR_REG);
+> +
+> + /* Invert Input Signal */
+> + writel(0x1 << 2, ir->base + SUNXI_IR_RXCTL_REG);
+> +
+> + /* Clear All Rx Interrupt Status */
+> + writel(0xff, ir->base + SUNXI_IR_RXSTA_REG);
+> +
+> + /* Enable IRQ on data, overflow, packed end */
+> + tmp = (0x1 << 4) | 0x3;
+> +
+> + /* Rx FIFO Threshold */
+> + tmp |= (SUNXI_IR_FIFO_TRIG - 1) << 8;
+> +
+> + writel(tmp, ir->base + SUNXI_IR_RXINT_REG);
+> +
+> + /* Enable IR Module */
+> + tmp = readl(ir->base + SUNXI_IR_CTL_REG);
+> +
+> + writel(tmp | 0x3, ir->base + SUNXI_IR_CTL_REG);
+> +
+> + dev_info(dev, "initialized sunXi IR driver\n");
+> + return 0;
+> +
+> +exit_free_dev:
+> + rc_free_device(ir->rc);
+> +exit_clkdisable_clk:
+> + clk_disable_unprepare(ir->clk);
+> +exit_clkdisable_apb_clk:
+> + clk_disable_unprepare(ir->apb_clk);
+> +
+> + return ret;
+> +}
+> +
+> +static int sunxi_ir_remove(struct platform_device *pdev)
+> +{
+> + unsigned long flags;
+> + struct sunxi_ir *ir = platform_get_drvdata(pdev);
+> +
+> + clk_disable_unprepare(ir->clk);
+> + clk_disable_unprepare(ir->apb_clk);
+> +
+> + spin_lock_irqsave(&ir->ir_lock, flags);
+> + /* disable IR IRQ */
+> + writel(0, ir->base + SUNXI_IR_RXINT_REG);
+> + /* clear All Rx Interrupt Status */
+> + writel(0xff, ir->base + SUNXI_IR_RXSTA_REG);
+> + /* disable IR */
+> + writel(0, ir->base + SUNXI_IR_CTL_REG);
+> + spin_unlock_irqrestore(&ir->ir_lock, flags);
+> +
+> + rc_unregister_device(ir->rc);
+> + return 0;
+> +}
+> +
+> +static const struct of_device_id sunxi_ir_match[] = {
+> + { .compatible = "allwinner,sun7i-a20-ir", },
+> + {},
+> +};
+> +
+> +static struct platform_driver sunxi_ir_driver = {
+> + .probe          = sunxi_ir_probe,
+> + .remove         = sunxi_ir_remove,
+> + .driver = {
+> + .name = SUNXI_IR_DEV,
+> + .owner = THIS_MODULE,
+> + .of_match_table = sunxi_ir_match,
+> + },
+> +};
+> +
+> +module_platform_driver(sunxi_ir_driver);
+> +
+> +MODULE_DESCRIPTION("Allwinner sunXi IR controller driver");
+> +MODULE_AUTHOR("Alexsey Shestacov <wingrime@linux-sunxi.org>");
+> +MODULE_LICENSE("GPL");
 > 
->        In general a task set of such tasks it not feasible/schedulable
-
-That last line is garbled. Could you fix, please.
-
-Also, could you add some words to explain what you mean by 'task set'.
-
->        within the given constraints. Therefore we must do an admittance
->        test on setting/changing SCHED_DEADLINE policy/attributes.
 > 
->        This admission test calculates that the task set is
->        feasible/schedulable, failing this, sched_setattr() will return
->        -EBUSY.
-> 
->        For example, it is required (but not sufficient) for the total
->        utilization to be less or equal to the total amount of cpu time
->        available. That is, since each job can maximally run for runtime
->        [us] per period [us], that task's utilization is runtime/period.
->        Summing this over all tasks must be less than the total amount of
->        CPUs present.
-> 
->        SCHED_DEADLINE tasks will fail fork(2) with -EAGAIN.
-
-Except if SCHED_RESET_ON_FORK was set, right? If yes, that should be
-mentioned here.
-
->        Because of the nature of (G)EDF, SCHED_DEADLINE tasks are the
->        highest priority (user controllable) tasks in the system, if any
->        SCHED_DEADLINE task is runnable it will preempt anything
->        FIFO/RR/OTHER/BATCH/IDLE task out there.
-> 
->        A SCHED_DEADLINE task calling sched_yield() will 'yield' the
->        current job and wait for a new period to begin.
-
-So, I'm trying to naively understand how this all works. If different 
-processes specify different deadline periods, how does the kernel deal
-with that? Is it worth adding some detail on this point?
-
-Thanks,
-
-Michael
+> среда, 30 апреля 2014 г., 16:51:12 UTC+6 пользователь Александр Берсенев 
+> написал:
+> >
+> > This patch introduces Consumer IR(CIR) support for sunxi boards.
+> >
+> > This is based on Alexsey Shestacov's work based on the original driver 
+> > supplied by Allwinner.
+> >
 
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+
+Cheers,
+Mauro
