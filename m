@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946010AbaD3QeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:34:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:22850 "EHLO
+	id S1946025AbaD3Qec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:34:32 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:22976 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1945938AbaD3QeJ (ORCPT
+	by vger.kernel.org with ESMTP id S1945948AbaD3Qeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:34:09 -0400
-Date: Wed, 30 Apr 2014 12:34:08 -0400
+	Wed, 30 Apr 2014 12:34:31 -0400
+Date: Wed, 30 Apr 2014 12:34:29 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.8.13.14-rt31
-Message-ID: <20140430123408.126147e9@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.87-rt109
+Message-ID: <20140430123429.2e253a41@gandalf.local.home>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,32 +29,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.8.13.14-rt31 stable release.
+I'm pleased to announce the 3.4.87-rt109 stable release.
 
 
 You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  branch: v3.8-rt
-  Head SHA1: cd0a51313b506fb1837b5877f76a62dbabe3d75e
+  branch: v3.4-rt
+  Head SHA1: f87482ecbdaf7c16967ff92a92812c5e918f15fd
 
 
-Or to build 3.8.13.14-rt31 directly, the following patches should be applied:
+Or to build 3.4.87-rt109 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.8.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.8.13.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.87.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/stable/patch-3.8.13.14.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13.14-rt31.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.87-rt109.patch.xz
 
 
 
-You can also build from 3.8.13.14-rt30 by applying the incremental patch:
+You can also build from 3.4.87-rt108 by applying the incremental patch:
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13.14-rt30-rt31.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.87-rt108-rt109.patch.xz
 
 
 
@@ -63,7 +61,7 @@ Enjoy,
 -- Steve
 
 
-Changes from v3.8.13.14-rt30:
+Changes from v3.4.87-rt108:
 
 ---
 
@@ -72,7 +70,7 @@ Sebastian Andrzej Siewior (2):
       rcu: make RCU_BOOST default on RT
 
 Steven Rostedt (Red Hat) (1):
-      Linux 3.8.13.14-rt31
+      Linux 3.4.87-rt109
 
 ----
  drivers/net/ethernet/freescale/gianfar.c         | 16 ++++++++--------
@@ -83,10 +81,10 @@ Steven Rostedt (Red Hat) (1):
  5 files changed, 26 insertions(+), 26 deletions(-)
 ---------------------------
 diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-index 5c53535..f11aa5a 100644
+index f3e3ee1..922a817 100644
 --- a/drivers/net/ethernet/freescale/gianfar.c
 +++ b/drivers/net/ethernet/freescale/gianfar.c
-@@ -1263,7 +1263,7 @@ static int gfar_suspend(struct device *dev)
+@@ -1257,7 +1257,7 @@ static int gfar_suspend(struct device *dev)
  
  	if (netif_running(ndev)) {
  
@@ -95,7 +93,7 @@ index 5c53535..f11aa5a 100644
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -1281,7 +1281,7 @@ static int gfar_suspend(struct device *dev)
+@@ -1275,7 +1275,7 @@ static int gfar_suspend(struct device *dev)
  
  		unlock_rx_qs(priv);
  		unlock_tx_qs(priv);
@@ -104,7 +102,7 @@ index 5c53535..f11aa5a 100644
  
  		disable_napi(priv);
  
-@@ -1323,7 +1323,7 @@ static int gfar_resume(struct device *dev)
+@@ -1316,7 +1316,7 @@ static int gfar_resume(struct device *dev)
  	/* Disable Magic Packet mode, in case something
  	 * else woke us up.
  	 */
@@ -113,7 +111,7 @@ index 5c53535..f11aa5a 100644
  	lock_tx_qs(priv);
  	lock_rx_qs(priv);
  
-@@ -1335,7 +1335,7 @@ static int gfar_resume(struct device *dev)
+@@ -1328,7 +1328,7 @@ static int gfar_resume(struct device *dev)
  
  	unlock_rx_qs(priv);
  	unlock_tx_qs(priv);
@@ -122,7 +120,7 @@ index 5c53535..f11aa5a 100644
  
  	netif_device_attach(ndev);
  
-@@ -2324,7 +2324,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+@@ -2312,7 +2312,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
  	u32 tempval;
  
  	regs = priv->gfargrp[0].regs;
@@ -131,7 +129,7 @@ index 5c53535..f11aa5a 100644
  	lock_rx_qs(priv);
  
  	if (features & NETIF_F_HW_VLAN_TX) {
-@@ -2356,7 +2356,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+@@ -2344,7 +2344,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
  	gfar_change_mtu(dev, dev->mtu);
  
  	unlock_rx_qs(priv);
@@ -140,7 +138,7 @@ index 5c53535..f11aa5a 100644
  }
  
  static int gfar_change_mtu(struct net_device *dev, int new_mtu)
-@@ -3226,14 +3226,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
+@@ -3223,14 +3223,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
  			dev->stats.tx_dropped++;
  			priv->extra_stats.tx_underrun++;
  
@@ -158,19 +156,19 @@ index 5c53535..f11aa5a 100644
  		netif_dbg(priv, tx_err, dev, "Transmit Error\n");
  	}
 diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-index ab6762c..bc450e2 100644
+index 8d74efd..a49e50c 100644
 --- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
 +++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
-@@ -504,7 +504,7 @@ static int gfar_sringparam(struct net_device *dev,
+@@ -486,7 +486,7 @@ static int gfar_sringparam(struct net_device *dev, struct ethtool_ringparam *rva
+ 
  		/* Halt TX and RX, and process the frames which
- 		 * have already been received
- 		 */
+ 		 * have already been received */
 -		local_irq_save(flags);
 +		local_irq_save_nort(flags);
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -512,7 +512,7 @@ static int gfar_sringparam(struct net_device *dev,
+@@ -494,7 +494,7 @@ static int gfar_sringparam(struct net_device *dev, struct ethtool_ringparam *rva
  
  		unlock_rx_qs(priv);
  		unlock_tx_qs(priv);
@@ -179,16 +177,16 @@ index ab6762c..bc450e2 100644
  
  		for (i = 0; i < priv->num_rx_queues; i++)
  			gfar_clean_rx_ring(priv->rx_queue[i],
-@@ -555,7 +555,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+@@ -535,7 +535,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+ 	if (dev->flags & IFF_UP) {
  		/* Halt TX and RX, and process the frames which
- 		 * have already been received
- 		 */
+ 		 * have already been received */
 -		local_irq_save(flags);
 +		local_irq_save_nort(flags);
  		lock_tx_qs(priv);
  		lock_rx_qs(priv);
  
-@@ -563,7 +563,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+@@ -543,7 +543,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
  
  		unlock_tx_qs(priv);
  		unlock_rx_qs(priv);
@@ -310,10 +308,10 @@ index cd14a4d..da304d2 100644
  	return count;
  }
 diff --git a/init/Kconfig b/init/Kconfig
-index d0590c7..34050fe 100644
+index 87afda5..548f678 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
-@@ -603,7 +603,7 @@ config TREE_RCU_TRACE
+@@ -499,7 +499,7 @@ config TREE_RCU_TRACE
  config RCU_BOOST
  	bool "Enable RCU priority boosting"
  	depends on RT_MUTEXES && PREEMPT_RCU
@@ -323,9 +321,9 @@ index d0590c7..34050fe 100644
  	  This option boosts the priority of preempted RCU readers that
  	  block the current preemptible RCU grace period for too long.
 diff --git a/localversion-rt b/localversion-rt
-index b72862e..a68b433 100644
+index e31dc78..51fcc52 100644
 --- a/localversion-rt
 +++ b/localversion-rt
 @@ -1 +1 @@
---rt30
-+-rt31
+--rt108
++-rt109
