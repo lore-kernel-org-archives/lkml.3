@@ -1,71 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946030AbaD3Us2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:48:28 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59369 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaD3Us0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:48:26 -0400
-Message-ID: <536161F5.7090508@kernel.org>
-Date: Wed, 30 Apr 2014 21:49:57 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1759486AbaD3UuY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:50:24 -0400
+Received: from mta-out1.inet.fi ([62.71.2.198]:33658 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758944AbaD3UuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:50:23 -0400
+Date: Wed, 30 Apr 2014 23:50:11 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, riel@redhat.com,
+        aarcange@redhat.com, mgorman@suse.de, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/swap.c: introduce
+ put_[un]refcounted_compound_page helpers for spliting put_compound_page
+Message-ID: <20140430205011.GA27455@node.dhcp.inet.fi>
+References: <b1987d6fb09745a5274895efbde79e37ff9557a3.1398764420.git.nasa4836@gmail.com>
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        dianders@chromium.org, gregkh@linuxfoundation.org,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
-        grundler@chromium.org, t.figa@samsung.com
-Subject: Re: [PATCH 5/5 v3] iio: exynos_adc: do a reinit_completion before
- the conversion
-References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com> <1398850015-17761-6-git-send-email-ch.naveen@samsung.com>
-In-Reply-To: <1398850015-17761-6-git-send-email-ch.naveen@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b1987d6fb09745a5274895efbde79e37ff9557a3.1398764420.git.nasa4836@gmail.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/04/14 10:26, Naveen Krishna Chatradhi wrote:
-> Add reinit_completion() before the wait_for_completion_timeout in
-> raw_read() call.
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-Applied to the togreg branch of iio.git
-I wasn't sure if this one was technically a fix, but as it isn't
-marked clearly as such it can go in during the next merge window.
-I won't have pushed this out to a non rebasing branch until tomorrow
-so if this fixes an observed issue then let me know and it might move
-to the fixes-togreg branch.
+On Tue, Apr 29, 2014 at 05:42:07PM +0800, Jianyu Zhan wrote:
+> Currently, put_compound_page should carefully handle tricky case
+> to avoid racing with compound page releasing or spliting, which
+> makes it growing quite lenthy(about 200+ lines) and need deep
+> tab indention, which makes it quite hard to follow and maintain.
+> 
+> This patch(and the next patch) tries to refactor this function.
+> It is a prepared patch.
+> 
+> Based on the code skeleton of put_compound_page:
+> 
+> put_compound_pge:
 
-Thanks,
+Typo.
 
-Jonathan
+>         if !PageTail(page)
+>         	put head page fastpath;
+> 		return;
+> 
+>         /* else PageTail */
+>         page_head = compound_head(page)
+>         if !__compound_tail_refcounted(page_head)
+> 		put head page optimal path; <---(1)
+> 		return;
+>         else
+> 		put head page slowpath; <--- (2)
+>                 return;
+> 
+> This patch introduces two helpers, put_[un]refcounted_compound_page,
+> handling the code path (1) and code path (2), respectively. They both
+> are tagged __always_inline, thus it elmiates function call overhead,
+> making them operating the same way as before.
+> 
+> They are almost copied verbatim(except one place, a "goto out_put_single"
+> is expanded), with some comments rephrasing.
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 > ---
-> Changes since v2:
-> None
-> Changes since v1:
-> None
-> v0:
-> This change is a part of the patch reviewed at https://lkml.org/lkml/2013/11/5/92
->
->   drivers/iio/adc/exynos_adc.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index eddc58e..010578f 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -151,6 +151,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->   		return -EINVAL;
->
->   	mutex_lock(&indio_dev->mlock);
-> +	reinit_completion(&info->completion);
->
->   	/* Select the channel to be used and Trigger conversion */
->   	if (info->version == ADC_V2) {
->
+>  mm/swap.c | 142 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 142 insertions(+)
+> 
+> diff --git a/mm/swap.c b/mm/swap.c
+> index c0cd7d0..a576449 100644
+> --- a/mm/swap.c
+> +++ b/mm/swap.c
+> @@ -79,6 +79,148 @@ static void __put_compound_page(struct page *page)
+>  	(*dtor)(page);
+>  }
+>  
+> +/**
+> + * Two special cases here: we could avoid taking compound_lock_irqsave
+> + * and could skip the tail refcounting(in _mapcount).
+> + *
+> + * 1. Hugetlbfs page:
+> + *
+> + *    PageHeadHuge will remain true until the compound page
+> + *    is released and enters the buddy allocator, and it could
+> + *    not be split by __split_huge_page_refcount().
+> + *
+> + *    So if we see PageHeadHuge set, and we have the tail page pin,
+> + *    then we could safely put head page.
+> + *
+> + * 2. Slab THP page:
 
+There's no such thing. It called Slab compound page.
+
+> + *
+> + *    PG_slab is cleared before the slab frees the head page, and
+> + *    tail pin cannot be the last reference left on the head page,
+> + *    because the slab code is free to reuse the compound page
+> + *    after a kfree/kmem_cache_free without having to check if
+> + *    there's any tail pin left.  In turn all tail pinsmust be always
+> + *    released while the head is still pinned by the slab code
+> + *    and so we know PG_slab will be still set too.
+> + *
+> + *    So if we see PageSlab set, and we have the tail page pin,
+> + *    then we could safely put head page.
+> + */
+-- 
+ Kirill A. Shutemov
