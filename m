@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511AbaD3VRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:17:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21688 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734AbaD3VRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:17:47 -0400
-Date: Wed, 30 Apr 2014 23:19:03 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI/MSI: Phase out pci_enable_msi_block()
-Message-ID: <20140430211902.GA5550@dhcp-26-207.brq.redhat.com>
-References: <cover.1397458024.git.agordeev@redhat.com>
- <0b08613dc17cd608c1babc1f42b8919f60e1093f.1397458024.git.agordeev@redhat.com>
- <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
- <20140414132834.GA9164@dhcp-26-207.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414132834.GA9164@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759561AbaD3VT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:19:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50430 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734AbaD3VTZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 17:19:25 -0400
+Date: Wed, 30 Apr 2014 14:19:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmapool: remove redundant NULL check for dev in
+ dma_pool_create()
+Message-Id: <20140430141924.8d84f7fdcac3ac3996802aa9@linux-foundation.org>
+In-Reply-To: <20140429025310.GA5913@devel>
+References: <20140429025310.GA5913@devel>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 03:28:34PM +0200, Alexander Gordeev wrote:
-> There are no users of pci_enable_msi_block() function have
-> left. Obsolete it in favor of pci_enable_msi_range() and
-> pci_enable_msi_exact() functions.
+On Tue, 29 Apr 2014 11:53:10 +0900 Daeseok Youn <daeseok.youn@gmail.com> wrote:
 
-Hi Bjorn,
+> "dev" cannot be NULL because it is already checked before
+> calling dma_pool_create().
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> If dev can be NULL, it has NULL deferencing when kmalloc_node()
+> is called after enabling CONFIG_NUMA.
 
-How about this one?
+hm, this is unclear.
 
-Thanks!
+The code which handles the dev==NULL case was obviously put there
+deliberately, presumably with the intention of permitting drivers to
+call dma_pool_create() without a device*.  This code is very old.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+A lot of drivers call dma_pool_create() (I doubt if you audited all of
+them!) and perhaps there are some which use this feature and have never
+been run on NUMA hardware.
+
+I think I'll apply the patch anyway because such drivers (if they
+exist) probably need some attending to.
+
+I rewrote the changelog thusly:
+
+
+: "dev" cannot be NULL because it is already checked before calling
+: dma_pool_create().
+: 
+: If dev ever was NULL, the code would oops in dev_to_node() after enabling
+: CONFIG_NUMA.
+: 
+: It is possible that some driver is using dev==NULL and has never been run
+: on a NUMA machine.  Such a driver is probably outdated, possibly buggy and
+: will need some attention if it starts triggering NULL derefs.
+
