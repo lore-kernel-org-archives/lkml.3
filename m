@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933860AbaD3NNC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:13:02 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:33007 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933552AbaD3NNA (ORCPT
+	id S933875AbaD3NPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:15:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:44522 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933454AbaD3NPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:13:00 -0400
-Date: Wed, 30 Apr 2014 14:12:24 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jungseok Lee <jays.lee@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        "steve.capper@linaro.org" <steve.capper@linaro.org>,
-        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
-Subject: Re: [PATCH v4 4/7] arm64: Add a description on 48-bit address space
- with 4KB pages
-Message-ID: <20140430131224.GD31220@arm.com>
-References: <000401cf6367$cc461500$64d23f00$@samsung.com>
- <20140429144759.GL17007@arm.com>
- <008e01cf643f$3e67eff0$bb37cfd0$@samsung.com>
+	Wed, 30 Apr 2014 09:15:53 -0400
+Date: Wed, 30 Apr 2014 09:15:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140430091550.1177bc90@gandalf.local.home>
+In-Reply-To: <1398863189.26071.97.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	<1397918766.5436.16.camel@marge.simpson.net>
+	<1398411635.11930.45.camel@marge.simpson.net>
+	<1398501491.12941.5.camel@marge.simpson.net>
+	<1398520699.28726.22.camel@marge.simpson.net>
+	<1398661784.30930.33.camel@marge.simpson.net>
+	<1398676186.30930.49.camel@marge.simpson.net>
+	<20140428101805.75032f45@gandalf.local.home>
+	<1398695832.14475.10.camel@marge.simpson.net>
+	<1398748869.5514.81.camel@marge.simpson.net>
+	<20140429201308.63292691@gandalf.local.home>
+	<1398843793.26071.52.camel@marge.simpson.net>
+	<1398863189.26071.97.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <008e01cf643f$3e67eff0$bb37cfd0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 07:41:40AM +0100, Jungseok Lee wrote:
-> On Tuesday, April 29, 2014 11:48 PM, Catalin Marinas wrote:
-> > On Tue, Apr 29, 2014 at 05:59:27AM +0100, Jungseok Lee wrote:
-> > > --- a/Documentation/arm64/memory.txt
-> > > +++ b/Documentation/arm64/memory.txt
-> > > @@ -8,10 +8,11 @@ This document describes the virtual memory layout
-> > > used by the AArch64  Linux kernel. The architecture allows up to 4
-> > > levels of translation  tables with a 4KB page size and up to 3 levels with a 64KB page size.
-> > >
-> > > -AArch64 Linux uses 3 levels of translation tables with the 4KB page
-> > > -configuration, allowing 39-bit (512GB) virtual addresses for both
-> > > user -and kernel. With 64KB pages, only 2 levels of translation tables
-> > > are -used but the memory layout is the same.
-> > > +AArch64 Linux uses 3 levels and 4 levels of translation tables with
-> > > +the 4KB page configuration, allowing 39-bit (512GB) and 48-bit
-> > > +(256TB) virtual addresses, respectively, for both user and kernel.
-> > > +With 64KB pages, only 2 levels of translation tables are used but the
-> > > +memory layout is the same.
-> > 
-> > Any reason why we couldn't use 48-bit address space with 64K pages (implying 3 levels)?
-> 
-> No technical reason.
-> Since 64K+3levels is not implemented in this set, I didn't add it.
-> 
-> Should 64K+3levels be prepared in this patchset?
-> 
-> > > -AArch64 Linux memory layout with 64KB pages:
-> > > +AArch64 Linux memory layout with 4KB pages + 4 levels:
-> > > +
-> > > +Start			End			Size		Use
-> > > +-----------------------------------------------------------------------
-> > > +0000000000000000	0000ffffffffffff	 256TB		user
-> > > +
-> > > +ffff000000000000	ffff7bfffffeffff	~124TB		vmalloc
-> > 
-> > BTW, maybe as a separate patch we should change the "end" to be exclusive. It becomes harder to modify
-> > (I've been through this a few times already ;)) and even follow the changes.
-> 
-> Does "exclusive" mean that 0000ffffffffffff is changed to 0001000000000000?
-> Or Does it mean that "End" column is dropped?
+On Wed, 30 Apr 2014 15:06:29 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-Not dropped but changed to 0001.... (the kernel already prints the
-memory layout in a similar way).
 
--- 
-Catalin
+> The End.. I hope.  I've had enough hotplug entertainment for a while.
+
+Not for me. 3.14-rt stress-cpu-hotplug crashes quickly. But it's a
+different issues than what my patch addressed. I'm still debugging it.
+
+-- Steve
+
