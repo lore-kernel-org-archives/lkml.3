@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946090AbaD3Vds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:33:48 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:53204 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964975AbaD3Vdq (ORCPT
+	id S1759340AbaD3Vej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:34:39 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:33255 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334AbaD3Veh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:33:46 -0400
-Message-ID: <53616C1A.3040608@codethink.co.uk>
-Date: Wed, 30 Apr 2014 14:33:14 -0700
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Kevin Hilman <khilman@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Felipe Balbi <balbi@ti.com>, Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
-        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime
- PM with the PM core
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be> <7hoazpdldx.fsf@paris.lan> <20140429131610.29859C4094A@trevor.secretlab.ca> <2401458.kIFL7AxWq0@avalon>
-In-Reply-To: <2401458.kIFL7AxWq0@avalon>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 30 Apr 2014 17:34:37 -0400
+Message-ID: <1398893151.1789.46.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 3/5] acpi_processor: do not mark present at boot but
+ not onlined CPU as onlined
+From: Toshi Kani <toshi.kani@hp.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Date: Wed, 30 Apr 2014 15:25:51 -0600
+In-Reply-To: <1397488277-14865-4-git-send-email-imammedo@redhat.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	 <1397488277-14865-4-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/04/14 14:25, Laurent Pinchart wrote:
-> On Tuesday 29 April 2014 14:16:10 Grant Likely wrote:
->> On Fri, 25 Apr 2014 16:44:58 -0700, Kevin Hilman <khilman@linaro.org> wrote:
->>> Geert Uytterhoeven <geert+renesas@glider.be> writes:
->>>> When adding a device from DT, check if its clocks are suitable for
->>>> Runtime PM, and register them with the PM core.
->>>> If Runtime PM is disabled, just enable the clock.
->>>>
->>>> This allows the PM core to automatically manage gate clocks of devices
->>>> for Runtime PM.
->>>
->>> ...unless the device is already in an existing pm_domain, right?
->>>
->>> I like this approach, and it extends nicely what we already do on
->>> platforms using drivers/base/power/clock_ops.c into DT land.
->>>
->>> My only concern is how this will interact if it's used along with
->>> devices that have existing pm_domains.  I don't have any specific
->>> concerns (yet, because it's Friday, and my brain is turing off), but it
->>> just made me wonder if this will be potentially confusing.
->>
->> I have big concerns about this approach. First, it will only work if
->> a clock is available at deivce creation time. The conversion of irq
->> controllers to normal device drivers has already shown that is a bad
->> idea.
->>
->> I also don't like that it tries to set up every clock, but there is no
->> guarantee that the driver will even use it. I would rather see this
->> behaviour linked into the function that obtains the clock at driver
->> .probe() time. That way it can handle deferred probe correctly and it
->> only sets up clocks that are actually used by the driver.
->
-> I like the idea, as it gives an opt-in approach to the problem: drivers could
-> decide whether they want the runtime PM core to handle clocks automatically
-> (which should cover most cases), but would have the option of handling clocks
-> manually if needed for special purposes.
+On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
+> acpi_processor_add() assumes that present at boot CPUs
+> are always onlined, it is not so if a CPU failed to become
+> onlined. As result acpi_processor_add() will mark such CPU
+> device as onlined in sysfs and following attempts to
+> online/offline it using /sys/device/system/cpu/cpuX/online
+> attribute will fail.
+> 
+> Do not poke into device internals in acpi_processor_add()
+> and touch "struct device { .offline }" attribute, since
+> for CPUs onlined at boot it's set by:
+>   topology_init() -> arch_register_cpu() -> register_cpu()
+> before ACPI device tree is parsed, and for hotplugged
+> CPUs it's set when userspace onlines CPU via sysfs.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+> v2:
+>  - fix regression in v1 leading to NULL pointer dereference
+>    on CPU unplug, do not remove "pr->dev = dev;"
+> ---
+>  drivers/acpi/acpi_processor.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..42d66f8 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -404,7 +404,6 @@ static int acpi_processor_add(struct acpi_device *device,
+>  		goto err;
+>  
+>  	pr->dev = dev;
+> -	dev->offline = pr->flags.need_hotplug_init;
 
-If drivers could have a field to say that they allow the driver-core
-or the pm-runtime would mean that drivers could easily be change without
-having to deal with what the SoC/SoC family have to care about this.
+IIRC, this change was necessary to handle the case when maxcpus=X is
+specified at boot.  In this case, excessive CPU's dev->offline needs to
+be set to 1.  Can you verify this?
 
-It would also mean that we could change drivers without having to make
-any changes to the SoC to say that it has to opt-in to the support.
+Thanks,
+-Toshi
 
-
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
