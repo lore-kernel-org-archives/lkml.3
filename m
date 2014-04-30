@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758668AbaD3KC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:02:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758219AbaD3KC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:02:58 -0400
-Message-ID: <5360CA3A.2040706@redhat.com>
-Date: Wed, 30 Apr 2014 12:02:34 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932862AbaD3KIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:08:45 -0400
+Received: from ip-78-45-166-173.net.upcbroadband.cz ([78.45.166.173]:57867
+	"EHLO moskyto.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaD3KIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 06:08:44 -0400
+Date: Wed, 30 Apr 2014 12:08:42 +0200
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Alexey Charkov <alchark@gmail.com>, Roger Luethi <rl@hellgate.ch>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: via-rhine: fix compiler warning
+Message-ID: <20140430100841.GD24832@moskyto.dyndns.org>
+References: <1398792971-10379-1-git-send-email-mq@suse.cz>
+ <063D6719AE5E284EB5DD2968C1650D6D0F702C5F@AcuExch.aculab.com>
+ <CABjd4YzRTPcy1nbhywuNLb0pz4gPVjhzegZJTc_g+_SVc1XJvw@mail.gmail.com>
+ <20140430095015.GC24832@moskyto.dyndns.org>
+ <063D6719AE5E284EB5DD2968C1650D6D0F702D55@AcuExch.aculab.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Jet Chen <jet.chen@intel.com>,
-        "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-References: <20140407111725.GC25152@localhost> <C97001BC43954D438ACB059713BA5CDF92040F0F00@USEA-EXCH7.na.uis.unisys.com> <53444220.50009@intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F06@USEA-EXCH7.na.uis.unisys.com> <53458A3A.1050608@intel.com> <20140409230114.GB8370@localhost> <5345D360.5000506@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com> <53475344.5090009@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F10@USEA-EXCH7.na.uis.unisys.com> <53481976.3020209@zytor.com> <534827F5.1020004@intel.com> <5348291B.7090501@zytor.com>
-In-Reply-To: <5348291B.7090501@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bajzpZikUji1w+G9"
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F702D55@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/04/2014 19:40, H. Peter Anvin ha scritto:
-> On 04/11/2014 10:35 AM, Jet Chen wrote:
->>
->> As Peter said, QEMU probably should *not* set the hypervisor bit. But based on my testing, I think KVM works properly in this case.
->>
->
-> Either way, unless there is a CPUID interface exposed in CPUID levels
-> 0x40000000+, then relying on the hypervisor bit to do VMCALL is wrong in
-> the extreme.
 
-Sorry for the delay guys, I was on vacation.
+--bajzpZikUji1w+G9
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Lack of a CPUID interface at 0x40000000 is indeed *the* good reason why 
-QEMU should not set the hypervisor bit.  Of course that there is no 
-guarantee that QEMU will never expose a 0x40000000 interface, and at 
-that point the hypervisor bit may reappear in QEMU's JIT mode.
+> > Also thanks for suggesting (void*)->(unsigned long), I didn't
+> > know that these two are defined to have the same size (in kernel code).
+>=20
+> The kernel assumes that throughout - the double cast is common.
+> The C99 type is uintptr_t - but I don't think that is defined in kernel.
+> The only place I know where sizeof (long) !=3D sizeof (void *) is 64bit
+> windows. So anyone trying to compile a linux driver to run in the
+> windows kernel might have issues (never mind the GPL ones).
 
-As to sending #UD to the guest at CPL>0, that is a choice of the 
-hypervisor.  Hyper-V (and KVM in Hyper-V emulation mode) does that, and 
-does the same in real mode too.  KVM instead sets EAX to -KVM_EPERM, and 
-accepts hypercalls in real mode (where CPL=0).  Terminating the guest is 
-surely the wrong thing to do at CPL>0.
+My colleague here has just explained me the same. :)
 
-Thanks,
+Being a linux-kernel newbie, I'm learning every day. Kernel programming
+is more different from userspace than I ever thought. Thank you for your
+patience.
+--=20
+Jan Mat=C4=9Bjka <mq@suse.cz>
+SUSE Labs
 
-Paolo
+--bajzpZikUji1w+G9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTYMupAAoJEDFERKcRJ1appn8P/0WMBqWuH3E8xphGaKct9UzD
+mNsob4bwdr1VAu3pfzahKr9F7c2RTGp1LwitcUzlC8k7y0AmZW2shpXkYNYTPnag
+XzMSUq9WNyMAdP+3aRP0CWPk5HtIM9tJF6x/Uy8KYTXo8940RBXMQ+GgbsVZ+0JE
+zs1DbJfvXaAqtIUvBNvhzi9JkQj5dQzjIpsW89sI9ClLqYdszDIoXYBwb3/LNGjf
+5B99rTfQ0aLm+wwqCuUQC7yxTYVJR7wABj3JCgsi49aOTC7gva0L0fKo+UdjFduM
+ek++KibJBJ4sPUhEpcSgrql0LTaEpFsa+G3uyqCsdMzFg8DdPbiLKI8EXREUokbv
+0zCI4LDlwuMyVy2PIqTzRdXuFvpNXAw5sqBFgcWaW2M6m1i/v31b7Ij6z/R5/kTP
+za1kyMKEZJ2wmjF++grn78fUD2q4XVCPqWLT99guDxQaT3L+iAbc5Hx1DlwWUHks
+73Zya5K6lfqmrVaISposL1FCllXKd5c+mvZugeblyCy7Mefy9XbalKLqnT+NmmN7
+uvqOoETWaz3/RNstRzqzvsLFV4r2iE1cCePMtoriCSpjCo83DoZChdYygtN7jsJZ
+LI8R+/e7DoKO/WpEG0TaFAFFG6nN1wkXolqNEZOiwJx2n8YmlTh+K5htbs1aQO+z
+VHJdWcd0BGcAwJXi0DYk
+=gNuT
+-----END PGP SIGNATURE-----
+
+--bajzpZikUji1w+G9--
