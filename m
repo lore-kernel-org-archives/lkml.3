@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946118AbaD3V2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:28:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11581 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734AbaD3V2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:28:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,960,1389772800"; 
-   d="scan'208";a="532698907"
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1398891992.10827.2.camel@buesod1.americas.hpqcorp.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	 <20140430082715.GA11096@twins.programming.kicks-ass.net>
-	 <1398880209.2970.100.camel@schen9-DESK>
-	 <20140430180441.GF17778@laptop.programming.kicks-ass.net>
-	 <1398881337.2970.103.camel@schen9-DESK>
-	 <1398891699.2970.110.camel@schen9-DESK>
-	 <1398891992.10827.2.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 14:28:05 -0700
-Message-ID: <1398893285.2970.111.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1946142AbaD3V3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:29:06 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:50441 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964975AbaD3V3C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 17:29:02 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core
+Date: Wed, 30 Apr 2014 23:29:17 +0200
+Message-ID: <4116377.A5MWbYX2Mh@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 14:06 -0700, Davidlohr Bueso wrote:
+Hi Geert,
 
-> > > > > 
-> > > > > 		  if (count == RWSEM_WAITING_BIAS)
-> > > > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
-> > > > > 		  else
-> > > > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
-> > > > 
-> > > > I think I simply mis-typed it; shouldn't both cases be
-> > > > RWSEM_ACTIVE_WRITE_BIAS ?
-> > > 
-> > > Yeah,  we should just write it as
-> > > 			  old = cmpxchg(&sem->count, count, RWSEM_ACTIVE_WRITE_BIAS);
-> > 
-> > Oops, I mean
-> > 			    old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
-> > 
-> > for count == 0, we need sem->count to be RWSEM_ACTIVE_WRITE_BIAS, 
-> > for count == RWSEM_WAITING_BIAS, we need sem->count to be  RWSEM_WAITING_BIAS + RWSEM_ACTIVE_WRITE_BIAS
+On Thursday 24 April 2014 12:13:19 Geert Uytterhoeven wrote:
+> On SoCs like ARM/SH-mobile, gate clocks are available for modules, allowing
+> Runtime PM for a device controlled by a gate clock.
 > 
-> Yep, I had just noticed this. Peter's original suggestion was correct,
-> just needed to change RWSEM_ACTIVE_BIAS for RWSEM_ACTIVE_WRITE_BIAS.
+> On legacy shmobile kernels, this is handled by the PM runtime code in
+> drivers/sh/pm_runtime.c, which installs a clock notifier for the platform
+> bus, registering the "NULL" clock of each platform device with the PM core.
+> This approach is also used on davinci, keystone, and omap1.
+
+This requires the device to have the MSTP clock defined as the first clock in 
+its DT node. I'm not against that, but the requirement should be clearly 
+documented, and we need to check existing DT bindings to make sure they comply 
+with that.
+
+I'd like to also take this as an opportunity to discuss how we should name 
+clocks in DT bindings for Renesas devices. Most devices have a single MSTP 
+clock, in which case we don't specify a name. Other devices need several 
+clocks. Names for the non-MSTP clocks will obviously be device-dependent, but 
+how should the MSTP clock be called in that time ? Should it have an empty 
+name (a "" string in DT) ? Should it have a standard name ? Maybe "fck" for 
+"functional clock" ?
+
+> On multi-platform shmobile kernels, this was not handled at all, leading
+> to spurious disabled clocks on drivers relying on Runtime PM, depending on
+> implicit reset state, or on the bootloader.
 > 
+> A first solution, enabling the PM runtime code in drivers/sh/pm_runtime.c
+> in a multi-platform-safe way, was provided by the patch series
+> "[PATCH v2 00/17] ARM: shmobile: Enable drivers/sh/pm_runtime.c on
+> multi-platform" (http://www.spinics.net/lists/linux-sh/msg30887.html).
+> 
+> Here is an alternative approach, avoiding the reliance on C board files,
+> which are being phased out.
+> 
+> This is also related to a patch series by Felipe Balbi ("[RFC/PATCH] base:
+> platform: add generic clock handling for platform-bus",
+> https://lkml.org/lkml/2014/1/31/290)
+> 
+> This series:
+>   1. Lets the MSTP clock driver indicate that its clocks are suitable for
+>      Runtime PM,
+>   2. Lets the DT code retrieve clock information when adding a device
+>      (it already retrieves information for resources (registers, irq) ---
+>      unfortunately clocks are not resources), and registering clocks
+>      suitable for Runtime PM with the PM core.
+>      If Runtime PM is disabled, the clocks are just enabled.
+> 
+> Note that this works for devices instantiated from DT only.
+> Fortunately the drivers for the remaining platform devices (SCI and CMT)
+> handle clocks theirselves, without Runtime PM, so they get properly enabled.
+> 
+> Patches:
+>   - [1/4] clk: Add CLK_RUNTIME_PM and clk_may_runtime_pm()
+>   - [2/4] PM / clock_ops: Add pm_clk_add_clk()
+>   - [3/4] of/clk: Register clocks suitable for Runtime PM with the
+>   - [4/4] clk: shmobile: mstp: Set CLK_RUNTIME_PM flag
+> 
+> This series was tested on Renesas r8a7791, using the Koelsch development
+> board.
 
-Yes, I think we are all on the same page now.
+-- 
+Regards,
 
-Tim
+Laurent Pinchart
 
