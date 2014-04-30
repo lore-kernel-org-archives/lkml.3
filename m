@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827AbaD3Ldb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:33:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51844 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758790AbaD3Ld2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758803AbaD3Ld2 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Apr 2014 07:33:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51835 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758650AbaD3Ld1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 07:33:27 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
 CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
@@ -15,59 +15,44 @@ CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <sergei.shtylyov@cogentembedded.com>, <prabhakar.csengg@gmail.com>,
         Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v3 4/4] net: davinci_mdio: simplify IO memory mapping
-Date: Wed, 30 Apr 2014 15:23:36 +0300
-Message-ID: <1398860616-6612-5-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v3 0/4] introduce devm_mdiobus_alloc/free and clean up davinci mdio
+Date: Wed, 30 Apr 2014 15:23:32 +0300
+Message-ID: <1398860616-6612-1-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398860616-6612-1-git-send-email-grygorii.strashko@ti.com>
-References: <1398860616-6612-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify IO memory mapping by using devm_ioremap_resource()
-which will do all errors handling and reporting for us.
+Introduce a resource managed devm_mdiobus_alloc[_size]()/devm_mdiobus_free()
+to automatically clean up MDIO bus alocations made by MDIO drivers,
+thus leading to simplified MDIO drivers code.
 
-Acked-and-tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/net/ethernet/ti/davinci_mdio.c |   21 +++------------------
- 1 file changed, 3 insertions(+), 18 deletions(-)
+Clean up Davinci MDIO driver and use new devm API.
 
-diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
-index 4757198..34e97ec 100644
---- a/drivers/net/ethernet/ti/davinci_mdio.c
-+++ b/drivers/net/ethernet/ti/davinci_mdio.c
-@@ -363,24 +363,9 @@ static int davinci_mdio_probe(struct platform_device *pdev)
- 	spin_lock_init(&data->lock);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		dev_err(dev, "could not find register map resource\n");
--		ret = -ENOENT;
--		goto bail_out;
--	}
--
--	res = devm_request_mem_region(dev, res->start, resource_size(res),
--					    dev_name(dev));
--	if (!res) {
--		dev_err(dev, "could not allocate register map resource\n");
--		ret = -ENXIO;
--		goto bail_out;
--	}
--
--	data->regs = devm_ioremap_nocache(dev, res->start, resource_size(res));
--	if (!data->regs) {
--		dev_err(dev, "could not map mdio registers\n");
--		ret = -ENOMEM;
-+	data->regs = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(data->regs)) {
-+		ret = PTR_ERR(data->regs);
- 		goto bail_out;
- 	}
- 
+Changes in v3:
+- added devm_mdiobus_alloc_size() and
+  devm_mdiobus_alloc() converted to be just a simple wrapper now.
+
+Changes in v2:
+- minor comments taken into account
+- additional patches added for cleaning up Davinci MDIO driver
+
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+
+Grygorii Strashko (4):
+  mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free
+  net: davinci_mdio: use devm_* api
+  net: davinci_mdio: drop pinctrl_pm_select_default_state from probe
+  net: davinci_mdio: simplify IO memory mapping
+
+ Documentation/driver-model/devres.txt  |    5 +++
+ drivers/net/ethernet/ti/davinci_mdio.c |   48 ++++-------------------
+ drivers/net/phy/mdio_bus.c             |   67 ++++++++++++++++++++++++++++++++
+ include/linux/phy.h                    |    7 ++++
+ 4 files changed, 87 insertions(+), 40 deletions(-)
+
 -- 
 1.7.9.5
 
