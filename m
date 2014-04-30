@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945926AbaD3RuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:50:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1794 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758905AbaD3RuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:50:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,959,1389772800"; 
-   d="scan'208";a="503855700"
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20140430082715.GA11096@twins.programming.kicks-ass.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	 <20140430082715.GA11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 10:50:09 -0700
-Message-ID: <1398880209.2970.100.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1945930AbaD3RvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:51:18 -0400
+Received: from mail-yk0-f201.google.com ([209.85.160.201]:63410 "EHLO
+	mail-yk0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759286AbaD3RvQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 13:51:16 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Apr 2014 13:51:16 EDT
+From: Doug Anderson <dianders@chromium.org>
+To: lee.jones@linaro.org, swarren@nvidia.com, wsa@the-dreams.de
+Cc: abrestic@chromium.org, dgreid@chromium.org, olof@lixom.net,
+        sjg@chromium.org, linux-samsung-soc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, David Hendricks <dhendrix@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
+Date: Wed, 30 Apr 2014 10:44:04 -0700
+Message-Id: <1398879850-9111-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1398879850-9111-1-git-send-email-dianders@chromium.org>
+References: <1398879850-9111-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 10:27 +0200, Peter Zijlstra wrote:
-> On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
-> > +/*
-> > + * Try to acquire write lock before the writer has been put on wait queue.
-> > + */
-> > +static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> > +{
-> > +	long count = ACCESS_ONCE(sem->count);
-> > +retry:
-> > +	if (count == RWSEM_WAITING_BIAS) {
-> > +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
-> > +		/* allow write lock stealing, try acquiring the write lock. */
-> > +		if (count == RWSEM_WAITING_BIAS)
-> > +			goto acquired;
-> > +		else if (count == 0)
-> > +			goto retry;
-> > +	} else if (count == 0) {
-> > +		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
-> > +		if (count == 0)
-> > +			goto acquired;
-> > +		else if (count == RWSEM_WAITING_BIAS)
-> > +			goto retry;
-> > +	}
-> > +	return false;
-> > +
-> > +acquired:
-> > +	return true;
-> > +}
-> 
-> Could we have written that like:
-> 
-> static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> {
-> 	long old, count = ACCESS_ONCE(sem->count);
-> 
-> 	for (;;) {
-> 		if (!(count == 0 || count == RWSEM_WAITING_BIAS))
-> 			return false;
-> 
-> 		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
+From: David Hendricks <dhendrix@chromium.org>
 
-Above line won't be correct for the case when count == 0.  We are trying 
-to acquire write lock, so the sem->count should become
-RWSEM_ACTIVE_WRITE_BIAS, or RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS.  
-So we should change the logic to
+To avoid spamming the EC we calculate the time between the previous
+transfer and the current transfer and force a delay if the time delta
+is too small.
 
-		  if (count == RWSEM_WAITING_BIAS)
-			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
-		  else
-			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
+However, a small miscalculation causes the delay period to be
+far too short. Most noticably this impacts commands with a long
+turnaround time such as EC firmware reads and writes.
 
-> 		if (old == count)
-> 			return true;
-> 
-> 		count = old;
-> 	}
-> }
-> 
-> ?
-> 
-> Just checking my brain got all the branches untangled right :-)
+Signed-off-by: David Hendricks <dhendrix@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+Tested-by: Andrew Bresticker <abrestic@chromium.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes in v3: None
+Changes in v2: None
 
-Thanks.
+ drivers/mfd/cros_ec_spi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Tim
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index 84af8d7..c185eb6 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		ktime_get_ts(&ts);
+ 		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
+ 		if (delay < EC_SPI_RECOVERY_TIME_NS)
+-			ndelay(delay);
++			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
+ 	}
+ 
+ 	/* Transmit phase - send our message */
+-- 
+1.9.1.423.g4596e3a
 
