@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640AbaD3MYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:24:23 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50672 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152AbaD3MYW (ORCPT
+	id S964871AbaD3M3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:29:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49528 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711AbaD3M3b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:24:22 -0400
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts o" <tytso@mit.edu>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [RFC PATCH] sched_clock: also call register_current_timer_delay() if possible
-Date: Wed, 30 Apr 2014 14:23:34 +0200
-Message-Id: <1398860614-29469-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.9.2
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 30 Apr 2014 08:29:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,958,1389772800"; 
+   d="scan'208";a="523746369"
+From: "Ma, Xindong" <xindong.ma@intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] hrtimer:do not start hrtimer on other cpu if it is the
+ leftmost timer.
+Thread-Topic: [PATCH] hrtimer:do not start hrtimer on other cpu if it is the
+ leftmost timer.
+Thread-Index: AQHPZF/5HGLsleH9KUitYk2SC73pBJsqFiCQ
+Date: Wed, 30 Apr 2014 12:29:20 +0000
+Message-ID: <3917C05D9F83184EAA45CE249FF1B1DD025C6E5F@SHSMSX103.ccr.corp.intel.com>
+References: <1398847391-5994-1-git-send-email-xindong.ma@intel.com>
+ <CAOh2x=k2-9c8sJtM+gfVjF3NzANO5RBk-GuqOue5gd5CLY3KAg@mail.gmail.com>
+In-Reply-To: <CAOh2x=k2-9c8sJtM+gfVjF3NzANO5RBk-GuqOue5gd5CLY3KAg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ARM one has to call register_current_timer_delay() in order to use
-the (quick) timer based calibrarion instead of the a little slower loop
-based delay.
-The timer function specified in register_current_timer_delay() is also
-used by read_current_timer() which would otherwise return -ENXIO.
-And read_current_timer() timer is used by get_cycles() which in turn is
-used by random_get_entropy(). That means each sub-architecture returned
-here 0 if register_current_timer_delay() was no performed.
 
-The parameters for for sched_clock_register() and
-register_current_timer_delay() are mostly the same. Instead of calling
-register_current_timer_delay() each time just after (or before)
-sched_clock_register() I thought it might easier by doing it once at
-sched_clock time since the parameter are the same. That means each ARM sub
-arch that working sched-clock would also have a working random_get_entropy()
-implementation.
-
-Any comments?
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- arch/arm/include/asm/delay.h |  1 +
- kernel/time/sched_clock.c    | 20 ++++++++++++++++++++
- 2 files changed, 21 insertions(+)
-
-diff --git a/arch/arm/include/asm/delay.h b/arch/arm/include/asm/delay.h
-index dff714d..0ae3ff9 100644
---- a/arch/arm/include/asm/delay.h
-+++ b/arch/arm/include/asm/delay.h
-@@ -64,6 +64,7 @@ extern void __loop_const_udelay(unsigned long);
- 
- /* Delay-loop timer registration. */
- #define ARCH_HAS_READ_CURRENT_TIMER
-+#define ARCH_HAS_CURRENT_TIMER_DELAY
- extern void register_current_timer_delay(const struct delay_timer *timer);
- 
- #endif /* __ASSEMBLY__ */
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 0abb364..dc09496 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -17,6 +17,7 @@
- #include <linux/sched_clock.h>
- #include <linux/seqlock.h>
- #include <linux/bitops.h>
-+#include <linux/delay.h>
- 
- struct clock_data {
- 	ktime_t wrap_kt;
-@@ -112,6 +113,24 @@ static enum hrtimer_restart sched_clock_poll(struct hrtimer *hrt)
- 	hrtimer_forward_now(hrt, cd.wrap_kt);
- 	return HRTIMER_RESTART;
- }
-+#ifdef ARCH_HAS_CURRENT_TIMER_DELAY
-+static struct delay_timer generic_timer;
-+
-+static void __init do_register_current_timer_delay(u64 (*read)(void),
-+		unsigned long rate)
-+{
-+	if (generic_timer.read_current_timer)
-+		return;
-+	generic_timer.read_current_timer = (unsigned long (*)(void))read;
-+	generic_timer.freq = rate;
-+	register_current_timer_delay(&generic_timer);
-+}
-+
-+#else
-+
-+static inline void do_register_current_timer_delay(u64 (*read)(void),
-+		unsigned long rate) {}
-+#endif
- 
- void __init sched_clock_register(u64 (*read)(void), int bits,
- 				 unsigned long rate)
-@@ -162,6 +181,7 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- 		enable_sched_clock_irqtime();
- 
- 	pr_debug("Registered %pF as sched_clock source\n", read);
-+	do_register_current_timer_delay(read, rate);
- }
- 
- void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
--- 
-1.9.2
-
+> -----Original Message-----
+> From: viresh.linux@gmail.com [mailto:viresh.linux@gmail.com] On Behalf Of
+> Viresh Kumar
+> Sent: Wednesday, April 30, 2014 6:36 PM
+> To: Ma, Xindong
+> Cc: Thomas Gleixner; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] hrtimer:do not start hrtimer on other cpu if it is the
+> leftmost timer.
+> 
+> Hi Leon,
+> 
+> On Wed, Apr 30, 2014 at 2:13 PM, Leon Ma <xindong.ma@intel.com> wrote:
+> > On SMP system, if cpuX is idle and it starts an hrtimer, the timer
+> > will be started on cpuY. But it can not reprogram the event source on
+> > cpuY. The timer is inserted into rb tree of cpuY, if it is the
+> > leftmost timer on cpuY and it is a very short timer, following
+> > hrtimers started on cpuY will also not set the event source. As a
+> > result, the timers on cpuY will expire later than expected.
+> 
+> Don't know but the explanation confused me a bit :), thought the patch looked
+> fine. So, in my words this is what I understood, let me know if I am on the right
+> side.
+> 
+> Current base of timer is: cpuY and we started timer from cpuX. If cpuX is idle,
+> we might select cpuY again as the base but we wouldn't be able to reprogram
+> the event source as it has to be done by local CPU.
+> 
+> And so in this case you want to select cpuX instead, right?
+Yes. Thanks Thomas to refine the changelog and make it clear:
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=012a45e3f4af68e86d85cce060c6c2fed56498b2
+> 
+> > When this case is detected, we should start the timer on cpuX and
+> > program event source properly.
+> >
+> > Signed-off-by: Leon Ma <xindong.ma@intel.com>
+> > ---
+> >  kernel/hrtimer.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c index
+> > d55092c..68becbc 100644
+> > --- a/kernel/hrtimer.c
+> > +++ b/kernel/hrtimer.c
+> > @@ -234,6 +234,11 @@ again:
+> >                         goto again;
+> >                 }
+> >                 timer->base = new_base;
+> > +       } else {
+> > +               if (cpu != this_cpu && hrtimer_check_target(timer,
+> new_base)) {
+> > +                       cpu = this_cpu;
+> > +                       goto again;
+> > +               }
+> >         }
+> >         return new_base;
+> >  }
+> > --
+> > 1.7.9.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
