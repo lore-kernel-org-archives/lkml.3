@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531AbaD3Jds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:33:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40686 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983AbaD3Jdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:33:47 -0400
-Date: Wed, 30 Apr 2014 11:33:45 +0200
-From: Jiri Bohac <jbohac@suse.cz>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] timer: prevent overflow in apply_slack
-Message-ID: <20140430093345.GA18623@midget.suse.cz>
-References: <20140417194215.GA10494@midget.suse.cz>
- <alpine.DEB.2.02.1404172344420.22697@ionos.tec.linutronix.de>
- <20140418152310.GA13654@midget.suse.cz>
- <20140429111356.GA23888@midget.suse.cz>
- <alpine.DEB.2.02.1404291921490.6261@ionos.tec.linutronix.de>
+	id S1758641AbaD3Jgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:36:46 -0400
+Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:41019
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758569AbaD3Jgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 05:36:44 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <mark.rutland@arm.com>, <broonie@kernel.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <rob@landley.net>, <richardcochran@gmail.com>
+CC: <gregkh@linuxfoundation.org>, <mpa@pengutronix.de>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv3 resend 0/2] add DT endianness binding support.
+Date: Wed, 30 Apr 2014 16:51:59 +0800
+Message-ID: <1398847921-9322-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(80976001)(6806004)(48376002)(62966002)(19580395003)(81542001)(83322001)(36756003)(101416001)(77156001)(44976005)(50226001)(50986999)(88136002)(77982001)(99396002)(92726001)(46102001)(47776003)(50466002)(20776003)(87286001)(79102001)(87936001)(77096999)(80022001)(74502001)(2201001)(74662001)(76482001)(81342001)(92566001)(31966008)(93916002)(83072002)(89996001)(86362001)(85852003)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB497;H:tx30smr01.am.freescale.net;FPR:3C1EDB13.9C1BD810.73E50FC3.784432BA.2012E;MLV:sfv;PTR:gate-tx3.freescale.com;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1404291921490.6261@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Forefront-PRVS: 0197AFBD92
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 07:22:25PM +0200, Thomas Gleixner wrote:
-> > > +	mask = (1LL << bit) - 1;
-> 
-> This should be 1UL, shouldn't it?
+Changes in V3 resend:
+- Add arm list and rmk for review.
+- Fix one comment from Markus Pargmann.
 
-yes, good catch, thanks!
+Changes in V3:
+- Follow Mark Rutland's advice.
+- Document common case of the endianess usage.
+
+Changes in V2:
+- Namespace the properties using the prefix sring.
+- Add one binding ducomentation off regmap.
 
 
 
+Xiubo Li (2):
+  dt/bindings: Add the DT binding documentation for endianness
+  regmap: add DT endianness binding support.
 
-On architectures with sizeof(int) < sizeof (long), the
-computation of mask inside apply_slack() can be undefined if the
-computed bit is > 32.
+ .../devicetree/bindings/endianness/endianness.txt  |  47 +++++++
+ drivers/base/regmap/regmap-i2c.c                   |   2 +
+ drivers/base/regmap/regmap-spi.c                   |   2 +
+ drivers/base/regmap/regmap.c                       | 147 +++++++++++++++++++--
+ 4 files changed, 187 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
 
-E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
-
-expires_limit = 0x20000000e
-bit = 33
-mask = (1 << 33) - 1  /* undefined */
-
-On x86, mask becomes 1 and and the slack is not applied properly.
-On s390, mask is -1, expires is set to 0 and the timer fires immediately.
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 87bd529..4c36c91 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -838,7 +838,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
- 
- 	bit = find_last_bit(&mask, BITS_PER_LONG);
- 
--	mask = (1 << bit) - 1;
-+	mask = (1UL << bit) - 1;
- 
- 	expires_limit = expires_limit & ~(mask);
- 
 -- 
-Jiri Bohac <jbohac@suse.cz>
-SUSE Labs, SUSE CZ
+1.8.4
 
