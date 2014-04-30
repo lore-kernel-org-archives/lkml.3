@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560AbaD3JV4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:21:56 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:14123
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758464AbaD3JVz convert rfc822-to-8bit (ORCPT
+	id S1758635AbaD3JWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:22:54 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:39959 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758576AbaD3JWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:21:55 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: cq93vc: fix cq93vc_get_regmap build error
-Thread-Topic: [PATCH] ASoC: cq93vc: fix cq93vc_get_regmap build error
-Thread-Index: AQHPZFN+asrFhsvZfEKkHNY5imRIrZsp4Xkw
-Date: Wed, 30 Apr 2014 09:21:52 +0000
-Message-ID: <0e8d4a56dbcf440797d5057d22b255b3@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <4308079.So6q7GrfYB@wuerfel>
-In-Reply-To: <4308079.So6q7GrfYB@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0197AFBD92
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(51704005)(77982001)(87936001)(50986999)(46102001)(54356999)(99396002)(19580405001)(33646001)(83072002)(77096999)(99286001)(79102001)(76176999)(74316001)(101416001)(20776003)(76576001)(81542001)(19580395003)(81342001)(2656002)(85852003)(92566001)(74662001)(76482001)(80022001)(83322001)(86362001)(31966008)(80976001)(74502001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:E0B0F61E.1692AEE9.38F519A6.CCD66A49.201A3;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Apr 2014 05:22:52 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F702C5F@AcuExch.aculab.com>
+References: <1398792971-10379-1-git-send-email-mq@suse.cz>
+	<063D6719AE5E284EB5DD2968C1650D6D0F702C5F@AcuExch.aculab.com>
+Date: Wed, 30 Apr 2014 13:22:51 +0400
+Message-ID: <CABjd4YzRTPcy1nbhywuNLb0pz4gPVjhzegZJTc_g+_SVc1XJvw@mail.gmail.com>
+Subject: Re: [PATCH] net: via-rhine: fix compiler warning
+From: Alexey Charkov <alchark@gmail.com>
+To: David Laight <David.Laight@aculab.com>
+Cc: Jan Moskyto Matejka <mq@suse.cz>, Roger Luethi <rl@hellgate.ch>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-04-30 12:49 GMT+04:00 David Laight <David.Laight@aculab.com>:
+> From: Jan Moskyto Matejka
+>> Fixed different size cast warning:
+>>
+>>       drivers/net/ethernet/via/via-rhine.c: In function rhine_init_one_platform:
+>>       drivers/net/ethernet/via/via-rhine.c:1132:13: warning: cast from pointer to integer of different
+>> size [-Wpointer-to-int-cast]
+>>         revision = (u32)match->data;
+>>                    ^
+>>
+>> That code was added in commit 2d283862dc62daead9db0dc89cd0d0351e91f765
+>> ("net: via-rhine: add OF bus binding").
+> ...
+>> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+>> index 4fa9201..76d18e0 100644
+>> --- a/drivers/net/ethernet/via/via-rhine.c
+>> +++ b/drivers/net/ethernet/via/via-rhine.c
+>> @@ -288,7 +288,7 @@ MODULE_DEVICE_TABLE(pci, rhine_pci_tbl);
+>>   * (for quirks etc.)
+>>   */
+>>  static struct of_device_id rhine_of_tbl[] = {
+>> -     { .compatible = "via,vt8500-rhine", .data = (void *)0x84 },
+>> +     { .compatible = "via,vt8500-rhine", .data = (u32 []) { 0x84 } },
+>>       { }     /* terminate list */
+>>  };
+>>  MODULE_DEVICE_TABLE(of, rhine_of_tbl);
+>> @@ -1129,7 +1129,7 @@ static int rhine_init_one_platform(struct platform_device *pdev)
+>>       if (!irq)
+>>               return -EINVAL;
+>>
+>> -     revision = (u32)match->data;
+>> +     revision = *((u32 *) match->data);
+>>       if (!revision)
+>>               return -EINVAL;
+>
+> Both those casts look horrid.
+> I'm not entirely convinced that the first is valid C - It would have to be
+> something specific to C99 initialisers.
+> Casts like *(u32 *)foo are also likely to be bugs (esp. on BE systems)
+> so themselves start ringing alarm bells.
+>
+> So why not just:
+>         revision = (unsigned long)match->data;
+> and add a comment that the 0x84 is the revision - #define ??
 
-> Subject: [PATCH] ASoC: cq93vc: fix cq93vc_get_regmap build error
-> 
-> 49101a25acd69c "ASoC: cq93vc: Remove the set_cache_io() entirely from
-> ASoC probe" introduced the cq93vc_get_regmap function that has an
-> obvious build error referring to the 'codec' variable that is not
-> declared anywhere"
-> 
-> sound/soc/codecs/cq93vc.c: In function 'cq93vc_get_regmap':
-> sound/soc/codecs/cq93vc.c:157:34: error: 'codec' undeclared (first use in this
-> function)
->   struct davinci_vc *davinci_vc = codec->dev->platform_data;
->                                   ^
-> 
-> This changes the code to compile again, presumably in the way it was
-> intended. Not tested.
-> 
+There is no particular reason why it should be u32 now - this is a
+leftover from the previous iteration of code where revision was a
+separate property in DT (sized u32). It actually mirrors the
+respective field in struct pci_dev, which is u8 - don't see any issue
+defining it as unsigned long (and also changing the definition in
+struct rhine_private).
 
-Reviewed-by: Xiubo Li <Li.Xiubo@freescale.com>
+The comment that it's the revision is right above the match table (cut
+off in the patch) :)
 
-Thanks,
+Jan, would you prefer to adjust your patch, or shall I send another
+one to change rp->revision and friends to unsigned long?
 
-
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Xiubo Li <Li.Xiubo@freescale.com>
-> 
-> diff --git a/sound/soc/codecs/cq93vc.c b/sound/soc/codecs/cq93vc.c
-> index 5ee48c8..537327c 100644
-> --- a/sound/soc/codecs/cq93vc.c
-> +++ b/sound/soc/codecs/cq93vc.c
-> @@ -154,7 +154,7 @@ static int cq93vc_remove(struct snd_soc_codec *codec)
-> 
->  static struct regmap *cq93vc_get_regmap(struct device *dev)
->  {
-> -	struct davinci_vc *davinci_vc = codec->dev->platform_data;
-> +	struct davinci_vc *davinci_vc = dev->platform_data;
-> 
->  	return davinci_vc->regmap;
->  }
-
+Thanks a lot,
+Alexey
