@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927AbaD3M44 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:56:56 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:51604 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758846AbaD3M4w (ORCPT
+	id S1759241AbaD3NAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:00:13 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:48269 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758901AbaD3M4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:56:52 -0400
+	Wed, 30 Apr 2014 08:56:55 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -19,25 +19,20 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/15] ARM: dts: kirkwood: fix mislocated pcie-controller nodes
-Date: Wed, 30 Apr 2014 14:56:28 +0200
-Message-Id: <1398862602-29595-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 04/15] ARM: dts: kirkwood: remove clock-frequency properties from UART nodes
+Date: Wed, 30 Apr 2014 14:56:31 +0200
+Message-Id: <1398862602-29595-5-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 54397d85349f
- ("ARM: kirkwood: Relocate PCIe device tree nodes")
+UART devices found on Kirkwood SoCs derive their baudrate from TCLK.
+With proper clocks property in the SoCs serial node, boards do not
+need to overwrite it anymore.
 
-moved the pcie-controller nodes for the Kirkwood SoCs to the mbus
-bus node. For some reason, two boards were not properly converted
-and have their pci-controller nodes still in the ocp bus node.
-
-As the corresponding SoC pcie-controller does not exist anymore,
-it is likely that pcie is broken on those boards since above commit.
-Fix it by moving the pcie related nodes to the correct location.
+Remove the remaining clock-frequency property from all Kirkwood boards.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -55,82 +50,79 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts | 18 ++++++++++--------
- arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi  | 18 ++++++++++--------
- 2 files changed, 20 insertions(+), 16 deletions(-)
+ arch/arm/boot/dts/kirkwood-cloudbox.dts             | 1 -
+ arch/arm/boot/dts/kirkwood-db.dtsi                  | 1 -
+ arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts | 1 -
+ arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts      | 1 -
+ arch/arm/boot/dts/kirkwood-ts219.dtsi               | 2 --
+ 5 files changed, 6 deletions(-)
 
+diff --git a/arch/arm/boot/dts/kirkwood-cloudbox.dts b/arch/arm/boot/dts/kirkwood-cloudbox.dts
+index 61212692740e..65ae6471d553 100644
+--- a/arch/arm/boot/dts/kirkwood-cloudbox.dts
++++ b/arch/arm/boot/dts/kirkwood-cloudbox.dts
+@@ -28,7 +28,6 @@
+ 		serial@12000 {
+ 			pinctrl-0 = <&pmx_uart0>;
+ 			pinctrl-names = "default";
+-			clock-frequency = <166666667>;
+ 			status = "okay";
+ 		};
+ 
+diff --git a/arch/arm/boot/dts/kirkwood-db.dtsi b/arch/arm/boot/dts/kirkwood-db.dtsi
+index 22df970df2a1..68dfb3ad57dd 100644
+--- a/arch/arm/boot/dts/kirkwood-db.dtsi
++++ b/arch/arm/boot/dts/kirkwood-db.dtsi
+@@ -36,7 +36,6 @@
+ 		serial@12000 {
+ 			pinctrl-0 = <&pmx_uart0>;
+ 			pinctrl-names = "default";
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
+diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+index db183455ff34..3994a86f989e 100644
+--- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
++++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
+@@ -37,7 +37,6 @@
+ 			};
+ 		};
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "ok";
+ 		};
+ 
 diff --git a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-index 2cb0dc529165..4bf358c28be2 100644
+index 9c48e827e34e..444257c08a0c 100644
 --- a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
 +++ b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
-@@ -30,6 +30,16 @@
- 		bootargs = "console=ttyS0,115200n8 earlyprintk";
- 	};
- 
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
-+
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+        };
-+
- 	ocp@f1000000 {
- 		pinctrl@10000 {
- 			pmx_usb_led: pmx-usb-led {
-@@ -73,14 +83,6 @@
- 		ehci@50000 {
- 			status = "okay";
+@@ -77,7 +77,6 @@
+ 		serial@12000 {
+ 			pinctrl-0 = <&pmx_uart0>;
+ 			pinctrl-names = "default";
+-			clock-frequency = <200000000>;
+ 			status = "ok";
  		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
  
- 	gpio-leds {
-diff --git a/arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi b/arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi
-index 843b8b561e5e..b88810df7ca2 100644
---- a/arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi
-@@ -4,6 +4,16 @@
- / {
- 	model = "ZyXEL NSA310";
- 
-+	mbus {
-+		pcie-controller {
-+			status = "okay";
-+
-+			pcie@1,0 {
-+				status = "okay";
-+			};
-+		};
-+	};
-+
- 	ocp@f1000000 {
- 		pinctrl: pinctrl@10000 {
- 
-@@ -51,14 +61,6 @@
- 			status = "okay";
- 			nr-ports = <2>;
+diff --git a/arch/arm/boot/dts/kirkwood-ts219.dtsi b/arch/arm/boot/dts/kirkwood-ts219.dtsi
+index 8f2226b8bd3d..414d2246b37c 100644
+--- a/arch/arm/boot/dts/kirkwood-ts219.dtsi
++++ b/arch/arm/boot/dts/kirkwood-ts219.dtsi
+@@ -35,13 +35,11 @@
+ 			};
  		};
--
--		pcie-controller {
--			status = "okay";
--
--			pcie@1,0 {
--				status = "okay";
--			};
--		};
- 	};
- 
- 	gpio_poweroff {
+ 		serial@12000 {
+-			clock-frequency = <200000000>;
+ 			status = "okay";
+ 			pinctrl-0 = <&pmx_uart0>;
+ 			pinctrl-names = "default";
+ 		};
+ 		serial@12100 {
+-			clock-frequency = <200000000>;
+ 			status = "okay";
+ 			pinctrl-0 = <&pmx_uart1>;
+ 			pinctrl-names = "default";
 -- 
 1.9.1
 
