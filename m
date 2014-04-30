@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422736AbaD3ReN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:34:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42254 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422698AbaD3ReM (ORCPT
+	id S1759337AbaD3RfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:35:19 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:63128 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaD3RfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:34:12 -0400
-Date: Wed, 30 Apr 2014 13:34:10 -0400 (EDT)
-Message-Id: <20140430.133410.981284387859397046.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, stable@kernel.org
-Subject: Re: [PATCH V2 net-next 1/1] hyperv: Properly handle checksum
- offload
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1398873921-20955-1-git-send-email-kys@microsoft.com>
-References: <1398873921-20955-1-git-send-email-kys@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 30 Apr 2014 10:34:12 -0700 (PDT)
+	Wed, 30 Apr 2014 13:35:17 -0400
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+To: abbotti@mev.co.uk, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org
+Cc: ravi23ganiga@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: comedi: fix coding style issues in comedi_fops.c
+Date: Wed, 30 Apr 2014 23:04:49 +0530
+Message-Id: <1398879289-20442-1-git-send-email-ravi23ganiga@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-Date: Wed, 30 Apr 2014 09:05:21 -0700
+This is a patch to fix coding style
+warnings found by the checkpatch.pl tool
 
-> Do checksum offload only if the client of the driver wants checksum to be
-> offloaded.
-> 
-> In V1 version of this patch, I  addressed comments from
-> Stephen Hemminger <stephen@networkplumber.org> and
-> Eric Dumazet <eric.dumazet@gmail.com>.
-> 
-> In this version of the patch I have addressed comments from
-> David Miller.
-> 
-> This patch fixes a bug that is exposed in gateway scenarios.
-> 
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-It does not make any sense to submit a patch for net-next and
-also ask for it to be included in -stable.
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index acc8019..a62d639 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1435,13 +1435,15 @@ static int __comedi_get_user_cmd(struct comedi_device *dev,
+ 	s = &dev->subdevices[cmd->subdev];
+ 
+ 	if (s->type == COMEDI_SUBD_UNUSED) {
+-		dev_dbg(dev->class_dev, "%d not valid subdevice\n", cmd->subdev);
++		dev_dbg(dev->class_dev, "%d not valid subdevice\n",
++			cmd->subdev);
+ 		return -EIO;
+ 	}
+ 
+ 	if (!s->do_cmd || !s->do_cmdtest || !s->async) {
+ 		dev_dbg(dev->class_dev,
+-			"subdevice %d does not support commands\n", cmd->subdev);
++			"subdevice %d does not support commands\n",
++			cmd->subdev);
+ 		return -EIO;
+ 	}
+ 
+-- 
+1.7.10.4
 
-First of all, -stable submissions are handled by me directly for
-networking.  Therefore you should not CC: stable on such patches,
-instead you ask me politly to include it in my stable submission
-queue.
-
-Second of all, if a patch is destined for stable, it should be
-submitted for 'net' not 'net-next'.
