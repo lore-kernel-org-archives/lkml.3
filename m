@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052AbaD3N7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:59:44 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:55447 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758836AbaD3N7m (ORCPT
+	id S1759118AbaD3OAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:00:18 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:65422 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758930AbaD3OAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:59:42 -0400
-Message-ID: <536101C9.9090601@gmail.com>
-Date: Wed, 30 Apr 2014 15:59:37 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-CC: mtk.manpages@gmail.com,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        =?UTF-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
-        Caitlin Bestler <caitlin.bestler@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Elie De Brauwer <eliedebrauwer@gmail.com>,
-        David Miller <davem@davemloft.net>,
-        Steven Whitehouse <steve@chygwyn.com>,
-        =?UTF-8?B?UsOpbWkgRGVuaXMtQ291cm1v?= =?UTF-8?B?bnQ=?= 
-	<remi.denis-courmont@nokia.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Chris Friesen <chris.friesen@windriver.com>
-Subject: recvmmsg() timeout behavior strangeness [RESEND]
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Apr 2014 10:00:17 -0400
+Message-ID: <1398866403.26071.125.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Date: Wed, 30 Apr 2014 16:00:03 +0200
+In-Reply-To: <20140430091550.1177bc90@gandalf.local.home>
+References: <20140411185739.GA6644@linutronix.de>
+	 <1397918766.5436.16.camel@marge.simpson.net>
+	 <1398411635.11930.45.camel@marge.simpson.net>
+	 <1398501491.12941.5.camel@marge.simpson.net>
+	 <1398520699.28726.22.camel@marge.simpson.net>
+	 <1398661784.30930.33.camel@marge.simpson.net>
+	 <1398676186.30930.49.camel@marge.simpson.net>
+	 <20140428101805.75032f45@gandalf.local.home>
+	 <1398695832.14475.10.camel@marge.simpson.net>
+	 <1398748869.5514.81.camel@marge.simpson.net>
+	 <20140429201308.63292691@gandalf.local.home>
+	 <1398843793.26071.52.camel@marge.simpson.net>
+	 <1398863189.26071.97.camel@marge.simpson.net>
+	 <20140430091550.1177bc90@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo,
+On Wed, 2014-04-30 at 09:15 -0400, Steven Rostedt wrote: 
+> On Wed, 30 Apr 2014 15:06:29 +0200
+> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> 
+> 
+> > The End.. I hope.  I've had enough hotplug entertainment for a while.
+> 
+> Not for me. 3.14-rt stress-cpu-hotplug crashes quickly. But it's a
+> different issues than what my patch addressed. I'm still debugging it.
 
-I raised this issue somewhat more than a year ago, here:
-http://thread.gmane.org/gmane.linux.man/3477
-but got no reply from you. (Chris Friesen in that thread agreed 
-that there is a problem though.)
+If you didn't fix the two bugs I showed, and (wisely) didn't look at the
+beautiful lglock patches I posted (no frozen shark, I'm disappointed;),
+your patch won't help.
 
-Here, a slightly revised version of that mail, since I've just bumper 
-into a related problem in a different context...
+-Mike
 
-As part of his attempt to better document the recvmmsg() syscall that
-you added in commit a2e2725541fad72416326798c2d7fa4dafb7d337, Elie de
-Brauwer alerted to me to some strangeness in the timeout behavior of
-the syscall. I suspect there's a bug that needs fixing, as detailed
-below.
-
-AFAICT, the timeout argument was added to this syscall as a result of
-the discussion here:
-http://markmail.org/message/m5l2ap4hiiimut6k#query:+page:1+mid:m5l2ap4hiiimut6k+state:results
-(20-21 May 2009, "[RFC 1/2] net: Introduce recvmmsg...")
-
-If I understand correctly, the *intended* purpose of the timeout
-argument is to set a limit on how long to wait for additional
-datagrams after the arrival of an initial datagram. However, the
-syscall behaves in quite a different way. Instead, it potentially
-blocks forever, regardless of the timeout. The way the timeout seems
-to work is as follows:
-
-1. The timeout, T, is armed on receipt of first diagram, starting at time X.
-2. After each further datagram is received, a check is made if we have
-reached time X+T. If we have reached that time, then the syscall
-returns.
-
-Since the timeout is only checked after the arrival of each datagram,
-we can have scenarios like the following:
-
-0. Assume a timeout of 10 seconds, and that vlen is 5.
-1. First datagram arrives at time X.
-2. Second datagram arrives at time X+2 secs
-3. No more datagrams arrive.
-
-In this case, the call blocks forever. Is that intended behavior?
-(Basically, if up to vlen-1 datagrams arrive before X+T, but then no 
-more datagrams arrive, the call will remain blocked forever.) If it's
-intended behavior, could you elaborate the use case, since it would be
-good to add that to the man page. If not, a fix seems to be needed,
-since otherwise, it's hard to see how the recvmmsg() timeout argument
-can sanely be used.
-
-Thanks,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
