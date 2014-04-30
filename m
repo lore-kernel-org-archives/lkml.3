@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637AbaD3Njk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:39:40 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45506 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaD3Nji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:39:38 -0400
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Dietmar Eggemann <dietmar.eggemann@arm.com>
-Subject: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups
-Date: Wed, 30 Apr 2014 14:39:38 +0100
-Message-Id: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-X-OriginalArrivalTime: 30 Apr 2014 13:39:50.0691 (UTC) FILETIME=[A90AC730:01CF6479]
-X-MC-Unique: 114043014393700501
-Content-Type: text/plain; charset=WINDOWS-1252
+	id S1758895AbaD3Noe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:44:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758576AbaD3Nod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:44:33 -0400
+Date: Wed, 30 Apr 2014 09:30:35 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <sandeen@redhat.com>,
+        <akpm@linux-foundation.org>, <jweiner@redhat.com>,
+        <kosaki.motohiro@jp.fujitsu.com>, <mhocko@suse.cz>,
+        <fengguang.wu@intel.com>, <mpatlasov@parallels.com>,
+        <Motohiro.Kosaki@us.fujitsu.com>
+Subject: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
+Message-ID: <20140430093035.7e7226f2@annuminas.surriel.com>
+In-Reply-To: <5360C9E7.6010701@jp.fujitsu.com>
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+	<5360C9E7.6010701@jp.fujitsu.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s3UDdoaP007813
 
-From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+On Wed, 30 Apr 2014 19:01:11 +0900
+Masayoshi Mizuma <m.mizuma@jp.fujitsu.com> wrote:
 
-There is no need to zero struct sched_group member cpumask and struct
-sched_group_power member power since both structures are already allocated
-as zeroed memory in __sdt_alloc().
+> Hi Rik,
+> 
+> I applied your patch to linux-next kernel, then divide error happened
+> when I ran ltp stress test.
+> The divide error occurred on the following div_u64(), so the following
+> should be also fixed...
+> 
+> static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
 
-This patch has been tested with
-BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
-in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
-CPU hotplug scenarios.
+Good catch.  This patch fixes both places, and also has Andrew's
+improvements in both places.
 
-Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Andrew, this can drop in -mm instead of my previous patch and
+your two cleanups to it.
+
+---8<---
+
+Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
+
+It is possible for "limit - setpoint + 1" to equal zero, leading to a
+divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+working, so we need to actually test the divisor before calling div64.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- kernel/sched/core.c |    2 --
- 1 file changed, 2 deletions(-)
+ mm/page-writeback.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9cae286824bb..6bc51aebbf1b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
- 			continue;
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index ef41349..f98a297 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+ 					  unsigned long dirty,
+ 					  unsigned long limit)
+ {
++	unsigned long divisor;
+ 	long long pos_ratio;
+ 	long x;
  
- 		group = get_group(i, sdd, &sg);
--		cpumask_clear(sched_group_cpus(sg));
--		sg->sgp->power = 0;
- 		cpumask_setall(sched_group_mask(sg));
++	divisor = limit - setpoint;
++	if (!divisor)
++		divisor = 1;	/* Avoid div-by-zero */
++
+ 	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+-		    limit - setpoint + 1);
++		    divisor);
+ 	pos_ratio = x;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+ 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+@@ -842,8 +847,12 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+ 	x_intercept = bdi_setpoint + span;
  
- 		for_each_cpu(j, span) {
--- 
-1.7.9.5
-
-
+ 	if (bdi_dirty < x_intercept - span / 4) {
++		unsigned long divisor = x_intercept - bdi_setpoint;
++		if (!divisor)
++			divisor = 1;	/* Avoid div-by-zero */
++
+ 		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
+-				    x_intercept - bdi_setpoint + 1);
++				    divisor);
+ 	} else
+ 		pos_ratio /= 4;
+ 
