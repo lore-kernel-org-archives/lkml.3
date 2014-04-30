@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaD3ISE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:18:04 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:43222 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaD3ISA (ORCPT
+	id S1757770AbaD3ITo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:19:44 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:47319 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaD3ITj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:18:00 -0400
-Message-ID: <5360B14D.8000902@linux.vnet.ibm.com>
-Date: Wed, 30 Apr 2014 13:46:13 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 30 Apr 2014 04:19:39 -0400
 MIME-Version: 1.0
-To: Michael Neuling <mikey@neuling.org>
-CC: Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org,
-        avagin@openvz.org, roland@redhat.com, oleg@redhat.com
-Subject: Re: [PATCH 0/3] Add new ptrace request macros on PowerPC
-References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com> <533BD922.4070009@linux.vnet.ibm.com> <535F4E10.2020300@linux.vnet.ibm.com> <CAEjGV6yi5YY95tM-HY4akN4BGXGn4chA8_sCaqvWx3HPSu2V3w@mail.gmail.com> <535F5BDE.2030309@linux.vnet.ibm.com> <CAEjGV6y8MRiCfRBtWjNfrwKMccROEAJw2rPVc_u+r=tAo2EcHQ@mail.gmail.com> <535F997B.3000500@linux.vnet.ibm.com> <20730.1398817745@ale.ozlabs.ibm.com>
-In-Reply-To: <20730.1398817745@ale.ozlabs.ibm.com>
+In-Reply-To: <53606F49.1000401@realtek.com>
+References: <cover.1398735435.git.micky_ching@realsil.com.cn>
+	<7208467.nZIXMIfPji@wuerfel>
+	<CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com>
+	<201404300228.s3U2S7WA026782@rtits1.realtek.com>
+	<53606F49.1000401@realtek.com>
+Date: Wed, 30 Apr 2014 10:19:39 +0200
+Message-ID: <CAPDyKFrA39eFnoy-sAGcAUeDqtB78cvAivV+mmRR5C-tov-9eg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Roger <rogerable@realtek.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, micky <micky_ching@realsil.com.cn>,
+        Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei WANG <wei_wang@realsil.com.cn>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14043008-4790-0000-0000-00000127E415
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 05:59 AM, Michael Neuling wrote:
-> Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
-> 
->> On 04/29/2014 01:52 PM, Michael Neuling wrote:
->>> That's not what that patch does. It shouldn't make any user visible changes
->>> to DSCR or PPR.
+On 30 April 2014 05:34, Roger <rogerable@realtek.com> wrote:
+>
+> On 04/29/2014 08:46 PM, Arnd Bergmann wrote:
 >>
->> It may not when it runs uninterrupted but after the tracee process has
->> stopped, thread.dscr reflects the default DSCR value as mentioned
->> before. This can be proved by changing the "dscr_default" value in
->> arch/powerpc/sysfs.c file.
-> 
-> The intention with DSCR is that if the user changes the DSCR, the kernel
-> should always save/restore it.  If you are seeing something else, then
-> that is a bug.  Anton has a test case for this here:
-> 
->   http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
-> 
-> If that is failing, then there is a bug that we need to fix.
-> 
-
-Anton's above DSCR test passed.
-
-> The PPR is the same, except that the kernel can change it over a
-> syscall.
-> 
->>> Over syscall PPR and DSCR may change.
-> 
-> Sorry, this should be only PPR.  DSCR shouldn't change over a syscall,
-> at least that's the intention.
-> 
->>> Depending on your test case, that may
->>> be your problem.
+>> On Tuesday 29 April 2014 13:05:15 Ulf Hansson wrote:
+>>>
+>>> On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>
+>>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>>>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+>>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>>>> :(.text+0x806708): undefined reference to `led_classdev_register'
+>>>>
+>>>> This adds an explicit dependency in Kconfig
+>>>
+>>>
+>>> I think the proper solution is to fix the dependency in the driver code
+>>> instead.
+>>>
+>>> There are already some ifdefs hackery for making it optional to use
+>>> leds, apparently that's not working properly.
+>>>
 >>
->> I would guess when the tracee process stops for ptrace analysis, tm_reclaim or
->> tm_recheckpoint path might be crossed which is causing this dscr_default value
->> to go into thread_struct.
-> 
-> That shouldn't happen.  If that's happening, it's a bug.
+>> Ah, right, I misinterpreted the bug. Here is a new version:
+>>
+>> 8<---------
+>>>
+>>> From 5b5588f8c9b8ded8b296fd32d87b2d118e548a29 Mon Sep 17 00:00:00 2001
+>>
+>> From: Arnd Bergmann <arnd@arndb.de>
+>> Date: Tue, 29 Apr 2014 11:41:40 +0200
+>> Subject: [PATCH] mmc: rtsx: usb backend needs LED support
+>>
+>> Building the rtsx USB driver uses the LED classdev base
+>> support if available, but that fails if the classdev
+>> is a module and the MMC driver is built-in, leading to this
+>> link error.
+>>
+>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>> :(.text+0x806708): undefined reference to `led_classdev_register'
+>>
+>> This adds an explicit dependency in Kconfig to ensure that
+>> the MMC driver has to be a module if LEDS_CLASS is a module,
+>> but still allows it to be built-in if LEDS_CLASS is either
+>> disabled or built-in.
+>>
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>>
+>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>> index 92d91fe..68da9b8 100644
+>>
+>> --- a/drivers/mmc/host/Kconfig
+>> +++ b/drivers/mmc/host/Kconfig
+>> @@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+>>   config MMC_REALTEK_USB
+>>         tristate "Realtek USB SD/MMC Card Interface Driver"
+>>         depends on MFD_RTSX_USB
+>> +       depends on m || LEDS_CLASS!=m
+>>
+>>         help
+>>           Say Y here to include driver code to support SD/MMC card
+>> interface
+>>           of Realtek RTS5129/39 series card reader
+>>
+>> .
+>>
+>
+> I think Ulf's idea is to fix the bug by modifying the .c files.
+> I really found the problem of my ifdef hackery and it should do something
+> similar in sdhci.c as:
+>
+> From: Roger Tseng <rogerable@realtek.com>
+> Date: Wed, 30 Apr 2014 11:11:25 +0800
+> Subject: [PATCH] mmc: rtsx: fix possible linking error if built-in
+>
+> rtsx_usb_sdmmc module uses the LED classdev if available, but the code
+> failed
+> to consider the situation that it is built-in and the LED classdev is a
+> module,
+> leading to following linking error:
+>
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+> rtsx_usb_sdmmc.c:(.text+0x2a018e): undefined reference to
+> `led_classdev_unregister'
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+> rtsx_usb_sdmmc.c:(.text+0x2a197e): undefined reference to
+> `led_classdev_register'
+>
+> Fix by excluding such condition when defining macro RTSX_USB_USE_LEDS_CLASS.
+>
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
 
-I would believe this is happening. Also after reverting the commit
-e9bdc3d6143d1c4b8d8ce5231, thread.dscr reflects the same value as that
-of thread.tm_dscr which is the check pointed DSCR register value just
-before the transaction started. So even the NIP has moved passed the point
-where the user changes DSCR inside the transaction, thread.dscr is unable
-to capture that latest value. But thread.dscr must contain the latest user
-changed value of DSCR which is definitely not happening here. So there is
-a problem we need to fix. 
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-
+> ---
+>  drivers/mmc/host/rtsx_usb_sdmmc.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c
+> b/drivers/mmc/host/rtsx_usb_sdmmc.c
+> index e11fafa..38bdda5 100644
+> --- a/drivers/mmc/host/rtsx_usb_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+> @@ -34,7 +34,8 @@
+>  #include <linux/mfd/rtsx_usb.h>
+>  #include <asm/unaligned.h>
+>
+> -#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
+> +#if defined(CONFIG_LEDS_CLASS) || (defined(CONFIG_LEDS_CLASS_MODULE) && \
+> +       defined(CONFIG_MMC_REALTEK_USB_MODULE))
+>  #include <linux/leds.h>
+>  #include <linux/workqueue.h>
+>  #define RTSX_USB_USE_LEDS_CLASS
+>
+> Best regards,
+> Roger Tseng
