@@ -1,46 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451AbaD3AeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 20:34:06 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:58614 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaD3AeC (ORCPT
+	id S1755270AbaD3Aev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 20:34:51 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57916 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbaD3Aet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 20:34:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140430003236.GA6472@thunk.org>
-References: <535FADDA.2070803@1h.com> <20140429183534.GB19325@thunk.org>
- <20140429185251.GA27969@ubuntumail> <53601E5B.5050004@1h.com>
- <20140429220234.GC28410@ubuntumail> <536026B3.1020905@1h.com>
- <20140429222913.GD28410@ubuntumail> <53602B84.1020304@mit.edu>
- <20140430001641.GA28969@ubuntumail> <20140430003236.GA6472@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Apr 2014 17:33:41 -0700
-Message-ID: <CALCETrU4KXbwvfgtBo=fZ-=DGzgTkEVP0G=FhvJhdoo=+K1g6g@mail.gmail.com>
-Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-To: "Theodore Ts'o" <tytso@mit.edu>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>, Marian Marinov <mm@1h.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lxc-devel <lxc-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 29 Apr 2014 20:34:49 -0400
+From: Matthew Dempsky <mdempsky@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Matthew Dempsky <mdempsky@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5] ptrace: Fix fork event messages across pid namespaces
+Date: Tue, 29 Apr 2014 17:34:37 -0700
+Message-Id: <1398818077-25107-1-git-send-email-mdempsky@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1398802858-13624-1-git-send-email-mdempsky@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 5:32 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Apr 30, 2014 at 12:16:41AM +0000, Serge Hallyn wrote:
->> I forget the details, but there was another case where I wanted to
->> have the userns which 'owns' the whole fs available.  I guess we'd
->> have to check against that instead of using inode_capable.
->
-> Yes, that sounds right.
->
-> And *please* tell me that that under no circumstances can anyone other
-> than root@init_user_ns is allowed to use mknod....
+On Tue, Apr 29, 2014 at 3:11 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> More Oleg review would be nice, please ;)
 
-I haven't read the code, but I tried it the other day, and I got
--EPERM.  So we're okay for now.  (Well, other than the issue I just
-sent to security@kernel.org, but that's not quite the same thing.)
+FWIW, Oleg "acked" v4 earlier in the thread.  Are you asking for
+further review from him beyond that?
 
---Andy
+> Well that's a scary comment.  If we're going to leave the code in this
+> state then please carefully describe (within this comment) the
+> *consequences* of the race.  Does the kernel crash?  Give away your ssh
+> keys?  If not then what.
+
+Sorry, I can see how that comment could be scary without proper
+context.  I added another sentence explaining the consequences are
+limited to the ptracer receiving a bogus pid_t value from
+PTRACE_GETEVENTMSG.
+
+> And how would userspace recognize and/or recover from the race?
+
+If the ptracer attaches via PTRACE_ATTACH, then there shouldn't be a
+race: the ptracer can't use PTRACE_SETOPTIONS to request fork events
+until after the child has already stopped.  So any SIGTRAP fork events
+that it receives before using PTRACE_SETOPTIONS it should disregard,
+because it hasn't asked the kernel to send them yet.
+
+If the ptracer attaches via PTRACE_SEIZE and also requests fork events
+at the same time, then it would need to discard the first SIGTRAP it
+receives for the child if:
+
+  1. it's a fork event;
+  2. the ptracer can't otherwise prove the fork happened after the
+     PTRACE_SEIZE rather than concurrently; and
+  3. the ptracer is concerned a ptracer from a different pid namespace
+     may have just detached.
+
+--
+
+v5:
+	- Clarify race condition comment to be less scary.
+
+v4 resend:
+	- Ran "git pull --rebase"; no code changes needed.
+
+v4:
+	- Refactor out ptrace_event_pid() to dedup FIXME code
+	- Handle task_active_pid_ns() returning NULL
+	- Use rcu_dereference() for accessing current->parent
+
+v3:
+        - Respond to Oleg feedback about p possibly already exiting
+          and adding proper locking
+        - Add comment warning that race condition still exists
+        - Removed selftest to instead be included with other ptrace tests
+        - Removed ptrace_message zero'ing; to be handled in followup patch
+
+v2:
+        - Moved selftests/ptrace-pidns into selftests/ptrace as pidns-events
+          per feedback from Kees.
+
+8>--------------------------------------------------------------------<8
+
+When tracing a process in another pid namespace, it's important for
+fork event messages to contain the child's pid as seen from the
+tracer's pid namespace, not the parent's.  Otherwise, the tracer won't
+be able to correlate the fork event with later SIGTRAP signals it
+receives from the child.
+
+We still risk a race condition if a ptracer from a different pid
+namespace attaches after we compute the pid_t value.  However, sending
+a bogus fork event message in this unlikely scenario is still a vast
+improvement over the status quo where we always send bogus fork event
+messages to debuggers in a different pid namespace than the forking
+process.
+
+Signed-off-by: Matthew Dempsky <mdempsky@chromium.org>
+---
+ include/linux/ptrace.h | 32 ++++++++++++++++++++++++++++++++
+ kernel/fork.c          | 10 +++++++---
+ 2 files changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+index 07d0df6..077904c 100644
+--- a/include/linux/ptrace.h
++++ b/include/linux/ptrace.h
+@@ -5,6 +5,7 @@
+ #include <linux/sched.h>		/* For struct task_struct.  */
+ #include <linux/err.h>			/* for IS_ERR_VALUE */
+ #include <linux/bug.h>			/* For BUG_ON.  */
++#include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
+ #include <uapi/linux/ptrace.h>
+ 
+ /*
+@@ -129,6 +130,37 @@ static inline void ptrace_event(int event, unsigned long message)
+ }
+ 
+ /**
++ * ptrace_event_pid - possibly stop for a ptrace event notification
++ * @event:	%PTRACE_EVENT_* value to report
++ * @pid:	process identifier for %PTRACE_GETEVENTMSG to return
++ *
++ * Check whether @event is enabled and, if so, report @event and @pid
++ * to the ptrace parent.  @pid is reported as the pid_t seen from the
++ * the ptrace parent's pid namespace.
++ *
++ * Called without locks.
++ */
++static inline void ptrace_event_pid(int event, struct pid *pid)
++{
++	/*
++	 * FIXME: There's a potential race if a ptracer in a different pid
++	 * namespace than parent attaches between computing message below and
++	 * when we acquire tasklist_lock in ptrace_stop().  If this happens,
++	 * the ptracer will get a bogus pid from PTRACE_GETEVENTMSG.
++	 */
++	unsigned long message = 0;
++	struct pid_namespace *ns;
++
++	rcu_read_lock();
++	ns = task_active_pid_ns(rcu_dereference(current->parent));
++	if (ns)
++		message = pid_nr_ns(pid, ns);
++	rcu_read_unlock();
++
++	ptrace_event(event, message);
++}
++
++/**
+  * ptrace_init_task - initialize ptrace state for a new child
+  * @child:		new child task
+  * @ptrace:		true if child should be ptrace'd by parent's tracer
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 54a8d26..1429043 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1606,10 +1606,12 @@ long do_fork(unsigned long clone_flags,
+ 	 */
+ 	if (!IS_ERR(p)) {
+ 		struct completion vfork;
++		struct pid *pid;
+ 
+ 		trace_sched_process_fork(current, p);
+ 
+-		nr = task_pid_vnr(p);
++		pid = get_task_pid(p, PIDTYPE_PID);
++		nr = pid_vnr(pid);
+ 
+ 		if (clone_flags & CLONE_PARENT_SETTID)
+ 			put_user(nr, parent_tidptr);
+@@ -1624,12 +1626,14 @@ long do_fork(unsigned long clone_flags,
+ 
+ 		/* forking complete and child started to run, tell ptracer */
+ 		if (unlikely(trace))
+-			ptrace_event(trace, nr);
++			ptrace_event_pid(trace, pid);
+ 
+ 		if (clone_flags & CLONE_VFORK) {
+ 			if (!wait_for_vfork_done(p, &vfork))
+-				ptrace_event(PTRACE_EVENT_VFORK_DONE, nr);
++				ptrace_event_pid(PTRACE_EVENT_VFORK_DONE, pid);
+ 		}
++
++		put_pid(pid);
+ 	} else {
+ 		nr = PTR_ERR(p);
+ 	}
+-- 
+1.9.1.423.g4596e3a
