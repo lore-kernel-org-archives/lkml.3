@@ -1,153 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758171AbaD3I3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:29:38 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:33705 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541AbaD3I3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:29:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <5360AE05.7020106@samsung.com>
-References: <1398232351-16280-1-git-send-email-leela.krishna@linaro.org> <5360AE05.7020106@samsung.com>
-From: Leela Krishna Amudala <leela.krishna@linaro.org>
-Date: Wed, 30 Apr 2014 13:59:12 +0530
-Message-ID: <CAM7CM0mJHWEAaqJ=jMkKXjkxr+XzC+QstSkFzX_g52JvrLUDCA@mail.gmail.com>
-Subject: Re: [PATCH V2] ARM: EXYNOS: cpu hotplug: use v7_exit_coherency_flush
- macro for cache disabling
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-pm <linux-pm@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1758039AbaD3IdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:33:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25461 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751818AbaD3IdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 04:33:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,956,1389772800"; 
+   d="scan'208";a="503579686"
+Subject: [PATCH] lib/spinlock_debug: Tweak the loop time to fit different
+ _delay()
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
+Cc: chuansheng.liu@intel.com, xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Apr 2014 18:40:38 -0400
+Message-ID: <1398897638.21870.8.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kgene,
+loops_per_jiffy*Hz  is not always 1 second exactly
+it depends on the realization of _delay() .
+delay_tsc is used as _delay() in arch/x86/lib/delay.c
+It makes loop loops_per_jiffy larger than exception
+and causes one thread can not obtain the spin lock for
+a long time which may trigger HARD LOCKUP in this case.
+So we use cpu_clock() which is more accurate.
 
-Can you please pick this patch to your tree ?
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ kernel/locking/spinlock_debug.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-Best Wishes,
-Leela Krishna.
+diff --git a/kernel/locking/spinlock_debug.c b/kernel/locking/spinlock_debug.c
+index 0374a59..471d26c 100644
+--- a/kernel/locking/spinlock_debug.c
++++ b/kernel/locking/spinlock_debug.c
+@@ -105,10 +105,13 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
+ 
+ static void __spin_lock_debug(raw_spinlock_t *lock)
+ {
+-	u64 i;
+-	u64 loops = loops_per_jiffy * HZ;
++	u64 t;
++	u64 one_second = 1000000000;
++	u32 this_cpu = raw_smp_processor_id();
++
++	t = cpu_clock(this_cpu);
+ 
+-	for (i = 0; i < loops; i++) {
++	while (cpu_clock(this_cpu) - t < one_second) {
+ 		if (arch_spin_trylock(&lock->raw_lock))
+ 			return;
+ 		__delay(1);
+-- 
+1.7.1
 
-On Wed, Apr 30, 2014 at 1:32 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> Hi,
->
-> On 04/23/2014 02:52 PM, Leela Krishna Amudala wrote:
->> A common macro v7_exit_coherency_flush available which does the below tasks in
->> the seqeunce.
->> -clearing C bit
->> -clearing L1 cache
->> -exit SMP
->> -instruction and data synchronization
->>
->> So removing the local functions which does the same thing and use the macro instead.
->>
->> Signed-off-by: Leela Krishna Amudala <leela.krishna@linaro.org>
->> Acked-by: Nicolas Pitre <nico@linaro.org>
->> ---
->> Changes since V1:
->>       - removed unwanted primary_part variable in exynos_cpu_die()
->>       - given more description in commit message
->>         suggested by Daniel Lezcano <daniel.lezcano@linaro.org>
->>
->>  arch/arm/mach-exynos/hotplug.c |   63 +---------------------------------------
->>  1 file changed, 1 insertion(+), 62 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
->> index 5eead53..9ca692d 100644
->> --- a/arch/arm/mach-exynos/hotplug.c
->> +++ b/arch/arm/mach-exynos/hotplug.c
->> @@ -24,56 +24,6 @@
->>  #include "common.h"
->>  #include "regs-pmu.h"
->>
->> -static inline void cpu_enter_lowpower_a9(void)
->> -{
->> -     unsigned int v;
->> -
->> -     asm volatile(
->> -     "       mcr     p15, 0, %1, c7, c5, 0\n"
->> -     "       mcr     p15, 0, %1, c7, c10, 4\n"
->> -     /*
->> -      * Turn off coherency
->> -      */
->> -     "       mrc     p15, 0, %0, c1, c0, 1\n"
->> -     "       bic     %0, %0, %3\n"
->> -     "       mcr     p15, 0, %0, c1, c0, 1\n"
->> -     "       mrc     p15, 0, %0, c1, c0, 0\n"
->> -     "       bic     %0, %0, %2\n"
->> -     "       mcr     p15, 0, %0, c1, c0, 0\n"
->> -       : "=&r" (v)
->> -       : "r" (0), "Ir" (CR_C), "Ir" (0x40)
->> -       : "cc");
->> -}
->> -
->> -static inline void cpu_enter_lowpower_a15(void)
->> -{
->> -     unsigned int v;
->> -
->> -     asm volatile(
->> -     "       mrc     p15, 0, %0, c1, c0, 0\n"
->> -     "       bic     %0, %0, %1\n"
->> -     "       mcr     p15, 0, %0, c1, c0, 0\n"
->> -       : "=&r" (v)
->> -       : "Ir" (CR_C)
->> -       : "cc");
->> -
->> -     flush_cache_louis();
->> -
->> -     asm volatile(
->> -     /*
->> -     * Turn off coherency
->> -     */
->> -     "       mrc     p15, 0, %0, c1, c0, 1\n"
->> -     "       bic     %0, %0, %1\n"
->> -     "       mcr     p15, 0, %0, c1, c0, 1\n"
->> -     : "=&r" (v)
->> -     : "Ir" (0x40)
->> -     : "cc");
->> -
->> -     isb();
->> -     dsb();
->> -}
->> -
->>  static inline void cpu_leave_lowpower(void)
->>  {
->>       unsigned int v;
->> @@ -132,19 +82,8 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
->>  void __ref exynos_cpu_die(unsigned int cpu)
->>  {
->>       int spurious = 0;
->> -     int primary_part = 0;
->>
->> -     /*
->> -      * we're ready for shutdown now, so do it.
->> -      * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
->> -      * number by reading the Main ID register and then perform the
->> -      * appropriate sequence for entering low power.
->> -      */
->> -     asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
->> -     if ((primary_part & 0xfff0) == 0xc0f0)
->> -             cpu_enter_lowpower_a15();
->> -     else
->> -             cpu_enter_lowpower_a9();
->> +     v7_exit_coherency_flush(louis);
->>
->>       platform_do_lowpower(cpu, &spurious);
->>
->>
->
-> I tested this patch on Exynos3250 based on Cortex-A7 dual core.
->
-> Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
->
-> Thanks,
-> Chanwoo Choi
->
