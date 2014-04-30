@@ -1,165 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845AbaD3CKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:10:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14825 "EHLO mga09.intel.com"
+	id S1755989AbaD3CLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:11:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25144 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaD3CE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:04:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,955,1389772800"; 
-   d="scan'208";a="503427809"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH 00/27] ACPICA: 20140424 Release
-Date: Wed, 30 Apr 2014 10:03:22 +0800
-Message-Id: <cover.1398817612.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
+	id S1750842AbaD3CLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 22:11:46 -0400
+Date: Wed, 30 Apr 2014 10:13:03 +0800
+From: Dave Young <dyoung@redhat.com>
+To: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] earlyprintk=efi,keep fix
+Message-ID: <20140430021303.GA12316@darkstar.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPICA 20140424 Release Notes for kernel-resident subsystem:
 
-Implemented support to skip/ignore NULL address entries in the RSDT/XSDT.
-Some of these tables are known to contain a trailing NULL entry. Lv Zheng.
+earlyprintk=efi,keep will cause kernel hangs while freeing initmem like below:
+[    2.826089] VFS: Mounted root (ext4 filesystem) readonly on device 254:2.
+[    2.846592] devtmpfs: mounted
+[    2.856974] Freeing unused kernel memory: 880K (ffffffff817d4000 - ffffffff818b0000)
 
-Removed an extraneous error message for the case where there are a large
-number of system GPEs (> 124). This was the "32-bit FADT register is too
-long to convert to GAS struct" message, which is irrelevant for GPEs since
-the GPEx_BLK_LEN fields of the FADT are always used instead of the (limited
-capacity) GAS bit length. Also, several changes to ensure proper support
-for GPE numbers > 255, where some "GPE number" fields were 8-bits
-internally.
+It is caused by efi earlyprintk use __init function which will be freed later.
+Such as early_efi_write is marked as __init, also it will use early_ioremap
+which is init function as well.
 
-Implemented and deployed additional configuration support for the public
-ACPICA external interfaces. Entire classes of interfaces can now be easily
-modified or configured out, replaced by stubbed inline functions by
-default. Lv Zheng.
+To fix this issue, I added one early initcall efi_ioremap_fb which will map the whole
+efi fb for later use. OTOH, adding a wrapper function efi_ioremap which will call
+early_ioremap before ioremap is available.
 
-Moved all public ACPICA runtime configuration globals to the public ACPICA
-external interface file for convenience. Also, removed some obsolete/unused
-globals. See the file acpixf.h. Lv Zheng.
+With this patch applied efi boot ok with earlyprintk=efi,keep console=efi
 
-Documentation: Added a new section to the ACPICA reference describing the
-maximum number of GPEs that can be supported by the FADT-defined GPEs in
-block zero and one. About 1200 total. See section 4.4.1 of the ACPICA
-reference.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ arch/x86/platform/efi/early_printk.c |   54 +++++++++++++++++++++++++++--------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
 
-Example Code and Data Size: These are the sizes for the OS-independent
-acpica.lib produced by the Microsoft Visual C++ 9.0 32-bit compiler. The
-debug version of the code includes the debug output trace mechanism and has
-a much larger code and data size.
-
-  Current Release:
-    Non-Debug Version:  96.8K Code, 27.2K Data, 124.0K Total
-    Debug Version:     189.5K Code, 79.7K Data, 269.2K Total
-  Previous Release:
-    Non-Debug Version:  97.0K Code, 27.2K Data, 124.2K Total
-    Debug Version:     189.7K Code, 79.5K Data, 269.2K Total
-
-===============
-
-The 20140424 ACPICA kernel-resident subsystem updates are linuxized based
-on the pm/linux-next branch to form this patchset.
-
-The patchset has passed the following build/boot tests.
-Build tests are performed as follows:
-1. i386 + default + COFNIG_ACPI=y
-2. i386 + allyes + CONFIG_ACPI=y
-3. i386 + default + COFNIG_ACPI=n
-4. i386 + allyes + CONFIG_ACPI=n
-5. x86_64 + default + COFNIG_ACPI=y
-6. x86_64 + allyes + CONFIG_ACPI=y
-7. x86_64 + default + COFNIG_ACPI=n
-8. x86_64 + allyes + CONFIG_ACPI=n
-Boot tests are performed as follows:
-1. i386 + default + COFNIG_ACPI=y
-2. x86_64 + default + COFNIG_ACPI=y
-Where:
-1. i386: machine named as "Dell Inspiron Mini 1010"
-2. x86_64: machine named as "HP Compaq 8200 Elite SFF PC"
-3. default: kernel configuration with following items enabled:
-   All hardware drivers related to the machines of i386/x86_64
-   All drivers/acpi configurations
-   All platform drivers
-   All ACPI drivers
-   4 DRM drivers that implement ACPI opregion
-   All buses with ACPI bindings
-   All cpufreq configurations
-   All xen configurations
-   All ACPI table drivers
-4. allyes: kernel configuration generated by allyesconfig.
-
-After applying this series, the divergence result is:
- 952 Lines, 33.5 Kbytes.
-
-Bob Moore (10):
-  ACPICA: Update acpi_buffer_to_resource interface.
-  ACPICA: Add support for LPIT table.
-  ACPICA: Add support for _LPD and _PRP methods.
-  ACPICA: Comment updates - no functional change.
-  ACPICA: Back port of _PRP update.
-  ACPICA: Back port of improvements on exception code.
-  ACPICA: Remove extraneous error message for large number of GPEs.
-  ACPICA: Events: Update GPE handling and initialization code.
-  ACPICA: Comment/format update, no functional change.
-  ACPICA: Update version to 20140424.
-
-David E. Box (1):
-  ACPICA: Update handling of PCI ID lists.
-
-Lv Zheng (16):
-  ACPICA: Utilities: Cleanup obsoleted global variables.
-  ACPICA: Utilities: Deploy ACPI_DEBUGGER_EXEC for ACPI_DEBUGGER
-    enabled code in utglobal.c.
-  ACPICA: acpidump: Fix code issue in invoking fread in the loop.
-  ACPICA: Update global variable definitions. No functional change.
-  ACPICA: OSL: Move external globals from utglobal.c to acpixf.h using
-    ACPI_INIT_GLOBAL/ACPI_GLOBAL.
-  ACPICA: OSL: Add configurability for memory allocation macros.
-  ACPICA: OSL: Add configurability for error message functions.
-  ACPICA: OSL: Add configurability for debug output functions.
-  ACPICA: OSL: Add section to collect the divergence in acpixf.h.
-  ACPICA: OSL: Add configurability for generic external functions.
-  ACPICA: Linux header: Add support for stubbed externals.
-  ACPICA: acpidump: Fix truncated RSDP signature validation.
-  ACPICA: Tables: Fix invalid pointer accesses in
-    acpi_tb_parse_root_table().
-  ACPICA: acpidump: Add support to force using RSDT.
-  ACPICA: Tables: Add new mechanism to skip NULL entries in RSDT and
-    XSDT.
-  ACPICA: Tables: Remove old mechanism to validate if XSDT contains
-    NULL entries.
-
- drivers/acpi/acpica/acevents.h                     |    5 +-
- drivers/acpi/acpica/acglobal.h                     |  141 +---
- drivers/acpi/acpica/aclocal.h                      |    9 +-
- drivers/acpi/acpica/acpredef.h                     |    4 +
- drivers/acpi/acpica/evgpe.c                        |   13 +-
- drivers/acpi/acpica/evgpeblk.c                     |   34 +-
- drivers/acpi/acpica/evgpeinit.c                    |   12 +-
- drivers/acpi/acpica/evxfgpe.c                      |    7 +-
- drivers/acpi/acpica/hwpci.c                        |   15 +-
- drivers/acpi/acpica/rscreate.c                     |   13 +-
- drivers/acpi/acpica/tbfadt.c                       |   51 +-
- drivers/acpi/acpica/tbutils.c                      |  123 +--
- drivers/acpi/acpica/utglobal.c                     |   26 +-
- drivers/acpi/acpica/utxferror.c                    |    2 +
- include/acpi/acnames.h                             |    1 +
- include/acpi/acpixf.h                              |  834 +++++++++++++-------
- include/acpi/actbl1.h                              |    4 +-
- include/acpi/actbl2.h                              |   71 +-
- include/acpi/actypes.h                             |   21 +
- include/acpi/platform/aclinux.h                    |   31 +
- .../acpi/os_specific/service_layers/oslinuxtbl.c   |  102 ++-
- tools/power/acpi/tools/acpidump/acpidump.h         |   23 +-
- tools/power/acpi/tools/acpidump/apmain.c           |   13 +-
- 23 files changed, 900 insertions(+), 655 deletions(-)
-
--- 
-1.7.10
-
+--- linux-2.6.orig/arch/x86/platform/efi/early_printk.c
++++ linux-2.6/arch/x86/platform/efi/early_printk.c
+@@ -14,8 +14,38 @@
+ 
+ static const struct font_desc *font;
+ static u32 efi_x, efi_y;
++static void *efi_fb;
+ 
+-static __init void early_efi_clear_scanline(unsigned int y)
++static __init int efi_ioremap_fb(void)
++{
++	unsigned long base, size;
++
++	base = boot_params.screen_info.lfb_base;
++	size = boot_params.screen_info.lfb_size;
++	efi_fb = ioremap(base, size);
++
++	return efi_fb ? 0 : -ENOMEM;
++}
++early_initcall(efi_ioremap_fb);
++
++static __init_refok void *efi_ioremap(unsigned long start, unsigned long len)
++{
++	unsigned long base;
++
++	base = boot_params.screen_info.lfb_base;
++	if (efi_fb)
++		return (efi_fb + start - base);
++	else
++		return early_ioremap(start, len);
++}
++
++static __init_refok void efi_iounmap(void *addr, unsigned long len)
++{
++	if (!efi_fb)
++		early_iounmap(addr, len);
++}
++
++static void early_efi_clear_scanline(unsigned int y)
+ {
+ 	unsigned long base, *dst;
+ 	u16 len;
+@@ -23,15 +53,15 @@ static __init void early_efi_clear_scanl
+ 	base = boot_params.screen_info.lfb_base;
+ 	len = boot_params.screen_info.lfb_linelength;
+ 
+-	dst = early_ioremap(base + y*len, len);
++	dst = efi_ioremap(base + y*len, len);
+ 	if (!dst)
+ 		return;
+ 
+ 	memset(dst, 0, len);
+-	early_iounmap(dst, len);
++	efi_iounmap(dst, len);
+ }
+ 
+-static __init void early_efi_scroll_up(void)
++static void early_efi_scroll_up(void)
+ {
+ 	unsigned long base, *dst, *src;
+ 	u16 len;
+@@ -42,20 +72,20 @@ static __init void early_efi_scroll_up(v
+ 	height = boot_params.screen_info.lfb_height;
+ 
+ 	for (i = 0; i < height - font->height; i++) {
+-		dst = early_ioremap(base + i*len, len);
++		dst = efi_ioremap(base + i*len, len);
+ 		if (!dst)
+ 			return;
+ 
+-		src = early_ioremap(base + (i + font->height) * len, len);
++		src = efi_ioremap(base + (i + font->height) * len, len);
+ 		if (!src) {
+-			early_iounmap(dst, len);
++			efi_iounmap(dst, len);
+ 			return;
+ 		}
+ 
+ 		memmove(dst, src, len);
+ 
+-		early_iounmap(src, len);
+-		early_iounmap(dst, len);
++		efi_iounmap(src, len);
++		efi_iounmap(dst, len);
+ 	}
+ }
+ 
+@@ -79,7 +109,7 @@ static void early_efi_write_char(u32 *ds
+ 	}
+ }
+ 
+-static __init void
++static void
+ early_efi_write(struct console *con, const char *str, unsigned int num)
+ {
+ 	struct screen_info *si;
+@@ -109,7 +139,7 @@ early_efi_write(struct console *con, con
+ 		for (h = 0; h < font->height; h++) {
+ 			unsigned int n, x;
+ 
+-			dst = early_ioremap(base + (efi_y + h) * len, len);
++			dst = efi_ioremap(base + (efi_y + h) * len, len);
+ 			if (!dst)
+ 				return;
+ 
+@@ -123,7 +153,7 @@ early_efi_write(struct console *con, con
+ 				s++;
+ 			}
+ 
+-			early_iounmap(dst, len);
++			efi_iounmap(dst, len);
+ 		}
+ 
+ 		num -= count;
