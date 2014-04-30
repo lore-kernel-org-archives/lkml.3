@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965009AbaD3SNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:13:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:49227 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159AbaD3SNC (ORCPT
+	id S1759165AbaD3SNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:13:48 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:58293 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159AbaD3SNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:13:02 -0400
-Message-ID: <53613D23.3020503@atmel.com>
-Date: Wed, 30 Apr 2014 11:12:51 -0700
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 30 Apr 2014 14:13:46 -0400
 MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Jean-Jacques Hiblot" <jjhiblot@traphandler.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 00/11] ARM: at91: rework main and slow clk implementation
-References: <1398172360-7837-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1398172360-7837-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
+References: <53554CDA.1060806@mentor.com>
+	<5357EABB.3070400@zytor.com>
+	<5357F310.8090600@mentor.com>
+	<CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
+	<CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
+Date: Wed, 30 Apr 2014 11:13:46 -0700
+Message-ID: <CAGXu5j+96t-AgFj6cy1L1cOLM54nkiiWnpiqWgFemBaP80cR6Q@mail.gmail.com>
+Subject: Re: randomized placement of x86_64 vdso
+From: Kees Cook <keescook@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Nathan Lynch <Nathan_Lynch@mentor.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/04/2014 06:12, Boris BREZILLON :
-> Hello,
-> 
-> This series introduce the real clock model (as described in atmel datasheets)
-> for slow and main clocks.
-> 
-> The modifications introduced by this series break the DT compat, but, as the
-> at91 CCF based implementation is pretty new (introduced in 3.14 only for sama5
-> eval boards) I think it won't impact a lot of users.
-> 
-> Nicolas, Mike, if this series is accepted, I'd like to get it merged as soon as
-> possible to prevent other developpers from using a deprecated DT binding.
-> Moreover, I think this series should go through the same path for both clk
-> and DT changes (whatever path is chosen: either at91 or clk tree) because the
-> changes are tightly coupled.
+On Wed, Apr 30, 2014 at 10:52 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Wed, Apr 30, 2014 at 10:47 AM, Kees Cook <keescook@google.com> wrote:
+>> On Wed, Apr 23, 2014 at 10:06 AM, Nathan Lynch <Nathan_Lynch@mentor.com> wrote:
+>>> On 04/23/2014 11:30 AM, H. Peter Anvin wrote:
+>>>> On 04/21/2014 09:52 AM, Nathan Lynch wrote:
+>>>>> Hi x86/vdso people,
+>>>>>
+>>>>> I've been working on adding a vDSO to 32-bit ARM, and Kees suggested I
+>>>>> look at x86_64's algorithm for placing the vDSO at a randomized offset
+>>>>> above the stack VMA.  I found that when the stack top occupies the
+>>>>> last slot in the PTE (is that the right term?), the vdso_addr routine
+>>>>> returns an address below mm->start_stack, equivalent to
+>>>>> (mm->start_stack & PAGE_MASK).  For instance if mm->start_stack is
+>>>>> 0x7fff3ffffc96, vdso_addr returns 0x7fff3ffff000.
+>>>>>
+>>>>> Since the address returned is always already occupied by the stack,
+>>>>> get_unmapped_area detects the collision and falls back to
+>>>>> vm_unmapped_area.  This results in the vdso being placed in the
+>>>>> address space next to libraries etc.  While this is generally
+>>>>> unnoticeable and doesn't break anything, it does mean that the vdso is
+>>>>> placed below the stack when there is actually room above the stack.
+>>>>> To me it also seems uncomfortably close to placing the vdso in the way
+>>>>> of downward expansion of the stack.
+>>>>>
+>>>>> I don't have a patch because I'm not sure what the algorithm should
+>>>>> be, but thought I would bring it up as vdso_addr doesn't seem to be
+>>>>> behaving as intended in all cases.
+>>>>>
+>>>>
+>>>> If the stack occupies the last possible page, how can you say there is
+>>>> "space above the stack"?
+>>>
+>>> Sorry for being unclear.  I probably am getting terminology wrong.  What
+>>> I'm trying to express is that if the stack top is in the last page of
+>>> its last-level page table (which may be the last possible page, but
+>>> that's not really the interesting case), vdso_addr returns an address
+>>> below mm->start_stack.
+>>
+>> It seems like this is avoidable, then? From your example, it seems
+>> like we lose the separated randomization in this case, but we don't
+>> need to? Do you have a suggestion for what could be done to fix this?
+>
+> I don't understand why the vDSO should be special here.  Either the
+> standard logic for randomizing the placement of DSOs is good, in which
+> case it should be good for the vDSO too, or I think we should fix it
+> for everything.
 
-Boris,
+The issue is specific to the vdso randomizing-near-the-stack code;
+regular mmap randomization is operating correctly. The reason for
+randomizing stack, vdso, and mmap separately is to avoid correlation
+of leaked offsets in one to the other regions.
 
-First of all, well...
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-I didn't find something to add but the little comment about the
-documentation that you already fixed in this v3 version.
-
-Mike,
-
-I would like to merge this whole series through my tree and then the
-arm-soc tree. If it is okay for you, can you give your acknowledgement
-before that I build a pull-request for the arm-soc guys?
-
-Thanks a lot, bye,
-
-> Changes since v2:
->  - add missing compatible in pmc.c
->  - fix sam9261 slow clock definition
->  - move xtal nodes out of /clocks node
->  - fix DT bindings documentation
->  - fix main RC oscillator initilization
-> 
-> Changes since v1:
-> - fix sam9rl main clk definition
-> Boris BREZILLON (11):
->   clk: at91: rework main clk implementation
->   clk: at91: update main clk documentation
->   clk: at91: add slow clks driver
->   clk: at91: add slow clk documentation
->   ARM: at91/dt: move sama5d3 SoC to the new main/slow clk model
->   ARM: at91/dt: add xtal frequencies to sama5d3xcm boards
->   ARM: at91/dt: add xtal frequencies to sama5d3 xplained board
->   ARM: at91/dt: move at91sam9261 SoC to the new main clock model
->   ARM: at91/dt: define main xtal frequency of the at91sam9261ek board
->   ARM: at91/dt: move at91sam9rl SoC to the new slow/main clock models
->   ARM: at91/dt: define sam9rlek crystal frequencies
-> 
->  .../devicetree/bindings/clock/at91-clock.txt       | 128 ++++-
->  arch/arm/boot/dts/at91-sama5d3_xplained.dts        |   8 +
->  arch/arm/boot/dts/at91sam9261.dtsi                 |  23 +-
->  arch/arm/boot/dts/at91sam9261ek.dts                |   4 +
->  arch/arm/boot/dts/at91sam9rl.dtsi                  |  46 +-
->  arch/arm/boot/dts/at91sam9rlek.dts                 |   9 +
->  arch/arm/boot/dts/sama5d3.dtsi                     |  61 ++-
->  arch/arm/boot/dts/sama5d3xcm.dtsi                  |   8 +
->  drivers/clk/at91/Makefile                          |   4 +-
->  drivers/clk/at91/clk-main.c                        | 577 ++++++++++++++++++---
->  drivers/clk/at91/clk-slow.c                        | 467 +++++++++++++++++
->  drivers/clk/at91/pmc.c                             |  17 +
->  drivers/clk/at91/pmc.h                             |   9 +
->  drivers/clk/at91/sckc.c                            |  57 ++
->  drivers/clk/at91/sckc.h                            |  22 +
->  include/linux/clk/at91_pmc.h                       |   1 +
->  16 files changed, 1352 insertions(+), 89 deletions(-)
->  create mode 100644 drivers/clk/at91/clk-slow.c
->  create mode 100644 drivers/clk/at91/sckc.c
->  create mode 100644 drivers/clk/at91/sckc.h
-> 
-
+-Kees
 
 -- 
-Nicolas Ferre
+Kees Cook
+Chrome OS Security
