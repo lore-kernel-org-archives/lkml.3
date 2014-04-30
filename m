@@ -1,150 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945967AbaD3QnC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:43:02 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:51306 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933593AbaD3QnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:43:00 -0400
-Message-ID: <1398876176.2618.12.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Date: Wed, 30 Apr 2014 09:42:56 -0700
-In-Reply-To: <20140430100047.GE11096@twins.programming.kicks-ass.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	 <20140430100047.GE11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946049AbaD3QnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:43:09 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:59129 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933593AbaD3QnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:43:06 -0400
+Date: Wed, 30 Apr 2014 10:42:36 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/15] ARM: dts: kirkwood: consolidate common pinctrl
+ settings
+Message-ID: <20140430164236.GC12944@obsidianresearch.com>
+References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 12:00 +0200, Peter Zijlstra wrote:
-> On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
-> >  __visible
-> >  struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >  {
-> > -	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
-> > +	long count;
-> >  	struct rwsem_waiter waiter;
-> >  	struct task_struct *tsk = current;
-> > +	bool waiting = true;
-> > +
-> > +	/* undo write bias from down_write operation, stop active locking */
-> > +	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
-> > +
-> > +	/* do optimistic spinning and steal lock if possible */
-> > +	if (rwsem_optimistic_spin(sem))
-> > +		goto done;
-> 
-> Why done, why not return? Afaict there's not yet been a change to the
-> state.
+On Wed, Apr 30, 2014 at 02:56:34PM +0200, Sebastian Hesselbarth wrote:
+> All SoCs have the same pinctrl setting for NAND, UART0/1, SPI, TWSI0,
+> and GBE1. Move it to the common pinctrl node that we now have.
 
-Right.
+There are two possible choices for UART0, UART1, and SPI on kirkwood..
 
-> >  
-> >  	/* set up my own style of waitqueue */
-> >  	waiter.task = tsk;
-> > @@ -204,34 +382,29 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >  
-> >  	raw_spin_lock_irq(&sem->wait_lock);
-> >  	if (list_empty(&sem->wait_list))
-> > -		adjustment += RWSEM_WAITING_BIAS;
-> > +		waiting = false;
-> >  	list_add_tail(&waiter.list, &sem->wait_list);
-> >  
-> >  	/* we're now waiting on the lock, but no longer actively locking */
-> > -	count = rwsem_atomic_update(adjustment, sem);
-> > +	if (waiting)
-> > +		count = ACCESS_ONCE(sem->count);
-> > +	else
-> > +		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
-> > +
-> 
-> Is there a reason we must delay this? Why not do away with the waiting
-> variable and do it where we check the list_empty() ?
+For instance I use this on my board:
 
-Yeah, that would simplify things, afaict.
+                                pmx_spi0: pmx-spi0 {
+                                        marvell,pins = "mpp7", "mpp10", "mpp11", "mpp12";
+                                        marvell,function = "spi";
+                                };
 
-> 
-> If there is a reason -- eg. we must order the list op vs the count op,
-> then there's a comment missing.
+vs
 
-There is no such reason.
+> +
+> +			pmx_spi: pmx-spi {
+> +				marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3";
+> +				marvell,function = "spi";
+> +			};
 
-> 
-> > -	/* If there were already threads queued before us and there are no
-> > +	/*
-> > +	 * If there were already threads queued before us and there are no
-> >  	 * active writers, the lock must be read owned; so we try to wake
-> > -	 * any read locks that were queued ahead of us. */
-> > -	if (count > RWSEM_WAITING_BIAS &&
-> > -	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
-> > +	 * any read locks that were queued ahead of us.
-> > +	 */
-> > +	if ((count > RWSEM_WAITING_BIAS) && waiting)
-> >  		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
-> >  
-> >  	/* wait until we successfully acquire the lock */
-> >  	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-> 
-> We should really use set_current_state(), there is no way tsk is
-> anything other than current, and using set_task_state() implies we're
-> changing someone else's state.
-> 
-> >  	while (true) {
-> > -		if (!(count & RWSEM_ACTIVE_MASK)) {
-> > -			/* Try acquiring the write lock. */
-> > -			count = RWSEM_ACTIVE_WRITE_BIAS;
-> > -			if (!list_is_singular(&sem->wait_list))
-> > -				count += RWSEM_WAITING_BIAS;
-> > -
-> > -			if (sem->count == RWSEM_WAITING_BIAS &&
-> > -			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
-> > -							RWSEM_WAITING_BIAS)
-> > -				break;
-> > -		}
-> > -
-> > +		if (rwsem_try_write_lock(count, sem))
-> > +			break;
-> >  		raw_spin_unlock_irq(&sem->wait_lock);
-> >  
-> >  		/* Block until there are no active lockers. */
-> > @@ -245,8 +418,8 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
-> >  
-> >  	list_del(&waiter.list);
-> >  	raw_spin_unlock_irq(&sem->wait_lock);
-> > +done:
-> >  	tsk->state = TASK_RUNNING;
-> 
-> __set_current_state(TASK_RUNNING);
-> 
-> Also, I would really expect this to be done right after the wait loop,
-> not outside of the lock.
+It looks like all the boards in the kernel use the same choice, so it
+makes some sense to consolidate, but I assume a board file can
+override the marvell,pins?
 
-Sure.
+Otherwise the rest of your patchset looked sane to me.
 
-> > -
-> >  	return sem;
-> >  }
-> 
-> Otherwise this looks ok I suppose.
-
-Thanks for the review!
-
+Regards,
+Jason
