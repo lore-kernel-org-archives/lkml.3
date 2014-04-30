@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895AbaD3Noe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:44:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758576AbaD3Nod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:44:33 -0400
-Date: Wed, 30 Apr 2014 09:30:35 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>, <sandeen@redhat.com>,
-        <akpm@linux-foundation.org>, <jweiner@redhat.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <mhocko@suse.cz>,
-        <fengguang.wu@intel.com>, <mpatlasov@parallels.com>,
-        <Motohiro.Kosaki@us.fujitsu.com>
-Subject: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
-Message-ID: <20140430093035.7e7226f2@annuminas.surriel.com>
-In-Reply-To: <5360C9E7.6010701@jp.fujitsu.com>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-	<5360C9E7.6010701@jp.fujitsu.com>
-Organization: Red Hat, Inc.
+	id S1758949AbaD3Nqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:46:36 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48462 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaD3Nqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:46:34 -0400
+Date: Wed, 30 Apr 2014 15:46:28 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+Cc: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "mpa@pengutronix.de" <mpa@pengutronix.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 0/2] add DT endianness binding support
+Message-ID: <20140430134628.GA6201@netboy>
+References: <1398833029-29546-1-git-send-email-Li.Xiubo@freescale.com>
+ <20140430071011.GA7312@netboy>
+ <334a9f7420ca466b9011f0c0ae53abda@BY2PR03MB505.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <334a9f7420ca466b9011f0c0ae53abda@BY2PR03MB505.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 19:01:11 +0900
-Masayoshi Mizuma <m.mizuma@jp.fujitsu.com> wrote:
-
-> Hi Rik,
+On Wed, Apr 30, 2014 at 07:14:08AM +0000, Li.Xiubo@freescale.com wrote:
 > 
-> I applied your patch to linux-next kernel, then divide error happened
-> when I ran ltp stress test.
-> The divide error occurred on the following div_u64(), so the following
-> should be also fixed...
+> > Subject: Re: [PATCHv3 0/2] add DT endianness binding support
+> > 
+> > Shouldn't this go to the arm list and rmk for review, too?
+> > 
 > 
-> static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+> Well, yes, I forgot it.
+> 
+> Should I resend them ?
 
-Good catch.  This patch fixes both places, and also has Andrew's
-improvements in both places.
+What I meant was, you should put
 
-Andrew, this can drop in -mm instead of my previous patch and
-your two cleanups to it.
+	<linux-arm-kernel@lists.infradead.org>
 
----8<---
+and
 
-Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
+	"Russell King <linux@arm.linux.org.uk>"
 
-It is possible for "limit - setpoint + 1" to equal zero, leading to a
-divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-working, so we need to actually test the divisor before calling div64.
+onto CC.
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
- mm/page-writeback.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index ef41349..f98a297 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
- 					  unsigned long dirty,
- 					  unsigned long limit)
- {
-+	unsigned long divisor;
- 	long long pos_ratio;
- 	long x;
- 
-+	divisor = limit - setpoint;
-+	if (!divisor)
-+		divisor = 1;	/* Avoid div-by-zero */
-+
- 	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
--		    limit - setpoint + 1);
-+		    divisor);
- 	pos_ratio = x;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
- 	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-@@ -842,8 +847,12 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
- 	x_intercept = bdi_setpoint + span;
- 
- 	if (bdi_dirty < x_intercept - span / 4) {
-+		unsigned long divisor = x_intercept - bdi_setpoint;
-+		if (!divisor)
-+			divisor = 1;	/* Avoid div-by-zero */
-+
- 		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
--				    x_intercept - bdi_setpoint + 1);
-+				    divisor);
- 	} else
- 		pos_ratio /= 4;
- 
+Thanks,
+Richard
