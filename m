@@ -1,144 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368AbaD3SXG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:23:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:46942 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759057AbaD3SXD (ORCPT
+	id S1945948AbaD3SaT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:30:19 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1945910AbaD3SaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:23:03 -0400
-X-AuditID: cbfee61a-b7f2b6d000006c4d-c2-53613f85a06f
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Levente Kurusa <levex@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux ATA/IDE <linux-ide@vger.kernel.org>,
-        Joe Thomas <Joe.Thomas@dothill.com>
-Subject: Re: [PATCH] ahci: unregister acpi notify handler when a ZPODD is
- unbound
-Date: Wed, 30 Apr 2014 20:22:31 +0200
-Message-id: <1414277.0ei2d0Yjc1@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <1398873887-23920-1-git-send-email-levex@linux.com>
-References: <1398873887-23920-1-git-send-email-levex@linux.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t9jAd1W+8Rgg78z1C0ObHnGaLG04y27
-	xbEdj5gsLu+aw2bxa/lRRgdWj9aLcR6bVnWyeTy5Mp3J4/MmuQCWKC6blNSczLLUIn27BK6M
-	6cduMBbslqrYOHs9UwPjLNEuRg4OCQETiSsn5boYOYFMMYkL99azdTFycQgJLGKU2PPoKRNI
-	QkighUliUVs2iM0mYCUxsX0VI0iviICKxIWt6iD1zAJTGCXOLXrMDFIjLBAscXXXVzCbRUBV
-	4teP9+wgNq+ApsTfp3tYQWxRAU+JHdtXsoHYnAIOEg8WbGGF2GUvsfjJT1aIekGJH5PvsYDY
-	zALyEvv2T2WFsHUk9rdOY5vAKDALSdksJGWzkJQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66X
-	nJ+7iREcws+kdjCubLA4xCjAwajEwzuBLTFYiDWxrLgy9xCjBAezkgjv0X8JwUK8KYmVValF
-	+fFFpTmpxYcYpTlYlMR5D7RaBwoJpCeWpGanphakFsFkmTg4pRoYV+uUvVzVJ/6ZITFl6oYL
-	nQ++vV72uyNObk6TRPxPbjv7f5a3dIr5M3P2Ptq4tvLV+X+LDYyNbaP+N3Wq5iU/3uaW49u6
-	LXyd24uJ+nNEnnUuL3JQVd7/ap23WXXpEg6bK5s21E+4NNVqsqrY6wcNfcdbWGfIxxnNyrVk
-	W/aE/aA/Y++Z74lblViKMxINtZiLihMBVAMEEl0CAAA=
+	Wed, 30 Apr 2014 14:30:16 -0400
+Date: Wed, 30 Apr 2014 11:29:47 -0700
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann Arnd Bergmann <arnd@arndb.de>,
+        Roger Quadros <rogerq@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v4 1/2] Documentation: Add GPIO reset binding to reset
+ binding documentation
+Message-ID: <20140430182947.GF3000@lukather>
+References: <1397463709-19405-1-git-send-email-p.zabel@pengutronix.de>
+ <20140417115820.GD4132@lukather>
+ <1398848062.19894.38.camel@paszta.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L+ofChggJdETEG3Y"
+Content-Disposition: inline
+In-Reply-To: <1398848062.19894.38.camel@paszta.hi.pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi,
+--L+ofChggJdETEG3Y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wednesday, April 30, 2014 06:04:47 PM Levente Kurusa wrote:
-> When a ZPODD device is unbound via sysfs, the acpi notify handler
-> is not removed. This causes panics as observed in Bug #74601. The
-> panic only happens when the wake happens from outside the kernel
-> (i.e. inserting media or pressing a button). Implement a new
-> ahci_remove_one function which causes zpodd_exit to be called for all
-> ZPODD devices on the unbound PCI device.
-> 
-> Signed-off-by: Levente Kurusa <levex@linux.com>
-> ---
-> 
-> Hi,
-> 
-> I am not sure if the loop below is correct. Maybe there is a better
-> solution to loop through all the devices which might use ZPODD?
-> 
-> Thanks, Lev.
-> 
->  drivers/ata/ahci.c         | 21 +++++++++++++++++++++
->  drivers/ata/ahci.h         |  4 ++++
->  drivers/ata/libata-zpodd.c |  1 +
->  3 files changed, 26 insertions(+)
-> 
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index 5a0bf8e..6d92bc9 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -475,12 +475,33 @@ static const struct pci_device_id ahci_pci_tbl[] = {
->  	{ }	/* terminate list */
->  };
->  
-> +#ifdef CONFIG_SATA_ZPODD
-> +void ahci_remove_one(struct pci_dev *pdev)
-> +{
-> +	struct ata_host *host = pci_get_drvdata(pdev);
-> +	struct ata_link *link;
-> +	struct ata_device *dev;
-> +	int i;
-> +
-> +	for (i = 0; i < host->n_ports; i++)
-> +		ata_for_each_link(link, host->ports[i], HOST_FIRST)
-> +			ata_for_each_dev(dev, link, ALL)
-> +				if (dev->zpodd)
-> +					zpodd_exit(dev);
+On Wed, Apr 30, 2014 at 10:54:22AM +0200, Philipp Zabel wrote:
+> Hi Maxime,
+>=20
+> Am Donnerstag, den 17.04.2014, 13:58 +0200 schrieb Maxime Ripard:
+> > I still feel like we should really treat gpios like just another reset
+> > controller, ie. using the resets property.
+>=20
+> I now feel like we really shouldn't. If we do anything but use the
+> generic gpio bindings for reset gpios, we might force every OS or
+> bootloader using the device tree to implement some kind of reset
+> controller framework, even for hardware that only has gpio resets.
 
-zpodd_init() is used in generic libata library code, same should be true
-for zpodd_exit().  Ideally, you should find some libata library function
-called from ata_pci_remove_one() suitable for this purpose.
+Well, we pretty much introduced that requirement already whenever we
+got this framework in the first place.
 
-Hmm, actually zpodd_exit() is already used in ata_scsi_handle_link_detach()
-so this should also be taken into consideration..
+You can now expect pretty much anything, even a CPU or a timer to have
+a reset property, so you have to handle them anyway.
 
-> +	ata_pci_remove_one(pdev);
-> +}
-> +#endif
->  
->  static struct pci_driver ahci_pci_driver = {
->  	.name			= DRV_NAME,
->  	.id_table		= ahci_pci_tbl,
->  	.probe			= ahci_init_one,
-> +#ifdef CONFIG_SATA_ZPODD
-> +	.remove			= ahci_remove_one,
-> +#else
->  	.remove			= ata_pci_remove_one,
-> +#endif
->  #ifdef CONFIG_PM
->  	.suspend		= ahci_pci_device_suspend,
->  	.resume			= ahci_pci_device_resume,
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index 51af275..87e4e6d 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-> @@ -383,6 +383,10 @@ void ahci_print_info(struct ata_host *host, const char *scc_s);
->  int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis);
->  void ahci_error_handler(struct ata_port *ap);
->  
-> +#ifdef CONFIG_SATA_ZPODD
-> +extern void zpodd_exit(struct ata_device *dev);
-> +#endif /* CONFIG_SATA_ZPODD */
-> +
->  static inline void __iomem *__ahci_port_base(struct ata_host *host,
->  					     unsigned int port_no)
->  {
-> diff --git a/drivers/ata/libata-zpodd.c b/drivers/ata/libata-zpodd.c
-> index f3a65a3..fe66949 100644
-> --- a/drivers/ata/libata-zpodd.c
-> +++ b/drivers/ata/libata-zpodd.c
-> @@ -281,3 +281,4 @@ void zpodd_exit(struct ata_device *dev)
->  	kfree(dev->zpodd);
->  	dev->zpodd = NULL;
->  }
-> +EXPORT_SYMBOL_GPL(zpodd_exit);
+So I'd be much more in favor of consistency both with other frameworks
+and within the reset framework itself.
 
-Then you would also not need to export zpodd_exit()..
+> > I understand that you chose this pattern to be pretty much compatible
+> > with what have been done so fare, bu I don't see how to fulfill that
+> > goal completely, since most of the devices are actually using
+> > reset-gpios, but some are using other names too (including
+> > reset-gpio).
+>=20
+> Yes, that is a problem that applies to all gpios, not only to reset
+> gpios, though.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Indeed, but you're the only one I can think of that have tried to
+factor the gpio handling in the framework after the facts. All the
+other either have no standards and let the driver deal with it, or
+have explicitly asked for a given property name.
 
+> > So if we can't be fully backward compatible, I don't see the benefit
+> > of being inconsistent with how reset controllers are used in general,
+>=20
+> See above.
+>=20
+> > and more globally on how gpios are tied for regulators for example.
+>=20
+> Reset controllers are rather more similar to gpio or interrupt
+> controllers. Those also have a number of entities per device node,
+> as opposed to regulators.
+
+Well, that depends on the bindings actually. The fact that the reset
+controller can handle several reset lines is dependent of the
+controller itself. And I believe we can say pretty much the same about
+the regulators.
+
+> > That would also make reset-gpio a regular reset driver, instead of
+> > adding logic to the core itself to handle this special case.
+>=20
+> Which is what I initially tried and moved away from.
+
+Yeah, I know.
+
+Overall, I'd very much like the DT maintainers to step in on
+this. Especially after the discussion we had again yesterday about the
+stable DT bindings things.
+
+Stable DT bindings only works if the DT maintainers can do some
+arbitration in this case.
+
+Mark? Ping?
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--L+ofChggJdETEG3Y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTYUEbAAoJEBx+YmzsjxAgFWgQALP3iKjnRxCRoOAroZuL/gZj
+WNvR1rvqtZf26r4I0V5r8581m9L3B/Aly6r0BhMDVSGAHNuKYkkE/Uj4uv4ZW1s/
+xPz6GSrLHVMim1awP+3OL2tRUFM3ZJhqdv7JKbIAVNWTsXCC65Afi/b9eb+bcF1W
+3hR/CbP/FYw24vayABlctTwM4R4J/6WD/JM9FO6EJYSKBs08LP9VlZau4sv13nMg
+g3v0w+8MIqGSYayOLdfjMcBj+sWJJVddCIQR3ZQPPNlHDr5o8Tt+Jo6mSUagDzJu
+yhL14tbqdj6PgUviIFfsP+TOU5oPa/gIGJv+oRH9s22hzahK5zSLEJkg2BlgJqBg
+Lwxf395HxsQn1L/svWoylFyy/zq9HZ7a//VHa9TJQXtsHClPdhsH1IfrfOLerFN5
+fiWVVi5SaJ/k+oyTvnJvJCxbowpkRUsq9vsuCw4nWeijb4HKlC8iOMzxqTcrhMc8
+y55bSYQBdksXnY0mOkCQ9ZyirpEDuwAWOak3ZR/SolP339OGkabRYzpHgsOd6HQd
+G1SKy/rOaNhKp6J2/6v2+x0oH3CzqGwI4/NgrJ67HvykNK4m/xLSZOBnj0wmn/RJ
+/vr7BMb1ZjppBYhANL80qAggC1U1D9CfYW5E94P5lGVkp/lp4n9hDQCvcf4Q40o+
+bOTVRh4doviqGhz1HXhV
+=fcIC
+-----END PGP SIGNATURE-----
+
+--L+ofChggJdETEG3Y--
