@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447AbaD3Sgz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:36:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49384 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759421AbaD3Sgw (ORCPT
+	id S1759453AbaD3SjM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:39:12 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:40903 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758836AbaD3SjK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:36:52 -0400
-Date: Wed, 30 Apr 2014 19:36:50 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140430183650.GQ18016@ZenIV.linux.org.uk>
-References: <20140429211851.GA32204@dastard>
- <20140429214842.GL18016@ZenIV.linux.org.uk>
- <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430040436.GO18016@ZenIV.linux.org.uk>
- <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
- <20140430160345.GP18016@ZenIV.linux.org.uk>
- <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+	Wed, 30 Apr 2014 14:39:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140422194313.GQ27882@wotan.suse.de>
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+ <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com>
+ <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com>
+ <20140315013940.GA28801@wotan.suse.de> <CAHA+R7MRVyjAN7w_qPxSxkrjo939bNEc3Ej+O3yH-oWj4gGJxw@mail.gmail.com>
+ <20140318212243.GD28471@garbanzo.do-not-panic.com> <20140422194313.GQ27882@wotan.suse.de>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 30 Apr 2014 11:38:44 -0700
+X-Google-Sender-Auth: veXfW9zjzuw6NsXDZXCNzXnyTFM
+Message-ID: <CAB=NE6U3o62mbDbL7Uaoe1r44xAXqW+iYM6y9jxP+UvM4kvYHw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port changes
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        bridge@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 07:33:38PM +0200, Miklos Szeredi wrote:
-> On Wed, Apr 30, 2014 at 6:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Wed, Apr 30, 2014 at 05:49:58PM +0200, Miklos Szeredi wrote:
-> >> > FWIW, the first two are really straightforward expanding the function
-> >> > into its only callsite.  The last needs more splitup.  Not sure if the
-> >> > following is good enough, but it ought to be at least somewhat cleaner.
-> >> > Combined change is identical to the original, so it doesn't invalidate
-> >> > the testing so far...
-> >>
-> >> Hmm, patches look okay, but I'm wondering if we really need the morgue list and
-> >> the waiting.  Why not just skip dentries that are presently being handled by
-> >> dentry_kill()?
-> >
-> > Who will be freeing them?  If we do that from dentry_kill(), we are back to
-> > needing them removed from shrink list by something called by dput().  And
-> > if we do that from shrink_dentry_list(), we'd damn better wait for
-> > dentry_iput() et.al. to finish.
-> 
-> We can do it from dput if the shrinker gets there first and from the
-> shrinker if dput manages to finish before.  See the updated patch in
-> the previous mail.
+On Tue, Apr 22, 2014 at 12:43 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> On Tue, Mar 18, 2014 at 02:22:43PM -0700, Luis R. Rodriguez wrote:
+>> On Tue, Mar 18, 2014 at 01:46:49PM -0700, Cong Wang wrote:
+>> > On Fri, Mar 14, 2014 at 6:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+>> > > On Thu, Mar 13, 2014 at 11:26:25AM -0700, Cong Wang wrote:
+>> > >> On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
+>> > >> <mcgrof@do-not-panic.com> wrote:
+>> > >> >                         spin_unlock_bh(&p->br->lock);
+>> > >> > +                       if (changed)
+>> > >> > +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
+>> > >> > +                                                        p->br->dev);
+>> > >> > +                       netdev_update_features(p->br->dev);
+>> > >>
+>> > >> I think this is supposed to be in netdev event handler of br->dev
+>> > >> instead of here.
+>> > >
+>> > > Do you mean netdev_update_features() ? I mimic'd what was being done on
+>> > > br_del_if() given that root blocking is doing something similar. If
+>> > > we need to change something for the above then I suppose it means we need
+>> > > to change br_del_if() too. Let me know if you see any reason for something
+>> > > else.
+>> > >
+>> >
+>> > Yeah, for me it looks like it's better to call netdev_update_features()
+>> > in the event handler of br->dev, rather than where calling
+>> > call_netdevice_notifiers(..., br->dev);.
+>>
+>> I still don't see why, in fact trying to verify this I am wondering now
+>> if instead we should actually fix br_features_recompute() to take into
+>> consideration BR_ROOT_BLOCK as below. Notice how netdev_update_features()
+>> is called above even if the MAC address did not change, just as is done
+>> on br_del_if(). There is an NETDEV_FEAT_CHANGE event so would it be more
+>> appropriate we just call
+>>
+>> call_netdevice_notifiers(NETDEV_FEAT_CHANGE, p->br->dev)
+>>
+>> for both the above then and also br_del_if()? How about the below
+>> change?
+>>
+>> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+>> index 54d207d..dcd9378 100644
+>> --- a/net/bridge/br_if.c
+>> +++ b/net/bridge/br_if.c
+>> @@ -315,6 +315,8 @@ netdev_features_t br_features_recompute(struct net_bridge *br,
+>>       features &= ~NETIF_F_ONE_FOR_ALL;
+>>
+>>       list_for_each_entry(p, &br->port_list, list) {
+>> +             if (p->flags & BR_ROOT_BLOCK)
+>> +                     continue;
+>>               features = netdev_increment_features(features,
+>>                                                    p->dev->features, mask);
+>>       }
+>
+> Cong, can you provide feedback on this? I tried to grow confidence on the
+> hunk above but its not clear but the other points still hold and I'd love
+> your feedback on those.
 
-Er?  The only patch I see is removal of RCU from shrink_dentry_list(), which
-is fine, but doesn't do anything of that sort.  What was the Message-ID?
+Re-poke.
 
-Let me see if I understand what you are proposing:
-	dentry_kill(dentry, 0) seeing DCACHE_DENTRY_KILLED
-		check DCACHE_MAY_FREE, free it's been set
-	dentry_kill(dentry, 1) seeing that we are on shrinker list
-		leave on the list, do the work on killing, retake ->d_lock,
-		if we are still on shrinker list
-			set DCACHE_MAY_FREE,
-		else
-			free it
-
-That would probably work...
+  Luis
