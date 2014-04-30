@@ -1,186 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829AbaD3QzC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:55:02 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34294 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084AbaD3Qy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:54:59 -0400
-Date: Wed, 30 Apr 2014 11:54:37 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: sundeep subbaraya <sundeep.lkml@gmail.com>
-CC: "balbi@ti.com" <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+	id S933945AbaD3Qzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:55:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:51300 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933786AbaD3Qzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:55:38 -0400
+Date: Wed, 30 Apr 2014 09:55:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
-Message-ID: <20140430165437.GO23679@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140421160802.GA22794@saruman.home>
- <Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
- <CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
- <20140422144944.GF5524@saruman.home>
- <CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+Message-ID: <20140430165532.GS8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+ <1398868249-26169-10-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5PFZVUeDPxlnBcQp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1398868249-26169-10-git-send-email-jslaby@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14043016-1542-0000-0000-0000017502C9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---5PFZVUeDPxlnBcQp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 30, 2014 at 04:30:42PM +0200, Jiri Slaby wrote:
+> Some threads do not use kthread_should_stop. Before we enable a
+> kthread support in kgr, we must make sure all those mark themselves
+> safe explicitly.
 
-Hi,
+Would it make sense to bury kgr_task_safe() in wait_event_interruptible()
+and friends?  The kgr_task_safe() implementation looks pretty lightweight,
+so it should not be a performance problem.
 
-On Wed, Apr 23, 2014 at 09:57:52AM +0530, sundeep subbaraya wrote:
-> >> > I get the impression that the two of you are arguing past each other.
-> >> > It appears that Sundeep is talking about transferring data from the
-> >> > gadget driver's buffer to an internal buffer in the UDC hardware, but
-> >> > Felipe is talking about transferring data from the UDC to the host.
-> >> >
-> >> > As I understand it, Sundeep said that when the gadget driver queues a
-> >> > data-IN request, the UDC driver copies as much of the data buffer as
-> >> > possible into a hardware FIFO.  If it succeeds in copying all the da=
-ta
-> >> > into the FIFO then the request's completion routine gets called
-> >> > immediately, even though the data doesn't get sent from the FIFO to =
-the
-> >> > host until the host asks for it.
-> >> >
-> >> > If only part of the data can be copied into the FIFO then the request
-> >> > is added to the ep's request queue before the usb_ep_queue() call
-> >> > returns.  When space becomes available in the FIFO, the data will be
-> >> > copied and eventually sent to the host.  When all the data has been
-> >> > copied to the FIFO, the request's completion routine will be called.
-> >
-> > there seems to be a slight problem with this approach: how will the IP
-> > know that even though you copied X bytes into the FIFO, it should wait
-> > for another Y bytes before shifting data to the wire ? How will it know
-> > that it shouldn't generate CRC yet because there's still data to be
-> > added ?
->=20
-> No. IP does/need not know that it has to wait for Y bytes.We just
-> write X bytes into
-> HW buffer and count as X in buffer count register. IP generates CRC
-> for bytes based
-> on Count register and sends data to Host. Let us consider this
-> scenario of bulk IN transfer:
-> req.length =3D 5120 and   wMaxPacketSize =3D 512, ep_queue is called once
-> and is returned with
-> status 0. In ep_queue this code snippet,
->                if (xudc_write_fifo(ep, req) =3D=3D 1)
->                         req =3D NULL;
->                if(req !=3D NULL)
->                          list_add_tail(&req->queue, &ep->queue);
->=20
-> xudc_write_fifo does the following if HW buffers not busy:
->      copies 512 bytes to HW buffer
->      set count and ready registers so that IP can start data transfer to =
-host
->      changes req.actual to 512 and returns 0(if req.length >
-> wMaxPacketSize) and 1(if req.length < wMaxPacketSize).
+One reason might this might be a bad idea is that there are calls to
+wait_event_interruptible() all over the place, which might therefore
+constrain where grafting could be safely done.  That would be fair enough,
+but does that also imply new constraints on where kthread_should_stop()
+can be invoked?  Any new constraints might not be a big deal given that
+a very large fraction of the kthreads (and maybe all of them) invoke
+kthread_should_stop() from their top-level function, but would be good
+to call out.
 
-you should return a proper error code, not 1.
+So, what is the story?
 
-> Since return is zero this request is added to queue. When data
-> transfer to host is completed IP generates
-> an interrupt. In the interrupt handler we again call write_fifo if
-> request list is not empty.
->        if (list_empty(&ep->queue))
->                 req =3D NULL;
->         else
->                 req =3D list_entry(ep->queue.next, struct xusb_req, queue=
-);
->         if (!req)
->                 return;
+							Thanx, Paul
 
-okay, this can be improved a bit though:
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: Dipankar Sarma <dipankar@in.ibm.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> ---
+>  drivers/base/devtmpfs.c  | 1 +
+>  fs/jbd2/journal.c        | 2 ++
+>  fs/notify/mark.c         | 5 ++++-
+>  kernel/hung_task.c       | 5 ++++-
+>  kernel/kthread.c         | 3 +++
+>  kernel/rcu/tree.c        | 6 ++++--
+>  kernel/rcu/tree_plugin.h | 9 +++++++--
+>  kernel/workqueue.c       | 1 +
+>  8 files changed, 26 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+> index 25798db14553..c7d52d1b8c9c 100644
+> --- a/drivers/base/devtmpfs.c
+> +++ b/drivers/base/devtmpfs.c
+> @@ -387,6 +387,7 @@ static int devtmpfsd(void *p)
+>  	sys_chroot(".");
+>  	complete(&setup_done);
+>  	while (1) {
+> +		kgr_task_safe(current);
+>  		spin_lock(&req_lock);
+>  		while (requests) {
+>  			struct req *req = requests;
+> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> index 67b8e303946c..1b9c4c2e014a 100644
+> --- a/fs/jbd2/journal.c
+> +++ b/fs/jbd2/journal.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/backing-dev.h>
+>  #include <linux/bitops.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/sched.h>
+> 
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/jbd2.h>
+> @@ -260,6 +261,7 @@ loop:
+>  			write_lock(&journal->j_state_lock);
+>  		}
+>  		finish_wait(&journal->j_wait_commit, &wait);
+> +		kgr_task_safe(current);
+>  	}
+> 
+>  	jbd_debug(1, "kjournald2 wakes\n");
+> diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+> index 923fe4a5f503..a74b6175e645 100644
+> --- a/fs/notify/mark.c
+> +++ b/fs/notify/mark.c
+> @@ -82,6 +82,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+> +#include <linux/sched.h>
+>  #include <linux/slab.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/srcu.h>
+> @@ -355,7 +356,9 @@ static int fsnotify_mark_destroy(void *ignored)
+>  			fsnotify_put_mark(mark);
+>  		}
+> 
+> -		wait_event_interruptible(destroy_waitq, !list_empty(&destroy_list));
+> +		wait_event_interruptible(destroy_waitq, ({
+> +					kgr_task_safe(current);
+> +					!list_empty(&destroy_list); }));
+>  	}
+> 
+>  	return 0;
+> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+> index 06bb1417b063..b5f85bff2509 100644
+> --- a/kernel/hung_task.c
+> +++ b/kernel/hung_task.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/kthread.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/export.h>
+> +#include <linux/sched.h>
+>  #include <linux/sysctl.h>
+>  #include <linux/utsname.h>
+>  #include <trace/events/sched.h>
+> @@ -227,8 +228,10 @@ static int watchdog(void *dummy)
+>  	for ( ; ; ) {
+>  		unsigned long timeout = sysctl_hung_task_timeout_secs;
+> 
+> -		while (schedule_timeout_interruptible(timeout_jiffies(timeout)))
+> +		while (schedule_timeout_interruptible(timeout_jiffies(timeout))) {
+> +			kgr_task_safe(current);
+>  			timeout = sysctl_hung_task_timeout_secs;
+> +		}
+> 
+>  		if (atomic_xchg(&reset_hung_task, 0))
+>  			continue;
+> diff --git a/kernel/kthread.c b/kernel/kthread.c
+> index 9a130ec06f7a..08b979dad619 100644
+> --- a/kernel/kthread.c
+> +++ b/kernel/kthread.c
+> @@ -78,6 +78,8 @@ static struct kthread *to_live_kthread(struct task_struct *k)
+>   */
+>  bool kthread_should_stop(void)
+>  {
+> +	kgr_task_safe(current);
+> +
+>  	return test_bit(KTHREAD_SHOULD_STOP, &to_kthread(current)->flags);
+>  }
+>  EXPORT_SYMBOL(kthread_should_stop);
+> @@ -497,6 +499,7 @@ int kthreadd(void *unused)
+>  		if (list_empty(&kthread_create_list))
+>  			schedule();
+>  		__set_current_state(TASK_RUNNING);
+> +		kgr_task_safe(current);
+> 
+>  		spin_lock(&kthread_create_lock);
+>  		while (!list_empty(&kthread_create_list)) {
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 0c47e300210a..5dddedacfc06 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -1593,9 +1593,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
+>  			trace_rcu_grace_period(rsp->name,
+>  					       ACCESS_ONCE(rsp->gpnum),
+>  					       TPS("reqwait"));
+> -			wait_event_interruptible(rsp->gp_wq,
+> +			wait_event_interruptible(rsp->gp_wq, ({
+> +						 kgr_task_safe(current);
+>  						 ACCESS_ONCE(rsp->gp_flags) &
+> -						 RCU_GP_FLAG_INIT);
+> +						 RCU_GP_FLAG_INIT; }));
+>  			/* Locking provides needed memory barrier. */
+>  			if (rcu_gp_init(rsp))
+>  				break;
+> @@ -1626,6 +1627,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+>  					(!ACCESS_ONCE(rnp->qsmask) &&
+>  					 !rcu_preempt_blocked_readers_cgp(rnp)),
+>  					j);
+> +			kgr_task_safe(current);
+>  			/* Locking provides needed memory barriers. */
+>  			/* If grace period done, leave loop. */
+>  			if (!ACCESS_ONCE(rnp->qsmask) &&
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 962d1d589929..8b383003b228 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -27,6 +27,7 @@
+>  #include <linux/delay.h>
+>  #include <linux/gfp.h>
+>  #include <linux/oom.h>
+> +#include <linux/sched.h>
+>  #include <linux/smpboot.h>
+>  #include "../time/tick-internal.h"
+> 
+> @@ -1273,7 +1274,8 @@ static int rcu_boost_kthread(void *arg)
+>  	for (;;) {
+>  		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
+>  		trace_rcu_utilization(TPS("End boost kthread@rcu_wait"));
+> -		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
+> +		rcu_wait(({ kgr_task_safe(current);
+> +					rnp->boost_tasks || rnp->exp_tasks; }));
+>  		trace_rcu_utilization(TPS("Start boost kthread@rcu_wait"));
+>  		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
+>  		more2boost = rcu_boost(rnp);
+> @@ -2283,11 +2285,14 @@ static int rcu_nocb_kthread(void *arg)
+> 
+>  	/* Each pass through this loop invokes one batch of callbacks */
+>  	for (;;) {
+> +		kgr_task_safe(current);
+>  		/* If not polling, wait for next batch of callbacks. */
+>  		if (!rcu_nocb_poll) {
+>  			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+>  					    TPS("Sleep"));
+> -			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
+> +			wait_event_interruptible(rdp->nocb_wq, ({
+> +						kgr_task_safe(current);
+> +						rdp->nocb_head; }));
+>  			/* Memory barrier provide by xchg() below. */
+>  		} else if (firsttime) {
+>  			firsttime = 0;
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0ee63af30bd1..4b89f1dc0dd8 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2369,6 +2369,7 @@ sleep:
+>  	__set_current_state(TASK_INTERRUPTIBLE);
+>  	spin_unlock_irq(&pool->lock);
+>  	schedule();
+> +	kgr_task_safe(current);
+>  	goto woke_up;
+>  }
+> 
+> -- 
+> 1.9.2
+> 
 
-	if (list_empty(&ep->queue))
-		return;
-
-	req =3D list_first_entry(&ep->queue, struct xusb_req, queue);
-
->         if (ep->is_in)
->                 xudc_write_fifo(ep, req);
->         else
->                 xudc_read_fifo(ep, req);
->=20
-> This happens 10 times(since length 5120) and completion is called.
-
-ok.
-
-> > If there's no space in the FIFO yet, why copy data at all ?
->=20
-> If HW buffers are busy(IP is still transferring previous data to Host
-> from buffer) then xudc_write_fifo returns 0 without changing
-> req.actual. When previous data transfer completes then Interrupt then
-> again write_fifo from handler.
-
-ok, sounds good to me.
-
-> >> > Thus there never is any need for the gadget driver to queue the requ=
-est
-> >> > again.
->=20
-> Yes
->=20
-> >> >An incomplete transfer means the FIFO didn't have enough room
-> >> > when the request was submitted; it doesn't mean that the data didn't
-> >> > eventually get sent to the host.
-> >>
-> >> Exactly Alan,this is what I was trying to say. Probably I was not
-> >> clear in explaining. I didnt see any harm this way and even this
-> >> implementation is same like at91_udc.c. I have been reading
-> >> mas_storage to understand when does gadget driver tries to enqueue a
-> >> request again. Since different gadget drivers might have different
-> >> requirements (agree with Felipe), wanted to know criteria for queuing
-> >> a same request again.
-> >>
-> >> I will change this implementation as per Felipe comments and test with
-> >> some of the gadgets.
-> >
-> > Let's see, please help me understand the questions above.
->=20
-> Hope this helps.
-
-it does, but please sort out the small comments I had above.
-
-cheers
-
---=20
-balbi
-
---5PFZVUeDPxlnBcQp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTYSrNAAoJEIaOsuA1yqREkF4P/RZSzrk6ZZO0+zhw8fAcM7Ot
-Q0beJ0VuMONNZ2IXKMovd1WDvIAMGn7orBySUFqvP1FzLxGP05NagbRr7X+8mFGl
-ulRtXkuLcmGqkzXvP8BsNwE0vTad4ND1eWOyReSuskY1HmSjkyl0c/zE0+As2IBm
-PuR2u7bgZzsoNPd0nYRdkPkYJ1f/7ezmqsbw0B6webk+LBpe3a3bHX+xpYf7oupO
-8A+hmN2QFVzZOx13erefAapJQJ7y5fs/xjGQhWnzfCn8QVWL/CD+/aipiFvbZLfz
-TuXHqGBHI1lY1d5gP5/QxUZb6CUr+evrvASHTveNmrxS5BPXMTY97WBKO2vElhj7
-md6nu5sNOm5e68QSVcELgANV2OQcgk4N1PLc2Nap7wCGo9zc2EGR6toU7M6GLVH6
-/5v+V8bUM/0GdHQ5b06VclFMNgWscbkNQdt37Y7wh93NxdEz8ZkWikcU7Vir3NUP
-Of7GR2YPn79uqJs6HPc/Yq3yZba1sota3YkElT5hMEHRXqZ2Fa3mjO5CDtJQrRok
-a8thvXHZ2vqkqwwwJItuCq+Jbxx7ZmkyzKZwhL/StwJT5zTDUb6BfOHnrJgy3GgJ
-Pk1EwZYHF3/tbLLdUOB2KiBXP39cDcJRosvhXyeRcXc6lr5DFxzAxT28UpUPNyMu
-mdUKzJoLNeFk9GRZrDYW
-=9bo9
------END PGP SIGNATURE-----
-
---5PFZVUeDPxlnBcQp--
