@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759503AbaD3UYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:24:21 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:35939 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758905AbaD3UYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:24:20 -0400
-Date: Wed, 30 Apr 2014 22:21:30 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Mark Rutland <mark.rutland@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 03/15] ARM: dts: kirkwood: add stdout-path property to
- all boards
-Message-ID: <20140430202130.GE3082@lunn.ch>
-References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1398862602-29595-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <20140430163807.GA3082@lunn.ch>
- <53615342.8010600@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53615342.8010600@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759524AbaD3UYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:24:33 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:22677 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758905AbaD3UYb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:24:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqsGADRbYVNXQ3IO/2dsb2JhbABZgwaCQMMygSAXdIJmHCMYgQIkE4hFAaYmo2OOUYRAAQOPE4oTAZJrgzM7
+Date: Wed, 30 Apr 2014 22:24:28 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] lib/vsprintf.c: fix comparison to bool
+Message-Id: <20140430222428.c1e6cdb0936e53ed2eca95b6@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, we *can* move it in kirkwood.dtsi, but IMHO we *should* keep it in
-> the board files. I see the "chosen" node and its properties as _the_
-> board node.
-> 
-> One could argue then, that we should count the memory properties too and
-> put the most common in the SoC dtsi. But you are right, as UART0 is also
-> the UART with boot support, it is likely to be always connected to
-> a more-or-less accessible console output.
-> 
-> I really have no strong opinion about it.
+Fixing 2 coccinelle warnings:
+lib/vsprintf.c:2350:2-9: WARNING: Assignment of bool to 0/1
+lib/vsprintf.c:2389:3-10: WARNING: Assignment of bool to 0/1
 
-Me neithe, but the advantage of putting it in kirkwood.dtsi is that it
-then does not get forgotten, and is always there for bearbox to use.
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ lib/vsprintf.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-    Andrew
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 0648291..6fe2c84 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -2347,7 +2347,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
+ 			break;
+ 
+ 		base = 10;
+-		is_sign = 0;
++		is_sign = false;
+ 
+ 		switch (*fmt++) {
+ 		case 'c':
+@@ -2386,7 +2386,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
+ 		case 'i':
+ 			base = 0;
+ 		case 'd':
+-			is_sign = 1;
++			is_sign = true;
+ 		case 'u':
+ 			break;
+ 		case '%':
+-- 
+1.9.1
+
