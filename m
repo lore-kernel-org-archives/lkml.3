@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945934AbaD3Q6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:58:13 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:44460
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945912AbaD3Q6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:58:11 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@gmail.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 6/6 v2] staging: comedi: addi_apci_1564: remove use of
- devpriv->s_EeParameters
-Thread-Topic: [PATCH 6/6 v2] staging: comedi: addi_apci_1564: remove use of
- devpriv->s_EeParameters
-Thread-Index: AQHPY4ZnHPwFiimH2UOrIUkZMgSYGJspCbaQgAE22QCAAB+ZAA==
-Date: Wed, 30 Apr 2014 16:58:10 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E261E9@P3PWEX4MB008.ex4.secureserver.net>
-References: <1398562711-6313-1-git-send-email-chase.southwood@gmail.com>
-	<1398760700-19397-1-git-send-email-chase.southwood@gmail.com>
-	<DC148C5AA1CEBA4E87973D432B1C2D8825E24280@P3PWEX4MB008.ex4.secureserver.net>
- <CA+jnaaV7YDQYAGg_yksfiD31bCGN0brvZvBqi0VrK6hV_moxzA@mail.gmail.com>
-In-Reply-To: <CA+jnaaV7YDQYAGg_yksfiD31bCGN0brvZvBqi0VrK6hV_moxzA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1759042AbaD3RBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:01:54 -0400
+Received: from mx02.posteo.de ([89.146.194.165]:57758 "EHLO posteo.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752425AbaD3RBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 13:01:53 -0400
+From: Martin Kepplinger <martink@posteo.de>
+To: gregkh@linuxfoundation.org
+Cc: forest@alittletooquiet.net, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH] staging: vt6656: make spin_lock_irq() human readable
+Date: Wed, 30 Apr 2014 19:01:18 +0200
+Message-Id: <1398877278-2280-1-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3UGwOAR009200
 
-On Wednesday, April 30, 2014 12:52 AM, Chase Southwood wrote:
-> Thanks so much, I greatly appreciate the review.  I'll fix the
-> changelog for patch 4 and send once more (as I assume that's easier
-> for Greg).  Also, I should know better about the cover letter as
-> well...I was once told not to send them for strictly cleanup patchsets
-> (as Greg can't do anything with them and cleanups should be obvious)
-> but I've gotten in the habit of not doing a cover letter for any
-> patchsets.  I will send cover letters (and be more careful about my
-> other mistakes) in the future.
+Don't require FIRMWAREbDownload() to, first off, unlock a held lock.
+Thus do all locking in main_usb.c and hold it for a insignificantly
+shorter period of time. This makes the affected area significantly more
+readable though.
 
-Chase,
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+ drivers/staging/vt6656/firmware.c |    2 --
+ drivers/staging/vt6656/main_usb.c |    5 ++++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-Good job on the cleanup you have done so far.
+diff --git a/drivers/staging/vt6656/firmware.c b/drivers/staging/vt6656/firmware.c
+index cd2ea76..79129ad 100644
+--- a/drivers/staging/vt6656/firmware.c
++++ b/drivers/staging/vt6656/firmware.c
+@@ -54,7 +54,6 @@ int FIRMWAREbDownload(struct vnt_private *pDevice)
+ 	int ii, rc;
+ 
+ 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"---->Download firmware\n");
+-	spin_unlock_irq(&pDevice->lock);
+ 
+ 	rc = request_firmware(&fw, FIRMWARE_NAME, dev);
+ 	if (rc) {
+@@ -91,7 +90,6 @@ free_fw:
+ out:
+ 	kfree(pBuffer);
+ 
+-	spin_lock_irq(&pDevice->lock);
+ 	return result;
+ }
+ MODULE_FIRMWARE(FIRMWARE_NAME);
+diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
+index 3c93230..1dc02c4 100644
+--- a/drivers/staging/vt6656/main_usb.c
++++ b/drivers/staging/vt6656/main_usb.c
+@@ -319,7 +319,11 @@ static int device_init_registers(struct vnt_private *pDevice)
+ 	memcpy(pDevice->abySNAP_Bridgetunnel, abySNAP_Bridgetunnel, ETH_ALEN);
+ 
+ 	if (!FIRMWAREbCheckVersion(pDevice)) {
++
++		spin_unlock_irq(&pDevice->lock);
+ 		if (FIRMWAREbDownload(pDevice) == true) {
++
++			spin_lock_irq(&pDevice->lock);
+ 			if (FIRMWAREbBrach2Sram(pDevice) == false) {
+ 				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
+ 					" FIRMWAREbBrach2Sram fail\n");
+@@ -329,7 +333,6 @@ static int device_init_registers(struct vnt_private *pDevice)
+ 		} else {
+ 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
+ 				" FIRMWAREbDownload fail\n");
+-			spin_unlock_irq(&pDevice->lock);
+ 			return false;
+ 		}
+ 	}
+-- 
+1.7.10.4
 
-The cover letter does not get committed as part of the patch set. But
-when you are submitting a series it give a convenient  place to add
-the sign off tag for a series. Also, if you would have done a cover letter
-for this series you would have probably spotted the subject line issues
-in patches 5 and 6.
-
-Keep up the good work!
-
-Hartley
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
