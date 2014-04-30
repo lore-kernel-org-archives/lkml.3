@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaD3CoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:44:22 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31755 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263AbaD3CoT (ORCPT
+	id S1754095AbaD3Cy3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:54:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60996 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305AbaD3Cy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:44:19 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-0e-5360637dc7cb
-From: Jungseok Lee <jays.lee@samsung.com>
-To: "'Catalin Marinas'" <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
-        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        steve.capper@linaro.org, sungjinn.chung@samsung.com,
-        "'Arnd Bergmann'" <arnd@arndb.de>, kgene.kim@samsung.com,
-        ilho215.lee@samsung.com
-References: <000201cf6367$c8084440$5818ccc0$@samsung.com>
- <20140429144052.GJ17007@arm.com>
-In-reply-to: <20140429144052.GJ17007@arm.com>
-Subject: Re: [PATCH v4 2/7] arm64: Decouple page size from level of translation
- tables
-Date: Wed, 30 Apr 2014 11:44:13 +0900
-Message-id: <007d01cf641e$122f9b20$368ed160$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: ko
-Thread-index: AQE5VUHIE8aJyTOAQ/hLT6p/NDXsYQMqZelpnDw8nOA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+Zvm5tckKwwenfuhZ/Jx1jt3i/rIfR
-	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
-	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJXx
-	c6NiwSruik9f/jE3ML7m6GLk5JAQMJFYNPM/K4QtJnHh3nq2LkYuDiGBZYwSbw/3M8IUde5d
-	yQqRWMQo0TzrOTuE84dR4nDrMTaQKjYBTYlHd3vYQWwRAX2JxVdugHUwC3QwSyx9ugxslJBA
-	jMTFBSvAGjgFdCXm7noHtltYIEJi7oLXzCA2i4CqxLxdb8BqeAUsJWbfPQBlC0r8mHyPBcRm
-	FtCSWL/zOBOELS+xec1bZohTFSR2nH3NCBEXkdj34h2QzQF0kJXEoj3WIPdICCzkkLi+pp8N
-	YpeAxLfJh1hAaiQEZCU2HYAaIylxcMUNlgmMErOQbJ6FZPMsJJtnIdm2gJFlFaNoakFyQXFS
-	epGJXnFibnFpXrpecn7uJkZICpiwg/HeAetDjMlA6ycyS4km5wNTSF5JvKGxmZGFqYmpsZG5
-	pRlpwkrivGqPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MPYLXt40vSHeY1OBwDeHtsDn
-	7WUHuZL4e1ZFx+l/PXJa/2rUdXfDCa8tNjB5XlZ5fl3iXAnfLO7e7ATVjuCpa/w2LlxwUV9q
-	v76Tj+K1d5rblrWlldrmqFxQ9DDfPsW6eWmE9H1HTqWP2lsPcuv+SDNQEjoqKbxP5/CptWt0
-	vnUvl3/v88j9lRJLcUaioRZzUXEiAG8QQnsXAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd3a5IRgg77PGhZ/Jx1jt3i/rIfR
-	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
-	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yf
-	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsI4x4+dGxYJV3BWfvvxjbmB8zdHFyMkhIWAi0bl3JSuELSZx
-	4d56ti5GLg4hgUWMEs2znrNDOH8YJQ63HmMDqWIT0JR4dLeHHcQWEdCXWHzlBitIEbNAB7PE
-	0qfLGEESQgIxEhcXrABr4BTQlZi76x3YCmGBCIm5C14zg9gsAqoS83a9AavhFbCUmH33AJQt
-	KPFj8j0WEJtZQEti/c7jTBC2vMTmNW+ZIU5VkNhx9jUjRFxEYt+Ld0A2B9BBVhKL9lhPYBSa
-	hWTSLCSTZiGZNAtJ9wJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQnmmfQOxlUNFocY
-	BTgYlXh4BbbGBwuxJpYVV+YeYpTgYFYS4WUOSAgW4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR
-	5Hxg8ssriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBkbdVN59
-	wdc0N+9+v4LdqfFzkrkzm3xPwfpgpYi5nB6/5S16bWdfYT1catpWpbTv0ZKY9Mh55+115xaU
-	LFn4THNZ0d7n37vmnjy+vtuwr/rS155ls2ep/GC/sf1xlMnVo9occXEBp/aEFJkYTxIOvpN3
-	5cvEh1ZGMWt3W066uHLJTd8LvGw+S5KUWIozEg21mIuKEwGt6ThpdAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 29 Apr 2014 22:54:28 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Joel Fernandes <joelf@ti.com>, Dave Martin <Dave.Martin@arm.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Nishanth Menon <nm@ti.com>,
+        "open list:OMAP SUPPORT" <linux-omap@vger.kernel.org>,
+        "moderated list:ARM SUB-ARCHITECT..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM: OMAP5: Redo THUMB mode switch on secondary CPU
+Date: Tue, 29 Apr 2014 21:53:47 -0500
+Message-ID: <1398826427-17200-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 29, 2014 11:41 PM, Catalin Marinas wrote:
-> Jungseok,
+Here's a redo of the patch [1] that effectively does the same
+thing but is the right way to do things by using ENDPROC instead.
+The firmware correctly switches to THUMB before entry.
 
-Hi, Catalin
+The patch applies ontop of the earlier patch [1].
 
-> On Tue, Apr 29, 2014 at 05:59:20AM +0100, Jungseok Lee wrote:
-> > +choice
-> > +	prompt "Level of translation tables"
-> > +	default ARM64_3_LEVELS if ARM64_4K_PAGES
-> > +	default ARM64_2_LEVELS if ARM64_64K_PAGES
-> > +	help
-> > +	  Allows level of translation tables.
-> > +
-> > +config ARM64_2_LEVELS
-> > +	bool "2 level"
-> > +	depends on ARM64_64K_PAGES
-> > +	help
-> > +	  This feature enables 2 levels of translation tables.
-> > +
-> > +config ARM64_3_LEVELS
-> > +	bool "3 level"
-> > +	depends on ARM64_4K_PAGES
-> > +	help
-> > +	  This feature enables 3 levels of translation tables.
-> > +
-> > +endchoice
-> 
-> As I mentioned previously
-> (http://www.spinics.net/linux/lists/arm-kernel/msg319552.html), just expose options for the VA space
-> bits rather than the number of levels.
-> You can still keep the number of levels config options but not visible in menuconfig (though I think
-> you could also hide them in some header and avoid config altogether). The VA bits config options can
-> be:
-> 
-> VA_BITS_39 if 4K (3 levels)
-> VA_BITS_42 if 64K (2 levels)
-> VA_BITS_47 if 16K (3 levels)
-> VA_BITS_48 if 4K || 16K || 64K (4/4/3 levels depending on page size)
-> 
-> That's more meaningful to people configuring the kernel.
+[1] https://lkml.org/lkml/2014/4/22/1044
 
-Okay, I will revise VA_BITS config as hiding the number of levels.
+Suggested-by: Dave Martin <Dave.Martin@arm.com>
+Cc: Dave Martin <Dave.Martin@arm.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
 
-Best Regards
-Jungseok Lee
+Tony, the earlier patch went into your fixes, and can remain. This patch is just a simple redo of the same and can go in for v3.16, no problem. Thanks.
+
+ arch/arm/mach-omap2/omap-headsmp.S |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+index 1809dce..bf36f26 100644
+--- a/arch/arm/mach-omap2/omap-headsmp.S
++++ b/arch/arm/mach-omap2/omap-headsmp.S
+@@ -31,10 +31,6 @@
+  * register AuxCoreBoot0.
+  */
+ ENTRY(omap5_secondary_startup)
+-.arm
+-THUMB( adr     r9, BSYM(wait)  )       @ CPU may be entered in ARM mode.
+-THUMB( bx      r9              )       @ If this is a Thumb-2 kernel,
+-THUMB( .thumb                  )       @ switch to Thumb now.
+ wait:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
+ 	ldr	r0, [r2]
+ 	mov	r0, r0, lsr #5
+@@ -43,7 +39,7 @@ wait:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
+ 	cmp	r0, r4
+ 	bne	wait
+ 	b	secondary_startup
+-END(omap5_secondary_startup)
++ENDPROC(omap5_secondary_startup)
+ /*
+  * OMAP4 specific entry point for secondary CPU to jump from ROM
+  * code.  This routine also provides a holding flag into which
+-- 
+1.7.9.5
 
