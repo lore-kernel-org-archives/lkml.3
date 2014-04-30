@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422736AbaD3QaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:30:07 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:55059 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422657AbaD3QaE (ORCPT
+	id S1945963AbaD3QaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:30:18 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62500 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422657AbaD3QaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:30:04 -0400
-Date: Wed, 30 Apr 2014 09:29:51 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: rydberg@euromail.se, balbi@ti.com, dmurphy@ti.com, mugunthanvnm@ti.com,
-        nsekhar@ti.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v3 2/7] Input: pixcir_i2c_ts: Initialize interrupt mode
- and power mode
-Message-ID: <20140430162950.GA13624@core.coreip.homeip.net>
-References: <1398861392-8959-1-git-send-email-rogerq@ti.com>
- <1398861392-8959-3-git-send-email-rogerq@ti.com>
+	Wed, 30 Apr 2014 12:30:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398861392-8959-3-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
+References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 30 Apr 2014 10:29:52 -0600
+Message-ID: <CAErSpo4fa=fmajhxGA7PRm42S1fS2wV_7w+EWaVh_qiawRAQxA@mail.gmail.com>
+Subject: Re: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+On Fri, Apr 25, 2014 at 3:18 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> This patchset rename the current pci_is_bridge() to pci_has_subordinate(),
+> and introduce a new pci_is_bridge() which determine pci bridge by check
+> dev->hdr_type. The new one is more accurate. PCIe Spec define the pci
+> device is a bridge by the dev->hdr_type = 0x01 || 0x02.
 
-On Wed, Apr 30, 2014 at 03:36:27PM +0300, Roger Quadros wrote:
-> +static int pixcir_stop(struct pixcir_i2c_ts_data *ts)
-> +{
-> +	struct device *dev = &ts->client->dev;
-> +	int ret;
-> +
-> +	/* exit ISR if running, no more report parsing */
-> +	ts->exiting = true;
-> +	mb();	/* update status before we synchronize irq */
-> +
-> +	/* disable ISR from running again */
-> +	disable_irq(ts->client->irq);
-> +
-> +	/* wait till running ISR complete */
-> +	synchronize_irq(ts->client->irq);
-> +
-> +	/* disable interrupt generation */
-> +	ret = pixcir_int_enable(ts, 0);
-> +	if (ret)
-> +		dev_err(dev, "Failed to disable interrupt generation\n");
-> +
-> +	/* restore IRQ */
-> +	enable_irq(ts->client->irq);
-> +
-> +	return ret;
+This needs to be posted to the linux-pci list.  The fact that it
+wasn't means it's not in patchwork, so it's not on my to-do list.
 
-Should not this be:
+Currently we have one interface: pci_is_bridge().
 
-	pixcir_int_enable(ts, 0);
-	ts->exiting = true;
-	mb();
-	synchronize_irq(ts->client->irq);
+After your series, we would have two interfaces: pci_is_bridge() and
+pci_has_subordinate().  Presumably, both are used, and you should
+explain how you decided which to use at each place.
 
-Why do we also need to disable/enable irq?
+I assume the difference is that the old pci_is_bridge() is true for a
+bridge that has a subordinate bus.  The new pci_is_bridge() is true
+for any bridge, even if there is no subordinate bus.  When do we even
+have a bridge with no subordinate bus?  This is the sort of stuff you
+need to explain so we know why we should apply these patches.
 
-By the way, disable_irq() implies synchronize_irq().
+Bjorn
 
-Thanks.
-
--- 
-Dmitry
+> Yijing Wang (13):
+>   PCI: rename pci_is_bridge() to pci_has_subordinate()
+>   PCI: Introduce new pci_is_bridge() helper function
+>   PCI: Use new pci_is_bridge() to simplify code
+>   x86/PCI: Use new pci_is_bridge() to simplify code
+>   IA64/PCI: Use new pci_is_bridge() to simplify code
+>   powerpc/PCI: Use new pci_is_bridge() to simplify code
+>   sparc/PCI: Use new pci_is_bridge() to simplify code
+>   PCI, rpaphp: Use new pci_is_bridge() to simplify code
+>   PCI, shpchp: Use new pci_is_bridge() to simplify code
+>   PCI, cpcihp: Use new pci_is_bridge() to simplify code
+>   PCI, acpiphp: Use new pci_is_bridge() to simplify code
+>   PCI, pcmcia: Use new pci_is_bridge() to simplify code
+>   PCI, pciehp: Use new pci_is_bridge() to simplify code
+>
+>  arch/ia64/pci/fixup.c                  |    4 +---
+>  arch/powerpc/kernel/pci-hotplug.c      |    3 +--
+>  arch/powerpc/kernel/pci_of_scan.c      |    3 +--
+>  arch/sparc/kernel/pci.c                |    3 +--
+>  arch/x86/pci/fixup.c                   |    4 +---
+>  drivers/pci/hotplug/acpiphp_glue.c     |    3 +--
+>  drivers/pci/hotplug/cpci_hotplug_pci.c |    3 +--
+>  drivers/pci/hotplug/pciehp_pci.c       |    3 +--
+>  drivers/pci/hotplug/rpadlpar_core.c    |    3 +--
+>  drivers/pci/hotplug/shpchp_pci.c       |    3 +--
+>  drivers/pci/pci-acpi.c                 |    8 +-------
+>  drivers/pci/pci-driver.c               |    8 ++++----
+>  drivers/pci/pci.h                      |    2 +-
+>  drivers/pci/probe.c                    |    3 +--
+>  drivers/pci/setup-bus.c                |    4 +---
+>  drivers/pcmcia/cardbus.c               |    3 +--
+>  include/linux/pci.h                    |    6 ++++++
+>  17 files changed, 25 insertions(+), 41 deletions(-)
+>
+>
