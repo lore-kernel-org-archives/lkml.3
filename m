@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626AbaD3NGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:06:35 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:57560 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbaD3NGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:06:34 -0400
-Message-ID: <1398863189.26071.97.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        Clark Williams <williams@redhat.com>
-Date: Wed, 30 Apr 2014 15:06:29 +0200
-In-Reply-To: <1398843793.26071.52.camel@marge.simpson.net>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
-	 <1398411635.11930.45.camel@marge.simpson.net>
-	 <1398501491.12941.5.camel@marge.simpson.net>
-	 <1398520699.28726.22.camel@marge.simpson.net>
-	 <1398661784.30930.33.camel@marge.simpson.net>
-	 <1398676186.30930.49.camel@marge.simpson.net>
-	 <20140428101805.75032f45@gandalf.local.home>
-	 <1398695832.14475.10.camel@marge.simpson.net>
-	 <1398748869.5514.81.camel@marge.simpson.net>
-	 <20140429201308.63292691@gandalf.local.home>
-	 <1398843793.26071.52.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S964913AbaD3NHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:07:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44738 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933638AbaD3NHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:07:09 -0400
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jan Moskyto Matejka <mq@suse.cz>
+Subject: [PATCH] [linux-next] serial: sc16is7xx: fix defined-but-not-used warnings
+Date: Wed, 30 Apr 2014 15:07:04 +0200
+Message-Id: <1398863224-19900-1-git-send-email-mq@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 09:43 +0200, Mike Galbraith wrote: 
-> On Tue, 2014-04-29 at 20:13 -0400, Steven Rostedt wrote: 
-> > On Tue, 29 Apr 2014 07:21:09 +0200
-> > Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
-> > 
-> > > On Mon, 2014-04-28 at 16:37 +0200, Mike Galbraith wrote: 
-> > > 
-> > > > > Seems that migrate_disable() must be called before taking the lock as
-> > > > > it is done in every other location.
-> > > > 
-> > > > And for tasklist_lock, seems you also MUST do that prior to trylock as
-> > > > well, else you'll run afoul of the hotplug beast.
-> > > 
-> > > Bah.  Futzing with dmesg while stress script is running is either a very
-> > > bad idea, or a very good test.  Both virgin 3.10-rt and 3.12-rt with new
-> > > bugs squashed will deadlock.
-> > > 
-> > > Too bad I kept on testing, I liked the notion that hotplug was solid ;-)
-> > 
-> > I was able to stress cpu hotplug on 3.12-rt after applying the
-> > following patch.
-> > 
-> > If there's no complaints about it. I'm going to add this to the 3.12-rt
-> > stable tree. As without it, it fails horribly with the cpu hotplug
-> > stress test, and I wont release a stable kernel that does that.
-> 
-> My local boxen are happy, 64 core box with 14-rt seems happy as well,
-> though I couldn't let it burn for long.
+drivers/tty/serial/sc16is7xx.c:1060:12: warning: 'sc16is7xx_probe' defined but not used [-Wunused-function]
+ static int sc16is7xx_probe(struct device *dev,
+            ^
+drivers/tty/serial/sc16is7xx.c:1176:12: warning: 'sc16is7xx_remove' defined but not used [-Wunused-function]
+ static int sc16is7xx_remove(struct device *dev)
+            ^
+drivers/tty/serial/sc16is7xx.c:1215:29: warning: 'regcfg' defined but not used [-Wunused-variable]
+ static struct regmap_config regcfg = {
+                             ^
 
-And 3.12 looks stable on 64 core DL980 as well.  (If it survived a 24
-hour busy+stress session I'd still likely fall outta my chair though)
+Fixed these warnings by #ifdef-ing them to CONFIG_REGMAP_I2C and
+recursively #ifdef-ing also some other functions that got defined but not used.
 
-My kinda sorta 3.12-rt enterprise to be kernel wasn't stable on DL980,
-while appearing just fine on small boxen, which made me suspect that
-there was still a big box something lurking, only raising its ugly head
-in the fatter kernel.  That wasn't an rt problem after all, someone in
-enterprise land just didn't stack their goody pile quite high enough
-while wedging upstream into the stable base kernel, which bent rt.
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+---
+ drivers/tty/serial/sc16is7xx.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-The End.. I hope.  I've had enough hotplug entertainment for a while.
-
--Mike
+diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
+index 7206a64..bd76277 100644
+--- a/drivers/tty/serial/sc16is7xx.c
++++ b/drivers/tty/serial/sc16is7xx.c
+@@ -389,6 +389,7 @@ static const struct sc16is7xx_devtype sc16is762_devtype = {
+ 	.nr_uart	= 2,
+ };
+ 
++#ifdef CONFIG_REGMAP_I2C
+ static bool sc16is7xx_regmap_volatile(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg >> SC16IS7XX_REG_SHIFT) {
+@@ -418,6 +419,7 @@ static bool sc16is7xx_regmap_precious(struct device *dev, unsigned int reg)
+ 
+ 	return false;
+ }
++#endif
+ 
+ static int sc16is7xx_set_baud(struct uart_port *port, int baud)
+ {
+@@ -466,6 +468,7 @@ static int sc16is7xx_set_baud(struct uart_port *port, int baud)
+ 	return DIV_ROUND_CLOSEST(clk / 16, div);
+ }
+ 
++#ifdef CONFIG_REGMAP_I2C
+ static void sc16is7xx_handle_rx(struct uart_port *port, unsigned int rxlen,
+ 				unsigned int iir)
+ {
+@@ -588,7 +591,9 @@ static void sc16is7xx_handle_tx(struct uart_port *port)
+ 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+ 		uart_write_wakeup(port);
+ }
++#endif
+ 
++#ifdef CONFIG_REGMAP_I2C
+ static void sc16is7xx_port_irq(struct sc16is7xx_port *s, int portno)
+ {
+ 	struct uart_port *port = &s->p[portno].port;
+@@ -651,6 +656,7 @@ static void sc16is7xx_wq_proc(struct work_struct *ws)
+ 	sc16is7xx_handle_tx(&one->port);
+ 	mutex_unlock(&s->mutex);
+ }
++#endif
+ 
+ static void sc16is7xx_stop_tx(struct uart_port* port)
+ {
+@@ -716,6 +722,7 @@ static unsigned int sc16is7xx_get_mctrl(struct uart_port *port)
+ 	return TIOCM_DSR | TIOCM_CAR;
+ }
+ 
++#ifdef CONFIG_REGMAP_I2C
+ static void sc16is7xx_md_proc(struct work_struct *ws)
+ {
+ 	struct sc16is7xx_one *one = to_sc16is7xx_one(ws, md_work);
+@@ -725,6 +732,7 @@ static void sc16is7xx_md_proc(struct work_struct *ws)
+ 			      (one->port.mctrl & TIOCM_LOOP) ?
+ 				      SC16IS7XX_MCR_LOOP_BIT : 0);
+ }
++#endif
+ 
+ static void sc16is7xx_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ {
+@@ -1006,6 +1014,7 @@ static const struct uart_ops sc16is7xx_ops = {
+ 	.pm		= sc16is7xx_pm,
+ };
+ 
++#ifdef CONFIG_REGMAP_I2C
+ #ifdef CONFIG_GPIOLIB
+ static int sc16is7xx_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+@@ -1200,6 +1209,7 @@ static int sc16is7xx_remove(struct device *dev)
+ 
+ 	return ret;
+ }
++#endif
+ 
+ static const struct of_device_id __maybe_unused sc16is7xx_dt_ids[] = {
+ 	{ .compatible = "nxp,sc16is740",	.data = &sc16is74x_devtype, },
+@@ -1212,6 +1222,7 @@ static const struct of_device_id __maybe_unused sc16is7xx_dt_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, sc16is7xx_dt_ids);
+ 
++#ifdef CONFIG_REGMAP_I2C
+ static struct regmap_config regcfg = {
+ 	.reg_bits = 7,
+ 	.pad_bits = 1,
+@@ -1221,7 +1232,6 @@ static struct regmap_config regcfg = {
+ 	.precious_reg = sc16is7xx_regmap_precious,
+ };
+ 
+-#ifdef CONFIG_REGMAP_I2C
+ static int sc16is7xx_i2c_probe(struct i2c_client *i2c,
+ 			       const struct i2c_device_id *id)
+ {
+-- 
+1.8.4.5
 
