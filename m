@@ -1,252 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933757AbaD3NJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:09:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35756 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195AbaD3NJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:09:47 -0400
-Date: Wed, 30 Apr 2014 15:09:37 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Dario Faggioli <raistlin@linux.it>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, rostedt@goodmis.org,
-        Oleg Nesterov <oleg@redhat.com>, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        Linux Kernel <linux-kernel@vger.kernel.org>, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        linux-man@vger.kernel.org
-Subject: Re: sched_{set,get}attr() manpage
-Message-ID: <20140430130937.GH30445@twins.programming.kicks-ass.net>
-References: <20131217123352.692059839@infradead.org>
- <CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>
- <20140121153851.GZ31570@twins.programming.kicks-ass.net>
- <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
- <20140214161929.GL27965@twins.programming.kicks-ass.net>
- <53020C9D.1050208@gmail.com>
- <20140428081858.GX13658@twins.programming.kicks-ass.net>
- <535FA467.2070403@gmail.com>
- <20140429160441.GU11096@twins.programming.kicks-ass.net>
- <5360D9E5.9080206@gmail.com>
+	id S933783AbaD3NLK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:11:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44921 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751602AbaD3NLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:11:08 -0400
+Date: Wed, 30 Apr 2014 15:11:06 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@cmpxchg.org, nasa4836@gmail.com
+Subject: Re: [PATCH 2/6] cgroup, memcg: allocate cgroup ID from 1
+Message-ID: <20140430131106.GE4357@dhcp22.suse.cz>
+References: <1398373333-1521-1-git-send-email-tj@kernel.org>
+ <1398373333-1521-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5360D9E5.9080206@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1398373333-1521-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 01:09:25PM +0200, Michael Kerrisk (man-pages) wrote:
-> Hi Peter,
+On Thu 24-04-14 17:02:09, Tejun Heo wrote:
+> Currently, cgroup->id is allocated from 0, which is always assigned to
+> the root cgroup; unfortunately, memcg wants to use ID 0 to indicate
+> invalid IDs and ends up incrementing all IDs by one.
 > 
-> Thanks for the revision. More comments below. Could you revise in 
-> the light of those comments, and hopefully also after feedback from 
-> Juri and Dario?
+> It's reasonable to reserve 0 for special purposes.  This patch updates
+> cgroup core so that ID 0 is not used and the root cgroups get ID 1.
+> The ID incrementing is removed form memcg.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
 
-New text below; hopefully a little clearer. If not, do holler.
+Sorry for a late response.
+Thanks for removing this hack from memcg!
+cgroup code change looks good at first glance but I am not familiar with
+all the recent changes so I do not feel to add my Reviewed-by.
 
----
-> [1] A page describing the sched_setattr() and sched_getattr() APIs
+Anyway
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-NAME
-	sched_setattr, sched_getattr - set and get scheduling policy/attributes
+for the change in the semantic and the memcg change.
 
-SYNOPSIS
-	#include <sched.h>
+Thanks!
 
-	struct sched_attr {
-		u32 size;
-		u32 sched_policy;
-		u64 sched_flags;
+> ---
+>  include/linux/cgroup.h | 4 ++--
+>  kernel/cgroup.c        | 4 ++--
+>  mm/memcontrol.c        | 8 ++------
+>  3 files changed, 6 insertions(+), 10 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index c6c703f..793f70a 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -144,8 +144,8 @@ struct cgroup {
+>  	/*
+>  	 * idr allocated in-hierarchy ID.
+>  	 *
+> -	 * The ID of the root cgroup is always 0, and a new cgroup
+> -	 * will be assigned with a smallest available ID.
+> +	 * ID 0 is not used, the ID of the root cgroup is always 1, and a
+> +	 * new cgroup will be assigned with a smallest available ID.
+>  	 *
+>  	 * Allocating/Removing ID must be protected by cgroup_mutex.
+>  	 */
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 21667f3..3fa0463 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1531,7 +1531,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
+>  	lockdep_assert_held(&cgroup_tree_mutex);
+>  	lockdep_assert_held(&cgroup_mutex);
+>  
+> -	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
+> +	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 1, 2, GFP_KERNEL);
+>  	if (ret < 0)
+>  		goto out;
+>  	root_cgrp->id = ret;
+> @@ -4225,7 +4225,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+>  	 * Temporarily set the pointer to NULL, so idr_find() won't return
+>  	 * a half-baked cgroup.
+>  	 */
+> -	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+> +	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 2, 0, GFP_KERNEL);
+>  	if (cgrp->id < 0) {
+>  		err = -ENOMEM;
+>  		goto err_unlock;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 29501f0..1d0b297 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -527,18 +527,14 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+>  
+>  static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
+>  {
+> -	/*
+> -	 * The ID of the root cgroup is 0, but memcg treat 0 as an
+> -	 * invalid ID, so we return (cgroup_id + 1).
+> -	 */
+> -	return memcg->css.cgroup->id + 1;
+> +	return memcg->css.cgroup->id;
+>  }
+>  
+>  static inline struct mem_cgroup *mem_cgroup_from_id(unsigned short id)
+>  {
+>  	struct cgroup_subsys_state *css;
+>  
+> -	css = css_from_id(id - 1, &memory_cgrp_subsys);
+> +	css = css_from_id(id, &memory_cgrp_subsys);
+>  	return mem_cgroup_from_css(css);
+>  }
+>  
+> -- 
+> 1.9.0
+> 
 
-		/* SCHED_NORMAL, SCHED_BATCH */
-		s32 sched_nice;
-
-		/* SCHED_FIFO, SCHED_RR */
-		u32 sched_priority;
-
-		/* SCHED_DEADLINE */
-		u64 sched_runtime;
-		u64 sched_deadline;
-		u64 sched_period;
-	};
-
-	int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
-
-	int sched_getattr(pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags);
-
-DESCRIPTION
-	sched_setattr() sets both the scheduling policy and the
-	associated attributes for the process whose ID is specified in
-	pid.
-
-	sched_setattr() replaces sched_setscheduler(), sched_setparam(),
-	nice() and some of setpriority().
-
-	If pid equals zero, the scheduling policy and attributes
-	of the calling process will be set.  The interpretation of the
-	argument attr depends on the selected policy.  Currently, Linux
-	supports the following "normal" (i.e., non-real-time) scheduling
-	policies:
-
-	SCHED_OTHER	the standard "fair" time-sharing policy;
-
-	SCHED_BATCH	for "batch" style execution of processes; and
-
-	SCHED_IDLE	for running very low priority background jobs.
-
-	The following "real-time" policies are also supported, for
-	special time-critical applications that need precise control
-	over the way in which runnable processes are selected for
-	execution:
-
-	SCHED_FIFO	a static priority first-in, first-out policy;
-
-	SCHED_RR	a static priority round-robin policy; and
-
-	SCHED_DEADLINE	a dynamic priority deadline policy.
-
-	The semantics of each of these policies are detailed in
-	sched(7).
-
-	sched_attr::size must be set to the size of the structure, as in
-	sizeof(struct sched_attr), if the provided structure is smaller
-	than the kernel structure, any additional fields are assumed
-	'0'. If the provided structure is larger than the kernel
-	structure, the kernel verifies all additional fields are '0' if
-	not the syscall will fail with -E2BIG.
-
-	sched_attr::sched_policy the desired scheduling policy.
-
-	sched_attr::sched_flags additional flags that can influence
-	scheduling behaviour. Currently as per Linux kernel 3.14:
-
-		SCHED_FLAG_RESET_ON_FORK - resets the scheduling policy
-		to: (struct sched_attr){ .sched_policy = SCHED_OTHER, }
-		on fork().
-
-	is the only supported flag.
-
-	sched_attr::sched_nice should only be set for SCHED_OTHER,
-	SCHED_BATCH, the desired nice value [-20,19], see sched(7).
-
-	sched_attr::sched_priority should only be set for SCHED_FIFO,
-	SCHED_RR, the desired static priority [1,99], see sched(7).
-
-	sched_attr::sched_runtime in nanoseconds,
-	sched_attr::sched_deadline in nanoseconds,
-	sched_attr::sched_period in nanoseconds, should only be set for
-	SCHED_DEADLINE and are the traditional sporadic task model
-	parameters, see sched(7).
-
-	The flags argument should be 0.
-
-	sched_getattr() queries the scheduling policy currently applied
-	to the process identified by pid.
-
-	Similar to sched_setattr(), sched_getattr() replaces
-	sched_getscheduler(), sched_getparam() and some of
-	getpriority().
-
-	If pid equals zero, the policy of the calling process will be
-	retrieved.
-
-	The size argument should reflect the size of struct sched_attr
-	as known to userspace. The kernel fills out sched_attr::size to
-	the size of its sched_attr structure. If the user provided
-	structure is larger, additional fields are not touched. If the
-	user provided structure is smaller, but the kernel needs to
-	return values outside the provided space, the syscall will fail
-	with -E2BIG.
-
-	The flags argument should be 0.
-
-	The other sched_attr fields are filled out as described in
-	sched_setattr().
-
-RETURN VALUE
-	On success, sched_setattr() and sched_getattr() return 0. On
-	error, -1 is returned, and errno is set appropriately.
-
-ERRORS
-       EINVAL The scheduling policy is not one  of  the  recognized  policies,
-              param is NULL, or param does not make sense for the selected
-	      policy.
-
-       EPERM  The calling process does not have appropriate privileges.
-
-       ESRCH  The process whose ID is pid could not be found.
-
-       E2BIG  The provided storage for struct sched_attr is either too
-              big, see sched_setattr(), or too small, see sched_getattr().
-
-       EBUSY  SCHED_DEADLINE admission control failure, see sched(7).
-
-NOTES
-       While the text above (and in sched_setscheduler(2)) talks about
-       processes, in actual fact these system calls are thread specific.
-
-       While the SCHED_DEADLINE parameters are in nanoseconds, current
-       kernels truncate the lower 10 bits and we get an effective
-       microsecond resolution.
-
-> [2] A piece of text describing the SCHED_DEADLINE policy, which I can
-> drop into sched(7).
-
-    SCHED_DEADLINE: Sporadic task model deadline scheduling
-       SCHED_DEADLINE is currently implemented using GEDF (Global
-       Earliest Deadline First) with additional CBS (Constant Bandwidth
-       Server).
-
-       A sporadic task is on that has a sequence of jobs, where each job
-       is activated at most once per period [ns]. Each job will have an
-       absolute deadline relative to its activation before which it must
-       finish its execution, and it shall at no time run longer
-       than runtime [ns] after its release.
-
-              activation/wakeup       absolute deadline
-              |        release        |
-              v        v              v
-       -------x--------x--------------x--------x-------
-                       |<- Runtime -->|
-              |<---------- Deadline ->|
-              |<---------- Period  ----------->|
-
-       This gives: runtime <= (rel) deadline <= period.
-
-       The CBS guarantees non-interference between tasks, by throttling
-       tasks that attempt to over-run their specified runtime.
-
-       In general the set of all SCHED_DEADLINE tasks is not
-       feasible/schedulable within the given constraints. Therefore we
-       must do an admittance test on setting/changing SCHED_DEADLINE
-       policy/attributes.
-
-       This admission test calculates that the task set is
-       feasible/schedulable, failing this, sched_setattr() will return
-       -EBUSY.
-
-       For example, it is required (but not necessarily sufficient) for
-       the total utilization to be less or equal to the total amount of
-       CPUs available, where, since each task can maximally run for
-       runtime [us] per period [us], that task's utilization is its
-       runtime/period.
-
-       Because we must be able to calculate admittance SCHED_DEADLINE
-       tasks are the highest priority (user controllable) tasks in the
-       system, if any SCHED_DEADLINE task is runnable it will preempt
-       any FIFO/RR/OTHER/BATCH/IDLE task.
-
-       SCHED_DEADLINE tasks will fail fork(2) with -EAGAIN, except when
-       the forking task has SCHED_FLAG_RESET_ON_FORK set.
-
-       A SCHED_DEADLINE task calling sched_yield() will 'yield' the
-       current job and wait for a new period to begin.
-
+-- 
+Michal Hocko
+SUSE Labs
