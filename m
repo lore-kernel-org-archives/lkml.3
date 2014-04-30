@@ -1,139 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945984AbaD3XHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 19:07:03 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60024 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759610AbaD3XG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 19:06:59 -0400
-Date: Wed, 30 Apr 2014 19:06:55 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] vmscan: memcg: Always use swappiness of the
- reclaimed memcg swappiness and oom_control
-Message-ID: <20140430230655.GG26041@cmpxchg.org>
-References: <1397682798-22906-1-git-send-email-hannes@cmpxchg.org>
- <20140418113611.GA7568@dhcp22.suse.cz>
- <20140424121917.GB4107@cmpxchg.org>
- <20140424142704.GC7644@dhcp22.suse.cz>
+	id S1946110AbaD3XOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 19:14:17 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:50636 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270AbaD3XOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 19:14:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424142704.GC7644@dhcp22.suse.cz>
+In-Reply-To: <CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
+References: <20140430160345.GP18016@ZenIV.linux.org.uk>
+	<CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+	<20140430183650.GQ18016@ZenIV.linux.org.uk>
+	<CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+	<20140430190227.GR18016@ZenIV.linux.org.uk>
+	<20140430195918.GS18016@ZenIV.linux.org.uk>
+	<CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
+	<20140430203823.GT18016@ZenIV.linux.org.uk>
+	<CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
+	<20140430211206.GU18016@ZenIV.linux.org.uk>
+	<20140430221238.GV18016@ZenIV.linux.org.uk>
+	<CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
+Date: Wed, 30 Apr 2014 16:14:14 -0700
+X-Google-Sender-Auth: 5hZwzOgmjRsKRB0zJpZx1JBqSDw
+Message-ID: <CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:27:04PM +0200, Michal Hocko wrote:
-> On Thu 24-04-14 08:19:17, Johannes Weiner wrote:
-> > On Fri, Apr 18, 2014 at 01:36:11PM +0200, Michal Hocko wrote:
-> > > On Wed 16-04-14 17:13:18, Johannes Weiner wrote:
-> > > > Per-memcg swappiness and oom killing can currently not be tweaked on a
-> > > > memcg that is part of a hierarchy, but not the root of that hierarchy.
-> > > > Users have complained that they can't configure this when they turned
-> > > > on hierarchy mode.  In fact, with hierarchy mode becoming the default,
-> > > > this restriction disables the tunables entirely.
-> > > 
-> > > Except when we would handle the first level under root differently,
-> > > which is ugly.
-> > > 
-> > > > But there is no good reason for this restriction. 
-> > > 
-> > > I had a patch for this somewhere on the think_more pile. I wasn't
-> > > particularly happy about the semantic so I haven't posted it.
-> > > 
-> > > > The settings for
-> > > > swappiness and OOM killing are taken from whatever memcg whose limit
-> > > > triggered reclaim and OOM invocation, regardless of its position in
-> > > > the hierarchy tree.
-> > > 
-> > > This is OK for the OOM knob because the memory pressure cannot be
-> > > handled at that level in hierarchy and that is where the OOM happens.
-> > > 
-> > > I am not so sure about the swappiness though. The swappiness tells us
-> > > how to proportionally scan anon vs. file LRUs and those are per-memcg,
-> > > not per-hierarchy (unlike the charge) so it makes sense to use it
-> > > per-memcg IMO.
-> > > 
-> > > Besides that using the reclaim target value might be quite confusing.
-> > > Say, somebody wants to prevent from swapping in a certain group and
-> > > yet the pages find their way to swap depending on where the reclaim is
-> > > triggered from.
-> > > Another thing would be that setting swappiness on an unlimited group has
-> > > no effect although I would argue it makes some sense in configuration
-> > > when parent is controlled by somebody else. I would like to tell how
-> > > to reclaim me when I cannot say how much memory I can have. 
-> > > 
-> > > It is true that we have a different behavior for the global reclaim
-> > > already but I am not entirely happy about that. Having a different
-> > > behavior for the global vs. limit reclaims just calls for troubles and
-> > > should be avoided as much as possible.
-> > > 
-> > > So let's think what is the best semantic before we merge this. I would
-> > > be more inclined for using per-memcg swappiness all the time (root using
-> > > the global knob) for all reclaims.
-> > 
-> > Yeah, we've always used the triggering group's swappiness value but at
-> > the same time forced the whole hierarchy to have the same setting as
-> > the root.
-> > 
-> > I don't really feel strongly about this.  If you prefer the per-memcg
-> > swappiness I can send a followup patch - or you can.
-> 
-> OK, I originally thought this would be in the same patch but now that I
-> think about it some more it would be better to have it separate in case
-> it turns out this will cause some issues (at least
-> global_reclaim-always-use-global-vm_swappiness is a behavior change).
-> So what do you think about this?
-> ---
-> >From 3a865b7b53aed96d93bbcf865028e63fd6f582ab Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 24 Apr 2014 15:28:05 +0200
-> Subject: [RFC PATCH] vmscan: memcg: Always use swappiness of the reclaimed memcg
-> 
-> The memory reclaim always uses swappiness of the reclaim target memcg
-> (origin of the memory pressure) or vm_swappiness for the global memory
-> reclaim. This behavior was consistent (except for difference between
-> global and hard limit reclaim) because swappiness was enforced to be
-> consistent within each memcg hierarchy.
-> 
-> After "mm: memcontrol: remove hierarchy restrictions for swappiness
-> and oom_control" each memcg can have its own swappiness independent on
-> hierarchical parents, though, so the consistency guarantee is gone.
-> This can lead to an unexpected behavior. Say that a group is explicitly
-> configured to not swapout by memory.swappiness=0 but its memory gets
-> swapped out anyway when the memory pressure comes from its parent with a
-> different swapping policy.
-> It is also unexpected that the knob is meaningless without setting the
-> hard limit which would trigger the reclaim and enforce the swappiness.
-> There are setups where the hard limit is configured higher in the
-> hierarchy by an administrator and children groups are under control of
-> somebody else who is interested in the swapout behavior but not
-> necessarily about the memory limit.
-> 
-> >From a semantic point of view swappiness is an attribute defining
-> anon vs. file proportional scanning of LRU which is memcg specific
-> (unlike charges which are propagated up the hierarchy) so it should be
-> applied to the particular memcg's LRU regardless where the memory
-> pressure comes from.
-> 
-> This patch removes vmscan_swappiness() and stores the swappiness into
-> the scan_control structure. mem_cgroup_swappiness is then used to
-> provide the correct value before shrink_lruvec is called.  The global
-> vm_swappiness is used for the root memcg.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Wed, Apr 30, 2014 at 4:04 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Let me go talk to the paravirt people. Maybe they don't need this, and
+> I don't know exactly *how* they use that lock pointer after the unlock
+> in the "kick waiters" part. Maybe it's all good.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+.. looking at current users (xen and kvm) it does in fact look all
+good. Yes, we "kick" possible waiters after the unlock, but the lock
+itself is not touched by that, it just uses the pointer to the lock as
+a way to figure out who to kick.
 
-> @@ -2221,6 +2217,7 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
->  
->  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
->  
-> +			sc->swappiness = mem_cgroup_swappiness(memcg);
->  			shrink_lruvec(lruvec, sc);
+In fact, I kind of knew that, but had forgotten. We very much depend
+on spin_unlock being safe wrt immediate deleton already: the
+"completion" code very much depends on it. It does a "spin_unlock()"
+to release the completion, and it can get reused immediately (it might
+be on the stack, it might be in some data structure that gets freed).
 
-This is a little nasty, but oh well...
+So I'd suggest removing that whole RCU thing, because it should be
+safe to unlock something that can go away immediately. We'd have huge
+problems elsewhere if it wasn't safe.
+
+               Linus
