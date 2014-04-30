@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097AbaD3AYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 20:24:23 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:49407 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756247AbaD3AYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 20:24:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140430002143.GB28969@ubuntumail>
-References: <20140429220234.GC28410@ubuntumail> <536026B3.1020905@1h.com>
- <20140429222913.GD28410@ubuntumail> <53602B84.1020304@mit.edu>
- <536033A9.5070504@1h.com> <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
- <20140429234739.GB2997@dakara> <CALCETrXK6N8CLjPtnHVXB-BM_bxNU6e1xYGd=_UKcjKMrR3j0g@mail.gmail.com>
- <20140430000101.GC2997@dakara> <CALCETrWz2i1xE_t982yA8GG4a-rD4AnU_43YA8cNdC9NpSD4Sg@mail.gmail.com>
- <20140430002143.GB28969@ubuntumail>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 29 Apr 2014 17:23:57 -0700
-Message-ID: <CALCETrVh0hCtiK=9fmEYfUWuz4C1dPq22kvyd=OWFMH5pXGaZw@mail.gmail.com>
-Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: =?UTF-8?Q?St=C3=A9phane_Graber?= <stgraber@ubuntu.com>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lxc-devel <lxc-devel@lists.sourceforge.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755819AbaD3A3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 20:29:14 -0400
+Received: from ozlabs.org ([103.22.144.67]:36773 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750756AbaD3A3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 20:29:08 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+cc: avagin@openvz.org, roland@redhat.com, oleg@redhat.com,
+        Linux PPC dev <linuxppc-dev@ozlabs.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add new ptrace request macros on PowerPC
+In-reply-to: <535F997B.3000500@linux.vnet.ibm.com>
+References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com> <533BD922.4070009@linux.vnet.ibm.com> <535F4E10.2020300@linux.vnet.ibm.com> <CAEjGV6yi5YY95tM-HY4akN4BGXGn4chA8_sCaqvWx3HPSu2V3w@mail.gmail.com> <535F5BDE.2030309@linux.vnet.ibm.com> <CAEjGV6y8MRiCfRBtWjNfrwKMccROEAJw2rPVc_u+r=tAo2EcHQ@mail.gmail.com> <535F997B.3000500@linux.vnet.ibm.com>
+Comments: In-reply-to Anshuman Khandual <khandual@linux.vnet.ibm.com>
+   message dated "Tue, 29 Apr 2014 17:52:19 +0530."
+X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
+Date: Wed, 30 Apr 2014 10:29:05 +1000
+Message-ID: <20730.1398817745@ale.ozlabs.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 5:21 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> > It should be a nonissue so long as we make sure that a file owned by a
->> > uid outside the scope of the container may not be changed even though
->> > fs_owner_uid is set. Otherwise, it's just a matter of chmod +S on say
->> > a shell and anyone who can see the fs from the host will be getting a
->> > root shell (assuming said file is owned by the host's uid 0).
->>
->> I feel like that's too fragile.  I'd rather add a rule that one of
->
-> yeah I don't wnat to rush something like that.  I'd rather stash
-> the userns of the task which did the mounting and check against
-> that.  Note that would make it worthless unless and until we allowed
-> mounting from non-init userns, but then we can only claim "our fs
-> superblock readers suck and therefore containers can't mount an fs"
-> so long before we start to feel some shame and audit them...
->
->> these filesystems always acts like it's nosuid unless you're inside a
->> user namespace that matches fs_owner_uid.
->>
->> Maybe even that is too weird.  How about setuid, setgid, and fcaps
->> only work on mounts that are in mount namespaces that are owned by the
->> current user namespace or one of its parents?  IOW, a struct mount is
->> only trusted if mnt->mnt_ns->user_ns == current user ns or one of its
->> parents?
->>
->> Untrusted mounts would act like they are nosuid,nodev.  Someone can
->> try to figure out a safe way to relax nodev at some point.
+Anshuman Khandual <khandual@linux.vnet.ibm.com> wrote:
 
-Do you like this variant?  We could add a way for global root to mount
-an fs on behalf of a userns.  I'd rather this be more explicit than
-just mounting it in a mount ns owned by the user namespace, though.
+> On 04/29/2014 01:52 PM, Michael Neuling wrote:
+> > That's not what that patch does. It shouldn't make any user visible changes
+> > to DSCR or PPR.
+> 
+> It may not when it runs uninterrupted but after the tracee process has
+> stopped, thread.dscr reflects the default DSCR value as mentioned
+> before. This can be proved by changing the "dscr_default" value in
+> arch/powerpc/sysfs.c file.
 
---Andy
+The intention with DSCR is that if the user changes the DSCR, the kernel
+should always save/restore it.  If you are seeing something else, then
+that is a bug.  Anton has a test case for this here:
+
+  http://ozlabs.org/~anton/junkcode/dscr_explicit_test.c
+
+If that is failing, then there is a bug that we need to fix.
+
+The PPR is the same, except that the kernel can change it over a
+syscall.
+
+> > Over syscall PPR and DSCR may change.
+
+Sorry, this should be only PPR.  DSCR shouldn't change over a syscall,
+at least that's the intention.
+
+> > Depending on your test case, that may
+> > be your problem.
+> 
+> I would guess when the tracee process stops for ptrace analysis, tm_reclaim or
+> tm_recheckpoint path might be crossed which is causing this dscr_default value
+> to go into thread_struct.
+
+That shouldn't happen.  If that's happening, it's a bug.
+
+Mikey
