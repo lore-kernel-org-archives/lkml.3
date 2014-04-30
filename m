@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340AbaD3Vej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:34:39 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:33255 "EHLO
+	id S1759493AbaD3Vjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:39:33 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:33790 "EHLO
 	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334AbaD3Veh (ORCPT
+	with ESMTP id S1752219AbaD3Vjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:34:37 -0400
-Message-ID: <1398893151.1789.46.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 3/5] acpi_processor: do not mark present at boot but
- not onlined CPU as onlined
+	Wed, 30 Apr 2014 17:39:31 -0400
+Message-ID: <1398893412.1789.48.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 4/5] x86: log error on secondary CPU wakeup failure
+ at ERR level
 From: Toshi Kani <toshi.kani@hp.com>
 To: Igor Mammedov <imammedo@redhat.com>
 Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
@@ -18,10 +18,10 @@ Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
         drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
         andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
         linux-acpi@vger.kernel.org
-Date: Wed, 30 Apr 2014 15:25:51 -0600
-In-Reply-To: <1397488277-14865-4-git-send-email-imammedo@redhat.com>
+Date: Wed, 30 Apr 2014 15:30:12 -0600
+In-Reply-To: <1397488277-14865-5-git-send-email-imammedo@redhat.com>
 References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
-	 <1397488277-14865-4-git-send-email-imammedo@redhat.com>
+	 <1397488277-14865-5-git-send-email-imammedo@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
 Mime-Version: 1.0
@@ -31,43 +31,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
-> acpi_processor_add() assumes that present at boot CPUs
-> are always onlined, it is not so if a CPU failed to become
-> onlined. As result acpi_processor_add() will mark such CPU
-> device as onlined in sysfs and following attempts to
-> online/offline it using /sys/device/system/cpu/cpuX/online
-> attribute will fail.
-> 
-> Do not poke into device internals in acpi_processor_add()
-> and touch "struct device { .offline }" attribute, since
-> for CPUs onlined at boot it's set by:
->   topology_init() -> arch_register_cpu() -> register_cpu()
-> before ACPI device tree is parsed, and for hotplugged
-> CPUs it's set when userspace onlines CPU via sysfs.
+> If system is running without debug level logging,
+> it will not log error if do_boot_cpu() failed to
+> wakeup AP. It may lead to silent AP bringup
+> failures at boot time.
+> Change message level to KERN_ERR to make error
+> visible to user as it's done on other architectures.
 > 
 > Signed-off-by: Igor Mammedov <imammedo@redhat.com>
 > ---
-> v2:
->  - fix regression in v1 leading to NULL pointer dereference
->    on CPU unplug, do not remove "pr->dev = dev;"
-> ---
->  drivers/acpi/acpi_processor.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+>  arch/x86/kernel/smpboot.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-> index c29c2c3..42d66f8 100644
-> --- a/drivers/acpi/acpi_processor.c
-> +++ b/drivers/acpi/acpi_processor.c
-> @@ -404,7 +404,6 @@ static int acpi_processor_add(struct acpi_device *device,
->  		goto err;
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 2988f69..ae2fd97 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -918,7 +918,7 @@ int native_cpu_up(unsigned int cpu, struct task_struct *tidle)
 >  
->  	pr->dev = dev;
-> -	dev->offline = pr->flags.need_hotplug_init;
+>  	err = do_boot_cpu(apicid, cpu, tidle);
+>  	if (err) {
+> -		pr_debug("do_boot_cpu failed %d\n", err);
+> +		pr_err("do_boot_cpu failed(%d) to wakeup CPU#%u\n", err, cpu);
+>  		return -EIO;
+>  	}
+>  
 
-IIRC, this change was necessary to handle the case when maxcpus=X is
-specified at boot.  In this case, excessive CPU's dev->offline needs to
-be set to 1.  Can you verify this?
+Looks good.
 
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+I will review patch 5/5 later (probably tomorrow).
 Thanks,
 -Toshi
 
