@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331AbaD3TAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:00:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49189 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175AbaD3TAD (ORCPT
+	id S1759392AbaD3TAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:00:22 -0400
+Received: from jablonecka.jablonka.cz ([91.219.244.36]:60924 "EHLO
+	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaD3TAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:00:03 -0400
-Date: Wed, 30 Apr 2014 12:00:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v3] mm,writeback: fix divide by zero in
- pos_ratio_polynom
-Message-Id: <20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-In-Reply-To: <20140430104114.4bdc588e@cuia.bos.redhat.com>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-	<5360C9E7.6010701@jp.fujitsu.com>
-	<20140430093035.7e7226f2@annuminas.surriel.com>
-	<20140430134826.GH4357@dhcp22.suse.cz>
-	<20140430104114.4bdc588e@cuia.bos.redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 15:00:19 -0400
+X-Greylist: delayed 1605 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Apr 2014 15:00:19 EDT
+Date: Wed, 30 Apr 2014 20:33:27 +0200
+From: Vojtech Pavlik <vojtech@suse.cz>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+Message-ID: <20140430183327.GA3926@suse.cz>
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+ <1398868249-26169-10-git-send-email-jslaby@suse.cz>
+ <20140430165532.GS8754@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140430165532.GS8754@linux.vnet.ibm.com>
+X-Bounce-Cookie: It's a lemon tree, dear Watson!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 10:41:14 -0400 Rik van Riel <riel@redhat.com> wrote:
-
-> It is possible for "limit - setpoint + 1" to equal zero, leading to a
-> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-> working, so we need to actually test the divisor before calling div64.
+On Wed, Apr 30, 2014 at 09:55:32AM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 30, 2014 at 04:30:42PM +0200, Jiri Slaby wrote:
+> > Some threads do not use kthread_should_stop. Before we enable a
+> > kthread support in kgr, we must make sure all those mark themselves
+> > safe explicitly.
 > 
-> ...
->
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -598,10 +598,15 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
->  					  unsigned long limit)
->  {
->  	long long pos_ratio;
-> +	long divisor;
->  	long x;
->  
-> +	divisor = limit - setpoint;
-> +	if (!(s32)divisor)
-> +		divisor = 1;	/* Avoid div-by-zero */
-> +
->  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-> -		    limit - setpoint + 1);
-> +		    (s32)divisor);
+> Would it make sense to bury kgr_task_safe() in wait_event_interruptible()
+> and friends?  The kgr_task_safe() implementation looks pretty lightweight,
+> so it should not be a performance problem.
 
-Doesn't this just paper over the bug one time in four billion?  The
-other 3999999999 times, pos_ratio_polynom() returns an incorect result?
+For userspace tasks, the kGraft in progress flag is cleared when
+entering or exiting userspace. At that point it is safe to switch the
+task to a post-patch world view.
 
-If it is indeed the case that pos_ratio_polynom() callers are
-legitimately passing a setpoint which is more than 2^32 less than limit
-then it would be better to handle that input correctly.
+For kernel threads, it's a bit more complicated: They never exit the
+kernel, they keep executing within the kernel continuously. The
+kgr_task_safe() call is thus inserted at a location within the main loop
+where a 'new loop' begins - where there are no dependencies on results
+of calls of functions from the previous loop.
 
-Writing a new suite of div functions sounds overkillish.  At some loss
-of precision could we do something like
+Hence, putting kgr_task_safe() into every wait_event_interruptible()
+wouldn't work, only a few of them are at that strategic spot where a
+'new loop' can be indicated to kGraft.
 
-	if (divisor > 2^32) {
-		divisor >>= log2(divisor) - 32;
-		dividend >>= log2(divisor) - 32;
-	}
-	x = div(dividend, divisor);
+The reason kgr_task_safe() is called from within the condition
+evaluation statement in wait_event_interruptible() in this patch is
+because we want it to be called as soon as a new loop begins - even if
+that loop is empty because the condition to stop waiting has not been
+met.
 
-?
+This also means that kGraft currently cannot patch the main loops of
+kernel threads themselves as the thread of execution never exits them.
 
-And let's uninline the sorry thing while we're in there ;)
+Jiøí (Slabý) has some ideas about how to do without calling
+kgr_task_safe() from within the kernel thread main loops, but for now,
+the goal is to keep things simple and easy to understand.
+
+> One reason might this might be a bad idea is that there are calls to
+> wait_event_interruptible() all over the place, which might therefore
+> constrain where grafting could be safely done.  That would be fair enough,
+> but does that also imply new constraints on where kthread_should_stop()
+> can be invoked?  Any new constraints might not be a big deal given that
+> a very large fraction of the kthreads (and maybe all of them) invoke
+> kthread_should_stop() from their top-level function, but would be good
+> to call out.
+
+> So, what is the story?
+
+kGraft currently assumes that kthread_should_stop() is always in a part
+of the main loop which doesn't carry over effect dependencies from the
+previous iteration. This is currently true for all the uses of
+kthread_should_stop(), but indeed it is an additional constraint for the
+future.
+
+
+Vojtech
