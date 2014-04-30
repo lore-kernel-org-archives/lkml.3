@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422795AbaD3OeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:34:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758965AbaD3OeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:34:06 -0400
-Message-ID: <53610941.8030309@redhat.com>
-Date: Wed, 30 Apr 2014 10:31:29 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
-References: <20140429151910.53f740ef@annuminas.surriel.com> <5360C9E7.6010701@jp.fujitsu.com> <20140430093035.7e7226f2@annuminas.surriel.com> <20140430134826.GH4357@dhcp22.suse.cz>
-In-Reply-To: <20140430134826.GH4357@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759337AbaD3Oeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:34:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52335 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759213AbaD3Oav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 10:30:51 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [RFC 00/16] kGraft
+Date: Wed, 30 Apr 2014 16:30:33 +0200
+Message-Id: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 09:48 AM, Michal Hocko wrote:
-> On Wed 30-04-14 09:30:35, Rik van Riel wrote:
-> [...]
->> Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
->>
->> It is possible for "limit - setpoint + 1" to equal zero, leading to a
->> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
->> working, so we need to actually test the divisor before calling div64.
->>
->> Signed-off-by: Rik van Riel <riel@redhat.com>
->> ---
->>   mm/page-writeback.c | 13 +++++++++++--
->>   1 file changed, 11 insertions(+), 2 deletions(-)
->>
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index ef41349..f98a297 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
->>   					  unsigned long dirty,
->>   					  unsigned long limit)
->>   {
->> +	unsigned long divisor;
->>   	long long pos_ratio;
->>   	long x;
->>
->> +	divisor = limit - setpoint;
->> +	if (!divisor)
->> +		divisor = 1;	/* Avoid div-by-zero */
->> +
->
-> This is still prone to u64 -> s32 issue, isn't it?
-> What was the original problem anyway? Was it really setpoint > limit or
-> rather the overflow?
+Hi,
 
-Thinking about it some more, is it possible that
-limit and/or setpoint are larger than 32 bits, but
-the difference between them is not?
+this is the first RFC on kGraft, the linux kernel online patching
+developed at SUSE.
 
-In that case, truncating both to 32 bits before
-doing the subtraction would be troublesome, and
-it would be better to do a cast in the comparison:
+The patches are posted as a reply to this email and can be also
+obtained as a whole tree at:
+https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/log/?h=kgraft
 
-if (!(s32)divisor)
-	divisor = 1;
+Jiri Kosina (4):
+  kgr: initial code
+  kgr: x86: refuse to build without fentry support
+  kgr: add procfs interface for per-process 'kgr_in_progress'
+  kgr: make a per-process 'in progress' flag a single bit
+
+Jiri Slaby (12):
+  ftrace: Add function to find fentry of function
+  ftrace: Make ftrace_is_dead available globally
+  kgr: add testing kgraft patch
+  kgr: update Kconfig documentation
+  kgr: add Documentation
+  kgr: trigger the first check earlier
+  kgr: sched.h, introduce kgr_task_safe helper
+  kgr: mark task_safe in some kthreads
+  kgr: kthreads support
+  kgr: handle irqs
+  kgr: add tools
+  kgr: add MAINTAINERS entry
+
+ Documentation/kgr.txt              |   26 +
+ MAINTAINERS                        |    9 +
+ arch/x86/Kconfig                   |    2 +
+ arch/x86/include/asm/kgr.h         |   45 +
+ arch/x86/include/asm/thread_info.h |    6 +-
+ arch/x86/kernel/entry_64.S         |    9 +
+ arch/x86/kernel/x8664_ksyms_64.c   |    1 +
+ drivers/base/devtmpfs.c            |    1 +
+ fs/jbd2/journal.c                  |    2 +
+ fs/notify/mark.c                   |    5 +-
+ fs/proc/base.c                     |   11 +
+ include/linux/ftrace.h             |    4 +
+ include/linux/kgr.h                |   86 +
+ include/linux/sched.h              |    9 +
+ kernel/Kconfig.kgr                 |   10 +
+ kernel/Makefile                    |    1 +
+ kernel/hung_task.c                 |    5 +-
+ kernel/kgr.c                       |  338 +++
+ kernel/kthread.c                   |    3 +
+ kernel/rcu/tree.c                  |    6 +-
+ kernel/rcu/tree_plugin.h           |    9 +-
+ kernel/trace/ftrace.c              |   29 +
+ kernel/trace/trace.h               |    2 -
+ kernel/workqueue.c                 |    1 +
+ samples/Kconfig                    |    8 +
+ samples/Makefile                   |    3 +-
+ samples/kgr/Makefile               |    1 +
+ samples/kgr/kgr_patcher.c          |   97 +
+ tools/Makefile                     |   13 +-
+ tools/kgraft/Makefile              |   30 +
+ tools/kgraft/README                |   50 +
+ tools/kgraft/TODO                  |   20 +
+ tools/kgraft/app.c                 |   35 +
+ tools/kgraft/app.h                 |    7 +
+ tools/kgraft/create-kgrmodule.sh   |   25 +
+ tools/kgraft/create-stub.sh        |   53 +
+ tools/kgraft/dwarf-inline-tree.c   |  544 +++++
+ tools/kgraft/dwarf_names.awk       |  126 ++
+ tools/kgraft/dwarf_names.c         | 4366 ++++++++++++++++++++++++++++++++++++
+ tools/kgraft/dwarf_names.h         |   53 +
+ tools/kgraft/extract-syms.sh       |   18 +
+ tools/kgraft/it2rev.pl             |   40 +
+ tools/kgraft/objcopy.diff          |  131 ++
+ tools/kgraft/symlist               |    1 +
+ 44 files changed, 6225 insertions(+), 16 deletions(-)
+ create mode 100644 Documentation/kgr.txt
+ create mode 100644 arch/x86/include/asm/kgr.h
+ create mode 100644 include/linux/kgr.h
+ create mode 100644 kernel/Kconfig.kgr
+ create mode 100644 kernel/kgr.c
+ create mode 100644 samples/kgr/Makefile
+ create mode 100644 samples/kgr/kgr_patcher.c
+ create mode 100644 tools/kgraft/Makefile
+ create mode 100644 tools/kgraft/README
+ create mode 100644 tools/kgraft/TODO
+ create mode 100644 tools/kgraft/app.c
+ create mode 100644 tools/kgraft/app.h
+ create mode 100755 tools/kgraft/create-kgrmodule.sh
+ create mode 100755 tools/kgraft/create-stub.sh
+ create mode 100644 tools/kgraft/dwarf-inline-tree.c
+ create mode 100644 tools/kgraft/dwarf_names.awk
+ create mode 100644 tools/kgraft/dwarf_names.c
+ create mode 100644 tools/kgraft/dwarf_names.h
+ create mode 100755 tools/kgraft/extract-syms.sh
+ create mode 100644 tools/kgraft/it2rev.pl
+ create mode 100644 tools/kgraft/objcopy.diff
+ create mode 100644 tools/kgraft/symlist
+
+-- 
+1.9.2
 
