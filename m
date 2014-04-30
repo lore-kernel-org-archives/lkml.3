@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946081AbaD3VG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:06:59 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64866 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946053AbaD3VG6 (ORCPT
+	id S1945916AbaD3VML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:12:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49504 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaD3VMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:06:58 -0400
-From: Karim Raslan <karim.allah.ahmed@gmail.com>
-Cc: Karim Raslan <karim.allah.ahmed@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        SeongJae Park <sj38.park@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Cruz Julian Bishop <cruzjbishop@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Fixing coding style issues in android alarm-dev.c
-Date: Wed, 30 Apr 2014 22:05:53 +0100
-Message-Id: <1398891959-10437-1-git-send-email-karim.allah.ahmed@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 30 Apr 2014 17:12:09 -0400
+Date: Wed, 30 Apr 2014 22:12:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140430211206.GU18016@ZenIV.linux.org.uk>
+References: <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+ <20140430160345.GP18016@ZenIV.linux.org.uk>
+ <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+ <20140430183650.GQ18016@ZenIV.linux.org.uk>
+ <CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+ <20140430190227.GR18016@ZenIV.linux.org.uk>
+ <20140430195918.GS18016@ZenIV.linux.org.uk>
+ <CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
+ <20140430203823.GT18016@ZenIV.linux.org.uk>
+ <CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixing "Missing a blank line after declarations" found by checkpatch.pl script
+On Wed, Apr 30, 2014 at 01:57:05PM -0700, Linus Torvalds wrote:
+> On Wed, Apr 30, 2014 at 1:38 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > We do not (and cannot) call dentry_kill() with rcu_read_lock held - it can
+> > trigger any amount of IO, for one thing.  We can take it around the
+> > couple of places where do that spin_unlock(&dentry->d_lock) (along with
+> > setting DCACHE_RCUACCESS) - that's what I'd been refering to.
+> 
+> Just the last spin_unlock() would be the case that matters, if the
+> spin_unlock() is done on something that could be freed immediately and
+> the lock protects and is inside the entity that gets freed.
 
-Signed-off-by: Karim Raslan <karim.allah.ahmed@gmail.com>
----
- drivers/staging/android/alarm-dev.c |    1 +
- 1 file changed, 1 insertion(+)
+*nod*
 
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
-index 2fc7cdd..f200e8a 100644
---- a/drivers/staging/android/alarm-dev.c
-+++ b/drivers/staging/android/alarm-dev.c
-@@ -329,6 +329,7 @@ static int alarm_release(struct inode *inode, struct file *file)
- 	if (file->private_data) {
- 		for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++) {
- 			uint32_t alarm_type_mask = 1U << i;
-+
- 			if (alarm_enabled & alarm_type_mask) {
- 				alarm_dbg(INFO,
- 					  "%s: clear alarm, pending %d\n",
--- 
-1.7.9.5
+There are two such spin_unlock (handover from shrink_dentry_list() to
+dput() and the opposite one), but they are all that needs protection -
+->d_flags update is outside the rcu-critical area.  I really wonder
+if we *can* get there without DCACHE_RCUACCESS having been set, though;
+dentry would have to be
+	* picked into shrink list (i.e. have had zero refcount at some point)
+	* never had been through __d_rehash()
+shrink_dentry_list() definitely counts on that being impossible, and it
+probably is, but I'm feeling seriously paranoid about the whole area.
+I'll finish grepping through the tree and probably drop setting
+DCACHE_RCUACCESS from the patch - either that, or set it in d_shrink_add()
+it it turns out that it is possible and shrink_dentry_list() is fucked...
 
+Tests seem to be running fine so far...
+
+> >   BTW, is there any convenient
+> > way to tell git commit --amend to update the commit date?  Something
+> > like --date=now would be nice, but it isn't accepted...
+> 
+> --date="$(date)" works.
+
+Thanks...
