@@ -1,209 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493AbaD3HQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 03:16:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2113 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751358AbaD3HQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 03:16:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,956,1389772800"; 
-   d="scan'208";a="503545534"
-Date: Wed, 30 Apr 2014 12:34:08 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
- controller
-Message-ID: <20140430070408.GR32284@intel.com>
-References: <1398349364-10726-1-git-send-email-maxime.ripard@free-electrons.com>
- <1398349364-10726-2-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398349364-10726-2-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757703AbaD3HRg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 03:17:36 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:41602 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaD3HRe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 03:17:34 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-36-5360a38c983e
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+Message-id: <5360A7C8.1080407@samsung.com>
+Date: Wed, 30 Apr 2014 16:35:36 +0900
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308
+ Thunderbird/17.0.4
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>, chow.kim@samsung.com,
+        Young-Gun Jang <yg1004.jang@samsung.com>,
+        VIKAS SAJJANC <vikas.sajjan@samsung.com>
+Subject: Re: [PATCH v3 01/12] ARM: EXYNOS: Make exynos machine_ops as static
+References: <1398835057-3860-1-git-send-email-pankaj.dubey@samsung.com>
+ <1398835057-3860-2-git-send-email-pankaj.dubey@samsung.com>
+ <CAK9yfHxfkegFzzJCz4nAkxrHT6FGT0OQ-5RkCdTA3ruo2kU8CA@mail.gmail.com>
+In-reply-to: <CAK9yfHxfkegFzzJCz4nAkxrHT6FGT0OQ-5RkCdTA3ruo2kU8CA@mail.gmail.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t8zI92exQnBBovmGVosm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NanPzTy2ixfsZrFoubz7YzWexoWc3iwOXR0tzD5nHn2h42
+	j81L6j36tqxi9Pi8SS6ANYrLJiU1J7MstUjfLoEro3vTVsaCPRIVX1e+ZWpgPCLcxcjJISFg
+	ItHb+ZgNwhaTuHBvPZDNxSEksIxRYtGEHhaYottXv7JDJBYxShzeeYsdJMErICjxY/I9sCJm
+	ATOJRy3rmLsYOYBsEYl/NyQhwtoSyxa+Zobofc0ocWlOOwtEr5ZEX1sHE4jNIqAqsebAHrCZ
+	bAK6Ek/ez2UGsUUFwiQ2Te9jBbFFgOpfdi9nAhnELPCLSWLh4idgRcICPhKztv6Auu4Mo8TH
+	I28ZQRKcAsESz7ctYgVJSAi8ZZd4+eol1DoBiW+TD7GAnCohICux6QAzxJuSEgdX3GCZwCg+
+	C8lzs5A8NwvhuVlInlvAyLKKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIySGJ+xgvHfA+hBj
+	MtD2icxSosn5wBSQVxJvaGxmZGFqYmpsZG5pRpqwkjiv2qOkICGB9MSS1OzU1ILUovii0pzU
+	4kOMTBycUg2Mue2by7/WhopqzmX6sObDzo3GPUd9ry2sXJv7/Gv1I2OBWZNivly/9v/8xzPn
+	D/AntzN92t6dlrvi5tz2yJ87rptF9AseYTH2/u7YxluvL8ObV9Hy8+q7LS2CxocPHmaM6udS
+	nGI36cU1hakvv2p9Cfs30evljafdoa7Nas3H7ZmNTqTHNG5ZqMRSnJFoqMVcVJwIAIwBzBn3	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAd2exQnBBmun6Fgsm3SXzaJ3wVU2
+	i02Pr7FaXN41h81ixvl9TBa3L/NanPzTy2ixfsZrFoubz7YzWexoWc3iwOXR0tzD5nHn2h42
+	j81L6j36tqxi9Pi8SS6ANaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEv
+	MTfVVsnFJ0DXLTMH6CglhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8aX
+	7W+YCz6IV6zsW8PWwPhDqIuRk0NCwETi9tWv7BC2mMSFe+vZuhi5OIQEFjFKHN55CyzBKyAo
+	8WPyPZYuRg4OZgF5iSOXskHCzAJmEo9a1jFD1L9mlLg0p50Fol5Loq+tgwnEZhFQlVhzYA/Y
+	HDYBXYkn7+cyg9iiAmESm6b3sYLYIkD1L7uXM4EMYhb4xSSxcPETsCJhAR+JWVt/sENsOMMo
+	8fHIW0aQBKdAsMTzbYtYJzAKzEJy4CyEA2chOXABI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k
+	/NxNjOCIfya1g3Flg8UhRgEORiUeXoGt8cFCrIllxZW5hxglOJiVRHgzOhKChXhTEiurUovy
+	44tKc1KLDzEmA703kVlKNDkfmIzySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2a
+	WpBaBLOFiYNTqoFR4/fV1f2Gj292HBPaGjr9W0XTxXpbNYE1M+d8WXRYRjwrevIDn/tNkber
+	QgLfiHz3NS2+0dcaOel29IfjNQ7zSpdIuFrtuTJDtW3DTS/R1O2WnRWvBZp7Yl/FXErdxXqM
+	553y2ZCX2ce9bPpi++p+ntNaa7suSHZt60dfmfftxzepcIko2H5XYinOSDTUYi4qTgQAjEep
+	LzwDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:22:44PM +0200, Maxime Ripard wrote:
-> The Allwinner A31 has a 16 channels DMA controller that it shares with the
-> newer A23. Although sharing some similarities with the DMA controller of the
-> older Allwinner SoCs, it's significantly different, I don't expect it to be
-> possible to share the driver for these two.
-> 
-> The A31 Controller is able to memory-to-memory or memory-to-device transfers on
-> the 16 channels in parallel.
+Hi Sachin,
 
-Overall driver looks in good shape, few comments though...
+On 04/30/2014 03:00 PM, Sachin Kamat wrote:
+> Hi Pankaj,
+>
+> On 30 April 2014 10:47, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+>> As machine function ops are used only in this file let's make
+>> them static.
+>>
+>> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/exynos.c |    6 +++---
+>>   1 file changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+>> index 3d69e8d..06dcce5 100644
+>> --- a/arch/arm/mach-exynos/exynos.c
+>> +++ b/arch/arm/mach-exynos/exynos.c
+>> @@ -198,7 +198,7 @@ static struct map_desc exynos5_iodesc[] __initdata = {
+>>          },
+>>   };
+>>
+>> -void exynos_restart(enum reboot_mode mode, const char *cmd)
+>> +static void exynos_restart(enum reboot_mode mode, const char *cmd)
+>>   {
+>>          struct device_node *np;
+>>          u32 val = 0x1;
+>> @@ -239,7 +239,7 @@ void __init exynos_cpufreq_init(void)
+>>          platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
+>>   }
+>>
+>> -void __init exynos_init_late(void)
+>> +static void __init exynos_init_late(void)
+>>   {
+>>          if (of_machine_is_compatible("samsung,exynos5440"))
+>>                  /* to be supported later */
+>> @@ -300,7 +300,7 @@ static void __init exynos_map_io(void)
+>>                  iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
+>>   }
+>>
+>> -void __init exynos_init_io(void)
+>> +static void __init exynos_init_io(void)
+>>   {
+>>          debug_ll_io_init();
+>
+> The declarations from common.h should also be removed in this patch to
+> avoid the below
+> build errors:
 
-> +This driver follows the generic DMA bindings defined in dma.txt.
-> +
-> +Required properties:
-> +
-> +- compatible:	Must be "allwinner,sun6i-a31-dma"
-> +- reg:		Should contain the registers base address and length
-> +- interrupts:	Should contain a reference to the interrupt used by this device
-> +- clocks:	Should contain a reference to the parent AHB clock
-> +- resets:	Should contain a reference to the reset controller asserting
-> +	  	this device in reset
-> +- #dma-cells :	Should be 1, a single cell holding a line request number
-> +
-> +Example:
-> +	dma: dma-controller@01c02000 {
-> +		compatible = "allwinner,sun6i-a31-dma";
-> +		reg = <0x01c02000 0x1000>;
-> +		interrupts = <0 50 4>;
-> +		clocks = <&ahb1_gates 6>;
-> +		resets = <&ahb1_rst 6>;
-> +		#dma-cells = <1>;
-> +	};
-> +
-> +Clients:
-> +
-> +DMA clients connected to the A31 DMA controller must use the format
-> +described in the dma.txt file, using a two-cell specifier for each
-> +channel: a phandle plus one integer cells.
-> +The two cells in order are:
-> +
-> +1. A phandle pointing to the DMA controller.
-> +2. The port ID as specified in the datasheet
-> +
-> +Example:
-> +spi2: spi@01c6a000 {
-> +	compatible = "allwinner,sun6i-a31-spi";
-> +	reg = <0x01c6a000 0x1000>;
-> +	interrupts = <0 67 4>;
-> +	clocks = <&ahb1_gates 22>, <&spi2_clk>;
-> +	clock-names = "ahb", "mod";
-> +	dmas = <&dma 25>, <&dma 25>;
-> +	dma-names = "rx", "tx";
-> +	resets = <&ahb1_rst 22>;
-> +};
-Ideally binding should be a separate patch
+Thanks. I will merge changes in common.h in this patch itself.
 
-> +static inline u8 convert_burst(u8 maxburst)
-> +{
-> +	if (maxburst == 1 || maxburst > 16)
-> +		return 0;
-are these valid configurations?
+>
+> arch/arm/mach-exynos/exynos.c:198:13: error: static declaration of
+> ‘exynos_restart’ follows non-static declaration
+>   static void exynos_restart(enum reboot_mode mode, const char *cmd)
+>               ^
+> In file included from arch/arm/mach-exynos/exynos.c:31:0:
+> arch/arm/mach-exynos/common.h:22:6: note: previous declaration of
+> ‘exynos_restart’ was here
+>   void exynos_restart(enum reboot_mode mode, const char *cmd);
+>        ^
+> arch/arm/mach-exynos/exynos.c:235:20: error: static declaration of
+> ‘exynos_init_late’ follows non-static declaration
+>   static void __init exynos_init_late(void)
+>                      ^
+> In file included from arch/arm/mach-exynos/exynos.c:31:0:
+> arch/arm/mach-exynos/common.h:25:6: note: previous declaration of
+> ‘exynos_init_late’ was here
+>   void exynos_init_late(void);
+>        ^
+> arch/arm/mach-exynos/exynos.c:296:20: error: static declaration of
+> ‘exynos_init_io’ follows non-static declaration
+>   static void __init exynos_init_io(void)
+>                      ^
+> In file included from arch/arm/mach-exynos/exynos.c:31:0:
+> arch/arm/mach-exynos/common.h:21:6: note: previous declaration of
+> ‘exynos_init_io’ was here
+>   void exynos_init_io(void);
+>
+>
 
-> +
-> +	return fls(maxburst) - 1;
-> +}
-> +
-> +static inline u8 convert_buswidth(enum dma_slave_buswidth addr_width)
-> +{
-> +	switch (addr_width) {
-> +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-> +		return 1;
-> +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-> +		return 2;
-return (addr_width >> 1); ..??
-since DMA_SLAVE_BUSWIDTH_2_BYTES is numeric 2 and DMA_SLAVE_BUSWIDTH_4_BYTES
-numeric 4. 
-> +	default:
-> +		return 0;
-error?
-
-> +static inline void sun6i_dma_cfg_lli(struct sun6i_dma_lli *lli,
-> +				     dma_addr_t src,
-> +				     dma_addr_t dst, u32 len,
-> +				     struct dma_slave_config *config)
-> +{
-> +	u32 src_width, dst_width, src_burst, dst_burst;
-> +
-> +	if (!config)
-> +		return;
-> +
-> +	src_burst = convert_burst(config->src_maxburst);
-> +	dst_burst = convert_burst(config->dst_maxburst);
-> +
-> +	src_width = convert_buswidth(config->src_addr_width);
-> +	dst_width = convert_buswidth(config->dst_addr_width);
-is 0 a valid case then?
-
-> +
-> +static int sun6i_dma_terminate_all(struct sun6i_vchan *vchan)
-> +{
-> +	struct sun6i_dma_dev *sdev = to_sun6i_dma_dev(vchan->vc.chan.device);
-> +	struct sun6i_pchan *pchan = vchan->phy;
-> +	unsigned long flags;
-> +	LIST_HEAD(head);
-> +
-> +	spin_lock(&sdev->lock);
-> +	list_del_init(&vchan->node);
-> +	spin_unlock(&sdev->lock);
-> +
-> +	spin_lock_irqsave(&vchan->vc.lock, flags);
-> +
-> +	vchan_get_all_descriptors(&vchan->vc, &head);
-> +
-> +	if (pchan) {
-> +		writel(DMA_CHAN_ENABLE_STOP, pchan->base + DMA_CHAN_ENABLE);
-> +		writel(DMA_CHAN_PAUSE_RESUME, pchan->base + DMA_CHAN_PAUSE);
-> +
-> +		vchan->phy = NULL;
-> +		pchan->vchan = NULL;
-> +		pchan->desc = NULL;
-> +		pchan->done = NULL;
-> +	}
-> +
-> +	spin_unlock_irqrestore(&vchan->vc.lock, flags);
-> +
-> +	vchan_dma_desc_free_list(&vchan->vc, &head);
-
-shouldn't you kill the tasklet as well here?
-
-> +static inline void sun6i_dma_free(struct sun6i_dma_dev *sdc)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < NR_MAX_VCHANS; i++) {
-> +		struct sun6i_vchan *vchan = &sdc->vchans[i];
-> +
-> +		list_del(&vchan->vc.chan.device_node);
-> +		tasklet_kill(&vchan->vc.task);
-> +	}
-> +
-> +	tasklet_kill(&sdc->task);
-This is again not good. see http://lwn.net/Articles/588457/
-At this point HW can still generate interrupts or you can have irq running!
-
-> +
-> +static int sun6i_dma_probe(struct platform_device *pdev)
-> +{
-> +	struct sun6i_dma_dev *sdc;
-> +	struct resource *res;
-> +	struct clk *mux, *pll6;
-> +	int irq;
-> +	int ret, i;
-> +
-> +	sdc = devm_kzalloc(&pdev->dev, sizeof(*sdc), GFP_KERNEL);
-> +	if (!sdc)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	sdc->base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(sdc->base))
-> +		return PTR_ERR(sdc->base);
-> +
-> +	irq = platform_get_irq(pdev, 0);
-> +	ret = devm_request_irq(&pdev->dev, irq, sun6i_dma_interrupt, 0,
-> +			       dev_name(&pdev->dev), sdc);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Cannot request IRQ\n");
-> +		return ret;
-> +	}
-this is not good. You have registered for irq, so your irq handlers can be
-invoked but you initialization is not complete yet.
 
 -- 
-~Vinod
+Best Regards,
+Pankaj Dubey
+
