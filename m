@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264AbaD3Ikr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:40:47 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32594 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057AbaD3Ikp (ORCPT
+	id S1758282AbaD3IlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:41:09 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:24357 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758028AbaD3Ikq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:40:45 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-29-5360b70b4402
+	Wed, 30 Apr 2014 04:40:46 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-2a-5360b70b6b02
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
@@ -16,85 +16,103 @@ Cc: Sachin Kamat <sachin.kamat@linaro.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/2] regulator: s5m8767: Allow GPIO 0 to be used as external
- control
-Date: Wed, 30 Apr 2014 10:40:41 +0200
-Message-id: <1398847242-9394-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 2/2] regulator: s2mps11: Allow GPIO 0 to be used as external
+ control on S2MPS14
+Date: Wed, 30 Apr 2014 10:40:42 +0200
+Message-id: <1398847242-9394-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t/xK7rc2xOCDe4dk7PYOGM9q8XUh0/Y
-	LF6/MLQ42/SG3eLblQ4mi8u75rBZrD1yl93i5J9eRouLK74wOXB67Jx1l91j06pONo871/aw
-	efRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfG8rkpBcsEK3ad6WVsYDzG18XIySEhYCJxYt5e
-	VghbTOLCvfVsXYxcHEICSxklTux+xATh9DFJPP3bzARSxSZgLLF5+RKwKhGBHkaJl1s/M4M4
-	zALvGSXOPFzKCFIlLBAmMfP0dLC5LAKqEkdnPAGzeQXcJB5t2cEGsU9O4uSxyawTGLkXMDKs
-	YhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJnS87GBcfszrEKMDBqMTDK7A1PliINbGsuDL3
-	EKMEB7OSCG9GR0KwEG9KYmVValF+fFFpTmrxIUYmDk6pBsacz1/f8j+O/2mbOCvXxUnl2IUE
-	valSDafW3DjcvnEBY3pQ1dG1HBlRwR+PHXf3D9F/Gal/1zxRR/bNp0XM9m/1FTOfXF/3YMey
-	K6lPpki1urZ/ENuSuPBDRkQTg30v05e3k1fG3dsQ8innwLmGBaZfUtcp1vxUuK3z30S7MSHd
-	2Lqv+UVqrqsSS3FGoqEWc1FxIgBhijyg+wEAAA==
+In-reply-to: <1398847242-9394-1-git-send-email-k.kozlowski@samsung.com>
+References: <1398847242-9394-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgluLIzCtJLcpLzFFi42I5/e/4FV3u7QnBBj1bLC02zljPajH14RM2
+	i9cvDC3ONr1ht/h2pYPJ4vKuOWwWa4/cZbc4+aeX0eLiii9MDpweO2fdZffYtKqTzePOtT1s
+	Hn1bVjF6fN4kF8AaxWWTkpqTWZZapG+XwJVx6W4ra8FM0Yq2tdfYGxhXCXYxcnJICJhIdJ/9
+	wwhhi0lcuLeerYuRi0NIYCmjxPGJvVBOH5PE07/NTCBVbALGEpuXLwFLiAj0MEq83PqZGcRh
+	FnjPKHHm4VKwWcICiRKrP60Hsjk4WARUJd7P8wMJ8wq4SXzZfIMJYp2cxMljk1lBbE4Bd4kb
+	t5eygdhCQDXLlm5gm8DIu4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSKh92cG4+JjV
+	IUYBDkYlHl6BrfHBQqyJZcWVuYcYJTiYlUR4MzoSgoV4UxIrq1KL8uOLSnNSiw8xMnFwSjUw
+	mihcbph0aP61yY4cP00eb/tWt3pJu526k5NAYkB+8qf1P+7Mfy1Z5jlxn5zEdVfTz9YPzASC
+	AhefiZxlfkx+8rLVp2L+lMW+cHRfIyr08fHJqVyzv90+GPt91TK7iq828/QOREzOcLUW65iq
+	Ub1Sdnm+X9Lspjgv/TAmM/WLGyL8FbqmVu74p8RSnJFoqMVcVJwIAFpZC00TAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 GPIO 0 is a valid GPIO so allow using it as external control for
-regulator.
+S2MPS14 regulators.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/s5m8767.c | 20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+ drivers/regulator/s2mps11.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 5daa06626f16..c79af943a5c0 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -528,16 +528,6 @@ static int s5m8767_pmic_dt_parse_ds_gpio(struct sec_pmic_dev *iodev,
- 	return 0;
- }
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index 6dad0aa74a47..1583d4eaf911 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -412,7 +412,7 @@ static int s2mps14_regulator_enable(struct regulator_dev *rdev)
  
--static void s5m8767_pmic_dt_parse_ext_control_gpio(struct sec_pmic_dev *iodev,
--		struct sec_regulator_data *rdata,
--		struct device_node *reg_np)
--{
--	rdata->ext_control_gpio = of_get_named_gpio(reg_np,
--			"s5m8767,pmic-ext-control-gpios", 0);
--	if (!gpio_is_valid(rdata->ext_control_gpio))
--		rdata->ext_control_gpio = 0;
--}
+ 	if (s2mps11->s2mps14_suspend_state & (1 << rdev_get_id(rdev)))
+ 		val = S2MPS14_ENABLE_SUSPEND;
+-	else if (s2mps11->ext_control_gpio[rdev_get_id(rdev)])
++	else if (gpio_is_valid(s2mps11->ext_control_gpio[rdev_get_id(rdev)]))
+ 		val = S2MPS14_ENABLE_EXT_CONTROL;
+ 	else
+ 		val = rdev->desc->enable_mask;
+@@ -593,9 +593,7 @@ static void s2mps14_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
+ 
+ 		gpio[reg] = of_get_named_gpio(rdata[reg].of_node,
+ 				"samsung,ext-control-gpios", 0);
+-		if (!gpio_is_valid(gpio[reg]))
+-			gpio[reg] = 0;
+-		else
++		if (gpio_is_valid(gpio[reg]))
+ 			dev_dbg(&pdev->dev, "Using GPIO %d for ext-control over %d/%s\n",
+ 					gpio[reg], reg, rdata[reg].name);
+ 	}
+@@ -658,6 +656,12 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
+ 			GFP_KERNEL);
+ 	if (!s2mps11->ext_control_gpio)
+ 		return -ENOMEM;
++	/*
++	 * 0 is a valid GPIO so initialize all GPIO-s to negative value
++	 * to indicate that external control won't be used for this regulator.
++	 */
++	for (i = 0; i < s2mps11->rdev_num; i++)
++		s2mps11->ext_control_gpio[i] = -EINVAL;
+ 
+ 	if (!iodev->dev->of_node) {
+ 		if (iodev->pdata) {
+@@ -687,6 +691,7 @@ common_reg:
+ 	config.dev = &pdev->dev;
+ 	config.regmap = iodev->regmap_pmic;
+ 	config.driver_data = s2mps11;
++	config.ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
+ 	for (i = 0; i < s2mps11->rdev_num; i++) {
+ 		struct regulator_dev *regulator;
+ 
+@@ -697,12 +702,7 @@ common_reg:
+ 			config.init_data = rdata[i].init_data;
+ 			config.of_node = rdata[i].of_node;
+ 		}
 -
- static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 					struct sec_platform_data *pdata)
- {
-@@ -586,7 +576,8 @@ static int s5m8767_pmic_dt_parse_pdata(struct platform_device *pdev,
- 			continue;
+-		if (s2mps11->ext_control_gpio[i]) {
+-			config.ena_gpio = s2mps11->ext_control_gpio[i];
+-			config.ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
+-		} else
+-			config.ena_gpio = config.ena_gpio_flags = 0;
++		config.ena_gpio = s2mps11->ext_control_gpio[i];
+ 
+ 		regulator = devm_regulator_register(&pdev->dev,
+ 						&regulators[i], &config);
+@@ -713,7 +713,7 @@ common_reg:
+ 			goto out;
  		}
  
--		s5m8767_pmic_dt_parse_ext_control_gpio(iodev, rdata, reg_np);
-+		rdata->ext_control_gpio = of_get_named_gpio(reg_np,
-+			"s5m8767,pmic-ext-control-gpios", 0);
- 
- 		rdata->id = i;
- 		rdata->initdata = of_get_regulator_init_data(
-@@ -959,8 +950,9 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 		config.driver_data = s5m8767;
- 		config.regmap = iodev->regmap_pmic;
- 		config.of_node = pdata->regulators[i].reg_node;
--		config.ena_gpio = config.ena_gpio_flags = 0;
--		if (pdata->regulators[i].ext_control_gpio)
-+		config.ena_gpio = -EINVAL;
-+		config.ena_gpio_flags = 0;
-+		if (gpio_is_valid(pdata->regulators[i].ext_control_gpio))
- 			s5m8767_regulator_config_ext_control(s5m8767,
- 					&pdata->regulators[i], &config);
- 
-@@ -973,7 +965,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 			return ret;
- 		}
- 
--		if (pdata->regulators[i].ext_control_gpio) {
-+		if (gpio_is_valid(pdata->regulators[i].ext_control_gpio)) {
- 			ret = s5m8767_enable_ext_control(s5m8767, rdev);
+-		if (s2mps11->ext_control_gpio[i]) {
++		if (gpio_is_valid(s2mps11->ext_control_gpio[i])) {
+ 			ret = s2mps14_pmic_enable_ext_control(s2mps11,
+ 					regulator);
  			if (ret < 0) {
- 				dev_err(s5m8767->dev,
 -- 
 1.9.1
 
