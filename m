@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759190AbaD3OQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:16:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4638 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758872AbaD3OQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:16:48 -0400
-Date: Wed, 30 Apr 2014 16:16:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-aio@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] aio: kill the misleading rcu read locks in
-	ioctx_add_table() and kill_ioctx()
-Message-ID: <20140430141636.GC18539@redhat.com>
-References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com> <20140429204217.GO14608@kvack.org> <20140429212222.GA28959@kvack.org> <20140430141552.GA18539@redhat.com>
+	id S1759233AbaD3ORI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:17:08 -0400
+Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:50520
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758905AbaD3ORH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 10:17:07 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the
+ send path
+Thread-Topic: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on
+ the send path
+Thread-Index: AQHPXzK1xiTkjzdkc0SXAOin2nil25sqPr8Q
+Date: Wed, 30 Apr 2014 14:17:04 +0000
+Message-ID: <7a7fd7286bc44121839ec68c8d1458b2@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1398288285-16268-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1398288285-16268-1-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-forefront-prvs: 0197AFBD92
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(51704005)(199002)(189002)(13464003)(77982001)(76482001)(76576001)(81542001)(46102001)(81342001)(2201001)(92566001)(4396001)(86612001)(86362001)(99396002)(19580395003)(99286001)(19580405001)(83322001)(31966008)(80976001)(85852003)(83072002)(33646001)(101416001)(74662001)(74502001)(50986999)(1511001)(20776003)(77096999)(79102001)(54356999)(76176999)(66066001)(80022001)(2656002)(87936001)(74316001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:B6DF7906.B933ED3A.B1F023DF.C2E27BB0.201D3;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430141552.GA18539@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ioctx_add_table() is the writer, it does not need rcu_read_lock() to
-protect ->ioctx_table. It relies on mm->ioctx_lock and rcu locks just
-add the confusion.
-
-And it doesn't need rcu_dereference() by the same reason, it must see
-any updates previously done under the same ->ioctx_lock. We could use
-rcu_dereference_protected() but the patch uses rcu_dereference_raw(),
-the function is simple enough.
-
-The same for kill_ioctx(), although it does not update the pointer.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/aio.c |   14 +++-----------
- 1 files changed, 3 insertions(+), 11 deletions(-)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 3526c2b..a415870 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -554,8 +554,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 	struct aio_ring *ring;
- 
- 	spin_lock(&mm->ioctx_lock);
--	rcu_read_lock();
--	table = rcu_dereference(mm->ioctx_table);
-+	table = rcu_dereference_raw(mm->ioctx_table);
- 
- 	while (1) {
- 		if (table)
-@@ -563,7 +562,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 				if (!table->table[i]) {
- 					ctx->id = i;
- 					table->table[i] = ctx;
--					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
- 					/* While kioctx setup is in progress,
-@@ -577,8 +575,6 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 				}
- 
- 		new_nr = (table ? table->nr : 1) * 4;
--
--		rcu_read_unlock();
- 		spin_unlock(&mm->ioctx_lock);
- 
- 		table = kzalloc(sizeof(*table) + sizeof(struct kioctx *) *
-@@ -589,8 +585,7 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 		table->nr = new_nr;
- 
- 		spin_lock(&mm->ioctx_lock);
--		rcu_read_lock();
--		old = rcu_dereference(mm->ioctx_table);
-+		old = rcu_dereference_raw(mm->ioctx_table);
- 
- 		if (!old) {
- 			rcu_assign_pointer(mm->ioctx_table, table);
-@@ -737,12 +732,9 @@ static int kill_ioctx(struct mm_struct *mm, struct kioctx *ctx,
- 
- 
- 	spin_lock(&mm->ioctx_lock);
--	rcu_read_lock();
--	table = rcu_dereference(mm->ioctx_table);
--
-+	table = rcu_dereference_raw(mm->ioctx_table);
- 	WARN_ON(ctx != table->table[ctx->id]);
- 	table->table[ctx->id] = NULL;
--	rcu_read_unlock();
- 	spin_unlock(&mm->ioctx_lock);
- 
- 	/* percpu_ref_kill() will do the necessary call_rcu() */
--- 
-1.5.5.1
 
 
+> -----Original Message-----
+> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
+> Sent: Wednesday, April 23, 2014 2:25 PM
+> To: davem@davemloft.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com
+> Cc: KY Srinivasan
+> Subject: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the
+> send path
+> 
+> We send packets using a copy-free mechanism (this is the Guest to Host
+> transport via VMBUS). While this is obviously optimal for large packets, it may
+> not be optimal for small packets. Hyper-V host supports a second mechanism
+> for sending packets that is "copy based". We implement that mechanism in
+> this patch.
+> 
+> In this version of the patch I have addressed a comment from David Miller.
+
+David,
+
+Please let me know if there is some other issue you want addressed in this patch.
+
+Regards,
+
+K. Y
