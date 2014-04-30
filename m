@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965218AbaD3VXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:23:01 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:50377 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965185AbaD3VW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:22:58 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM with the PM core
-Date: Wed, 30 Apr 2014 23:23:11 +0200
-Message-ID: <2068296.FXWLXn1mqR@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be> <1398334403-26181-4-git-send-email-geert+renesas@glider.be> <CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
+	id S1946018AbaD3VYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:24:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16995 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965069AbaD3VYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 17:24:08 -0400
+Message-ID: <53616957.1020309@redhat.com>
+Date: Wed, 30 Apr 2014 17:21:27 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, mpatlasov@parallels.com,
+        Motohiro.Kosaki@us.fujitsu.com
+Subject: Re: [PATCH v5] mm,writeback: fix divide by zero in pos_ratio_polynom
+References: <20140429151910.53f740ef@annuminas.surriel.com>	<5360C9E7.6010701@jp.fujitsu.com>	<20140430093035.7e7226f2@annuminas.surriel.com>	<20140430134826.GH4357@dhcp22.suse.cz>	<20140430104114.4bdc588e@cuia.bos.redhat.com>	<20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>	<53614F3C.8020009@redhat.com>	<20140430123526.bc6a229c1ea4addad1fb483d@linux-foundation.org>	<20140430160218.442863e0@cuia.bos.redhat.com>	<20140430131353.fa9f49604ea39425bc93c24a@linux-foundation.org>	<20140430164255.7a753a8e@cuia.bos.redhat.com> <20140430140057.7d2a6e984b2ec987182d2a4e@linux-foundation.org>
+In-Reply-To: <20140430140057.7d2a6e984b2ec987182d2a4e@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf and Geert,
+On 04/30/2014 05:00 PM, Andrew Morton wrote:
+> On Wed, 30 Apr 2014 16:42:55 -0400 Rik van Riel <riel@redhat.com> wrote:
+>
+>> On Wed, 30 Apr 2014 13:13:53 -0700
+>> Andrew Morton <akpm@linux-foundation.org> wrote:
+>>
+>>> This was a consequence of 64->32 truncation and it can't happen any
+>>> more, can it?
+>>
+>> Andrew, this is cleaner indeed :)
+>
+> I'm starting to get worried about 32-bit wraparound in the patch
+> version number ;)
+>
+>> Masayoshi-san, does the bug still happen with this version, or does
+>> this fix the problem?
+>>
+>
+> We could put something like
+>
+> 	if (WARN_ON_ONCE(setpoint == limit))
+> 		setpoint--;
+>
+> in there if we're not sure.  But it's better to be sure!
 
-On Thursday 24 April 2014 15:11:24 Ulf Hansson wrote:
-> On 24 April 2014 12:13, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> > When adding a device from DT, check if its clocks are suitable for Runtime
-> > PM, and register them with the PM core.
-> > If Runtime PM is disabled, just enable the clock.
-> > 
-> > This allows the PM core to automatically manage gate clocks of devices for
-> > Runtime PM.
-> 
-> Normally I don't think it's a good idea to "automatically" manage
-> clocks from PM core or any other place but from the driver (and
-> possibly the subsystem).
-> 
-> The reason is simply that we hide things that normally is supposed to
-> be handled by the driver. Typically a cross SOC driver should work
-> fine both with and without a pm_domain. It should also not rely on
-> CONFIG_PM_RUNTIME.
+The more I look at the code, the more I am convinced that
+Michal is right, and we cannot actually hit the case that
+"limit - setpoint + 1 == 0".
 
-That's a very good point. Geert, what do you think should happen if 
-CONFIG_PM_RUNTIME is not set ? I don't have a strong opinion (yet) on whether 
-we could require CONFIG_PM_RUNTIME, but it would indeed be nice to support 
-both cases. One option would be to keep the clocks enabled unconditionally in 
-that case, as not setting CONFIG_PM_RUNTIME means that the user doesn't care 
-(or cares less) about power consumption.
-
-> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
--- 
-Regards,
-
-Laurent Pinchart
+Setpoint always seems to be some in-between point.
 
