@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423AbaD3KbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:31:17 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:51359 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaD3KbQ (ORCPT
+	id S1758650AbaD3Kfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:35:37 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:48205 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223AbaD3Kfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:31:16 -0400
-Subject: [PATCH v1.0 3/16] arcmsr: Support hibernation
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
+	Wed, 30 Apr 2014 06:35:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398847391-5994-1-git-send-email-xindong.ma@intel.com>
+References: <1398847391-5994-1-git-send-email-xindong.ma@intel.com>
+Date: Wed, 30 Apr 2014 16:05:35 +0530
+X-Google-Sender-Auth: 9yLuCEldpU7Y5C0SNZJmhDMBoU0
+Message-ID: <CAOh2x=k2-9c8sJtM+gfVjF3NzANO5RBk-GuqOue5gd5CLY3KAg@mail.gmail.com>
+Subject: Re: [PATCH] hrtimer:do not start hrtimer on other cpu if it is the
+ leftmost timer.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Leon Ma <xindong.ma@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 18:31:02 +0800
-Message-ID: <1398853862.6930.3.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+Hi Leon,
 
-Adding code for supporting system hibernation
+On Wed, Apr 30, 2014 at 2:13 PM, Leon Ma <xindong.ma@intel.com> wrote:
+> On SMP system, if cpuX is idle and it starts an hrtimer, the timer
+> will be started on cpuY. But it can not reprogram the event source
+> on cpuY. The timer is inserted into rb tree of cpuY, if it is the
+> leftmost timer on cpuY and it is a very short timer, following hrtimers
+> started on cpuY will also not set the event source. As a result,
+> the timers on cpuY will expire later than expected.
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+Don't know but the explanation confused me a bit :), thought the patch
+looked fine. So, in my words this is what I understood, let me know if
+I am on the right side.
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-28 16:54:08.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:03:00.000000000 +0800
-@@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
- static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
- static int arcmsr_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *id);
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
-+static int arcmsr_resume(struct pci_dev *pdev);
- static void arcmsr_remove(struct pci_dev *pdev);
- static void arcmsr_shutdown(struct pci_dev *pdev);
- static void arcmsr_iop_init(struct AdapterControlBlock *acb);
- static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
- static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
-+static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
-+	u32 intmask_org);
- static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
- static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
-@@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
- 	.id_table			= arcmsr_device_id_table,
- 	.probe			= arcmsr_probe,
- 	.remove			= arcmsr_remove,
-+	.suspend		= arcmsr_suspend,
-+	.resume			= arcmsr_resume,
- 	.shutdown		= arcmsr_shutdown,
- };
- /*
-@@ -793,6 +799,86 @@ pci_disable_dev:
- 	return -ENODEV;
- }
- 
-+static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	int i;
-+	uint32_t intmask_org;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	intmask_org = arcmsr_disable_outbound_ints(acb);
-+	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
-+		free_irq(pdev->irq, acb);
-+		pci_disable_msi(pdev);
-+	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
-+		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
-+			free_irq(acb->entries[i].vector, acb);
-+		pci_disable_msix(pdev);
-+	} else
-+		free_irq(pdev->irq, acb);
-+	del_timer_sync(&acb->eternal_timer);
-+	flush_scheduled_work();
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+	arcmsr_enable_outbound_ints(acb, intmask_org);
-+	pci_set_drvdata(pdev, host);
-+	pci_save_state(pdev);
-+	pci_disable_device(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+	return 0;
-+}
-+
-+static int arcmsr_resume(struct pci_dev *pdev)
-+{
-+	int error;
-+	struct Scsi_Host *host = pci_get_drvdata(pdev);
-+	struct AdapterControlBlock *acb =
-+		(struct AdapterControlBlock *)host->hostdata;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_enable_wake(pdev, PCI_D0, 0);
-+	pci_restore_state(pdev);
-+	if (pci_enable_device(pdev)) {
-+		pr_warn("%s: pci_enable_device error\n", __func__);
-+		return -ENODEV;
-+	}
-+	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-+	if (error) {
-+		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
-+		if (error) {
-+			pr_warn("scsi%d: No suitable DMA mask available\n",
-+			       host->host_no);
-+			goto controller_unregister;
-+		}
-+	}
-+	pci_set_master(pdev);
-+	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
-+		goto controller_stop;
-+	arcmsr_iop_init(acb);
-+	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
-+	atomic_set(&acb->rq_map_token, 16);
-+	atomic_set(&acb->ante_token_value, 16);
-+	acb->fw_flag = FW_NORMAL;
-+	init_timer(&acb->eternal_timer);
-+	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
-+	acb->eternal_timer.data = (unsigned long) acb;
-+	acb->eternal_timer.function = &arcmsr_request_device_map;
-+	add_timer(&acb->eternal_timer);
-+	return 0;
-+controller_stop:
-+	arcmsr_stop_adapter_bgrb(acb);
-+	arcmsr_flush_adapter_cache(acb);
-+controller_unregister:
-+	scsi_remove_host(host);
-+	arcmsr_free_ccb_pool(acb);
-+	arcmsr_unmap_pciregion(acb);
-+	pci_release_regions(pdev);
-+	scsi_host_put(host);
-+	pci_disable_device(pdev);
-+	return -ENODEV;
-+}
-+
- static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
- {
- 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+Current base of timer is: cpuY and we started timer from cpuX. If cpuX
+is idle, we might select cpuY again as the base but we wouldn't be able
+to reprogram the event source as it has to be done by local CPU.
 
+And so in this case you want to select cpuX instead, right?
 
+> When this case is detected, we should start the timer on cpuX and
+> program event source properly.
+>
+> Signed-off-by: Leon Ma <xindong.ma@intel.com>
+> ---
+>  kernel/hrtimer.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index d55092c..68becbc 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -234,6 +234,11 @@ again:
+>                         goto again;
+>                 }
+>                 timer->base = new_base;
+> +       } else {
+> +               if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
+> +                       cpu = this_cpu;
+> +                       goto again;
+> +               }
+>         }
+>         return new_base;
+>  }
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
