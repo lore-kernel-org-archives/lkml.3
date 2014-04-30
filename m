@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422690AbaD3OEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:04:11 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:53179 "EHLO
+	id S1759011AbaD3OEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:04:42 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:53168 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933754AbaD3ODt (ORCPT
+	with ESMTP id S933549AbaD3ODp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:03:49 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-d6-536102c4b4ff
+	Wed, 30 Apr 2014 10:03:45 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-be-536102c0deb0
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -24,46 +24,82 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-arm-kernel@lists.infradead.org (moderated list:ARM/S5P EXYNOS
 	AR...),
         dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org
-Subject: [RFC PATCH 4/4] drm/panel/ld9040: do not power off panel on removal
-Date: Wed, 30 Apr 2014 16:02:54 +0200
-Message-id: <1398866574-27001-5-git-send-email-a.hajda@samsung.com>
+Subject: [RFC PATCH 2/4] drm/panel: add interface tracker support
+Date: Wed, 30 Apr 2014 16:02:52 +0200
+Message-id: <1398866574-27001-3-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <1398866574-27001-1-git-send-email-a.hajda@samsung.com>
 References: <1398866574-27001-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t/xy7pHmBKDDd68l7S4te4cq0XvuZNM
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t/xy7oHmBKDDa4tE7e4te4cq0XvuZNM
 	Fn8nHWO3uPL1PZtF8+L1bBaT7k9gsTjb9IbdYtPja6wWl3fNYbPo2bCV1WLG+X1MFrcv81qs
 	PXKX3WL9jNcsFvPaX7Ja/Nw1j8VBwKOluYfN4/evSYweO2fdZffY/u0Bq8f+uWvYPe53H2fy
-	2Lyk3qNvyypGj8+b5AI4o7hsUlJzMstSi/TtErgy3pxaw17wm6Xi97an7A2Ms1m6GDk5JARM
-	JA7PaIeyxSQu3FvP1sXIxSEksJRRYsnlN+wQTh+TRNvmPWBVbAKaEn8332QDsUUEdCSu93Qz
-	gxQxC6xmlTjweRIzSEJYwEdiwvt7YA0sAqoSE/f3gzXwCjhL3Nm7kQlinYLEsi9rweo5BVwk
-	Wn7uA6sRAqqZMXER0wRG3gWMDKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQsL6yw7Gxces
-	DjEKcDAq8fAKbI0PFmJNLCuuzD3EKMHBrCTCe/RfQrAQb0piZVVqUX58UWlOavEhRiYOTqkG
-	Rj/D0qfuBVwH3AXm37y6b+7ndTa+rycIvWt83ahXo331wyLdhjzWQDdHpldbsz+d9uz519Ao
-	mfn46MTXLXZ351pZimiuK3zCtTCjP+Pv/hucHU8eVL5pFqr+qLhyvrTaBEelc1Y7fkwKn7Yv
-	w3Fvk47ybVWRzRPYNR3jm6UeHg62MX37z+yVjhJLcUaioRZzUXEiAJ78X0pJAgAA
+	2Lyk3qNvyypGj8+b5AI4o7hsUlJzMstSi/TtErgyXi3ZxV4wja/iZUdEA+M77i5GTg4JAROJ
+	841rWSFsMYkL99azdTFycQgJLGWU+D7lMlhCSKCPSaL5ARuIzSagKfF3800wW0RAR+J6Tzcz
+	SAOzwGpWiQOfJzGDJIQFHCV+3T3FBGKzCKhKHG5Zww5i8wo4S+x4NpUdYpuCxLIva8HqOQVc
+	JFp+7mODWOYsMWPiIqYJjLwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoSE9JcdjIuP
+	WR1iFOBgVOLhFdgaHyzEmlhWXJl7iFGCg1lJhPfov4RgId6UxMqq1KL8+KLSnNTiQ4xMHJxS
+	DYwqfziPcy7cP51/9q5d0fszrc1ezl/ZvpYxSKdTZqJ4ao6zBOvJ/Tzn2rdu/1PrVf2c9eKb
+	aRFpixRdT/67y2z2ruaK67ZNfbeusRmt+FLE3uQXdawqM/7mtuxHMytV5BqLU88vb/TvvZ/8
+	7rL/VBUfS6N9QpeW2Sos3XthA2+uxseNzyO7zk9VYinOSDTUYi4qTgQA4AfSAEcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Panel is powered off already by connector during drm_panel_remove call.
+drm_panel framework allows only query for presence of given panel.
+It also does not protect panel module from unloading and does not
+provide solution for driver unbinding. interface_tracker
+should solve both issues.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/panel/panel-ld9040.c | 1 -
- 1 file changed, 1 deletion(-)
+---
+ drivers/gpu/drm/drm_panel.c       | 5 +++++
+ include/linux/interface_tracker.h | 2 ++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/drivers/gpu/drm/panel/panel-ld9040.c b/drivers/gpu/drm/panel/panel-ld9040.c
-index 1f1f837..1def4b0 100644
---- a/drivers/gpu/drm/panel/panel-ld9040.c
-+++ b/drivers/gpu/drm/panel/panel-ld9040.c
-@@ -348,7 +348,6 @@ static int ld9040_remove(struct spi_device *spi)
- {
- 	struct ld9040 *ctx = spi_get_drvdata(spi);
+diff --git a/drivers/gpu/drm/drm_panel.c b/drivers/gpu/drm/drm_panel.c
+index 2ef988e..72a3c5c 100644
+--- a/drivers/gpu/drm/drm_panel.c
++++ b/drivers/gpu/drm/drm_panel.c
+@@ -22,6 +22,7 @@
+  */
  
--	ld9040_power_off(ctx);
- 	drm_panel_remove(&ctx->panel);
+ #include <linux/err.h>
++#include <linux/interface_tracker.h>
+ #include <linux/module.h>
+ 
+ #include <drm/drm_crtc.h>
+@@ -41,6 +42,8 @@ int drm_panel_add(struct drm_panel *panel)
+ 	mutex_lock(&panel_lock);
+ 	list_add_tail(&panel->list, &panel_list);
+ 	mutex_unlock(&panel_lock);
++	interface_tracker_ifup(panel->dev->of_node,
++			       INTERFACE_TRACKER_TYPE_DRM_PANEL, panel);
  
  	return 0;
+ }
+@@ -48,6 +51,8 @@ EXPORT_SYMBOL(drm_panel_add);
+ 
+ void drm_panel_remove(struct drm_panel *panel)
+ {
++	interface_tracker_ifdown(panel->dev->of_node,
++				 INTERFACE_TRACKER_TYPE_DRM_PANEL, panel);
+ 	mutex_lock(&panel_lock);
+ 	list_del_init(&panel->list);
+ 	mutex_unlock(&panel_lock);
+diff --git a/include/linux/interface_tracker.h b/include/linux/interface_tracker.h
+index e1eff00..0a08cba 100644
+--- a/include/linux/interface_tracker.h
++++ b/include/linux/interface_tracker.h
+@@ -6,6 +6,8 @@
+ struct list_head;
+ struct interface_tracker_block;
+ 
++#define INTERFACE_TRACKER_TYPE_DRM_PANEL 1
++
+ typedef void (*interface_tracker_fn_t)(struct interface_tracker_block *itb,
+ 				       const void *object, unsigned long type,
+ 				       bool on, void *data);
 -- 
 1.8.3.2
 
