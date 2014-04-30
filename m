@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759235AbaD3S4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:56:12 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:57401 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758905AbaD3S4J (ORCPT
+	id S1759331AbaD3TAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:00:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49189 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaD3TAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:56:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <1398749704-10196-1-git-send-email-inderpal.s@samsung.com>
-References: <1398749704-10196-1-git-send-email-inderpal.s@samsung.com>
-Date: Wed, 30 Apr 2014 11:56:08 -0700
-X-Google-Sender-Auth: YjmOqWngDitcIWN9mSGCjmK94nc
-Message-ID: <CAD=FV=Vo+GLTt7fh4639XFsJfSUTN0ARBsOy+O24gtB_87MgLw@mail.gmail.com>
-Subject: Re: [RFC PATCH] regulator: virtual: Introduce a new virtual locker
- regulator type
-From: Doug Anderson <dianders@chromium.org>
-To: Inderpal Singh <inderpal.s@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pm@vger.kernel.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Pawel Moll <pawel.moll@arm.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 30 Apr 2014 15:00:03 -0400
+Date: Wed, 30 Apr 2014 12:00:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, mpatlasov@parallels.com,
+        Motohiro.Kosaki@us.fujitsu.com
+Subject: Re: [PATCH v3] mm,writeback: fix divide by zero in
+ pos_ratio_polynom
+Message-Id: <20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
+In-Reply-To: <20140430104114.4bdc588e@cuia.bos.redhat.com>
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+	<5360C9E7.6010701@jp.fujitsu.com>
+	<20140430093035.7e7226f2@annuminas.surriel.com>
+	<20140430134826.GH4357@dhcp22.suse.cz>
+	<20140430104114.4bdc588e@cuia.bos.redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 30 Apr 2014 10:41:14 -0400 Rik van Riel <riel@redhat.com> wrote:
 
-On Mon, Apr 28, 2014 at 10:35 PM, Inderpal Singh <inderpal.s@samsung.com> wrote:
-> On some SoCs there could be requirements that two or more voltage
-> regulators need to maintain certain skew for proper functioning.
+> It is possible for "limit - setpoint + 1" to equal zero, leading to a
+> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+> working, so we need to actually test the divisor before calling div64.
+> 
+> ...
 >
-> This patch implements a new vitual locker type regulator which can
-> have multiple output and input regulators. The real regulators will
-> be hidden under the virtual output regulators. The consumer of the
-> real regulators need not change anything. Only the name of the real
-> regulators need to be changed.
->
-> This patch has been tested on exynos5420 based smdk5420.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Signed-off-by: Inderpal Singh <inderpal.s@samsung.com>
-> ---
->  .../bindings/regulator/locker-regulator.txt        |  36 ++
->  drivers/regulator/Kconfig                          |   9 +
->  drivers/regulator/Makefile                         |   1 +
->  drivers/regulator/locker.c                         | 472 +++++++++++++++++++++
->  include/linux/regulator/locker.h                   |  35 ++
->  5 files changed, 553 insertions(+)
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -598,10 +598,15 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+>  					  unsigned long limit)
+>  {
+>  	long long pos_ratio;
+> +	long divisor;
+>  	long x;
+>  
+> +	divisor = limit - setpoint;
+> +	if (!(s32)divisor)
+> +		divisor = 1;	/* Avoid div-by-zero */
+> +
+>  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+> -		    limit - setpoint + 1);
+> +		    (s32)divisor);
 
-I cornered Rob and Mark Rutland a little bit about this at ELC today
-(sorry!).  Neither of them was a huge ran of adding a pseudo device.
-Rob suggested that Mark Brown might be the best person to give
-direction here.  Mark Brown: any thoughts?
+Doesn't this just paper over the bug one time in four billion?  The
+other 3999999999 times, pos_ratio_polynom() returns an incorect result?
 
-Potentially we could also make this type of thing a core regulator property:
+If it is indeed the case that pos_ratio_polynom() callers are
+legitimately passing a setpoint which is more than 2^32 less than limit
+then it would be better to handle that input correctly.
 
-  buck2_reg: BUCK2 {
-          regulator-name = "vdd_arm";
-          regulator-min-microvolt = <800000>;
-          regulator-max-microvolt = <1500000>;
-          regulator-always-on;
-          regulator-boot-on;
-          regulator-op-mode = <1>;
-          regulator-ramp-delay = <12500>;
-  };
-  buck3_reg: BUCK3 {
-          regulator-name = "vdd_int";
-          regulator-min-microvolt = <800000>;
-          regulator-max-microvolt = <1400000>;
-          regulator-always-on;
-          regulator-boot-on;
-          regulator-op-mode = <1>;
-          regulator-ramp-delay = <12500>;
-          regulator-lock-to = <&buck2>;
-          regulator-lock-within = <300000>;
-  };
+Writing a new suite of div functions sounds overkillish.  At some loss
+of precision could we do something like
 
-Another option is to add no device tree code at all and add code to
-the devfreq / cpufreq drivers used on this device.  In order to do
-this cleanly I think we'd need to extend the regulator core's
-notification scheme to introduce a new event:
-REGULATOR_EVENT_VOLTAGE_CHANGING that's called _before_ a voltage
-change happened.
+	if (divisor > 2^32) {
+		divisor >>= log2(divisor) - 32;
+		dividend >>= log2(divisor) - 32;
+	}
+	x = div(dividend, divisor);
 
+?
 
-Or maybe there's some yet different (cleaner) solution that I haven't
-thought of.
-
--Doug
+And let's uninline the sorry thing while we're in there ;)
