@@ -1,144 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758756AbaD3Lai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:30:38 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:58808 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758037AbaD3Lag (ORCPT
+	id S1758846AbaD3Ldc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:33:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51715 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758650AbaD3Lda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:30:36 -0400
-Subject: [PATCH v1.0 12/16] arcmsr: revise alloction of second
- dma_coherent_handle for type B adapter
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 19:30:29 +0800
-Message-ID: <1398857429.6930.51.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 07:33:30 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
+CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <santosh.shilimkar@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sergei.shtylyov@cogentembedded.com>, <prabhakar.csengg@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v3 3/4] net: davinci_mdio: drop pinctrl_pm_select_default_state from probe
+Date: Wed, 30 Apr 2014 15:23:35 +0300
+Message-ID: <1398860616-6612-4-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398860616-6612-1-git-send-email-grygorii.strashko@ti.com>
+References: <1398860616-6612-1-git-send-email-grygorii.strashko@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+The "default" pinctrl state is set by Drivers core now before
+calling the driver's probe.
+Hence, it's safe to drop pinctrl_pm_select_default_state() call
+from Davinci mdio driver probe.
 
-Revise allocation of second dma_coherent_handle for type_B adapter.
-
-Signed-off-by: Ching<ching2048@areca.com.tw>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Acked-and-tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
+ drivers/net/ethernet/ti/davinci_mdio.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-29 12:38:44.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-29 15:50:42.000000000 +0800
-@@ -507,6 +507,7 @@ struct AdapterControlBlock
- 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
- 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
- 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
-+	u32				roundup_ccbsize;
- 	struct pci_dev *		pdev;
- 	struct Scsi_Host *		host;
- 	unsigned long			vir2phy_offset;
-@@ -563,6 +564,7 @@ struct AdapterControlBlock
- 	dma_addr_t			dma_coherent_handle;
- 	/* dma_coherent_handle used for memory free */
- 	dma_addr_t				dma_coherent_handle2;
-+	void				*dma_coherent2;
- 	unsigned int				uncache_size;
- 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
- 	/* data collection buffer for read from 80331 */
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:13:36.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:13:48.000000000 +0800
-@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
- static void arcmsr_free_mu(struct AdapterControlBlock *acb)
- {
- 	switch (acb->adapter_type) {
--	case ACB_ADAPTER_TYPE_A:
--	case ACB_ADAPTER_TYPE_C:
--		break;
- 	case ACB_ADAPTER_TYPE_B:{
--		dma_free_coherent(&acb->pdev->dev,
--			sizeof(struct MessageUnit_B),
--			acb->pmuB, acb->dma_coherent_handle2);
-+		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
-+			acb->dma_coherent2, acb->dma_coherent_handle2);
-+		break;
- 	}
- 	}
- }
-@@ -2300,12 +2297,15 @@ static bool arcmsr_hbaB_get_config(struc
- 	char __iomem *iop_device_map;
- 	/*firm_version,21,84-99*/
- 	int count;
--	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
-+
-+	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
-+	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
- 	if (!dma_coherent){
- 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
- 		return false;
- 	}
- 	acb->dma_coherent_handle2 = dma_coherent_handle;
-+	acb->dma_coherent2 = dma_coherent;
- 	reg = (struct MessageUnit_B *)dma_coherent;
- 	acb->pmuB = reg;
- 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
-@@ -2651,6 +2651,7 @@ static int arcmsr_polling_ccbdone(struct
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
- {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
-+	dma_addr_t dma_coherent_handle;
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 4b202a2..4757198 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -348,9 +348,6 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 	data->bus->parent	= dev;
+ 	data->bus->priv		= data;
  
- 	/*
- 	********************************************************************
-@@ -2658,8 +2659,16 @@ static int arcmsr_iop_confirm(struct Ada
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
--	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
-+	switch (acb->adapter_type) {
-+		case ACB_ADAPTER_TYPE_B:
-+			dma_coherent_handle = acb->dma_coherent_handle2;
-+			break;
-+		default:
-+			dma_coherent_handle = acb->dma_coherent_handle;
-+			break;
-+	}
-+	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
-@@ -2687,7 +2696,6 @@ static int arcmsr_iop_confirm(struct Ada
- 		break;
- 
- 	case ACB_ADAPTER_TYPE_B: {
--		unsigned long post_queue_phyaddr;
- 		uint32_t __iomem *rwbuffer;
- 
- 		struct MessageUnit_B *reg = acb->pmuB;
-@@ -2699,16 +2707,15 @@ static int arcmsr_iop_confirm(struct Ada
- 				acb->host->host_no);
- 			return 1;
- 		}
--		post_queue_phyaddr = acb->dma_coherent_handle2;
- 		rwbuffer = reg->message_rwbuffer;
- 		/* driver "set config" signature */
- 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
- 		/* normal should be zero */
- 		writel(cdb_phyaddr_hi32, rwbuffer++);
- 		/* postQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr, rwbuffer++);
-+		writel(cdb_phyaddr, rwbuffer++);
- 		/* doneQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr + 1056, rwbuffer++);
-+		writel(cdb_phyaddr + 1056, rwbuffer++);
- 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
- 		writel(1056, rwbuffer);
- 
-
+-	/* Select default pin state */
+-	pinctrl_pm_select_default_state(&pdev->dev);
+-
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+ 	data->clk = devm_clk_get(dev, "fck");
+-- 
+1.7.9.5
 
