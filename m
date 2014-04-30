@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204AbaD3Ccg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:32:36 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33873 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbaD3Cce (ORCPT
+	id S1755183AbaD3CgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:36:07 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30116 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017AbaD3CgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:32:34 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-6f-536060c005c0
-From: Jungseok Lee <jays.lee@samsung.com>
-To: "'Mitchel Humpherys'" <mitchelh@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
-        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
-        kgene.kim@samsung.com, steve.capper@linaro.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        ilho215.lee@samsung.com,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com
-References: <000101cf6367$c4c219f0$4e464dd0$@samsung.com>
- <vnkwsioveuwk.fsf@mitchelh-linux.qualcomm.com>
-In-reply-to: <vnkwsioveuwk.fsf@mitchelh-linux.qualcomm.com>
-Subject: Re: [PATCH v4 1/7] arm64: Use pr_* instead of printk
-Date: Wed, 30 Apr 2014 11:32:32 +0900
-Message-id: <007c01cf641c$708af310$51a0d930$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Content-language: ko
-Thread-index: AQH53oiK3bvuFiXeAAxzk4NVI+GSxgGy6gNqmsbj9zA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+Zoe6BhIRgg8tvLC3+TjrGbvF+WQ+j
-	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzWLt/G1sFivmLWOz
-	+DBjJaMDr8eaeWsYPX7/msTocbmvl8njzrU9bB7nN61h9ti8pN6jb8sqRo/Pm+QCOKK4bFJS
-	czLLUov07RK4Mrof/2UqmMxd0Tz7CWMDYw9nFyMnh4SAicTxjx9YIWwxiQv31rN1MXJxCAks
-	Y5Q4vXMWI0xR47PlTBCJ6YwSa8+9YYZw/jBKbN13jgmkik1AU+LR3R52EFtEwFBi27vjjCBF
-	zAILmSWWHPoBtkNIIEti5vlJYA2cAtYS36efAopzcAgL2Eq8n5kHEmYRUJU4t3Q2G4jNK2Ap
-	seXXfUYIW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWveMkNcqiCx4+xrRoi4iMS+F+8YIe6xknj+
-	fi07yD0SAls4JL42vWaDWCYg8W3yIRaQGyQEZCU2HYCaIylxcMUNlgmMErOQrJ6FZPUsJKtn
-	IVm3gJFlFaNoakFyQXFSepGRXnFibnFpXrpecn7uJkZIYujbwXjzgPUhxmSg9ROZpUST84GJ
-	Ja8k3tDYzMjC1MTU2Mjc0ow0YSVx3kUPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MM6/
-	/fVq5tqlzO2uZs/N+Nkv6R55WCP0d4u7VfXJTUU1+xXrg0w3a3t31ga32Jun6h5wFbOY/dX9
-	U+AC3uPFR9yPlh7J+vL5j7B33JqPLKJSzA7fdS3jDeeknEncKHMnccbarx/V2Zes+ezRKXaU
-	ddGuX2rlvTodd8sDpB5Mm/jwQ0H9Cf7/RkosxRmJhlrMRcWJAMYL5G0iAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDKsWRmVeSWpSXmKPExsVy+t9jQd0DCQnBBseemlj8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8Xa+dvYLFbMW8Zm
-	8WHGSkYHXo8189Ywevz+NYnR43JfL5PHnWt72DzOb1rD7LF5Sb1H35ZVjB6fN8kFcEQ1MNpk
-	pCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAN2spFCWmFMK
-	FApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8zofvyXqWAyd0Xz7CeMDYw9nF2MnBwS
-	AiYSjc+WM0HYYhIX7q1n62Lk4hASmM4osfbcG2YI5w+jxNZ958Cq2AQ0JR7d7WEHsUUEDCW2
-	vTvOCFLELLCQWWLJoR+sIAkhgSyJmecngTVwClhLfJ9+CijOwSEsYCvxfmYeSJhFQFXi3NLZ
-	bCA2r4ClxJZf9xkhbEGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywxxqYLEjrOvGSHiIhL7Xrxj
-	hLjHSuL5+7XsExiFZiEZNQvJqFlIRs1C0r6AkWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4m
-	RnDaeSa1g3Flg8UhRgEORiUeXoGt8cFCrIllxZW5hxglOJiVRHiZAxKChXhTEiurUovy44tK
-	c1KLDzEmA306kVlKNDkfmBLzSuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBa
-	BLOFiYNTqoFx2epjlaZPX/OsEDZ8J/TWJVBIn2uh+OpHFjE7M7bLlc3Y6XwhnsvRYP8u9+4P
-	C/kvnvz3/eLmWz6T+ur25m+/UWuXwzjF9zN3VFmMyw8ltfDfeR7beVgFGH+zi68KPx6wxN9e
-	1mTBxevvRXbft4/r+R3FaxZqX2pQHt+0xWPl6uvXFY4yBz1XYinOSDTUYi4qTgQAesq9YH8D	AAA=
+	Tue, 29 Apr 2014 22:36:01 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-61-5360618cbddb
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 3/4] f2fs: no need to wait on page writebck to meta pages
+Date: Wed, 30 Apr 2014 11:33:42 +0900
+Message-id: <1398825223-23062-3-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+In-reply-to: <1398825223-23062-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1398825223-23062-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t8zQ92exIRggyMvVSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyniyZitLwSu2iocL
+	+RsYL7F2MXJySAiYSPTu/MwCYYtJXLi3nq2LkYtDSGAZo8TD9ieMMEVzblxgh0gsYpS4cnwT
+	O0hCSKCTSWLNo4ouRg4ONgFtic37DUDCIgLMEgumnmcEqWcWmMAo8X/Re7ANwgKeEvNnf2EC
+	sVkEVCWmLrnAAtLLK+AucWByKcQubYltzyeC7eUU8JC4+PoiI8Qqd4l9bw6CHSch8JtN4uD+
+	HewQcwQkvk0+BDZHQkBWYtMBZog5khIHV9xgmcAovICRYRWjaGpBckFxUnqRqV5xYm5xaV66
+	XnJ+7iZGSLhO3MF4/4D1IcZkoHETmaVEk/OB4Z5XEm9obGZkYWpiamxkbmlGmrCSOG/6o6Qg
+	IYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYxZSX2ntPRWTtY/W+6cFczV8erC5Pr6jbdifewL
+	LikcVkt6bSzHqzrlTYTD0f0sM5ZsunxUdX/v7q97K1Q7dEWlbmxK2hnRJXKUt89+77Wk/u2e
+	X0rXHW+d/uuCjL2hq9gMn83O1mseCTS8OR9zeadG9sdT3hP15MOCuA9pr6j8FXR7xgl5X2Yl
+	luKMREMt5qLiRABTAiwtbQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAd2exIRgg7Z9ihbXd/1lsri0yN1i
+	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvH
+	m5oZGOoaWlqYKynkJeam2iq5+AToumXmAG1TUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesb
+	EgTXY2SABhLWMWY8WbOVpeAVW8XDhfwNjJdYuxg5OSQETCTm3LjADmGLSVy4t56ti5GLQ0hg
+	EaPEleObwBJCAp1MEmseVXQxcnCwCWhLbN5vABIWEWCWWDD1PCNIPbPABEaJ/4ves4AkhAU8
+	JebP/sIEYrMIqEpMXXKBBaSXV8Bd4sDkUohd2hLbnk9kBLE5BTwkLr6+yAixyl1i35uDbBMY
+	eRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI6GZ1I7GFc2WBxiFOBgVOLhFdgaHyzE
+	mlhWXJl7iFGCg1lJhJc5ICFYiDclsbIqtSg/vqg0J7X4EGMy0FETmaVEk/OBkZpXEm9obGJm
+	ZGlkZmFkYm5OmrCSOO+BVutAIYH0xJLU7NTUgtQimC1MHJxSDYzOD6xZv4mG+Rb1dz48NCPd
+	YPvbR34N/f+lpu+aZfQ51TBpu/rlypabniJJyycl6XSovVSrZUkJrP+zz6i/1fZPf7LJho7d
+	cV7TZU6fFfv1ftZVoSfMcRNmZ99w+rb+t1XR4dh/9sc2RAXY7v9aKOb4SUB7idqF5xfebTRb
+	tm4HW5xqmXJmqY4SS3FGoqEWc1FxIgBFzLbIygIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 30, 2014 5:35 AM, Mitchel Humpherys wrote:
-> On Mon, Apr 28 2014 at 09:59:14 PM, Jungseok Lee <jays.lee@samsung.com> wrote:
-> > This patch fixed the following checkpatch complaint as using pr_*
-> > instead of printk.
-> >
-> > WARNING: printk() should include KERN_ facility level
-> >
-> > Cc: Catalin Marinas <catalin.marinas@arm.com>
-> > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> > Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
-> > ---
-> >  arch/arm64/kernel/traps.c |   14 +++++++-------
-> >  1 file changed, 7 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-> > index 7ffaddd..0484e81 100644
-> > --- a/arch/arm64/kernel/traps.c
-> > +++ b/arch/arm64/kernel/traps.c
-> > @@ -65,7 +65,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
-> >  	fs = get_fs();
-> >  	set_fs(KERNEL_DS);
-> >
-> > -	printk("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-> > +	pr_emerg("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-> 
-> Currently this printk is being called with lvl=KERN_EMERG or lvl="". In the case of lvl=KERN_EMERG
-> leaving lvl in is redundant. In the case of lvl="" this is a behavioral change (printing to a
-> different log level). Was this intended?
+This patch removes grab_cache_page_write_begin for meta pages.
 
-No intention. I will drop the change in the next version.
-Thanks!!
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/checkpoint.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Best Regards
-Jungseok Lee
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 1346ce9..b6f6ead 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -33,11 +33,14 @@ struct page *grab_meta_page(struct f2fs_sb_info *sbi, pgoff_t index)
+ 	struct address_space *mapping = META_MAPPING(sbi);
+ 	struct page *page = NULL;
+ repeat:
+-	page = grab_cache_page_write_begin(mapping, index, AOP_FLAG_NOFS);
++	page = grab_cache_page(mapping, index);
+ 	if (!page) {
+ 		cond_resched();
+ 		goto repeat;
+ 	}
++	/* meta pages should not be under writeback */
++	if (PageWriteback(page))
++		WARN_ON(1);
+ 
+ 	SetPageUptodate(page);
+ 	return page;
+-- 
+1.8.4.474.g128a96c
 
