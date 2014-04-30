@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933759AbaD3PQZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:16:25 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:53880 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759235AbaD3PQX (ORCPT
+	id S933945AbaD3PQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:16:42 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:36447 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759260AbaD3PQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:16:23 -0400
-Message-ID: <1398870979.24255.37.camel@hornet>
-Subject: Re: [PATCH 10/10] hwmon: vexpress: Use devm helper for hwmon device
- registration
-From: Pawel Moll <pawel.moll@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Wed, 30 Apr 2014 16:16:19 +0100
-In-Reply-To: <535EDD49.8050107@roeck-us.net>
-References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
-	 <1398707877-22596-11-git-send-email-pawel.moll@arm.com>
-	 <535EDD49.8050107@roeck-us.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 11:16:36 -0400
+From: Alexander Bersenev <bay@hackerdom.ru>
+To: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        maxime.ripard@free-electrons.com, pawel.moll@arm.com,
+        rdunlap@infradead.org, robh+dt@kernel.org, sean@mess.org,
+        srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Cc: Alexander Bersenev <bay@hackerdom.ru>
+Subject: [PATCH v5 0/3] ARM: sunxi: Add support for consumer infrared devices
+Date: Wed, 30 Apr 2014 21:16:47 +0600
+Message-Id: <1398871010-30681-1-git-send-email-bay@hackerdom.ru>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 23:59 +0100, Guenter Roeck wrote:
-> On 04/28/2014 10:uct attribute_group **attr_groups;
-> > @@ -114,10 +95,13 @@ struct vexpress_hwmon_type {
-> >   static DEVICE_ATTR(in1_label, S_IRUGO, vexpress_hwmon_label_show, NULL);
-> >   static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, vexpress_hwmon_u32_show,
-> >   		NULL, 1000);
-> > -static VEXPRESS_HWMON_ATTRS(volt, in1_label, in1_input);
-> >   static struct attribute_group vexpress_hwmon_group_volt = {
-> >   	.is_visible = vexpress_hwmon_attr_is_visible,
-> > -	.attrs = vexpress_hwmon_attrs_volt,
-> > +	.attrs = (struct attribute *[]) {
-> 
-> Is this typecast necessary ?
+This patch introduces Consumer IR(CIR) support for sunxi boards.
 
-Yes, it's the gcc extension that allows compound literals to be used for
-static structure members initialization. I like it, because it makes
-them easier to understand (in my opinion, that is), but if you prefer
-the classic approach, I'll unroll VEXPRESS_HWMON_ATTRS into:
+This is based on Alexsey Shestacov's work based on the original driver 
+supplied by Allwinner.
 
-static struct attribute vexpress_hwmon_attrs_volt = {
-	&dev_attr_in1_label.attr,
-	&sensor_dev_attr_in1_input.dev_attr.attr,
-	NULL
-};
+Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 
-And keep
+---
+Changes since version 1: 
+ - Fix timer memory leaks 
+ - Fix race condition when driver unloads while interrupt handler is active
+ - Support Cubieboard 2(need testing)
 
-static struct attribute_group vexpress_hwmon_group_volt = {
-  	.is_visible = vexpress_hwmon_attr_is_visible,
-	.attrs = vexpress_hwmon_attrs_volt,
-};
+Changes since version 2:
+- More reliable keydown events
+- Documentation fixes
+- Rename registers accurding to A20 user manual
+- Remove some includes, order includes alphabetically
+- Use BIT macro
+- Typo fixes
 
-> > @@ -232,45 +227,19 @@ static int vexpress_hwmon_probe(struct platform_device *pdev)
-> >   	if (!match)
-> >   		return -ENODEV;
-> >   	type = match->data;
-> > -	data->name = type->name;
-> >
-> >   	data->reg = devm_regmap_init_vexpress_config(&pdev->dev);
-> > -	if (!data->reg)
-> > -		return -ENODEV;
-> > -
-> > -	err = sysfs_create_groups(&pdev->dev.kobj, type->attr_groups);
-> > -	if (err)
-> > -		goto error;
-> > -
-> > -	data->hwmon_dev = hwmon_device_register(&pdev->dev);
-> > -	if (IS_ERR(data->hwmon_dev)) {
-> > -		err = PTR_ERR(data->hwmon_dev);
-> > -		goto error;
-> > -	}
-> > +	if (IS_ERR(data->reg))
-> > +		return PTR_ERR(data->reg);
-> 
-> Did the API for devm_regmap_init_vexpress_config change ?
-> If so, it might make sense to separate this out into a separate patch,
-> together with the API change (it is a logically different change).
+Changes since version 3:
+- Split the patch on smaller parts
+- More documentation fixes
+- Add clock-names in DT
+- Use devm_clk_get function to get the clocks
+- Removed gpios property from ir's DT
+- Changed compatible from allwinner,sunxi-ir to allwinner,sun7i-a20-ir in DT
+- Use spin_lock_irq instead spin_lock_irqsave in interrupt handler
+- Add myself in the copyright ;)
+- Coding style and indentation fixes
 
-I'm not sure I understand the question. The other patch from the series
-I've copied you on
-(http://article.gmane.org/gmane.linux.ports.arm.kernel/320577 "[PATCH
-02/10] mfd: vexpress: Convert custom func API to regmap") changes
+Changes since version 4:
+- Try to fix indentation errors by sending patches with git send-mail
 
--       data->func = vexpress_config_func_get_by_dev(&pdev->dev);
+Alexander Bersenev (3):
+  ARM: sunxi: Add documentation for sunxi consumer infrared devices
+  ARM: sunxi: Add driver for sunxi IR controller
+  ARM: sunxi: Add IR controller support in DT on A20
 
-into
+ .../devicetree/bindings/media/sunxi-ir.txt         |  23 ++
+ arch/arm/boot/dts/sun7i-a20-cubieboard2.dts        |   6 +
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |  31 +++
+ drivers/media/rc/Kconfig                           |  10 +
+ drivers/media/rc/Makefile                          |   1 +
+ drivers/media/rc/sunxi-ir.c                        | 303 +++++++++++++++++++++
+ 7 files changed, 380 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+ create mode 100644 drivers/media/rc/sunxi-ir.c
 
-+       data->reg = devm_regmap_init_vexpress_config(&pdev->dev);
-
-Your ack there, by the way, will be really appreciated :-)
-
-> One question - I seem to be unable to apply the patch. What is your
-> baseline branch / repository ?
-
-The whole series, based on v3.15-rc3 lives here:
-
-	git://git.linaro.org/people/pawel.moll/linux.git vexpress/sysreg
-
-Pawel
+-- 
+1.9.2
 
