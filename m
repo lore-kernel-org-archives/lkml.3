@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaD3HwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 03:52:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38820 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaD3HwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 03:52:20 -0400
-Date: Wed, 30 Apr 2014 17:52:09 +1000
-From: NeilBrown <neilb@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        NFS <linux-nfs@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH/RFC] SCHED: allow wait_on_bit functions to support a
- timeout.
-Message-ID: <20140430175209.166a42d9@notabene.brown>
-In-Reply-To: <20140430073154.GW11096@twins.programming.kicks-ass.net>
-References: <20140429194406.06c580b8@notabene.brown>
-	<20140429103217.GQ27561@twins.programming.kicks-ass.net>
-	<20140430122926.6bb0c771@notabene.brown>
-	<20140430073154.GW11096@twins.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/=nUe5wKFOOKiiWy8fL+WO3t"; protocol="application/pgp-signature"
+	id S1755878AbaD3Hwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 03:52:32 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:59356 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269AbaD3Hwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 03:52:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <DC148C5AA1CEBA4E87973D432B1C2D8825E24280@P3PWEX4MB008.ex4.secureserver.net>
+References: <1398562711-6313-1-git-send-email-chase.southwood@gmail.com>
+	<1398760700-19397-1-git-send-email-chase.southwood@gmail.com>
+	<DC148C5AA1CEBA4E87973D432B1C2D8825E24280@P3PWEX4MB008.ex4.secureserver.net>
+Date: Wed, 30 Apr 2014 02:52:28 -0500
+Message-ID: <CA+jnaaV7YDQYAGg_yksfiD31bCGN0brvZvBqi0VrK6hV_moxzA@mail.gmail.com>
+Subject: Re: [PATCH 6/6 v2] staging: comedi: addi_apci_1564: remove use of devpriv->s_EeParameters
+From: Chase Southwood <chase.southwood@gmail.com>
+To: Hartley Sweeten <HartleyS@visionengravers.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=nUe5wKFOOKiiWy8fL+WO3t
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Ian and Hartley,
 
-On Wed, 30 Apr 2014 09:31:54 +0200 Peter Zijlstra <peterz@infradead.org>
-wrote:
-
-> On Wed, Apr 30, 2014 at 12:29:26PM +1000, NeilBrown wrote:
-> > If you think it is a good cleanup I'll post a proper patch with all the=
- right
-> > Cc:s.
->=20
-> Yeah, its a good cleanup. Thanks!
->=20
-> > +static inline int
-> > +wait_on_bit(void *word, int bit, unsigned mode)
-> > +{
-> > +	if (!test_bit(bit, word))
-> > +		return 0;
-> > +	return out_of_line_wait_on_bit(word, bit,
-> > +				       bit_wait,
-> > +				       mode & 65535);
-> > +}
-> > +
-> > +static inline int
-> > +wait_on_bit_io(void *word, int bit, unsigned mode)
-> > +{
-> > +	if (!test_bit(bit, word))
-> > +		return 0;
-> > +	return out_of_line_wait_on_bit(word, bit,
-> > +				       bit_wait_io,
-> > +				       mode & 65535);
-> > +}
->=20
-> That actually fits on one <80 line. Also, where does the 16 bit mask
-> come from? On which, I would write that in hex, 0xFFFF is slightly
-> easier to recognise as (1<<16)-1.
-
-That is a hangover from an earlier attempt which didn't work.  Thanks for
-catching it.
-
-I'll refresh and do some basic testing tomorrow and send it out, including =
-to
-Oleg.
+Thanks so much, I greatly appreciate the review.  I'll fix the
+changelog for patch 4 and send once more (as I assume that's easier
+for Greg).  Also, I should know better about the cover letter as
+well...I was once told not to send them for strictly cleanup patchsets
+(as Greg can't do anything with them and cleanups should be obvious)
+but I've gotten in the habit of not doing a cover letter for any
+patchsets.  I will send cover letters (and be more careful about my
+other mistakes) in the future.
 
 Thanks,
-NeilBrown
+Chase
 
---Sig_/=nUe5wKFOOKiiWy8fL+WO3t
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU2Crqjnsnt1WYoG5AQJuWhAAjHZHmwjdz17W8mW0Ib7fc1Za/+P1KN0s
-LDEJ9KqUeNlSx0eu3BUB7dwf7SdRlFpgzpQmiMffPJ7faOd9adyQQQ3Ji0rQe2ZI
-gxbjfo6bk9faJc7+uLiP315me+NNQM0R1PRwKZMI0OaPP52qURJHpyeOCdmlpvIy
-MFyX+xf0qAMV6EaW/6B1edW4yDe7H6tau7L6/rlufRjf7nU8+0nkmIjufxJLUMv/
-IGxI9iS/3ZLrCvksIoLlmNGDKlfUE8wPKyvo+jpefPbxok9yV/c1DDCN0QA/p8Jc
-yzUMn1ZsHsPq2B4O6Ou9+7uEnQcBRmPUzcxe65JLbpGGdtGDIMh4JKuWaFniBdsA
-9LnyJ0O5JWeQUaNDDoPK3oCD3+JJb5ek65P+0y59PtIjR4nGCMgEqVDyZbY8Ub1O
-o068x2pBXpaoYj+isz7Z20HrL0JoCuaNNyRN2NwVPXuPzj/WafqgTkjO84tLMQUC
-mOzi7iBTRX5DRz3TT/1OS/NUQAezKM12JnF/N91s1UmaNf+SvjzdkPSlQADpuUsb
-rIbcUpzKvUnA4mQM5ED0Tb5YKsctv68V8Zvu1DOsDEZF9bKvlyYzdGjoIAbumDRx
-fHbiBycUFxPQmS54qzCKwgvplL5IfxNtyFNHS8NP0aETBS0iA/CrDBlIbyRZ5ntp
-IZNJtIe1hmk=
-=UbBG
------END PGP SIGNATURE-----
-
---Sig_/=nUe5wKFOOKiiWy8fL+WO3t--
+On Tue, Apr 29, 2014 at 3:33 PM, Hartley Sweeten
+<HartleyS@visionengravers.com> wrote:
+> On, Tuesday, April 29, 2014 1:38 AM, Chase Southwood wrote:
+>> This driver no longer reads the eeprom to find the board specific data,
+>> all the necessary data is in the boardinfo. Use the boardinfo directly
+>> instead of passing through devpriv->s_EeParameters.
+>>
+>> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+>> Cc: Ian Abbott <abbotti@mev.co.uk>
+>> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+>> ---
+>> 2: Incorrect patch title fixed.
+>>
+>> Ian and Hartley,
+>>
+>> The auto_attach() function is starting to look much better now.  My next patchset
+>> will be geared towards only allocating subdevices which are actually used.
+>
+> Other than Ian's comment on patch 4/6 everything looks good to me.
+>
+> For the series:
+> Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>
+> BTW, for a patch series you should include a cover letter (PATCH 00/xx).
+>
+> Regards,
+> Hartley
