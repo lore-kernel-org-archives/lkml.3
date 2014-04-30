@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933978AbaD3OtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:49:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46933 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933589AbaD3OtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:49:07 -0400
-Date: Wed, 30 Apr 2014 16:49:03 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Rik van Riel <riel@redhat.com>
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
-Message-ID: <20140430144903.GI4357@dhcp22.suse.cz>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
- <5360C9E7.6010701@jp.fujitsu.com>
- <20140430093035.7e7226f2@annuminas.surriel.com>
- <20140430134826.GH4357@dhcp22.suse.cz>
- <53610941.8030309@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53610941.8030309@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759097AbaD3Oyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:54:52 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:41853 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758834AbaD3Oyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 10:54:50 -0400
+Message-ID: <1398869686.26071.151.camel@marge.simpson.net>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Date: Wed, 30 Apr 2014 16:54:46 +0200
+In-Reply-To: <20140430103308.1e46dd18@gandalf.local.home>
+References: <20140411185739.GA6644@linutronix.de>
+	 <1397918766.5436.16.camel@marge.simpson.net>
+	 <1398411635.11930.45.camel@marge.simpson.net>
+	 <1398501491.12941.5.camel@marge.simpson.net>
+	 <1398520699.28726.22.camel@marge.simpson.net>
+	 <1398661784.30930.33.camel@marge.simpson.net>
+	 <1398676186.30930.49.camel@marge.simpson.net>
+	 <20140428101805.75032f45@gandalf.local.home>
+	 <1398695832.14475.10.camel@marge.simpson.net>
+	 <1398748869.5514.81.camel@marge.simpson.net>
+	 <20140429201308.63292691@gandalf.local.home>
+	 <1398843793.26071.52.camel@marge.simpson.net>
+	 <1398863189.26071.97.camel@marge.simpson.net>
+	 <20140430091550.1177bc90@gandalf.local.home>
+	 <1398866403.26071.125.camel@marge.simpson.net>
+	 <20140430101919.70b2f622@gandalf.local.home>
+	 <20140430103308.1e46dd18@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-04-14 10:31:29, Rik van Riel wrote:
-> On 04/30/2014 09:48 AM, Michal Hocko wrote:
-> >On Wed 30-04-14 09:30:35, Rik van Riel wrote:
-> >[...]
-> >>Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
-> >>
-> >>It is possible for "limit - setpoint + 1" to equal zero, leading to a
-> >>divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-> >>working, so we need to actually test the divisor before calling div64.
-> >>
-> >>Signed-off-by: Rik van Riel <riel@redhat.com>
-> >>---
-> >>  mm/page-writeback.c | 13 +++++++++++--
-> >>  1 file changed, 11 insertions(+), 2 deletions(-)
-> >>
-> >>diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> >>index ef41349..f98a297 100644
-> >>--- a/mm/page-writeback.c
-> >>+++ b/mm/page-writeback.c
-> >>@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
-> >>  					  unsigned long dirty,
-> >>  					  unsigned long limit)
-> >>  {
-> >>+	unsigned long divisor;
-> >>  	long long pos_ratio;
-> >>  	long x;
-> >>
-> >>+	divisor = limit - setpoint;
-> >>+	if (!divisor)
-> >>+		divisor = 1;	/* Avoid div-by-zero */
-> >>+
-> >
-> >This is still prone to u64 -> s32 issue, isn't it?
-> >What was the original problem anyway? Was it really setpoint > limit or
-> >rather the overflow?
+On Wed, 2014-04-30 at 10:33 -0400, Steven Rostedt wrote: 
+> On Wed, 30 Apr 2014 10:19:19 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Thinking about it some more, is it possible that
-> limit and/or setpoint are larger than 32 bits, but
-> the difference between them is not?
+> > I'm testing it now. But could you please post them as regular patches.
+> > They were attachments to this thread, and were not something that stood
+> > out.
 > 
-> In that case, truncating both to 32 bits before
-> doing the subtraction would be troublesome, and
-> it would be better to do a cast in the comparison:
-> 
-> if (!(s32)divisor)
-> 	divisor = 1;
+> With your two patches, it still crashes exactly the same way. I
+> probably should remove my debug just in case, but I think this box has
+> another problem with it.
 
-How is that any different than defining divisor as 32b directly?
- 
+You killed this hunk of hotplug-light-get-online-cpus.patch
 
--- 
-Michal Hocko
-SUSE Labs
+@@ -333,7 +449,7 @@ static int __ref _cpu_down(unsigned int
+                /* CPU didn't die: tell everyone.  Can't complain. */
+                smpboot_unpark_threads(cpu);
+                cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+-               goto out_release;
++               goto out_cancel;
+        }
+        BUG_ON(cpu_online(cpu));
+
+..and fixed this too?
+
+Another little bug.  This hunk of patches/stomp-machine-raw-lock.patch
+should be while (atomic_read(&done.nr_todo)) 
+
+@@ -647,7 +671,7 @@ int stop_machine_from_inactive_cpu(int (
+        ret = multi_cpu_stop(&msdata);
+
+        /* Busy wait for completion. */
+-       while (!completion_done(&done.completion))
++       while (!atomic_read(&done.nr_todo))
+                cpu_relax();
+
+        mutex_unlock(&stop_cpus_mutex);
+
