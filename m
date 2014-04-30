@@ -1,84 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259AbaD3P4k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:56:40 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:57060 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758931AbaD3P4i (ORCPT
+	id S1759373AbaD3P5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:57:04 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:35216 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759285AbaD3P5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:56:38 -0400
-Message-ID: <1398873394.7754.1.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        Clark Williams <williams@redhat.com>
-Date: Wed, 30 Apr 2014 17:56:34 +0200
-In-Reply-To: <20140430114819.03e8c6ce@gandalf.local.home>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
-	 <1398411635.11930.45.camel@marge.simpson.net>
-	 <1398501491.12941.5.camel@marge.simpson.net>
-	 <1398520699.28726.22.camel@marge.simpson.net>
-	 <1398661784.30930.33.camel@marge.simpson.net>
-	 <1398676186.30930.49.camel@marge.simpson.net>
-	 <20140428101805.75032f45@gandalf.local.home>
-	 <1398695832.14475.10.camel@marge.simpson.net>
-	 <1398748869.5514.81.camel@marge.simpson.net>
-	 <20140429201308.63292691@gandalf.local.home>
-	 <1398843793.26071.52.camel@marge.simpson.net>
-	 <1398863189.26071.97.camel@marge.simpson.net>
-	 <20140430091550.1177bc90@gandalf.local.home>
-	 <1398866403.26071.125.camel@marge.simpson.net>
-	 <20140430101919.70b2f622@gandalf.local.home>
-	 <20140430103308.1e46dd18@gandalf.local.home>
-	 <1398869686.26071.151.camel@marge.simpson.net>
-	 <20140430111100.72a7a71b@gandalf.local.home>
-	 <1398870957.5220.2.camel@marge.simpson.net>
-	 <20140430114819.03e8c6ce@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 30 Apr 2014 11:57:01 -0400
+Date: Wed, 30 Apr 2014 17:56:56 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140430155656.GD3113@tucsk.piliscsaba.szeredi.hu>
+References: <20140429181610.GJ18016@ZenIV.linux.org.uk>
+ <20140429191015.GK18016@ZenIV.linux.org.uk>
+ <20140429211851.GA32204@dastard>
+ <20140429214842.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+ <20140429232013.GM18016@ZenIV.linux.org.uk>
+ <20140430023142.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+ <20140430040436.GO18016@ZenIV.linux.org.uk>
+ <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 11:48 -0400, Steven Rostedt wrote: 
-> On Wed, 30 Apr 2014 17:15:57 +0200
-> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
-> 
-> > On Wed, 2014-04-30 at 11:11 -0400, Steven Rostedt wrote:
-> > 
-> > > > Another little bug.  This hunk of patches/stomp-machine-raw-lock.patch
-> > > > should be while (atomic_read(&done.nr_todo)) 
-> > > > 
-> > > > @@ -647,7 +671,7 @@ int stop_machine_from_inactive_cpu(int (
-> > > >         ret = multi_cpu_stop(&msdata);
-> > > > 
-> > > >         /* Busy wait for completion. */
-> > > > -       while (!completion_done(&done.completion))
-> > > > +       while (!atomic_read(&done.nr_todo))
-> >                    ^--- that ! needs to go away 
-> > > 
-> > > I don't see this in the code. That is, there is no "completion_done()"
-> > > in stop_machine_from_inactive_cpu(). It is already an atomic_read().
-> > 
-> > Yes, but it should read "while (atomic_read(&done.nr_todo))"
-> 
-> Ah, this would have been better if you had sent a patch. I misread what
-> you talked about.
-> 
-> Yes, this was the culprit of my failures. After removing the '!', it
-> worked.
-> 
-> Care to send a patch :-)
+And a followup patch for that, removing RCU locking from shrink_dentry_list().
 
-I figured those two were just edit patch, done, but yeah, I can do that.
+I haven't tested any of this at this point, but I'll ask IBM to do some stress
+testing.
 
--Mike
+Thanks,
+Miklos
+---
 
+From: Miklos Szeredi <mszeredi@suse.cz>
+Subject: dcache: don't need rcu in shrink_dentry_list()
+
+Since now the shrink list is private and nobody can free the dentry while
+it is on the shrink list, we can remove RCU protection from this.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/dcache.c |   29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
+
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -822,23 +822,9 @@ static void shrink_dentry_list(struct li
+ {
+ 	struct dentry *dentry, *parent;
+ 
+-	rcu_read_lock();
+-	for (;;) {
+-		dentry = list_entry_rcu(list->prev, struct dentry, d_lru);
+-		if (&dentry->d_lru == list)
+-			break; /* empty */
+-
+-		/*
+-		 * Get the dentry lock, and re-verify that the dentry is
+-		 * this on the shrinking list. If it is, we know that
+-		 * DCACHE_SHRINK_LIST and DCACHE_LRU_LIST are set.
+-		 */
++	while (!list_empty(list)) {
++		dentry = list_entry(list->prev, struct dentry, d_lru);
+ 		spin_lock(&dentry->d_lock);
+-		if (dentry != list_entry(list->prev, struct dentry, d_lru)) {
+-			spin_unlock(&dentry->d_lock);
+-			continue;
+-		}
+-
+ 		/*
+ 		 * The dispose list is isolated and dentries are not accounted
+ 		 * to the LRU here, so we can simply remove it from the list
+@@ -854,7 +840,6 @@ static void shrink_dentry_list(struct li
+ 			spin_unlock(&dentry->d_lock);
+ 			continue;
+ 		}
+-		rcu_read_unlock();
+ 
+ 		if (unlikely(dentry->d_flags & DCACHE_DENTRY_KILLED)) {
+ 			bool free_it;
+@@ -870,8 +855,6 @@ static void shrink_dentry_list(struct li
+ 
+ 			if (free_it)
+ 				dentry_free(dentry);
+-
+-			rcu_read_lock();
+ 			continue;
+ 		}
+ 
+@@ -879,17 +862,15 @@ static void shrink_dentry_list(struct li
+ 		/*
+ 		 * If dentry_kill returns NULL, we have nothing more to do.
+ 		 */
+-		if (!parent) {
+-			rcu_read_lock();
++		if (!parent)
+ 			continue;
+-		}
++
+ 		if (unlikely(parent == dentry)) {
+ 			/*
+ 			 * trylocks have failed and d_lock has been held the
+ 			 * whole time, so it could not have been added to any
+ 			 * other lists. Just add it back to the shrink list.
+ 			 */
+-			rcu_read_lock();
+ 			d_shrink_add(dentry, list);
+ 			spin_unlock(&dentry->d_lock);
+ 			continue;
+@@ -903,9 +884,7 @@ static void shrink_dentry_list(struct li
+ 		dentry = parent;
+ 		while (dentry && !lockref_put_or_lock(&dentry->d_lockref))
+ 			dentry = dentry_kill(dentry, 1);
+-		rcu_read_lock();
+ 	}
+-	rcu_read_unlock();
+ }
+ 
+ static enum lru_status
