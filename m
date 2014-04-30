@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756785AbaD3AkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 20:40:22 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.201]:32808 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755126AbaD3AkS (ORCPT
+	id S1752364AbaD3Ao6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 20:44:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53911 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaD3Ao4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 20:40:18 -0400
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Apr 2014 20:40:17 EDT
-X-Env-Sender: schivers@csc.com.au
-X-Msg-Ref: server-9.tower-86.messagelabs.com!1398818039!46713101!1
-X-Originating-IP: [20.137.2.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-In-Reply-To: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
-References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Chris Zankel <chris@zankel.net>, devicetree@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, James Hogan <james.hogan@imgtec.co>,
-        linux-kernel@vger.kernel.org, linux-kernel-owner@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, linuxppc-dev@lists.ozlabs.org
+	Tue, 29 Apr 2014 20:44:56 -0400
+Date: Wed, 30 Apr 2014 00:44:53 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lxc-devel <lxc-devel@lists.sourceforge.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
+Message-ID: <20140430004453.GD28969@ubuntumail>
+References: <20140429222913.GD28410@ubuntumail>
+ <53602B84.1020304@mit.edu>
+ <536033A9.5070504@1h.com>
+ <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
+ <20140429234739.GB2997@dakara>
+ <CALCETrXK6N8CLjPtnHVXB-BM_bxNU6e1xYGd=_UKcjKMrR3j0g@mail.gmail.com>
+ <20140430000101.GC2997@dakara>
+ <CALCETrWz2i1xE_t982yA8GG4a-rD4AnU_43YA8cNdC9NpSD4Sg@mail.gmail.com>
+ <20140430002143.GB28969@ubuntumail>
+ <CALCETrVh0hCtiK=9fmEYfUWuz4C1dPq22kvyd=OWFMH5pXGaZw@mail.gmail.com>
 MIME-Version: 1.0
-Subject: Re: [PATCH v2 00/21] FDT clean-ups and libfdt support
-X-KeepSent: AA1D4E52:AF067B90-CA257CCA:0001CA91;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 8.5.2FP4 SHF97 March 26, 2012
-From: Stephen N Chivers <schivers@csc.com.au>
-Message-ID: <OFAA1D4E52.AF067B90-ONCA257CCA.0001CA91-CA257CCA.00031A7A@csc.com>
-Date: Wed, 30 Apr 2014 11:33:53 +1100
-X-MIMETrack: Serialize by Router on AMER-GW15/SRV/CSC(Release 8.5.2FP3 HF666|December 11, 2012) at
- 04/29/2014 08:33:59 PM,
-	Serialize complete at 04/29/2014 08:33:59 PM
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVh0hCtiK=9fmEYfUWuz4C1dPq22kvyd=OWFMH5pXGaZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Rob Herring <robherring2@gmail.com>
-> To: Grant Likely <grant.likely@linaro.org>, linux-
-> kernel@vger.kernel.org, devicetree@vger.kernel.org
-> Cc: Rob Herring <robh@kernel.org>, Aurelien Jacquiot <a-
-> jacquiot@ti.com>, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-> Chris Zankel <chris@zankel.net>, "H. Peter Anvin" <hpa@zytor.com>, 
-> Ingo Molnar <mingo@redhat.com>, James Hogan <james.hogan@imgtec.co>
-> Date: 04/30/2014 09:45 AM
-> Subject: [PATCH v2 00/21] FDT clean-ups and libfdt support
-> Sent by: linux-kernel-owner@vger.kernel.org
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Tue, Apr 29, 2014 at 5:21 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> > It should be a nonissue so long as we make sure that a file owned by a
+> >> > uid outside the scope of the container may not be changed even though
+> >> > fs_owner_uid is set. Otherwise, it's just a matter of chmod +S on say
+> >> > a shell and anyone who can see the fs from the host will be getting a
+> >> > root shell (assuming said file is owned by the host's uid 0).
+> >>
+> >> I feel like that's too fragile.  I'd rather add a rule that one of
+> >
+> > yeah I don't wnat to rush something like that.  I'd rather stash
+> > the userns of the task which did the mounting and check against
+> > that.  Note that would make it worthless unless and until we allowed
+> > mounting from non-init userns, but then we can only claim "our fs
+> > superblock readers suck and therefore containers can't mount an fs"
+> > so long before we start to feel some shame and audit them...
+> >
+> >> these filesystems always acts like it's nosuid unless you're inside a
+> >> user namespace that matches fs_owner_uid.
+> >>
+> >> Maybe even that is too weird.  How about setuid, setgid, and fcaps
+> >> only work on mounts that are in mount namespaces that are owned by the
+> >> current user namespace or one of its parents?  IOW, a struct mount is
+> >> only trusted if mnt->mnt_ns->user_ns == current user ns or one of its
+> >> parents?
+> >>
+> >> Untrusted mounts would act like they are nosuid,nodev.  Someone can
+> >> try to figure out a safe way to relax nodev at some point.
 > 
-> From: Rob Herring <robh@kernel.org>
-> 
-> This is a series of clean-ups of architecture FDT code and converts the
-> core FDT code over to using libfdt functions. This is in preparation
-> to add FDT based address translation parsing functions for early
-> console support. This series removes direct access to FDT data from all
-> arches except powerpc.
-> 
-> The current MIPS lantiq and xlp DT code is buggy as built-in DTBs need
-> to be copied out of init section. Patches 2 and 3 should be applied to
-> 3.15.
-> 
-> Changes in v2 are relatively minor. There was a bug in the unflattening
-> code where walking up the tree was not being handled correctly (thanks
-> to Michal Simek). I re-worked things a bit to avoid globally adding
-> libfdt include paths.
-> 
-> A branch is available here[1], and I plan to put into linux-next in a 
-few
-> days. Please test! I've compiled on arm, arm64, mips, microblaze, 
-xtensa,
-> and powerpc and booted on arm and arm64.
-I have tested this for PowerPC using a snapshot of libfdt[1] collected 
-from
-the today (30/04/2014).
+> Do you like this variant?  We could add a way for global root to mount
+> an fs on behalf of a userns.  I'd rather this be more explicit than
+> just mounting it in a mount ns owned by the user namespace, though.
 
-The computers used were 32 bit, Freescale and IBM/AMCC CPUs:
+I'm missing something.  Which mnt are you talking about?  A user
+can just clone a new userns and then clone(CLONE_NEWNS) to get a set
+of mounts owned by himself...  We need to get a mnt (or a cred or
+straight to a userns) tied to the first mount of the superblock, istm.
 
-        MVME5100 - Motorola/Fresscale CPU - PPCBug firmware
-        SAM440EP - IBM/AMCC - U-Boot firmware
-
-Tested-by: Stephen Chivers <schivers@csc.com>
-
-Stephen Chivers,
-CSC Australia Pty. Ltd.
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git libfdt
-
+-serge
