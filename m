@@ -1,333 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806AbaD3Lih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:38:37 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:57791 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758371AbaD3Lie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:38:34 -0400
-Subject: [PATCH v1.0 14/16] arcmsr: fix sparse checking error
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 19:38:26 +0800
-Message-ID: <1398857906.6930.59.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1758827AbaD3Ljo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:39:44 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49689 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758371AbaD3Ljn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 07:39:43 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <mturquette@linaro.org>, <t-kristo@ti.com>, <tony@atomide.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: [PATCH] clk: ti: clk-54xx: Set the rate for dpll_abe_m2x2_ck
+Date: Wed, 30 Apr 2014 14:39:37 +0300
+Message-ID: <1398857977-30114-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+In order to get correct clock dividers for AESS/ABE we need to set the
+dpll_abe_m2x2_ck rate to be double of dpll_abe_ck.
 
-Fix sparse utility checking errors.
-
-Signed-off-by: Ching<ching2048@areca.com.tw>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
+ drivers/clk/ti/clk-54xx.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:22:22.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:22:26.000000000 +0800
-@@ -78,7 +78,7 @@ MODULE_VERSION(ARCMSR_DRIVER_VERSION);
- #define	ARCMSR_SLEEPTIME	10
- #define	ARCMSR_RETRYCOUNT	12
+diff --git a/drivers/clk/ti/clk-54xx.c b/drivers/clk/ti/clk-54xx.c
+index 08f3d1b915b3..5e183993e3ec 100644
+--- a/drivers/clk/ti/clk-54xx.c
++++ b/drivers/clk/ti/clk-54xx.c
+@@ -240,6 +240,12 @@ int __init omap5xxx_dt_clk_init(void)
+ 	if (rc)
+ 		pr_err("%s: failed to configure ABE DPLL!\n", __func__);
  
--wait_queue_head_t wait_q;
-+static wait_queue_head_t wait_q;
- static int arcmsr_iop_message_xfer(struct AdapterControlBlock *acb,
- 					struct scsi_cmnd *cmd);
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb);
-@@ -371,7 +371,7 @@ static uint8_t arcmsr_hbaB_wait_msgint_r
- 
- static uint8_t arcmsr_hbaC_wait_msgint_ready(struct AdapterControlBlock *pACB)
- {
--	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
- 	int i;
- 
- 	for (i = 0; i < 2000; i++) {
-@@ -421,7 +421,7 @@ static void arcmsr_hbaB_flush_cache(stru
- 
- static void arcmsr_hbaC_flush_cache(struct AdapterControlBlock *pACB)
- {
--	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *reg = pACB->pmuC;
- 	int retry_count = 30;/* enlarge wait flush adapter cache time: 10 minute */
- 	writel(ARCMSR_INBOUND_MESG0_FLUSH_CACHE, &reg->inbound_msgaddr0);
- 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
-@@ -873,7 +873,7 @@ static uint8_t arcmsr_hbaB_abort_allcmd(
- }
- static uint8_t arcmsr_hbaC_abort_allcmd(struct AdapterControlBlock *pACB)
- {
--	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *reg = pACB->pmuC;
- 	writel(ARCMSR_INBOUND_MESG0_ABORT_CMD, &reg->inbound_msgaddr0);
- 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
- 	if (!arcmsr_hbaC_wait_msgint_ready(pACB)) {
-@@ -961,7 +961,7 @@ static u32 arcmsr_disable_outbound_ints(
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C:{
--		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		/* disable all outbound interrupt */
- 		orig_mask = readl(&reg->host_int_mask); /* disable outbound message0 int */
- 		writel(orig_mask|ARCMSR_HBCMU_ALL_INTMASKENABLE, &reg->host_int_mask);
-@@ -1085,8 +1085,9 @@ static void arcmsr_done4abort_postqueue(
- 		/*clear all outbound posted Q*/
- 		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell); /* clear doorbell interrupt */
- 		for (i = 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {
--			if ((flag_ccb = readl(&reg->done_qbuffer[i])) != 0) {
--				writel(0, &reg->done_qbuffer[i]);
-+			flag_ccb = reg->done_qbuffer[i];
-+			if (flag_ccb != 0) {
-+				reg->done_qbuffer[i] = 0;
- 				pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
- 				pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
- 				error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
-@@ -1099,7 +1100,7 @@ static void arcmsr_done4abort_postqueue(
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *reg = acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		struct  ARCMSR_CDB *pARCMSR_CDB;
- 		uint32_t flag_ccb, ccb_cdb_phy;
- 		bool error;
-@@ -1232,7 +1233,7 @@ static void arcmsr_enable_outbound_ints(
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *reg = acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		mask = ~(ARCMSR_HBCMU_UTILITY_A_ISR_MASK | ARCMSR_HBCMU_OUTBOUND_DOORBELL_ISR_MASK|ARCMSR_HBCMU_OUTBOUND_POSTQUEUE_ISR_MASK);
- 		writel(intmask_org & mask, &reg->host_int_mask);
- 		acb->outbound_int_enable = ~(intmask_org & mask) & 0x0000000f;
-@@ -1319,12 +1320,12 @@ static void arcmsr_post_ccb(struct Adapt
- 		uint32_t ending_index, index = reg->postq_index;
- 
- 		ending_index = ((index + 1) % ARCMSR_MAX_HBB_POSTQUEUE);
--		writel(0, &reg->post_qbuffer[ending_index]);
-+		reg->post_qbuffer[ending_index] = 0;
- 		if (arcmsr_cdb->Flags & ARCMSR_CDB_FLAG_SGL_BSIZE) {
--			writel(cdb_phyaddr | ARCMSR_CCBPOST_FLAG_SGL_BSIZE,\
--						 &reg->post_qbuffer[index]);
-+			reg->post_qbuffer[index] =
-+				cdb_phyaddr | ARCMSR_CCBPOST_FLAG_SGL_BSIZE;
- 		} else {
--			writel(cdb_phyaddr, &reg->post_qbuffer[index]);
-+			reg->post_qbuffer[index] = cdb_phyaddr;
- 		}
- 		index++;
- 		index %= ARCMSR_MAX_HBB_POSTQUEUE;/*if last index number set it to 0 */
-@@ -1333,7 +1334,7 @@ static void arcmsr_post_ccb(struct Adapt
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *phbcmu = acb->pmuC;
- 		uint32_t ccb_post_stamp, arc_cdb_size;
- 
- 		arc_cdb_size = (ccb->arc_cdb_size > 0x300) ? 0x300 : ccb->arc_cdb_size;
-@@ -1375,7 +1376,7 @@ static void arcmsr_hbaB_stop_bgrb(struct
- 
- static void arcmsr_hbaC_stop_bgrb(struct AdapterControlBlock *pACB)
- {
--	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *reg = pACB->pmuC;
- 	pACB->acb_flags &= ~ACB_F_MSG_START_BGRB;
- 	writel(ARCMSR_INBOUND_MESG0_STOP_BGRB, &reg->inbound_msgaddr0);
- 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &reg->inbound_doorbell);
-@@ -1409,7 +1410,7 @@ static void arcmsr_free_ccb_pool(struct 
- 	dma_free_coherent(&acb->pdev->dev, acb->uncache_size, acb->dma_coherent, acb->dma_coherent_handle);
- }
- 
--void arcmsr_iop_message_read(struct AdapterControlBlock *acb)
-+static void arcmsr_iop_message_read(struct AdapterControlBlock *acb)
- {
- 	switch (acb->adapter_type) {
- 	case ACB_ADAPTER_TYPE_A: {
-@@ -1481,7 +1482,7 @@ struct QBUFFER __iomem *arcmsr_get_iop_r
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *phbcmu = acb->pmuC;
- 		qbuffer = (struct QBUFFER __iomem *)&phbcmu->message_rbuffer;
- 		}
- 	}
-@@ -1505,7 +1506,7 @@ static struct QBUFFER __iomem *arcmsr_ge
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		pqbuffer = (struct QBUFFER __iomem *)&reg->message_wbuffer;
- 	}
- 
-@@ -1701,7 +1702,7 @@ static void arcmsr_hbaA_doorbell_isr(str
- static void arcmsr_hbaC_doorbell_isr(struct AdapterControlBlock *pACB)
- {
- 	uint32_t outbound_doorbell;
--	struct MessageUnit_C *reg = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *reg = pACB->pmuC;
- 	/*
- 	*******************************************************************
- 	**  Maybe here we need to check wrqbuffer_lock is lock or not
-@@ -1747,8 +1748,8 @@ static void arcmsr_hbaB_postqueue_isr(st
- 	struct CommandControlBlock *pCCB;
- 	bool error;
- 	index = reg->doneq_index;
--	while ((flag_ccb = readl(&reg->done_qbuffer[index])) != 0) {
--		writel(0, &reg->done_qbuffer[index]);
-+	while ((flag_ccb = reg->done_qbuffer[index]) != 0) {
-+		reg->done_qbuffer[index] = 0;
- 		pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
- 		pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
- 		error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
-@@ -1761,13 +1762,13 @@ static void arcmsr_hbaB_postqueue_isr(st
- 
- static void arcmsr_hbaC_postqueue_isr(struct AdapterControlBlock *acb)
- {
--	struct MessageUnit_C *phbcmu;
-+	struct MessageUnit_C __iomem *phbcmu;
- 	struct ARCMSR_CDB *arcmsr_cdb;
- 	struct CommandControlBlock *ccb;
- 	uint32_t flag_ccb, ccb_cdb_phy, throttling = 0;
- 	int error;
- 
--	phbcmu = (struct MessageUnit_C *)acb->pmuC;
-+	phbcmu = acb->pmuC;
- 	/* areca cdb command done */
- 	/* Use correct offset and size for syncing */
- 
-@@ -1799,7 +1800,7 @@ static void arcmsr_hbaC_postqueue_isr(st
- */
- static void arcmsr_hbaA_message_isr(struct AdapterControlBlock *acb)
- {
--	struct MessageUnit_A *reg  = acb->pmuA;
-+	struct MessageUnit_A __iomem *reg  = acb->pmuA;
- 	/*clear interrupt and message state*/
- 	writel(ARCMSR_MU_OUTBOUND_MESSAGE0_INT, &reg->outbound_intstatus);
- 	schedule_work(&acb->arcmsr_do_message_isr_bh);
-@@ -1823,7 +1824,7 @@ static void arcmsr_hbaB_message_isr(stru
- */
- static void arcmsr_hbaC_message_isr(struct AdapterControlBlock *acb)
- {
--	struct MessageUnit_C *reg  = acb->pmuC;
-+	struct MessageUnit_C __iomem *reg  = acb->pmuC;
- 	/*clear interrupt and message state*/
- 	writel(ARCMSR_HBCMU_IOP2DRV_MESSAGE_CMD_DONE_DOORBELL_CLEAR, &reg->outbound_doorbell_clear);
- 	schedule_work(&acb->arcmsr_do_message_isr_bh);
-@@ -1884,7 +1885,7 @@ static int arcmsr_hbaB_handle_isr(struct
- static int arcmsr_hbaC_handle_isr(struct AdapterControlBlock *pACB)
- {
- 	uint32_t host_interrupt_status;
--	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
- 	/*
- 	*********************************************
- 	**   check outbound intstatus
-@@ -2290,7 +2291,7 @@ static struct CommandControlBlock *arcms
- 		list_del_init(&ccb->list);
- 	}else{
- 		spin_unlock_irqrestore(&acb->ccblist_lock, flags);
--		return 0;
-+		return NULL;
- 	}
- 	spin_unlock_irqrestore(&acb->ccblist_lock, flags);
- 	return ccb;
-@@ -2527,11 +2528,11 @@ static bool arcmsr_hbaB_get_config(struc
- static bool arcmsr_hbaC_get_config(struct AdapterControlBlock *pACB)
- {
- 	uint32_t intmask_org, Index, firmware_state = 0;
--	struct MessageUnit_C *reg = pACB->pmuC;
-+	struct MessageUnit_C __iomem *reg = pACB->pmuC;
- 	char *acb_firm_model = pACB->firm_model;
- 	char *acb_firm_version = pACB->firm_version;
--	char *iop_firm_model = (char *)(&reg->msgcode_rwbuffer[15]);    /*firm_model,15,60-67*/
--	char *iop_firm_version = (char *)(&reg->msgcode_rwbuffer[17]);  /*firm_version,17,68-83*/
-+	char __iomem *iop_firm_model = (char __iomem *)(&reg->msgcode_rwbuffer[15]);    /*firm_model,15,60-67*/
-+	char __iomem *iop_firm_version = (char __iomem *)(&reg->msgcode_rwbuffer[17]);  /*firm_version,17,68-83*/
- 	int count;
- 	/* disable all outbound interrupt */
- 	intmask_org = readl(&reg->host_int_mask); /* disable outbound message0 int */
-@@ -2678,7 +2679,8 @@ static int arcmsr_hbaB_polling_ccbdone(s
- 	writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell);
- 	while(1){
- 		index = reg->doneq_index;
--		if ((flag_ccb = readl(&reg->done_qbuffer[index])) == 0) {
-+		flag_ccb = reg->done_qbuffer[index];
-+		if (flag_ccb == 0) {
- 			if (poll_ccb_done){
- 				rtn = SUCCESS;
- 				break;
-@@ -2691,7 +2693,7 @@ static int arcmsr_hbaB_polling_ccbdone(s
- 				goto polling_hbb_ccb_retry;
- 			}
- 		}
--		writel(0, &reg->done_qbuffer[index]);
-+		reg->done_qbuffer[index] = 0;
- 		index++;
- 		/*if last index number set it to 0 */
- 		index %= ARCMSR_MAX_HBB_POSTQUEUE;
-@@ -2728,7 +2730,7 @@ static int arcmsr_hbaB_polling_ccbdone(s
- 
- static int arcmsr_hbaC_polling_ccbdone(struct AdapterControlBlock *acb, struct CommandControlBlock *poll_ccb)
- {
--	struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+	struct MessageUnit_C __iomem *reg = acb->pmuC;
- 	uint32_t flag_ccb, ccb_cdb_phy;
- 	struct ARCMSR_CDB *arcmsr_cdb;
- 	bool error;
-@@ -2891,7 +2893,7 @@ static int arcmsr_iop_confirm(struct Ada
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
- 		if (cdb_phyaddr_hi32 != 0) {
--			struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+			struct MessageUnit_C __iomem *reg = acb->pmuC;
- 
- 			printk(KERN_NOTICE "arcmsr%d: cdb_phyaddr_hi32=0x%x\n",
- 					acb->adapter_index, cdb_phyaddr_hi32);
-@@ -2932,7 +2934,7 @@ static void arcmsr_wait_firmware_ready(s
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		do {
- 			firmware_state = readl(&reg->outbound_msgaddr1);
- 		} while ((firmware_state & ARCMSR_HBCMU_MESSAGE_FIRMWARE_OK) == 0);
-@@ -2964,7 +2966,7 @@ static void arcmsr_hbaA_request_device_m
- 
- static void arcmsr_hbaB_request_device_map(struct AdapterControlBlock *acb)
- {
--	struct MessageUnit_B __iomem *reg = acb->pmuB;
-+	struct MessageUnit_B *reg = acb->pmuB;
- 	if (unlikely(atomic_read(&acb->rq_map_token) == 0) || ((acb->acb_flags & ACB_F_BUS_RESET) != 0 ) || ((acb->acb_flags & ACB_F_ABORT) != 0 )){
- 		mod_timer(&acb->eternal_timer, jiffies + msecs_to_jiffies(6 * HZ));
- 		return;
-@@ -3049,7 +3051,7 @@ static void arcmsr_hbaB_start_bgrb(struc
- 
- static void arcmsr_hbaC_start_bgrb(struct AdapterControlBlock *pACB)
- {
--	struct MessageUnit_C *phbcmu = (struct MessageUnit_C *)pACB->pmuC;
-+	struct MessageUnit_C __iomem *phbcmu = pACB->pmuC;
- 	pACB->acb_flags |= ACB_F_MSG_START_BGRB;
- 	writel(ARCMSR_INBOUND_MESG0_START_BGRB, &phbcmu->inbound_msgaddr0);
- 	writel(ARCMSR_HBCMU_DRV2IOP_MESSAGE_CMD_DONE, &phbcmu->inbound_doorbell);
-@@ -3096,7 +3098,7 @@ static void arcmsr_clear_doorbell_queue_
- 		}
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
--		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
-+		struct MessageUnit_C __iomem *reg = acb->pmuC;
- 		uint32_t outbound_doorbell, i;
- 		/* empty doorbell Qbuffer if door bell ringed */
- 		outbound_doorbell = readl(&reg->outbound_doorbell);
-
++	abe_dpll = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
++	if (!rc)
++		rc = clk_set_rate(abe_dpll, OMAP5_DPLL_ABE_DEFFREQ * 2);
++	if (rc)
++		pr_err("%s: failed to configure ABE m2x2 DPLL!\n", __func__);
++
+ 	usb_dpll = clk_get_sys(NULL, "dpll_usb_ck");
+ 	rc = clk_set_rate(usb_dpll, OMAP5_DPLL_USB_DEFFREQ);
+ 	if (rc)
+-- 
+1.9.2
 
