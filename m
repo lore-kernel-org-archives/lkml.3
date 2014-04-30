@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759042AbaD3RBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:01:54 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:57758 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752425AbaD3RBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:01:53 -0400
-From: Martin Kepplinger <martink@posteo.de>
-To: gregkh@linuxfoundation.org
-Cc: forest@alittletooquiet.net, linux-kernel@vger.kernel.org,
-        Martin Kepplinger <martink@posteo.de>
-Subject: [PATCH] staging: vt6656: make spin_lock_irq() human readable
-Date: Wed, 30 Apr 2014 19:01:18 +0200
-Message-Id: <1398877278-2280-1-git-send-email-martink@posteo.de>
-X-Mailer: git-send-email 1.7.10.4
+	id S1759165AbaD3RDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:03:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43939 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758917AbaD3RDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 13:03:02 -0400
+Date: Wed, 30 Apr 2014 19:02:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/2] aio: change exit_aio() to load mm->ioctx_table once
+	and avoid rcu_read_lock()
+Message-ID: <20140430170248.GA22640@redhat.com>
+References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com> <20140429204217.GO14608@kvack.org> <20140429212222.GA28959@kvack.org> <20140430141552.GA18539@redhat.com> <20140430141616.GB18539@redhat.com> <20140430152344.GD28959@kvack.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430152344.GD28959@kvack.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't require FIRMWAREbDownload() to, first off, unlock a held lock.
-Thus do all locking in main_usb.c and hold it for a insignificantly
-shorter period of time. This makes the affected area significantly more
-readable though.
+On 04/30, Benjamin LaHaise wrote:
+>
+> > -		ctx->mmap_size = 0;
+> > -
+> > -		kill_ioctx(mm, ctx, NULL);
+> > +		if (ctx) {
+> > +			ctx->mmap_size = 0;
+> > +			kill_ioctx(mm, ctx, NULL);
+> > +		}
+>
+> Rather than indenting and moving the two lines changing mmap_size and the
+> kill_ioctx() call, why not just do "if (!ctx) ... continue;"?  That reduces
+> the number of lines changed and avoid excessive indentation.
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
+OK. To me the code looks better/simpler with "if (ctx)", but this is subjective
+of course, I won't argue.
+
+The patch still removes the empty line between mmap_size = 0 and kill_ioctx(),
+we reset mmap_size only for kill_ioctx(). But feel free to remove this change.
+
+-------------------------------------------------------------------------------
+Subject: [PATCH v3 1/2] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
+
+1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
+   or even rcu_dereference().
+
+   This mm has no users, nobody else can play with ->ioctx_table. Otherwise
+   the code is buggy anyway, if we need rcu_read_lock() in a loop because
+   ->ioctx_table can be updated then kfree(table) is obviously wrong.
+
+2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
+   munmap(), but another reason is that we simply can't do vm_munmap() unless
+   current->mm == mm and this is not true in general, the caller is mmput().
+
+3. We do not really need to nullify mm->ioctx_table before return, probably
+   the current code does this to catch the potential problems. But in this
+   case RCU_INIT_POINTER(NULL) looks better.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- drivers/staging/vt6656/firmware.c |    2 --
- drivers/staging/vt6656/main_usb.c |    5 ++++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ fs/aio.c |   42 ++++++++++++++++--------------------------
+ 1 files changed, 16 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/staging/vt6656/firmware.c b/drivers/staging/vt6656/firmware.c
-index cd2ea76..79129ad 100644
---- a/drivers/staging/vt6656/firmware.c
-+++ b/drivers/staging/vt6656/firmware.c
-@@ -54,7 +54,6 @@ int FIRMWAREbDownload(struct vnt_private *pDevice)
- 	int ii, rc;
+diff --git a/fs/aio.c b/fs/aio.c
+index 79b7e69..b67f3e2 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -791,40 +791,30 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
+  */
+ void exit_aio(struct mm_struct *mm)
+ {
+-	struct kioctx_table *table;
+-	struct kioctx *ctx;
+-	unsigned i = 0;
+-
+-	while (1) {
+-		rcu_read_lock();
+-		table = rcu_dereference(mm->ioctx_table);
+-
+-		do {
+-			if (!table || i >= table->nr) {
+-				rcu_read_unlock();
+-				rcu_assign_pointer(mm->ioctx_table, NULL);
+-				if (table)
+-					kfree(table);
+-				return;
+-			}
++	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
++	int i;
  
- 	DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"---->Download firmware\n");
--	spin_unlock_irq(&pDevice->lock);
+-			ctx = table->table[i++];
+-		} while (!ctx);
++	if (!table)
++		return;
  
- 	rc = request_firmware(&fw, FIRMWARE_NAME, dev);
- 	if (rc) {
-@@ -91,7 +90,6 @@ free_fw:
- out:
- 	kfree(pBuffer);
+-		rcu_read_unlock();
++	for (i = 0; i < table->nr; ++i) {
++		struct kioctx *ctx = table->table[i];
  
--	spin_lock_irq(&pDevice->lock);
- 	return result;
- }
- MODULE_FIRMWARE(FIRMWARE_NAME);
-diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index 3c93230..1dc02c4 100644
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -319,7 +319,11 @@ static int device_init_registers(struct vnt_private *pDevice)
- 	memcpy(pDevice->abySNAP_Bridgetunnel, abySNAP_Bridgetunnel, ETH_ALEN);
- 
- 	if (!FIRMWAREbCheckVersion(pDevice)) {
-+
-+		spin_unlock_irq(&pDevice->lock);
- 		if (FIRMWAREbDownload(pDevice) == true) {
-+
-+			spin_lock_irq(&pDevice->lock);
- 			if (FIRMWAREbBrach2Sram(pDevice) == false) {
- 				DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
- 					" FIRMWAREbBrach2Sram fail\n");
-@@ -329,7 +333,6 @@ static int device_init_registers(struct vnt_private *pDevice)
- 		} else {
- 			DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO
- 				" FIRMWAREbDownload fail\n");
--			spin_unlock_irq(&pDevice->lock);
- 			return false;
- 		}
++		if (!ctx)
++			continue;
+ 		/*
+-		 * We don't need to bother with munmap() here -
+-		 * exit_mmap(mm) is coming and it'll unmap everything.
+-		 * Since aio_free_ring() uses non-zero ->mmap_size
+-		 * as indicator that it needs to unmap the area,
+-		 * just set it to 0; aio_free_ring() is the only
+-		 * place that uses ->mmap_size, so it's safe.
++		 * We don't need to bother with munmap() here - exit_mmap(mm)
++		 * is coming and it'll unmap everything. And we simply can't,
++		 * this is not necessarily our ->mm.
++		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
++		 * that it needs to unmap the area, just set it to 0.
+ 		 */
+ 		ctx->mmap_size = 0;
+-
+ 		kill_ioctx(mm, ctx, NULL);
  	}
++
++	RCU_INIT_POINTER(mm->ioctx_table, NULL);
++	kfree(table);
+ }
+ 
+ static void put_reqs_available(struct kioctx *ctx, unsigned nr)
 -- 
-1.7.10.4
+1.5.5.1
+
 
