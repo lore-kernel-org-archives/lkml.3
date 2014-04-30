@@ -1,163 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932198AbaD3CiE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:38:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:51952 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758AbaD3CiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:38:01 -0400
-Date: Wed, 30 Apr 2014 12:37:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: linux-next: manual merge of the drm-intel tree with the
- drm-intel-fixes tree
-Message-Id: <20140430123753.16dd13b23d29e09548a4bd56@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp"
+	id S1752171AbaD3CoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:44:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:31755 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaD3CoT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 22:44:19 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-0e-5360637dc7cb
+From: Jungseok Lee <jays.lee@samsung.com>
+To: "'Catalin Marinas'" <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
+        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        steve.capper@linaro.org, sungjinn.chung@samsung.com,
+        "'Arnd Bergmann'" <arnd@arndb.de>, kgene.kim@samsung.com,
+        ilho215.lee@samsung.com
+References: <000201cf6367$c8084440$5818ccc0$@samsung.com>
+ <20140429144052.GJ17007@arm.com>
+In-reply-to: <20140429144052.GJ17007@arm.com>
+Subject: Re: [PATCH v4 2/7] arm64: Decouple page size from level of translation
+ tables
+Date: Wed, 30 Apr 2014 11:44:13 +0900
+Message-id: <007d01cf641e$122f9b20$368ed160$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQE5VUHIE8aJyTOAQ/hLT6p/NDXsYQMqZelpnDw8nOA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+Zvm5tckKwwenfuhZ/Jx1jt3i/rIfR
+	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
+	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJXx
+	c6NiwSruik9f/jE3ML7m6GLk5JAQMJFYNPM/K4QtJnHh3nq2LkYuDiGBZYwSbw/3M8IUde5d
+	yQqRWMQo0TzrOTuE84dR4nDrMTaQKjYBTYlHd3vYQWwRAX2JxVdugHUwC3QwSyx9ugxslJBA
+	jMTFBSvAGjgFdCXm7noHtltYIEJi7oLXzCA2i4CqxLxdb8BqeAUsJWbfPQBlC0r8mHyPBcRm
+	FtCSWL/zOBOELS+xec1bZohTFSR2nH3NCBEXkdj34h2QzQF0kJXEoj3WIPdICCzkkLi+pp8N
+	YpeAxLfJh1hAaiQEZCU2HYAaIylxcMUNlgmMErOQbJ6FZPMsJJtnIdm2gJFlFaNoakFyQXFS
+	epGJXnFibnFpXrpecn7uJkZICpiwg/HeAetDjMlA6ycyS4km5wNTSF5JvKGxmZGFqYmpsZG5
+	pRlpwkrivGqPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MPYLXt40vSHeY1OBwDeHtsDn
+	7WUHuZL4e1ZFx+l/PXJa/2rUdXfDCa8tNjB5XlZ5fl3iXAnfLO7e7ATVjuCpa/w2LlxwUV9q
+	v76Tj+K1d5rblrWlldrmqFxQ9DDfPsW6eWmE9H1HTqWP2lsPcuv+SDNQEjoqKbxP5/CptWt0
+	vnUvl3/v88j9lRJLcUaioRZzUXEiAG8QQnsXAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAd3a5IRgg77PGhZ/Jx1jt3i/rIfR
+	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
+	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yf
+	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
+	0BA3XQuYxghd35AguB4jAzSQsI4x4+dGxYJV3BWfvvxjbmB8zdHFyMkhIWAi0bl3JSuELSZx
+	4d56ti5GLg4hgUWMEs2znrNDOH8YJQ63HmMDqWIT0JR4dLeHHcQWEdCXWHzlBitIEbNAB7PE
+	0qfLGEESQgIxEhcXrABr4BTQlZi76x3YCmGBCIm5C14zg9gsAqoS83a9AavhFbCUmH33AJQt
+	KPFj8j0WEJtZQEti/c7jTBC2vMTmNW+ZIU5VkNhx9jUjRFxEYt+Ld0A2B9BBVhKL9lhPYBSa
+	hWTSLCSTZiGZNAtJ9wJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwQnmmfQOxlUNFocY
+	BTgYlXh4BbbGBwuxJpYVV+YeYpTgYFYS4WUOSAgW4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR
+	5Hxg8ssriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBkbdVN59
+	wdc0N+9+v4LdqfFzkrkzm3xPwfpgpYi5nB6/5S16bWdfYT1catpWpbTv0ZKY9Mh55+115xaU
+	LFn4THNZ0d7n37vmnjy+vtuwr/rS155ls2ep/GC/sf1xlMnVo9occXEBp/aEFJkYTxIOvpN3
+	5cvEh1ZGMWt3W066uHLJTd8LvGw+S5KUWIozEg21mIuKEwGt6ThpdAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, April 29, 2014 11:41 PM, Catalin Marinas wrote:
+> Jungseok,
 
-Hi all,
+Hi, Catalin
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/i915_gem_gtt.c between commitcfa7c862982b
-("drm/i915: Sanitize the enable_ppgtt module option once") from the
-drm-intel-fixes tree tree and commit 5db6c735ead5 ("drm/i915: dmesg
-output for VT-d testing") from the drm-intel tree.
+> On Tue, Apr 29, 2014 at 05:59:20AM +0100, Jungseok Lee wrote:
+> > +choice
+> > +	prompt "Level of translation tables"
+> > +	default ARM64_3_LEVELS if ARM64_4K_PAGES
+> > +	default ARM64_2_LEVELS if ARM64_64K_PAGES
+> > +	help
+> > +	  Allows level of translation tables.
+> > +
+> > +config ARM64_2_LEVELS
+> > +	bool "2 level"
+> > +	depends on ARM64_64K_PAGES
+> > +	help
+> > +	  This feature enables 2 levels of translation tables.
+> > +
+> > +config ARM64_3_LEVELS
+> > +	bool "3 level"
+> > +	depends on ARM64_4K_PAGES
+> > +	help
+> > +	  This feature enables 3 levels of translation tables.
+> > +
+> > +endchoice
+> 
+> As I mentioned previously
+> (http://www.spinics.net/linux/lists/arm-kernel/msg319552.html), just expose options for the VA space
+> bits rather than the number of levels.
+> You can still keep the number of levels config options but not visible in menuconfig (though I think
+> you could also hide them in some header and avoid config altogether). The VA bits config options can
+> be:
+> 
+> VA_BITS_39 if 4K (3 levels)
+> VA_BITS_42 if 64K (2 levels)
+> VA_BITS_47 if 16K (3 levels)
+> VA_BITS_48 if 4K || 16K || 64K (4/4/3 levels depending on page size)
+> 
+> That's more meaningful to people configuring the kernel.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Okay, I will revise VA_BITS config as hiding the number of levels.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best Regards
+Jungseok Lee
 
-diff --cc drivers/gpu/drm/i915/i915_gem_gtt.c
-index 154b0f8bb88d,496916298e8a..000000000000
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@@ -62,62 -48,13 +62,9 @@@ static int sanitize_enable_ppgtt(struc
-  	}
-  #endif
- =20
- -	/* Full ppgtt disabled by default for now due to issues. */
- -	if (full)
- -		return HAS_PPGTT(dev) && (i915.enable_ppgtt =3D=3D 2);
- -	else
- -		return HAS_ALIASING_PPGTT(dev);
- +	return HAS_ALIASING_PPGTT(dev) ? 1 : 0;
-  }
- =20
-- #define GEN6_PPGTT_PD_ENTRIES 512
-- #define I915_PPGTT_PT_ENTRIES (PAGE_SIZE / sizeof(gen6_gtt_pte_t))
-- typedef uint64_t gen8_gtt_pte_t;
-- typedef gen8_gtt_pte_t gen8_ppgtt_pde_t;
--=20
-- /* PPGTT stuff */
-- #define GEN6_GTT_ADDR_ENCODE(addr)	((addr) | (((addr) >> 28) & 0xff0))
-- #define HSW_GTT_ADDR_ENCODE(addr)	((addr) | (((addr) >> 28) & 0x7f0))
--=20
-- #define GEN6_PDE_VALID			(1 << 0)
-- /* gen6+ has bit 11-4 for physical addr bit 39-32 */
-- #define GEN6_PDE_ADDR_ENCODE(addr)	GEN6_GTT_ADDR_ENCODE(addr)
--=20
-- #define GEN6_PTE_VALID			(1 << 0)
-- #define GEN6_PTE_UNCACHED		(1 << 1)
-- #define HSW_PTE_UNCACHED		(0)
-- #define GEN6_PTE_CACHE_LLC		(2 << 1)
-- #define GEN7_PTE_CACHE_L3_LLC		(3 << 1)
-- #define GEN6_PTE_ADDR_ENCODE(addr)	GEN6_GTT_ADDR_ENCODE(addr)
-- #define HSW_PTE_ADDR_ENCODE(addr)	HSW_GTT_ADDR_ENCODE(addr)
--=20
-- /* Cacheability Control is a 4-bit value. The low three bits are stored i=
-n *
--  * bits 3:1 of the PTE, while the fourth bit is stored in bit 11 of the P=
-TE.
--  */
-- #define HSW_CACHEABILITY_CONTROL(bits)	((((bits) & 0x7) << 1) | \
-- 					 (((bits) & 0x8) << (11 - 3)))
-- #define HSW_WB_LLC_AGE3			HSW_CACHEABILITY_CONTROL(0x2)
-- #define HSW_WB_LLC_AGE0			HSW_CACHEABILITY_CONTROL(0x3)
-- #define HSW_WB_ELLC_LLC_AGE0		HSW_CACHEABILITY_CONTROL(0xb)
-- #define HSW_WB_ELLC_LLC_AGE3		HSW_CACHEABILITY_CONTROL(0x8)
-- #define HSW_WT_ELLC_LLC_AGE0		HSW_CACHEABILITY_CONTROL(0x6)
-- #define HSW_WT_ELLC_LLC_AGE3		HSW_CACHEABILITY_CONTROL(0x7)
--=20
-- #define GEN8_PTES_PER_PAGE		(PAGE_SIZE / sizeof(gen8_gtt_pte_t))
-- #define GEN8_PDES_PER_PAGE		(PAGE_SIZE / sizeof(gen8_ppgtt_pde_t))
--=20
-- /* GEN8 legacy style addressis defined as a 3 level page table:
--  * 31:30 | 29:21 | 20:12 |  11:0
--  * PDPE  |  PDE  |  PTE  | offset
--  * The difference as compared to normal x86 3 level page table is the PDP=
-Es are
--  * programmed via register.
--  */
-- #define GEN8_PDPE_SHIFT			30
-- #define GEN8_PDPE_MASK			0x3
-- #define GEN8_PDE_SHIFT			21
-- #define GEN8_PDE_MASK			0x1ff
-- #define GEN8_PTE_SHIFT			12
-- #define GEN8_PTE_MASK			0x1ff
--=20
-- #define PPAT_UNCACHED_INDEX		(_PAGE_PWT | _PAGE_PCD)
-- #define PPAT_CACHED_PDE_INDEX		0 /* WB LLC */
-- #define PPAT_CACHED_INDEX		_PAGE_PAT /* WB LLCeLLC */
-- #define PPAT_DISPLAY_ELLC_INDEX		_PAGE_PCD /* WT eLLC */
- =20
-  static void ppgtt_bind_vma(struct i915_vma *vma,
-  			   enum i915_cache_level cache_level,
-@@@ -2041,14 -1971,10 +1981,18 @@@ int i915_gem_gtt_init(struct drm_devic
-  		 gtt->base.total >> 20);
-  	DRM_DEBUG_DRIVER("GMADR size =3D %ldM\n", gtt->mappable_end >> 20);
-  	DRM_DEBUG_DRIVER("GTT stolen size =3D %zdM\n", gtt->stolen_size >> 20);
- +	/*
- +	 * i915.enable_ppgtt is read-only, so do an early pass to validate the
- +	 * user's requested state against the hardware/driver capabilities.  We
- +	 * do this now so that we can print out any log messages once rather
- +	 * than every time we check intel_enable_ppgtt().
- +	 */
- +	i915.enable_ppgtt =3D sanitize_enable_ppgtt(dev, i915.enable_ppgtt);
- +	DRM_DEBUG_DRIVER("ppgtt mode: %i\n", i915.enable_ppgtt);
-+ #ifdef CONFIG_INTEL_IOMMU
-+ 	if (intel_iommu_gfx_mapped)
-+ 		DRM_INFO("VT-d active for gfx access\n");
-+ #endif
- =20
-  	return 0;
-  }
-
---Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTYGIGAAoJEMDTa8Ir7ZwVHrIP/2Mvt6zorQK9C9Cnd4X4Cw05
-bjUJOzMvpQro8Q5ho3xXJgMfHAaG0XN2FyBln1JHup1nXKhlWVrsKiFa/AsdSOVX
-B6CxMkbQ1/l1MNSrssk8HnR2+9tT5zYBd3tl8+htmiW/EQigLvr0R+3QgY1JVamn
-xdQ2U3R40foSCELFcbkmMsgHJ95ZRQXTRZLxf0MGAUSbFXSE7gUomCiBYSvA7YV0
-+Cfuslz7eXJdrr6TdVo5PGBId0kkklKAG2azMHG+SKukUTVkFKE9GgbbhUukfEnr
-ASo8ux0Hgh3Ye227SUV1cz8b45+fFAFctjcJ2TfE/E0VQYl4s+nXc1Nz+nfUCQtJ
-3bYhHgUVoXDHjoreN3YsZER3j0G9hHtT3iYlWJjoW0gHhlErGDiPN8zW8W5rSSKy
-M5zw28yzcdTqtjj4y+aro1Dr7FZF74tBoMhJAgb927tqE4nYVtZ98515bqkWu7Qa
-MIMS6YyRCWRyy6Kb6K7BfWy9BrIsc9+xpvGwWKTDaXlPXNlAHI76AOB9hJQ6ejbl
-VoS+Mxl+mKO7OUybnYjs7yBy/Tkommr4Nw0M2PpER1YUntnR83LH1VMU2+gT7tuL
-Qmf8FHgEZCx0bJYaKjoXobgfQrX9Ki0cluMQr08TxRrr9vrQkiLj7QZZLsKFZHIe
-pnSYLfDG5YfbTMbgQIn5
-=PyIM
------END PGP SIGNATURE-----
-
---Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp--
