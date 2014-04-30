@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266AbaD3Oay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:30:54 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52334 "EHLO
+	id S1759282AbaD3Oaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:30:55 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52348 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758933AbaD3Oav (ORCPT
+	by vger.kernel.org with ESMTP id S1758944AbaD3Oav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Apr 2014 10:30:51 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -14,9 +14,9 @@ Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
         Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>
-Subject: [RFC 02/16] ftrace: Make ftrace_is_dead available globally
-Date: Wed, 30 Apr 2014 16:30:35 +0200
-Message-Id: <1398868249-26169-3-git-send-email-jslaby@suse.cz>
+Subject: [RFC 04/16] kgr: add testing kgraft patch
+Date: Wed, 30 Apr 2014 16:30:37 +0200
+Message-Id: <1398868249-26169-5-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
 References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
@@ -24,59 +24,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kgr wants to test whether ftrace is OK with patching. If not, we just
-bail out and will not initialize at all.
+This is intended to be a presentation of the kgraft engine, so it is
+placed into samples/ directory.
 
+It patches sys_iopl() and sys_capable() to print an additional message
+to the original functionality.
+
+Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 ---
- include/linux/ftrace.h | 3 +++
- kernel/trace/trace.h   | 2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ samples/Kconfig           |  4 ++
+ samples/Makefile          |  3 +-
+ samples/kgr/Makefile      |  1 +
+ samples/kgr/kgr_patcher.c | 97 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 104 insertions(+), 1 deletion(-)
+ create mode 100644 samples/kgr/Makefile
+ create mode 100644 samples/kgr/kgr_patcher.c
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 8b447493b6a5..720b7be77615 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -144,6 +144,8 @@ enum ftrace_tracing_type_t {
- /* Current tracing type, default is FTRACE_TYPE_ENTER */
- extern enum ftrace_tracing_type_t ftrace_tracing_type;
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 6181c2cc9ca0..a923510443de 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -55,6 +55,10 @@ config SAMPLE_KDB
+ 	  Build an example of how to dynamically add the hello
+ 	  command to the kdb shell.
  
-+extern int ftrace_is_dead(void);
++config SAMPLE_KGR_PATCHER
++	tristate "Build kgr patcher example -- loadable modules only"
++	depends on KGR && m
 +
- /**
-  * ftrace_stop - stop function tracer.
-  *
-@@ -245,6 +247,7 @@ static inline int ftrace_nr_registered_ops(void)
- 	return 0;
- }
- static inline void clear_ftrace_function(void) { }
-+static inline int ftrace_is_dead(void) { return 0; }
- static inline void ftrace_kill(void) { }
- static inline void ftrace_stop(void) { }
- static inline void ftrace_start(void) { }
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 2e29d7ba5a52..e3d867571ffc 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -819,7 +819,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
+ config SAMPLE_RPMSG_CLIENT
+ 	tristate "Build rpmsg client sample -- loadable modules only"
+ 	depends on RPMSG && m
+diff --git a/samples/Makefile b/samples/Makefile
+index 1a60c62e2045..a141b219c019 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,5 @@
+ # Makefile for Linux samples code
  
- 	return test_tsk_trace_trace(task);
- }
--extern int ftrace_is_dead(void);
- int ftrace_create_function_files(struct trace_array *tr,
- 				 struct dentry *parent);
- void ftrace_destroy_function_files(struct trace_array *tr);
-@@ -828,7 +827,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
- {
- 	return 1;
- }
--static inline int ftrace_is_dead(void) { return 0; }
- static inline int
- ftrace_create_function_files(struct trace_array *tr,
- 			     struct dentry *parent)
+ obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
+-			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
++			   hw_breakpoint/ kfifo/ kdb/ kgr/ \
++			   hidraw/ rpmsg/ seccomp/
+diff --git a/samples/kgr/Makefile b/samples/kgr/Makefile
+new file mode 100644
+index 000000000000..202eee7d050e
+--- /dev/null
++++ b/samples/kgr/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_SAMPLE_KGR_PATCHER) += kgr_patcher.o
+diff --git a/samples/kgr/kgr_patcher.c b/samples/kgr/kgr_patcher.c
+new file mode 100644
+index 000000000000..828543e36f3f
+--- /dev/null
++++ b/samples/kgr/kgr_patcher.c
+@@ -0,0 +1,97 @@
++/*
++ * kgr_patcher -- just kick kgr infrastructure for test
++ *
++ *  Copyright (c) 2013-2014 SUSE
++ *   Authors: Jiri Kosina
++ *	      Vojtech Pavlik
++ *	      Jiri Slaby
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/kgr.h>
++#include <linux/kallsyms.h>
++#include <linux/sched.h>
++#include <linux/types.h>
++#include <linux/capability.h>
++#include <linux/ptrace.h>
++
++#include <asm/processor.h>
++
++/*
++ * This all should be autogenerated from the patched sources
++ *
++ * IMPORTANT TODO: we have to handle cases where the new code is calling out
++ * into functions which are not exported to modules.
++ *
++ * This can either be handled by calling all such functions indirectly, i.e
++ * obtaining pointer from kallsyms in the stub (and transforming all callsites
++ * to do pointer dereference), or by modifying the kernel module linker.
++ */
++
++asmlinkage long kgr_new_sys_iopl(unsigned int level)
++{
++        struct pt_regs *regs = current_pt_regs();
++        unsigned int old = (regs->flags >> 12) & 3;
++        struct thread_struct *t = &current->thread;
++
++	printk(KERN_DEBUG "kgr-patcher: this is a new sys_iopl()\n");
++
++        if (level > 3)
++                return -EINVAL;
++        /* Trying to gain more privileges? */
++        if (level > old) {
++                if (!capable(CAP_SYS_RAWIO))
++                        return -EPERM;
++        }
++        regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
++        t->iopl = level << 12;
++        set_iopl_mask(t->iopl);
++
++        return 0;
++}
++KGR_PATCHED_FUNCTION(patch, SyS_iopl, kgr_new_sys_iopl);
++
++static bool new_capable(int cap)
++{
++	printk(KERN_DEBUG "kgr-patcher: this is a new capable()\n");
++
++        return ns_capable(&init_user_ns, cap);
++}
++KGR_PATCHED_FUNCTION(patch, capable, new_capable);
++
++static const struct kgr_patch patch = {
++	.patches = {
++		KGR_PATCH(SyS_iopl),
++		KGR_PATCH(capable),
++		KGR_PATCH_END
++	}
++};
++
++static int __init kgr_patcher_init(void)
++{
++	/* removing not supported (yet?) */
++	__module_get(THIS_MODULE);
++	kgr_start_patching(&patch);
++	return 0;
++}
++
++static void __exit kgr_patcher_cleanup(void)
++{
++	/* extra care needs to be taken when freeing ftrace_ops->private */
++	printk(KERN_ERR "removing now buggy!\n");
++}
++
++module_init(kgr_patcher_init);
++module_exit(kgr_patcher_cleanup);
++
++MODULE_LICENSE("GPL");
++
 -- 
 1.9.2
 
