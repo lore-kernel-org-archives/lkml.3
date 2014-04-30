@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958AbaD3Mkc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:40:32 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:41097 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757878AbaD3Mkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:40:31 -0400
-Message-ID: <5360EF3F.1040003@linaro.org>
-Date: Wed, 30 Apr 2014 14:40:31 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758979AbaD3Mlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:41:44 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:40956 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758884AbaD3Mln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 08:41:43 -0400
+X-IronPort-AV: E=Sophos;i="4.97,958,1389744000"; 
+   d="scan'208";a="126282370"
+Message-ID: <5360EF70.20202@citrix.com>
+Date: Wed, 30 Apr 2014 13:41:20 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] cpuidle / menu: Return error code if there are no
- suitable states
-References: <2471963.urOyfY8mOG@vostro.rjw.lan> <6832089.A5AOPipfbA@vostro.rjw.lan> <535E3818.2040905@linaro.org> <2000825.kO1es8ShkW@vostro.rjw.lan>
-In-Reply-To: <2000825.kO1es8ShkW@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xenproject.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        <x86@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 7/9] x86: skip check for spurious faults for non-present
+ faults
+References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com> <1397571337-20409-8-git-send-email-david.vrabel@citrix.com>
+In-Reply-To: <1397571337-20409-8-git-send-email-david.vrabel@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 01:28 AM, Rafael J. Wysocki wrote:
-> On Monday, April 28, 2014 01:14:32 PM Daniel Lezcano wrote:
->> On 04/27/2014 02:55 PM, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> If there is a PM QoS latency limit and all of the sufficiently shallow
->>> C-states are disabled, the cpuidle menu governor returns 0 which on
->>> some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
->>> if that C-state has been disabled.
->>>
->>> Fix the issue by modifying the menu governor to return an error code
->>> in such situations.
->>>
->>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> ---
->>>    drivers/cpuidle/governors/menu.c |    2 +-
->>>    include/linux/cpuidle.h          |    2 ++
->>>    2 files changed, 3 insertions(+), 1 deletion(-)
->>>
->>> Index: linux-pm/drivers/cpuidle/governors/menu.c
->>> ===================================================================
->>> --- linux-pm.orig/drivers/cpuidle/governors/menu.c
->>> +++ linux-pm/drivers/cpuidle/governors/menu.c
->>> @@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
->>>    		data->needs_update = 0;
->>>    	}
->>>
->>> -	data->last_state_idx = 0;
->>> +	data->last_state_idx = CPUIDLE_DRIVER_STATE_POLL;
->>>
->>>    	/* Special case when user has set very strict latency requirement */
->>>    	if (unlikely(latency_req == 0))
->>> Index: linux-pm/include/linux/cpuidle.h
->>> ===================================================================
->>> --- linux-pm.orig/include/linux/cpuidle.h
->>> +++ linux-pm/include/linux/cpuidle.h
->>> @@ -217,8 +217,10 @@ static inline int cpuidle_register_gover
->>>
->>>    #ifdef CONFIG_ARCH_HAS_CPU_RELAX
->>>    #define CPUIDLE_DRIVER_STATE_START	1
->>> +#define CPUIDLE_DRIVER_STATE_POLL	0
->>>    #else
->>>    #define CPUIDLE_DRIVER_STATE_START	0
->>> +#define CPUIDLE_DRIVER_STATE_POLL	(-ENXIO)
->>>    #endif
->>>
->>>    #endif /* _LINUX_CPUIDLE_H */
->>
->> Hi Rafael,
->>
->> CPUIDLE_DRIVER_STATE_START is only for x86. It introduces some confusion
->> in the code.
->
-> I won't disagree with that.
->
->> As only two drivers are concerned by it, wouldn't make
->> sense to add the poll state to those driver directly instead of having
->> the code hacked around ? (eg. insert the poll state in the common
->> cpuidle code).
->
-> Well, what about initializing data->last_state_idx to
-> (CPUIDLE_DRIVER_STATE_START - 1) in menu_select() instead of introducing the
-> new symbol for the time being and getting rid of CPUIDLE_DRIVER_STATE_START
-> separately?
+On 15/04/14 15:15, David Vrabel wrote:
+> If a fault on a kernel address is due to a non-present page, then it
+> cannot be the result of stale TLB entry from a protection change (RO
+> to RW or NX to X).  Thus the pagetable walk in spurious_fault() can be
+> skipped.
+> 
+> This avoids spurious_fault() oopsing in some cases if the pagetables
+> it attempts to walk are not accessible.  This obscures the location of
+> the original fault.
+> 
+> This also fixes a crash with Xen PV guests when they access entries in
+> the M2P corresponding to device MMIO regions.  The M2P is mapped
+> (read-only) by Xen into the kernel address space of the guest and this
+> mapping may contains holes for non-RAM regions.  Read faults will
+> result in calls to spurious_fault(), but because the page tables for
+> the M2P mappings are not accessible by the guest the pagetable walk
+> would fault.
+> 
+> This was not normally a problem as MMIO mappings would not normally
+> result in a M2P lookup because of the use of the _PAGE_IOMAP bit the
+> PTE.  However, removing the _PAGE_IOMAP bit requires M2P lookups for
+> MMIO mappings as well.
+> 
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+> x86 maintainers, this is a prerequisite for removing Xen's usage of
+> _PAGE_IOMAP so I think this is best merged via the Xen tree.
 
-+1
+Peter, any opinion on this patch?
 
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+David
