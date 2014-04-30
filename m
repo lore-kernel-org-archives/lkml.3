@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964983AbaD3Sk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:40:29 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:43822 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759085AbaD3Sk0 (ORCPT
+	id S1945936AbaD3Slt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:41:49 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:34754 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965013AbaD3Slr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:40:26 -0400
+	Wed, 30 Apr 2014 14:41:47 -0400
+Message-ID: <536143E5.6080805@cogentembedded.com>
+Date: Wed, 30 Apr 2014 22:41:41 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6WKyQbh9Eih05szW6708fVTNPgTe62SU5tC2dQkqwJApg@mail.gmail.com>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
- <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com>
- <20140318201056.7b876394@nehalam.linuxnetplumber.net> <20140320020540.GF28801@wotan.suse.de>
- <CAB=NE6WKyQbh9Eih05szW6708fVTNPgTe62SU5tC2dQkqwJApg@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 30 Apr 2014 11:40:04 -0700
-X-Google-Sender-Auth: Zwthb-83t0xzV5zCWBbhK_XrcjU
-Message-ID: <CAB=NE6VZNiJaag7mzMxk02+EjXLoyK=Uwe+YK+M+54UcVV_AEw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        bridge@lists.linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+To: Kumar Gala <galak@codeaurora.org>, Mike Turquette <mturquette@linaro.org>
+CC: linux-arm-msm@vger.kernel.org, sboyd@codeaurora.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: qcom: Remove accidental merged reject file
+References: <1398881711-5566-1-git-send-email-galak@codeaurora.org>
+In-Reply-To: <1398881711-5566-1-git-send-email-galak@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 12:41 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> Stephen, I'd like to respin this series to address all pending
-> feedback, I'd still like your feedback / call / judgement on this
-> part. I'm fine either way, just wanted to ensure I highlight the
-> reasoning of why I kept the original random MAC address.
+Hello.
 
-Re-poke.
+On 04/30/2014 10:15 PM, Kumar Gala wrote:
 
-  Luis
+> Looks like commit cff558c79f572530bdbbb9b847134094008afcef accidentally
+
+    Please also specify that commit's summary in parens.
+
+> added in a merge reject file, so remove it.
+
+> Signed-off-by: Kumar Gala <galak@codeaurora.org>
+
+WBR, Sergei
+
