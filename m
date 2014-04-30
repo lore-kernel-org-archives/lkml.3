@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaD3CGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:06:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30998 "EHLO mga09.intel.com"
+	id S932211AbaD3CGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:06:23 -0400
+Received: from mga11.intel.com ([192.55.52.93]:48031 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756834AbaD3CGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:06:10 -0400
+	id S932092AbaD3CGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 22:06:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,955,1389772800"; 
-   d="scan'208";a="523497180"
+   d="scan'208";a="523497225"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Zhao Yakui <yakui.zhao@intel.com>, Bob Moore <robert.moore@intel.com>
-Subject: [PATCH 23/27] ACPICA: Tables: Remove old mechanism to validate if XSDT contains NULL entries.
-Date: Wed, 30 Apr 2014 10:06:02 +0800
-Message-Id: <6dcea27ee505707b2debab1c7ea793f24b68eb4b.1398817612.git.lv.zheng@intel.com>
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH 24/27] ACPICA: Remove extraneous error message for large number of GPEs.
+Date: Wed, 30 Apr 2014 10:06:09 +0800
+Message-Id: <5cec58046257dde5fe9f1d9161039dc3c98a7c15.1398817612.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1398817612.git.lv.zheng@intel.com>
 References: <cover.1398817612.git.lv.zheng@intel.com>
@@ -25,180 +25,166 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the NULL entry sanity check implemented, the XSDT validation is
-useless because:
-1. If XSDT contains NULL entries, it can be bypassed by the new sanity
-   check mechanism;
-2. If RSDP contains a bad XSDT address, invoking XSDT validation will still
-   lead to a kernel crash.
+From: Bob Moore <robert.moore@intel.com>
 
-This patch deletes the old XSDT validation solution and thus enables the
-new NULL entry sanity check solution.
+Fixes a problem where an extraneous error message was emitted during
+initialization if there is a GPE block larger than 255 bits. Any
+GPE block larger than 120 GPEs could generate the error.
 
-Note that if there are reports reporting regressions caused by the enabling
-of the new feature and disabling of the old feature, this commit should be
-bisected and reverted. Lv Zheng.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
-Buglink: https://bugs.archlinux.org/task/39811
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
-Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
-Cc: Zhao Yakui <yakui.zhao@intel.com>
 Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 ---
- drivers/acpi/acpica/tbutils.c |  105 -----------------------------------------
- 1 file changed, 105 deletions(-)
+ drivers/acpi/acpica/tbfadt.c |   51 +++++++++++++++++++++++++++---------------
+ 1 file changed, 33 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-index 801d196..e37a103 100644
---- a/drivers/acpi/acpica/tbutils.c
-+++ b/drivers/acpi/acpica/tbutils.c
-@@ -49,8 +49,6 @@
- ACPI_MODULE_NAME("tbutils")
+diff --git a/drivers/acpi/acpica/tbfadt.c b/drivers/acpi/acpica/tbfadt.c
+index a37af16..41519a9 100644
+--- a/drivers/acpi/acpica/tbfadt.c
++++ b/drivers/acpi/acpica/tbfadt.c
+@@ -52,7 +52,8 @@ ACPI_MODULE_NAME("tbfadt")
+ static void
+ acpi_tb_init_generic_address(struct acpi_generic_address *generic_address,
+ 			     u8 space_id,
+-			     u8 byte_width, u64 address, char *register_name);
++			     u8 byte_width,
++			     u64 address, char *register_name, u8 flags);
  
- /* Local prototypes */
--static acpi_status acpi_tb_validate_xsdt(acpi_physical_address address);
--
- static acpi_physical_address
- acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size);
+ static void acpi_tb_convert_fadt(void);
  
-@@ -251,87 +249,6 @@ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size)
+@@ -69,13 +70,14 @@ typedef struct acpi_fadt_info {
+ 	u16 address32;
+ 	u16 length;
+ 	u8 default_length;
+-	u8 type;
++	u8 flags;
  
- /*******************************************************************************
-  *
-- * FUNCTION:    acpi_tb_validate_xsdt
-- *
-- * PARAMETERS:  address             - Physical address of the XSDT (from RSDP)
-- *
-- * RETURN:      Status. AE_OK if the table appears to be valid.
-- *
-- * DESCRIPTION: Validate an XSDT to ensure that it is of minimum size and does
-- *              not contain any NULL entries. A problem that is seen in the
-- *              field is that the XSDT exists, but is actually useless because
-- *              of one or more (or all) NULL entries.
-- *
-- ******************************************************************************/
--
--static acpi_status acpi_tb_validate_xsdt(acpi_physical_address xsdt_address)
--{
--	struct acpi_table_header *table;
--	u8 *next_entry;
--	acpi_physical_address address;
--	u32 length;
--	u32 entry_count;
--	acpi_status status;
--	u32 i;
--
--	/* Get the XSDT length */
--
--	table =
--	    acpi_os_map_memory(xsdt_address, sizeof(struct acpi_table_header));
--	if (!table) {
--		return (AE_NO_MEMORY);
--	}
--
--	length = table->length;
--	acpi_os_unmap_memory(table, sizeof(struct acpi_table_header));
--
--	/*
--	 * Minimum XSDT length is the size of the standard ACPI header
--	 * plus one physical address entry
--	 */
--	if (length < (sizeof(struct acpi_table_header) + ACPI_XSDT_ENTRY_SIZE)) {
--		return (AE_INVALID_TABLE_LENGTH);
--	}
--
--	/* Map the entire XSDT */
--
--	table = acpi_os_map_memory(xsdt_address, length);
--	if (!table) {
--		return (AE_NO_MEMORY);
--	}
--
--	/* Get the number of entries and pointer to first entry */
--
--	status = AE_OK;
--	next_entry = ACPI_ADD_PTR(u8, table, sizeof(struct acpi_table_header));
--	entry_count = (u32)((table->length - sizeof(struct acpi_table_header)) /
--			    ACPI_XSDT_ENTRY_SIZE);
--
--	/* Validate each entry (physical address) within the XSDT */
--
--	for (i = 0; i < entry_count; i++) {
--		address =
--		    acpi_tb_get_root_table_entry(next_entry,
--						 ACPI_XSDT_ENTRY_SIZE);
--		if (!address) {
--
--			/* Detected a NULL entry, XSDT is invalid */
--
--			status = AE_NULL_ENTRY;
--			break;
--		}
--
--		next_entry += ACPI_XSDT_ENTRY_SIZE;
--	}
--
--	/* Unmap table */
--
--	acpi_os_unmap_memory(table, length);
--	return (status);
--}
--
--/*******************************************************************************
-- *
-  * FUNCTION:    acpi_tb_parse_root_table
-  *
-  * PARAMETERS:  rsdp                    - Pointer to the RSDP
-@@ -355,7 +272,6 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 	u32 table_count;
- 	struct acpi_table_header *table;
- 	acpi_physical_address address;
--	acpi_physical_address rsdt_address;
- 	u32 length;
- 	u8 *table_entry;
- 	acpi_status status;
-@@ -384,14 +300,11 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 		 * as per the ACPI specification.
- 		 */
- 		address = (acpi_physical_address) rsdp->xsdt_physical_address;
--		rsdt_address =
--		    (acpi_physical_address) rsdp->rsdt_physical_address;
- 		table_entry_size = ACPI_XSDT_ENTRY_SIZE;
- 	} else {
- 		/* Root table is an RSDT (32-bit physical addresses) */
+ } acpi_fadt_info;
  
- 		address = (acpi_physical_address) rsdp->rsdt_physical_address;
--		rsdt_address = address;
- 		table_entry_size = ACPI_RSDT_ENTRY_SIZE;
+ #define ACPI_FADT_OPTIONAL          0
+ #define ACPI_FADT_REQUIRED          1
+ #define ACPI_FADT_SEPARATE_LENGTH   2
++#define ACPI_FADT_GPE_REGISTER      4
+ 
+ static struct acpi_fadt_info fadt_info_table[] = {
+ 	{"Pm1aEventBlock",
+@@ -125,14 +127,14 @@ static struct acpi_fadt_info fadt_info_table[] = {
+ 	 ACPI_FADT_OFFSET(gpe0_block),
+ 	 ACPI_FADT_OFFSET(gpe0_block_length),
+ 	 0,
+-	 ACPI_FADT_SEPARATE_LENGTH},
++	 ACPI_FADT_SEPARATE_LENGTH | ACPI_FADT_GPE_REGISTER},
+ 
+ 	{"Gpe1Block",
+ 	 ACPI_FADT_OFFSET(xgpe1_block),
+ 	 ACPI_FADT_OFFSET(gpe1_block),
+ 	 ACPI_FADT_OFFSET(gpe1_block_length),
+ 	 0,
+-	 ACPI_FADT_SEPARATE_LENGTH}
++	 ACPI_FADT_SEPARATE_LENGTH | ACPI_FADT_GPE_REGISTER}
+ };
+ 
+ #define ACPI_FADT_INFO_ENTRIES \
+@@ -189,19 +191,29 @@ static struct acpi_fadt_pm_info fadt_pm_info_table[] = {
+ static void
+ acpi_tb_init_generic_address(struct acpi_generic_address *generic_address,
+ 			     u8 space_id,
+-			     u8 byte_width, u64 address, char *register_name)
++			     u8 byte_width,
++			     u64 address, char *register_name, u8 flags)
+ {
+ 	u8 bit_width;
+ 
+-	/* Bit width field in the GAS is only one byte long, 255 max */
+-
++	/*
++	 * Bit width field in the GAS is only one byte long, 255 max.
++	 * Check for bit_width overflow in GAS.
++	 */
+ 	bit_width = (u8)(byte_width * 8);
+-
+-	if (byte_width > 31) {	/* (31*8)=248 */
+-		ACPI_ERROR((AE_INFO,
+-			    "%s - 32-bit FADT register is too long (%u bytes, %u bits) "
+-			    "to convert to GAS struct - 255 bits max, truncating",
+-			    register_name, byte_width, (byte_width * 8)));
++	if (byte_width > 31) {	/* (31*8)=248, (32*8)=256 */
++		/*
++		 * No error for GPE blocks, because we do not use the bit_width
++		 * for GPEs, the legacy length (byte_width) is used instead to
++		 * allow for a large number of GPEs.
++		 */
++		if (!(flags & ACPI_FADT_GPE_REGISTER)) {
++			ACPI_ERROR((AE_INFO,
++				    "%s - 32-bit FADT register is too long (%u bytes, %u bits) "
++				    "to convert to GAS struct - 255 bits max, truncating",
++				    register_name, byte_width,
++				    (byte_width * 8)));
++		}
+ 
+ 		bit_width = 255;
  	}
+@@ -450,6 +462,7 @@ static void acpi_tb_convert_fadt(void)
+ 	struct acpi_generic_address *address64;
+ 	u32 address32;
+ 	u8 length;
++	u8 flags;
+ 	u32 i;
  
-@@ -401,24 +314,6 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
- 	 */
- 	acpi_os_unmap_memory(rsdp, sizeof(struct acpi_table_rsdp));
+ 	/*
+@@ -515,6 +528,7 @@ static void acpi_tb_convert_fadt(void)
+ 				       fadt_info_table[i].length);
  
--	/*
--	 * If it is present and used, validate the XSDT for access/size
--	 * and ensure that all table entries are at least non-NULL
--	 */
--	if (table_entry_size == ACPI_XSDT_ENTRY_SIZE) {
--		status = acpi_tb_validate_xsdt(address);
--		if (ACPI_FAILURE(status)) {
--			ACPI_BIOS_WARNING((AE_INFO,
--					   "XSDT is invalid (%s), using RSDT",
--					   acpi_format_exception(status)));
--
--			/* Fall back to the RSDT */
--
--			address = rsdt_address;
--			table_entry_size = ACPI_RSDT_ENTRY_SIZE;
--		}
--	}
--
- 	/* Map the RSDT/XSDT table header to get the full table length */
+ 		name = fadt_info_table[i].name;
++		flags = fadt_info_table[i].flags;
  
- 	table = acpi_os_map_memory(address, sizeof(struct acpi_table_header));
+ 		/*
+ 		 * Expand the ACPI 1.0 32-bit addresses to the ACPI 2.0 64-bit "X"
+@@ -554,7 +568,7 @@ static void acpi_tb_convert_fadt(void)
+ 									   [i].
+ 									   length),
+ 							     (u64)address32,
+-							     name);
++							     name, flags);
+ 			} else if (address64->address != (u64)address32) {
+ 
+ 				/* Address mismatch */
+@@ -582,7 +596,8 @@ static void acpi_tb_convert_fadt(void)
+ 								      length),
+ 								     (u64)
+ 								     address32,
+-								     name);
++								     name,
++								     flags);
+ 				}
+ 			}
+ 		}
+@@ -603,7 +618,7 @@ static void acpi_tb_convert_fadt(void)
+ 					   address64->bit_width));
+ 		}
+ 
+-		if (fadt_info_table[i].type & ACPI_FADT_REQUIRED) {
++		if (fadt_info_table[i].flags & ACPI_FADT_REQUIRED) {
+ 			/*
+ 			 * Field is required (Pm1a_event, Pm1a_control).
+ 			 * Both the address and length must be non-zero.
+@@ -617,7 +632,7 @@ static void acpi_tb_convert_fadt(void)
+ 								    address),
+ 						 length));
+ 			}
+-		} else if (fadt_info_table[i].type & ACPI_FADT_SEPARATE_LENGTH) {
++		} else if (fadt_info_table[i].flags & ACPI_FADT_SEPARATE_LENGTH) {
+ 			/*
+ 			 * Field is optional (Pm2_control, GPE0, GPE1) AND has its own
+ 			 * length field. If present, both the address and length must
+@@ -726,7 +741,7 @@ static void acpi_tb_setup_fadt_registers(void)
+ 						     (fadt_pm_info_table[i].
+ 						      register_num *
+ 						      pm1_register_byte_width),
+-						     "PmRegisters");
++						     "PmRegisters", 0);
+ 		}
+ 	}
+ }
 -- 
 1.7.10
 
