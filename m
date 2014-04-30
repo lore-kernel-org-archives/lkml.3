@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759271AbaD3PpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:45:17 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39020 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758929AbaD3PpQ (ORCPT
+	id S1759368AbaD3Ps1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:48:27 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:21587 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759333AbaD3PsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:45:16 -0400
-Date: Wed, 30 Apr 2014 11:37:34 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth 2014-04-25
-Message-ID: <20140430153733.GD3635@tuxdriver.com>
-References: <20140425124602.GF7832@joana>
+	Wed, 30 Apr 2014 11:48:23 -0400
+Date: Wed, 30 Apr 2014 11:48:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140430114819.03e8c6ce@gandalf.local.home>
+In-Reply-To: <1398870957.5220.2.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	<1397918766.5436.16.camel@marge.simpson.net>
+	<1398411635.11930.45.camel@marge.simpson.net>
+	<1398501491.12941.5.camel@marge.simpson.net>
+	<1398520699.28726.22.camel@marge.simpson.net>
+	<1398661784.30930.33.camel@marge.simpson.net>
+	<1398676186.30930.49.camel@marge.simpson.net>
+	<20140428101805.75032f45@gandalf.local.home>
+	<1398695832.14475.10.camel@marge.simpson.net>
+	<1398748869.5514.81.camel@marge.simpson.net>
+	<20140429201308.63292691@gandalf.local.home>
+	<1398843793.26071.52.camel@marge.simpson.net>
+	<1398863189.26071.97.camel@marge.simpson.net>
+	<20140430091550.1177bc90@gandalf.local.home>
+	<1398866403.26071.125.camel@marge.simpson.net>
+	<20140430101919.70b2f622@gandalf.local.home>
+	<20140430103308.1e46dd18@gandalf.local.home>
+	<1398869686.26071.151.camel@marge.simpson.net>
+	<20140430111100.72a7a71b@gandalf.local.home>
+	<1398870957.5220.2.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140425124602.GF7832@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 09:46:02AM -0300, Gustavo Padovan wrote:
-> Hi John,
-> 
-> Some fixes for 3.15. There is a revert for the intel driver, a new device id,
-> and two important SSP fixes from Johan. This one is rebased on wireless/master.
-> 
-> Please pull or let me know of any concerns you have. Thanks!
-> 	
-> 	Gustavo
-> 
-> ---
-> The following changes since commit ffa216bb5eecfce0f01b0b2a95d5c320dde90005:
-> 
->   brcmfmac: Fix brcmf_chip_ai_coredisable not applying reset bits to BCMA_IOCTL (2014-04-24 21:46:22 -0400)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
-> 
-> for you to fetch changes up to 1fb4e09a7e780b915dbd172592ae7e2a4c071065:
-> 
->   Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-25 09:47:16 +0300)
+On Wed, 30 Apr 2014 17:15:57 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-I pulled this on Friday, but forgot to send an email -- FYI! :-)
+> On Wed, 2014-04-30 at 11:11 -0400, Steven Rostedt wrote:
+> 
+> > > Another little bug.  This hunk of patches/stomp-machine-raw-lock.patch
+> > > should be while (atomic_read(&done.nr_todo)) 
+> > > 
+> > > @@ -647,7 +671,7 @@ int stop_machine_from_inactive_cpu(int (
+> > >         ret = multi_cpu_stop(&msdata);
+> > > 
+> > >         /* Busy wait for completion. */
+> > > -       while (!completion_done(&done.completion))
+> > > +       while (!atomic_read(&done.nr_todo))
+>                    ^--- that ! needs to go away 
+> > 
+> > I don't see this in the code. That is, there is no "completion_done()"
+> > in stop_machine_from_inactive_cpu(). It is already an atomic_read().
+> 
+> Yes, but it should read "while (atomic_read(&done.nr_todo))"
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Ah, this would have been better if you had sent a patch. I misread what
+you talked about.
+
+Yes, this was the culprit of my failures. After removing the '!', it
+worked.
+
+Care to send a patch :-)
+
+-- Steve
