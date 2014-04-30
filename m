@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946104AbaD3WkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 18:40:14 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:60542 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1945984AbaD3WkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 18:40:12 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: peterz@infradead.org, mingo@elte.hu, amit.kucheria@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it out
-Date: Thu, 01 May 2014 00:56:41 +0200
-Message-ID: <2735426.75qSjG3M6Y@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2783362.8r7SvVhudq@vostro.rjw.lan>
-References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org> <2783362.8r7SvVhudq@vostro.rjw.lan>
+	id S965132AbaD3Wqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 18:46:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45841 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965000AbaD3Wqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 18:46:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,960,1389772800"; 
+   d="scan'208";a="532739458"
+Message-ID: <53617D54.2060709@linux.intel.com>
+Date: Wed, 30 Apr 2014 15:46:44 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Salman Qazi <sqazi@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Michal Hocko <mhocko@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        Vojtech Pavlik <vojtech@suse.cz>, Petr Tesarik <ptesarik@suse.cz>,
+        Petr Mladek <pmladek@suse.cz>
+Subject: Re: 64bit x86: NMI nesting still buggy?
+References: <alpine.LNX.2.00.1404291150200.8903@pobox.suse.cz> <535FA920.9080503@linux.intel.com> <alpine.LNX.2.00.1405010008420.10908@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1405010008420.10908@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 01, 2014 12:47:25 AM Rafael J. Wysocki wrote:
-> On Wednesday, April 30, 2014 02:01:02 PM Daniel Lezcano wrote:
-> > Encapsulate the large portion of cpuidle_idle_call inside another
-> > function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
-> > Also that is benefitial for the clarity of the code as it removes
-> > a nested indentation level.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+On 04/30/2014 03:10 PM, Jiri Kosina wrote:
+> On Tue, 29 Apr 2014, H. Peter Anvin wrote:
 > 
-> Well, this conflicts with
+>>> [2] 	"A special case can occur if an SMI handler nests inside an NMI 
+>>> 	 handler and then another NMI occurs. During NMI interrupt 
+>>> 	 handling, NMI interrupts are disabled, so normally NMI interrupts 
+>>>  	 are serviced and completed with an IRET instruction one at a 
+>>> 	 time. When the processor enters SMM while executing an NMI 
+>>> 	 handler, the processor saves the SMRAM state save map but does 
+>>> 	 not save the attribute to keep NMI interrupts disabled. 
+>>> 	 Potentially, an NMI could be latched (while in SMM or upon exit) 
+>>> 	 and serviced upon exit of SMM even though the previous NMI  
+>>> 	 handler has still not completed."
+>>
+>> I believe [2] only applies if there is an IRET executing inside the SMM
+>> handler, which should not normally be the case.  It might also have been
+>> addressed since that was written, but I don't know.
 > 
-> https://patchwork.kernel.org/patch/4071541/
+> Is there any chance that Intel would reveal what's behind this paragraph 
+> and how likely it is to expect such BIOSes in the wild?
 > 
-> which you haven't commented on and I still want cpuidle_select() to be able to
-> return negative values because of
-> 
-> https://patchwork.kernel.org/patch/4089631/
-> 
-> (and I have one more patch on top of these two that requires this).
 
-Moreover (along the lines of Nico said) after https://patchwork.kernel.org/patch/4071541/
-we actually don't need the #ifdef CONFIG_CPU_IDLE in your patch, because cpuidle_select()
-for CONFIG_CPU_IDLE unset is a static inline returning a negative number and the compiler
-should optimize out the blocks that depend on it being non-negative.
+I can ask internally and try to find out.  It  might very well be stale,
+I don't know.
 
-Thanks!
+	-hpa
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
