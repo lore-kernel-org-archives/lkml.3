@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876AbaD3MNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:13:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44577 "EHLO mx1.redhat.com"
+	id S1758898AbaD3MNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:13:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22888 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752098AbaD3MNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:13:05 -0400
-Date: Wed, 30 Apr 2014 14:12:37 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 1/3] perf tools: Cache register accesses for unwind
- processing
-Message-ID: <20140430121237.GB2637@krava.brq.redhat.com>
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
- <1397756352-26694-2-git-send-email-jolsa@redhat.com>
- <1398608961.1689.9.camel@leonhard>
- <20140428094826.GD1109@krava.brq.redhat.com>
- <1398690175.1724.5.camel@leonhard>
- <20140428132420.GD18628@krava.brq.redhat.com>
- <87ha5dotto.fsf@sejong.aot.lge.com>
+	id S1758767AbaD3MNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 08:13:46 -0400
+Date: Wed, 30 Apr 2014 14:13:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mateusz Guzik <mguzik@redhat.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] aio: change exit_aio() to load mm->ioctx_table
+	once and avoid rcu_read_lock()
+Message-ID: <20140430121334.GA7674@redhat.com>
+References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com> <20140429204217.GO14608@kvack.org> <20140429212222.GA28959@kvack.org> <20140429230457.GA4604@mguzik.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87ha5dotto.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140429230457.GA4604@mguzik.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 09:36:19AM +0900, Namhyung Kim wrote:
-> On Mon, 28 Apr 2014 15:24:20 +0200, Jiri Olsa wrote:
-> > On Mon, Apr 28, 2014 at 10:02:55PM +0900, Namhyung Kim wrote:
-> >> Hi Jiri,
-> >> 
-> >> 2014-04-28 (월), 11:48 +0200, Jiri Olsa:
-> >> > On Sun, Apr 27, 2014 at 11:29:21PM +0900, Namhyung Kim wrote:
-> >> > > Hi Jiri,
-> >> > > 
-> >> > > 2014-04-17 (목), 19:39 +0200, Jiri Olsa:
-> >> > > > Caching registers value into an array. Got about 4% speed up
-> >> > > > of perf_reg_value function for report command processing
-> >> > > > dwarf unwind stacks.
-> >> > > 
-> >> > > I'm not familiar with the code base, so probably silly questions:  Where
-> >> > > does the speed up come from?  IOW I don't know what's the difference
-> >> > > between the regs->regs and regs->cached_regs.  And does the cached_regs
-> >> > > contain correct values of registers for each frame?
-> >> > 
-> >> > the current way register's value is accessed is to get its
-> >> > index in the sample's regs array.. based on register's id
-> >> > and the registers mask
-> >> > 
-> >> > so each time you want register value you traverse the registers
-> >> > mask and count reg's index for the sample regs array
-> >> > 
-> >> > this patch does this only once for each register (at the time it's
-> >> > first accessed) and cache its value in the array (cache_regs). The
-> >> > cache_mask is used to identify which regs are already cached.
-> >> 
-> >> That means it'll get the same value everytime it accesses a register in
-> >> frames in a sample?
+On 04/30, Mateusz Guzik wrote:
+>
+> On Tue, Apr 29, 2014 at 05:22:22PM -0400, Benjamin LaHaise wrote:
+> > On Tue, Apr 29, 2014 at 04:42:17PM -0400, Benjamin LaHaise wrote:
+> > > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > >
+> > > Your patch does not apply because it is whitespace damaged.  Please resend
+> > > and verify that it applies with 'git am'.
 > >
-> > right..
-> 
-> Hmm.. I thought it'd be changed somehow as it unwinds frames.
+> > Whoops, it's not whitespace damange, but rather that it doesn't apply with
+> > the other changes that are queued up in the aio-next tree.  You can find a
+> > copy of that tree at git://git.kvack.org/~bcrl/aio-next.git .  The change
+> > that conflicts is an additional parameter to kill_ioctx().
+>
+> While here is there any reason for:
+> rcu_assign_pointer(mm->ioctx_table, NULL);
+>
+> Nothing looks at this pointer afterwards and mm is about to be freed.
 
-nope, it's just sample's user space registers values from the
-time sample was taken
+Yees, and initially I was going to remove it, but this needs "3" in the
+changelog and I am lazy ;)
 
-both libunwind and libdw unwinders keep the registers state
-through the frames unwinding internally
+> I thought it would be used to sanity check that everything was cleared
+> before freeing,
 
-jirka
+Actually, ->mm_count can be > 1, we do not know if we are going to free
+this mm_struct or not.
+
+We do not really need to nullify this ptr anyway, but perhaps it makes
+sense to keep this initialization anyway, I dunno. But I'll change it to
+use RCU_INIT_POINTER(NULL) in v2.
+
+Oleg.
+
