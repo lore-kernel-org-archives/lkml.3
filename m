@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938AbaD3NgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:36:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaD3NgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:36:22 -0400
-Date: Wed, 30 Apr 2014 09:35:55 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
- output fields (v4)
-Message-ID: <20140430133554.GB61249@redhat.com>
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
- <20140422211647.GO8488@redhat.com>
- <87lhuwr2pk.fsf@sejong.aot.lge.com>
- <20140423125828.GL5328@redhat.com>
- <1398346899.1681.18.camel@leonhard>
- <20140424210015.GJ8488@redhat.com>
- <20140428194642.GQ5328@redhat.com>
- <878uqpos3k.fsf@sejong.aot.lge.com>
- <20140429172735.GD32375@redhat.com>
- <874n1bpuzh.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874n1bpuzh.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933637AbaD3Njk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:39:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45506 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaD3Nji (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:39:38 -0400
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Dietmar Eggemann <dietmar.eggemann@arm.com>
+Subject: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in build_sched_groups
+Date: Wed, 30 Apr 2014 14:39:38 +0100
+Message-Id: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-OriginalArrivalTime: 30 Apr 2014 13:39:50.0691 (UTC) FILETIME=[A90AC730:01CF6479]
+X-MC-Unique: 114043014393700501
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id s3UDdoaP007813
 
-On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
-> Hi Don,
-> 
-> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
-> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
-> >> >        /*
-> >> >         * Addresses with no major/minor numbers are assumed to be
-> >> >         * anonymous in userspace.  Sort those on pid then address.
-> >> >         *
-> >> >         * The kernel and non-zero major/minor mapped areas are
-> >> >         * assumed to be unity mapped.  Sort those on address.
-> >> >         */
-> >> >
-> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
-> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
-> >> >            !l_map->ino_generation) {
-> >> >                /* userspace anonymous */
-> >> >
-> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
-> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
-> >> 
-> >> Isn't it necessary to check whether the address is in a same map in case
-> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
-> >> might have same value for different maps.
-> >
-> > That's why I sort on pids here.  Because the anon address might have the
-> > same value for different maps.  The thought was to group all the pid
-> > addresses together to keep things seperated.
-> >
-> > Do you see a different way to solve the problem?  I am not sure al_addr
-> > vs. addr will make much difference here.
-> 
-> I'm not saying to get rid of the pid check, I'm saying that it might
-> need to add another check for maps (i.e. start address) as there might
-> be many maps in a single address space.
+From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
 
-Hmm, I guess I would need to see an example.  While I agree there might be
-many maps in a single address space (/proc/<pid>/maps demonstrates that),
-I understood them to map to a unique location (ie no overlap) unless they
-are shared.
+There is no need to zero struct sched_group member cpumask and struct
+sched_group_power member power since both structures are already allocated
+as zeroed memory in __sdt_alloc().
 
-I am willing to believe I missed scenario when sorting, I just can't think
-of it (so I wouldn't know how to fix it).  That's why I was looking for an
-example to make it more obvious to me.  Sorry for being slow..
+This patch has been tested with
+BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
+in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
+CPU hotplug scenarios.
 
-Cheers,
-Don
+Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+---
+ kernel/sched/core.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9cae286824bb..6bc51aebbf1b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
+ 			continue;
+ 
+ 		group = get_group(i, sdd, &sg);
+-		cpumask_clear(sched_group_cpus(sg));
+-		sg->sgp->power = 0;
+ 		cpumask_setall(sched_group_mask(sg));
+ 
+ 		for_each_cpu(j, span) {
+-- 
+1.7.9.5
+
+
