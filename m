@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaD3BAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 21:00:25 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:61911 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755421AbaD3BAH (ORCPT
+	id S1752806AbaD3BDx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 21:03:53 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43534 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaD3BDw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 21:00:07 -0400
-Subject: [PATCH 4/7] PCI: Don't set BAR to zero if dma_addr_t is too small
-To: linux-pci@vger.kernel.org
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Tue, 29 Apr 2014 19:00:05 -0600
-Message-ID: <20140430010005.13138.18200.stgit@bhelgaas-glaptop.roam.corp.google.com>
-In-Reply-To: <20140430005642.13138.99577.stgit@bhelgaas-glaptop.roam.corp.google.com>
-References: <20140430005642.13138.99577.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Tue, 29 Apr 2014 21:03:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140430004453.GD28969@ubuntumail>
+References: <20140429222913.GD28410@ubuntumail> <53602B84.1020304@mit.edu>
+ <536033A9.5070504@1h.com> <CALCETrVJY6SWjdbqSSCeOo9oid22TnL83v9oDVg06XLZfPkLCw@mail.gmail.com>
+ <20140429234739.GB2997@dakara> <CALCETrXK6N8CLjPtnHVXB-BM_bxNU6e1xYGd=_UKcjKMrR3j0g@mail.gmail.com>
+ <20140430000101.GC2997@dakara> <CALCETrWz2i1xE_t982yA8GG4a-rD4AnU_43YA8cNdC9NpSD4Sg@mail.gmail.com>
+ <20140430002143.GB28969@ubuntumail> <CALCETrVh0hCtiK=9fmEYfUWuz4C1dPq22kvyd=OWFMH5pXGaZw@mail.gmail.com>
+ <20140430004453.GD28969@ubuntumail>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 29 Apr 2014 18:03:31 -0700
+Message-ID: <CALCETrVDiVZeezSLRH7PUQC=eMiqxXnXgCFzmyq9D=RbhyuHsw@mail.gmail.com>
+Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: =?UTF-8?Q?St=C3=A9phane_Graber?= <stgraber@ubuntu.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        lxc-devel <lxc-devel@lists.sourceforge.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a BAR is above 4GB and our dma_addr_t is too small, don't clear the BAR
-to zero: that doesn't disable the BAR, and it makes it more likely that the
-BAR will conflict with things if we turn on the memory enable bit (as we
-will at "out:" if the BIOS left it enabled).
+On Tue, Apr 29, 2014 at 5:44 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> On Tue, Apr 29, 2014 at 5:21 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+>> > Quoting Andy Lutomirski (luto@amacapital.net):
+>> >> > It should be a nonissue so long as we make sure that a file owned by a
+>> >> > uid outside the scope of the container may not be changed even though
+>> >> > fs_owner_uid is set. Otherwise, it's just a matter of chmod +S on say
+>> >> > a shell and anyone who can see the fs from the host will be getting a
+>> >> > root shell (assuming said file is owned by the host's uid 0).
+>> >>
+>> >> I feel like that's too fragile.  I'd rather add a rule that one of
+>> >
+>> > yeah I don't wnat to rush something like that.  I'd rather stash
+>> > the userns of the task which did the mounting and check against
+>> > that.  Note that would make it worthless unless and until we allowed
+>> > mounting from non-init userns, but then we can only claim "our fs
+>> > superblock readers suck and therefore containers can't mount an fs"
+>> > so long before we start to feel some shame and audit them...
+>> >
+>> >> these filesystems always acts like it's nosuid unless you're inside a
+>> >> user namespace that matches fs_owner_uid.
+>> >>
+>> >> Maybe even that is too weird.  How about setuid, setgid, and fcaps
+>> >> only work on mounts that are in mount namespaces that are owned by the
+>> >> current user namespace or one of its parents?  IOW, a struct mount is
+>> >> only trusted if mnt->mnt_ns->user_ns == current user ns or one of its
+>> >> parents?
+>> >>
+>> >> Untrusted mounts would act like they are nosuid,nodev.  Someone can
+>> >> try to figure out a safe way to relax nodev at some point.
+>>
+>> Do you like this variant?  We could add a way for global root to mount
+>> an fs on behalf of a userns.  I'd rather this be more explicit than
+>> just mounting it in a mount ns owned by the user namespace, though.
+>
+> I'm missing something.  Which mnt are you talking about?  A user
+> can just clone a new userns and then clone(CLONE_NEWNS) to get a set
+> of mounts owned by himself...  We need to get a mnt (or a cred or
+> straight to a userns) tied to the first mount of the superblock, istm.
 
-We should also print the BAR info and its original size so we can see what
-happens when we try to assign space to it.
+Sure, but then that user is the only user that ends up trusting the
+mount.  This could end up being surprising, though -- it would be
+weird for a bind mount of an implicitly nosuid mount to end up not
+being nosuid as seen by the mounter.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pci/probe.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+This still feels a bit overcomplicated.  Grr.  I do like that idea
+that, if someone creates a tmpfs mount, sticks a setuid file in it,
+and hands someone outside the namespace an fd to the mount, that the
+file won't be setuid as seen from outside.  This will make using the
+same uids in different containers a lot safer, although it still won't
+really be safe.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 82cd75f6118a..dd710b12d34c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -174,7 +174,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 	u64 l64, sz64, mask64;
- 	u16 orig_cmd;
- 	struct pci_bus_region region, inverted_region;
--	bool bar_too_big = false, bar_disabled = false;
-+	bool bar_too_big = false, bar_too_high = false;
- 
- 	mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
- 
-@@ -254,13 +254,11 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 		}
- 
- 		if ((sizeof(dma_addr_t) < 8) && l) {
--			/* Address above 32-bit boundary; disable the BAR */
--			pci_write_config_dword(dev, pos, 0);
--			pci_write_config_dword(dev, pos + 4, 0);
-+			/* Above 32-bit boundary; try to reallocate */
- 			res->flags |= IORESOURCE_UNSET;
- 			res->start = 0;
- 			res->end = sz64;
--			bar_disabled = true;
-+			bar_too_high = true;
- 			goto out;
- 		} else {
- 			region.start = l64;
-@@ -311,7 +309,10 @@ out:
- 	if (bar_too_big)
- 		dev_err(&dev->dev, "reg 0x%x: can't handle BAR larger than 4GB (size %#010llx)\n",
- 			pos, (unsigned long long) sz64);
--	if (res->flags && !bar_disabled)
-+	if (bar_too_high)
-+		dev_info(&dev->dev, "reg 0x%x: can't handle BAR above 4G (bus address %#010llx)\n",
-+			 pos, (unsigned long long) l64);
-+	if (res->flags)
- 		dev_printk(KERN_DEBUG, &dev->dev, "reg 0x%x: %pR\n", pos, res);
- 
- 	return (res->flags & IORESOURCE_MEM_64) ? 1 : 0;
+Another wart: chroot on a directory in someone else's mount namespace
+works, I think.  That just seems wrong, although I don't immediately
+see how it's a problem.
 
+--Andy
