@@ -1,237 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387AbaD3U2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:28:44 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59940 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758944AbaD3UZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:25:56 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch 1/9] mm: memcontrol: fold mem_cgroup_do_charge()
-Date: Wed, 30 Apr 2014 16:25:35 -0400
-Message-Id: <1398889543-23671-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+	id S1759527AbaD3UbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:31:14 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53790 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759296AbaD3UbM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:31:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 03/15] ARM: dts: kirkwood: add stdout-path property to all boards
+Date: Wed, 30 Apr 2014 22:30:21 +0200
+Message-ID: <142642785.6KSg8q4tJP@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140430202130.GE3082@lunn.ch>
+References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com> <53615342.8010600@gmail.com> <20140430202130.GE3082@lunn.ch>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8cCvyX//wAjTRDl1x5tnZNhVrXtCHZK2bumXNkTW1pV
+ +8kPDOFoimGSLK4HXvtb95mh/TD3CFPMz4pCI8a7oQYeYqoe31
+ XPTFZnzAJkJXo5snCr8qguYbaPdhxHJ90hYEmTHoh/kiKo+jSE
+ agu3fXHPcuidND+x+8vD0QwDbCFgI9PVwQXzN/LBWIcl+xxTez
+ GMS/irMcliw+vr2JbXRWWNdV1ByU4/bnzMcErEnPehbg16BjBD
+ XQ11b22pIT1G1u1NqjnO3tXDq+XB8w+8NpR2FFja/PebcfKs20
+ Btn308WRienyxYpSkie5wGLBPCE5ZdJi6lwHmLTcbDhYWJehR3
+ DupZrTWIXyfXM4IsZVm8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function was split out because mem_cgroup_try_charge() got too
-big.  But having essentially one sequence of operations arbitrarily
-split in half is not good for reworking the code.  Fold it back in.
+On Wednesday 30 April 2014 22:21:30 Andrew Lunn wrote:
+> > Yes, we *can* move it in kirkwood.dtsi, but IMHO we *should* keep it in
+> > the board files. I see the "chosen" node and its properties as _the_
+> > board node.
+> > 
+> > One could argue then, that we should count the memory properties too and
+> > put the most common in the SoC dtsi. But you are right, as UART0 is also
+> > the UART with boot support, it is likely to be always connected to
+> > a more-or-less accessible console output.
+> > 
+> > I really have no strong opinion about it.
+> 
+> Me neithe, but the advantage of putting it in kirkwood.dtsi is that it
+> then does not get forgotten, and is always there for bearbox to use.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 166 ++++++++++++++++++++++----------------------------------
- 1 file changed, 64 insertions(+), 102 deletions(-)
+I would prefer having it in the board.dts file out of principle, but I
+agree it's not very important either way.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 29501f040568..75dfeb8fa98b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2574,80 +2574,6 @@ static int memcg_cpu_hotplug_callback(struct notifier_block *nb,
- 	return NOTIFY_OK;
- }
- 
--
--/* See mem_cgroup_try_charge() for details */
--enum {
--	CHARGE_OK,		/* success */
--	CHARGE_RETRY,		/* need to retry but retry is not bad */
--	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
--	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
--};
--
--static int mem_cgroup_do_charge(struct mem_cgroup *memcg, gfp_t gfp_mask,
--				unsigned int nr_pages, unsigned int min_pages,
--				bool invoke_oom)
--{
--	unsigned long csize = nr_pages * PAGE_SIZE;
--	struct mem_cgroup *mem_over_limit;
--	struct res_counter *fail_res;
--	unsigned long flags = 0;
--	int ret;
--
--	ret = res_counter_charge(&memcg->res, csize, &fail_res);
--
--	if (likely(!ret)) {
--		if (!do_swap_account)
--			return CHARGE_OK;
--		ret = res_counter_charge(&memcg->memsw, csize, &fail_res);
--		if (likely(!ret))
--			return CHARGE_OK;
--
--		res_counter_uncharge(&memcg->res, csize);
--		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
--		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
--	} else
--		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
--	/*
--	 * Never reclaim on behalf of optional batching, retry with a
--	 * single page instead.
--	 */
--	if (nr_pages > min_pages)
--		return CHARGE_RETRY;
--
--	if (!(gfp_mask & __GFP_WAIT))
--		return CHARGE_WOULDBLOCK;
--
--	if (gfp_mask & __GFP_NORETRY)
--		return CHARGE_NOMEM;
--
--	ret = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
--	if (mem_cgroup_margin(mem_over_limit) >= nr_pages)
--		return CHARGE_RETRY;
--	/*
--	 * Even though the limit is exceeded at this point, reclaim
--	 * may have been able to free some pages.  Retry the charge
--	 * before killing the task.
--	 *
--	 * Only for regular pages, though: huge pages are rather
--	 * unlikely to succeed so close to the limit, and we fall back
--	 * to regular pages anyway in case of failure.
--	 */
--	if (nr_pages <= (1 << PAGE_ALLOC_COSTLY_ORDER) && ret)
--		return CHARGE_RETRY;
--
--	/*
--	 * At task move, charge accounts can be doubly counted. So, it's
--	 * better to wait until the end of task_move if something is going on.
--	 */
--	if (mem_cgroup_wait_acct_move(mem_over_limit))
--		return CHARGE_RETRY;
--
--	if (invoke_oom)
--		mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(csize));
--
--	return CHARGE_NOMEM;
--}
--
- /**
-  * mem_cgroup_try_charge - try charging a memcg
-  * @memcg: memcg to charge
-@@ -2664,7 +2590,11 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
- {
- 	unsigned int batch = max(CHARGE_BATCH, nr_pages);
- 	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
--	int ret;
-+	struct mem_cgroup *mem_over_limit;
-+	struct res_counter *fail_res;
-+	unsigned long nr_reclaimed;
-+	unsigned long flags = 0;
-+	unsigned long long size;
- 
- 	if (mem_cgroup_is_root(memcg))
- 		goto done;
-@@ -2683,44 +2613,76 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
- 
- 	if (gfp_mask & __GFP_NOFAIL)
- 		oom = false;
--again:
-+retry:
- 	if (consume_stock(memcg, nr_pages))
- 		goto done;
- 
--	do {
--		bool invoke_oom = oom && !nr_oom_retries;
-+	size = batch * PAGE_SIZE;
-+	if (!res_counter_charge(&memcg->res, size, &fail_res)) {
-+		if (!do_swap_account)
-+			goto done_restock;
-+		if (!res_counter_charge(&memcg->memsw, size, &fail_res))
-+			goto done_restock;
-+		res_counter_uncharge(&memcg->res, size);
-+		mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
-+		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
-+	} else
-+		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
- 
--		/* If killed, bypass charge */
--		if (fatal_signal_pending(current))
--			goto bypass;
-+	if (batch > nr_pages) {
-+		batch = nr_pages;
-+		goto retry;
-+	}
- 
--		ret = mem_cgroup_do_charge(memcg, gfp_mask, batch,
--					   nr_pages, invoke_oom);
--		switch (ret) {
--		case CHARGE_OK:
--			break;
--		case CHARGE_RETRY: /* not in OOM situation but retry */
--			batch = nr_pages;
--			goto again;
--		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
--			goto nomem;
--		case CHARGE_NOMEM: /* OOM routine works */
--			if (!oom || invoke_oom)
--				goto nomem;
--			nr_oom_retries--;
--			break;
--		}
--	} while (ret != CHARGE_OK);
-+	if (!(gfp_mask & __GFP_WAIT))
-+		goto nomem;
- 
--	if (batch > nr_pages)
--		refill_stock(memcg, batch - nr_pages);
--done:
--	return 0;
-+	if (gfp_mask & __GFP_NORETRY)
-+		goto nomem;
-+
-+	nr_reclaimed = mem_cgroup_reclaim(mem_over_limit, gfp_mask, flags);
-+
-+	if (mem_cgroup_margin(mem_over_limit) >= batch)
-+		goto retry;
-+	/*
-+	 * Even though the limit is exceeded at this point, reclaim
-+	 * may have been able to free some pages.  Retry the charge
-+	 * before killing the task.
-+	 *
-+	 * Only for regular pages, though: huge pages are rather
-+	 * unlikely to succeed so close to the limit, and we fall back
-+	 * to regular pages anyway in case of failure.
-+	 */
-+	if (nr_reclaimed && batch <= (1 << PAGE_ALLOC_COSTLY_ORDER))
-+		goto retry;
-+	/*
-+	 * At task move, charge accounts can be doubly counted. So, it's
-+	 * better to wait until the end of task_move if something is going on.
-+	 */
-+	if (mem_cgroup_wait_acct_move(mem_over_limit))
-+		goto retry;
-+
-+	if (fatal_signal_pending(current))
-+		goto bypass;
-+
-+	if (!oom)
-+		goto nomem;
-+
-+	if (nr_oom_retries--)
-+		goto retry;
-+
-+	mem_cgroup_oom(mem_over_limit, gfp_mask, get_order(batch));
- nomem:
- 	if (!(gfp_mask & __GFP_NOFAIL))
- 		return -ENOMEM;
- bypass:
- 	return -EINTR;
-+
-+done_restock:
-+	if (batch > nr_pages)
-+		refill_stock(memcg, batch - nr_pages);
-+done:
-+	return 0;
- }
- 
- /**
--- 
-1.9.2
-
+	Arnd
