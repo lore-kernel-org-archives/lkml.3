@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393AbaD3Jx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:53:29 -0400
-Received: from smtprelay.synopsys.com ([198.182.44.111]:46603 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaD3Jx1 convert rfc822-to-8bit (ORCPT
+	id S933466AbaD3Jxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:53:55 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36157 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaD3Jxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:53:27 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: "stable@vger.kernel.org" <stable@vger.kernel.org>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
-Subject: ARC patches for stable 3.10
-Thread-Topic: ARC patches for stable 3.10
-Thread-Index: Ac9kWfuHs1HsNTuISCm1RIcGFPO6OQ==
-Date: Wed, 30 Apr 2014 09:53:05 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751B1242@IN01WEMBXA.internal.synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.93]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 30 Apr 2014 05:53:54 -0400
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+To: will.deacon@arm.com
+Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>
+Subject: [PATCH v6 3/4] arm64: Add regs_return_value() in syscall.h
+Date: Wed, 30 Apr 2014 18:51:31 +0900
+Message-Id: <1398851492-16345-4-git-send-email-takahiro.akashi@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398851492-16345-1-git-send-email-takahiro.akashi@linaro.org>
+References: <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+ <1398851492-16345-1-git-send-email-takahiro.akashi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This macro, regs_return_value, is used mainly for audit to record system
+call's results, but may also be used in test_kprobes.c.
 
-Please apply the following mainline commits to stable 3.10 as prerequisites for a
-patch for 3.15/stable which will follow to Linus right after.
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+---
+ arch/arm64/include/asm/ptrace.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-147aece29b15051173eb1e767018135361cdba89  (went in 3.11-rc1)
-"ARC: Entry Handler tweaks: Simplify branch for in-kernel preemption"
+diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
+index c7ba261..a429b59 100644
+--- a/arch/arm64/include/asm/ptrace.h
++++ b/arch/arm64/include/asm/ptrace.h
+@@ -135,6 +135,11 @@ struct pt_regs {
+ #define user_stack_pointer(regs) \
+ 	(!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
+ 
++static inline unsigned long regs_return_value(struct pt_regs *regs)
++{
++	return regs->regs[0];
++}
++
+ /*
+  * Are the current registers suitable for user mode? (used to maintain
+  * security in signal handlers)
+-- 
+1.7.9.5
 
-fce16bc35ae4a45634f3dc348d8d297a25c277cf  (went in 3.12-rc1)
-"ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE"
-
-Thx,
--Vineet
