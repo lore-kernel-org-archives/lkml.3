@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758870AbaD3Lma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:42:30 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:57364 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758585AbaD3Lm2 (ORCPT
+	id S1758815AbaD3LqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:46:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45577 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758650AbaD3LqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:42:28 -0400
-Subject: [PATCH v1.0 15/16] arcmsr: modify some strings
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 19:42:20 +0800
-Message-ID: <1398858140.6930.63.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 07:46:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18iSBQGlZE9rzGPlirq5cFrzGbaoP6EIyM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 39CF0567E2B
+Date: Wed, 30 Apr 2014 07:45:48 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Marek Vasut <marex@denx.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency
+ for M25P80)
+Message-ID: <20140430114548.GQ28159@titan.lakedaemon.net>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+ <1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+ <535A8FC9.8040707@wwwdotorg.org>
+ <20140429190603.GB9418@norris-Latitude-E6410>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429190603.GB9418@norris-Latitude-E6410>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+On Tue, Apr 29, 2014 at 12:06:03PM -0700, Brian Norris wrote:
+> Hi Stephen,
+> 
+> On Fri, Apr 25, 2014 at 10:39:37AM -0600, Stephen Warren wrote:
+> > On 04/17/2014 01:21 AM, Brian Norris wrote:
+> > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
+> > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+> > > relevant defconfigs.
+> > > 
+> > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+> > 
+> > I hadn't realized that the problem this patch solves was already present
+> > in the code, so this patch is simply catching up the defconfigs rather
+> > than part of a series which changed the code to cause the problem.
+> 
+> Yes, this is "catching up the defconfigs." The SPI_NOR framework is new,
+> and I didn't want to generate defconfig noise until a few things
+> stabilized (particularly, its Kconfig symbol name).
+> 
+> > So, this needs to be applied ASAP.
+> > 
+> > I think this should be split it up so that each defconfig can go through
+> > the tree that owns it to avoid conflicts. If you repost split up, I can
+> > apply the tegra_defconfig change to the Tegra tree.
+> 
+> OK, I'll try to split it up. Is ARM unique in tracking defconfigs in
+> separate trees? I assume MIPS, PowerPC, and Blackfin won't require the
+> same splitting? I'd like to avoid 31 patches when <20 could suffice.
 
-Modify some strings.
+wrt arm-soc, typically they take all changes to multi_v7_defconfig
+directly since it is prone to conflicts.  All the other ones are managed
+by the individual sub-arch maintainers.
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+> I'll also rebase on linux-next. I think there may be a few conflicts.
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:22:26.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:22:28.000000000 +0800
-@@ -2,11 +2,10 @@
- *******************************************************************************
- **        O.S   : Linux
- **   FILE NAME  : arcmsr_hba.c
--**        BY    : Nick Cheng
--**   Description: SCSI RAID Device Driver for
--**                ARECA RAID Host adapter
-+**        BY    : Nick Cheng, C.L. Huang
-+**   Description: SCSI RAID Device Driver for Areca RAID Controller
- *******************************************************************************
--** Copyright (C) 2002 - 2005, Areca Technology Corporation All rights reserved
-+** Copyright (C) 2002 - 2014, Areca Technology Corporation All rights reserved
- **
- **     Web site: www.areca.com.tw
- **       E-mail: support@areca.com.tw
-@@ -70,8 +69,8 @@
- #include <scsi/scsi_transport.h>
- #include <scsi/scsicam.h>
- #include "arcmsr.h"
--MODULE_AUTHOR("Nick Cheng <support@areca.com.tw>");
--MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/16xx/1880) SATA/SAS RAID Host Bus Adapter");
-+MODULE_AUTHOR("Nick Cheng, C.L. Huang <support@areca.com.tw>");
-+MODULE_DESCRIPTION("Areca ARC11xx/12xx/16xx/188x SAS/SATA RAID Controller Driver");
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_VERSION(ARCMSR_DRIVER_VERSION);
- 
-@@ -126,8 +125,7 @@ static int arcmsr_adjust_disk_queue_dept
- 
- static struct scsi_host_template arcmsr_scsi_host_template = {
- 	.module			= THIS_MODULE,
--	.name			= "ARCMSR ARECA SATA/SAS RAID Controller"
--				ARCMSR_DRIVER_VERSION,
-+	.name			= "Areca SAS/SATA RAID driver",
- 	.info			= arcmsr_info,
- 	.queuecommand		= arcmsr_queue_command,
- 	.eh_abort_handler		= arcmsr_abort,
-@@ -3444,14 +3442,14 @@ static const char *arcmsr_info(struct Sc
- 	case PCI_DEVICE_ID_ARECA_1680:
- 	case PCI_DEVICE_ID_ARECA_1681:
- 	case PCI_DEVICE_ID_ARECA_1880:
--		type = "SAS";
-+		type = "SAS/SATA";
- 		break;
- 	default:
--		type = "X-TYPE";
-+		type = "unknown";
-+		raid6 =	0;
- 		break;
- 	}
--	sprintf(buf, "Areca %s Host Adapter RAID Controller%s\n %s",
--			type, raid6 ? "( RAID6 capable)" : "",
--			ARCMSR_DRIVER_VERSION);
-+	sprintf(buf, "Areca %s RAID Controller %s\narcmsr version %s\n",
-+		type, raid6 ? "(RAID6 capable)" : "", ARCMSR_DRIVER_VERSION);
- 	return buf;
- }
+I can't speak for the other sub-archs, but I typically prefer that
+patches be based on an -rc tag, -rc1 if possible.
 
+thx,
 
+Jason.
