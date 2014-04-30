@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573AbaD3JOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:14:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34885 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758533AbaD3JO3 (ORCPT
+	id S933001AbaD3JP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:15:26 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:51739 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758636AbaD3JPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:14:29 -0400
-Date: Wed, 30 Apr 2014 11:14:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tim Chen <tim.c.chen@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-Message-ID: <20140430091425.GC11096@twins.programming.kicks-ass.net>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
- <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	Wed, 30 Apr 2014 05:15:20 -0400
+Date: Wed, 30 Apr 2014 11:15:15 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
+References: <CA+55aFwJ0mAnkP6rwv3_nDHZ1U3SH_pbRCj-bBN5SdRVR2FCZA@mail.gmail.com>
+ <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
+ <20140429181610.GJ18016@ZenIV.linux.org.uk>
+ <20140429191015.GK18016@ZenIV.linux.org.uk>
+ <20140429211851.GA32204@dastard>
+ <20140429214842.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+ <20140429232013.GM18016@ZenIV.linux.org.uk>
+ <20140430023142.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
-> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
-> +{
-> +	int retval;
-> +	struct task_struct *owner;
-> +
-> +	rcu_read_lock();
-> +	owner = ACCESS_ONCE(sem->owner);
-> +
-> +	/* Spin only if active writer running */
-> +	if (owner)
-> +		retval = owner->on_cpu;
-> +	else {
-> +		/*
-> +		 * When the owner is not set, the sem owner may have just
-> +		 * acquired it and not set the owner yet, or the sem has
-> +		 * been released, or reader active.
-> +		 */
-> +		retval = false;
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return retval;
-> +}
+On Tue, Apr 29, 2014 at 07:56:13PM -0700, Linus Torvalds wrote:
+> On Tue, Apr 29, 2014 at 7:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > OK, aggregate diff follows, more readable splitup (3 commits) attached.
+> > It seems to survive beating here; testing, review and comments are
+> > welcome.
+> 
+> Miklos, did you have some particular load that triggered this, or was
+> it just some reports? It would be really good to get this patch some
+> stress-testing.
+> 
+> I like how the patch removes more lines than it adds, but apart from
+> that it's hard to read the patch (even the split-out ones) and say
+> anything more about it. I think this needs a *lot* of testing.
 
-Also, the mutex case has a need_resched() test in there; any particular
-reason you didn't mirror that?
+IBM is triggering this with the host01 test from the LTP suite.  I haven't yet
+tried to reproduce it.
 
-See 46af29e479cc0 ("locking/mutexes: Return false if task need_resched() in mutex_can_spin_on_owner()")
+Thanks,
+Miklos
