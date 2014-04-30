@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758723AbaD3Jhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:37:31 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:35779 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758507AbaD3Jh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:37:26 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Alexey Charkov'" <alchark@gmail.com>
-CC: Jan Moskyto Matejka <mq@suse.cz>, Roger Luethi <rl@hellgate.ch>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: via-rhine: fix compiler warning
-Thread-Topic: [PATCH] net: via-rhine: fix compiler warning
-Thread-Index: AQHPY9FWWp1qfKJ7c0OzzdAVAe6qrZsp2FVQ///6yYCAABN1cA==
-Date: Wed, 30 Apr 2014 09:35:28 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F702D00@AcuExch.aculab.com>
-References: <1398792971-10379-1-git-send-email-mq@suse.cz>
-	<063D6719AE5E284EB5DD2968C1650D6D0F702C5F@AcuExch.aculab.com>
- <CABjd4YzRTPcy1nbhywuNLb0pz4gPVjhzegZJTc_g+_SVc1XJvw@mail.gmail.com>
-In-Reply-To: <CABjd4YzRTPcy1nbhywuNLb0pz4gPVjhzegZJTc_g+_SVc1XJvw@mail.gmail.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1758740AbaD3Jic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:38:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751983AbaD3Jia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 05:38:30 -0400
+Message-ID: <5360C47F.9090609@redhat.com>
+Date: Wed, 30 Apr 2014 17:38:07 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: "Zhangjie (HZ)" <zhangjie14@huawei.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: davem@davemloft.net, linville@tuxdriver.com, jeffrey.t.kirsher@intel.com,
+        rusty@rustcorp.com.au, mst@redhat.com, qinchuanyu@huawei.com,
+        liuyongan@huawei.com, zhaoshenglong@huawei.com
+Subject: Re: [PATCH net-next] virtio-net: Set needed_headroom for virtio-net
+ when VIRTIO_F_ANY_LAYOUT is true
+References: <535F824A.5060804@huawei.com>
+In-Reply-To: <535F824A.5060804@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3U9bgcH006303
 
-From: Alexey Charkov [mailto:alchark@gmail.com]
- 
-> 2014-04-30 12:49 GMT+04:00 David Laight <David.Laight@aculab.com>:
-> > From: Jan Moskyto Matejka
-> >> Fixed different size cast warning:
-> >>
-> >>       drivers/net/ethernet/via/via-rhine.c: In function rhine_init_one_platform:
-> >>       drivers/net/ethernet/via/via-rhine.c:1132:13: warning: cast from pointer to integer of different
-> >> size [-Wpointer-to-int-cast]
-> >>         revision = (u32)match->data;
-> >>                    ^
-> >>
-> >> That code was added in commit 2d283862dc62daead9db0dc89cd0d0351e91f765
-> >> ("net: via-rhine: add OF bus binding").
-> > ...
-> >> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
-> >> index 4fa9201..76d18e0 100644
-> >> --- a/drivers/net/ethernet/via/via-rhine.c
-> >> +++ b/drivers/net/ethernet/via/via-rhine.c
-> >> @@ -288,7 +288,7 @@ MODULE_DEVICE_TABLE(pci, rhine_pci_tbl);
-> >>   * (for quirks etc.)
-> >>   */
-> >>  static struct of_device_id rhine_of_tbl[] = {
-> >> -     { .compatible = "via,vt8500-rhine", .data = (void *)0x84 },
-> >> +     { .compatible = "via,vt8500-rhine", .data = (u32 []) { 0x84 } },
-> >>       { }     /* terminate list */
-> >>  };
-> >>  MODULE_DEVICE_TABLE(of, rhine_of_tbl);
-> >> @@ -1129,7 +1129,7 @@ static int rhine_init_one_platform(struct platform_device *pdev)
-> >>       if (!irq)
-> >>               return -EINVAL;
-> >>
-> >> -     revision = (u32)match->data;
-> >> +     revision = *((u32 *) match->data);
-> >>       if (!revision)
-> >>               return -EINVAL;
-> >
-> > Both those casts look horrid.
-> > I'm not entirely convinced that the first is valid C - It would have to be
-> > something specific to C99 initialisers.
-> > Casts like *(u32 *)foo are also likely to be bugs (esp. on BE systems)
-> > so themselves start ringing alarm bells.
-> >
-> > So why not just:
-> >         revision = (unsigned long)match->data;
-> > and add a comment that the 0x84 is the revision - #define ??
-> 
-> There is no particular reason why it should be u32 now - this is a
-> leftover from the previous iteration of code where revision was a
-> separate property in DT (sized u32). It actually mirrors the
-> respective field in struct pci_dev, which is u8 - don't see any issue
-> defining it as unsigned long (and also changing the definition in
-> struct rhine_private).
+On 04/29/2014 06:43 PM, Zhangjie (HZ) wrote:
+> This is a small supplement for commit e7428e95a06fb516fac1308bd0e176e27c0b9287
+> ("virtio-net: put virtio-net header inline with data"). TCP packages have
+> enough room to put virtio-net header in, but UDP packages do not. By
+> setting dev->needed_headroom for virtio-net device, UDP packages could have
+> enough room.
+>
+> For UDP packages, sk_buff is alloced in fun __ip_append_data. The size is
+> "alloclen + hh_len + 15", and "hh_len = LL_RESERVED_SPACE(rt-dst.dev);".
+> The Macro is defined as follows:
+> #define LL_RESERVED_SPACE(dev) \
+>      ((((dev)->hard_header_len+(dev)->needed_headroom)\
+>      &~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
+> By default, for UDP packages, after skb is allocated, only 16 bytes
+> reserved. And 2 bytes remained after mac header is set. That is not enough
+> to put virtio-net header in. If we set dev->needed_headroom to 12 or 10
+> (according to mergeable_rx_bufs is on or off ), more room can be reserved.
+> Then there is enough room for UDP packages to put the header in.
+>
+> test result list as below:
+> guest and host: suse11sp3, netperf, intel 2.4GHz
+> +-------+---------+---------+---------+---------+
+> |       |   old             |   new             |
+> +-------+---------+---------+---------+---------+
+> | UDP   |  Gbit/s | pps     |  Gbit/s | pps     |
+> | 64    |  0.57   | 692232  |  0.61   | 742420  |
+> | 256   |  1.60   | 686860  |  1.71   | 733331  |
+> | 512   |  2.92   | 674576  |  3.07   | 710446  |
+> | 1024  |  4.99   | 598977  |  5.17   | 620821  |
+> | 1460  |  5.68   | 483757  |  7.16   | 610519  |
+> | 4096  |  6.98   | 637468  |  7.21   | 658471  |
+> +-------+---------+---------+---------+---------+
+>
+> Signed-off-by: Zhang Jie <zhangjie14@huawei.com>
+> ---
+>  drivers/net/virtio_net.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 8a852b5..b852bb3 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1724,6 +1724,13 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>  		vi->has_cvq = true;
+>
+> +	if (vi->any_header_sg) {
+> +		if (vi->mergeable_rx_bufs)
+> +			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
+> +		else
+> +			dev->needed_headroom = sizeof(struct virtio_net_hdr);
+> +	}
+> +
+>  	/* Use single tx/rx queue pair as default */
+>  	vi->curr_queue_pairs = 1;
+>  	vi->max_queue_pairs = max_queue_pairs;
 
-I'd guess that the field in 'struct rhine_private' only needs to
-be large enough for the domain of the values that are actually
-saved in it.
-If these are versions (of something) then a fixed size type
-(or just int) is probably more appropriate.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Acked-by: Jason Wang <jasowang@redhat.com>
