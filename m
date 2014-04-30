@@ -1,115 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759303AbaD3TCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:02:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49404 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758963AbaD3TCa (ORCPT
+	id S1759271AbaD3THp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:07:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54644 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbaD3THo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:02:30 -0400
-Date: Wed, 30 Apr 2014 20:02:27 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140430190227.GR18016@ZenIV.linux.org.uk>
-References: <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430040436.GO18016@ZenIV.linux.org.uk>
- <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
- <20140430160345.GP18016@ZenIV.linux.org.uk>
- <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
- <20140430183650.GQ18016@ZenIV.linux.org.uk>
- <CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+	Wed, 30 Apr 2014 15:07:44 -0400
+Date: Wed, 30 Apr 2014 12:07:39 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Vojtech Pavlik <vojtech@suse.cz>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Michael Matz <matz@suse.de>,
+        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+Message-ID: <20140430190739.GT8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+ <1398868249-26169-10-git-send-email-jslaby@suse.cz>
+ <20140430165532.GS8754@linux.vnet.ibm.com>
+ <20140430183327.GA3926@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140430183327.GA3926@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14043019-9332-0000-0000-000000A7DC69
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 08:42:01PM +0200, Miklos Szeredi wrote:
+On Wed, Apr 30, 2014 at 08:33:27PM +0200, Vojtech Pavlik wrote:
+> On Wed, Apr 30, 2014 at 09:55:32AM -0700, Paul E. McKenney wrote:
+> > On Wed, Apr 30, 2014 at 04:30:42PM +0200, Jiri Slaby wrote:
+> > > Some threads do not use kthread_should_stop. Before we enable a
+> > > kthread support in kgr, we must make sure all those mark themselves
+> > > safe explicitly.
+> > 
+> > Would it make sense to bury kgr_task_safe() in wait_event_interruptible()
+> > and friends?  The kgr_task_safe() implementation looks pretty lightweight,
+> > so it should not be a performance problem.
+> 
+> For userspace tasks, the kGraft in progress flag is cleared when
+> entering or exiting userspace. At that point it is safe to switch the
+> task to a post-patch world view.
+> 
+> For kernel threads, it's a bit more complicated: They never exit the
+> kernel, they keep executing within the kernel continuously. The
+> kgr_task_safe() call is thus inserted at a location within the main loop
+> where a 'new loop' begins - where there are no dependencies on results
+> of calls of functions from the previous loop.
+> 
+> Hence, putting kgr_task_safe() into every wait_event_interruptible()
+> wouldn't work, only a few of them are at that strategic spot where a
+> 'new loop' can be indicated to kGraft.
+> 
+> The reason kgr_task_safe() is called from within the condition
+> evaluation statement in wait_event_interruptible() in this patch is
+> because we want it to be called as soon as a new loop begins - even if
+> that loop is empty because the condition to stop waiting has not been
+> met.
+> 
+> This also means that kGraft currently cannot patch the main loops of
+> kernel threads themselves as the thread of execution never exits them.
+> 
+> Jiří (Slabý) has some ideas about how to do without calling
+> kgr_task_safe() from within the kernel thread main loops, but for now,
+> the goal is to keep things simple and easy to understand.
 
-> Message-ID: <20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+OK, from an RCU perspective:
 
-I see...  Several points:
-	* I still think that it's better to do handling of "we see
-DCACHE_DENTRY_KILLED already set" in dentry_kill() itself.
-	* in dentry_kill(dentry, 0) we *know* that it's not on a shrink
-list - the caller has just removed it from there and we'd kept ->d_lock
-since that point.   What's more, with that scheme we don't need to bother
-with can_free at all - just grab ->d_lock after ->d_release() call and check
-DCACHE_SHRINK_LIST.  No sense trying to avoid that - in case where we
-could just go ahead and free the sucker, there's neither contention nor
-anybody else interested in that cacheline, so spin_lock(&dentry->d_lock)
-is pretty much free.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-IOW, I'd prefer to do the following (completely untested) on top of 1/6--4/6:
+> > One reason might this might be a bad idea is that there are calls to
+> > wait_event_interruptible() all over the place, which might therefore
+> > constrain where grafting could be safely done.  That would be fair enough,
+> > but does that also imply new constraints on where kthread_should_stop()
+> > can be invoked?  Any new constraints might not be a big deal given that
+> > a very large fraction of the kthreads (and maybe all of them) invoke
+> > kthread_should_stop() from their top-level function, but would be good
+> > to call out.
+> 
+> > So, what is the story?
+> 
+> kGraft currently assumes that kthread_should_stop() is always in a part
+> of the main loop which doesn't carry over effect dependencies from the
+> previous iteration. This is currently true for all the uses of
+> kthread_should_stop(), but indeed it is an additional constraint for the
+> future.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index e482775..82d8eb4 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -489,6 +489,17 @@ relock:
- 		goto relock;
- 	}
- 
-+	if (unlikely(dentry->d_flags & DCACHE_DENTRY_KILLED)) {
-+		if (parent)
-+			spin_unlock(&parent->d_lock);
-+		if (dentry->d_flags & DCACHE_MAY_FREE) {
-+			spin_unlock(&dentry->d_lock);
-+			dentry_free(dentry);
-+		} else {
-+			spin_unlock(&dentry->d_lock);
-+		}
-+		return parent;
-+	}
- 	/*
- 	 * The dentry is now unrecoverably dead to the world.
- 	 */
-@@ -504,8 +515,6 @@ relock:
- 	if (dentry->d_flags & DCACHE_LRU_LIST) {
- 		if (!(dentry->d_flags & DCACHE_SHRINK_LIST))
- 			d_lru_del(dentry);
--		else
--			d_shrink_del(dentry);
- 	}
- 	/* if it was on the hash then remove it */
- 	__d_drop(dentry);
-@@ -527,7 +536,14 @@ relock:
- 	if (dentry->d_op && dentry->d_op->d_release)
- 		dentry->d_op->d_release(dentry);
- 
--	dentry_free(dentry);
-+	spin_lock(&dentry->d_lock);
-+	if (dentry->d_flags & DCACHE_SHRINK_LIST) {
-+		dentry->d_flags |= DCACHE_MAY_FREE;
-+		spin_unlock(&dentry->d_lock);
-+	} else {
-+		spin_unlock(&dentry->d_lock);
-+		dentry_free(dentry);
-+	}
- 	return parent;
- }
- 
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 3b9bfdb..3c7ec32 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -221,6 +221,8 @@ struct dentry_operations {
- #define DCACHE_SYMLINK_TYPE		0x00300000 /* Symlink */
- #define DCACHE_FILE_TYPE		0x00400000 /* Other file type */
- 
-+#define DCACHE_MAY_FREE			0x00800000
-+
- extern seqlock_t rename_lock;
- 
- static inline int dname_external(const struct dentry *dentry)
+Got it.  It would be good to document this.  ;-)
+
+							Thanx, Paul
+
+> Vojtech
+> 
+
