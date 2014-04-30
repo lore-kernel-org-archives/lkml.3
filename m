@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759165AbaD3SNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:13:48 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:58293 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159AbaD3SNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:13:46 -0400
+	id S1759337AbaD3SOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:14:44 -0400
+Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:20364
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752186AbaD3SOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 14:14:43 -0400
+Message-ID: <1398881677.24575.197.camel@snotra.buserror.net>
+Subject: Re: [PATCH] powerpc 32: Provides VIRT_CPU_ACCOUNTING
+From: Scott Wood <scottwood@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Christophe Leroy <christophe.leroy@c-s.fr>,
+        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Date: Wed, 30 Apr 2014 13:14:37 -0500
+In-Reply-To: <1398833787.31586.8.camel@pasglop>
+References: <20140319215241.236B21A4BDE@localhost.localdomain>
+	 <1395266717.12479.293.camel@snotra.buserror.net>
+	 <1398833787.31586.8.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
-References: <53554CDA.1060806@mentor.com>
-	<5357EABB.3070400@zytor.com>
-	<5357F310.8090600@mentor.com>
-	<CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
-	<CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com>
-Date: Wed, 30 Apr 2014 11:13:46 -0700
-Message-ID: <CAGXu5j+96t-AgFj6cy1L1cOLM54nkiiWnpiqWgFemBaP80cR6Q@mail.gmail.com>
-Subject: Re: randomized placement of x86_64 vdso
-From: Kees Cook <keescook@google.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Nathan Lynch <Nathan_Lynch@mentor.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:55b5:c8fb:7ca4:3149]
+X-ClientProxiedBy: BN1PR02CA0043.namprd02.prod.outlook.com (10.141.56.43) To
+ BL2PR03MB388.namprd03.prod.outlook.com (10.141.91.153)
+X-Forefront-PRVS: 0197AFBD92
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(51704005)(199002)(189002)(377424004)(79102001)(83072002)(93916002)(33646001)(86362001)(101416001)(50986999)(50466002)(85852003)(87976001)(20776003)(47776003)(50226001)(81542001)(4396001)(81342001)(99396002)(80022001)(80976001)(74662001)(74502001)(31966008)(62966002)(89996001)(92726001)(77982001)(42186004)(87286001)(23676002)(76176999)(77156001)(92566001)(83322001)(76482001)(46102001)(88136002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB388;H:[IPv6:2601:2:5800:3f7:55b5:c8fb:7ca4:3149];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=scottwood@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 10:52 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Wed, Apr 30, 2014 at 10:47 AM, Kees Cook <keescook@google.com> wrote:
->> On Wed, Apr 23, 2014 at 10:06 AM, Nathan Lynch <Nathan_Lynch@mentor.com> wrote:
->>> On 04/23/2014 11:30 AM, H. Peter Anvin wrote:
->>>> On 04/21/2014 09:52 AM, Nathan Lynch wrote:
->>>>> Hi x86/vdso people,
->>>>>
->>>>> I've been working on adding a vDSO to 32-bit ARM, and Kees suggested I
->>>>> look at x86_64's algorithm for placing the vDSO at a randomized offset
->>>>> above the stack VMA.  I found that when the stack top occupies the
->>>>> last slot in the PTE (is that the right term?), the vdso_addr routine
->>>>> returns an address below mm->start_stack, equivalent to
->>>>> (mm->start_stack & PAGE_MASK).  For instance if mm->start_stack is
->>>>> 0x7fff3ffffc96, vdso_addr returns 0x7fff3ffff000.
->>>>>
->>>>> Since the address returned is always already occupied by the stack,
->>>>> get_unmapped_area detects the collision and falls back to
->>>>> vm_unmapped_area.  This results in the vdso being placed in the
->>>>> address space next to libraries etc.  While this is generally
->>>>> unnoticeable and doesn't break anything, it does mean that the vdso is
->>>>> placed below the stack when there is actually room above the stack.
->>>>> To me it also seems uncomfortably close to placing the vdso in the way
->>>>> of downward expansion of the stack.
->>>>>
->>>>> I don't have a patch because I'm not sure what the algorithm should
->>>>> be, but thought I would bring it up as vdso_addr doesn't seem to be
->>>>> behaving as intended in all cases.
->>>>>
->>>>
->>>> If the stack occupies the last possible page, how can you say there is
->>>> "space above the stack"?
->>>
->>> Sorry for being unclear.  I probably am getting terminology wrong.  What
->>> I'm trying to express is that if the stack top is in the last page of
->>> its last-level page table (which may be the last possible page, but
->>> that's not really the interesting case), vdso_addr returns an address
->>> below mm->start_stack.
->>
->> It seems like this is avoidable, then? From your example, it seems
->> like we lose the separated randomization in this case, but we don't
->> need to? Do you have a suggestion for what could be done to fix this?
->
-> I don't understand why the vDSO should be special here.  Either the
-> standard logic for randomizing the placement of DSOs is good, in which
-> case it should be good for the vDSO too, or I think we should fix it
-> for everything.
+On Wed, 2014-04-30 at 14:56 +1000, Benjamin Herrenschmidt wrote:
+> On Wed, 2014-03-19 at 17:05 -0500, Scott Wood wrote:
+> > On Wed, 2014-03-19 at 22:52 +0100, Christophe Leroy wrote:
+> > > This patch provides VIRT_CPU_ACCOUTING to PPC32 architecture.
+> > > Unlike PPC64, PPC32 doesn't provide the PACA register. Therefore the
+> > > implementation is similar to the one done in the IA64 architecture.
+> > > It is based on additional information added to the Task Info structure.
+> > 
+> > PACA isn't a register -- just a convention for how Linux uses a GPR.
+> > Maybe it's time to use it on PPC32 as well?
+> 
+> PACA is actually a data structure and you really really don't want it
+> on ppc32 :-) Having a register point to current works, having a register
+> point to per-cpu data instead works too (ie, change what we do today),
+> but don't introduce a PACA *please* :-)
 
-The issue is specific to the vdso randomizing-near-the-stack code;
-regular mmap randomization is operating correctly. The reason for
-randomizing stack, vdso, and mmap separately is to avoid correlation
-of leaked offsets in one to the other regions.
+What is special about 64-bit that warrants doing things differently from
+32-bit?
 
--Kees
+What is the difference between PACA and "per-cpu data", other than the
+obscure name?
+ 
+-Scott
 
--- 
-Kees Cook
-Chrome OS Security
+
