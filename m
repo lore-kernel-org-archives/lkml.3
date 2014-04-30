@@ -1,139 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaD3DgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 23:36:12 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40751 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaD3DgK (ORCPT
+	id S1751818AbaD3DpZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 23:45:25 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:52411 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751263AbaD3DpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 23:36:10 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3U3ZSDO011949, This message is accepted by code: ctloc85258
-Message-ID: <53606F49.1000401@realtek.com>
-Date: Wed, 30 Apr 2014 11:34:33 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 29 Apr 2014 23:45:22 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Ulf Hansson <ulf.hansson@linaro.org>
-CC: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        <devel@linuxdriverproject.org>,
+In-Reply-To: <53554846.3070608@zytor.com>
+References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
+ <53554846.3070608@zytor.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Wed, 30 Apr 2014 11:44:41 +0800
+Message-ID: <CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>
+Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by GDB
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, eparis@redhat.com, ak@linux.intel.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
-References: <cover.1398735435.git.micky_ching@realsil.com.cn> <7208467.nZIXMIfPji@wuerfel> <CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com> <201404300228.s3U2S7WA026782@rtits1.realtek.com>
-In-Reply-To: <201404300228.s3U2S7WA026782@rtits1.realtek.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
+        "gdb@sourceware.org" <gdb@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04/29/2014 08:46 PM, Arnd Bergmann wrote:
-> On Tuesday 29 April 2014 13:05:15 Ulf Hansson wrote:
->> On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
->>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
->>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
->>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
->>> :(.text+0x806708): undefined reference to `led_classdev_register'
->>>
->>> This adds an explicit dependency in Kconfig
+On Tue, Apr 22, 2014 at 12:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/21/2014 09:19 AM, Hui Zhu wrote:
+>> }
+>> Now ax is in 32 bits now, need sign-extend to 64 bits.  But
+>> current_thread_info()->status TS_COMPAT is cleared when GDB call "call func1()".
+>> Linux kernel don't know this is a 32 bits task and will not extend it.
+>> Then -ERESTARTSYS is not be handled and go back to user space.
 >>
->> I think the proper solution is to fix the dependency in the driver code instead.
+>> Then the syscall "read" get a errno in ERESTARTSYS.
 >>
->> There are already some ifdefs hackery for making it optional to use
->> leds, apparently that's not working properly.
+>> To fix this issue, I tried to add a local variable to "do_signal" but
+>> it is not works.  The stack is cleared before GDB "continue".
+>> so I make a patch that add "test_thread_flag (TIF_IA32)" to syscall_get_error.
+>>
+>> Signed-off-by: Hui Zhu <hui@codesourcery.com>
+>> ---
+>> --- a/arch/x86/include/asm/syscall.h
+>> +++ b/arch/x86/include/asm/syscall.h
+>> @@ -48,7 +48,8 @@ static inline long syscall_get_error(str
+>>   * TS_COMPAT is set for 32-bit syscall entries and then
+>>   * remains set until we return to user mode.
+>>   */
+>> - if (task_thread_info(task)->status & TS_COMPAT)
+>> + if ((task_thread_info(task)->status & TS_COMPAT)
+>> +    || test_thread_flag (TIF_IA32))
+>>   /*
+>>   * Sign-extend the value so (int)-EFOO becomes (long)-EFOO
+>>   * and will match correctly in comparisons.
 >>
 >
-> Ah, right, I misinterpreted the bug. Here is a new version:
+> No, this is definitely not the right fix.  Your description is
+> incredibly hard to follow, but I feel pretty strongly that the above is
+> at the very best a last resort fix.  TS_COMPAT is a local property
+> whereas TIF_IA32 is global; it is important to keep their respective
+> uses correct.  Mixing them is almost guaranteed to be just plain wrong.
 >
-> 8<---------
->>From 5b5588f8c9b8ded8b296fd32d87b2d118e548a29 Mon Sep 17 00:00:00 2001
-> From: Arnd Bergmann <arnd@arndb.de>
-> Date: Tue, 29 Apr 2014 11:41:40 +0200
-> Subject: [PATCH] mmc: rtsx: usb backend needs LED support
->
-> Building the rtsx USB driver uses the LED classdev base
-> support if available, but that fails if the classdev
-> is a module and the MMC driver is built-in, leading to this
-> link error.
->
-> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
-> :(.text+0x806480): undefined reference to `led_classdev_unregister'
-> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
-> :(.text+0x806708): undefined reference to `led_classdev_register'
->
-> This adds an explicit dependency in Kconfig to ensure that
-> the MMC driver has to be a module if LEDS_CLASS is a module,
-> but still allows it to be built-in if LEDS_CLASS is either
-> disabled or built-in.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->
-> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-> index 92d91fe..68da9b8 100644
-> --- a/drivers/mmc/host/Kconfig
-> +++ b/drivers/mmc/host/Kconfig
-> @@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
->   config MMC_REALTEK_USB
->   	tristate "Realtek USB SD/MMC Card Interface Driver"
->   	depends on MFD_RTSX_USB
-> +	depends on m || LEDS_CLASS!=m
->   	help
->   	  Say Y here to include driver code to support SD/MMC card interface
->   	  of Realtek RTS5129/39 series card reader
->
-> .
+>         -hpa
 >
 
-I think Ulf's idea is to fix the bug by modifying the .c files.
-I really found the problem of my ifdef hackery and it should do 
-something similar in sdhci.c as:
+I am sorry that the root cause of issue has something wrong.
+The right root cause is:
+When inferior call 32 bits syscall "read", Linux kernel function
+"ia32_cstar_target" will set TS_COMPAT to current_thread_info->status.
 
-From: Roger Tseng <rogerable@realtek.com>
-Date: Wed, 30 Apr 2014 11:11:25 +0800
-Subject: [PATCH] mmc: rtsx: fix possible linking error if built-in
+syscall read is interrupt by ctrl-c.   Then the $rax will be set to
+errno -512 in 64 bits.
+And the inferior will be stopped by Linux kernel function ptrace_stop,
+the call trace is:
+#0  freezable_schedule () at include/linux/freezer.h:172
+#1  ptrace_stop (exit_code=exit_code@entry=5, why=why@entry=262148,
+    clear_code=clear_code@entry=0, info=info@entry=0xffff88001d833e78)
+    at kernel/signal.c:1920
+#2  0xffffffff8107ec33 in ptrace_signal (info=0xffff88001d833e78, signr=5)
+    at kernel/signal.c:2157
+#3  get_signal_to_deliver (info=info@entry=0xffff88001d833e78,
+    return_ka=return_ka@entry=0xffff88001d833e58, regs=<optimized out>,
+    cookie=cookie@entry=0x0 <irq_stack_union>) at kernel/signal.c:2269
+#4  0xffffffff81013438 in do_signal (regs=regs@entry=0xffff88001d833f58)
+    at arch/x86/kernel/signal.c:696
+#5  0xffffffff81013a40 in do_notify_resume (regs=0xffff88001d833f58,
+    unused=<optimized out>, thread_info_flags=4) at arch/x86/kernel/signal.c:747
+#6  <signal handler called>
+#7  0x0000000000000000 in irq_stack_union ()
 
-rtsx_usb_sdmmc module uses the LED classdev if available, but the code 
-failed
-to consider the situation that it is built-in and the LED classdev is a 
-module,
-leading to following linking error:
+After that, GDB can control the stopped inferior.
+To call function "func1()" of inferior, GDB need:
+Step 1, save current values of registers ($rax 0xfffffffffffffe00(64 bits -512)
+is cut to 0xfffffe00(32 bits -512) because inferior is a 32 bits program).
+Step 2, change the values of registers.
+Step 3, Push a dummy frame to stack.
+Step 4, set a breakpint in the return address.
 
-   LD      init/built-in.o
-drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
-rtsx_usb_sdmmc.c:(.text+0x2a018e): undefined reference to 
-`led_classdev_unregister'
-drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
-rtsx_usb_sdmmc.c:(.text+0x2a197e): undefined reference to 
-`led_classdev_register'
+When GDB resume the inferior, it will keep execut from ptrace_stop
+with new values of registers that set by GDB.
+And TS_COMPAT inside current_thread_info->status will be cleared when
+inferior switch back to user space.
 
-Fix by excluding such condition when defining macro RTSX_USB_USE_LEDS_CLASS.
+When function "func1()" return, inferior will be stoped by breakpoint
+inferior will be stopped by Linux kernel function "ptrace_stop" again.
+current_thread_info->status will not set TS_COMPAT when inferior swith
+from user space to kernel space because breakpoint handler "int3" doesn't
+has code for that.
 
-Signed-off-by: Roger Tseng <rogerable@realtek.com>
+GDB begin to set saved values of registers back to inferior that use
+function "amd64_collect_native_gregset".  Because this function just
+zero-extend each 32 bits value to 64 bits value before put them to inferior.
+$rax's value is set to 0xfffffe00(32 bits -512) but not
+0xfffffffffffffe00(64 bits -512).
+
+When GDB continue syscall "read" that is interrupted by "ctrl-c", it will
+keep execute from ptrace_stop without "TS_COMPAT".
+Then in Linux kernel function "syscall_get_error", current_thread_info->status
+doesn't have TS_COMPAT and $rax is 0xfffffe00(32 bits -512).  Then in
+function do_signal will not handle this -ERESTARTSYS.
+
+-ERESTARTSYS will be return back to inferior, that is why inferior got a
+errno -ERESTARTSYS.
+
+I made a new patch that before call do_notify_resume(will call do_signal)
+in the int3 handler, set TS_COMPAT to status if this task is TIF_IA32.
+Then after GDB call a function of inferior, it will still has TS_COMPAT.
+
+Signed-off-by: Hui Zhu <hui@codesourcery.com>
 ---
-  drivers/mmc/host/rtsx_usb_sdmmc.c | 3 ++-
-  1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c 
-b/drivers/mmc/host/rtsx_usb_sdmmc.c
-index e11fafa..38bdda5 100644
---- a/drivers/mmc/host/rtsx_usb_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
-@@ -34,7 +34,8 @@
-  #include <linux/mfd/rtsx_usb.h>
-  #include <asm/unaligned.h>
-
--#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
-+#if defined(CONFIG_LEDS_CLASS) || (defined(CONFIG_LEDS_CLASS_MODULE) && \
-+       defined(CONFIG_MMC_REALTEK_USB_MODULE))
-  #include <linux/leds.h>
-  #include <linux/workqueue.h>
-  #define RTSX_USB_USE_LEDS_CLASS
-
-Best regards,
-Roger Tseng
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1545,7 +1545,14 @@ paranoid_userspace:
+  ENABLE_INTERRUPTS(CLBR_NONE)
+  xorl %esi,%esi /* arg2: oldset */
+  movq %rsp,%rdi /* arg1: &pt_regs */
++        testl $_TIF_IA32,%ebx
++        jnz call_do_notify_resume
++        GET_THREAD_INFO(%rcx)
++        orl $TS_COMPAT,TI_status(%rcx)
++call_do_notify_resume:
+  call do_notify_resume
++        GET_THREAD_INFO(%rcx)
++        andl    $~TS_COMPAT,TI_status(%rcx)
+  DISABLE_INTERRUPTS(CLBR_NONE)
+  TRACE_IRQS_OFF
+  jmp paranoid_userspace
