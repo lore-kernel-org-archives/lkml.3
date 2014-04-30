@@ -1,134 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945948AbaD3SaT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:30:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48820 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1945910AbaD3SaQ (ORCPT
+	id S1422683AbaD3SbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:31:13 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:37162 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759024AbaD3SbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:30:16 -0400
-Date: Wed, 30 Apr 2014 11:29:47 -0700
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann Arnd Bergmann <arnd@arndb.de>,
-        Roger Quadros <rogerq@ti.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v4 1/2] Documentation: Add GPIO reset binding to reset
- binding documentation
-Message-ID: <20140430182947.GF3000@lukather>
-References: <1397463709-19405-1-git-send-email-p.zabel@pengutronix.de>
- <20140417115820.GD4132@lukather>
- <1398848062.19894.38.camel@paszta.hi.pengutronix.de>
+	Wed, 30 Apr 2014 14:31:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L+ofChggJdETEG3Y"
-Content-Disposition: inline
-In-Reply-To: <1398848062.19894.38.camel@paszta.hi.pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5j+96t-AgFj6cy1L1cOLM54nkiiWnpiqWgFemBaP80cR6Q@mail.gmail.com>
+References: <53554CDA.1060806@mentor.com> <5357EABB.3070400@zytor.com>
+ <5357F310.8090600@mentor.com> <CAGXu5jKqvmn++UvaYxnN+QRxezv9W4E64ZaAbfTvVJmmyi9L6Q@mail.gmail.com>
+ <CALCETrXze8cL8yr82E8VzoSm59DD04SGNC5AxYj9mS4+M8-uPg@mail.gmail.com> <CAGXu5j+96t-AgFj6cy1L1cOLM54nkiiWnpiqWgFemBaP80cR6Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 30 Apr 2014 11:30:50 -0700
+Message-ID: <CALCETrV3remZK=MgNH83rsgMfmikfGXZj0-x1z0v4MrNAy8=Hg@mail.gmail.com>
+Subject: Re: randomized placement of x86_64 vdso
+To: Kees Cook <keescook@google.com>
+Cc: Nathan Lynch <Nathan_Lynch@mentor.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 30, 2014 at 11:13 AM, Kees Cook <keescook@google.com> wrote:
+> On Wed, Apr 30, 2014 at 10:52 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Wed, Apr 30, 2014 at 10:47 AM, Kees Cook <keescook@google.com> wrote:
+>>> On Wed, Apr 23, 2014 at 10:06 AM, Nathan Lynch <Nathan_Lynch@mentor.com> wrote:
+>>>> On 04/23/2014 11:30 AM, H. Peter Anvin wrote:
+>>>>> On 04/21/2014 09:52 AM, Nathan Lynch wrote:
+>>>>>> Hi x86/vdso people,
+>>>>>>
+>>>>>> I've been working on adding a vDSO to 32-bit ARM, and Kees suggested I
+>>>>>> look at x86_64's algorithm for placing the vDSO at a randomized offset
+>>>>>> above the stack VMA.  I found that when the stack top occupies the
+>>>>>> last slot in the PTE (is that the right term?), the vdso_addr routine
+>>>>>> returns an address below mm->start_stack, equivalent to
+>>>>>> (mm->start_stack & PAGE_MASK).  For instance if mm->start_stack is
+>>>>>> 0x7fff3ffffc96, vdso_addr returns 0x7fff3ffff000.
+>>>>>>
+>>>>>> Since the address returned is always already occupied by the stack,
+>>>>>> get_unmapped_area detects the collision and falls back to
+>>>>>> vm_unmapped_area.  This results in the vdso being placed in the
+>>>>>> address space next to libraries etc.  While this is generally
+>>>>>> unnoticeable and doesn't break anything, it does mean that the vdso is
+>>>>>> placed below the stack when there is actually room above the stack.
+>>>>>> To me it also seems uncomfortably close to placing the vdso in the way
+>>>>>> of downward expansion of the stack.
+>>>>>>
+>>>>>> I don't have a patch because I'm not sure what the algorithm should
+>>>>>> be, but thought I would bring it up as vdso_addr doesn't seem to be
+>>>>>> behaving as intended in all cases.
+>>>>>>
+>>>>>
+>>>>> If the stack occupies the last possible page, how can you say there is
+>>>>> "space above the stack"?
+>>>>
+>>>> Sorry for being unclear.  I probably am getting terminology wrong.  What
+>>>> I'm trying to express is that if the stack top is in the last page of
+>>>> its last-level page table (which may be the last possible page, but
+>>>> that's not really the interesting case), vdso_addr returns an address
+>>>> below mm->start_stack.
+>>>
+>>> It seems like this is avoidable, then? From your example, it seems
+>>> like we lose the separated randomization in this case, but we don't
+>>> need to? Do you have a suggestion for what could be done to fix this?
+>>
+>> I don't understand why the vDSO should be special here.  Either the
+>> standard logic for randomizing the placement of DSOs is good, in which
+>> case it should be good for the vDSO too, or I think we should fix it
+>> for everything.
+>
+> The issue is specific to the vdso randomizing-near-the-stack code;
+> regular mmap randomization is operating correctly. The reason for
+> randomizing stack, vdso, and mmap separately is to avoid correlation
+> of leaked offsets in one to the other regions.
 
---L+ofChggJdETEG3Y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I understand why the offset from the stack to the vDSO should be
+randomized, and why the offset from the stack to, say, glibc should be
+randomized.  What I don't get is why the offset from glibc to the vDSO
+should be randomized but the offset from glibc to openssl should be
+deterministic.  Or am I misunderstanding?
 
-On Wed, Apr 30, 2014 at 10:54:22AM +0200, Philipp Zabel wrote:
-> Hi Maxime,
->=20
-> Am Donnerstag, den 17.04.2014, 13:58 +0200 schrieb Maxime Ripard:
-> > I still feel like we should really treat gpios like just another reset
-> > controller, ie. using the resets property.
->=20
-> I now feel like we really shouldn't. If we do anything but use the
-> generic gpio bindings for reset gpios, we might force every OS or
-> bootloader using the device tree to implement some kind of reset
-> controller framework, even for hardware that only has gpio resets.
-
-Well, we pretty much introduced that requirement already whenever we
-got this framework in the first place.
-
-You can now expect pretty much anything, even a CPU or a timer to have
-a reset property, so you have to handle them anyway.
-
-So I'd be much more in favor of consistency both with other frameworks
-and within the reset framework itself.
-
-> > I understand that you chose this pattern to be pretty much compatible
-> > with what have been done so fare, bu I don't see how to fulfill that
-> > goal completely, since most of the devices are actually using
-> > reset-gpios, but some are using other names too (including
-> > reset-gpio).
->=20
-> Yes, that is a problem that applies to all gpios, not only to reset
-> gpios, though.
-
-Indeed, but you're the only one I can think of that have tried to
-factor the gpio handling in the framework after the facts. All the
-other either have no standards and let the driver deal with it, or
-have explicitly asked for a given property name.
-
-> > So if we can't be fully backward compatible, I don't see the benefit
-> > of being inconsistent with how reset controllers are used in general,
->=20
-> See above.
->=20
-> > and more globally on how gpios are tied for regulators for example.
->=20
-> Reset controllers are rather more similar to gpio or interrupt
-> controllers. Those also have a number of entities per device node,
-> as opposed to regulators.
-
-Well, that depends on the bindings actually. The fact that the reset
-controller can handle several reset lines is dependent of the
-controller itself. And I believe we can say pretty much the same about
-the regulators.
-
-> > That would also make reset-gpio a regular reset driver, instead of
-> > adding logic to the core itself to handle this special case.
->=20
-> Which is what I initially tried and moved away from.
-
-Yeah, I know.
-
-Overall, I'd very much like the DT maintainers to step in on
-this. Especially after the discussion we had again yesterday about the
-stable DT bindings things.
-
-Stable DT bindings only works if the DT maintainers can do some
-arbitration in this case.
-
-Mark? Ping?
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---L+ofChggJdETEG3Y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTYUEbAAoJEBx+YmzsjxAgFWgQALP3iKjnRxCRoOAroZuL/gZj
-WNvR1rvqtZf26r4I0V5r8581m9L3B/Aly6r0BhMDVSGAHNuKYkkE/Uj4uv4ZW1s/
-xPz6GSrLHVMim1awP+3OL2tRUFM3ZJhqdv7JKbIAVNWTsXCC65Afi/b9eb+bcF1W
-3hR/CbP/FYw24vayABlctTwM4R4J/6WD/JM9FO6EJYSKBs08LP9VlZau4sv13nMg
-g3v0w+8MIqGSYayOLdfjMcBj+sWJJVddCIQR3ZQPPNlHDr5o8Tt+Jo6mSUagDzJu
-yhL14tbqdj6PgUviIFfsP+TOU5oPa/gIGJv+oRH9s22hzahK5zSLEJkg2BlgJqBg
-Lwxf395HxsQn1L/svWoylFyy/zq9HZ7a//VHa9TJQXtsHClPdhsH1IfrfOLerFN5
-fiWVVi5SaJ/k+oyTvnJvJCxbowpkRUsq9vsuCw4nWeijb4HKlC8iOMzxqTcrhMc8
-y55bSYQBdksXnY0mOkCQ9ZyirpEDuwAWOak3ZR/SolP339OGkabRYzpHgsOd6HQd
-G1SKy/rOaNhKp6J2/6v2+x0oH3CzqGwI4/NgrJ67HvykNK4m/xLSZOBnj0wmn/RJ
-/vr7BMb1ZjppBYhANL80qAggC1U1D9CfYW5E94P5lGVkp/lp4n9hDQCvcf4Q40o+
-bOTVRh4doviqGhz1HXhV
-=fcIC
------END PGP SIGNATURE-----
-
---L+ofChggJdETEG3Y--
+--Andy
