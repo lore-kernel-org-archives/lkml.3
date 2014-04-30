@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508AbaD3Ujo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:39:44 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:55980 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758872AbaD3Ujm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:39:42 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: David Fries <David@Fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] w1: do not unlock unheld list_mutex in __w1_remove_master_device()
-Date: Thu,  1 May 2014 00:37:58 +0400
-Message-Id: <1398890278-15319-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1759567AbaD3UmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:42:18 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:59318 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759024AbaD3UmR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:42:17 -0400
+Message-ID: <53616081.1070806@kernel.org>
+Date: Wed, 30 Apr 2014 21:43:45 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
+        grundler@chromium.org, t.figa@samsung.com
+Subject: Re: [PATCH 1/5 v3] iio: exynos_adc: use indio_dev->dev structure
+ to handle child nodes
+References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com> <1398850015-17761-2-git-send-email-ch.naveen@samsung.com>
+In-Reply-To: <1398850015-17761-2-git-send-email-ch.naveen@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-w1_process_callbacks() expects to be called with dev->list_mutex held,
-but it is the fact only in w1_process(). __w1_remove_master_device()
-calls w1_process_callbacks() after it releases list_mutex.
-
-The patch fixes __w1_remove_master_device() to acquire list_mutex
-for w1_process_callbacks(). It is implemented by moving
-w1_process_callbacks() functionality to __w1_process_callbacks()
-and adding a wrapper with the old name.
-
-Found by Linux Driver Verification project (linuxtesting.org).
-
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/w1/w1.c |  8 +++++---
- drivers/w1/w1.h | 13 ++++++++++++-
- 2 files changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index ff52618cafbe..e507c51512aa 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -1075,12 +1075,14 @@ static void w1_search_process(struct w1_master *dev, u8 search_type)
- }
- 
- /**
-- * w1_process_callbacks() - execute each dev->async_list callback entry
-+ * __w1_process_callbacks() - execute each dev->async_list callback entry
-  * @dev: w1_master device
-  *
-+ * The w1 master list_mutex must be held.
-+ *
-  * Return: 1 if there were commands to executed 0 otherwise
-  */
--int w1_process_callbacks(struct w1_master *dev)
-+int __w1_process_callbacks(struct w1_master *dev)
- {
- 	int ret = 0;
- 	struct w1_async_cmd *async_cmd, *async_n;
-@@ -1122,7 +1124,7 @@ int w1_process(void *data)
- 		/* Note, w1_process_callback drops the lock while processing,
- 		 * but locks it again before returning.
- 		 */
--		if (!w1_process_callbacks(dev) && jremain) {
-+		if (!__w1_process_callbacks(dev) && jremain) {
- 			/* a wake up is either to stop the thread, process
- 			 * callbacks, or search, it isn't process callbacks, so
- 			 * schedule a search.
-diff --git a/drivers/w1/w1.h b/drivers/w1/w1.h
-index 734dab7fc687..e357321a5e13 100644
---- a/drivers/w1/w1.h
-+++ b/drivers/w1/w1.h
-@@ -341,9 +341,20 @@ extern int w1_max_slave_ttl;
- extern struct list_head w1_masters;
- extern struct mutex w1_mlock;
- 
--extern int w1_process_callbacks(struct w1_master *dev);
-+extern int __w1_process_callbacks(struct w1_master *dev);
- extern int w1_process(void *);
- 
-+static inline int w1_process_callbacks(struct w1_master *dev)
-+{
-+	int ret;
-+
-+	mutex_lock(&dev->list_mutex);
-+	ret = __w1_process_callbacks(dev);
-+	mutex_unlock(&dev->list_mutex);
-+	return ret;
-+}
-+
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __W1_H */
--- 
-1.8.3.2
+On 30/04/14 10:26, Naveen Krishna Chatradhi wrote:
+> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>
+> Using pdev->dev with device_for_each_child() would iterate over all
+> of the children of the platform device and delete them.
+> Thus, causing crashes during module unload.
+>
+> We should be using the indio_dev->dev structure for
+> registering/unregistering child nodes.
+>
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> Reported-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Doug Anderson <dianders@chromium.org>
+This one has been in my fixes-togreg branch for a few days and
+a pull request has gone to Greg.
+> ---
+> Changes since v2:
+> None
+> Changes since v1:
+> Adding Doug's tags
+> v0:
+> This change was tested on top of
+>     https://lkml.org/lkml/2014/4/21/481 from Doug.
+>
+>   drivers/iio/adc/exynos_adc.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index d25b262..affa93f 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -344,7 +344,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>
+>   	exynos_adc_hw_init(info);
+>
+> -	ret = of_platform_populate(np, exynos_adc_match, NULL, &pdev->dev);
+> +	ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
+>   	if (ret < 0) {
+>   		dev_err(&pdev->dev, "failed adding child nodes\n");
+>   		goto err_of_populate;
+> @@ -353,7 +353,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>   	return 0;
+>
+>   err_of_populate:
+> -	device_for_each_child(&pdev->dev, NULL,
+> +	device_for_each_child(&indio_dev->dev, NULL,
+>   				exynos_adc_remove_devices);
+>   	regulator_disable(info->vdd);
+>   	clk_disable_unprepare(info->clk);
+> @@ -369,7 +369,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
+>   	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+>   	struct exynos_adc *info = iio_priv(indio_dev);
+>
+> -	device_for_each_child(&pdev->dev, NULL,
+> +	device_for_each_child(&indio_dev->dev, NULL,
+>   				exynos_adc_remove_devices);
+>   	regulator_disable(info->vdd);
+>   	clk_disable_unprepare(info->clk);
+>
 
