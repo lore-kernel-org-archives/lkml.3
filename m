@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758944AbaD3N0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:26:54 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:39104 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758785AbaD3N0x (ORCPT
+	id S1758970AbaD3N1I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:27:08 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:32978 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752210AbaD3N1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:26:53 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-49-5360fa1a2203
-Message-id: <1398864419.14545.8.camel@AMDC1943>
-Subject: Idea: regulator: Merge s2mpa01 with s2mps11
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sachin Kamat <sachin.kamat@samsung.com>
-Cc: Mark Brown <broonie@linaro.org>, Sangbeom Kim <sbkim73@samsung.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Apr 2014 15:26:59 +0200
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphluLIzCtJLcpLzFFi42I5/e/4VV2pXwnBBn8Wa1psun6d1eLyrjls
-	FlcunWKzuLjiC5MDi8eda3vYPPq2rGL0+LxJLoA5issmJTUnsyy1SN8ugSvj0KMVjAVnmCtO
-	dS5nb2B8xdTFyMEhIWAi8fRFeRcjJ5ApJnHh3nq2LkYuDiGBpYwS20+/ZYdwPjNK/G1uZQWp
-	4hXQl3h16i8biC0M1Dzv7wUwm03AWGLz8iVgtoiAtsT89suMIDazQLrEp9dfWUBsFgFVid+N
-	86Di6hKT5i1ihtisLDFv/zEmiPmCEj8m32OBqJGX2LzmLfMERr5ZSFpmISmbhaRsASPzKkbR
-	1NLkguKk9FxDveLE3OLSvHS95PzcTYyQEPyyg3HxMatDjAIcjEo8vAJb44OFWBPLiitzDzFK
-	cDArifDy3U8IFuJNSaysSi3Kjy8qzUktPsTIxMEp1cDYeNFjAb9pbHLIFqO9n3LPTjp548T1
-	FZ2tm6YaWszRUwza9zFNxIvh2rENn/dVPJjX5MNt3bv7Qe0l4dTbbFfZsgwFVCyV/Ssy67y2
-	xD5Pj/tdr9kwRUH+f6bVCl5vg8W3mEJDnngV/WXYarZl9ukT3xY57ZnUFb6kYGXU03kLVrBL
-	iqZOiH6sxFKckWioxVxUnAgAf5LYDR8CAAA=
+	Wed, 30 Apr 2014 09:27:07 -0400
+Date: Wed, 30 Apr 2014 14:26:28 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        John Stultz <john.stultz@linaro.org>, Theodore Ts o <tytso@mit.edu>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] sched_clock: also call
+ register_current_timer_delay() if possible
+Message-ID: <20140430132628.GC15719@arm.com>
+References: <1398860614-29469-1-git-send-email-bigeasy@linutronix.de>
+ <20140430124800.GC21876@arm.com>
+ <5360F42C.9080401@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5360F42C.9080401@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Sachin,
+On Wed, Apr 30, 2014 at 02:01:32PM +0100, Sebastian Andrzej Siewior wrote:
+> On 04/30/2014 02:48 PM, Will Deacon wrote:
+> > Hi Sebastian,
+> 
+> Hi Will,
+> 
+> > As long as sched_clock is guaranteed to be a fixed frequency, always-on
+> > clocksource then this could work, but it removes the flexibility of having
+> > a separate delay clock and sched clock (is this useful?).
+> 
+> 
+> 
+> > Looking at your patch, I noticed that we need to extend the
+> > register_current_timer_delay function to deal with clocks that aren't as
+> > wide as cycle_t, otherwise we don't delay() for long enough when the clock
+> > overflows (this is potentially already an issue for architected timers <
+> > 64-bit). Could you cook a patch for that please?
+> 
+> Sure, I would change the type from long to u64 and fix all users. Would
+> that be okay for you?
 
+I don't think that's the problem I was referring to. What I mean is that a
+clocksource might overflow at any number of bits, so the delay calculation
+needs to take this into account when it does:
 
-The S2MPA01 and S2MPS1X PMICs regulator drivers look quite similar to
-each other. Most of the S2MPA01 driver is the same as S2MPS11 (except
-changes added for supporting S2MPS14).
+	while ((get_cycles() - start) < cycles)
 
-I would like to merge these drivers into one. However I do not have
-neither any board with S2MPA01 nor S2MPA01 datasheet.
+because a premature overflow from get_cycles() will cause us to return
+early. The solution is to mask the result of the subtraction before the
+comparison to match the width of the clock.
 
-What do you think about merging them? Could you test it later when I
-will finish the development?
-
-
-Best regards,
-Krzysztof
-
+Will
