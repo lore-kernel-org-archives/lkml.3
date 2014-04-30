@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402AbaD3QTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:19:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16591 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbaD3QTs (ORCPT
+	id S1759421AbaD3QXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:23:11 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:39121 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759198AbaD3QXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:19:48 -0400
-Date: Wed, 30 Apr 2014 19:19:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        devel@acpica.org,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
-Message-ID: <20140430161927.GW4963@mwanda>
-References: <20140430150844.GA10621@mwanda>
- <CAGXu5jL+VLb_+ZJd6-L5P+Bdxmw+i7j2cLyPOT4rwfE6iqHuRA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jL+VLb_+ZJd6-L5P+Bdxmw+i7j2cLyPOT4rwfE6iqHuRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 30 Apr 2014 12:23:09 -0400
+Message-ID: <1398874984.2618.2.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+Date: Wed, 30 Apr 2014 09:23:04 -0700
+In-Reply-To: <20140430091425.GC11096@twins.programming.kicks-ass.net>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	 <20140430091425.GC11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 08:33:21AM -0700, Kees Cook wrote:
-> On Wed, Apr 30, 2014 at 8:08 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > +#if CONFIG_DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> > +#define strcpy(dest, src) do {                                         \
-> > +       int len = __compiletime_size(dest);                             \
-> > +       if (len > 1 && strlen(src) >= len)                              \
-> > +               WARN_ONCE(1, "strcpy() overflow copying \"%s\"\n", src);        \
+On Wed, 2014-04-30 at 11:14 +0200, Peter Zijlstra wrote:
+> On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
+> > +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> > +{
+> > +	int retval;
+> > +	struct task_struct *owner;
+> > +
+> > +	rcu_read_lock();
+> > +	owner = ACCESS_ONCE(sem->owner);
+> > +
+> > +	/* Spin only if active writer running */
+> > +	if (owner)
+> > +		retval = owner->on_cpu;
+> > +	else {
+> > +		/*
+> > +		 * When the owner is not set, the sem owner may have just
+> > +		 * acquired it and not set the owner yet, or the sem has
+> > +		 * been released, or reader active.
+> > +		 */
+> > +		retval = false;
+> > +	}
+> > +	rcu_read_unlock();
+> > +
+> > +	return retval;
+> > +}
 > 
-> This should probably BUG. An overflowing strcpy shouldn't be allowed
-> to continue.
+> Also, the mutex case has a need_resched() test in there; any particular
+> reason you didn't mirror that?
 
-I was worried about false positives.
-
-Speaking of false positives the STRICT checks on copy_from_user() have
-been disabled for a year now because of a three year old GCC bug.  I
-wonder if the GCC people realize the security impact it has.  See
-commit 2fb0815c9ee6 ('gcc4: disable __compiletime_object_size for GCC
-4.6+') and http://gcc.gnu.org/bugzilla/show_bug.cgi?id=48880
-
-> > +config DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> > +       bool "Strict checks for strcpy() overflows"
-> > +       depends on DEBUG_KERNEL
-> > +       help
-> > +         Enabling this option adds some extra sanity checks when strcpy() is
-> > +         called().  This will slow down the kernel a bit.
-> 
-> Isn't this an entirely compile-time check? I would expect it to be
-> entirely optimized by the compiler. In fact, could this be turned into
-> a build failure instead?
-
-No.  The problem is when we don't know the size of the src string.  Also
-if GCC is able to find the compile time size of both the src and
-dest string then Smatch and other static checkers are able to as well so
-I'm not very concerned about that case because we already catch them.
-
-regards,
-dan carpenter
+Good catch. I had made sure we have it in rwsem_optimistic_spin() but
+overlooked this function, will update.
 
