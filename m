@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409AbaD3Rtk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:49:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34621 "EHLO mx1.redhat.com"
+	id S1945926AbaD3RuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:50:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1794 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758905AbaD3Rtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:49:39 -0400
-Message-ID: <53613793.6070600@redhat.com>
-Date: Wed, 30 Apr 2014 18:49:07 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Kettenis <mark.kettenis@xs4all.nl>
-CC: hpa@zytor.com, pinskia@gmail.com, teawater@gmail.com, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, eparis@redhat.com,
-        ak@linux.intel.com, linux-kernel@vger.kernel.org, gdb@sourceware.org
-Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by
- GDB
-References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>	<53554846.3070608@zytor.com>	<CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>	<53608125.2020103@zytor.com> <CA+=Sn1=y-smZOaD_yRxEwgu-PPaZYdQtB_RGPCA5-9wmB6=hvQ@mail.gmail.com> <536085B7.5070002@zytor.com> <201404301335.s3UDZX4J017978@glazunov.sibelius.xs4all.nl>
-In-Reply-To: <201404301335.s3UDZX4J017978@glazunov.sibelius.xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758905AbaD3RuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 13:50:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,959,1389772800"; 
+   d="scan'208";a="503855700"
+Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20140430082715.GA11096@twins.programming.kicks-ass.net>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	 <20140430082715.GA11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Apr 2014 10:50:09 -0700
+Message-ID: <1398880209.2970.100.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 02:35 PM, Mark Kettenis wrote:
->> Date: Tue, 29 Apr 2014 22:10:15 -0700
->> From: "H. Peter Anvin" <hpa@zytor.com>
->>
->> On 04/29/2014 10:08 PM, Andrew Pinski wrote:
->>>
->>> restoring the values is hard since even the ptrace interface does not
->>> allow for that.
->>>
->>
->> So that begs the ultimate question, which is: given the fact that there
->> is *state missing* from the state vector (this is the core of the
->> problem), is there a way we can add that state so that gdb will be able
->> to save and restore it?
+On Wed, 2014-04-30 at 10:27 +0200, Peter Zijlstra wrote:
+> On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
+> > +/*
+> > + * Try to acquire write lock before the writer has been put on wait queue.
+> > + */
+> > +static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> > +{
+> > +	long count = ACCESS_ONCE(sem->count);
+> > +retry:
+> > +	if (count == RWSEM_WAITING_BIAS) {
+> > +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> > +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
+> > +		/* allow write lock stealing, try acquiring the write lock. */
+> > +		if (count == RWSEM_WAITING_BIAS)
+> > +			goto acquired;
+> > +		else if (count == 0)
+> > +			goto retry;
+> > +	} else if (count == 0) {
+> > +		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
+> > +		if (count == 0)
+> > +			goto acquired;
+> > +		else if (count == RWSEM_WAITING_BIAS)
+> > +			goto retry;
+> > +	}
+> > +	return false;
+> > +
+> > +acquired:
+> > +	return true;
+> > +}
 > 
-> Carrying around additional state in GDB is complicated; I'd rather
-> avoid it.
-
-Agreed very much.
-
-> arch/x86/kernel/ptrace.c:putreg32() has this bit of code:
+> Could we have written that like:
 > 
->         case offsetof(struct user32, regs.orig_eax):
->                 /*
->                  * A 32-bit debugger setting orig_eax means to restore
->                  * the state of the task restarting a 32-bit syscall.
->                  * Make sure we interpret the -ERESTART* codes correctly
->                  * in case the task is not actually still sitting at the
->                  * exit from a 32-bit syscall with TS_COMPAT still set.
->                  */
->                 regs->orig_ax = value;
->                 if (syscall_get_nr(child, regs) >= 0)
->                         task_thread_info(child)->status |= TS_COMPAT;
->                 break;
+> static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> {
+> 	long old, count = ACCESS_ONCE(sem->count);
 > 
-> which gets used for 32-bit compat ptrace(2).  Perhaps the same logic
-> should be added to putreg() if the child is a 32-bit process?
+> 	for (;;) {
+> 		if (!(count == 0 || count == RWSEM_WAITING_BIAS))
+> 			return false;
+> 
+> 		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
 
-Sounds like the right fix to me.
+Above line won't be correct for the case when count == 0.  We are trying 
+to acquire write lock, so the sem->count should become
+RWSEM_ACTIVE_WRITE_BIAS, or RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS.  
+So we should change the logic to
 
--- 
-Pedro Alves
+		  if (count == RWSEM_WAITING_BIAS)
+			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
+		  else
+			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
+
+> 		if (old == count)
+> 			return true;
+> 
+> 		count = old;
+> 	}
+> }
+> 
+> ?
+> 
+> Just checking my brain got all the branches untangled right :-)
+
+Thanks.
+
+Tim
 
