@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945954AbaD3Rgs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:36:48 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42297 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422723AbaD3Rgr (ORCPT
+	id S1945975AbaD3Rje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:39:34 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:53074 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945926AbaD3Rjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:36:47 -0400
-Date: Wed, 30 Apr 2014 13:36:45 -0400 (EDT)
-Message-Id: <20140430.133645.1431735801141049226.davem@davemloft.net>
-To: kys@microsoft.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Subject: Re: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on
- the send path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1398878071-21307-1-git-send-email-kys@microsoft.com>
-References: <1398878071-21307-1-git-send-email-kys@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 30 Apr 2014 10:36:47 -0700 (PDT)
+	Wed, 30 Apr 2014 13:39:33 -0400
+Date: Wed, 30 Apr 2014 13:39:28 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: peterz@infradead.org, mingo@elte.hu, linaro-kernel@lists.linaro.org,
+        linux-pm@vger.kernel.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] sched: idle: Encapsulate the code to compile it
+ out
+In-Reply-To: <1398342291-16322-2-git-send-email-daniel.lezcano@linaro.org>
+Message-ID: <alpine.LFD.2.11.1404301311390.980@knanqh.ubzr>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <1398342291-16322-2-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-Date: Wed, 30 Apr 2014 10:14:31 -0700
+On Thu, 24 Apr 2014, Daniel Lezcano wrote:
 
-> We send packets using a copy-free mechanism (this is the Guest to Host transport
-> via VMBUS). While this is obviously optimal for large packets,
-> it may not be optimal for small packets. Hyper-V host supports
-> a second mechanism for sending packets that is "copy based". We implement that
-> mechanism in this patch.
-> 
-> In this version of the patch I have addressed a comment from David Miller.
-> 
-> With this patch (and all of the other offload and VRSS patches), we are now able
-> to almost saturate a 10G interface between Linux VMs on Hyper-V
-> on different hosts - close to  9 Gbps as measured via iperf.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Encapsulate the large portion of cpuidle_idle_call inside another
+> function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
+> Also that is benefitial for the clarity of the code as it removes
+> a nested indentation level.
 
-Applied.
+I agree with the nesting level concern.
+
+However I dislike the proliferation of #ifdef's in the main code. Those 
+added in this patch are unnecessary. We want as much compilation 
+coverage as possible.
+
+With cpuidle_enabled() already hardcoded to return -ENODEV when 
+CONFIG_CPU_IDLE=n, the compiler should already be smart enough to 
+optimize away all the redundant code in that case.  You may look at the 
+assembly output from the compiler if you're not sure.
+
+And if you're still not trusting the compiler then the second best 
+option is to use IS_ENABLED(CONFIG_CPU_IDLE) inside some if statement.
+
+
+Nicolas
