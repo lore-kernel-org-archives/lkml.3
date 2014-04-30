@@ -1,107 +1,667 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945923AbaD3QX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:23:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33054 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965086AbaD3QXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:23:46 -0400
-Date: Wed, 30 Apr 2014 11:23:18 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH v8 17/20] usb: phy: msm: Select secondary PHY via TCSR
-Message-ID: <20140430162318.GJ23679@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
- <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3bvv0EcKsvvYeex"
-Content-Disposition: inline
-In-Reply-To: <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S965126AbaD3QZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:25:55 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60759 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759076AbaD3QZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:25:53 -0400
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+To: a.zummo@towertech.it, rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
+Date: Wed, 30 Apr 2014 21:55:07 +0530
+Message-Id: <1398875107-19450-1-git-send-email-ravi23ganiga@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---u3bvv0EcKsvvYeex
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a patch to add support for
+maxim dallas rtc ds1343 and ds1344
 
-On Mon, Apr 28, 2014 at 04:34:20PM +0300, Ivan T. Ivanov wrote:
-> From: Tim Bird <tbird20d@gmail.com>
->=20
-> Select the secondary PHY using the TCSR register, if phy-num=3D1
-> in the DTS (or phy_number is set in the platform data).  The
-> SOC has 2 PHYs which can be used with the OTG port, and this
-> code allows configuring the correct one.
->=20
-> Note: This resolves the problem I was seeing where I couldn't
-> get the USB driver working at all on a dragonboard, from cold
-> boot.  This patch depends on patch 5/14 from Ivan's msm USB
-> patch set.  It does not use DT for the register address, as
-> there's no evidence that this address changes between SoC
-> versions.
->=20
-> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
-> ---
->  drivers/usb/phy/phy-msm-usb.c    | 14 ++++++++++++++
->  include/linux/usb/msm_hsusb_hw.h |  3 +++
->  2 files changed, 17 insertions(+)
->=20
-> diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-> index db8d963..9437bcf 100644
-> --- a/drivers/usb/phy/phy-msm-usb.c
-> +++ b/drivers/usb/phy/phy-msm-usb.c
-> @@ -1489,6 +1489,7 @@ static int msm_otg_probe(struct platform_device *pd=
-ev)
->  	struct resource *res;
->  	struct msm_otg *motg;
->  	struct usb_phy *phy;
-> +	void __iomem *phy_select;
->=20
->  	motg =3D devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
->  	if (!motg) {
-> @@ -1553,6 +1554,19 @@ static int msm_otg_probe(struct platform_device *p=
-dev)
->  	if (IS_ERR(motg->regs))
->  		return PTR_ERR(motg->regs);
->=20
-> +	/*
-> +	 * NOTE: The PHYs can be multiplexed between the chipidea controller
-> +	 * and the dwc3 controller, using a single bit. It is important that
-> +	 * the dwc3 driver does not set this bit in an incompatible way.
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/rtc/Kconfig      |   10 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-ds1343.c |  594 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 605 insertions(+)
+ create mode 100644 drivers/rtc/rtc-ds1343.c
 
-why would dwc3 access the PHY's address space ?
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 2e565f8..eb5cdcb 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -573,6 +573,16 @@ config RTC_DRV_DS1305
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-ds1305.
+ 
++config RTC_DRV_DS1343
++	tristate "Dallas/Maxim DS1343/DS1344"
++	help
++	  If you say yes here you get support for the
++	  Dallas/Maxim DS1343 and DS1344 real time clock chips.
++	  Support for trickle charger, alarm is provided.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-ds1343.
++
+ config RTC_DRV_DS1347
+ 	tristate "Dallas/Maxim DS1347"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 40a0991..a8daf6c 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
+ obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
+ obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
+ obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
++obj-$(CONFIG_RTC_DRV_DS1343)	+= rtc-ds1343.o
+ obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
+ obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
+ obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
+diff --git a/drivers/rtc/rtc-ds1343.c b/drivers/rtc/rtc-ds1343.c
+new file mode 100644
+index 0000000..97552fb
+--- /dev/null
++++ b/drivers/rtc/rtc-ds1343.c
+@@ -0,0 +1,594 @@
++/* rtc-ds1343.c
++ *
++ * Driver for Dallas Semiconductor DS1343 Low Current, SPI Compatible
++ * Real Time Clock
++ *
++ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/spi/spi.h>
++#include <linux/regmap.h>
++#include <linux/rtc.h>
++#include <linux/bcd.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++
++#define DS1343_DRV_VERSION	"01.00"
++#define DALLAS_MAXIM_DS1343	0
++#define DALLAS_MAXIM_DS1344	1
++
++/* RTC DS1343 Registers */
++#define DS1343_SECONDS_REG	0x00
++#define DS1343_MINUTES_REG	0x01
++#define DS1343_HOURS_REG	0x02
++#define DS1343_DAY_REG		0x03
++#define DS1343_DATE_REG		0x04
++#define DS1343_MONTH_REG	0x05
++#define DS1343_YEAR_REG		0x06
++#define DS1343_ALM0_SEC_REG	0x07
++#define DS1343_ALM0_MIN_REG	0x08
++#define DS1343_ALM0_HOUR_REG	0x09
++#define DS1343_ALM0_DAY_REG	0x0A
++#define DS1343_ALM1_SEC_REG	0x0B
++#define DS1343_ALM1_MIN_REG	0x0C
++#define DS1343_ALM1_HOUR_REG	0x0D
++#define DS1343_ALM1_DAY_REG	0x0E
++#define DS1343_CONTROL_REG	0x0F
++#define DS1343_STATUS_REG	0x10
++#define DS1343_TRICKLE_REG	0x11
++
++/* DS1343 Control Registers bits */
++#define DS1343_EOSC		0x80
++#define DS1343_DOSF		0x20
++#define DS1343_EGFIL		0x10
++#define DS1343_SQW		0x08
++#define DS1343_INTCN		0x04
++#define DS1343_A1IE		0x02
++#define DS1343_A0IE		0x01
++
++/* DS1343 Status Registers bits */
++#define DS1343_OSF		0x80
++#define DS1343_IRQF1		0x02
++#define DS1343_IRQF0		0x01
++
++/* DS1343 Trickle Charger Registers bits */
++#define DS1343_TRICKLE_MAGIC	0xa0
++#define DS1343_TRICKLE_DS1	0x08
++#define DS1343_TRICKLE_1K	0x01
++#define DS1343_TRICKLE_2K	0x02
++#define DS1343_TRICKLE_4K	0x03
++
++static const struct spi_device_id ds1343_id[] = {
++	{ "ds1343", DALLAS_MAXIM_DS1343 },
++	{ "ds1344", DALLAS_MAXIM_DS1344 },
++	{ }
++};
++MODULE_DEVICE_TABLE(spi, ds1343_id);
++
++struct ds1343_priv {
++	struct spi_device *spi;
++	struct rtc_device *rtc;
++	struct regmap *map;
++	struct mutex mutex;
++	unsigned int irqen;
++	int alarm_sec;
++	int alarm_min;
++	int alarm_hour;
++	int alarm_mday;
++};
++
++static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++#ifdef RTC_SET_CHARGE
++	case RTC_SET_CHARGE:
++	{
++		int val;
++
++		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
++			return -EFAULT;
++
++		return regmap_write(priv->map, DS1343_TRICKLE_REG, val);
++	}
++	break;
++#endif
++	}
++
++	return -ENOIOCTLCMD;
++}
++
++#ifdef CONFIG_PROC_FS
++
++static int ds1343_proc(struct device *dev, struct seq_file *seq)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	unsigned int data;
++	unsigned char alarm_mode = 0;
++	const char *alarm_str, *diodes = "disabled", *resistors = " ";
++
++	regmap_read(priv->map, DS1343_CONTROL_REG, &data);
++
++	seq_printf(seq,
++			"oscillator\t: %s\n"
++			"disable_oscillator_stop_flag\t: %s\n"
++			"glitch_filter\t: %s\n"
++			"square_wave\t: %s\n"
++			"alarm_enable\t: %s\n",
++			(data & DS1343_EOSC) ? "disabled" : "enabled",
++			(data & DS1343_DOSF) ? "disabled" : "enabled",
++			(data & DS1343_EGFIL) ? "enabled" : "disabled",
++			(data & DS1343_SQW) ? "enabled" : "disabled",
++			(data & DS1343_A0IE) ? "enabled" : "disabled");
++
++	regmap_read(priv->map, DS1343_ALM0_SEC_REG, &data);
++	alarm_mode = (data & 0x80) >> 4;
++
++	regmap_read(priv->map, DS1343_ALM0_MIN_REG, &data);
++	alarm_mode |= (data & 0x80) >> 5;
++
++	regmap_read(priv->map, DS1343_ALM0_HOUR_REG, &data);
++	alarm_mode |= (data & 0x80) >> 6;
++
++	regmap_read(priv->map, DS1343_ALM0_DAY_REG, &data);
++	alarm_mode |= (data & 0x80) >> 7;
++
++	switch (alarm_mode) {
++	case 15:
++		alarm_str = "each second";
++		break;
++
++	case 7:
++		alarm_str = "seconds match";
++		break;
++
++	case 3:
++		alarm_str = "minutes and seconds match";
++		break;
++
++	case 1:
++		alarm_str = "hours, minutes and seconds match";
++		break;
++
++	case 0:
++		alarm_str = "day, hours, minutes and seconds match";
++		break;
++
++	default:
++		alarm_str = "invalid";
++		break;
++	}
++
++	seq_printf(seq, "alarm_mode\t: %s\n", alarm_str);
++
++	regmap_read(priv->map, DS1343_STATUS_REG, &data);
++	seq_printf(seq,
++			"alarm_pending\t: %s\n"
++			"oscillator_stop_flag\t: %s\n",
++			(data & DS1343_IRQF0) ? "yes" : "no",
++			(data & DS1343_OSF) ? "1" : "0");
++
++	regmap_read(priv->map, DS1343_TRICKLE_REG, &data);
++
++	if ((data & 0xf0) == DS1343_TRICKLE_MAGIC) {
++		switch (data & 0x0c) {
++		case DS1343_TRICKLE_DS1:
++			diodes = "one diode,";
++			break;
++
++		default:
++			diodes = "no diode,";
++			break;
++		}
++
++		switch (data & 0x03) {
++		case DS1343_TRICKLE_1K:
++			resistors = "1k Ohm";
++			break;
++
++		case DS1343_TRICKLE_2K:
++			resistors = "2k Ohm";
++			break;
++
++		case DS1343_TRICKLE_4K:
++			resistors = "4k Ohm";
++			break;
++
++		default:
++			diodes = "disabled";
++			break;
++		}
++	}
++
++	seq_printf(seq,
++			"trickle_charger\t: %s %s\n",
++			diodes, resistors);
++
++	return 0;
++}
++
++#else
++
++#define ds1343_proc NULL
++
++#endif
++
++static int ds1343_read_time(struct device *dev, struct rtc_time *dt)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	unsigned char buf[7];
++	int res;
++
++	res = regmap_bulk_read(priv->map, DS1343_SECONDS_REG, buf, 7);
++	if (res)
++		return res;
++
++	dt->tm_sec	= bcd2bin(buf[0]);
++	dt->tm_min	= bcd2bin(buf[1]);
++	dt->tm_hour	= bcd2bin(buf[2] & 0x3F);
++	dt->tm_wday	= bcd2bin(buf[3]) - 1;
++	dt->tm_mday	= bcd2bin(buf[4]);
++	dt->tm_mon	= bcd2bin(buf[5] & 0x1F) - 1;
++	dt->tm_year	= bcd2bin(buf[6]) + 100; /* year offset from 1900 */
++
++	return rtc_valid_tm(dt);
++}
++
++static int ds1343_set_time(struct device *dev, struct rtc_time *dt)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	int res;
++
++	res = regmap_write(priv->map, DS1343_SECONDS_REG,
++				bin2bcd(dt->tm_sec));
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_MINUTES_REG,
++				bin2bcd(dt->tm_min));
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_HOURS_REG,
++				bin2bcd(dt->tm_hour) & 0x3F);
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_DAY_REG,
++				bin2bcd(dt->tm_wday + 1));
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_DATE_REG,
++				bin2bcd(dt->tm_mday));
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_MONTH_REG,
++				bin2bcd(dt->tm_mon + 1));
++	if (res)
++		return res;
++
++	dt->tm_year %= 100;
++
++	res = regmap_write(priv->map, DS1343_YEAR_REG,
++				bin2bcd(dt->tm_year));
++	if (res)
++		return res;
++
++	return 0;
++}
++
++static int ds1343_update_alarm(struct device *dev)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	unsigned int control, stat;
++	unsigned char buf[4];
++	int res = 0;
++
++	res = regmap_read(priv->map, DS1343_CONTROL_REG, &control);
++	if (res)
++		return res;
++
++	res = regmap_read(priv->map, DS1343_STATUS_REG, &stat);
++	if (res)
++		return res;
++
++	control &= ~(DS1343_A0IE);
++	stat &= ~(DS1343_IRQF0);
++
++	res = regmap_write(priv->map, DS1343_CONTROL_REG, control);
++	if (res)
++		return res;
++
++	res = regmap_write(priv->map, DS1343_STATUS_REG, stat);
++	if (res)
++		return res;
++
++	buf[0] = priv->alarm_sec < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_sec) & 0x7F;
++	buf[1] = priv->alarm_min < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_min) & 0x7F;
++	buf[2] = priv->alarm_hour < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_hour) & 0x3F;
++	buf[3] = priv->alarm_mday < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_mday) & 0x7F;
++
++	res = regmap_bulk_write(priv->map, DS1343_ALM0_SEC_REG, buf, 4);
++	if (res)
++		return res;
++
++	if (priv->irqen) {
++		control |= DS1343_A0IE;
++		res = regmap_write(priv->map, DS1343_CONTROL_REG, control);
++	}
++
++	return res;
++}
++
++static int ds1343_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++	unsigned int stat;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	res = regmap_read(priv->map, DS1343_STATUS_REG, &stat);
++	if (res)
++		goto out;
++
++	alarm->enabled = !!(priv->irqen & RTC_AF);
++	alarm->pending = !!(stat & DS1343_IRQF0);
++
++	alarm->time.tm_sec = priv->alarm_sec < 0 ? 0 : priv->alarm_sec;
++	alarm->time.tm_min = priv->alarm_min < 0 ? 0 : priv->alarm_min;
++	alarm->time.tm_hour = priv->alarm_hour < 0 ? 0 : priv->alarm_hour;
++	alarm->time.tm_mday = priv->alarm_mday < 0 ? 0 : priv->alarm_mday;
++
++	alarm->time.tm_mon = -1;
++	alarm->time.tm_year = -1;
++	alarm->time.tm_wday = -1;
++	alarm->time.tm_yday = -1;
++	alarm->time.tm_isdst = -1;
++
++out:
++	mutex_unlock(&priv->mutex);
++	return res;
++}
++
++static int ds1343_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	priv->alarm_sec = alarm->time.tm_sec;
++	priv->alarm_min = alarm->time.tm_min;
++	priv->alarm_hour = alarm->time.tm_hour;
++	priv->alarm_mday = alarm->time.tm_mday;
++
++	if (alarm->enabled)
++		priv->irqen |= RTC_AF;
++
++	res = ds1343_update_alarm(dev);
++
++	mutex_unlock(&priv->mutex);
++
++	return res;
++}
++
++static int ds1343_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	if (enabled)
++		priv->irqen |= RTC_AF;
++	else
++		priv->irqen &= ~RTC_AF;
++
++	res = ds1343_update_alarm(dev);
++
++	mutex_unlock(&priv->mutex);
++
++	return res;
++}
++
++static irqreturn_t ds1343_thread(int irq, void *dev_id)
++{
++	struct ds1343_priv *priv = dev_id;
++	unsigned int stat, control;
++	int res = 0;
++
++	mutex_lock(&priv->mutex);
++
++	res = regmap_read(priv->map, DS1343_STATUS_REG, &stat);
++	if (res)
++		goto out;
++
++	if (stat & DS1343_IRQF0) {
++		stat &= ~DS1343_IRQF0;
++		regmap_write(priv->map, DS1343_STATUS_REG, stat);
++
++		res = regmap_read(priv->map, DS1343_CONTROL_REG, &control);
++		if (res)
++			goto out;
++
++		control &= ~DS1343_A0IE;
++		regmap_write(priv->map, DS1343_CONTROL_REG, control);
++
++		rtc_update_irq(priv->rtc, 1, RTC_AF | RTC_IRQF);
++	}
++
++out:
++	mutex_unlock(&priv->mutex);
++	return IRQ_HANDLED;
++}
++
++static const struct rtc_class_ops ds1343_rtc_ops = {
++	.ioctl		= ds1343_ioctl,
++	.proc		= ds1343_proc,
++	.read_time	= ds1343_read_time,
++	.set_time	= ds1343_set_time,
++	.read_alarm	= ds1343_read_alarm,
++	.set_alarm	= ds1343_set_alarm,
++	.alarm_irq_enable = ds1343_alarm_irq_enable,
++};
++
++static int ds1343_probe(struct spi_device *spi)
++{
++	struct ds1343_priv *priv;
++	struct regmap_config config;
++	unsigned int data;
++	int res;
++
++	memset(&config, 0, sizeof(config));
++	config.reg_bits = 8;
++	config.val_bits = 8;
++	config.write_flag_mask = 0x80;
++
++	priv = devm_kzalloc(&spi->dev, sizeof(struct ds1343_priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->spi = spi;
++	mutex_init(&priv->mutex);
++
++	/* RTC DS1347 works in spi mode 3 and
++	 * its chip select is active high
++	 */
++	spi->mode = SPI_MODE_3 | SPI_CS_HIGH;
++	spi->bits_per_word = 8;
++	res = spi_setup(spi);
++	if (res)
++		return res;
++
++	spi_set_drvdata(spi, priv);
++
++	priv->map = devm_regmap_init_spi(spi, &config);
++
++	if (IS_ERR(priv->map)) {
++		dev_err(&spi->dev, "spi regmap init failed for rtc ds1343\n");
++		return PTR_ERR(priv->map);
++	}
++
++	res = regmap_read(priv->map, DS1343_SECONDS_REG, &data);
++	if (res)
++		return res;
++
++	regmap_read(priv->map, DS1343_CONTROL_REG, &data);
++	data |= DS1343_INTCN;
++	data &= ~(DS1343_EOSC | DS1343_A1IE | DS1343_A0IE);
++	regmap_write(priv->map, DS1343_CONTROL_REG, data);
++
++	regmap_read(priv->map, DS1343_STATUS_REG, &data);
++	data &= ~(DS1343_OSF | DS1343_IRQF1 | DS1343_IRQF0);
++	regmap_write(priv->map, DS1343_STATUS_REG, data);
++
++	priv->rtc = devm_rtc_device_register(&spi->dev, "ds1343",
++					&ds1343_rtc_ops, THIS_MODULE);
++	if (IS_ERR(priv->rtc)) {
++		dev_err(&spi->dev, "unable to register rtc ds1343\n");
++		return PTR_ERR(priv->rtc);
++	}
++
++	if (spi->irq >= 0) {
++		res = devm_request_threaded_irq(&spi->dev, spi->irq, NULL,
++						ds1343_thread,
++						IRQF_NO_SUSPEND | IRQF_ONESHOT,
++						"ds1343", priv);
++		if (res) {
++			dev_err(&spi->dev, "unable to request irq for rtc ds1343\n");
++			return res;
++		}
++
++		device_set_wakeup_capable(&spi->dev, 1);
++	}
++
++	return 0;
++}
++
++static int ds1343_remove(struct spi_device *spi)
++{
++	struct ds1343_priv *priv = spi_get_drvdata(spi);
++
++	if (spi->irq) {
++		mutex_lock(&priv->mutex);
++		priv->irqen &= ~RTC_AF;
++		mutex_unlock(&priv->mutex);
++
++		devm_free_irq(&spi->dev, spi->irq, priv);
++	}
++
++	spi_set_drvdata(spi, NULL);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static int ds1343_suspend(struct device *dev)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	if (spi->irq >= 0 && device_may_wakeup(dev))
++		enable_irq_wake(spi->irq);
++
++	return 0;
++}
++
++static int ds1343_resume(struct device *dev)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	if (spi->irq >= 0 && device_may_wakeup(dev))
++		disable_irq_wake(spi->irq);
++
++	return 0;
++}
++
++#endif
++
++static SIMPLE_DEV_PM_OPS(ds1343_pm, ds1343_suspend, ds1343_resume);
++
++static struct spi_driver ds1343_driver = {
++	.driver = {
++		.name = "ds1343",
++		.owner = THIS_MODULE,
++		.pm = &ds1343_pm,
++	},
++	.probe = ds1343_probe,
++	.remove = ds1343_remove,
++	.id_table = ds1343_id,
++};
++
++module_spi_driver(ds1343_driver);
++
++MODULE_DESCRIPTION("DS1343 RTC SPI Driver");
++MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_VERSION(DS1343_DRV_VERSION);
+-- 
+1.7.10.4
 
---=20
-balbi
-
---u3bvv0EcKsvvYeex
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTYSN2AAoJEIaOsuA1yqREgHcP/AjE9reuixFBQ51Uwk0zsAdi
-SOU1H9AvDEYtF+IAXXSEaDckMO4odRsiiHuwc0oElu8e+kKY1bydgdkHtjHHv0+4
-ynxo5cgNjJXR5+heAHiLuytt2aUGe0FChiLVDkAv7KLo/vLiRnLGGHHuduGUb2lW
-L371pm2EHEc86A9Ap2kt8e3I8VyuiCsJoogiyXs5PrqWN7GlwifekFefM+Bv+1gL
-EDnwTqEzIK17wcKmG6END3Zmv5BJK55psyNFhrIDuvJhV67LedNw6oGLfted6sqp
-D/GUNBUQPVt1pzWD4pW33I3F4VHBBUcyIBlwrVJVrLC6+LiKh381L6gFg1tSXEdI
-Re8bjXPUhhj1CzNg7v0ct5/V6QIWasz8T9q3Wlw6tLsQ88c4xo46CMo3OaqD5Mvq
-r+r7gA5J0fk0RLWxMo9hsaqD/AXrdoRJMwu7/tBSojhj9+6ryEPLeBqJ3ycN67MI
-4Yk5h1wAjobZ9xX+r9Yy428g03/7V/3jx7soeFv2CR62e33vtapDhOG7GyGB2kfP
-qQh1ipnOZ9S5agDxQe63tCOSqRAUbBAmWnhKp5RODYCblyEb2bvf93jJMH/CRgdD
-1NI1Tiv9bD16jkofbi7/LnTB9aC0h+cHyt05nH91rCqy52CJp7BfQYTX2DD6daEk
-dbctgFqhDQbuV622ZY7J
-=pQBv
------END PGP SIGNATURE-----
-
---u3bvv0EcKsvvYeex--
