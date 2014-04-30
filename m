@@ -1,115 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168AbaD3PEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:04:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:44713 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758905AbaD3PEU (ORCPT
+	id S1422685AbaD3PJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:09:19 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:19953 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758872AbaD3PJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:04:20 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH/RFC] Deprecate BUG/BUG_ON in favour of BUG_AND_HALT/BUG_AND_HALT_ON
-Date: Wed, 30 Apr 2014 11:03:27 -0400
-Message-ID: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.9.0
+	Wed, 30 Apr 2014 11:09:18 -0400
+Date: Wed, 30 Apr 2014 18:08:44 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [patch] lib: check for strcpy() overflows to fixed length buffers
+Message-ID: <20140430150844.GA10621@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A long standing problem for us has been the misuse of BUG/BUG_ON.
-The typical misuse is someone only thinking of what represents
-a bug in their local code, and especially for people relatively
-new to Linux, starting out in device drivers, the appeal of using
-BUG w/o knowing what it really does is too great.
+There are sometimes where we know that we are doing an strcpy() into a
+fixed length buffer.  In those cases, we could verify that the strcpy()
+doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
+if you want to check for that.  The downside is that it makes strcpy
+slower.
 
-So you end up with some trivial non system critical driver bringing
-the whole system to a grinding halt just because it detected an
-internal inconsistency.  That just makes users unhappy and looks bad.
+I introduced __compiletime_size() to make this work.  It returns the
+size of the destination buffer or zero if the size isn't known.  The
+__compiletime_object_size() is similar but if you pass it a struct
+member then it returns the size of everything from there to the end of
+the struct.  Another difference is __compiletime_object_size() returns
+-1 for unknown sizes.
 
-It is hopeless to think we can reclaim BUG/BUG_ON for their original
-intent, given there are currently ~20k instances.  To make progress
-here, we create BUG_AND_HALT variants, which leave no doubt as to
-what they do in name alone.
+If you pass a char pointer to __compiletime_size() then it returns zero.
 
-Then we can incrementally move the real BUG users (unrecoverable
-filesystem corruption, page table mangling, etc) onto BUG_AND_HALT,
-and finally at some time in the future we'll simply make the old
-BUG/BUG_ON be aliases for WARN/WARN_ON, once we've moved over the
-bulk of the instances really needing to halt the system.
+The strcpy() check ignores buffers with just one byte because people
+often use those for variable length strings at the end of a struct.
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
+I have tested this patch lightly and created some bugs for it to detect
+but I have not detected any real life overflows.
 
-[This might not be a unique idea; but I'm pretty sure I'd first
-heard of it during a discussion with Ingo at RT summit last year.]
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
- include/asm-generic/bug.h | 16 ++++++++++++++++
- scripts/checkpatch.pl     |  7 +++++++
- 2 files changed, 23 insertions(+)
-
-diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-index 630dd2372238..57b79a394ceb 100644
---- a/include/asm-generic/bug.h
-+++ b/include/asm-generic/bug.h
-@@ -43,6 +43,14 @@ struct bug_entry {
-  * If you're tempted to BUG(), think again:  is completely giving up
-  * really the *only* solution?  There are usually better options, where
-  * users don't need to reboot ASAP and can mostly shut down cleanly.
-+ *
-+ * Sadly nobody listens to the above, and trying to reclaim BUG/BUG_ON
-+ * for their original intent is about as hopeful as wishing "selfie"
-+ * wasn't headed for the OED.  So the plan is to avoid BUG/BUG_ON
-+ * entirely.  Either use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON.
-+ * Once the critical (e.g. fs etc) BUG/BUG_ON users are updated to use
-+ * the clearly named HALT variants, we can point the old BUG/BUG_ON
-+ * defines below to be clones of the less drastic WARN variants.
-  */
- #ifndef HAVE_ARCH_BUG
- #define BUG() do { \
-@@ -51,10 +59,18 @@ struct bug_entry {
- } while (0)
+diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
+index e863dd5..5e0fc2b 100644
+--- a/include/acpi/platform/acenv.h
++++ b/include/acpi/platform/acenv.h
+@@ -320,7 +320,7 @@
+ #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
+ #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
+ #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
+-#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
++#define ACPI_STRCPY(d,s)        strcpy((d), (s))
+ #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
+ #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
+ #define ACPI_STRCMP(d,s)        strcmp((d), (s))
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 2507fd2..1fb7fd0 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -16,6 +16,9 @@
+ #if GCC_VERSION >= 40100 && GCC_VERSION < 40600
+ # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
  #endif
++#if GCC_VERSION > 40600
++# define __compiletime_size(obj) __builtin_object_size(obj, 3)
++#endif
  
-+#ifndef HAVE_ARCH_BUG_AND_HALT
-+#define BUG_AND_HALT BUG
+ #if GCC_VERSION >= 40300
+ /* Mark functions as cold. gcc will assume any path leading to a call
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index ee7239e..b615964 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -318,6 +318,9 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #ifndef __compiletime_object_size
+ # define __compiletime_object_size(obj) -1
+ #endif
++#ifndef __compiletime_size
++# define __compiletime_size(obj) 0
++#endif
+ #ifndef __compiletime_warning
+ # define __compiletime_warning(message)
+ #endif
+diff --git a/include/linux/string.h b/include/linux/string.h
+index ac889c5..fc126a1 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -154,4 +154,13 @@ static inline const char *kbasename(const char *path)
+ 	return tail ? tail + 1 : path;
+ }
+ 
++#if CONFIG_DEBUG_STRICT_SLOW_STRCPY_CHECKS
++#define strcpy(dest, src) do {						\
++	int len = __compiletime_size(dest);				\
++	if (len > 1 && strlen(src) >= len)				\
++		WARN_ONCE(1, "strcpy() overflow copying \"%s\"\n", src);	\
++	strcpy(dest, src);						\
++} while (0)
 +#endif
 +
- #ifndef HAVE_ARCH_BUG_ON
- #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
- #endif
+ #endif /* _LINUX_STRING_H_ */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 819ac51..94db086 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1431,6 +1431,15 @@ config DEBUG_STRICT_USER_COPY_CHECKS
  
-+#ifndef HAVE_ARCH_BUG_AND_HALT_ON
-+#define BUG_AND_HALT_ON BUG_ON
-+#endif
-+
- /*
-  * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
-  * significant issues that need prompt attention if they should ever
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 34eb2160489d..3cbf3591cf76 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2010,6 +2010,13 @@ sub process {
- 			$rpt_cleaners = 1;
- 		}
+ 	  If unsure, say N.
  
-+# Dont use BUG/BUG_ON; use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON
-+		if ($rawline =~ /^\+.*BUG\(/ || $rawline =~ /^\+.*BUG_ON\(/) {
-+			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
-+			WARN("BUG/BUG_ON",
-+			     "Use of BUG/BUG_ON is deprecated. Use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON\n" . $herevet);
-+		}
++config DEBUG_STRICT_SLOW_STRCPY_CHECKS
++	bool "Strict checks for strcpy() overflows"
++	depends on DEBUG_KERNEL
++	help
++	  Enabling this option adds some extra sanity checks when strcpy() is
++	  called().  This will slow down the kernel a bit.
 +
- # Check for FSF mailing addresses.
- 		if ($rawline =~ /\bwrite to the Free/i ||
- 		    $rawline =~ /\b59\s+Temple\s+Pl/i ||
--- 
-1.9.0
-
++	  If unsure, say N.
++
+ source kernel/trace/Kconfig
+ 
+ menu "Runtime Testing"
