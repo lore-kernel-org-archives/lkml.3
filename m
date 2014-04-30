@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422748AbaD3OcN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:32:13 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52344 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759225AbaD3Oav (ORCPT
+	id S1759303AbaD3OdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:33:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:44805 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759086AbaD3OdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:30:51 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: linux-kernel@vger.kernel.org
-Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [RFC 07/16] kgr: trigger the first check earlier
-Date: Wed, 30 Apr 2014 16:30:40 +0200
-Message-Id: <1398868249-26169-8-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+	Wed, 30 Apr 2014 10:33:11 -0400
+Date: Wed, 30 Apr 2014 10:33:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140430103308.1e46dd18@gandalf.local.home>
+In-Reply-To: <20140430101919.70b2f622@gandalf.local.home>
+References: <20140411185739.GA6644@linutronix.de>
+	<1397918766.5436.16.camel@marge.simpson.net>
+	<1398411635.11930.45.camel@marge.simpson.net>
+	<1398501491.12941.5.camel@marge.simpson.net>
+	<1398520699.28726.22.camel@marge.simpson.net>
+	<1398661784.30930.33.camel@marge.simpson.net>
+	<1398676186.30930.49.camel@marge.simpson.net>
+	<20140428101805.75032f45@gandalf.local.home>
+	<1398695832.14475.10.camel@marge.simpson.net>
+	<1398748869.5514.81.camel@marge.simpson.net>
+	<20140429201308.63292691@gandalf.local.home>
+	<1398843793.26071.52.camel@marge.simpson.net>
+	<1398863189.26071.97.camel@marge.simpson.net>
+	<20140430091550.1177bc90@gandalf.local.home>
+	<1398866403.26071.125.camel@marge.simpson.net>
+	<20140430101919.70b2f622@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 5 seconds, not 30. This speeds up the whole process in most
-scenarios.
+On Wed, 30 Apr 2014 10:19:19 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
----
- kernel/kgr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> I'm testing it now. But could you please post them as regular patches.
+> They were attachments to this thread, and were not something that stood
+> out.
 
-diff --git a/kernel/kgr.c b/kernel/kgr.c
-index 6f55c7654618..5e9a07faddb9 100644
---- a/kernel/kgr.c
-+++ b/kernel/kgr.c
-@@ -281,7 +281,7 @@ int kgr_start_patching(const struct kgr_patch *patch)
- 	/*
- 	 * give everyone time to exit kernel, and check after a while
- 	 */
--	queue_delayed_work(kgr_wq, &kgr_work, KGR_TIMEOUT * HZ);
-+	queue_delayed_work(kgr_wq, &kgr_work, 5 * HZ);
- 
- 	return 0;
- }
--- 
-1.9.2
+With your two patches, it still crashes exactly the same way. I
+probably should remove my debug just in case, but I think this box has
+another problem with it.
 
+-- Steve
