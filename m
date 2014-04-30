@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605AbaD3BOy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 21:14:54 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:47076 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755128AbaD3BOt (ORCPT
+	id S1755937AbaD3BQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 21:16:08 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:42004 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298AbaD3BQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 21:14:49 -0400
-Message-ID: <53604E82.1040407@gmail.com>
-Date: Wed, 30 Apr 2014 09:14:42 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
+	Tue, 29 Apr 2014 21:16:06 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3U1Fms3001233, This message is accepted by code: ctloc85258
+Message-ID: <53604FBE.2050701@realsil.com.cn>
+Date: Wed, 30 Apr 2014 09:19:58 +0800
+From: micky <micky_ching@realsil.com.cn>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] unicore32: About toolchain issues and source code.
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>
+CC: <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH] staging: rts5208: fix static checker warnings
+References: <1396432732-26514-1-git-send-email-micky_ching@realsil.com.cn>
+In-Reply-To: <1396432732-26514-1-git-send-email-micky_ching@realsil.com.cn>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
+Hi Dan,
 
-Excuse me, I did not find our unicore32 toolchains source code (I got
-binary to cross-compile Linux kernel), could you provide more related
-information for it, thanks.
+I have send this patch to fix the static checker warning, but not 
+applied yet.
 
-And I find 2 unicore32 toolchains issues, please help check.
+Best Regards.
+micky.
+On 04/02/2014 05:58 PM, micky_ching@realsil.com.cn wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
+>
+> The patch fa590c222fba: "staging: rts5208: add support for rts5208
+> and rts5288" from Nov 12, 2013, leads to the following static checker
+> warning:
+> 	drivers/staging/rts5208/rtsx_chip.c:107 rtsx_enable_bus_int()
+> 	warn: add curly braces?
+> This warning is produced because incorrect code indent.
+>
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>   drivers/staging/rts5208/rtsx_chip.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
+> index 6426807..7907e93 100644
+> --- a/drivers/staging/rts5208/rtsx_chip.c
+> +++ b/drivers/staging/rts5208/rtsx_chip.c
+> @@ -104,7 +104,7 @@ void rtsx_enable_bus_int(struct rtsx_chip *chip)
+>   	if (chip->ic_version >= IC_VER_C)
+>   		reg |= DELINK_INT_EN;
+>   #ifdef SUPPORT_OCP
+> -		reg |= OC_INT_EN;
+> +	reg |= OC_INT_EN;
+>   #endif
+>   	if (!chip->adma_mode)
+>   		reg |= DATA_DONE_INT_EN;
 
- - Gas issue:
-
-      AS      firmware/keyspan/usa18x.fw.gen.o
-    firmware/keyspan/usa18x.fw.gen.S: Assembler messages:
-    firmware/keyspan/usa18x.fw.gen.S:11: Error: junk at end of line, first unrecognized character is `,'
-    make[1]: *** [firmware/keyspan/usa18x.fw.gen.o] Error 1
-    make: *** [firmware] Error 2
-    
-    it is about statement ".section .builtin_fw,"a",@progbits".
-    
-     - The statement is correct and standard.
-    
-     - Use "aM" instead of "a", can pass compiling, but shouldn't do it.
-    
-     - Remove "@progbits", can pass compiling, but shouldn't do it.
-  
-  - Compiler issue:
- 
-      CC [M]  drivers/media/dvb-frontends/tda10048.o
-    drivers/media/dvb-frontends/tda10048.c: In function ‘tda10048_set_wref’:
-    drivers/media/dvb-frontends/tda10048.c:367: internal compiler error: in simplify_const_unary_operation, at simplify-rtx.c:1278
-    Please submit a full bug report,
-    with preprocessed source if appropriate.
-    See <http://gcc.gnu.org/bugs.html> for instructions.
-    make[3]: *** [drivers/media/dvb-frontends/tda10048.o] Error 1
-    make[2]: *** [drivers/media/dvb-frontends] Error 2
-    make[1]: *** [drivers/media] Error 2
-    make: *** [drivers] Error 2
-
-  - Toolchain information:
-
-    root@gchen:/upstream/toolchain/binutils/gas# /upstream/toolchain/unicore32/pi3dian14-beyondmind/prebuilt/linux-x86/toolchain/uc4-1.0-beta-hard-RHELAS4/bin/unicore32-linux-gcc -v
-    Using built-in specs.
-    Target: unicore32-linux
-    Configured with: /home/ghb/trunk/gcc-4.4.2/configure --target=unicore32-linux --prefix=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4 --enable-clocale=gnu --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-languages=c,c++,fortran --disable-multilib --disable-libstdcxx-pch --with-headers=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4/unicore32-linux/include --with-pkgversion=UC4_1.0-beta_20100415
-    Thread model: posix
-    gcc version 4.4.2 (UC4_1.0-beta_20100415) 
-    root@gchen:/upstream/toolchain/binutils/gas# /upstream/toolchain/unicore32/pi3dian14-beyondmind/prebuilt/linux-x86/toolchain/uc4-1.0-beta-hard-RHELAS4/bin/unicore32-linux-as -v
-    GNU assembler version 2.19.1 (unicore32-linux) using BFD version (GNU Binutils) 2.19.1
-
-
-Next, I shall continue for unicore32 allmodconfig (hope I can finish
-within 2014-05-31). And we may find other toolchain issues during cross
-compiling (I shall report and try to solve them, after get source code).
-
-
-Thanks.
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
