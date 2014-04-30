@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967AbaD3HL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 03:11:29 -0400
-Received: from ozlabs.org ([103.22.144.67]:45979 "EHLO ozlabs.org"
+	id S1757905AbaD3HLY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 03:11:24 -0400
+Received: from ozlabs.org ([103.22.144.67]:47966 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888AbaD3HLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754273AbaD3HLW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Apr 2014 03:11:22 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ingo Molnar <mingo@kernel.org>,
-        Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
-        riel@redhat.com, mgorman@suse.de, ak@linux.intel.com,
-        peterz@infradead.org, dave.hansen@intel.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH V3 2/2] powerpc/pseries: init fault_around_order for pseries
-In-Reply-To: <20140429070632.GB27951@gmail.com>
-References: <1398675690-16186-1-git-send-email-maddy@linux.vnet.ibm.com> <1398675690-16186-3-git-send-email-maddy@linux.vnet.ibm.com> <20140429070632.GB27951@gmail.com>
+To: "Zhangjie \(HZ\)" <zhangjie14@huawei.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: davem@davemloft.net, linville@tuxdriver.com, jeffrey.t.kirsher@intel.com,
+        mst@redhat.com, jasowang@redhat.com, qinchuanyu@huawei.com,
+        liuyongan@huawei.com, zhangjie14@huawei.com, zhaoshenglong@huawei.com
+Subject: Re: [PATCH net-next] virtio-net: Set needed_headroom for virtio-net when VIRTIO_F_ANY_LAYOUT is true
+In-Reply-To: <535F824A.5060804@huawei.com>
+References: <535F824A.5060804@huawei.com>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 30 Apr 2014 16:34:11 +0930
-Message-ID: <87d2fz47tg.fsf@rustcorp.com.au>
+Date: Wed, 30 Apr 2014 11:14:10 +0930
+Message-ID: <87iopr4mmt.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar <mingo@kernel.org> writes:
-> * Madhavan Srinivasan <maddy@linux.vnet.ibm.com> wrote:
+"Zhangjie (HZ)" <zhangjie14@huawei.com> writes:
+> This is a small supplement for commit e7428e95a06fb516fac1308bd0e176e27c0b9287
+> ("virtio-net: put virtio-net header inline with data"). TCP packages have
+> enough room to put virtio-net header in, but UDP packages do not. By
+> setting dev->needed_headroom for virtio-net device, UDP packages could have
+> enough room.
 >
->> Performance data for different FAULT_AROUND_ORDER values from 4 socket
->> Power7 system (128 Threads and 128GB memory). perf stat with repeat of 5
->> is used to get the stddev values. Test ran in v3.14 kernel (Baseline) and
->> v3.15-rc1 for different fault around order values.
->> 
->> FAULT_AROUND_ORDER      Baseline        1               3               4               5               8
->> 
->> Linux build (make -j64)
->> minor-faults            47,437,359      35,279,286      25,425,347      23,461,275      22,002,189      21,435,836
->> times in seconds        347.302528420   344.061588460   340.974022391   348.193508116   348.673900158   350.986543618
->>  stddev for time        ( +-  1.50% )   ( +-  0.73% )   ( +-  1.13% )   ( +-  1.01% )   ( +-  1.89% )   ( +-  1.55% )
->>  %chg time to baseline                  -0.9%           -1.8%           0.2%            0.39%           1.06%
->
-> Probably too noisy.
+> For UDP packages, sk_buff is alloced in fun __ip_append_data. The size is
+> "alloclen + hh_len + 15", and "hh_len = LL_RESERVED_SPACE(rt-dst.dev);".
+> The Macro is defined as follows:
+> #define LL_RESERVED_SPACE(dev) \
+>      ((((dev)->hard_header_len+(dev)->needed_headroom)\
+>      &~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
+> By default, for UDP packages, after skb is allocated, only 16 bytes
+> reserved. And 2 bytes remained after mac header is set. That is not enough
+> to put virtio-net header in. If we set dev->needed_headroom to 12 or 10
+> (according to mergeable_rx_bufs is on or off ), more room can be reserved.
+> Then there is enough room for UDP packages to put the header in.
 
-A little, but 3 still looks like the winner.
+Seems like a no-brainer.  Good find!
 
->> Linux rebuild (make -j64)
->> minor-faults            941,552         718,319         486,625         440,124         410,510         397,416
->> times in seconds        30.569834718    31.219637539    31.319370649    31.434285472    31.972367174    31.443043580
->>  stddev for time        ( +-  1.07% )   ( +-  0.13% )   ( +-  0.43% )   ( +-  0.18% )   ( +-  0.95% )   ( +-  0.58% )
->>  %chg time to baseline                  2.1%            2.4%            2.8%            4.58%           2.85%
->
-> Here it looks like a speedup. Optimal value: 5+.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-No, lower time is better.  Baseline (no faultaround) wins.
-
-
-etc.
-
-It's not a huge surprise that a 64k page arch wants a smaller value than
-a 4k system.  But I agree: I don't see much upside for FAO > 0, but I do
-see downside.
-
-Most extreme results:
-Order 1: 2% loss on recompile.  10% win 4% loss on seq.  9% loss random.
-Order 3: 2% loss on recompile.  6% win 5% loss on seq.  14% loss on random.
-Order 4: 2.8% loss on recompile. 10% win 7% loss on seq.  9% loss on random.
-
-> I'm starting to suspect that maybe workloads ought to be given a 
-> choice in this matter, via madvise() or such.
-
-I really don't think they'll be able to use it; it'll change far too
-much with machine and kernel updates.  I think we should apply patch #1
-(with fixes) to make it a variable, then set it to 0 for PPC.
-
-Cheers,
+Thanks,
 Rusty.
+
+
+
+>
+> test result list as below:
+> guest and host: suse11sp3, netperf, intel 2.4GHz
+> +-------+---------+---------+---------+---------+
+> |       |   old             |   new             |
+> +-------+---------+---------+---------+---------+
+> | UDP   |  Gbit/s | pps     |  Gbit/s | pps     |
+> | 64    |  0.57   | 692232  |  0.61   | 742420  |
+> | 256   |  1.60   | 686860  |  1.71   | 733331  |
+> | 512   |  2.92   | 674576  |  3.07   | 710446  |
+> | 1024  |  4.99   | 598977  |  5.17   | 620821  |
+> | 1460  |  5.68   | 483757  |  7.16   | 610519  |
+> | 4096  |  6.98   | 637468  |  7.21   | 658471  |
+> +-------+---------+---------+---------+---------+
+>
+> Signed-off-by: Zhang Jie <zhangjie14@huawei.com>
+> ---
+>  drivers/net/virtio_net.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 8a852b5..b852bb3 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -1724,6 +1724,13 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+>  		vi->has_cvq = true;
+>
+> +	if (vi->any_header_sg) {
+> +		if (vi->mergeable_rx_bufs)
+> +			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
+> +		else
+> +			dev->needed_headroom = sizeof(struct virtio_net_hdr);
+> +	}
+> +
+>  	/* Use single tx/rx queue pair as default */
+>  	vi->curr_queue_pairs = 1;
+>  	vi->max_queue_pairs = max_queue_pairs;
+> -- 
+> 1.9.0.msysgit.0
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
