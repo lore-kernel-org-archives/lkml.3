@@ -1,91 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945956AbaD3UEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:04:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46553 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759118AbaD3UEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:04:02 -0400
-Date: Wed, 30 Apr 2014 15:03:53 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Zhuang Jin Can <jin.can.zhuang@intel.com>
-CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: dwc3: gadget: fix burst size corruption
-Message-ID: <20140430200353.GC3839@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140501071604.GB30575@intel.com>
+	id S965069AbaD3UEk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:04:40 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:58452 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759259AbaD3UEi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:04:38 -0400
+Message-ID: <53615752.5040106@gmail.com>
+Date: Wed, 30 Apr 2014 16:04:34 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="W5WqUoFLvi1M7tJE"
-Content-Disposition: inline
-In-Reply-To: <20140501071604.GB30575@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: "Luis R. Rodriguez" <mcgrof@suse.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        bridge@lists.linux-foundation.org
+Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port changes
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com> <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com> <20140315013940.GA28801@wotan.suse.de> <CAHA+R7MRVyjAN7w_qPxSxkrjo939bNEc3Ej+O3yH-oWj4gGJxw@mail.gmail.com> <20140318212243.GD28471@garbanzo.do-not-panic.com> <20140422194313.GQ27882@wotan.suse.de>
+In-Reply-To: <20140422194313.GQ27882@wotan.suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---W5WqUoFLvi1M7tJE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/22/2014 03:43 PM, Luis R. Rodriguez wrote:
+> On Tue, Mar 18, 2014 at 02:22:43PM -0700, Luis R. Rodriguez wrote:
+>> On Tue, Mar 18, 2014 at 01:46:49PM -0700, Cong Wang wrote:
+>>> On Fri, Mar 14, 2014 at 6:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+>>>> On Thu, Mar 13, 2014 at 11:26:25AM -0700, Cong Wang wrote:
+>>>>> On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
+>>>>> <mcgrof@do-not-panic.com> wrote:
+>>>>>>                         spin_unlock_bh(&p->br->lock);
+>>>>>> +                       if (changed)
+>>>>>> +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
+>>>>>> +                                                        p->br->dev);
+>>>>>> +                       netdev_update_features(p->br->dev);
+>>>>>
+>>>>> I think this is supposed to be in netdev event handler of br->dev
+>>>>> instead of here.
+>>>>
+>>>> Do you mean netdev_update_features() ? I mimic'd what was being done on
+>>>> br_del_if() given that root blocking is doing something similar. If
+>>>> we need to change something for the above then I suppose it means we need
+>>>> to change br_del_if() too. Let me know if you see any reason for something
+>>>> else.
+>>>>
+>>>
+>>> Yeah, for me it looks like it's better to call netdev_update_features()
+>>> in the event handler of br->dev, rather than where calling
+>>> call_netdevice_notifiers(..., br->dev);.
+>>
+>> I still don't see why, in fact trying to verify this I am wondering now
+>> if instead we should actually fix br_features_recompute() to take into
+>> consideration BR_ROOT_BLOCK as below. Notice how netdev_update_features()
+>> is called above even if the MAC address did not change, just as is done
+>> on br_del_if(). There is an NETDEV_FEAT_CHANGE event so would it be more
+>> appropriate we just call
+>>
+>> call_netdevice_notifiers(NETDEV_FEAT_CHANGE, p->br->dev)
+>>
+>> for both the above then and also br_del_if()? How about the below
+>> change?
+>>
+>> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+>> index 54d207d..dcd9378 100644
+>> --- a/net/bridge/br_if.c
+>> +++ b/net/bridge/br_if.c
+>> @@ -315,6 +315,8 @@ netdev_features_t br_features_recompute(struct net_bridge *br,
+>>  	features &= ~NETIF_F_ONE_FOR_ALL;
+>>  
+>>  	list_for_each_entry(p, &br->port_list, list) {
+>> +		if (p->flags & BR_ROOT_BLOCK)
+>> +			continue;
+>>  		features = netdev_increment_features(features,
+>>  						     p->dev->features, mask);
+>>  	}
+> 
+> Cong, can you provide feedback on this? I tried to grow confidence on the
+> hunk above but its not clear but the other points still hold and I'd love
+> your feedback on those.
+> 
 
-On Thu, May 01, 2014 at 03:16:04AM -0400, Zhuang Jin Can wrote:
-> endpoint.maxburst may be 0 if a gadget doesn't call config_ep_by_speed()
-> to update it from the companion descriptor.
-> And endpoint.maxburst - 1 returns 11111b which wrongly sets bit
-> 26 of endpoint parameter 0.
-> This sets a wrong endpoint state and will cause "Get Endpoint State"
-> command can't get the corret endpoint state and "Set Endpoint Config"
-> command can't restore the correct endpoint state during hibernation
-> resume flow.
-> Thus, when endpoint.maxburst is 0, we should set burst as 0 directly.
->=20
-> Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-> ---
->  drivers/usb/dwc3/gadget.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> index 70715ee..44eca95 100644
-> --- a/drivers/usb/dwc3/gadget.c
-> +++ b/drivers/usb/dwc3/gadget.c
-> @@ -440,7 +440,8 @@ static int dwc3_gadget_set_ep_config(struct dwc3 *dwc=
-, struct dwc3_ep *dep,
-> =20
->  	/* Burst size is only needed in SuperSpeed mode */
->  	if (dwc->gadget.speed =3D=3D USB_SPEED_SUPER) {
-> -		u32 burst =3D dep->endpoint.maxburst - 1;
-> +		u32 burst =3D dep->endpoint.maxburst ?
-> +				dep->endpoint.maxburst - 1 : 0;
+Hi Luis
 
-again, you found a bug on the gadget driver. Fix that. composite.c
-guarantees that for those functions which don't pass bMaxBurst,
-gadget->maxburst will be set to *at least* 1.
+The hunk above isn't right.  Just because you set ROOT_BLOCK on the port
+doesn't mean that you should ignore it's device features.  If the device
+you just added happens to disable or enable some device offload feature,
+you should take that into account.
 
---=20
-balbi
+Thanks
+-vlad
 
---W5WqUoFLvi1M7tJE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>   Luis
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTYVcpAAoJEIaOsuA1yqREn2sP/jRP2GT4ONO7CxVaauLiS/BW
-Z1LcuKQ5hNlR8Z+AxePMuwoGmxJEx2V8/E2bN504i6F8kgo30aXb89trMUb2qV6m
-Y874pnsg6037CrHPHwi3VzK229XiXp7LtNwnszPoSVbH2Hdg62wKwb59GWFTPniX
-MwVi6sh3bvC6kWa+JTEpKvDphHgB6d91UlZJEFJ8FBUSLUf5kR/lH9ycIPEKpO8c
-Ko1j0k9KKysfylJflc+v8dOgS5uTMOXd4MOeVSOZfhMYHdz5s5yge2bauBqTiVwi
-CxREzBH5jdTIJaXKgTu+/HJY6el8bx1izIX13urrxxt0Ciz0sN8HrrvYHRsGHax6
-QyIMM5EGtXTa7/8FICHU1yJftBnLEnai9CV0Mooa6llNmxUaCg0UXOIAoN+HC0FV
-mBfaWwSSDTfrm6gG3CqIt+0XjacUhHFvRRmw2z8HOWdd4atnpdRIPIr1yTV+Etl2
-gBKiVtA9en4RKic4GAJISWcI6efApPlKsk994YotyDGetQSHL/qIohwxZUy1lQZt
-yVmT8HGgJLm/GBhWVxN2++zu5rXfcqY7LeN3xs0E28+vBMwXji2d8rC8kk+EJ1Pt
-TSL4GI3nkUYiFsuITBMG2h9pRKN33SOwDiarCYMGeZ9YhvakogLCm4Uwx9g3CLVF
-WW/QDL/l1blfCpzZDY7O
-=Xr9Z
------END PGP SIGNATURE-----
-
---W5WqUoFLvi1M7tJE--
