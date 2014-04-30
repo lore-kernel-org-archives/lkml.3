@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaD3Hiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 03:38:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48092 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaD3Hix (ORCPT
+	id S1753121AbaD3HnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 03:43:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34490 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaD3HnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 03:38:53 -0400
-Date: Wed, 30 Apr 2014 09:38:50 +0200
+	Wed, 30 Apr 2014 03:43:11 -0400
+Date: Wed, 30 Apr 2014 09:43:07 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        NFS <linux-nfs@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH/RFC] SCHED: allow wait_on_bit functions to support a
- timeout.
-Message-ID: <20140430073850.GB13658@twins.programming.kicks-ass.net>
-References: <20140429194406.06c580b8@notabene.brown>
- <20140429103217.GQ27561@twins.programming.kicks-ass.net>
- <20140430122926.6bb0c771@notabene.brown>
- <20140430073154.GW11096@twins.programming.kicks-ass.net>
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: Re: [PATCH] lib/spinlock_debug: avoid one thread can not obtain the
+ spinlock for a long time.
+Message-ID: <20140430074307.GX11096@twins.programming.kicks-ass.net>
+References: <1398877471.21870.6.camel@wxm-ubuntu>
+ <20140430060625.GV11096@twins.programming.kicks-ass.net>
+ <FA47D36D6EC9FE4CB463299737C09B9901C14B96@shsmsx102.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140430073154.GW11096@twins.programming.kicks-ass.net>
+In-Reply-To: <FA47D36D6EC9FE4CB463299737C09B9901C14B96@shsmsx102.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 09:31:54AM +0200, Peter Zijlstra wrote:
-> On Wed, Apr 30, 2014 at 12:29:26PM +1000, NeilBrown wrote:
-> > If you think it is a good cleanup I'll post a proper patch with all the right
-> > Cc:s.
-> 
-> Yeah, its a good cleanup. Thanks!
+On Wed, Apr 30, 2014 at 06:17:48AM +0000, Wang, Xiaoming wrote:
+> Dear Peter
+> 	If we wait the end of loop as loops_per_jiffy. 
+> It may last more than 130s and local IRQ disabled at interval 
+> which may cause Hard LOCKUP. We break out in 1 second and
+> dump the stack for debug.
 
-Also, please add Oleg to the Cc, he was involved in the last big wait
-cleanup too.
+Yeah, so? That makes shoddy engineering alright then?
+
+So either fix the loops_per_jiffy thing, it is supposed to wait for 1
+second after all, or explain why its broken and entirely replace it.
+
+What you do not do is make a loop with 2 differently broken timeouts and
+hope one works.
