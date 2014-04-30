@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947AbaD3OtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:49:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:54032 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933466AbaD3Os7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:48:59 -0400
-Date: Wed, 30 Apr 2014 10:48:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 01/16] ftrace: Add function to find fentry of function
-Message-ID: <20140430104856.272169be@gandalf.local.home>
-In-Reply-To: <1398868249-26169-2-git-send-email-jslaby@suse.cz>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
-	<1398868249-26169-2-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S933978AbaD3OtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:49:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46933 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933589AbaD3OtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 10:49:07 -0400
+Date: Wed, 30 Apr 2014 16:49:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Rik van Riel <riel@redhat.com>
+Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, mpatlasov@parallels.com,
+        Motohiro.Kosaki@us.fujitsu.com
+Subject: Re: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
+Message-ID: <20140430144903.GI4357@dhcp22.suse.cz>
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+ <5360C9E7.6010701@jp.fujitsu.com>
+ <20140430093035.7e7226f2@annuminas.surriel.com>
+ <20140430134826.GH4357@dhcp22.suse.cz>
+ <53610941.8030309@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53610941.8030309@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 16:30:34 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
-
-> This is needed for kgr to find fentry location to be "ftraced". We use
-> this to find a place where to jump to a new/old code location.
+On Wed 30-04-14 10:31:29, Rik van Riel wrote:
+> On 04/30/2014 09:48 AM, Michal Hocko wrote:
+> >On Wed 30-04-14 09:30:35, Rik van Riel wrote:
+> >[...]
+> >>Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
+> >>
+> >>It is possible for "limit - setpoint + 1" to equal zero, leading to a
+> >>divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+> >>working, so we need to actually test the divisor before calling div64.
+> >>
+> >>Signed-off-by: Rik van Riel <riel@redhat.com>
+> >>---
+> >>  mm/page-writeback.c | 13 +++++++++++--
+> >>  1 file changed, 11 insertions(+), 2 deletions(-)
+> >>
+> >>diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> >>index ef41349..f98a297 100644
+> >>--- a/mm/page-writeback.c
+> >>+++ b/mm/page-writeback.c
+> >>@@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+> >>  					  unsigned long dirty,
+> >>  					  unsigned long limit)
+> >>  {
+> >>+	unsigned long divisor;
+> >>  	long long pos_ratio;
+> >>  	long x;
+> >>
+> >>+	divisor = limit - setpoint;
+> >>+	if (!divisor)
+> >>+		divisor = 1;	/* Avoid div-by-zero */
+> >>+
+> >
+> >This is still prone to u64 -> s32 issue, isn't it?
+> >What was the original problem anyway? Was it really setpoint > limit or
+> >rather the overflow?
 > 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> ---
->  include/linux/ftrace.h |  1 +
->  kernel/trace/ftrace.c  | 29 +++++++++++++++++++++++++++++
->  2 files changed, 30 insertions(+)
+> Thinking about it some more, is it possible that
+> limit and/or setpoint are larger than 32 bits, but
+> the difference between them is not?
 > 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index ae9504b4b67d..8b447493b6a5 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -299,6 +299,7 @@ extern void
->  unregister_ftrace_function_probe_func(char *glob, struct ftrace_probe_ops *ops);
->  extern void unregister_ftrace_function_probe_all(char *glob);
->  
-> +extern unsigned long ftrace_function_to_fentry(unsigned long addr);
->  extern int ftrace_text_reserved(const void *start, const void *end);
->  
->  extern int ftrace_nr_registered_ops(void);
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 4a54a25afa2f..9968695cdcf9 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1495,6 +1495,35 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
->  		}				\
->  	}
->  
-> +/**
-> + * ftrace_function_to_fentry -- lookup fentry location for a function
-> + * @addr: function address to find a fentry in
-> + *
-> + * Perform a lookup in a list of fentry callsites to find one that fits a
-> + * specified function @addr. It returns the corresponding fentry callsite or
-> + * zero on failure.
-> + */
-> +unsigned long ftrace_function_to_fentry(unsigned long addr)
-> +{
-> +	const struct dyn_ftrace *rec;
-> +	const struct ftrace_page *pg;
-> +	unsigned long ret = 0;
-> +
-> +	mutex_lock(&ftrace_lock);
-> +	do_for_each_ftrace_rec(pg, rec) {
+> In that case, truncating both to 32 bits before
+> doing the subtraction would be troublesome, and
+> it would be better to do a cast in the comparison:
+> 
+> if (!(s32)divisor)
+> 	divisor = 1;
 
-The records are sorted within a pg. You can optimize this a lot if you
-just test the first and last record and see if it is in the range. If
-not, then skip to the next page. If it is, you can use a bsearch as
-well, to save on the lookups.
+How is that any different than defining divisor as 32b directly?
+ 
 
--- Steve
-
-> +		unsigned long off;
-> +		if (!kallsyms_lookup_size_offset(rec->ip, NULL, &off))
-> +			continue;
-> +		if (addr + off == rec->ip) {
-> +			ret = rec->ip;
-> +			goto end;
-> +		}
-> +	} while_for_each_ftrace_rec()
-> +end:
-> +	mutex_unlock(&ftrace_lock);
-> +
-> +	return ret;
-> +}
->  
->  static int ftrace_cmp_recs(const void *a, const void *b)
->  {
-
+-- 
+Michal Hocko
+SUSE Labs
