@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965000AbaD3Tf2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:35:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49610 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932186AbaD3Tf1 (ORCPT
+	id S1759413AbaD3Tjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:39:51 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:56293 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759107AbaD3Tjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:35:27 -0400
-Date: Wed, 30 Apr 2014 12:35:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v3] mm,writeback: fix divide by zero in
- pos_ratio_polynom
-Message-Id: <20140430123526.bc6a229c1ea4addad1fb483d@linux-foundation.org>
-In-Reply-To: <53614F3C.8020009@redhat.com>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-	<5360C9E7.6010701@jp.fujitsu.com>
-	<20140430093035.7e7226f2@annuminas.surriel.com>
-	<20140430134826.GH4357@dhcp22.suse.cz>
-	<20140430104114.4bdc588e@cuia.bos.redhat.com>
-	<20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-	<53614F3C.8020009@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 30 Apr 2014 15:39:49 -0400
+Message-ID: <5361517D.8000106@gmail.com>
+Date: Wed, 30 Apr 2014 21:39:41 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/15] ARM: dts: kirkwood: consolidate common pinctrl
+ settings
+References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com> <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com> <20140430164236.GC12944@obsidianresearch.com>
+In-Reply-To: <20140430164236.GC12944@obsidianresearch.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 15:30:04 -0400 Rik van Riel <riel@redhat.com> wrote:
-
-> On 04/30/2014 03:00 PM, Andrew Morton wrote:
-> > On Wed, 30 Apr 2014 10:41:14 -0400 Rik van Riel <riel@redhat.com> wrote:
-> >
-> >> It is possible for "limit - setpoint + 1" to equal zero, leading to a
-> >> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-> >> working, so we need to actually test the divisor before calling div64.
-> >>
-> >> ...
-> >>
-> >> --- a/mm/page-writeback.c
-> >> +++ b/mm/page-writeback.c
-> >> @@ -598,10 +598,15 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
-> >>   					  unsigned long limit)
-> >>   {
-> >>   	long long pos_ratio;
-> >> +	long divisor;
-> >>   	long x;
-> >>
-> >> +	divisor = limit - setpoint;
-> >> +	if (!(s32)divisor)
-> >> +		divisor = 1;	/* Avoid div-by-zero */
-> >> +
-> >>   	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-> >> -		    limit - setpoint + 1);
-> >> +		    (s32)divisor);
-> >
-> > Doesn't this just paper over the bug one time in four billion?  The
-> > other 3999999999 times, pos_ratio_polynom() returns an incorect result?
-> >
-> > If it is indeed the case that pos_ratio_polynom() callers are
-> > legitimately passing a setpoint which is more than 2^32 less than limit
-> > then it would be better to handle that input correctly.
+On 04/30/2014 06:42 PM, Jason Gunthorpe wrote:
+> On Wed, Apr 30, 2014 at 02:56:34PM +0200, Sebastian Hesselbarth wrote:
+>> All SoCs have the same pinctrl setting for NAND, UART0/1, SPI, TWSI0,
+>> and GBE1. Move it to the common pinctrl node that we now have.
 > 
-> The easy way would be by calling div64_s64 and div64_u64,
-> which are 64 bit all the way through.
+> There are two possible choices for UART0, UART1, and SPI on kirkwood..
 > 
-> Any objections?
+> For instance I use this on my board:
+> 
+>                                 pmx_spi0: pmx-spi0 {
+>                                         marvell,pins = "mpp7", "mpp10", "mpp11", "mpp12";
+>                                         marvell,function = "spi";
+>                                 };
+> 
+> vs
+> 
+>> +
+>> +			pmx_spi: pmx-spi {
+>> +				marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3";
+>> +				marvell,function = "spi";
+>> +			};
+> 
+> It looks like all the boards in the kernel use the same choice, so it
+> makes some sense to consolidate, but I assume a board file can
+> override the marvell,pins?
 
-Sounds good to me.
+Yes, there are already some boards (e.g. t5325 with spi0) overwriting
+pinctrl settings instead of overwriting the pinctrl-0 property. I
+thought, I keep this behavior and note it above each pinctrl node in
+some of the following patches.
 
-> The inlined bits seem to be stubs calling the _rem variants
-> of the functions, and discarding the remainder.
+But your comment reminded me of something more important: there is
+one set of boards using kirkwood-lsxl.dtsi which does not explicitly
+set spi's pinctrl property. So this consolidation potentially breaks
+spi on those boards.
 
-I was referring to pos_ratio_polynom().  The compiler will probably be
-uninlining it anyway, but still...
+An explicit Tested-by for Buffalo Linkstation LS-CHLv2 and/or LS-XHL
+would be good.
+
+> Otherwise the rest of your patchset looked sane to me.
+
+I count that as a
+
+Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+
+Thanks!
+
+Sebastian
 
