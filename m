@@ -1,129 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422685AbaD3PJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:09:19 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19953 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758872AbaD3PJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:09:18 -0400
-Date: Wed, 30 Apr 2014 18:08:44 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [patch] lib: check for strcpy() overflows to fixed length buffers
-Message-ID: <20140430150844.GA10621@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1422710AbaD3PJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:09:30 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47672
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758872AbaD3PJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 11:09:29 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, stable@kernel.org
+Subject: [PATCH V2 net-next 1/1] hyperv: Properly handle checksum offload
+Date: Wed, 30 Apr 2014 09:05:21 -0700
+Message-Id: <1398873921-20955-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are sometimes where we know that we are doing an strcpy() into a
-fixed length buffer.  In those cases, we could verify that the strcpy()
-doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
-if you want to check for that.  The downside is that it makes strcpy
-slower.
+Do checksum offload only if the client of the driver wants checksum to be
+offloaded.
 
-I introduced __compiletime_size() to make this work.  It returns the
-size of the destination buffer or zero if the size isn't known.  The
-__compiletime_object_size() is similar but if you pass it a struct
-member then it returns the size of everything from there to the end of
-the struct.  Another difference is __compiletime_object_size() returns
--1 for unknown sizes.
+In V1 version of this patch, I  addressed comments from
+Stephen Hemminger <stephen@networkplumber.org> and
+Eric Dumazet <eric.dumazet@gmail.com>.
 
-If you pass a char pointer to __compiletime_size() then it returns zero.
+In this version of the patch I have addressed comments from
+David Miller.
 
-The strcpy() check ignores buffers with just one byte because people
-often use those for variable length strings at the end of a struct.
+This patch fixes a bug that is exposed in gateway scenarios.
 
-I have tested this patch lightly and created some bugs for it to detect
-but I have not detected any real life overflows.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: stable@kernel.org
+---
+ drivers/net/hyperv/netvsc_drv.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
-index e863dd5..5e0fc2b 100644
---- a/include/acpi/platform/acenv.h
-+++ b/include/acpi/platform/acenv.h
-@@ -320,7 +320,7 @@
- #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
- #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
- #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
--#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
-+#define ACPI_STRCPY(d,s)        strcpy((d), (s))
- #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
- #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
- #define ACPI_STRCMP(d,s)        strcmp((d), (s))
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 2507fd2..1fb7fd0 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -16,6 +16,9 @@
- #if GCC_VERSION >= 40100 && GCC_VERSION < 40600
- # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
- #endif
-+#if GCC_VERSION > 40600
-+# define __compiletime_size(obj) __builtin_object_size(obj, 3)
-+#endif
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 939e3af..64c7816 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -467,6 +467,10 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	if (skb_is_gso(skb))
+ 		goto do_lso;
  
- #if GCC_VERSION >= 40300
- /* Mark functions as cold. gcc will assume any path leading to a call
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index ee7239e..b615964 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -318,6 +318,9 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #ifndef __compiletime_object_size
- # define __compiletime_object_size(obj) -1
- #endif
-+#ifndef __compiletime_size
-+# define __compiletime_size(obj) 0
-+#endif
- #ifndef __compiletime_warning
- # define __compiletime_warning(message)
- #endif
-diff --git a/include/linux/string.h b/include/linux/string.h
-index ac889c5..fc126a1 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -154,4 +154,13 @@ static inline const char *kbasename(const char *path)
- 	return tail ? tail + 1 : path;
- }
- 
-+#if CONFIG_DEBUG_STRICT_SLOW_STRCPY_CHECKS
-+#define strcpy(dest, src) do {						\
-+	int len = __compiletime_size(dest);				\
-+	if (len > 1 && strlen(src) >= len)				\
-+		WARN_ONCE(1, "strcpy() overflow copying \"%s\"\n", src);	\
-+	strcpy(dest, src);						\
-+} while (0)
-+#endif
++	if ((skb->ip_summed == CHECKSUM_NONE) ||
++	    (skb->ip_summed == CHECKSUM_UNNECESSARY))
++		goto do_send;
 +
- #endif /* _LINUX_STRING_H_ */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 819ac51..94db086 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1431,6 +1431,15 @@ config DEBUG_STRICT_USER_COPY_CHECKS
- 
- 	  If unsure, say N.
- 
-+config DEBUG_STRICT_SLOW_STRCPY_CHECKS
-+	bool "Strict checks for strcpy() overflows"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enabling this option adds some extra sanity checks when strcpy() is
-+	  called().  This will slow down the kernel a bit.
-+
-+	  If unsure, say N.
-+
- source kernel/trace/Kconfig
- 
- menu "Runtime Testing"
+ 	rndis_msg_size += NDIS_CSUM_PPI_SIZE;
+ 	ppi = init_ppi_data(rndis_msg, NDIS_CSUM_PPI_SIZE,
+ 			    TCPIP_CHKSUM_PKTINFO);
+-- 
+1.7.4.1
+
