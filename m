@@ -1,74 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447AbaD3LAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 07:00:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48489 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932509AbaD3LAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 07:00:18 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "angus.clark@st.com" <angus.clark@st.com>,
-        "Ezequiel Garcia (ezequiel.garcia@free-electrons.com)" 
-	<ezequiel.garcia@free-electrons.com>
-Subject: RE: [RFC 07/47] mtd: nand: stm_nand_bch: initialise the BCH
- Controller
-Thread-Topic: [RFC 07/47] mtd: nand: stm_nand_bch: initialise the BCH
- Controller
-Thread-Index: AQHPSAMZxGz7oQGsEk27seq0WSyPipry1aNAgDb6YgCAAGRNsA==
-Date: Wed, 30 Apr 2014 10:59:33 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAC6A35@DBDE04.ent.ti.com>
-References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
- <1395735604-26706-8-git-send-email-lee.jones@linaro.org>
- <20980858CB6D3A4BAE95CA194937D5E73EAB5CB7@DBDE04.ent.ti.com>
- <20140430102244.GK29462@lee--X1>
-In-Reply-To: <20140430102244.GK29462@lee--X1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S933466AbaD3LCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 07:02:46 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:57477 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290AbaD3LCp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 07:02:45 -0400
+Subject: [PATCH v1.0 7/16] arcmsr: revise message_isr_bh_fn to delete
+ duplicate code
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Apr 2014 19:02:37 +0800
+Message-ID: <1398855757.6930.25.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3UB0QG4006851
 
->From: Lee Jones [mailto:lee.jones@linaro.org]
->>On Wed, 26 Mar 2014, Gupta, Pekon wrote:
-[...]
+From: Ching<ching2048@areca.com.tw>
 
->> >+	/* Reset and disable boot-mode controller */
->> >+	writel(BOOT_CFG_RESET, nandi->base + NANDBCH_BOOTBANK_CFG);
->> >+	udelay(1);
->> >+	writel(0x00000000, nandi->base + NANDBCH_BOOTBANK_CFG);
->>
->> Why using 'udelay' ?
->> Isn't there any status register which tells you that controller is reset / initialized ?
->> Or may be polling on NANDBCH_BOOTBANK_CFG may itself give you status.
->
->Documenation says:
->
->  "The soft reset bit has to be reset to â€˜0â€™ to de-assert the soft
->   reset. The soft reset bit is expected to be asserted for at least
->   one clock cycle for proper reset"
->
-Thatâ€™s the hardware way of saying that 'enable the clock before applying reset'.
-Clock is required to propagate reset-logic to flip-flops in pipeline, which do not get direct reset.
+Revise message_isr_bh_fn to remove the duplicate code for each adapter type.
 
-However that apart. You may safely drop udelay(1) because this 'udelay' is at
-CPU side and won't guarantee anything about clocks at your controller side.
-But I leave it to you as this delay is pretty small.
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:10:02.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-04-30 15:10:46.000000000 +0800
+@@ -511,119 +511,65 @@ static int arcmsr_alloc_ccb_pool(struct 
+ 
+ static void arcmsr_message_isr_bh_fn(struct work_struct *work) 
+ {
+-	struct AdapterControlBlock *acb = container_of(work,struct AdapterControlBlock, arcmsr_do_message_isr_bh);
+-	switch (acb->adapter_type) {
+-		case ACB_ADAPTER_TYPE_A: {
++	struct AdapterControlBlock *acb = container_of(work,
++		struct AdapterControlBlock, arcmsr_do_message_isr_bh);
++	char *acb_dev_map = (char *)acb->device_map;
++	uint32_t __iomem *signature = NULL;
++	char __iomem *devicemap = NULL;
++	int target, lun;
++	struct scsi_device *psdev;
++	char diff, temp;
+ 
+-			struct MessageUnit_A __iomem *reg  = acb->pmuA;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*) (&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*) (&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
+-			break;
++	switch (acb->adapter_type) {
++	case ACB_ADAPTER_TYPE_A: {
++		struct MessageUnit_A __iomem *reg  = acb->pmuA;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
+-
+-		case ACB_ADAPTER_TYPE_B: {
+-			struct MessageUnit_B *reg  = acb->pmuB;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*)(&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*)(&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
++	case ACB_ADAPTER_TYPE_B: {
++		struct MessageUnit_B *reg  = acb->pmuB;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
++	case ACB_ADAPTER_TYPE_C: {
++		struct MessageUnit_C __iomem *reg  = acb->pmuC;
++		signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+ 		break;
+-		case ACB_ADAPTER_TYPE_C: {
+-			struct MessageUnit_C *reg  = acb->pmuC;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for (target = 0; target < ARCMSR_MAX_TARGETID - 1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp = *acb_dev_map;
+-						for (lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if ((temp & 0x01) == 1 && (diff & 0x01) == 1) {
+-								scsi_add_device(acb->host, 0, target, lun);
+-							} else if ((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
++		}
++	}
++	atomic_inc(&acb->rq_map_token);
++	if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
++		for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
++			target++) {
++			temp = readb(devicemap);
++			diff = (*acb_dev_map) ^ temp;
++			if (diff != 0) {
++				*acb_dev_map = temp;
++				for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
++					lun++) {
++					if ((diff & 0x01) == 1 &&
++						(temp & 0x01) == 1) {
++						scsi_add_device(acb->host,
++							0, target, lun);
++					} else if ((diff & 0x01) == 1
++						&& (temp & 0x01) == 0) {
++						psdev =
++							scsi_device_lookup(acb->host,
++							0, target, lun);
++						if (psdev != NULL) {
++							scsi_remove_device(psdev);
++							scsi_device_put(psdev);
+ 						}
+ 					}
+-					devicemap++;
+-					acb_dev_map++;
++					temp >>= 1;
++					diff >>= 1;
+ 				}
+ 			}
++			devicemap++;
++			acb_dev_map++;
+ 		}
+ 	}
+ }
 
 
-with regards, pekon
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
