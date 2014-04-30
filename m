@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142AbaD3CEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:04:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21860 "EHLO mga01.intel.com"
+	id S1755377AbaD3CEz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:04:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20435 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751016AbaD3CEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:04:43 -0400
+	id S1751016AbaD3CEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 22:04:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,955,1389772800"; 
-   d="scan'208";a="531005085"
+   d="scan'208";a="531005102"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
         <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
         Bob Moore <robert.moore@intel.com>
-Subject: [PATCH 10/27] ACPICA: OSL: Move external globals from utglobal.c to acpixf.h using ACPI_INIT_GLOBAL/ACPI_GLOBAL.
-Date: Wed, 30 Apr 2014 10:04:35 +0800
-Message-Id: <f459c57b5961d1f96ce42be70c8339c69e90ad90.1398817612.git.lv.zheng@intel.com>
+Subject: [PATCH 11/27] ACPICA: OSL: Add configurability for memory allocation macros.
+Date: Wed, 30 Apr 2014 10:04:42 +0800
+Message-Id: <e6fdf9c843dbb870f9f90511ab8ddf8485557075.1398817612.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1398817612.git.lv.zheng@intel.com>
 References: <cover.1398817612.git.lv.zheng@intel.com>
@@ -28,17 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 OSPMs like Linux trend to include all header files but leave empty stub
 macros for a feature that is not configured during build.
 
-This patch cleans up global variables that are defined in utglobal.c using
-ACPI_INIT_GLOBAL mechanism.  In Linux, such global variables are used by
-the subsystems external to ACPICA.
-This patch also cleans up global variables that are defined in utglobal.c
-using ACPI_GLOBAL mechanism.  In Linux, such global variables are not used
-or should not be used by the subsystems external to ACPICA.
+For macros defined without other symbols referencesd it is safe to leave
+them without protections.
 
-External global variables can be redefined by OSPMs using
-ACPI_INIT_GLOBAL/ACPI_GLOBAL macros.  Thus the ACPI_GLOBAL/ACPI_INIT_GLOBAL
-mechanisms can be used by OSPM to implement stubs for such external
-globals.
+By investigation, there are only the following internal/external
+symbols referenced by the ACPICA macros:
+1. C library symbols, including string, ctype, stdarg APIs.  Since such
+   symbols are always accessbile in the kernel source tree, it is safe to
+   leave macros referencing them without protected for Linux.
+2. ACPICA OSL symbols, such symbols are designed to be used only by ACPICA
+   internal APIs.  And there are macros directly referencing mutex and
+   memory allocation OSL symbols.  We need to examine the external usages
+   of such macros.
+   For macros referencing the mutex OSL symbols, fortunately, there is no
+   external user directly invoking such macros.
+   ========================================================================
+   !! IMPORTANT !!
+   ========================================================================
+   For macros referencing memory allocation OSL symbols -
+    1. 'free' - ACPI_FREE
+    2. 'alloc' - ACPI_ALLOCATE, ACPI_ALLOCATE_ZEROED, ACPI_ALLOCATE_BUFFER,
+                 ACPI_ALLOCATE_LOCAL_BUFFER
+   there are external users directly invoking 'alloc' macros.  And the more
+   complicated situation is the reversals of such macros are not ACPI_FREE
+   but acpi_os_free (or kfree) in Linux.  Though we can define such macros
+   into no-op, we in fact cannot define their reversals into no-op.
+   This patch adds mechanism to protect ACPICA memory allocation APIs for
+   Linux so that acpi_os_free (or kfree) invoked in Linux can have a zero
+   address returned by 'alloc' macros to free.  In this
+   way, acpi_os_free (or kfree) can be converted into no-op.
+   ========================================================================
+3. ACPI_OFFSET and other macros that would access structure members, we
+   need to check if such structure members are not accessible under a
+   specific configuration.  Fortunately, currently Linux doesn't use such
+   structure members when CONFIG_ACPI is disabled.
+
+This patch thus only adds mechanism useful for implementing stubs for
+ACPICA provided macros - the configurability of memory allocation APIs.
 
 This patch doesn't include code for Linux to use this new mechanism, thus
 no functional changes.  Lv Zheng.
@@ -46,101 +72,58 @@ no functional changes.  Lv Zheng.
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
 Signed-off-by: Bob Moore <robert.moore@intel.com>
 ---
- drivers/acpi/acpica/utglobal.c |   22 ----------------------
- include/acpi/acpixf.h          |   35 +++++++++++++++++++++++------------
- 2 files changed, 23 insertions(+), 34 deletions(-)
+ include/acpi/actypes.h |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/acpi/acpica/utglobal.c b/drivers/acpi/acpica/utglobal.c
-index 825b064..d69be3c 100644
---- a/drivers/acpi/acpica/utglobal.c
-+++ b/drivers/acpi/acpica/utglobal.c
-@@ -55,28 +55,7 @@ ACPI_MODULE_NAME("utglobal")
-  * Static global variable initialization.
+diff --git a/include/acpi/actypes.h b/include/acpi/actypes.h
+index e763565..19b26bb 100644
+--- a/include/acpi/actypes.h
++++ b/include/acpi/actypes.h
+@@ -329,6 +329,15 @@ typedef u32 acpi_physical_address;
   *
   ******************************************************************************/
--/* Debug output control masks */
--u32 acpi_dbg_level = ACPI_DEBUG_DEFAULT;
--
--u32 acpi_dbg_layer = 0;
--
--/* acpi_gbl_FADT is a local copy of the FADT, converted to a common format. */
--
--struct acpi_table_fadt acpi_gbl_FADT;
--u32 acpi_gbl_trace_flags;
--acpi_name acpi_gbl_trace_method_name;
--u8 acpi_gbl_system_awake_and_running;
--u32 acpi_current_gpe_count;
--
--/*
-- * ACPI 5.0 introduces the concept of a "reduced hardware platform", meaning
-- * that the ACPI hardware is no longer required. A flag in the FADT indicates
-- * a reduced HW machine, and that flag is duplicated here for convenience.
-- */
--u8 acpi_gbl_reduced_hardware;
--
- /* Various state name strings */
--
- const char *acpi_gbl_sleep_state_names[ACPI_S_STATE_COUNT] = {
- 	"\\_S0_",
- 	"\\_S1_",
-@@ -337,7 +316,6 @@ acpi_status acpi_ut_init_globals(void)
- 	acpi_gbl_acpi_hardware_present = TRUE;
- 	acpi_gbl_last_owner_id_index = 0;
- 	acpi_gbl_next_owner_id_offset = 0;
--	acpi_gbl_trace_method_name = 0;
- 	acpi_gbl_trace_dbg_level = 0;
- 	acpi_gbl_trace_dbg_layer = 0;
- 	acpi_gbl_debugger_configuration = DEBUGGER_THREADING;
-diff --git a/include/acpi/acpixf.h b/include/acpi/acpixf.h
-index 010816e..8255689 100644
---- a/include/acpi/acpixf.h
-+++ b/include/acpi/acpixf.h
-@@ -185,22 +185,33 @@ ACPI_INIT_GLOBAL(u8, acpi_gbl_disable_ssdt_table_install, FALSE);
- ACPI_INIT_GLOBAL(u8, acpi_gbl_osi_data, 0);
  
++#ifdef ACPI_NO_MEM_ALLOCATIONS
++
++#define ACPI_ALLOCATE(a)                NULL
++#define ACPI_ALLOCATE_ZEROED(a)         NULL
++#define ACPI_FREE(a)
++#define ACPI_MEM_TRACKING(a)
++
++#else				/* ACPI_NO_MEM_ALLOCATIONS */
++
+ #ifdef ACPI_DBG_TRACK_ALLOCATIONS
  /*
-- * Other miscellaneous public globals
-+ * ACPI 5.0 introduces the concept of a "reduced hardware platform", meaning
-+ * that the ACPI hardware is no longer required. A flag in the FADT indicates
-+ * a reduced HW machine, and that flag is duplicated here for convenience.
+  * Memory allocation tracking (used by acpi_exec to detect memory leaks)
+@@ -350,6 +359,8 @@ typedef u32 acpi_physical_address;
+ 
+ #endif				/* ACPI_DBG_TRACK_ALLOCATIONS */
+ 
++#endif				/* ACPI_NO_MEM_ALLOCATIONS */
++
+ /******************************************************************************
+  *
+  * ACPI Specification constants (Do not change unless the specification changes)
+@@ -928,9 +939,19 @@ struct acpi_object_list {
+  * Miscellaneous common Data Structures used by the interfaces
   */
--extern u32 acpi_current_gpe_count;
--extern struct acpi_table_fadt acpi_gbl_FADT;
--extern u8 acpi_gbl_system_awake_and_running;
--extern u8 acpi_gbl_reduced_hardware;	/* ACPI 5.0 */
-+ACPI_INIT_GLOBAL(u8, acpi_gbl_reduced_hardware, FALSE);
+ #define ACPI_NO_BUFFER              0
++
++#ifdef ACPI_NO_MEM_ALLOCATIONS
++
++#define ACPI_ALLOCATE_BUFFER        (acpi_size) (0)
++#define ACPI_ALLOCATE_LOCAL_BUFFER  (acpi_size) (0)
++
++#else				/* ACPI_NO_MEM_ALLOCATIONS */
++
+ #define ACPI_ALLOCATE_BUFFER        (acpi_size) (-1)	/* Let ACPICA allocate buffer */
+ #define ACPI_ALLOCATE_LOCAL_BUFFER  (acpi_size) (-2)	/* For internal use only (enables tracking) */
  
--/* Runtime configuration of debug print levels */
--
--extern u32 acpi_dbg_level;
--extern u32 acpi_dbg_layer;
-+/*
-+ * This mechanism is used to trace a specified AML method. The method is
-+ * traced each time it is executed.
-+ */
-+ACPI_INIT_GLOBAL(u32, acpi_gbl_trace_flags, 0);
-+ACPI_INIT_GLOBAL(acpi_name, acpi_gbl_trace_method_name, 0);
- 
--/* ACPICA runtime options */
-+/*
-+ * Runtime configuration of debug output control masks. We want the debug
-+ * switches statically initialized so they are already set when the debugger
-+ * is entered.
-+ */
-+ACPI_INIT_GLOBAL(u32, acpi_dbg_level, ACPI_DEBUG_DEFAULT);
-+ACPI_INIT_GLOBAL(u32, acpi_dbg_layer, 0);
- 
--extern u32 acpi_gbl_trace_flags;
--extern acpi_name acpi_gbl_trace_method_name;
-+/*
-+ * Globals that are publically available
-+ */
-+ACPI_GLOBAL(u32, acpi_current_gpe_count);
-+ACPI_GLOBAL(struct acpi_table_fadt, acpi_gbl_FADT);
-+ACPI_GLOBAL(u8, acpi_gbl_system_awake_and_running);
- 
- /*
-  * Hardware-reduced prototypes. All interfaces that use these macros will
++#endif				/* ACPI_NO_MEM_ALLOCATIONS */
++
+ struct acpi_buffer {
+ 	acpi_size length;	/* Length in bytes of the buffer */
+ 	void *pointer;		/* pointer to buffer */
 -- 
 1.7.10
 
