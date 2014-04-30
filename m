@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbaD3E0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 00:26:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37041 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978AbaD3E0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 00:26:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,956,1389772800"; 
-   d="scan'208";a="532185376"
-Message-ID: <53607B7D.6050205@linux.intel.com>
-Date: Wed, 30 Apr 2014 12:26:37 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753366AbaD3Eu2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 00:50:28 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:48473 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060AbaD3Eu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 00:50:26 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix v2] sched: fix possible invalid memory access caused
- by CPU hot-addition
-References: <1398653293-12483-1-git-send-email-jiang.liu@linux.intel.com> <20140428070954.GM11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140428070954.GM11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <26065037.GxQQuIURPg@wuerfel>
+References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <26065037.GxQQuIURPg@wuerfel>
+From: Shaik Ameer Basha <shaik.samsung@gmail.com>
+Date: Wed, 30 Apr 2014 10:20:05 +0530
+Message-ID: <CAOD6ATrKumCcFFWFp7i7XLMssG23QV0FZ=3KqGCnnJt17Xmr1A@mail.gmail.com>
+Subject: Re: [PATCH v12 00/31] iommu/exynos: Fixes and Enhancements of System
+ MMU driver with DT
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Shaik Ameer Basha <shaik.ameer@samsung.com>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        supash.ramaswamy@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        sunil joshi <joshi@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Cho KyongHo <pullip.cho@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>, thierry.reding@gmail.com,
+        hdoyu@nvidia.com, Dave.Martin@arm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Peter, I will try to find other solutions.
-
-On 2014/4/28 15:09, Peter Zijlstra wrote:
-> On Mon, Apr 28, 2014 at 10:48:13AM +0800, Jiang Liu wrote:
->> Intel platforms with Nehalem/Westmere/IvyBridge CPUs may support socket
->> hotplug/online at runtime. The CPU hot-addition flow is:
->> 1) handle CPU hot-addition event
->> 	1.a) gather platform specific information
->> 	1.b) associate hot-added CPU with NUMA node
->> 	1.c) create CPU device
->> 2) online hot-added CPU through sysfs:
->> 	2.a)	cpu_up()
->> 	2.b)		->try_online_node()
->> 	2.c)			->hotadd_new_pgdat()
->> 	2.d)			->node_set_online()
+On Mon, Apr 28, 2014 at 2:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 27 April 2014 13:07:32 Shaik Ameer Basha wrote:
+>> The current exynos-iommu(System MMU) driver does not work autonomously
+>> since it is lack of support for power management of peripheral blocks.
+>> For example, MFC device driver must ensure that its System MMU is disabled
+>> before MFC block is power-down not to invalidate IOTLB in the System MMU
+>> when I/O memory mapping is changed. Because a System MMU resides in the
+>> same H/W block, access to control registers of System MMU while the H/W
+>> block is turned off must be prohibited.
 >>
->> Between 1.b and 2.c, hot-added CPUs are associated with NUMA nodes
->> but those NUMA nodes may still be in offlined state. So we should
->> check node_online(nid) before calling kmalloc_node(nid) and friends,
->> otherwise it may cause invalid memory access as below.
-> 
-> So complete and full NAK on this. This is a workaround for a fucked in
-> the head BIOS. If you're going to do a work around for that they should
-> live in arch/ space, not in core code.
-> 
-> The code in question is nearly 7 years old (2.6.24), which leads me to
-> believe it works just fine for (regular) memory less nodes as I've not
-> had complaints about it before.
+>> This set of changes solves the above problem with setting each System MMUs
+>> as the parent of the device which owns the System MMU to receive the
+>> information when the device is turned off or turned on.
+>>
+>> Another big change to the driver is the support for devicetree.
+>> The bindings for System MMU is described in
+>> Documentation/devicetree/bindings/arm/samsung/system-mmu.txt
+>
+> Sorry I've been absent from the review so far. Most of the patches
+> seem entirely reasonable to me, but I'm worried about the DT binding
+> aspect. We are going to see more systems shipping with IOMMUs now,
+> and we are seeing an increasing number of submissions for 64-bit
+> systems. We really have to work out what the DT representation for
+> IOMMUs should look like in general before adding another ad-hod
+> implementation that is private to one driver.
+
+Hi Arnd,
+
+No issues. Its good that finally you are here :)
+
+I am going through the possibilities for new bindings that you
+mentioned in the other thread.
+    -- [PATCH v12 11/31] documentation: iommu: add binding document of
+Exynos System MMU
+
+Exynos IOMMU driver is pretty simple with only one exception, "some
+devices are using multiple IOMMUs".
+
+>From starting (of this patch set), we were trying to fix three major issues.
+[1] How to control the probing order of required IOMMU(s) for a given
+device and a device itself.
+[2] Handling multiple IOMMUs for one device.
+[3] Generic DT bindings to link Device and IOMMUs.
+
+I have gone through the implementation of Tegra SMMU driver by "Hiroshi Doyu"
+    -- [PATCHv7 00/12] Unifying SMMU driver among Tegra SoCs
+[https://lkml.org/lkml/2013/12/12/74]
+
+For the first point [1],
+------------------------------
+Tegra implementation tries to fix this issue with these two patches
+    -- iommu/of: check if dependee iommu is ready or not
+[http://patchwork.ozlabs.org/patch/300560/]
+    -- driver/core: populate devices in order for IOMMUs
+[http://patchwork.ozlabs.org/patch/300558/]
+I can follow this driver if this approach is acceptable.
+
+For the second point [2]
+----------------------------------
+Currently we are handling this issue by providing same mapping for all
+IOMMUs linked to the same device.
+And current Exynos drivers doesn't have any special implementation to
+handle this case differently.
+
+I thought of understanding how Tegra SMMU driver is handling this case.
+Frankly speaking, I didn't understand how its done there.
+
+For the third point [3]
+-------------------------------
+As Tegra SMMU driver is inline with the discussion in other thread, we
+can follow the same bindings, unless
+the discussion takes us in the other direction.
+
+"KyongHo Cho" is the author for this driver and hope he has more inputs.
+
+Regards,
+Shaik
+
+
+
+>
+>         Arnd
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
