@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946049AbaD3QnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:43:09 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:59129 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933593AbaD3QnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:43:06 -0400
-Date: Wed, 30 Apr 2014 10:42:36 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 07/15] ARM: dts: kirkwood: consolidate common pinctrl
- settings
-Message-ID: <20140430164236.GC12944@obsidianresearch.com>
-References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1946053AbaD3QoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:44:11 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:64097 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758924AbaD3QoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:44:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+In-Reply-To: <1398848110-6152-3-git-send-email-gautam.vivek@samsung.com>
+References: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com>
+	<1398848110-6152-3-git-send-email-gautam.vivek@samsung.com>
+Date: Wed, 30 Apr 2014 22:14:06 +0530
+Message-ID: <CAK9yfHyj9xyNiSo6S2bDnF+k1oB3LR+aG+N7Kgg60VPKYKjnjQ@mail.gmail.com>
+Subject: Re: [PATCH 2/4] ARM: dts: Add usb2phy to Exynos 5250
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Praveen Paneri <p.paneri@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 02:56:34PM +0200, Sebastian Hesselbarth wrote:
-> All SoCs have the same pinctrl setting for NAND, UART0/1, SPI, TWSI0,
-> and GBE1. Move it to the common pinctrl node that we now have.
+Hi Vivek,
 
-There are two possible choices for UART0, UART1, and SPI on kirkwood..
+On 30 April 2014 14:25, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> From: Kamil Debski <k.debski@samsung.com>
+>
+> Add support to PHY of USB2 of the Exynos 5250 SoC.
+>
+> Signed-off-by: Kamil Debski <k.debski@samsung.com>
+> [gautam.vivek@samsung.com: Split the usb phy entries from
+> syscon entries from earlier patch: dts: Add usb2phy to Exynos 5250]
+> [gautam.vivek@samsung.com: Added phy entry for OHCI also along with EHCI]
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> ---
+>
+> Changes from v7:
+> None
+>
+>  arch/arm/boot/dts/exynos5250.dtsi |   26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+> index 70f0cd5..51e554c 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -563,6 +563,14 @@
+>
+>                 clocks = <&clock CLK_USB2>;
+>                 clock-names = "usbhost";
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               port@0 {
+> +                       reg = <0>;
+> +                       phys = <&usb2_phy_gen 1>;
+> +                       phy-names = "host";
+> +                       status = "ok";
 
-For instance I use this on my board:
+This should be "okay".
 
-                                pmx_spi0: pmx-spi0 {
-                                        marvell,pins = "mpp7", "mpp10", "mpp11", "mpp12";
-                                        marvell,function = "spi";
-                                };
+> +               };
+>         };
+>
+>         usb@12120000 {
+> @@ -572,6 +580,14 @@
+>
+>                 clocks = <&clock CLK_USB2>;
+>                 clock-names = "usbhost";
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +               port@0 {
+> +                       reg = <0>;
+> +                       phys = <&usb2_phy_gen 1>;
+> +                       phy-names = "host";
+> +                       status = "ok";
 
-vs
+ditto.
 
-> +
-> +			pmx_spi: pmx-spi {
-> +				marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3";
-> +				marvell,function = "spi";
-> +			};
 
-It looks like all the boards in the kernel use the same choice, so it
-makes some sense to consolidate, but I assume a board file can
-override the marvell,pins?
-
-Otherwise the rest of your patchset looked sane to me.
-
-Regards,
-Jason
+-- 
+With warm regards,
+Sachin
