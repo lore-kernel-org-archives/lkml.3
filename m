@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433AbaD3TyJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:54:09 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:46834 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759303AbaD3TyH (ORCPT
+	id S1759479AbaD3TzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:55:06 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55381 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759439AbaD3TzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:54:07 -0400
-Message-ID: <536154D8.2010600@gmail.com>
-Date: Wed, 30 Apr 2014 21:54:00 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 07/15] ARM: dts: kirkwood: consolidate common pinctrl
- settings
-References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com> <1398862602-29595-8-git-send-email-sebastian.hesselbarth@gmail.com> <20140430164236.GC12944@obsidianresearch.com> <5361517D.8000106@gmail.com> <20140430194437.GB17365@obsidianresearch.com>
-In-Reply-To: <20140430194437.GB17365@obsidianresearch.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 15:55:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: Re: [Patch v2] lapic need be checked if available when initialize acpi processor id
+Date: Wed, 30 Apr 2014 22:11:34 +0200
+Message-ID: <8303149.p62vWCFBDA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com> <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 09:44 PM, Jason Gunthorpe wrote:
-> On Wed, Apr 30, 2014 at 09:39:41PM +0200, Sebastian Hesselbarth wrote:
->> On 04/30/2014 06:42 PM, Jason Gunthorpe wrote:
->>> On Wed, Apr 30, 2014 at 02:56:34PM +0200, Sebastian Hesselbarth wrote:
->>>> All SoCs have the same pinctrl setting for NAND, UART0/1, SPI, TWSI0,
->>>> and GBE1. Move it to the common pinctrl node that we now have.
+On Wednesday, April 30, 2014 01:55:03 PM Baoquan He wrote:
+> In acpi_processor_get_info(), acpi processor info is initialized including
+> id, namely cpu index. Currently, if on UP system running SMP kerenl with
+> no LAPIC in MADT, cpu0_initialized is checked if acpi processor id is
+> initialized.
 > 
->> Yes, there are already some boards (e.g. t5325 with spi0) overwriting
->> pinctrl settings instead of overwriting the pinctrl-0 property. I
->> thought, I keep this behavior and note it above each pinctrl node in
->> some of the following patches.
+> However this check maybe is not correct for kdump kernel. Most of time
+> only 1 CPU is supported because of known problems. So in 1st kernel
+> multiple CPUs are present, then crash happened in one specific CPU,
+> say 2nd CPU. Then it jump into kdump kernel with "nr_cpus=1" specified
+> in cmdline. In this situation, since kdump kernel is warm reset, it will
+> reuse the ACPI resource passed from crashed kernel directly, namely 1st
+> kernel. It means in MADT all LAPIC is enabled while only 1 CPU is
+> present in running system. The kdump kernel usually is the same as the
+> crashed 1st kernel. So now in kdump kernel, x86_cpu_to_apicid stored the
+> apicid and its related cpu id. If only check cpu0_initialized, it will
+> assign 0 to the acpi processor id of 1st CPU, it's not correct.
 > 
-> That all makes sense, I think the commit message just seemed to say
-> something else.
-
-Well, this patch is about moving the pinctrl nodes to the common SoC
-dtsi. The next 6 patches are about setting the default pinctrl property.
-
-> Maybe more like:
+> So in this patch, check acpi_lapic too. If acpi_lapic is 0, then LAPIC in
+> MADT is not available, assigne 0 to the handling acpi processor. If
+> acpi_lapic is 1, then LAPIC in MADT is available, let's get apic processor
+> id from x86_cpu_to_apicid.
 > 
-> NAND and TWSI0 have only one valid pin control choice on Kirkwood,
-> move those definitions into the common dtsi.
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  drivers/acpi/acpi_processor.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> For UART0/1 and SPI, which have two choices, move the definition that
-> is used in the majority of the board files into the common dtsi.
-> Board files that are different will override.
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..33f934d 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  	pr->apic_id = apic_id;
+>  
+>  	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> -	if (!cpu0_initialized) {
+> +	if (!cpu0_initialized && !acpi_lapic) {
 
-Ok, I see. Well, strictly speaking the setting node itself is always
-valid, no matter if the board uses it. So that is why I first moved
-them into kirkwood.dtsi and did set the pinctrl-0 property in the
-later patches, e.g. commit message of Patch 9 reads:
+That doesn't compile:
 
-"""
-Most boards use the default UART0/1 pinctrl setting without RTS/CTS.
-Add the pinctrl setting to the toplevel SoC UART nodes and put a note
-in front of the corresponding pinctrl node to overwrite the setting
-on board level. Currently, both boards using a different UART pinctrl
-setting (Openblocks A6, A7) already overwrite the pinctrl node.
-"""
+drivers/acpi/acpi_processor.c:271:28: error: 'acpi_lapic' undeclared (first use in this function)
 
-But I can, of course, reword this commit message.
+>  		cpu0_initialized = 1;
+>  		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+>  		if ((cpu_index == -1) && (num_online_cpus() == 1))
+> 
 
-Sebastian
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
