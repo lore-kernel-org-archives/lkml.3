@@ -1,182 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588AbaD3FCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 01:02:30 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:47142 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273AbaD3E7o (ORCPT
+	id S1755302AbaD3FIL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 01:08:11 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:55279 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaD3FII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 00:59:44 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-37-5360833e0c9a
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, Pankaj Dubey <pankaj.dubey@samsung.com>
-Subject: [PATCH v3 07/12] ARM: EXYNOS: Add support for mapping PMU base address
- via DT
-Date: Wed, 30 Apr 2014 14:17:32 +0900
-Message-id: <1398835057-3860-8-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1398835057-3860-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1398835057-3860-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsVy+t8zQ1275oRgg/krdCyWTbrLZtG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wm6xfsZrFoubz7YzWexoWc3iwOXR0tzD5rF5Sb1H
-	35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZXzvO8tesFKm4uImqwbGk+JdjJwcEgImEs+WH2KC
-	sMUkLtxbz9bFyMUhJLCMUWLpnzcsMEWP1s1mgUgsYpTo/9/KBOG0MUk8vj6fFaSKTUBX4sn7
-	ucwgtohAtsSVxvvMIEXMArsZJRob57GBJIQFIiRW7+wB6ubgYBFQlTjdoAYS5hVwl7h1oRUs
-	LCGgIDFnkg1ImFPAQ2Lh7d9g44WAShoaehhBRkoIrGKX6N1/C2wXi4CAxLfJh1ggemUlNh1g
-	hjhaUuLgihssExiFFzAyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQICfreHYy3D1gfYkwG
-	GjeRWUo0OR8YNXkl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0tSC2KLyrNSS0+
-	xMjEwSnVwKjf+f5u275j3DeEzu9W3OrpcOxjXWft2bVLPrHX7mDqDP377ebuDluFbRku+wXY
-	Vy4Kb/z9OIjho/CcEjHjux86tsXoKGiwL648I7Wk5ii//nz+AgP3CVf3mWm8WXXq94lo568x
-	he+aCr7Z/S/7kxWfKKcWyZjYu+Hi/J/JEorKHi9n2h9cHafEUpyRaKjFXFScCAB5qQILkAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAV275oRgg22v1SyWTbrLZtG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3ktFm39wm6xfsZrFoubz7YzWexoWc3iwOXR0tzD5rF5Sb1H
-	35ZVjB6fN8kFsEQ1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5
-	+AToumXmAN2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsY8z43neWvWCl
-	TMXFTVYNjCfFuxg5OSQETCQerZvNAmGLSVy4t56ti5GLQ0hgEaNE//9WJginjUni8fX5rCBV
-	bAK6Ek/ez2UGsUUEsiWuNN5nBiliFtjNKNHYOI8NJCEsECGxemcPUDcHB4uAqsTpBjWQMK+A
-	u8StC61gYQkBBYk5k2xAwpwCHhILb/8GGy8EVNLQ0MM4gZF3ASPDKkbR1ILkguKk9FwjveLE
-	3OLSvHS95PzcTYzgmHomvYNxVYPFIUYBDkYlHl6BrfHBQqyJZcWVuYcYJTiYlUR4z1cmBAvx
-	piRWVqUW5ccXleakFh9iTAa6aSKzlGhyPjDe80riDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgk
-	kJ5YkpqdmlqQWgSzhYmDU6qBUeDJF+WD0dLNfRr93+/YbFxiu7do73pJ5u8FxsJ6gt2K7/Y+
-	k2eMkrzmr6+bzdfDvP/uVibLFMGO55cr8mq7I7y9ihu/BOaW+LGcay9vV/ytyiwgfHsL95Wo
-	SKVEs+gZrMUzfCYoealw2DA94HWfJlm+qmTtq9hDkakuvNNvSh/uNosLv6DEUpyRaKjFXFSc
-	CAARUiQ17QIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 30 Apr 2014 01:08:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <53608125.2020103@zytor.com>
+References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
+	<53554846.3070608@zytor.com>
+	<CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>
+	<53608125.2020103@zytor.com>
+Date: Tue, 29 Apr 2014 22:08:07 -0700
+Message-ID: <CA+=Sn1=y-smZOaD_yRxEwgu-PPaZYdQtB_RGPCA5-9wmB6=hvQ@mail.gmail.com>
+Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by GDB
+From: Andrew Pinski <pinskia@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Hui Zhu <teawater@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, eparis@redhat.com,
+        Andi Kleen <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Young-Gun Jang <yg1004.jang@samsung.com>
+On Tue, Apr 29, 2014 at 9:50 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/29/2014 08:44 PM, Hui Zhu wrote:
+>>
+>> I am sorry that the root cause of issue has something wrong.
+>> The right root cause is:
+>> When inferior call 32 bits syscall "read", Linux kernel function
+>> "ia32_cstar_target" will set TS_COMPAT to current_thread_info->status.
+>>
+>> syscall read is interrupt by ctrl-c.   Then the $rax will be set to
+>> errno -512 in 64 bits.
+>> And the inferior will be stopped by Linux kernel function ptrace_stop,
+>> the call trace is:
+>> #0  freezable_schedule () at include/linux/freezer.h:172
+>> #1  ptrace_stop (exit_code=exit_code@entry=5, why=why@entry=262148,
+>>     clear_code=clear_code@entry=0, info=info@entry=0xffff88001d833e78)
+>>     at kernel/signal.c:1920
+>> #2  0xffffffff8107ec33 in ptrace_signal (info=0xffff88001d833e78, signr=5)
+>>     at kernel/signal.c:2157
+>> #3  get_signal_to_deliver (info=info@entry=0xffff88001d833e78,
+>>     return_ka=return_ka@entry=0xffff88001d833e58, regs=<optimized out>,
+>>     cookie=cookie@entry=0x0 <irq_stack_union>) at kernel/signal.c:2269
+>> #4  0xffffffff81013438 in do_signal (regs=regs@entry=0xffff88001d833f58)
+>>     at arch/x86/kernel/signal.c:696
+>> #5  0xffffffff81013a40 in do_notify_resume (regs=0xffff88001d833f58,
+>>     unused=<optimized out>, thread_info_flags=4) at arch/x86/kernel/signal.c:747
+>> #6  <signal handler called>
+>> #7  0x0000000000000000 in irq_stack_union ()
+>>
+>> After that, GDB can control the stopped inferior.
+>> To call function "func1()" of inferior, GDB need:
+>> Step 1, save current values of registers ($rax 0xfffffffffffffe00(64 bits -512)
+>> is cut to 0xfffffe00(32 bits -512) because inferior is a 32 bits program).
+>
+> So gdb just corrupted the system state.
 
-Add support for mapping Samsung Power Management Unit (PMU)
-base address from device tree. This patch also adds helper
-function as "get_exynos_pmuregmap". This function can be used
-by other machine files such as "pm.c", "hotplug.c" for accessing
-PMU regmap handle.
+Except GDB in 32bit mode does not know the registers are full 64bits so ...
 
-Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
----
- arch/arm/mach-exynos/Kconfig  |    2 ++
- arch/arm/mach-exynos/common.h |    2 ++
- arch/arm/mach-exynos/exynos.c |   39 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 43 insertions(+)
+>
+>> Step 2, change the values of registers.
+>> Step 3, Push a dummy frame to stack.
+>> Step 4, set a breakpint in the return address.
+>>
+>> When GDB resume the inferior, it will keep execut from ptrace_stop
+>> with new values of registers that set by GDB.
+>
+>> And TS_COMPAT inside current_thread_info->status will be cleared when
+>> inferior switch back to user space.
+>
+> As it should, because TS_COMPAT *only is meaningful while a system call
+> is executing*.
+>
+>> When function "func1()" return, inferior will be stoped by breakpoint
+>> inferior will be stopped by Linux kernel function "ptrace_stop" again.
+>> current_thread_info->status will not set TS_COMPAT when inferior swith
+>> from user space to kernel space because breakpoint handler "int3" doesn't
+>> has code for that.
+>
+> As it shouldn't, because there is no system call entry involved.
+>
+>> GDB begin to set saved values of registers back to inferior that use
+>> function "amd64_collect_native_gregset".  Because this function just
+>> zero-extend each 32 bits value to 64 bits value before put them to inferior.
+>> $rax's value is set to 0xfffffe00(32 bits -512) but not
+>> 0xfffffffffffffe00(64 bits -512).
+>>
+>> When GDB continue syscall "read" that is interrupted by "ctrl-c", it will
+>> keep execute from ptrace_stop without "TS_COMPAT".
+>
+> gdb has corrupted the state, and it fails to execute.
+>
+> I'm wondering if we need to add additional state here, to carry the
+> TS_COMPAT bit.  We have talked about this kind of issues in the past.
+>
+>> Then in Linux kernel function "syscall_get_error", current_thread_info->status
+>> doesn't have TS_COMPAT and $rax is 0xfffffe00(32 bits -512).  Then in
+>> function do_signal will not handle this -ERESTARTSYS.
+>>
+>> -ERESTARTSYS will be return back to inferior, that is why inferior got a
+>> errno -ERESTARTSYS.
+>>
+>> I made a new patch that before call do_notify_resume(will call do_signal)
+>> in the int3 handler, set TS_COMPAT to status if this task is TIF_IA32.
+>> Then after GDB call a function of inferior, it will still has TS_COMPAT.
+>
+> I'm not sure if I want to label this a gdb bug or not (my main feeling
+> is that gdb should save and restore the register set presented to it,
+> and that truncating values to 32 bits is the root of the problem), but
+> the above is definitely a hack which doesn't really address the real
+> problem.
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index fc8bf18..2f60c90 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -26,6 +26,7 @@ config ARCH_EXYNOS4
- 	select PINCTRL
- 	select PM_GENERIC_DOMAINS if PM_RUNTIME
- 	select S5P_DEV_MFC
-+	select MFD_SYSCON
- 	help
- 	  Samsung EXYNOS4 SoCs based systems
- 
-@@ -36,6 +37,7 @@ config ARCH_EXYNOS5
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_SMP
- 	select PINCTRL
-+	select MFD_SYSCON
- 	help
- 	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
- 
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 8a4aa0b..33a2bee 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -55,4 +55,6 @@ struct exynos_pmu_conf {
- extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
- extern void exynos_enter_aftr(void);
- 
-+extern struct regmap *get_exynos_pmuregmap(void);
-+
- #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index a7b45db..9045fd6 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -19,6 +19,7 @@
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/pm_domain.h>
-+#include <linux/mfd/syscon.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/cache-l2x0.h>
-@@ -36,6 +37,8 @@
- #define L2_AUX_VAL 0x7C470001
- #define L2_AUX_MASK 0xC200ffff
- 
-+static struct regmap *exynos_pmu_regmap;
-+
- static struct map_desc exynos4_iodesc[] __initdata = {
- 	{
- 		.virtual	= (unsigned long)S3C_VA_SYS,
-@@ -260,6 +263,14 @@ static int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
- 	return 1;
- }
- 
-+static const struct of_device_id exynos_dt_pmu_match[] = {
-+	{ .compatible = "samsung,exynos4210-pmu" },
-+	{ .compatible = "samsung,exynos4212-pmu" },
-+	{ .compatible = "samsung,exynos4412-pmu" },
-+	{ .compatible = "samsung,exynos5250-pmu" },
-+	{},
-+};
-+
- /*
-  * exynos_map_io
-  *
-@@ -327,6 +338,32 @@ static int __init exynos4_l2x0_cache_init(void)
- }
- early_initcall(exynos4_l2x0_cache_init);
- 
-+
-+struct regmap *get_exynos_pmuregmap()
-+{
-+	return exynos_pmu_regmap;
-+}
-+
-+void __init exynos_map_pmu(void)
-+{
-+	struct device_node *np = NULL;
-+
-+	early_syscon_init();
-+
-+	np = of_find_matching_node(NULL, exynos_dt_pmu_match);
-+
-+	if (!np) {
-+		pr_err("Failed to find PMU node\n");
-+		return;
-+	} else {
-+		exynos_pmu_regmap = syscon_early_regmap_lookup_by_phandle(np,
-+				"samsung,syscon-phandle");
-+	}
-+
-+	if (IS_ERR(exynos_pmu_regmap))
-+		pr_err("failed to find exynos_pmu_regmap\n");
-+}
-+
- static void __init exynos_dt_machine_init(void)
- {
- 	struct device_node *i2c_np;
-@@ -355,6 +392,8 @@ static void __init exynos_dt_machine_init(void)
- 		}
- 	}
- 
-+	exynos_map_pmu();
-+
- 	if (!soc_is_exynos5440())
- 		platform_device_register(&exynos_cpuidle);
- 
--- 
-1.7.10.4
+restoring the values is hard since even the ptrace interface does not
+allow for that.
 
+Thanks,
+Andrew Pinski
+
+>
+>         -hpa
+>
