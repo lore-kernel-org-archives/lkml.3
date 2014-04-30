@@ -1,90 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422728AbaD3UQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:16:06 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20643 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422664AbaD3UQC (ORCPT
+	id S1422757AbaD3UQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:16:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50089 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422664AbaD3UQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:16:02 -0400
-Date: Wed, 30 Apr 2014 23:15:29 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>
-Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
-Message-ID: <20140430201529.GX4963@mwanda>
-References: <20140430150844.GA10621@mwanda>
- <1507574.Y0KFKOdI6F@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1507574.Y0KFKOdI6F@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 30 Apr 2014 16:16:18 -0400
+Date: Wed, 30 Apr 2014 13:16:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Matthew Dempsky <mdempsky@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        Roland McGrath <mcgrathr@chromium.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5] ptrace: Fix fork event messages across pid
+ namespaces
+Message-Id: <20140430131616.32899e2dc4f0592c9cd21075@linux-foundation.org>
+In-Reply-To: <1398818077-25107-1-git-send-email-mdempsky@chromium.org>
+References: <1398802858-13624-1-git-send-email-mdempsky@chromium.org>
+	<1398818077-25107-1-git-send-email-mdempsky@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 09:49:23PM +0200, Rafael J. Wysocki wrote:
-> On Wednesday, April 30, 2014 06:08:44 PM Dan Carpenter wrote:
-> > There are sometimes where we know that we are doing an strcpy() into a
-> > fixed length buffer.  In those cases, we could verify that the strcpy()
-> > doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> > if you want to check for that.  The downside is that it makes strcpy
-> > slower.
-> > 
-> > I introduced __compiletime_size() to make this work.  It returns the
-> > size of the destination buffer or zero if the size isn't known.  The
-> > __compiletime_object_size() is similar but if you pass it a struct
-> > member then it returns the size of everything from there to the end of
-> > the struct.  Another difference is __compiletime_object_size() returns
-> > -1 for unknown sizes.
-> > 
-> > If you pass a char pointer to __compiletime_size() then it returns zero.
-> > 
-> > The strcpy() check ignores buffers with just one byte because people
-> > often use those for variable length strings at the end of a struct.
-> > 
-> > I have tested this patch lightly and created some bugs for it to detect
-> > but I have not detected any real life overflows.
-> > 
-> > Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> > 
-> > diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
-> > index e863dd5..5e0fc2b 100644
-> > --- a/include/acpi/platform/acenv.h
-> > +++ b/include/acpi/platform/acenv.h
-> 
-> This is an ACPICA header and changes to it need to be submitted to the ACPICA
-> maintainers (as per MAINTAINERS).  We only get ACPICA changes from the
-> upstream project (except for really special situations).
+On Tue, 29 Apr 2014 17:34:37 -0700 Matthew Dempsky <mdempsky@chromium.org> wrote:
 
-Ok.  I should have added Robert and Lv to the CC list.  My guess is
-that the (void) is needed to avoid compile warnings but it's needed for
-us to avoid compile breakage with this change.
-
-Anyway, I'll wait for a couple days and resend that bit broken out.
-
-regards,
-dan carpenter
-
+> On Tue, Apr 29, 2014 at 3:11 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > More Oleg review would be nice, please ;)
 > 
-> > @@ -320,7 +320,7 @@
-> >  #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
-> >  #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
-> >  #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
-> > -#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
-> > +#define ACPI_STRCPY(d,s)        strcpy((d), (s))
-> >  #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
-> >  #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
-> >  #define ACPI_STRCMP(d,s)        strcmp((d), (s))
-> 
-> Thanks!
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+> FWIW, Oleg "acked" v4 earlier in the thread.  Are you asking for
+> further review from him beyond that?
+
+It's conventional to retain acked-by's and reviewed-by's in the
+changelog.  Sometimes they can be invalidated by subsequent changes -
+that's a judgement call one has to make.
+
+
