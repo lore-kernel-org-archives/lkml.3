@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276AbaD3GEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 02:04:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63884 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184AbaD3GEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 02:04:08 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] powerpc: fix skipping call to early_init_fdt_scan_reserved_mem
-Date: Wed, 30 Apr 2014 01:03:52 -0500
-Message-Id: <1398837832-30052-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1757339AbaD3GET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 02:04:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400AbaD3GEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 02:04:15 -0400
+Date: Wed, 30 Apr 2014 14:03:03 +0800
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: Re: [Patch v2] lapic need be checked if available when initialize
+ acpi processor id
+Message-ID: <20140430060303.GE4774@dhcp-16-105.nay.redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com>
+ <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+Hi Rafael,
 
-The call to early_init_fdt_scan_reserved_mem will be skipped if
-reserved-ranges is not found. Move the call earlier so that it is called
-unconditionally.
+Thanks for previous review for v1. Later on I thought acpi_lapic is
+more suitable for checking whether LAPIC in MADT is available, and it can
+hanlde both the UP system running SMP kernel with no LAPIC in MADT and kdump
+kernel after multiple CPUs system crashed on non-1st CPU.
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Tested-by: Stephen Chivers <schivers@csc.com>
----
-I found this issue in testing of my fdt clean-up series (thanks to 
-Stephen). Since the reserved memory support is new, I don't think it is 
-critical to fix this for 3.15. I plan to include this with my fdt series 
-for 3.16 unless I hear otherwise.
+I tested the 1st case by addding "disableapic nr_cpus=1" into cmdline
+of SMP kenrel, and it works. For 2nd case, it works too, below warning
+message is not printed any more. 
 
-Rob
+acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor
 
- arch/powerpc/kernel/prom.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Do you like this idea?
 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index 668aa47..d657549 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -567,6 +567,8 @@ static void __init early_reserve_mem_dt(void)
- 	unsigned long i, len, dt_root;
- 	const __be32 *prop;
- 
-+	early_init_fdt_scan_reserved_mem();
-+
- 	dt_root = of_get_flat_dt_root();
- 
- 	prop = of_get_flat_dt_prop(dt_root, "reserved-ranges", &len);
-@@ -589,8 +591,6 @@ static void __init early_reserve_mem_dt(void)
- 			memblock_reserve(base, size);
- 		}
- 	}
--
--	early_init_fdt_scan_reserved_mem();
- }
- 
- static void __init early_reserve_mem(void)
--- 
-1.9.1
+Thanks
+Baoquan
 
+On 04/30/14 at 01:55pm, Baoquan He wrote:
+> In acpi_processor_get_info(), acpi processor info is initialized including
+> id, namely cpu index. Currently, if on UP system running SMP kerenl with
+> no LAPIC in MADT, cpu0_initialized is checked if acpi processor id is
+> initialized.
+> 
+> However this check maybe is not correct for kdump kernel. Most of time
+> only 1 CPU is supported because of known problems. So in 1st kernel
+> multiple CPUs are present, then crash happened in one specific CPU,
+> say 2nd CPU. Then it jump into kdump kernel with "nr_cpus=1" specified
+> in cmdline. In this situation, since kdump kernel is warm reset, it will
+> reuse the ACPI resource passed from crashed kernel directly, namely 1st
+> kernel. It means in MADT all LAPIC is enabled while only 1 CPU is
+> present in running system. The kdump kernel usually is the same as the
+> crashed 1st kernel. So now in kdump kernel, x86_cpu_to_apicid stored the
+> apicid and its related cpu id. If only check cpu0_initialized, it will
+> assign 0 to the acpi processor id of 1st CPU, it's not correct.
+> 
+> So in this patch, check acpi_lapic too. If acpi_lapic is 0, then LAPIC in
+> MADT is not available, assigne 0 to the handling acpi processor. If
+> acpi_lapic is 1, then LAPIC in MADT is available, let's get apic processor
+> id from x86_cpu_to_apicid.
+> 
+> Signed-off-by: Baoquan He <bhe@redhat.com>
+> ---
+>  drivers/acpi/acpi_processor.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..33f934d 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  	pr->apic_id = apic_id;
+>  
+>  	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> -	if (!cpu0_initialized) {
+> +	if (!cpu0_initialized && !acpi_lapic) {
+>  		cpu0_initialized = 1;
+>  		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+>  		if ((cpu_index == -1) && (num_online_cpus() == 1))
+> -- 
+> 1.8.5.3
+> 
