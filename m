@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759556AbaD3UyX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:54:23 -0400
-Received: from mta-out1.inet.fi ([62.71.2.199]:33308 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759165AbaD3UyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:54:22 -0400
-Date: Wed, 30 Apr 2014 23:54:08 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, riel@redhat.com,
-        mgorman@suse.de, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm/swap.c: split put_compound_page function
-Message-ID: <20140430205408.GB27455@node.dhcp.inet.fi>
-References: <b1987d6fb09745a5274895efbde79e37ff9557a3.1398764420.git.nasa4836@gmail.com>
- <1fc028045336844fe9ba9ee27c406e6ebe4726f4.1398764420.git.nasa4836@gmail.com>
+	id S1759536AbaD3U5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:57:09 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:38706 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759361AbaD3U5G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:57:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1fc028045336844fe9ba9ee27c406e6ebe4726f4.1398764420.git.nasa4836@gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <20140430203823.GT18016@ZenIV.linux.org.uk>
+References: <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+	<20140430040436.GO18016@ZenIV.linux.org.uk>
+	<20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+	<20140430160345.GP18016@ZenIV.linux.org.uk>
+	<CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+	<20140430183650.GQ18016@ZenIV.linux.org.uk>
+	<CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
+	<20140430190227.GR18016@ZenIV.linux.org.uk>
+	<20140430195918.GS18016@ZenIV.linux.org.uk>
+	<CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
+	<20140430203823.GT18016@ZenIV.linux.org.uk>
+Date: Wed, 30 Apr 2014 13:57:05 -0700
+X-Google-Sender-Auth: 8Ybo29KOjK0UbS_tQOOpb0K6Whc
+Message-ID: <CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 05:42:28PM +0800, Jianyu Zhan wrote:
-> Currently, put_compound_page should carefully handle tricky case
-> to avoid racing with compound page releasing or spliting, which
-> makes it growing quite lenthy(about 200+ lines) and need deep
-> tab indention, which makes it quite hard to follow and maintain.
-> 
-> Now based on two helpers introduced in the previous patch
-> ("mm/swap.c: introduce put_[un]refcounted_compound_page helpers
-> for spliting put_compound_page"), this patch just replaces those
-> two lenthy code path with these two helpers, respectively.
-> Also, it has some comment rephrasing.
-> 
-> After this patch, the put_compound_page() will be very compact,
-> thus easy to read and maintain.
-> 
-> After spliting, the object file is of same size as the original one.
-> Actually, I've diff'ed put_compound_page()'s orginal disassemble code
-> and the patched disassemble code, the are 100% the same!
-> 
-> This fact shows that this spliting has no functinal change,
-> but it brings readability.
-> 
-> This patch and the previous one blow the code by 32 lines, which
-> mostly credits to comments.
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  mm/swap.c | 142 +++++++-------------------------------------------------------
->  1 file changed, 16 insertions(+), 126 deletions(-)
-> 
-> diff --git a/mm/swap.c b/mm/swap.c
-> index a576449..d8654d8 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -225,6 +225,11 @@ static void put_compound_page(struct page *page)
->  {
->  	struct page *page_head;
->  
-> +	/*
-> +	 * We see the PageCompound set and PageTail not set, so @page maybe:
-> +	 *  1. hugetlbfs head page, or
-> +	 *  2. THP head page.
+On Wed, Apr 30, 2014 at 1:38 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> We do not (and cannot) call dentry_kill() with rcu_read_lock held - it can
+> trigger any amount of IO, for one thing.  We can take it around the
+> couple of places where do that spin_unlock(&dentry->d_lock) (along with
+> setting DCACHE_RCUACCESS) - that's what I'd been refering to.
 
-3. Head of slab compound page.
+Just the last spin_unlock() would be the case that matters, if the
+spin_unlock() is done on something that could be freed immediately and
+the lock protects and is inside the entity that gets freed.
 
-> +	 */
->  	if (likely(!PageTail(page))) {
->  		if (put_page_testzero(page)) {
->  			/*
-> @@ -239,135 +244,20 @@ static void put_compound_page(struct page *page)
->  		return;
->  	}
->  
+>   BTW, is there any convenient
+> way to tell git commit --amend to update the commit date?  Something
+> like --date=now would be nice, but it isn't accepted...
 
-...
+--date="$(date)" works.
 
-> +	 * We see the PageCompound set and PageTail set, so @page maybe:
-> +	 *  1. a tail hugetlbfs page, or
-> +	 *  2. a tail THP page, or
-> +	 *  3. a split THP page.
+The "--date" thing doesn't take the nice "git approxidate" strings,
+maybe it should. So you have to give it a "real" date.
 
-4. Tail of slab compound page
-
--- 
- Kirill A. Shutemov
+              Linus
