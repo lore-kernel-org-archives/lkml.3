@@ -1,64 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933727AbaD3Msp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:48:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64027 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932885AbaD3Mso (ORCPT
+	id S933734AbaD3MvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:51:24 -0400
+Received: from ip-78-45-166-173.net.upcbroadband.cz ([78.45.166.173]:58236
+	"EHLO moskyto.dyndns.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757878AbaD3MvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:48:44 -0400
-Date: Wed, 30 Apr 2014 13:48:00 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>, Theodore Ts o <tytso@mit.edu>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] sched_clock: also call
- register_current_timer_delay() if possible
-Message-ID: <20140430124800.GC21876@arm.com>
-References: <1398860614-29469-1-git-send-email-bigeasy@linutronix.de>
+	Wed, 30 Apr 2014 08:51:23 -0400
+Date: Wed, 30 Apr 2014 14:51:20 +0200
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Einon <mark@einon.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [linux-next] [staging] rtl8821ae: fixed defined-not-used
+ warning
+Message-ID: <20140430125120.GG24832@moskyto.dyndns.org>
+References: <1398860143-2676-1-git-send-email-mq@suse.cz>
+ <1398861590.18460.7.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ulDeV4rPMk/y39in"
 Content-Disposition: inline
-In-Reply-To: <1398860614-29469-1-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1398861590.18460.7.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
 
-On Wed, Apr 30, 2014 at 01:23:34PM +0100, Sebastian Andrzej Siewior wrote:
-> On ARM one has to call register_current_timer_delay() in order to use
-> the (quick) timer based calibrarion instead of the a little slower loop
-> based delay.
-> The timer function specified in register_current_timer_delay() is also
-> used by read_current_timer() which would otherwise return -ENXIO.
-> And read_current_timer() timer is used by get_cycles() which in turn is
-> used by random_get_entropy(). That means each sub-architecture returned
-> here 0 if register_current_timer_delay() was no performed.
-> 
-> The parameters for for sched_clock_register() and
-> register_current_timer_delay() are mostly the same. Instead of calling
-> register_current_timer_delay() each time just after (or before)
-> sched_clock_register() I thought it might easier by doing it once at
-> sched_clock time since the parameter are the same. That means each ARM sub
-> arch that working sched-clock would also have a working random_get_entropy()
-> implementation.
-> 
-> Any comments?
+--ulDeV4rPMk/y39in
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-As long as sched_clock is guaranteed to be a fixed frequency, always-on
-clocksource then this could work, but it removes the flexibility of having
-a separate delay clock and sched clock (is this useful?).
+On Wed, Apr 30, 2014 at 02:39:50PM +0200, Paul Bolle wrote:
+> On Wed, 2014-04-30 at 14:15 +0200, Jan Moskyto Matejka wrote:
+> > --- a/drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c
+> > +++ b/drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c
+> > @@ -503,6 +503,7 @@ static void halbtc8192e2ant_querybt_info(struct btc=
+_coexist *btcoexist)
+> >  	btcoexist->btc_fill_h2c(btcoexist, 0x61, 1, h2c_parameter);
+> >  }
+> > =20
+> > +#if (BT_AUTO_REPORT_ONLY_8192E_2ANT !=3D 0)
+> >  static bool halbtc8192e2ant_iswifi_status_changed(struct btc_coexist *=
+btcoexist)
+> >  {
+> >  	static bool pre_wifi_busy;
+> > @@ -534,6 +535,7 @@ static bool halbtc8192e2ant_iswifi_status_changed(s=
+truct btc_coexist *btcoexist)
+> > =20
+> >  	return false;
+> >  }
+> > +#endif
+> > =20
+> >  static void halbtc8192e2ant_update_btlink_info(struct btc_coexist *btc=
+oexist)
+> >  {
+>=20
+> The output of=20
+>     git grep BT_AUTO_REPORT_ONLY_8192E_2ANT next-20140430
+>=20
+> is
+>     next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#=
+if (BT_AUTO_REPORT_ONLY_8192E_2ANT =3D=3D 1)
+>     next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#=
+if (BT_AUTO_REPORT_ONLY_8192E_2ANT =3D=3D 0)
+>     next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.c:#=
+if (BT_AUTO_REPORT_ONLY_8192E_2ANT =3D=3D 0)
+>     next-20140430:drivers/staging/rtl8821ae/btcoexist/halbtc8192e2ant.h:#=
+define     BT_AUTO_REPORT_ONLY_8192E_2ANT                  0
+>=20
+> So it seems that some trivial cleaning up is possible. Ie, drop the
+> #define and drop the three tests that are either always true or always
+> false. Is there a reason not to do that cleaning up?
 
-Looking at your patch, I noticed that we need to extend the
-register_current_timer_delay function to deal with clocks that aren't as
-wide as cycle_t, otherwise we don't delay() for long enough when the clock
-overflows (this is potentially already an issue for architected timers <
-64-bit). Could you cook a patch for that please?
+I thought this part of code is here for somebody who wants to make a
+custom build with this variable changed to compile in the other
+behaviour. But after a while, it stopped to make sense for me. I may
+clean it up. I'll send a cleanup-patch later.
+--=20
+Jan Mat=C4=9Bjka <mq@suse.cz>
+SUSE Labs
 
-Will
+--ulDeV4rPMk/y39in
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTYPHIAAoJEDFERKcRJ1apRr4P/1bVLlZdElio7UNFLl8JUVQ2
+8fDL/p1viIffB5UwF8qbn+ZSvi92NXut3PCFYVO4p1ZyHJuGhqSl7rYn+mcyvOoo
+eBkuAN6nLX3XhPodqEFkZnKVwwHqriTQihJzKDoY0B0Dt1PBOnq++SRW+971DhXO
+iwuvqDnV5AfWFpLqhrxpvHNzExNnzmYY1aZomKK+cNdGNukIlU6hY83g6ZTqx2kF
+rpdCk4+aCfWwT4y1SeTVylRg9Rh5cdJH/Ui84dFHVTxsCRyeDdzduWVZ42aI2X2S
+WALU8GawmvAky9vyuul+ALnJ+7bBZtlFqUxeWK6TrMP8+9Db/24OzeqMMM9plZFe
+SXS/aMFfbsgL3arS//YLYhda5mQzUoRgwj7tHw0a+6fG9UHrJv3OW/4aZ32l5qBa
+FB2OBujqyyPuV5VaqndSIdwTi2LiYCiVIWczUhfMCnSKinPVZ86d26+05JuGxqk9
+daRz3OVWB/BXEkwOoi299asWSqrB0lrgzoqmn87HCowz9uEVkIo8kON8AwI9a/cJ
+9tIZxBqYtKxCutOrlpMjku32qnmWe6KHbFdQP76RQYZgzFsvkCdUCb/N4QRo6x99
+RppraXPXYm4E2vfNN/pnbE+WiES+4MT6DelqEswGrwdcVtiunQjhK7TzvymWlsEe
+HTZcX81/pXAnnkcLJ47M
+=06xL
+-----END PGP SIGNATURE-----
+
+--ulDeV4rPMk/y39in--
