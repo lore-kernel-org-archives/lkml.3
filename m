@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524AbaD3VBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:01:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759165AbaD3VA7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:00:59 -0400
-Date: Wed, 30 Apr 2014 14:00:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v5] mm,writeback: fix divide by zero in
- pos_ratio_polynom
-Message-Id: <20140430140057.7d2a6e984b2ec987182d2a4e@linux-foundation.org>
-In-Reply-To: <20140430164255.7a753a8e@cuia.bos.redhat.com>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
-	<5360C9E7.6010701@jp.fujitsu.com>
-	<20140430093035.7e7226f2@annuminas.surriel.com>
-	<20140430134826.GH4357@dhcp22.suse.cz>
-	<20140430104114.4bdc588e@cuia.bos.redhat.com>
-	<20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-	<53614F3C.8020009@redhat.com>
-	<20140430123526.bc6a229c1ea4addad1fb483d@linux-foundation.org>
-	<20140430160218.442863e0@cuia.bos.redhat.com>
-	<20140430131353.fa9f49604ea39425bc93c24a@linux-foundation.org>
-	<20140430164255.7a753a8e@cuia.bos.redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S965044AbaD3VDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:03:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64388 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309AbaD3VDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 17:03:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,960,1389772800"; 
+   d="scan'208";a="532684957"
+Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1398881337.2970.103.camel@schen9-DESK>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
+	 <20140430082715.GA11096@twins.programming.kicks-ass.net>
+	 <1398880209.2970.100.camel@schen9-DESK>
+	 <20140430180441.GF17778@laptop.programming.kicks-ass.net>
+	 <1398881337.2970.103.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Apr 2014 14:01:39 -0700
+Message-ID: <1398891699.2970.110.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014 16:42:55 -0400 Rik van Riel <riel@redhat.com> wrote:
-
-> On Wed, 30 Apr 2014 13:13:53 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
+On Wed, 2014-04-30 at 11:08 -0700, Tim Chen wrote:
+> On Wed, 2014-04-30 at 20:04 +0200, Peter Zijlstra wrote:
+> > On Wed, Apr 30, 2014 at 10:50:09AM -0700, Tim Chen wrote:
+> > > On Wed, 2014-04-30 at 10:27 +0200, Peter Zijlstra wrote:
+> > > > On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
+> > > > > +/*
+> > > > > + * Try to acquire write lock before the writer has been put on wait queue.
+> > > > > + */
+> > > > > +static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> > > > > +{
+> > > > > +	long count = ACCESS_ONCE(sem->count);
+> > > > > +retry:
+> > > > > +	if (count == RWSEM_WAITING_BIAS) {
+> > > > > +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
+> > > > > +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
+> > 
+> > count = RWSEM_WAITING_BIAS
+> > new = RWSEM_WAITING_BIAS + RWSEM_ACTIVE_WRITE_BIAS
+> > new = count + RWSEM_ACTIVE_WRITE_BIAS
+> > 
+> > > > > +		/* allow write lock stealing, try acquiring the write lock. */
+> > > > > +		if (count == RWSEM_WAITING_BIAS)
+> > > > > +			goto acquired;
+> > > > > +		else if (count == 0)
+> > > > > +			goto retry;
+> > > > > +	} else if (count == 0) {
+> > > > > +		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
+> > 
+> > count = 0
+> > new = RWSEM_ACTIVE_WRITE_BIAS
+> > new = count + RWSEM_ACTIVE_WRITE_BIAS
+> > 
+> > > > > +		if (count == 0)
+> > > > > +			goto acquired;
+> > > > > +		else if (count == RWSEM_WAITING_BIAS)
+> > > > > +			goto retry;
+> > > > > +	}
+> > > > > +	return false;
+> > > > > +
+> > > > > +acquired:
+> > > > > +	return true;
+> > > > > +}
+> > > > 
+> > > > Could we have written that like:
+> > > > 
+> > > > static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
+> > > > {
+> > > > 	long old, count = ACCESS_ONCE(sem->count);
+> > > > 
+> > > > 	for (;;) {
+> > > > 		if (!(count == 0 || count == RWSEM_WAITING_BIAS))
+> > > > 			return false;
+> > > > 
+> > > > 		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
+> > > 
+> > > Above line won't be correct for the case when count == 0.  We are trying 
+> > > to acquire write lock, so the sem->count should become
+> > > RWSEM_ACTIVE_WRITE_BIAS, or RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS.  
+> > > So we should change the logic to
+> > > 
+> > > 		  if (count == RWSEM_WAITING_BIAS)
+> > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
+> > > 		  else
+> > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
+> > 
+> > I think I simply mis-typed it; shouldn't both cases be
+> > RWSEM_ACTIVE_WRITE_BIAS ?
 > 
-> > This was a consequence of 64->32 truncation and it can't happen any
-> > more, can it?
-> 
-> Andrew, this is cleaner indeed :)
+> Yeah,  we should just write it as
+> 			  old = cmpxchg(&sem->count, count, RWSEM_ACTIVE_WRITE_BIAS);
 
-I'm starting to get worried about 32-bit wraparound in the patch
-version number ;)
+Oops, I mean
+			    old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
 
-> Masayoshi-san, does the bug still happen with this version, or does
-> this fix the problem?
-> 
+for count == 0, we need sem->count to be RWSEM_ACTIVE_WRITE_BIAS, 
+for count == RWSEM_WAITING_BIAS, we need sem->count to be  RWSEM_WAITING_BIAS + RWSEM_ACTIVE_WRITE_BIAS
 
-We could put something like
-
-	if (WARN_ON_ONCE(setpoint == limit))
-		setpoint--;
-
-in there if we're not sure.  But it's better to be sure!
+Tim
 
 
