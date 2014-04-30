@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326AbaD3Rcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 13:32:32 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42206 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759256AbaD3Rca (ORCPT
+	id S1422695AbaD3Rdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 13:33:41 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:57842 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256AbaD3Rdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 13:32:30 -0400
-Date: Wed, 30 Apr 2014 13:32:28 -0400 (EDT)
-Message-Id: <20140430.133228.1835236768036652448.davem@davemloft.net>
-To: zhangjie14@huawei.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linville@tuxdriver.com, jeffrey.t.kirsher@intel.com,
-        rusty@rustcorp.com.au, mst@redhat.com, jasowang@redhat.com,
-        qinchuanyu@huawei.com, liuyongan@huawei.com, zhaoshenglong@huawei.com
-Subject: Re: [PATCH net-next] virtio-net: Set needed_headroom for
- virtio-net when VIRTIO_F_ANY_LAYOUT is true
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <535F824A.5060804@huawei.com>
-References: <535F824A.5060804@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 30 Apr 2014 10:32:30 -0700 (PDT)
+	Wed, 30 Apr 2014 13:33:39 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140430160345.GP18016@ZenIV.linux.org.uk>
+References: <20140429181610.GJ18016@ZenIV.linux.org.uk>
+	<20140429191015.GK18016@ZenIV.linux.org.uk>
+	<20140429211851.GA32204@dastard>
+	<20140429214842.GL18016@ZenIV.linux.org.uk>
+	<CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+	<20140429232013.GM18016@ZenIV.linux.org.uk>
+	<20140430023142.GN18016@ZenIV.linux.org.uk>
+	<CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+	<20140430040436.GO18016@ZenIV.linux.org.uk>
+	<20140430154958.GC3113@tucsk.piliscsaba.szeredi.hu>
+	<20140430160345.GP18016@ZenIV.linux.org.uk>
+Date: Wed, 30 Apr 2014 19:33:38 +0200
+Message-ID: <CAJfpegu+q3sT=8==9K5t4=qeJH2azFcBGeMXUtK3LVSEEzXTUA@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Zhangjie (HZ)" <zhangjie14@huawei.com>
-Date: Tue, 29 Apr 2014 18:43:22 +0800
+On Wed, Apr 30, 2014 at 6:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Apr 30, 2014 at 05:49:58PM +0200, Miklos Szeredi wrote:
+>> > FWIW, the first two are really straightforward expanding the function
+>> > into its only callsite.  The last needs more splitup.  Not sure if the
+>> > following is good enough, but it ought to be at least somewhat cleaner.
+>> > Combined change is identical to the original, so it doesn't invalidate
+>> > the testing so far...
+>>
+>> Hmm, patches look okay, but I'm wondering if we really need the morgue list and
+>> the waiting.  Why not just skip dentries that are presently being handled by
+>> dentry_kill()?
+>
+> Who will be freeing them?  If we do that from dentry_kill(), we are back to
+> needing them removed from shrink list by something called by dput().  And
+> if we do that from shrink_dentry_list(), we'd damn better wait for
+> dentry_iput() et.al. to finish.
 
-> This is a small supplement for commit e7428e95a06fb516fac1308bd0e176e27c0b9287
-> ("virtio-net: put virtio-net header inline with data"). TCP packages have
-> enough room to put virtio-net header in, but UDP packages do not. By
-> setting dev->needed_headroom for virtio-net device, UDP packages could have
-> enough room.
-> 
-> For UDP packages, sk_buff is alloced in fun __ip_append_data. The size is
-> "alloclen + hh_len + 15", and "hh_len = LL_RESERVED_SPACE(rt-dst.dev);".
-> The Macro is defined as follows:
-> #define LL_RESERVED_SPACE(dev) \
->      ((((dev)->hard_header_len+(dev)->needed_headroom)\
->      &~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
-> By default, for UDP packages, after skb is allocated, only 16 bytes
-> reserved. And 2 bytes remained after mac header is set. That is not enough
-> to put virtio-net header in. If we set dev->needed_headroom to 12 or 10
-> (according to mergeable_rx_bufs is on or off ), more room can be reserved.
-> Then there is enough room for UDP packages to put the header in.
-> 
-> test result list as below:
-> guest and host: suse11sp3, netperf, intel 2.4GHz
-> +-------+---------+---------+---------+---------+
-> |       |   old             |   new             |
-> +-------+---------+---------+---------+---------+
-> | UDP   |  Gbit/s | pps     |  Gbit/s | pps     |
-> | 64    |  0.57   | 692232  |  0.61   | 742420  |
-> | 256   |  1.60   | 686860  |  1.71   | 733331  |
-> | 512   |  2.92   | 674576  |  3.07   | 710446  |
-> | 1024  |  4.99   | 598977  |  5.17   | 620821  |
-> | 1460  |  5.68   | 483757  |  7.16   | 610519  |
-> | 4096  |  6.98   | 637468  |  7.21   | 658471  |
-> +-------+---------+---------+---------+---------+
-> 
-> Signed-off-by: Zhang Jie <zhangjie14@huawei.com>
+We can do it from dput if the shrinker gets there first and from the
+shrinker if dput manages to finish before.  See the updated patch in
+the previous mail.
 
-Applied.
+Thanks,
+Miklos
