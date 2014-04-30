@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759037AbaD3Nsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:48:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45599 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757983AbaD3Nsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:48:30 -0400
-Date: Wed, 30 Apr 2014 15:48:26 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Rik van Riel <riel@redhat.com>
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
-Message-ID: <20140430134826.GH4357@dhcp22.suse.cz>
-References: <20140429151910.53f740ef@annuminas.surriel.com>
- <5360C9E7.6010701@jp.fujitsu.com>
- <20140430093035.7e7226f2@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430093035.7e7226f2@annuminas.surriel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1759063AbaD3Ntt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:49:49 -0400
+Received: from sibelius.xs4all.nl ([83.163.83.176]:25009 "EHLO
+	glazunov.sibelius.xs4all.nl" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758792AbaD3Nts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:49:48 -0400
+X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Apr 2014 09:49:47 EDT
+Date: Wed, 30 Apr 2014 15:35:33 +0200 (CEST)
+Message-Id: <201404301335.s3UDZX4J017978@glazunov.sibelius.xs4all.nl>
+From: Mark Kettenis <mark.kettenis@xs4all.nl>
+To: hpa@zytor.com
+CC: pinskia@gmail.com, teawater@gmail.com, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, eparis@redhat.com,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, gdb@sourceware.org
+In-reply-to: <536085B7.5070002@zytor.com> (hpa@zytor.com)
+Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by GDB
+References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>	<53554846.3070608@zytor.com>	<CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>	<53608125.2020103@zytor.com> <CA+=Sn1=y-smZOaD_yRxEwgu-PPaZYdQtB_RGPCA5-9wmB6=hvQ@mail.gmail.com> <536085B7.5070002@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-04-14 09:30:35, Rik van Riel wrote:
-[...]
-> Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
+> Date: Tue, 29 Apr 2014 22:10:15 -0700
+> From: "H. Peter Anvin" <hpa@zytor.com>
 > 
-> It is possible for "limit - setpoint + 1" to equal zero, leading to a
-> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
-> working, so we need to actually test the divisor before calling div64.
+> On 04/29/2014 10:08 PM, Andrew Pinski wrote:
+> > 
+> > restoring the values is hard since even the ptrace interface does not
+> > allow for that.
+> > 
 > 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  mm/page-writeback.c | 13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index ef41349..f98a297 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
->  					  unsigned long dirty,
->  					  unsigned long limit)
->  {
-> +	unsigned long divisor;
->  	long long pos_ratio;
->  	long x;
->  
-> +	divisor = limit - setpoint;
-> +	if (!divisor)
-> +		divisor = 1;	/* Avoid div-by-zero */
-> +
+> So that begs the ultimate question, which is: given the fact that there
+> is *state missing* from the state vector (this is the core of the
+> problem), is there a way we can add that state so that gdb will be able
+> to save and restore it?
 
-This is still prone to u64 -> s32 issue, isn't it?
-What was the original problem anyway? Was it really setpoint > limit or
-rather the overflow?
+Carrying around additional state in GDB is complicated; I'd rather
+avoid it.
 
->  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
-> -		    limit - setpoint + 1);
-> +		    divisor);
->  	pos_ratio = x;
->  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
-> @@ -842,8 +847,12 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
->  	x_intercept = bdi_setpoint + span;
->  
->  	if (bdi_dirty < x_intercept - span / 4) {
-> +		unsigned long divisor = x_intercept - bdi_setpoint;
+arch/x86/kernel/ptrace.c:putreg32() has this bit of code:
 
-Same here.
+        case offsetof(struct user32, regs.orig_eax):
+                /*
+                 * A 32-bit debugger setting orig_eax means to restore
+                 * the state of the task restarting a 32-bit syscall.
+                 * Make sure we interpret the -ERESTART* codes correctly
+                 * in case the task is not actually still sitting at the
+                 * exit from a 32-bit syscall with TS_COMPAT still set.
+                 */
+                regs->orig_ax = value;
+                if (syscall_get_nr(child, regs) >= 0)
+                        task_thread_info(child)->status |= TS_COMPAT;
+                break;
 
-> +		if (!divisor)
-> +			divisor = 1;	/* Avoid div-by-zero */
-> +
->  		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
-> -				    x_intercept - bdi_setpoint + 1);
-> +				    divisor);
->  	} else
->  		pos_ratio /= 4;
->  
+which gets used for 32-bit compat ptrace(2).  Perhaps the same logic
+should be added to putreg() if the child is a 32-bit process?
 
--- 
-Michal Hocko
-SUSE Labs
+If (and only if) the goal of that TS_COMPAT flag solely is to trigger
+the error code sign-extension in arch/x86/asm/syscall.h:syscall_get_error(),
+we could work around to problem in GDB by checking "orig_ax" to see if
+we're continuing an interrupted system call and sign extend the error
+code in the real "eax" register if we are.
