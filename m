@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759016AbaD3M5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:57:08 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:50820 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954AbaD3M5C (ORCPT
+	id S1759000AbaD3M5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:57:06 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:52387 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758931AbaD3M5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 08:57:02 -0400
+	Wed, 30 Apr 2014 08:57:00 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -19,20 +19,22 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 11/15] ARM: dts: kirkwood: set default pinctrl for NAND
-Date: Wed, 30 Apr 2014 14:56:38 +0200
-Message-Id: <1398862602-29595-12-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 10/15] ARM: dts: kirkwood: set default pinctrl for SPI0
+Date: Wed, 30 Apr 2014 14:56:37 +0200
+Message-Id: <1398862602-29595-11-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is only one valid pinctrl setting for NAND on Kirkwood. Now that we
-have the setting in the common SoC pinctrl, move it to the NAND controller
-node directly and remove it from the individual boards.
+Most Kirkwood boards use the default SPI0 pinctrl setting anyway. Add a
+default pinctrl setting to the toplevel SoC SPI0 node and put a note
+in front of the corresponding pinctrl node to overwrite the setting
+on board level.
 
-While at it, also fix up status = "okay" to "ok" on one board's NAND node.
+Currently, only T5325 is using a different setting and already
+overwrites the corresponding pinctrl node.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -50,163 +52,170 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/kirkwood-db.dtsi                | 2 --
- arch/arm/boot/dts/kirkwood-dnskw.dtsi             | 2 --
- arch/arm/boot/dts/kirkwood-ib62x0.dts             | 2 --
- arch/arm/boot/dts/kirkwood-km_kirkwood.dts        | 4 +---
- arch/arm/boot/dts/kirkwood-laplug.dts             | 1 -
- arch/arm/boot/dts/kirkwood-mplcec4.dts            | 2 --
- arch/arm/boot/dts/kirkwood-openblocks_a6.dts      | 2 --
- arch/arm/boot/dts/kirkwood-openblocks_a7.dts      | 2 --
- arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi | 2 --
- arch/arm/boot/dts/kirkwood-topkick.dts            | 2 --
- arch/arm/boot/dts/kirkwood.dtsi                   | 2 ++
- 11 files changed, 3 insertions(+), 20 deletions(-)
+ arch/arm/boot/dts/kirkwood-b3.dts              | 2 --
+ arch/arm/boot/dts/kirkwood-cloudbox.dts        | 2 --
+ arch/arm/boot/dts/kirkwood-dreamplug.dts       | 2 --
+ arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts | 2 --
+ arch/arm/boot/dts/kirkwood-ns2-common.dtsi     | 2 --
+ arch/arm/boot/dts/kirkwood-rd88f6192.dts       | 2 --
+ arch/arm/boot/dts/kirkwood-synology.dtsi       | 2 --
+ arch/arm/boot/dts/kirkwood-t5325.dts           | 6 ------
+ arch/arm/boot/dts/kirkwood-ts219.dtsi          | 2 --
+ arch/arm/boot/dts/kirkwood.dtsi                | 6 ++++++
+ 10 files changed, 6 insertions(+), 22 deletions(-)
 
-diff --git a/arch/arm/boot/dts/kirkwood-db.dtsi b/arch/arm/boot/dts/kirkwood-db.dtsi
-index 2790f46d87e0..812df691ae3d 100644
---- a/arch/arm/boot/dts/kirkwood-db.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-db.dtsi
+diff --git a/arch/arm/boot/dts/kirkwood-b3.dts b/arch/arm/boot/dts/kirkwood-b3.dts
+index 38972b221089..6678e0b318d5 100644
+--- a/arch/arm/boot/dts/kirkwood-b3.dts
++++ b/arch/arm/boot/dts/kirkwood-b3.dts
+@@ -70,8 +70,6 @@
+ 
+ 		spi@10600 {
+ 			status = "okay";
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 
+ 			m25p16@0 {
+ 				#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/kirkwood-cloudbox.dts b/arch/arm/boot/dts/kirkwood-cloudbox.dts
+index 1ac6bd9f54de..e7a232eb28b0 100644
+--- a/arch/arm/boot/dts/kirkwood-cloudbox.dts
++++ b/arch/arm/boot/dts/kirkwood-cloudbox.dts
+@@ -37,8 +37,6 @@
+ 		};
+ 
+ 		spi@10600 {
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 			status = "okay";
+ 
+ 			flash@0 {
+diff --git a/arch/arm/boot/dts/kirkwood-dreamplug.dts b/arch/arm/boot/dts/kirkwood-dreamplug.dts
+index dd8d1a4611a8..af56cecc6c73 100644
+--- a/arch/arm/boot/dts/kirkwood-dreamplug.dts
++++ b/arch/arm/boot/dts/kirkwood-dreamplug.dts
+@@ -38,8 +38,6 @@
+ 
+ 		spi@10600 {
+ 			status = "okay";
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 
+ 			m25p40@0 {
+ 				#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
+index acbebc6dc169..b318d5d82d67 100644
+--- a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
++++ b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
+@@ -60,8 +60,6 @@
+ 		};
+ 
+ 		spi@10600 {
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 			status = "okay";
+ 
+ 			flash@0 {
+diff --git a/arch/arm/boot/dts/kirkwood-ns2-common.dtsi b/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
+index 696b208b676f..c10ff0f5290b 100644
+--- a/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
++++ b/arch/arm/boot/dts/kirkwood-ns2-common.dtsi
+@@ -24,8 +24,6 @@
+ 		};
+ 
+ 		spi@10600 {
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 			status = "okay";
+ 
+ 			flash@0 {
+diff --git a/arch/arm/boot/dts/kirkwood-rd88f6192.dts b/arch/arm/boot/dts/kirkwood-rd88f6192.dts
+index 30087b19efae..35a29dee8dd8 100644
+--- a/arch/arm/boot/dts/kirkwood-rd88f6192.dts
++++ b/arch/arm/boot/dts/kirkwood-rd88f6192.dts
 @@ -57,8 +57,6 @@
- };
  
- &nand {
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 	chip-delay = <25>;
- 	status = "okay";
+ 		spi@10600 {
+ 			status = "okay";
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
  
-diff --git a/arch/arm/boot/dts/kirkwood-dnskw.dtsi b/arch/arm/boot/dts/kirkwood-dnskw.dtsi
-index bcc6e0f48571..113dcf056dcf 100644
---- a/arch/arm/boot/dts/kirkwood-dnskw.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-dnskw.dtsi
-@@ -183,8 +183,6 @@
- };
+ 			m25p128@0 {
+ 				#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/kirkwood-synology.dtsi b/arch/arm/boot/dts/kirkwood-synology.dtsi
+index 370af7f69319..a21419f78bee 100644
+--- a/arch/arm/boot/dts/kirkwood-synology.dtsi
++++ b/arch/arm/boot/dts/kirkwood-synology.dtsi
+@@ -213,8 +213,6 @@
  
- &nand {
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 	status = "okay";
- 	chip-delay = <35>;
+ 		spi@10600 {
+ 			status = "okay";
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
  
-diff --git a/arch/arm/boot/dts/kirkwood-ib62x0.dts b/arch/arm/boot/dts/kirkwood-ib62x0.dts
-index 6804638eb87e..bfa5edde179c 100644
---- a/arch/arm/boot/dts/kirkwood-ib62x0.dts
-+++ b/arch/arm/boot/dts/kirkwood-ib62x0.dts
-@@ -105,8 +105,6 @@
+ 			m25p80@0 {
+ 				#address-cells = <1>;
+diff --git a/arch/arm/boot/dts/kirkwood-t5325.dts b/arch/arm/boot/dts/kirkwood-t5325.dts
+index ae102abcab04..289fc9e2afc2 100644
+--- a/arch/arm/boot/dts/kirkwood-t5325.dts
++++ b/arch/arm/boot/dts/kirkwood-t5325.dts
+@@ -65,10 +65,6 @@
+ 				marvell,function = "gpio";
+ 			};
  
- &nand {
- 	status = "okay";
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
+-			/*
+-			 * Redefined from kirkwood-6281.dtsi, because
+-			 * we don't use SPI CS on MPP0, but on MPP7.
+-			 */
+ 			pmx_spi: pmx-spi {
+ 				marvell,pins = "mpp1", "mpp2", "mpp3", "mpp7";
+ 				marvell,function = "spi";
+@@ -87,8 +83,6 @@
+ 		};
  
- 	partition@0 {
- 		label = "u-boot";
-diff --git a/arch/arm/boot/dts/kirkwood-km_kirkwood.dts b/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
-index db14bd03b86b..61139bf30985 100644
---- a/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
-+++ b/arch/arm/boot/dts/kirkwood-km_kirkwood.dts
-@@ -46,9 +46,7 @@
- };
+ 		spi@10600 {
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
+ 			status = "okay";
  
- &nand {
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
--	status = "ok";
-+	status = "okay";
- 	chip-delay = <25>;
- };
+ 			flash@0 {
+diff --git a/arch/arm/boot/dts/kirkwood-ts219.dtsi b/arch/arm/boot/dts/kirkwood-ts219.dtsi
+index 21cb9aeb2455..539a2f80a3ad 100644
+--- a/arch/arm/boot/dts/kirkwood-ts219.dtsi
++++ b/arch/arm/boot/dts/kirkwood-ts219.dtsi
+@@ -47,8 +47,6 @@
+ 		};
+ 		spi@10600 {
+ 			status = "okay";
+-			pinctrl-0 = <&pmx_spi>;
+-			pinctrl-names = "default";
  
-diff --git a/arch/arm/boot/dts/kirkwood-laplug.dts b/arch/arm/boot/dts/kirkwood-laplug.dts
-index 4c91fbb084c5..642755acf2fe 100644
---- a/arch/arm/boot/dts/kirkwood-laplug.dts
-+++ b/arch/arm/boot/dts/kirkwood-laplug.dts
-@@ -138,7 +138,6 @@
- &nand {
- 	/* Total size : 512MB */
- 	status = "okay";
--	pinctrl-0 = <&pmx_nand>;
- 
- 	partition@0 {
- 		label = "u-boot";
-diff --git a/arch/arm/boot/dts/kirkwood-mplcec4.dts b/arch/arm/boot/dts/kirkwood-mplcec4.dts
-index 79796c8b9c4f..f3a991837515 100644
---- a/arch/arm/boot/dts/kirkwood-mplcec4.dts
-+++ b/arch/arm/boot/dts/kirkwood-mplcec4.dts
-@@ -162,8 +162,6 @@
- };
- 
- &nand {
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 	status = "okay";
- 
- 	partition@0 {
-diff --git a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-index 1e056b3b1817..00c2e5a9d863 100644
---- a/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-+++ b/arch/arm/boot/dts/kirkwood-openblocks_a6.dts
-@@ -130,8 +130,6 @@
- &nand {
- 	chip-delay = <25>;
- 	status = "okay";
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 
- 	partition@0 {
- 		label = "uboot";
-diff --git a/arch/arm/boot/dts/kirkwood-openblocks_a7.dts b/arch/arm/boot/dts/kirkwood-openblocks_a7.dts
-index 07f6bf6aba91..bc07aa5e6698 100644
---- a/arch/arm/boot/dts/kirkwood-openblocks_a7.dts
-+++ b/arch/arm/boot/dts/kirkwood-openblocks_a7.dts
-@@ -148,8 +148,6 @@
- &nand {
- 	chip-delay = <25>;
- 	status = "okay";
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 
- 	partition@0 {
- 		label = "uboot";
-diff --git a/arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi b/arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi
-index e2c43aecc7b2..7196c7f3e109 100644
---- a/arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi
-+++ b/arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi
-@@ -71,8 +71,6 @@
- };
- 
- &nand {
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 	status = "okay";
- 
- 	partition@0 {
-diff --git a/arch/arm/boot/dts/kirkwood-topkick.dts b/arch/arm/boot/dts/kirkwood-topkick.dts
-index 14b12189d464..a4dd47acf98a 100644
---- a/arch/arm/boot/dts/kirkwood-topkick.dts
-+++ b/arch/arm/boot/dts/kirkwood-topkick.dts
-@@ -174,8 +174,6 @@
- 
- &nand {
- 	status = "okay";
--	pinctrl-0 = <&pmx_nand>;
--	pinctrl-names = "default";
- 
- 	partition@0 {
- 		label = "u-boot";
+ 			m25p128@0 {
+ 				#address-cells = <1>;
 diff --git a/arch/arm/boot/dts/kirkwood.dtsi b/arch/arm/boot/dts/kirkwood.dtsi
-index 0c8d8fa29926..caafcde88f67 100644
+index f92c8c4e3908..0c8d8fa29926 100644
 --- a/arch/arm/boot/dts/kirkwood.dtsi
 +++ b/arch/arm/boot/dts/kirkwood.dtsi
-@@ -61,6 +61,8 @@
- 			chip-delay = <25>;
- 			/* set partition map and/or chip-delay in board dts */
+@@ -88,6 +88,10 @@
+ 				marvell,function = "nand";
+ 			};
+ 
++			/*
++			 * Default SPI0 pinctrl setting with CSn on mpp0,
++			 * overwrite marvell,pins on board level if required.
++			 */
+ 			pmx_spi: pmx-spi {
+ 				marvell,pins = "mpp0", "mpp1", "mpp2", "mpp3";
+ 				marvell,function = "spi";
+@@ -127,6 +131,8 @@
+ 			interrupts = <23>;
+ 			reg = <0x10600 0x28>;
  			clocks = <&gate_clk 7>;
-+			pinctrl-0 = <&pmx_nand>;
++			pinctrl-0 = <&pmx_spi>;
 +			pinctrl-names = "default";
  			status = "disabled";
  		};
- 	};
+ 
 -- 
 1.9.1
 
