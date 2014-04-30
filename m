@@ -1,127 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbaD3Eu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 00:50:28 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:48473 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaD3Eu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 00:50:26 -0400
+	id S1754019AbaD3EvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 00:51:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45450 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750861AbaD3EvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 00:51:19 -0400
+Message-ID: <53608125.2020103@zytor.com>
+Date: Tue, 29 Apr 2014 21:50:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <26065037.GxQQuIURPg@wuerfel>
-References: <1398584283-22846-1-git-send-email-shaik.ameer@samsung.com> <26065037.GxQQuIURPg@wuerfel>
-From: Shaik Ameer Basha <shaik.samsung@gmail.com>
-Date: Wed, 30 Apr 2014 10:20:05 +0530
-Message-ID: <CAOD6ATrKumCcFFWFp7i7XLMssG23QV0FZ=3KqGCnnJt17Xmr1A@mail.gmail.com>
-Subject: Re: [PATCH v12 00/31] iommu/exynos: Fixes and Enhancements of System
- MMU driver with DT
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Shaik Ameer Basha <shaik.ameer@samsung.com>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        supash.ramaswamy@linaro.org, Tomasz Figa <tomasz.figa@gmail.com>,
-        sunil joshi <joshi@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Cho KyongHo <pullip.cho@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>, thierry.reding@gmail.com,
-        hdoyu@nvidia.com, Dave.Martin@arm.com
-Content-Type: text/plain; charset=UTF-8
+To: Hui Zhu <teawater@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, eparis@redhat.com, ak@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gdb@sourceware.org" <gdb@sourceware.org>
+Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by
+ GDB
+References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com> <53554846.3070608@zytor.com> <CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>
+In-Reply-To: <CANFwon3zA9FMujmnN3nMiv8Zr8bU9o72XXa26dkePNq57U=JcQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 28, 2014 at 2:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 27 April 2014 13:07:32 Shaik Ameer Basha wrote:
->> The current exynos-iommu(System MMU) driver does not work autonomously
->> since it is lack of support for power management of peripheral blocks.
->> For example, MFC device driver must ensure that its System MMU is disabled
->> before MFC block is power-down not to invalidate IOTLB in the System MMU
->> when I/O memory mapping is changed. Because a System MMU resides in the
->> same H/W block, access to control registers of System MMU while the H/W
->> block is turned off must be prohibited.
->>
->> This set of changes solves the above problem with setting each System MMUs
->> as the parent of the device which owns the System MMU to receive the
->> information when the device is turned off or turned on.
->>
->> Another big change to the driver is the support for devicetree.
->> The bindings for System MMU is described in
->> Documentation/devicetree/bindings/arm/samsung/system-mmu.txt
+On 04/29/2014 08:44 PM, Hui Zhu wrote:
+> 
+> I am sorry that the root cause of issue has something wrong.
+> The right root cause is:
+> When inferior call 32 bits syscall "read", Linux kernel function
+> "ia32_cstar_target" will set TS_COMPAT to current_thread_info->status.
+> 
+> syscall read is interrupt by ctrl-c.   Then the $rax will be set to
+> errno -512 in 64 bits.
+> And the inferior will be stopped by Linux kernel function ptrace_stop,
+> the call trace is:
+> #0  freezable_schedule () at include/linux/freezer.h:172
+> #1  ptrace_stop (exit_code=exit_code@entry=5, why=why@entry=262148,
+>     clear_code=clear_code@entry=0, info=info@entry=0xffff88001d833e78)
+>     at kernel/signal.c:1920
+> #2  0xffffffff8107ec33 in ptrace_signal (info=0xffff88001d833e78, signr=5)
+>     at kernel/signal.c:2157
+> #3  get_signal_to_deliver (info=info@entry=0xffff88001d833e78,
+>     return_ka=return_ka@entry=0xffff88001d833e58, regs=<optimized out>,
+>     cookie=cookie@entry=0x0 <irq_stack_union>) at kernel/signal.c:2269
+> #4  0xffffffff81013438 in do_signal (regs=regs@entry=0xffff88001d833f58)
+>     at arch/x86/kernel/signal.c:696
+> #5  0xffffffff81013a40 in do_notify_resume (regs=0xffff88001d833f58,
+>     unused=<optimized out>, thread_info_flags=4) at arch/x86/kernel/signal.c:747
+> #6  <signal handler called>
+> #7  0x0000000000000000 in irq_stack_union ()
+> 
+> After that, GDB can control the stopped inferior.
+> To call function "func1()" of inferior, GDB need:
+> Step 1, save current values of registers ($rax 0xfffffffffffffe00(64 bits -512)
+> is cut to 0xfffffe00(32 bits -512) because inferior is a 32 bits program).
+
+So gdb just corrupted the system state.
+
+> Step 2, change the values of registers.
+> Step 3, Push a dummy frame to stack.
+> Step 4, set a breakpint in the return address.
+> 
+> When GDB resume the inferior, it will keep execut from ptrace_stop
+> with new values of registers that set by GDB.
+
+> And TS_COMPAT inside current_thread_info->status will be cleared when
+> inferior switch back to user space.
+
+As it should, because TS_COMPAT *only is meaningful while a system call
+is executing*.
+
+> When function "func1()" return, inferior will be stoped by breakpoint
+> inferior will be stopped by Linux kernel function "ptrace_stop" again.
+> current_thread_info->status will not set TS_COMPAT when inferior swith
+> from user space to kernel space because breakpoint handler "int3" doesn't
+> has code for that.
+
+As it shouldn't, because there is no system call entry involved.
+
+> GDB begin to set saved values of registers back to inferior that use
+> function "amd64_collect_native_gregset".  Because this function just
+> zero-extend each 32 bits value to 64 bits value before put them to inferior.
+> $rax's value is set to 0xfffffe00(32 bits -512) but not
+> 0xfffffffffffffe00(64 bits -512).
 >
-> Sorry I've been absent from the review so far. Most of the patches
-> seem entirely reasonable to me, but I'm worried about the DT binding
-> aspect. We are going to see more systems shipping with IOMMUs now,
-> and we are seeing an increasing number of submissions for 64-bit
-> systems. We really have to work out what the DT representation for
-> IOMMUs should look like in general before adding another ad-hod
-> implementation that is private to one driver.
+> When GDB continue syscall "read" that is interrupted by "ctrl-c", it will
+> keep execute from ptrace_stop without "TS_COMPAT".
 
-Hi Arnd,
+gdb has corrupted the state, and it fails to execute.
 
-No issues. Its good that finally you are here :)
+I'm wondering if we need to add additional state here, to carry the
+TS_COMPAT bit.  We have talked about this kind of issues in the past.
 
-I am going through the possibilities for new bindings that you
-mentioned in the other thread.
-    -- [PATCH v12 11/31] documentation: iommu: add binding document of
-Exynos System MMU
+> Then in Linux kernel function "syscall_get_error", current_thread_info->status
+> doesn't have TS_COMPAT and $rax is 0xfffffe00(32 bits -512).  Then in
+> function do_signal will not handle this -ERESTARTSYS.
+> 
+> -ERESTARTSYS will be return back to inferior, that is why inferior got a
+> errno -ERESTARTSYS.
+> 
+> I made a new patch that before call do_notify_resume(will call do_signal)
+> in the int3 handler, set TS_COMPAT to status if this task is TIF_IA32.
+> Then after GDB call a function of inferior, it will still has TS_COMPAT.
 
-Exynos IOMMU driver is pretty simple with only one exception, "some
-devices are using multiple IOMMUs".
+I'm not sure if I want to label this a gdb bug or not (my main feeling
+is that gdb should save and restore the register set presented to it,
+and that truncating values to 32 bits is the root of the problem), but
+the above is definitely a hack which doesn't really address the real
+problem.
 
->From starting (of this patch set), we were trying to fix three major issues.
-[1] How to control the probing order of required IOMMU(s) for a given
-device and a device itself.
-[2] Handling multiple IOMMUs for one device.
-[3] Generic DT bindings to link Device and IOMMUs.
+	-hpa
 
-I have gone through the implementation of Tegra SMMU driver by "Hiroshi Doyu"
-    -- [PATCHv7 00/12] Unifying SMMU driver among Tegra SoCs
-[https://lkml.org/lkml/2013/12/12/74]
-
-For the first point [1],
-------------------------------
-Tegra implementation tries to fix this issue with these two patches
-    -- iommu/of: check if dependee iommu is ready or not
-[http://patchwork.ozlabs.org/patch/300560/]
-    -- driver/core: populate devices in order for IOMMUs
-[http://patchwork.ozlabs.org/patch/300558/]
-I can follow this driver if this approach is acceptable.
-
-For the second point [2]
-----------------------------------
-Currently we are handling this issue by providing same mapping for all
-IOMMUs linked to the same device.
-And current Exynos drivers doesn't have any special implementation to
-handle this case differently.
-
-I thought of understanding how Tegra SMMU driver is handling this case.
-Frankly speaking, I didn't understand how its done there.
-
-For the third point [3]
--------------------------------
-As Tegra SMMU driver is inline with the discussion in other thread, we
-can follow the same bindings, unless
-the discussion takes us in the other direction.
-
-"KyongHo Cho" is the author for this driver and hope he has more inputs.
-
-Regards,
-Shaik
-
-
-
->
->         Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
