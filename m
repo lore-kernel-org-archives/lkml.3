@@ -1,63 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaD3Dbb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 23:31:31 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:43863 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678AbaD3Dba convert rfc822-to-8bit (ORCPT
+	id S1752358AbaD3DgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 23:36:12 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:40751 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaD3DgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 23:31:30 -0400
-Subject: Re: [PATCH 18/47] staging/lustre/hsm: HSM requests not delivered
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140429090810.GY26890@mwanda>
-Date: Tue, 29 Apr 2014 23:31:13 -0400
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        James Nunez <james.a.nunez@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <34EC51E0-6759-40B6-A3E5-02871FD32979@linuxhacker.ru>
-References: <1398618431-29757-1-git-send-email-green@linuxhacker.ru> <1398618431-29757-19-git-send-email-green@linuxhacker.ru> <20140429090810.GY26890@mwanda>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-X-Mailer: Apple Mail (2.1283)
+	Tue, 29 Apr 2014 23:36:10 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3U3ZSDO011949, This message is accepted by code: ctloc85258
+Message-ID: <53606F49.1000401@realtek.com>
+Date: Wed, 30 Apr 2014 11:34:33 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH] mmc: rtsx: usb backend needs LED support
+References: <cover.1398735435.git.micky_ching@realsil.com.cn> <7208467.nZIXMIfPji@wuerfel> <CAPDyKFpJrrviaZo_L8MkLF=v7DqGEVj9=uSNsNtU-FXNwu-MmQ@mail.gmail.com> <201404300228.s3U2S7WA026782@rtits1.realtek.com>
+In-Reply-To: <201404300228.s3U2S7WA026782@rtits1.realtek.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 29, 2014, at 5:08 AM, Dan Carpenter wrote:
 
-> On Sun, Apr 27, 2014 at 01:06:42PM -0400, Oleg Drokin wrote:
->> diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
->> index 7fbc18e..c391b60 100644
->> --- a/drivers/staging/lustre/lustre/llite/dir.c
->> +++ b/drivers/staging/lustre/lustre/llite/dir.c
->> @@ -1804,6 +1804,11 @@ out_rmdir:
->> 		/* Compute the whole struct size */
->> 		totalsize = hur_len(hur);
-> hur_len() has an integer overflow bug.
+On 04/29/2014 08:46 PM, Arnd Bergmann wrote:
+> On Tuesday 29 April 2014 13:05:15 Ulf Hansson wrote:
+>> On 29 April 2014 11:45, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+>>> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+>>> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+>>> :(.text+0x806708): undefined reference to `led_classdev_register'
+>>>
+>>> This adds an explicit dependency in Kconfig
+>>
+>> I think the proper solution is to fix the dependency in the driver code instead.
+>>
+>> There are already some ifdefs hackery for making it optional to use
+>> leds, apparently that's not working properly.
+>>
+>
+> Ah, right, I misinterpreted the bug. Here is a new version:
+>
+> 8<---------
+>>From 5b5588f8c9b8ded8b296fd32d87b2d118e548a29 Mon Sep 17 00:00:00 2001
+> From: Arnd Bergmann <arnd@arndb.de>
+> Date: Tue, 29 Apr 2014 11:41:40 +0200
+> Subject: [PATCH] mmc: rtsx: usb backend needs LED support
+>
+> Building the rtsx USB driver uses the LED classdev base
+> support if available, but that fails if the classdev
+> is a module and the MMC driver is built-in, leading to this
+> link error.
+>
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+> :(.text+0x806480): undefined reference to `led_classdev_unregister'
+> drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+> :(.text+0x806708): undefined reference to `led_classdev_register'
+>
+> This adds an explicit dependency in Kconfig to ensure that
+> the MMC driver has to be a module if LEDS_CLASS is a module,
+> but still allows it to be built-in if LEDS_CLASS is either
+> disabled or built-in.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index 92d91fe..68da9b8 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -696,6 +696,7 @@ config MMC_REALTEK_PCI
+>   config MMC_REALTEK_USB
+>   	tristate "Realtek USB SD/MMC Card Interface Driver"
+>   	depends on MFD_RTSX_USB
+> +	depends on m || LEDS_CLASS!=m
+>   	help
+>   	  Say Y here to include driver code to support SD/MMC card interface
+>   	  of Realtek RTS5129/39 series card reader
+>
+> .
+>
 
-Indeed. Thanks.
+I think Ulf's idea is to fix the bug by modifying the .c files.
+I really found the problem of my ifdef hackery and it should do 
+something similar in sdhci.c as:
 
-The below check for the MDS_MAXREQSIZE was aimed at fixing it, I guess. But it's obviously flawed.
+From: Roger Tseng <rogerable@realtek.com>
+Date: Wed, 30 Apr 2014 11:11:25 +0800
+Subject: [PATCH] mmc: rtsx: fix possible linking error if built-in
 
->> 		OBD_FREE_PTR(hur);
->> +
->> +		/* Final size will be more than double totalsize */
->> +		if (totalsize >= MDS_MAXREQSIZE / 3)
->> +			return -E2BIG;
-> "totalsize" is signed and this condition doesn't take negatives into
-> consideration.  Make totalsize unsigned.
+rtsx_usb_sdmmc module uses the LED classdev if available, but the code 
+failed
+to consider the situation that it is built-in and the LED classdev is a 
+module,
+leading to following linking error:
 
-In fact we should just enforce a max limit on item count in hur structure above
-and that would take care of both the overflow and here.
+   LD      init/built-in.o
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_remove':
+rtsx_usb_sdmmc.c:(.text+0x2a018e): undefined reference to 
+`led_classdev_unregister'
+drivers/built-in.o: In function `rtsx_usb_sdmmc_drv_probe':
+rtsx_usb_sdmmc.c:(.text+0x2a197e): undefined reference to 
+`led_classdev_register'
 
->> +
->> 		OBD_ALLOC_LARGE(hur, totalsize);
-> How do we know that "totalsize" is more than sizeof(*hur)?  If we fixed
-> the overflow bug then maybe this isn't a problem.  I haven't looked.
+Fix by excluding such condition when defining macro RTSX_USB_USE_LEDS_CLASS.
 
-hur_size calculates total size as size of the struct hur (but using offset_of of it's last member that's a zero-sized array + whatever the size of the follow on items.
+Signed-off-by: Roger Tseng <rogerable@realtek.com>
+---
+  drivers/mmc/host/rtsx_usb_sdmmc.c | 3 ++-
+  1 file changed, 2 insertions(+), 1 deletion(-)
 
-Bye,
-    Oleg
+diff --git a/drivers/mmc/host/rtsx_usb_sdmmc.c 
+b/drivers/mmc/host/rtsx_usb_sdmmc.c
+index e11fafa..38bdda5 100644
+--- a/drivers/mmc/host/rtsx_usb_sdmmc.c
++++ b/drivers/mmc/host/rtsx_usb_sdmmc.c
+@@ -34,7 +34,8 @@
+  #include <linux/mfd/rtsx_usb.h>
+  #include <asm/unaligned.h>
+
+-#if defined(CONFIG_LEDS_CLASS) || defined(CONFIG_LEDS_CLASS_MODULE)
++#if defined(CONFIG_LEDS_CLASS) || (defined(CONFIG_LEDS_CLASS_MODULE) && \
++       defined(CONFIG_MMC_REALTEK_USB_MODULE))
+  #include <linux/leds.h>
+  #include <linux/workqueue.h>
+  #define RTSX_USB_USE_LEDS_CLASS
+
+Best regards,
+Roger Tseng
