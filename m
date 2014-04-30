@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759277AbaD3PdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:33:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759243AbaD3PdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:33:20 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@kernel.org>,
-        Mathias Krause <minipli@googlemail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Richard Yao <ryao@gentoo.org>,
-        Xia Kaixu <xiakaixu@huawei.com>
-Subject: [GIT PULL 0/7] perf/urgent fixes
-Date: Wed, 30 Apr 2014 17:32:44 +0200
-Message-Id: <1398871971-381-1-git-send-email-jolsa@kernel.org>
+	id S1759358AbaD3PeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:34:04 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13305 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758924AbaD3PeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 11:34:01 -0400
+Message-ID: <1398872038.24255.41.camel@hornet>
+Subject: Re: [PATCH 10/10] hwmon: vexpress: Use devm helper for hwmon device
+ registration
+From: Pawel Moll <pawel.moll@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Wed, 30 Apr 2014 16:33:58 +0100
+In-Reply-To: <20140430152754.GA30924@roeck-us.net>
+References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
+	 <1398707877-22596-11-git-send-email-pawel.moll@arm.com>
+	 <535EDD49.8050107@roeck-us.net> <1398870979.24255.37.camel@hornet>
+	 <20140430152754.GA30924@roeck-us.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+On Wed, 2014-04-30 at 16:27 +0100, Guenter Roeck wrote:
+> > I'm not sure I understand the question. The other patch from the series
+> 
+> The code above seems to change from
+> 
+>    	data->reg = devm_regmap_init_vexpress_config(&pdev->dev);
+> 	if (!data->reg)
+> 		return -ENODEV;
+> 
+> to
+> 
+>    	data->reg = devm_regmap_init_vexpress_config(&pdev->dev);
+> 	if (IS_ERR(data->reg))
+> 		return PTR_ERR(data->reg);
+> 
+> as part of this patch. This suggests that the return value from
+> devm_regmap_init_vexpress_config may have changed from NULL to 
+> ERR_PTR. Is my understanding wrong ?
 
-thanks,
-jirka
+No, you've got it right, but it's me making a mistake in patch splitting
+- it is supposed to be a part of the first patch. Thanks for spotting
+this!
 
+Pawel
 
-The following changes since commit 9f7ff8931e3c5ddc8535476971ec9501e9555c05:
-
-  perf/x86: Fix RAPL rdmsrl_safe() usage (2014-04-24 08:12:41 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-urgent-for-mingo
-
-for you to fetch changes up to 9a126728165eef9b1e9349fe57b9747ac6c6f7e3:
-
-  perf tests x86: Fix stack map lookup in dwarf unwind test (2014-04-30 17:02:31 +0200)
-
-----------------------------------------------------------------
-perf/urgent fixes:
-
-. Fix perf to use non-executable stack, again (Mathias Krause)
-
-. Remove extra '/' character in events file path (Xia Kaixu)
-
-. Search for modules in %s/lib/modules/%s (Richard Yao)
-
-. Build related fixies plus static build test (Jiri Olsa)
-
-. Fix stack map lookup in dwarf unwind test (Jiri Olsa)
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-
-----------------------------------------------------------------
-Jiri Olsa (4):
-      perf tools: Use LDFLAGS instead of ALL_LDFLAGS
-      perf tools: Fix bfd dependency libraries detection
-      perf tests: Add static build make test
-      perf tests x86: Fix stack map lookup in dwarf unwind test
-
-Mathias Krause (1):
-      perf x86: Fix perf to use non-executable stack, again
-
-Richard Yao (1):
-      perf machine: Search for modules in %s/lib/modules/%s
-
-Xia Kaixu (1):
-      perf tools: Remove extra '/' character in events file path
-
- tools/lib/api/fs/debugfs.c               |  4 ++--
- tools/perf/Makefile.perf                 |  2 +-
- tools/perf/arch/x86/tests/dwarf-unwind.c |  2 +-
- tools/perf/arch/x86/tests/regs_load.S    |  8 ++++++-
- tools/perf/config/Makefile               | 38 +++++++++++++++++++++++---------
- tools/perf/tests/make                    |  2 ++
- tools/perf/util/machine.c                | 16 ++++++++++----
- 7 files changed, 52 insertions(+), 20 deletions(-)
