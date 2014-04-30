@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274AbaD3O6r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:58:47 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:35615 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759255AbaD3O6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:58:46 -0400
-Message-ID: <53610FA3.10205@suse.cz>
-Date: Wed, 30 Apr 2014 16:58:43 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Vojtech Pavlik <vojtech@suse.cz>, Michael Matz <matz@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RFC 01/16] ftrace: Add function to find fentry of function
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>	<1398868249-26169-2-git-send-email-jslaby@suse.cz> <20140430104856.272169be@gandalf.local.home>
-In-Reply-To: <20140430104856.272169be@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1422672AbaD3PA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:00:56 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:48187 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759048AbaD3PAz convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Wed, 30 Apr 2014 11:00:55 -0400
+X-Greylist: delayed 1211 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Apr 2014 11:00:54 EDT
+Message-Id: <53612787020000780000DDA0@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Wed, 30 Apr 2014 15:40:39 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <david.vrabel@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 6/6] xen/pciback: Don't call
+ xen_pcibk_config_init_dev when device de-assigned.
+References: <1398866051-32714-1-git-send-email-konrad.wilk@oracle.com>
+ <1398866051-32714-7-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1398866051-32714-7-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 04:48 PM, Steven Rostedt wrote:
-> On Wed, 30 Apr 2014 16:30:34 +0200
-> Jiri Slaby <jslaby@suse.cz> wrote:
->> --- a/kernel/trace/ftrace.c
->> +++ b/kernel/trace/ftrace.c
->> @@ -1495,6 +1495,35 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
->>  		}				\
->>  	}
->>  
->> +/**
->> + * ftrace_function_to_fentry -- lookup fentry location for a function
->> + * @addr: function address to find a fentry in
->> + *
->> + * Perform a lookup in a list of fentry callsites to find one that fits a
->> + * specified function @addr. It returns the corresponding fentry callsite or
->> + * zero on failure.
->> + */
->> +unsigned long ftrace_function_to_fentry(unsigned long addr)
->> +{
->> +	const struct dyn_ftrace *rec;
->> +	const struct ftrace_page *pg;
->> +	unsigned long ret = 0;
->> +
->> +	mutex_lock(&ftrace_lock);
->> +	do_for_each_ftrace_rec(pg, rec) {
-> 
-> The records are sorted within a pg. You can optimize this a lot if you
-> just test the first and last record and see if it is in the range. If
-> not, then skip to the next page. If it is, you can use a bsearch as
-> well, to save on the lookups.
+>>> On 30.04.14 at 15:54, <konrad.wilk@oracle.com> wrote:
+> When the device is de-assigned from a guest (but still owned
+> by xen-pciback) we would needlessly free all of its dynamic
+> entries.
 
-Yes, this is a KISS (and suboptimal) version as there is a slight issue
-in your suggestion: if we pass addres of a function of which the fentry
-is the first in pg, it would be out of range for the particular pg. What
-should work is: check the first entry and then search binary...
+I wonder whether that isn't intentional - dynamic fields are only
+being used for what comes through the "quirks" attribute.
 
-thanks,
--- 
-js
-suse labs
+> --- a/drivers/xen/xen-pciback/pci_stub.c
+> +++ b/drivers/xen/xen-pciback/pci_stub.c
+> @@ -288,8 +288,6 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
+>  
+>  	/* And cleanup up our emulated fields. */
+>  	xen_pcibk_config_reset_dev(dev);
+> -	xen_pcibk_config_free_dyn_fields(dev);
+> -
+
+Irrespective of the above, patch title and contents are out of sync.
+
+Jan
+
