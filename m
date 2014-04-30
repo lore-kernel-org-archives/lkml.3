@@ -1,139 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262AbaD3JxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:53:08 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:58622 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaD3JxD (ORCPT
+	id S933393AbaD3Jx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:53:29 -0400
+Received: from smtprelay.synopsys.com ([198.182.44.111]:46603 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaD3Jx1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:53:03 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: will.deacon@arm.com
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
-        catalin.marinas@arm.com, dsaxena@linaro.org, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v6 2/4] arm64: split syscall_trace() into separate functions for enter/exit
-Date: Wed, 30 Apr 2014 18:51:30 +0900
-Message-Id: <1398851492-16345-3-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398851492-16345-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
- <1398851492-16345-1-git-send-email-takahiro.akashi@linaro.org>
+	Wed, 30 Apr 2014 05:53:27 -0400
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
+Subject: ARC patches for stable 3.10
+Thread-Topic: ARC patches for stable 3.10
+Thread-Index: Ac9kWfuHs1HsNTuISCm1RIcGFPO6OQ==
+Date: Wed, 30 Apr 2014 09:53:05 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA230751B1242@IN01WEMBXA.internal.synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.93]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As done in arm, this change makes it easy to confirm we invoke syscall
-related hooks, including syscall tracepoint, audit and seccomp which would
-be implemented later, in correct order. That is, undoing operations in the
-opposite order on exit that they were done on entry.
+Hi,
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/kernel/entry.S  |   10 ++++-----
- arch/arm64/kernel/ptrace.c |   50 +++++++++++++++++++++++++-------------------
- 2 files changed, 33 insertions(+), 27 deletions(-)
+Please apply the following mainline commits to stable 3.10 as prerequisites for a
+patch for 3.15/stable which will follow to Linus right after.
 
-diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-index f9f2cae..00d6eb9 100644
---- a/arch/arm64/kernel/entry.S
-+++ b/arch/arm64/kernel/entry.S
-@@ -649,9 +649,8 @@ ENDPROC(el0_svc)
- 	 * switches, and waiting for our parent to respond.
- 	 */
- __sys_trace:
--	mov	x1, sp
--	mov	w0, #0				// trace entry
--	bl	syscall_trace
-+	mov	x0, sp
-+	bl	syscall_trace_enter
- 	adr	lr, __sys_trace_return		// return address
- 	uxtw	scno, w0			// syscall number (possibly new)
- 	mov	x1, sp				// pointer to regs
-@@ -666,9 +665,8 @@ __sys_trace:
- 
- __sys_trace_return:
- 	str	x0, [sp]			// save returned x0
--	mov	x1, sp
--	mov	w0, #1				// trace exit
--	bl	syscall_trace
-+	mov	x0, sp
-+	bl	syscall_trace_exit
- 	b	ret_to_user
- 
- /*
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 6a8928b..6d666dc 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -1058,35 +1058,43 @@ long arch_ptrace(struct task_struct *child, long request,
- 	return ptrace_request(child, request, addr, data);
- }
- 
--asmlinkage int syscall_trace(int dir, struct pt_regs *regs)
-+enum ptrace_syscall_dir {
-+	PTRACE_SYSCALL_ENTER = 0,
-+	PTRACE_SYSCALL_EXIT,
-+};
-+
-+static void tracehook_report_syscall(struct pt_regs *regs,
-+				     enum ptrace_syscall_dir dir)
- {
-+	int regno;
- 	unsigned long saved_reg;
- 
--	if (!test_thread_flag(TIF_SYSCALL_TRACE))
--		return regs->syscallno;
--
--	if (is_compat_task()) {
--		/* AArch32 uses ip (r12) for scratch */
--		saved_reg = regs->regs[12];
--		regs->regs[12] = dir;
--	} else {
--		/*
--		 * Save X7. X7 is used to denote syscall entry/exit:
--		 *   X7 = 0 -> entry, = 1 -> exit
--		 */
--		saved_reg = regs->regs[7];
--		regs->regs[7] = dir;
--	}
-+	/*
-+	 * A scratch register (ip(r12) on AArch32, x7 on AArch64) is
-+	 * used to denote syscall entry/exit:
-+	 */
-+	regno = (is_compat_task() ? 12 : 7);
-+	saved_reg = regs->regs[regno];
-+	regs->regs[regno] = dir;
- 
--	if (dir)
-+	if (dir == PTRACE_SYSCALL_EXIT)
- 		tracehook_report_syscall_exit(regs, 0);
- 	else if (tracehook_report_syscall_entry(regs))
- 		regs->syscallno = ~0UL;
- 
--	if (is_compat_task())
--		regs->regs[12] = saved_reg;
--	else
--		regs->regs[7] = saved_reg;
-+	regs->regs[regno] = saved_reg;
-+}
-+
-+asmlinkage int syscall_trace_enter(struct pt_regs *regs)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
- 
- 	return regs->syscallno;
- }
-+
-+asmlinkage void syscall_trace_exit(struct pt_regs *regs)
-+{
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		tracehook_report_syscall(regs, PTRACE_SYSCALL_EXIT);
-+}
--- 
-1.7.9.5
+147aece29b15051173eb1e767018135361cdba89  (went in 3.11-rc1)
+"ARC: Entry Handler tweaks: Simplify branch for in-kernel preemption"
 
+fce16bc35ae4a45634f3dc348d8d297a25c277cf  (went in 3.12-rc1)
+"ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE"
+
+Thx,
+-Vineet
