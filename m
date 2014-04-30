@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524AbaD3UYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:24:33 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:22677 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758905AbaD3UYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:24:31 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqsGADRbYVNXQ3IO/2dsb2JhbABZgwaCQMMygSAXdIJmHCMYgQIkE4hFAaYmo2OOUYRAAQOPE4oTAZJrgzM7
-Date: Wed, 30 Apr 2014 22:24:28 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] lib/vsprintf.c: fix comparison to bool
-Message-Id: <20140430222428.c1e6cdb0936e53ed2eca95b6@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759549AbaD3UZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:25:58 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59938 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758905AbaD3UZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:25:55 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 0/9] mm: memcontrol: naturalize charge lifetime
+Date: Wed, 30 Apr 2014 16:25:34 -0400
+Message-Id: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing 2 coccinelle warnings:
-lib/vsprintf.c:2350:2-9: WARNING: Assignment of bool to 0/1
-lib/vsprintf.c:2389:3-10: WARNING: Assignment of bool to 0/1
+Hi,
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- lib/vsprintf.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+these patches rework memcg charge lifetime to integrate more naturally
+with the lifetime of user pages.  This drastically simplifies the code
+and reduces charging and uncharging overhead.  The most expensive part
+of charging and uncharging is the page_cgroup bit spinlock, which is
+removed entirely after this series.
 
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index 0648291..6fe2c84 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -2347,7 +2347,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
- 			break;
- 
- 		base = 10;
--		is_sign = 0;
-+		is_sign = false;
- 
- 		switch (*fmt++) {
- 		case 'c':
-@@ -2386,7 +2386,7 @@ int vsscanf(const char *buf, const char *fmt, va_list args)
- 		case 'i':
- 			base = 0;
- 		case 'd':
--			is_sign = 1;
-+			is_sign = true;
- 		case 'u':
- 			break;
- 		case '%':
--- 
-1.9.1
+Here are the top-10 profile entries of a stress test that reads a 128G
+sparse file on a freshly booted box, without a dedicated cgroup
+(i.e. executing in the root memcg).  Before:
+
+    15.36%              cat  [kernel.kallsyms]   [k] copy_user_generic_string                  
+    13.31%              cat  [kernel.kallsyms]   [k] memset                                    
+    11.48%              cat  [kernel.kallsyms]   [k] do_mpage_readpage                         
+     4.23%              cat  [kernel.kallsyms]   [k] get_page_from_freelist                    
+     2.38%              cat  [kernel.kallsyms]   [k] put_page                                  
+     2.32%              cat  [kernel.kallsyms]   [k] __mem_cgroup_commit_charge                
+     2.18%          kswapd0  [kernel.kallsyms]   [k] __mem_cgroup_uncharge_common              
+     1.92%          kswapd0  [kernel.kallsyms]   [k] shrink_page_list                          
+     1.86%              cat  [kernel.kallsyms]   [k] __radix_tree_lookup                       
+     1.62%              cat  [kernel.kallsyms]   [k] __pagevec_lru_add_fn                      
+
+And after:
+
+    15.67%           cat  [kernel.kallsyms]   [k] copy_user_generic_string                  
+    13.48%           cat  [kernel.kallsyms]   [k] memset                                    
+    11.42%           cat  [kernel.kallsyms]   [k] do_mpage_readpage                         
+     3.98%           cat  [kernel.kallsyms]   [k] get_page_from_freelist                    
+     2.46%           cat  [kernel.kallsyms]   [k] put_page                                  
+     2.13%       kswapd0  [kernel.kallsyms]   [k] shrink_page_list                          
+     1.88%           cat  [kernel.kallsyms]   [k] __radix_tree_lookup                       
+     1.67%           cat  [kernel.kallsyms]   [k] __pagevec_lru_add_fn                      
+     1.39%       kswapd0  [kernel.kallsyms]   [k] free_pcppages_bulk                        
+     1.30%           cat  [kernel.kallsyms]   [k] kfree                                     
+
+The code also survived some prolonged stress testing with a swapping
+workload being moved continuously between memcgs.
+
+My apologies in advance for the reviewability.  I tried to split out
+the rewrite into more steps, but had to declare the current code as
+unsalvagaeble after it took me more than a day to convince myself how
+the swap accounting works.  It's probably easiest to read this as
+newly written code.
+
+ Documentation/cgroups/memcg_test.txt |  160 +--
+ include/linux/memcontrol.h           |   94 +-
+ include/linux/page_cgroup.h          |   43 +-
+ include/linux/swap.h                 |   15 +-
+ kernel/events/uprobes.c              |    1 +
+ mm/filemap.c                         |   13 +-
+ mm/huge_memory.c                     |   51 +-
+ mm/memcontrol.c                      | 1724 ++++++++++++--------------------
+ mm/memory.c                          |   41 +-
+ mm/migrate.c                         |   46 +-
+ mm/rmap.c                            |    6 -
+ mm/shmem.c                           |   28 +-
+ mm/swap.c                            |   22 +
+ mm/swap_state.c                      |    8 +-
+ mm/swapfile.c                        |   21 +-
+ mm/truncate.c                        |    1 -
+ mm/vmscan.c                          |    9 +-
+ mm/zswap.c                           |    2 +-
+ 18 files changed, 833 insertions(+), 1452 deletions(-)
 
