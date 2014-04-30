@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090AbaD3M5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 08:57:53 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:46866 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758960AbaD3M5D (ORCPT
+	id S1759072AbaD3M5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 08:57:51 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:55279 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758965AbaD3M5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Apr 2014 08:57:03 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -19,18 +19,17 @@ Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 14/15] ARM: dts: kirkwood: set Guruplug ethernet PHY compatible
-Date: Wed, 30 Apr 2014 14:56:41 +0200
-Message-Id: <1398862602-29595-15-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 15/15] ARM: dts: kirkwood: set Guruplug phy-connection-type to rgmii-id
+Date: Wed, 30 Apr 2014 14:56:42 +0200
+Message-Id: <1398862602-29595-16-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ethernet PHY compatible shall be "ethernet-phy-ieee802.3-c22" and
-"ethernet-phy-idAAAA.BBBB" if PHY OUI id is known. We know it for
-the PHY found on Guruplug, so set it accordingly.
+Ethernet PHYs found on Globalscale Guruplug are connected by RGMII-ID.
+Set the corresponding phy-connection-type property accordingly.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -48,32 +47,29 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
-index 871a5f8afb01..f6f15e2910ed 100644
+index f6f15e2910ed..c5a1fc75c7a3 100644
 --- a/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
 +++ b/arch/arm/boot/dts/kirkwood-guruplug-server-plus.dts
-@@ -101,12 +101,16 @@
- 	status = "okay";
- 
- 	ethphy0: ethernet-phy@0 {
--		compatible = "marvell,88e1121";
-+		/* Marvell 88E1121R */
-+		compatible = "ethernet-phy-id0141.0cb0",
-+		             "ethernet-phy-ieee802.3-c22";
+@@ -105,6 +105,7 @@
+ 		compatible = "ethernet-phy-id0141.0cb0",
+ 		             "ethernet-phy-ieee802.3-c22";
  		reg = <0>;
++		phy-connection-type = "rgmii-id";
  	};
  
  	ethphy1: ethernet-phy@1 {
--		compatible = "marvell,88e1121";
-+		/* Marvell 88E1121R */
-+		compatible = "ethernet-phy-id0141.0cb0",
-+		             "ethernet-phy-ieee802.3-c22";
+@@ -112,6 +113,7 @@
+ 		compatible = "ethernet-phy-id0141.0cb0",
+ 		             "ethernet-phy-ieee802.3-c22";
  		reg = <1>;
++		phy-connection-type = "rgmii-id";
  	};
  };
+ 
 -- 
 1.9.1
 
