@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933313AbaD3J3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:29:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36611 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933145AbaD3J2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933246AbaD3J3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:29:00 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:19826 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933147AbaD3J2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Apr 2014 05:28:54 -0400
-Date: Wed, 30 Apr 2014 13:19:50 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Zhangjie (HZ)" <zhangjie14@huawei.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        linville@tuxdriver.com, jeffrey.t.kirsher@intel.com,
-        rusty@rustcorp.com.au, jasowang@redhat.com, qinchuanyu@huawei.com,
-        liuyongan@huawei.com, zhaoshenglong@huawei.com
-Subject: Re: [PATCH net-next] virtio-net: Set needed_headroom for virtio-net
- when VIRTIO_F_ANY_LAYOUT is true
-Message-ID: <20140430101950.GA22654@redhat.com>
-References: <535F824A.5060804@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535F824A.5060804@huawei.com>
+X-AuditID: cbfee68e-b7fd86d0000038e3-c2-5360c255b1c7
+From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+To: linux-iio@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        dianders@chromium.org, gregkh@linuxfoundation.org,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de, cpgs@samsung.com,
+        grundler@chromium.org, t.figa@samsung.com
+Subject: [PATCH 5/5 v3] iio: exynos_adc: do a reinit_completion before the
+ conversion
+Date: Wed, 30 Apr 2014 14:56:55 +0530
+Message-id: <1398850015-17761-6-git-send-email-ch.naveen@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com>
+References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSpRt6KCHY4OBMbYuXhzQtzi47yGbR
+	vHg9m8WrIz+YLJZMns9qMe/IOxaLy7vmsFnMOL+PyWLRtv/MFutnvGZx4PKY3XCRxWPnrLvs
+	HvvnrmH3WPLmEKtH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZWx++ZS14CdbxbmFzcwNjC9Z
+	uxg5OSQETCQ2rZrBBmGLSVy4tx7MFhJYyijx420aTM2Ztk3MXYxcQPHpjBKb/35mgijqZ5Lo
+	PRIFYrMJmEkcXLSavYuRg0NEQFZiZrceSD2zwBOgOVteM4PEhQXCJVYsTAIpZxFQldi84CML
+	iM0r4Cqx4f0ZRpASCQEFiTmTbEDCnAJuEs1HF7JAbHKVaDp7mAlkpITAIXaJO+1b2CDmCEh8
+	m3yIBaJXVmLTAWaIkyUlDq64wTKBUXgBI8MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMA4
+	OP3vWd8OxpsHrA8xJgONm8gsJZqcD4yjvJJ4Q2MzIwtTE1NjI3NLM9KElcR5Fz1MChISSE8s
+	Sc1OTS1ILYovKs1JLT7EyMTBKdXAGMWjstxZguOLzWv2ItMAlbJ5snNT/R9fedv8QrdKeMXH
+	By7qXN6FNx7tDXt/daKoqaH7WfnNR6sf/5BVq1A9t5fvb3D6JH7x0yG23vsuL1RX1vP52tJd
+	dJRdateWBOF7/3fvWvveNFe/lcvwo2GNQRHLjir/e58+zby+q+bsw0f7H3z8KuSprMRSnJFo
+	qMVcVJwIAEaFX2WZAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd3QQwnBBqeeK1m8PKRpcXbZQTaL
+	5sXr2SxeHfnBZLFk8nxWi3lH3rFYXN41h81ixvl9TBaLtv1ntlg/4zWLA5fH7IaLLB47Z91l
+	99g/dw27x5I3h1g9+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
+	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
+	aCBhDWPG5pdPWQt+slWcW9jM3MD4krWLkZNDQsBE4kzbJmYIW0ziwr31bF2MXBxCAtMZJTb/
+	/cwEkhAS6GeS6D0SBWKzCZhJHFy0mr2LkYNDREBWYma3Hkg9s8ATRokfW14zg8SFBcIlVixM
+	AilnEVCV2LzgIwuIzSvgKrHh/RlGkBIJAQWJOZNsQMKcAm4SzUcXskBscpVoOnuYaQIj7wJG
+	hlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwXH2THoH46oGi0OMAhyMSjy8Alvjg4VYE8uK
+	K3MPMUpwMCuJ8GZ0JAQL8aYkVlalFuXHF5XmpBYfYkwGOmois5Rocj4wBeSVxBsam5ibGpta
+	mliYmFmSJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2P0xY6vLO0/5xbO2Dx5I2fFjL/F
+	P1X3zn/K+eUOk+g9Zoa0FW86vtTIHX3/eHWx0IydqZKGLGeWcSUFRwue+27kON3v0tPJwW8E
+	zsp7n2647FoS+1zd/mr5OqWp05YlPXWVquz9o7FNWJTNecUxI6upbXpZP7O//WrY3dUr6pI+
+	o//6t0Nb05YosRRnJBpqMRcVJwIAkLfHk/cCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 06:43:22PM +0800, Zhangjie (HZ) wrote:
-> This is a small supplement for commit e7428e95a06fb516fac1308bd0e176e27c0b9287
-> ("virtio-net: put virtio-net header inline with data"). TCP packages have
-> enough room to put virtio-net header in, but UDP packages do not. By
-> setting dev->needed_headroom for virtio-net device, UDP packages could have
-> enough room.
-> 
-> For UDP packages, sk_buff is alloced in fun __ip_append_data. The size is
-> "alloclen + hh_len + 15", and "hh_len = LL_RESERVED_SPACE(rt-dst.dev);".
-> The Macro is defined as follows:
-> #define LL_RESERVED_SPACE(dev) \
->      ((((dev)->hard_header_len+(dev)->needed_headroom)\
->      &~(HH_DATA_MOD - 1)) + HH_DATA_MOD)
-> By default, for UDP packages, after skb is allocated, only 16 bytes
-> reserved. And 2 bytes remained after mac header is set. That is not enough
-> to put virtio-net header in. If we set dev->needed_headroom to 12 or 10
-> (according to mergeable_rx_bufs is on or off ), more room can be reserved.
-> Then there is enough room for UDP packages to put the header in.
-> 
-> test result list as below:
-> guest and host: suse11sp3, netperf, intel 2.4GHz
-> +-------+---------+---------+---------+---------+
-> |       |   old             |   new             |
-> +-------+---------+---------+---------+---------+
-> | UDP   |  Gbit/s | pps     |  Gbit/s | pps     |
-> | 64    |  0.57   | 692232  |  0.61   | 742420  |
-> | 256   |  1.60   | 686860  |  1.71   | 733331  |
-> | 512   |  2.92   | 674576  |  3.07   | 710446  |
-> | 1024  |  4.99   | 598977  |  5.17   | 620821  |
-> | 1460  |  5.68   | 483757  |  7.16   | 610519  |
-> | 4096  |  6.98   | 637468  |  7.21   | 658471  |
-> +-------+---------+---------+---------+---------+
-> 
-> Signed-off-by: Zhang Jie <zhangjie14@huawei.com>
+Add reinit_completion() before the wait_for_completion_timeout in
+raw_read() call.
 
-Thanks for your patience!
+Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+---
+Changes since v2:
+None
+Changes since v1:
+None
+v0:
+This change is a part of the patch reviewed at https://lkml.org/lkml/2013/11/5/92
 
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+ drivers/iio/adc/exynos_adc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+index eddc58e..010578f 100644
+--- a/drivers/iio/adc/exynos_adc.c
++++ b/drivers/iio/adc/exynos_adc.c
+@@ -151,6 +151,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&indio_dev->mlock);
++	reinit_completion(&info->completion);
+ 
+ 	/* Select the channel to be used and Trigger conversion */
+ 	if (info->version == ADC_V2) {
+-- 
+1.7.9.5
 
-> ---
->  drivers/net/virtio_net.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 8a852b5..b852bb3 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1724,6 +1724,13 @@ static int virtnet_probe(struct virtio_device *vdev)
->  	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
->  		vi->has_cvq = true;
-> 
-> +	if (vi->any_header_sg) {
-> +		if (vi->mergeable_rx_bufs)
-> +			dev->needed_headroom = sizeof(struct virtio_net_hdr_mrg_rxbuf);
-> +		else
-> +			dev->needed_headroom = sizeof(struct virtio_net_hdr);
-> +	}
-> +
->  	/* Use single tx/rx queue pair as default */
->  	vi->curr_queue_pairs = 1;
->  	vi->max_queue_pairs = max_queue_pairs;
-> -- 
-> 1.9.0.msysgit.0
-> 
