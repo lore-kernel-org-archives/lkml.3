@@ -1,92 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479AbaD3F2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 01:28:37 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:7144
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750876AbaD3F2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 01:28:35 -0400
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <mark.rutland@arm.com>, <broonie@kernel.org>
-CC: <gregkh@linuxfoundation.org>, <mpa@pengutronix.de>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCHv3 1/2] dt/bindings: Add the DT binding documentation for endianness
-Date: Wed, 30 Apr 2014 12:43:48 +0800
-Message-ID: <1398833029-29546-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1398833029-29546-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1398833029-29546-1-git-send-email-Li.Xiubo@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(4396001)(87936001)(81542001)(92566001)(19580395003)(46102001)(77982001)(44976005)(76482001)(76176999)(80022001)(83072002)(47776003)(85852003)(20776003)(77096999)(99396002)(83322001)(48376002)(6806004)(50986999)(101416001)(50226001)(79102001)(31966008)(87286001)(74662001)(89996001)(50466002)(77156001)(19580405001)(81342001)(74502001)(88136002)(36756003)(86362001)(93916002)(92726001)(62966002)(80976001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB501;H:tx30smr01.am.freescale.net;FPR:C15E5FFF.2486242C.43579B0A.84B6F211.2018A;MLV:sfv;PTR:gate-tx3.freescale.com;A:1;MX:1;LANG:en;
+	id S1757626AbaD3FaD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 01:30:03 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50567 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754820AbaD3F37 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 01:29:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,956,1389772800"; 
+   d="scan'208";a="532209558"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "David E. Box" <david.e.box@linux.intel.com>,
+        "jacob.jun.pan@linux.intel.com" <jacob.jun.pan@linux.intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>
+CC: "alan@linux.intel.com" <alan@linux.intel.com>,
+        "Accardi, Kristen C" <kristen.c.accardi@intel.com>
+Subject: RE: [PATCH v2 1/4] powercap/rapl: further relax energy counter
+ checks
+Thread-Topic: [PATCH v2 1/4] powercap/rapl: further relax energy counter
+ checks
+Thread-Index: AQHPY/tdPgqAXGE0ZUuhxXt2JzeiuJspolEw
+Date: Wed, 30 Apr 2014 05:29:54 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59EF6C00@BGSMSX101.gar.corp.intel.com>
+References: <1398693880-13428-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1398810789-2301-1-git-send-email-david.e.box@linux.intel.com>
+ <1398810789-2301-2-git-send-email-david.e.box@linux.intel.com>
+In-Reply-To: <1398810789-2301-2-git-send-email-david.e.box@linux.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Forefront-PRVS: 0197AFBD92
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- .../devicetree/bindings/endianness/endianness.txt  | 47 ++++++++++++++++++++++
- 1 file changed, 47 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
 
-diff --git a/Documentation/devicetree/bindings/endianness/endianness.txt b/Documentation/devicetree/bindings/endianness/endianness.txt
-new file mode 100644
-index 0000000..49458a1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/endianness/endianness.txt
-@@ -0,0 +1,47 @@
-+Device-Tree binding for device endianness
-+
-+The endianness mode of CPU & Device scenarios:
-+Index    CPU       Device     Endianess flag for DT bool property
-+------------------------------------------------------------
-+1        LE        LE         -
-+2        LE        BE         'big-endian{,-*}'
-+3        BE        BE         -
-+4        BE        LE         'little-endian{,-*}'
-+
-+For one device driver, which will run in different scenarios above
-+on different SoCs using the devicetree, we need one way to simplify
-+this.
-+
-+Required properties:
-+- {big,little}-endian{,-*}: this is one boolean property.
-+
-+Examples:
-+Scenario 1 : CPU in LE mode & device in LE mode.
-+dev: dev@40031000 {
-+	      compatible = "name";
-+	      reg = <0x40031000 0x1000>;
-+	      ...
-+};
-+
-+Scenario 2 : CPU in LE mode & device in BE mode.
-+dev: dev@40031000 {
-+	      compatible = "name";
-+	      reg = <0x40031000 0x1000>;
-+	      ...
-+	      big-endian{,-*};
-+};
-+
-+Scenario 3 : CPU in BE mode & device in BE mode.
-+dev: dev@40031000 {
-+	      compatible = "name";
-+	      reg = <0x40031000 0x1000>;
-+	      ...
-+};
-+
-+Scenario 4 : CPU in BE mode & device in LE mode.
-+dev: dev@40031000 {
-+	      compatible = "name";
-+	      reg = <0x40031000 0x1000>;
-+	      ...
-+	      little-endian{,-*};
-+};
--- 
-1.8.4
+
+> -----Original Message-----
+> From: David E. Box [mailto:david.e.box@linux.intel.com]
+> Sent: Wednesday, April 30, 2014 4:03 AM
+> To: david.e.box@linux.intel.com; jacob.jun.pan@linux.intel.com; linux-
+> pm@vger.kernel.org; Wysocki, Rafael J; linux-kernel@vger.kernel.org;
+> hpa@linux.intel.com
+> Cc: alan@linux.intel.com; R, Durgadoss; Accardi, Kristen C
+> Subject: [PATCH v2 1/4] powercap/rapl: further relax energy counter checks
+> 
+> From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> 
+> Energy counters may roll slowly for some RAPL domains, checking all
+> of them can be time consuming and takes unpredictable amount of time.
+> Therefore, we relax the sanity check by only checking availability of the
+> MSRs and non-zero value of the energy status counters. It has been shown
+> sufficient for all the platforms tested to filter out inactive domains.
+> 
+
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
+
+Thanks,
+Durga
+
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  drivers/powercap/intel_rapl.c |   29 +++++++++--------------------
+>  1 file changed, 9 insertions(+), 20 deletions(-)
+> 
+> diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
+> index d9a0770..1c987d2 100644
+> --- a/drivers/powercap/intel_rapl.c
+> +++ b/drivers/powercap/intel_rapl.c
+> @@ -1124,8 +1124,7 @@ err_cleanup_package:
+>  static int rapl_check_domain(int cpu, int domain)
+>  {
+>  	unsigned msr;
+> -	u64 val1, val2 = 0;
+> -	int retry = 0;
+> +	u64 val = 0;
+> 
+>  	switch (domain) {
+>  	case RAPL_DOMAIN_PACKAGE:
+> @@ -1144,26 +1143,13 @@ static int rapl_check_domain(int cpu, int domain)
+>  		pr_err("invalid domain id %d\n", domain);
+>  		return -EINVAL;
+>  	}
+> -	if (rdmsrl_safe_on_cpu(cpu, msr, &val1))
+> -		return -ENODEV;
+> -
+> -	/* PP1/uncore/graphics domain may not be active at the time of
+> -	 * driver loading. So skip further checks.
+> +	/* make sure domain counters are available and contains non-zero
+> +	 * values, otherwise skip it.
+>  	 */
+> -	if (domain == RAPL_DOMAIN_PP1)
+> -		return 0;
+> -	/* energy counters roll slowly on some domains */
+> -	while (++retry < 10) {
+> -		usleep_range(10000, 15000);
+> -		rdmsrl_safe_on_cpu(cpu, msr, &val2);
+> -		if ((val1 & ENERGY_STATUS_MASK) != (val2 &
+> ENERGY_STATUS_MASK))
+> -			return 0;
+> -	}
+> -	/* if energy counter does not change, report as bad domain */
+> -	pr_info("domain %s energy ctr %llu:%llu not working, skip\n",
+> -		rapl_domain_names[domain], val1, val2);
+> +	if (rdmsrl_safe_on_cpu(cpu, msr, &val) || !val)
+> +		return -ENODEV;
+> 
+> -	return -ENODEV;
+> +	return 0;
+>  }
+> 
+>  /* Detect active and valid domains for the given CPU, caller must
+> @@ -1180,6 +1166,9 @@ static int rapl_detect_domains(struct rapl_package *rp,
+> int cpu)
+>  		/* use physical package id to read counters */
+>  		if (!rapl_check_domain(cpu, i))
+>  			rp->domain_map |= 1 << i;
+> +		else
+> +			pr_warn("RAPL domain %s detection failed\n",
+> +				rapl_domain_names[i]);
+>  	}
+>  	rp->nr_domains = bitmap_weight(&rp->domain_map,
+> 	RAPL_DOMAIN_MAX);
+>  	if (!rp->nr_domains) {
+> --
+> 1.7.10.4
 
