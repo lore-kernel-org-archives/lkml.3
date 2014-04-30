@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759678AbaD3Xnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 19:43:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49611 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752270AbaD3Xno (ORCPT
+	id S1759730AbaD3XpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 19:45:15 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:50549 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759624AbaD3XpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 19:43:44 -0400
-Date: Thu, 1 May 2014 00:43:41 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140430234341.GX18016@ZenIV.linux.org.uk>
-References: <CAJfpegu+=zidycJwcBPjuDLP-ZnGisOGQpD8GKhD-Wz6eNzd9g@mail.gmail.com>
- <20140430190227.GR18016@ZenIV.linux.org.uk>
- <20140430195918.GS18016@ZenIV.linux.org.uk>
- <CA+55aFxe4HKHiWbarfwtww9=WUgfAmk+Cf3G7tdBB19uMdjbEg@mail.gmail.com>
- <20140430203823.GT18016@ZenIV.linux.org.uk>
- <CA+55aFyqqwrtv7ifTYVK943qm2OJOF8aF1y6apMSwjG93T=ztA@mail.gmail.com>
- <20140430211206.GU18016@ZenIV.linux.org.uk>
- <20140430221238.GV18016@ZenIV.linux.org.uk>
- <CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
- <CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
+	Wed, 30 Apr 2014 19:45:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53608180.5070800@zytor.com>
+References: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
+ <1398723161-21968-5-git-send-email-andi@firstfloor.org> <535FED4D.5000703@amacapital.net>
+ <20140429233950.GE2382@two.firstfloor.org> <53608180.5070800@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 30 Apr 2014 16:44:52 -0700
+Message-ID: <CALCETrVQiZPb1M183Fq61dbFAjnJScuB2y+rdH8BQ+yp-MO+Mw@mail.gmail.com>
+Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 04:14:14PM -0700, Linus Torvalds wrote:
-> On Wed, Apr 30, 2014 at 4:04 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > Let me go talk to the paravirt people. Maybe they don't need this, and
-> > I don't know exactly *how* they use that lock pointer after the unlock
-> > in the "kick waiters" part. Maybe it's all good.
-> 
-> .. looking at current users (xen and kvm) it does in fact look all
-> good. Yes, we "kick" possible waiters after the unlock, but the lock
-> itself is not touched by that, it just uses the pointer to the lock as
-> a way to figure out who to kick.
-> 
-> In fact, I kind of knew that, but had forgotten. We very much depend
-> on spin_unlock being safe wrt immediate deleton already: the
-> "completion" code very much depends on it. It does a "spin_unlock()"
-> to release the completion, and it can get reused immediately (it might
-> be on the stack, it might be in some data structure that gets freed).
-> 
-> So I'd suggest removing that whole RCU thing, because it should be
-> safe to unlock something that can go away immediately. We'd have huge
-> problems elsewhere if it wasn't safe.
+On Tue, Apr 29, 2014 at 9:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/29/2014 04:39 PM, Andi Kleen wrote:
+>>> Case 3 is annoying.  If nothing tries to change the user gs base, then
+>>> everything is okay because the user gs base and the kernel gs bases are
+>>> equal.  But if something does try to change the user gs base, then it
+>>> will accidentally change the kernel gs base instead.
+>>
+>> It doesn't really matter, as they are the same.
+>> They would just switch identities.
+>>
+>> Besides I don't think anyone does that.
+>>
+>
+> It matters -- greatly -- if (and only if) we can enter the kernel with
+> usergs == kernelgs and then want to change usergs inside a paranoid
+> routine.  At that point we risk being upside down, which basically means
+> we're rooted.
+>
+> However, I believe this patchset also means only IST entries can be
+> paranoid, which in turn means we can't sleep inside them.  To the very
+> best of my knowledge the only times we change usergs is on context
+> switch or inside a system call.  We need to make sure that is actually
+> the case, though.
+>
+> I'm at ELC for a few days, so I'll have limited decent-sized-monitor
+> time, but it shouldn't be too hard to convince ourselves of... mostly a
+> matter of making sure something like ptrace can't to stupid crap.
 
-OK, done and force-pushed.  Should propagate in a few...
+The only things that look relevant are the context switch paths and
+the kvm stuff.  I don't know what happens if an IST exception happens
+while running a guest, though.  TBH I have no idea what the VMX and
+SVM interfaces look like.
+
+paranoid_schedule looks scary.  If I'm understanding it correctly, it
+expects to be executed with gs == usergs.  I think it's okay, since it
+will only be invoked if we trapped from userspace, in which case the
+state is well-defined.  But this bit could be wrong:
+
+    testl %ebx,%ebx                /* swapgs needed? */
+    jnz paranoid_restore
+    testl $3,CS(%rsp)
+    jnz   paranoid_userspace
+
+If usergs == kernelgs, then ebx will always be 1 and we'll never end
+up in paranoid_userspace.
+
+This could be fixed in two ways.  We could just switch the order of
+the tests, since the only way to have ebx == 1 and CS with CPL == 3
+should be if we're coming from userspace with usergs==kernelgs.  Or we
+could get rid of the paranoid schedule code entirely.  It is actually
+needed for anything?  Timer and rescheduling interrupts shouldn't be
+paranoid, and if there's any paranoid code that will trigger a
+reschedule, couldn't it do it much more sanely by sending an IPI to
+self and thus deferring the reschedule until interrupts are enabled?
+
+Alternatively, what if the paranoid entry checked whether we're coming
+from userspace at the very beginning and, if so, just jumped to the
+non-paranoid entry?
+
+--Andy
