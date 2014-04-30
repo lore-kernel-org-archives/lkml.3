@@ -1,129 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758994AbaD3Nqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:46:53 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47052 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758939AbaD3Nqv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:46:51 -0400
-Message-ID: <5360FECF.6060301@arm.com>
-Date: Wed, 30 Apr 2014 14:46:55 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1759037AbaD3Nsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:48:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45599 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757983AbaD3Nsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:48:30 -0400
+Date: Wed, 30 Apr 2014 15:48:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Rik van Riel <riel@redhat.com>
+Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, sandeen@redhat.com, akpm@linux-foundation.org,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, mpatlasov@parallels.com,
+        Motohiro.Kosaki@us.fujitsu.com
+Subject: Re: [PATCH v2] mm,writeback: fix divide by zero in pos_ratio_polynom
+Message-ID: <20140430134826.GH4357@dhcp22.suse.cz>
+References: <20140429151910.53f740ef@annuminas.surriel.com>
+ <5360C9E7.6010701@jp.fujitsu.com>
+ <20140430093035.7e7226f2@annuminas.surriel.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Do not zero sg->cpumask and sg->sgp->power in
- build_sched_groups
-References: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-In-Reply-To: <1398865178-12577-1-git-send-email-dietmar.eggemann@arm.com>
-X-OriginalArrivalTime: 30 Apr 2014 13:47:03.0758 (UTC) FILETIME=[AB2B8EE0:01CF647A]
-X-MC-Unique: 114043014465000501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430093035.7e7226f2@annuminas.surriel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/04/14 14:39, Dietmar Eggemann wrote:
-> From: Dietmar Eggemann <Dietmar.Eggemann@arm.com>
+On Wed 30-04-14 09:30:35, Rik van Riel wrote:
+[...]
+> Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
 > 
-> There is no need to zero struct sched_group member cpumask and struct
-> sched_group_power member power since both structures are already allocated
-> as zeroed memory in __sdt_alloc().
+> It is possible for "limit - setpoint + 1" to equal zero, leading to a
+> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
+> working, so we need to actually test the divisor before calling div64.
 > 
-> This patch has been tested with
-> BUG_ON(!cpumask_empty(sched_group_cpus(sg))); and BUG_ON(sg->sgp->power);
-> in build_sched_groups() on ARM TC2 and INTEL i5 M520 platform including
-> CPU hotplug scenarios.
-> 
-> Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 > ---
->  kernel/sched/core.c |    2 --
->  1 file changed, 2 deletions(-)
+>  mm/page-writeback.c | 13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9cae286824bb..6bc51aebbf1b 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5807,8 +5807,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
->  			continue;
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index ef41349..f98a297 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -597,11 +597,16 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
+>  					  unsigned long dirty,
+>  					  unsigned long limit)
+>  {
+> +	unsigned long divisor;
+>  	long long pos_ratio;
+>  	long x;
 >  
->  		group = get_group(i, sdd, &sg);
-> -		cpumask_clear(sched_group_cpus(sg));
-> -		sg->sgp->power = 0;
->  		cpumask_setall(sched_group_mask(sg));
+> +	divisor = limit - setpoint;
+> +	if (!divisor)
+> +		divisor = 1;	/* Avoid div-by-zero */
+> +
+
+This is still prone to u64 -> s32 issue, isn't it?
+What was the original problem anyway? Was it really setpoint > limit or
+rather the overflow?
+
+>  	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+> -		    limit - setpoint + 1);
+> +		    divisor);
+>  	pos_ratio = x;
+>  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+>  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> @@ -842,8 +847,12 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+>  	x_intercept = bdi_setpoint + span;
 >  
->  		for_each_cpu(j, span) {
-> 
+>  	if (bdi_dirty < x_intercept - span / 4) {
+> +		unsigned long divisor = x_intercept - bdi_setpoint;
 
-there is also a discrepancy between build_sched_groups() and
-build_overlap_sched_groups(). The latter one sets power and power_orig
-to SCHED_POWER_SCALE * cpumask_weight(sg_span) (since c3decf0dfbc95
-'sched: Always initialize cpu-power' and 8e8339a3a1069 'sched:
-Initialize power_orig for overlapping groups').
+Same here.
 
-So we could do the same in build_sched_groups(). IMHO, then the
-appropriate check 'if (!group->sgp->power_orig)' in
-sched_domain_debug_one() becomes superfluous.
+> +		if (!divisor)
+> +			divisor = 1;	/* Avoid div-by-zero */
+> +
+>  		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
+> -				    x_intercept - bdi_setpoint + 1);
+> +				    divisor);
+>  	} else
+>  		pos_ratio /= 4;
+>  
 
--- Dietmar
-
-Patch proposal against tip_sched_core.
-
--- >8 --
-
-Subject: [PATCH] sched: Initialize sg->sgp->power and sg->sgp->power_orig for
- non-overlapping groups
-
----
- kernel/sched/core.c |   17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9cae286824bb..ccf9b811ba37 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5206,18 +5206,6 @@ static int sched_domain_debug_one(struct sched_domain *sd, int cpu, int level,
- 			break;
- 		}
- 
--		/*
--		 * Even though we initialize ->power to something semi-sane,
--		 * we leave power_orig unset. This allows us to detect if
--		 * domain iteration is still funny without causing /0 traps.
--		 */
--		if (!group->sgp->power_orig) {
--			printk(KERN_CONT "\n");
--			printk(KERN_ERR "ERROR: domain->cpu_power not "
--					"set\n");
--			break;
--		}
--
- 		if (!cpumask_weight(sched_group_cpus(group))) {
- 			printk(KERN_CONT "\n");
- 			printk(KERN_ERR "ERROR: empty group\n");
-@@ -5807,8 +5795,6 @@ build_sched_groups(struct sched_domain *sd, int cpu)
- 			continue;
- 
- 		group = get_group(i, sdd, &sg);
--		cpumask_clear(sched_group_cpus(sg));
--		sg->sgp->power = 0;
- 		cpumask_setall(sched_group_mask(sg));
- 
- 		for_each_cpu(j, span) {
-@@ -5819,6 +5805,9 @@ build_sched_groups(struct sched_domain *sd, int cpu)
- 			cpumask_set_cpu(j, sched_group_cpus(sg));
- 		}
- 
-+		sg->sgp->power = SCHED_POWER_SCALE * cpumask_weight(sched_group_cpus(sg));
-+		sg->sgp->power_orig = sg->sgp->power;
-+
- 		if (!first)
- 			first = sg;
- 		if (last)
 -- 
-1.7.9.5
-
-
+Michal Hocko
+SUSE Labs
