@@ -1,122 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946049AbaD3VGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 17:06:39 -0400
-Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:40402 "EHLO
-	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945914AbaD3VGh (ORCPT
+	id S1946081AbaD3VG7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 17:06:59 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:64866 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946053AbaD3VG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 17:06:37 -0400
-Message-ID: <1398891992.10827.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2] rwsem: Support optimistic spinning
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
-Date: Wed, 30 Apr 2014 14:06:32 -0700
-In-Reply-To: <1398891699.2970.110.camel@schen9-DESK>
-References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
-	 <1398722941.25549.16.camel@buesod1.americas.hpqcorp.net>
-	 <20140430082715.GA11096@twins.programming.kicks-ass.net>
-	 <1398880209.2970.100.camel@schen9-DESK>
-	 <20140430180441.GF17778@laptop.programming.kicks-ass.net>
-	 <1398881337.2970.103.camel@schen9-DESK>
-	 <1398891699.2970.110.camel@schen9-DESK>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Apr 2014 17:06:58 -0400
+From: Karim Raslan <karim.allah.ahmed@gmail.com>
+Cc: Karim Raslan <karim.allah.ahmed@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        SeongJae Park <sj38.park@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Cruz Julian Bishop <cruzjbishop@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Fixing coding style issues in android alarm-dev.c
+Date: Wed, 30 Apr 2014 22:05:53 +0100
+Message-Id: <1398891959-10437-1-git-send-email-karim.allah.ahmed@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 14:01 -0700, Tim Chen wrote:
-> On Wed, 2014-04-30 at 11:08 -0700, Tim Chen wrote:
-> > On Wed, 2014-04-30 at 20:04 +0200, Peter Zijlstra wrote:
-> > > On Wed, Apr 30, 2014 at 10:50:09AM -0700, Tim Chen wrote:
-> > > > On Wed, 2014-04-30 at 10:27 +0200, Peter Zijlstra wrote:
-> > > > > On Mon, Apr 28, 2014 at 03:09:01PM -0700, Davidlohr Bueso wrote:
-> > > > > > +/*
-> > > > > > + * Try to acquire write lock before the writer has been put on wait queue.
-> > > > > > + */
-> > > > > > +static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> > > > > > +{
-> > > > > > +	long count = ACCESS_ONCE(sem->count);
-> > > > > > +retry:
-> > > > > > +	if (count == RWSEM_WAITING_BIAS) {
-> > > > > > +		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
-> > > > > > +			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
-> > > 
-> > > count = RWSEM_WAITING_BIAS
-> > > new = RWSEM_WAITING_BIAS + RWSEM_ACTIVE_WRITE_BIAS
-> > > new = count + RWSEM_ACTIVE_WRITE_BIAS
-> > > 
-> > > > > > +		/* allow write lock stealing, try acquiring the write lock. */
-> > > > > > +		if (count == RWSEM_WAITING_BIAS)
-> > > > > > +			goto acquired;
-> > > > > > +		else if (count == 0)
-> > > > > > +			goto retry;
-> > > > > > +	} else if (count == 0) {
-> > > > > > +		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
-> > > 
-> > > count = 0
-> > > new = RWSEM_ACTIVE_WRITE_BIAS
-> > > new = count + RWSEM_ACTIVE_WRITE_BIAS
-> > > 
-> > > > > > +		if (count == 0)
-> > > > > > +			goto acquired;
-> > > > > > +		else if (count == RWSEM_WAITING_BIAS)
-> > > > > > +			goto retry;
-> > > > > > +	}
-> > > > > > +	return false;
-> > > > > > +
-> > > > > > +acquired:
-> > > > > > +	return true;
-> > > > > > +}
-> > > > > 
-> > > > > Could we have written that like:
-> > > > > 
-> > > > > static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
-> > > > > {
-> > > > > 	long old, count = ACCESS_ONCE(sem->count);
-> > > > > 
-> > > > > 	for (;;) {
-> > > > > 		if (!(count == 0 || count == RWSEM_WAITING_BIAS))
-> > > > > 			return false;
-> > > > > 
-> > > > > 		old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
-> > > > 
-> > > > Above line won't be correct for the case when count == 0.  We are trying 
-> > > > to acquire write lock, so the sem->count should become
-> > > > RWSEM_ACTIVE_WRITE_BIAS, or RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS.  
-> > > > So we should change the logic to
-> > > > 
-> > > > 		  if (count == RWSEM_WAITING_BIAS)
-> > > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_BIAS);
-> > > > 		  else
-> > > > 			old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
-> > > 
-> > > I think I simply mis-typed it; shouldn't both cases be
-> > > RWSEM_ACTIVE_WRITE_BIAS ?
-> > 
-> > Yeah,  we should just write it as
-> > 			  old = cmpxchg(&sem->count, count, RWSEM_ACTIVE_WRITE_BIAS);
-> 
-> Oops, I mean
-> 			    old = cmpxchg(&sem->count, count, count + RWSEM_ACTIVE_WRITE_BIAS);
-> 
-> for count == 0, we need sem->count to be RWSEM_ACTIVE_WRITE_BIAS, 
-> for count == RWSEM_WAITING_BIAS, we need sem->count to be  RWSEM_WAITING_BIAS + RWSEM_ACTIVE_WRITE_BIAS
+fixing "Missing a blank line after declarations" found by checkpatch.pl script
 
-Yep, I had just noticed this. Peter's original suggestion was correct,
-just needed to change RWSEM_ACTIVE_BIAS for RWSEM_ACTIVE_WRITE_BIAS.
+Signed-off-by: Karim Raslan <karim.allah.ahmed@gmail.com>
+---
+ drivers/staging/android/alarm-dev.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+index 2fc7cdd..f200e8a 100644
+--- a/drivers/staging/android/alarm-dev.c
++++ b/drivers/staging/android/alarm-dev.c
+@@ -329,6 +329,7 @@ static int alarm_release(struct inode *inode, struct file *file)
+ 	if (file->private_data) {
+ 		for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++) {
+ 			uint32_t alarm_type_mask = 1U << i;
++
+ 			if (alarm_enabled & alarm_type_mask) {
+ 				alarm_dbg(INFO,
+ 					  "%s: clear alarm, pending %d\n",
+-- 
+1.7.9.5
 
