@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422719AbaD3PV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:21:29 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:36390 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422649AbaD3PV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:21:28 -0400
-Message-ID: <1398871284.5220.6.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        Clark Williams <williams@redhat.com>
-Date: Wed, 30 Apr 2014 17:21:24 +0200
-In-Reply-To: <20140430111100.72a7a71b@gandalf.local.home>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
-	 <1398411635.11930.45.camel@marge.simpson.net>
-	 <1398501491.12941.5.camel@marge.simpson.net>
-	 <1398520699.28726.22.camel@marge.simpson.net>
-	 <1398661784.30930.33.camel@marge.simpson.net>
-	 <1398676186.30930.49.camel@marge.simpson.net>
-	 <20140428101805.75032f45@gandalf.local.home>
-	 <1398695832.14475.10.camel@marge.simpson.net>
-	 <1398748869.5514.81.camel@marge.simpson.net>
-	 <20140429201308.63292691@gandalf.local.home>
-	 <1398843793.26071.52.camel@marge.simpson.net>
-	 <1398863189.26071.97.camel@marge.simpson.net>
-	 <20140430091550.1177bc90@gandalf.local.home>
-	 <1398866403.26071.125.camel@marge.simpson.net>
-	 <20140430101919.70b2f622@gandalf.local.home>
-	 <20140430103308.1e46dd18@gandalf.local.home>
-	 <1398869686.26071.151.camel@marge.simpson.net>
-	 <20140430111100.72a7a71b@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	id S933787AbaD3PXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:23:46 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:37145 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933552AbaD3PXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 11:23:45 -0400
+Date: Wed, 30 Apr 2014 11:23:44 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Kent Overstreet <kmo@daterainc.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] aio: change exit_aio() to load mm->ioctx_table once and avoid rcu_read_lock()
+Message-ID: <20140430152344.GD28959@kvack.org>
+References: <20140429183915.GA32513@redhat.com> <20140429184004.GB32521@redhat.com> <20140429204217.GO14608@kvack.org> <20140429212222.GA28959@kvack.org> <20140430141552.GA18539@redhat.com> <20140430141616.GB18539@redhat.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430141616.GB18539@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Oleg,
 
-I fired off a 100 iteration run on 64 core box.  If it's still alive in
-the morning, it should still be busy as hell.
+On Wed, Apr 30, 2014 at 04:16:16PM +0200, Oleg Nesterov wrote:
+> 1. We can read ->ioctx_table only once and we do not read rcu_read_lock()
+>    or even rcu_dereference().
+> 
+>    This mm has no users, nobody else can play with ->ioctx_table. Otherwise
+>    the code is buggy anyway, if we need rcu_read_lock() in a loop because
+>    ->ioctx_table can be updated then kfree(table) is obviously wrong.
+> 
+> 2. Update the comment. "exit_mmap(mm) is coming" is the good reason to avoid
+>    munmap(), but another reason is that we simply can't do vm_munmap() unless
+>    current->mm == mm and this is not true in general, the caller is mmput().
+> 
+> 3. We do not really need to nullify mm->ioctx_table before return, probably
+>    the current code does this to catch the potential problems. But in this
+>    case RCU_INIT_POINTER(NULL) looks better.
 
--Mike
+Looks pretty good.  One minor style comment below.
 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  fs/aio.c |   47 ++++++++++++++++++-----------------------------
+>  1 files changed, 18 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 79b7e69..3526c2b 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -791,40 +791,29 @@ EXPORT_SYMBOL(wait_on_sync_kiocb);
+>   */
+>  void exit_aio(struct mm_struct *mm)
+>  {
+> -	struct kioctx_table *table;
+> -	struct kioctx *ctx;
+> -	unsigned i = 0;
+> -
+> -	while (1) {
+> -		rcu_read_lock();
+> -		table = rcu_dereference(mm->ioctx_table);
+> -
+> -		do {
+> -			if (!table || i >= table->nr) {
+> -				rcu_read_unlock();
+> -				rcu_assign_pointer(mm->ioctx_table, NULL);
+> -				if (table)
+> -					kfree(table);
+> -				return;
+> -			}
+> -
+> -			ctx = table->table[i++];
+> -		} while (!ctx);
+> +	struct kioctx_table *table = rcu_dereference_raw(mm->ioctx_table);
+> +	int i;
+>  
+> -		rcu_read_unlock();
+> +	if (!table)
+> +		return;
+>  
+> +	for (i = 0; i < table->nr; ++i) {
+> +		struct kioctx *ctx = table->table[i];
+>  		/*
+> -		 * We don't need to bother with munmap() here -
+> -		 * exit_mmap(mm) is coming and it'll unmap everything.
+> -		 * Since aio_free_ring() uses non-zero ->mmap_size
+> -		 * as indicator that it needs to unmap the area,
+> -		 * just set it to 0; aio_free_ring() is the only
+> -		 * place that uses ->mmap_size, so it's safe.
+> +		 * We don't need to bother with munmap() here - exit_mmap(mm)
+> +		 * is coming and it'll unmap everything. And we simply can't,
+> +		 * this is not necessarily our ->mm.
+> +		 * Since kill_ioctx() uses non-zero ->mmap_size as indicator
+> +		 * that it needs to unmap the area, just set it to 0.
+>  		 */
+> -		ctx->mmap_size = 0;
+> -
+> -		kill_ioctx(mm, ctx, NULL);
+> +		if (ctx) {
+> +			ctx->mmap_size = 0;
+> +			kill_ioctx(mm, ctx, NULL);
+> +		}
+
+Rather than indenting and moving the two lines changing mmap_size and the 
+kill_ioctx() call, why not just do "if (!ctx) ... continue;"?  That reduces 
+the number of lines changed and avoid excessive indentation.
+
+		-ben
+
+>  	}
+> +
+> +	RCU_INIT_POINTER(mm->ioctx_table, NULL);
+> +	kfree(table);
+>  }
+>  
+>  static void put_reqs_available(struct kioctx *ctx, unsigned nr)
+> -- 
+> 1.5.5.1
+> 
+
+-- 
+"Thought is the essence of where you are now."
