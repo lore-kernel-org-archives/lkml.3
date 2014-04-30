@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207AbaD3ANO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 20:13:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:62505 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757038AbaD3ANM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 20:13:12 -0400
-Date: Tue, 29 Apr 2014 20:13:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Nicholas Mc Guire <der.herr@hofr.at>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-Message-ID: <20140429201308.63292691@gandalf.local.home>
-In-Reply-To: <1398748869.5514.81.camel@marge.simpson.net>
-References: <20140411185739.GA6644@linutronix.de>
-	<1397918766.5436.16.camel@marge.simpson.net>
-	<1398411635.11930.45.camel@marge.simpson.net>
-	<1398501491.12941.5.camel@marge.simpson.net>
-	<1398520699.28726.22.camel@marge.simpson.net>
-	<1398661784.30930.33.camel@marge.simpson.net>
-	<1398676186.30930.49.camel@marge.simpson.net>
-	<20140428101805.75032f45@gandalf.local.home>
-	<1398695832.14475.10.camel@marge.simpson.net>
-	<1398748869.5514.81.camel@marge.simpson.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1757303AbaD3APQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 20:15:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324AbaD3APO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 20:15:14 -0400
+Date: Tue, 29 Apr 2014 20:14:32 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
+        davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        tglx@linutronix.de
+Subject: Re: [3.15-rc3] rtmutex-debug assertion.
+Message-ID: <20140430001432.GA32142@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, peterz@infradead.org,
+	davidlohr@hp.com, Linus Torvalds <torvalds@linux-foundation.org>,
+	tglx@linutronix.de
+References: <20140429151655.GA14277@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140429151655.GA14277@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Apr 2014 07:21:09 +0200
-Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+On Tue, Apr 29, 2014 at 11:16:55AM -0400, Dave Jones wrote:
+ > Just hit this while fuzzing the futex() syscall.
+ > 
+ > 
+ > WARNING: CPU: 2 PID: 6202 at kernel/locking/rtmutex-debug.c:151 debug_rt_mutex_proxy_unlock+0x4e/0x60()
+ > DEBUG_LOCKS_WARN_ON(!rt_mutex_owner(lock))
+ > Modules linked in:
+ >  tun fuse ipt_ULOG nfnetlink bnep can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can_raw can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm xfs libcrc32c btusb bluetooth snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_timer snd microcode serio_raw pcspkr usb_debug 6lowpan_iphc rfkill shpchp ptp pps_core soundcore
+ > CPU: 2 PID: 6202 Comm: trinity-c63 Not tainted 3.15.0-rc3+ #201
+ >  0000000000000009 00000000de725d52 ffff880099befbd8 ffffffff92746dad
+ >  ffff880099befc20 ffff880099befc10 ffffffff9206d46d ffff88020951c010
+ >  ffff88009d718000 ffff88009d718000 ffffc90011408680 ffffc90011408688
+ > Call Trace:
+ >  [<ffffffff92746dad>] dump_stack+0x4e/0x7a
+ >  [<ffffffff9206d46d>] warn_slowpath_common+0x7d/0xa0
+ >  [<ffffffff9206d4ec>] warn_slowpath_fmt+0x5c/0x80
+ >  [<ffffffff920c533e>] debug_rt_mutex_proxy_unlock+0x4e/0x60
+ >  [<ffffffff920c4d77>] rt_mutex_proxy_unlock+0x17/0x40
+ >  [<ffffffff920ead7a>] free_pi_state+0x6a/0xb0
+ >  [<ffffffff920eade0>] unqueue_me_pi+0x20/0x40
+ >  [<ffffffff920ebfc2>] futex_lock_pi.isra.18+0x262/0x3f0
+ >  [<ffffffff92096910>] ? hrtimer_get_res+0x50/0x50
+ >  [<ffffffff920edb2c>] do_futex+0x2ec/0xb60
+ >  [<ffffffff92349897>] ? debug_smp_processor_id+0x17/0x20
+ >  [<ffffffff920bf3ee>] ? put_lock_stats.isra.23+0xe/0x30
+ >  [<ffffffff920bf756>] ? lock_release_holdtime.part.24+0xe6/0x160
+ >  [<ffffffff920a3cdd>] ? get_parent_ip+0xd/0x50
+ >  [<ffffffff9275698b>] ? preempt_count_sub+0x6b/0xf0
+ >  [<ffffffff92751f51>] ? _raw_spin_unlock+0x31/0x50
+ >  [<ffffffff920ee420>] SyS_futex+0x80/0x180
+ >  [<ffffffff9275b0e4>] tracesys+0xdd/0xe2
 
-> On Mon, 2014-04-28 at 16:37 +0200, Mike Galbraith wrote: 
-> 
-> > > Seems that migrate_disable() must be called before taking the lock as
-> > > it is done in every other location.
-> > 
-> > And for tasklist_lock, seems you also MUST do that prior to trylock as
-> > well, else you'll run afoul of the hotplug beast.
-> 
-> Bah.  Futzing with dmesg while stress script is running is either a very
-> bad idea, or a very good test.  Both virgin 3.10-rt and 3.12-rt with new
-> bugs squashed will deadlock.
-> 
-> Too bad I kept on testing, I liked the notion that hotplug was solid ;-)
+This is trickier to reproduce than it first seemed, as logging slows
+things down so much.  But after a few hours, it logged that the
+call that triggered this was..
 
-I was able to stress cpu hotplug on 3.12-rt after applying the
-following patch.
+futex(uaddr=0x7f55ff8c4000, op=0x6, val=0x200000006223800b, utime=0x7f55ff8c4000, uaddr2=0x7f55ff8c4000, val3=-123)
 
-If there's no complaints about it. I'm going to add this to the 3.12-rt
-stable tree. As without it, it fails horribly with the cpu hotplug
-stress test, and I wont release a stable kernel that does that.
+Those addresses come from an mmap we made on startup..
 
--- Steve
+[init] mapping[3]: (zeropage PROT_READ | PROT_WRITE) 0x7f55ff8c4000 (1MB)
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+op = FUTEX_LOCK_PI
 
-diff --git a/kernel/rt.c b/kernel/rt.c
-index bb72347..4f2a613 100644
---- a/kernel/rt.c
-+++ b/kernel/rt.c
-@@ -180,12 +180,15 @@ EXPORT_SYMBOL(_mutex_unlock);
-  */
- int __lockfunc rt_write_trylock(rwlock_t *rwlock)
- {
--	int ret = rt_mutex_trylock(&rwlock->lock);
-+	int ret;
-+
-+	migrate_disable();
-+	ret = rt_mutex_trylock(&rwlock->lock);
- 
--	if (ret) {
-+	if (ret)
- 		rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
--		migrate_disable();
--	}
-+	else
-+		migrate_enable();
- 
- 	return ret;
- }
-@@ -212,11 +215,12 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
- 	 * write locked.
- 	 */
- 	if (rt_mutex_owner(lock) != current) {
-+		migrate_disable();
- 		ret = rt_mutex_trylock(lock);
--		if (ret) {
-+		if (ret)
- 			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
--			migrate_disable();
--		}
-+		else
-+			migrate_enable();
- 	} else if (!rwlock->read_depth) {
- 		ret = 0;
- 	}
-@@ -245,8 +249,8 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
- 	 */
- 	if (rt_mutex_owner(lock) != current) {
- 		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
--		__rt_spin_lock(lock);
- 		migrate_disable();
-+		__rt_spin_lock(lock);
- 	}
- 	rwlock->read_depth++;
- }
+val seems to be garbage.
+
+I'll do another run, just to see if it's always the same set of values,
+but it's going to probably take an overnight run.
+
+	Dave
 
