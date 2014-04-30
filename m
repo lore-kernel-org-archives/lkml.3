@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282AbaD3Oaz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:30:55 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52348 "EHLO
+	id S1422662AbaD3ObG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:31:06 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52381 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758944AbaD3Oav (ORCPT
+	by vger.kernel.org with ESMTP id S1759263AbaD3Oay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:30:51 -0400
+	Wed, 30 Apr 2014 10:30:54 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: linux-kernel@vger.kernel.org
 Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
         Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
         Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [RFC 04/16] kgr: add testing kgraft patch
-Date: Wed, 30 Apr 2014 16:30:37 +0200
-Message-Id: <1398868249-26169-5-git-send-email-jslaby@suse.cz>
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [RFC 09/16] kgr: mark task_safe in some kthreads
+Date: Wed, 30 Apr 2014 16:30:42 +0200
+Message-Id: <1398868249-26169-10-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
 References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
@@ -24,162 +28,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is intended to be a presentation of the kgraft engine, so it is
-placed into samples/ directory.
+Some threads do not use kthread_should_stop. Before we enable a
+kthread support in kgr, we must make sure all those mark themselves
+safe explicitly.
 
-It patches sys_iopl() and sys_capable() to print an additional message
-to the original functionality.
-
-Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
 ---
- samples/Kconfig           |  4 ++
- samples/Makefile          |  3 +-
- samples/kgr/Makefile      |  1 +
- samples/kgr/kgr_patcher.c | 97 +++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 104 insertions(+), 1 deletion(-)
- create mode 100644 samples/kgr/Makefile
- create mode 100644 samples/kgr/kgr_patcher.c
+ drivers/base/devtmpfs.c  | 1 +
+ fs/jbd2/journal.c        | 2 ++
+ fs/notify/mark.c         | 5 ++++-
+ kernel/hung_task.c       | 5 ++++-
+ kernel/kthread.c         | 3 +++
+ kernel/rcu/tree.c        | 6 ++++--
+ kernel/rcu/tree_plugin.h | 9 +++++++--
+ kernel/workqueue.c       | 1 +
+ 8 files changed, 26 insertions(+), 6 deletions(-)
 
-diff --git a/samples/Kconfig b/samples/Kconfig
-index 6181c2cc9ca0..a923510443de 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -55,6 +55,10 @@ config SAMPLE_KDB
- 	  Build an example of how to dynamically add the hello
- 	  command to the kdb shell.
- 
-+config SAMPLE_KGR_PATCHER
-+	tristate "Build kgr patcher example -- loadable modules only"
-+	depends on KGR && m
-+
- config SAMPLE_RPMSG_CLIENT
- 	tristate "Build rpmsg client sample -- loadable modules only"
- 	depends on RPMSG && m
-diff --git a/samples/Makefile b/samples/Makefile
-index 1a60c62e2045..a141b219c019 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -1,4 +1,5 @@
- # Makefile for Linux samples code
- 
- obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
--			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
-+			   hw_breakpoint/ kfifo/ kdb/ kgr/ \
-+			   hidraw/ rpmsg/ seccomp/
-diff --git a/samples/kgr/Makefile b/samples/kgr/Makefile
-new file mode 100644
-index 000000000000..202eee7d050e
---- /dev/null
-+++ b/samples/kgr/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_SAMPLE_KGR_PATCHER) += kgr_patcher.o
-diff --git a/samples/kgr/kgr_patcher.c b/samples/kgr/kgr_patcher.c
-new file mode 100644
-index 000000000000..828543e36f3f
---- /dev/null
-+++ b/samples/kgr/kgr_patcher.c
-@@ -0,0 +1,97 @@
-+/*
-+ * kgr_patcher -- just kick kgr infrastructure for test
-+ *
-+ *  Copyright (c) 2013-2014 SUSE
-+ *   Authors: Jiri Kosina
-+ *	      Vojtech Pavlik
-+ *	      Jiri Slaby
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/kgr.h>
-+#include <linux/kallsyms.h>
+diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+index 25798db14553..c7d52d1b8c9c 100644
+--- a/drivers/base/devtmpfs.c
++++ b/drivers/base/devtmpfs.c
+@@ -387,6 +387,7 @@ static int devtmpfsd(void *p)
+ 	sys_chroot(".");
+ 	complete(&setup_done);
+ 	while (1) {
++		kgr_task_safe(current);
+ 		spin_lock(&req_lock);
+ 		while (requests) {
+ 			struct req *req = requests;
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 67b8e303946c..1b9c4c2e014a 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -43,6 +43,7 @@
+ #include <linux/backing-dev.h>
+ #include <linux/bitops.h>
+ #include <linux/ratelimit.h>
 +#include <linux/sched.h>
-+#include <linux/types.h>
-+#include <linux/capability.h>
-+#include <linux/ptrace.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/jbd2.h>
+@@ -260,6 +261,7 @@ loop:
+ 			write_lock(&journal->j_state_lock);
+ 		}
+ 		finish_wait(&journal->j_wait_commit, &wait);
++		kgr_task_safe(current);
+ 	}
+ 
+ 	jbd_debug(1, "kjournald2 wakes\n");
+diff --git a/fs/notify/mark.c b/fs/notify/mark.c
+index 923fe4a5f503..a74b6175e645 100644
+--- a/fs/notify/mark.c
++++ b/fs/notify/mark.c
+@@ -82,6 +82,7 @@
+ #include <linux/kthread.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
++#include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/srcu.h>
+@@ -355,7 +356,9 @@ static int fsnotify_mark_destroy(void *ignored)
+ 			fsnotify_put_mark(mark);
+ 		}
+ 
+-		wait_event_interruptible(destroy_waitq, !list_empty(&destroy_list));
++		wait_event_interruptible(destroy_waitq, ({
++					kgr_task_safe(current);
++					!list_empty(&destroy_list); }));
+ 	}
+ 
+ 	return 0;
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 06bb1417b063..b5f85bff2509 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -14,6 +14,7 @@
+ #include <linux/kthread.h>
+ #include <linux/lockdep.h>
+ #include <linux/export.h>
++#include <linux/sched.h>
+ #include <linux/sysctl.h>
+ #include <linux/utsname.h>
+ #include <trace/events/sched.h>
+@@ -227,8 +228,10 @@ static int watchdog(void *dummy)
+ 	for ( ; ; ) {
+ 		unsigned long timeout = sysctl_hung_task_timeout_secs;
+ 
+-		while (schedule_timeout_interruptible(timeout_jiffies(timeout)))
++		while (schedule_timeout_interruptible(timeout_jiffies(timeout))) {
++			kgr_task_safe(current);
+ 			timeout = sysctl_hung_task_timeout_secs;
++		}
+ 
+ 		if (atomic_xchg(&reset_hung_task, 0))
+ 			continue;
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 9a130ec06f7a..08b979dad619 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -78,6 +78,8 @@ static struct kthread *to_live_kthread(struct task_struct *k)
+  */
+ bool kthread_should_stop(void)
+ {
++	kgr_task_safe(current);
 +
-+#include <asm/processor.h>
-+
-+/*
-+ * This all should be autogenerated from the patched sources
-+ *
-+ * IMPORTANT TODO: we have to handle cases where the new code is calling out
-+ * into functions which are not exported to modules.
-+ *
-+ * This can either be handled by calling all such functions indirectly, i.e
-+ * obtaining pointer from kallsyms in the stub (and transforming all callsites
-+ * to do pointer dereference), or by modifying the kernel module linker.
-+ */
-+
-+asmlinkage long kgr_new_sys_iopl(unsigned int level)
-+{
-+        struct pt_regs *regs = current_pt_regs();
-+        unsigned int old = (regs->flags >> 12) & 3;
-+        struct thread_struct *t = &current->thread;
-+
-+	printk(KERN_DEBUG "kgr-patcher: this is a new sys_iopl()\n");
-+
-+        if (level > 3)
-+                return -EINVAL;
-+        /* Trying to gain more privileges? */
-+        if (level > old) {
-+                if (!capable(CAP_SYS_RAWIO))
-+                        return -EPERM;
-+        }
-+        regs->flags = (regs->flags & ~X86_EFLAGS_IOPL) | (level << 12);
-+        t->iopl = level << 12;
-+        set_iopl_mask(t->iopl);
-+
-+        return 0;
-+}
-+KGR_PATCHED_FUNCTION(patch, SyS_iopl, kgr_new_sys_iopl);
-+
-+static bool new_capable(int cap)
-+{
-+	printk(KERN_DEBUG "kgr-patcher: this is a new capable()\n");
-+
-+        return ns_capable(&init_user_ns, cap);
-+}
-+KGR_PATCHED_FUNCTION(patch, capable, new_capable);
-+
-+static const struct kgr_patch patch = {
-+	.patches = {
-+		KGR_PATCH(SyS_iopl),
-+		KGR_PATCH(capable),
-+		KGR_PATCH_END
-+	}
-+};
-+
-+static int __init kgr_patcher_init(void)
-+{
-+	/* removing not supported (yet?) */
-+	__module_get(THIS_MODULE);
-+	kgr_start_patching(&patch);
-+	return 0;
-+}
-+
-+static void __exit kgr_patcher_cleanup(void)
-+{
-+	/* extra care needs to be taken when freeing ftrace_ops->private */
-+	printk(KERN_ERR "removing now buggy!\n");
-+}
-+
-+module_init(kgr_patcher_init);
-+module_exit(kgr_patcher_cleanup);
-+
-+MODULE_LICENSE("GPL");
-+
+ 	return test_bit(KTHREAD_SHOULD_STOP, &to_kthread(current)->flags);
+ }
+ EXPORT_SYMBOL(kthread_should_stop);
+@@ -497,6 +499,7 @@ int kthreadd(void *unused)
+ 		if (list_empty(&kthread_create_list))
+ 			schedule();
+ 		__set_current_state(TASK_RUNNING);
++		kgr_task_safe(current);
+ 
+ 		spin_lock(&kthread_create_lock);
+ 		while (!list_empty(&kthread_create_list)) {
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 0c47e300210a..5dddedacfc06 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1593,9 +1593,10 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 			trace_rcu_grace_period(rsp->name,
+ 					       ACCESS_ONCE(rsp->gpnum),
+ 					       TPS("reqwait"));
+-			wait_event_interruptible(rsp->gp_wq,
++			wait_event_interruptible(rsp->gp_wq, ({
++						 kgr_task_safe(current);
+ 						 ACCESS_ONCE(rsp->gp_flags) &
+-						 RCU_GP_FLAG_INIT);
++						 RCU_GP_FLAG_INIT; }));
+ 			/* Locking provides needed memory barrier. */
+ 			if (rcu_gp_init(rsp))
+ 				break;
+@@ -1626,6 +1627,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ 					(!ACCESS_ONCE(rnp->qsmask) &&
+ 					 !rcu_preempt_blocked_readers_cgp(rnp)),
+ 					j);
++			kgr_task_safe(current);
+ 			/* Locking provides needed memory barriers. */
+ 			/* If grace period done, leave loop. */
+ 			if (!ACCESS_ONCE(rnp->qsmask) &&
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 962d1d589929..8b383003b228 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -27,6 +27,7 @@
+ #include <linux/delay.h>
+ #include <linux/gfp.h>
+ #include <linux/oom.h>
++#include <linux/sched.h>
+ #include <linux/smpboot.h>
+ #include "../time/tick-internal.h"
+ 
+@@ -1273,7 +1274,8 @@ static int rcu_boost_kthread(void *arg)
+ 	for (;;) {
+ 		rnp->boost_kthread_status = RCU_KTHREAD_WAITING;
+ 		trace_rcu_utilization(TPS("End boost kthread@rcu_wait"));
+-		rcu_wait(rnp->boost_tasks || rnp->exp_tasks);
++		rcu_wait(({ kgr_task_safe(current);
++					rnp->boost_tasks || rnp->exp_tasks; }));
+ 		trace_rcu_utilization(TPS("Start boost kthread@rcu_wait"));
+ 		rnp->boost_kthread_status = RCU_KTHREAD_RUNNING;
+ 		more2boost = rcu_boost(rnp);
+@@ -2283,11 +2285,14 @@ static int rcu_nocb_kthread(void *arg)
+ 
+ 	/* Each pass through this loop invokes one batch of callbacks */
+ 	for (;;) {
++		kgr_task_safe(current);
+ 		/* If not polling, wait for next batch of callbacks. */
+ 		if (!rcu_nocb_poll) {
+ 			trace_rcu_nocb_wake(rdp->rsp->name, rdp->cpu,
+ 					    TPS("Sleep"));
+-			wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
++			wait_event_interruptible(rdp->nocb_wq, ({
++						kgr_task_safe(current);
++						rdp->nocb_head; }));
+ 			/* Memory barrier provide by xchg() below. */
+ 		} else if (firsttime) {
+ 			firsttime = 0;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0ee63af30bd1..4b89f1dc0dd8 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2369,6 +2369,7 @@ sleep:
+ 	__set_current_state(TASK_INTERRUPTIBLE);
+ 	spin_unlock_irq(&pool->lock);
+ 	schedule();
++	kgr_task_safe(current);
+ 	goto woke_up;
+ }
+ 
 -- 
 1.9.2
 
