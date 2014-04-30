@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337AbaD3SOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:14:44 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:20364
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752186AbaD3SOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:14:43 -0400
-Message-ID: <1398881677.24575.197.camel@snotra.buserror.net>
-Subject: Re: [PATCH] powerpc 32: Provides VIRT_CPU_ACCOUNTING
-From: Scott Wood <scottwood@freescale.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Christophe Leroy <christophe.leroy@c-s.fr>,
-        Paul Mackerras <paulus@samba.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Date: Wed, 30 Apr 2014 13:14:37 -0500
-In-Reply-To: <1398833787.31586.8.camel@pasglop>
-References: <20140319215241.236B21A4BDE@localhost.localdomain>
-	 <1395266717.12479.293.camel@snotra.buserror.net>
-	 <1398833787.31586.8.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	id S965055AbaD3SPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:15:07 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:61017 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaD3SPE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 14:15:04 -0400
+Date: Wed, 30 Apr 2014 11:14:58 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rob Herring <robherring2@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
+        dev@linux-sunxi.org
+Subject: Re: [PATCH v3 3/9] of: mtd: add NAND timing mode retrieval support
+Message-ID: <20140430181458.GD2497@norris-Latitude-E6410>
+References: <1394647664-8258-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1394647664-8258-4-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:55b5:c8fb:7ca4:3149]
-X-ClientProxiedBy: BN1PR02CA0043.namprd02.prod.outlook.com (10.141.56.43) To
- BL2PR03MB388.namprd03.prod.outlook.com (10.141.91.153)
-X-Forefront-PRVS: 0197AFBD92
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(51704005)(199002)(189002)(377424004)(79102001)(83072002)(93916002)(33646001)(86362001)(101416001)(50986999)(50466002)(85852003)(87976001)(20776003)(47776003)(50226001)(81542001)(4396001)(81342001)(99396002)(80022001)(80976001)(74662001)(74502001)(31966008)(62966002)(89996001)(92726001)(77982001)(42186004)(87286001)(23676002)(76176999)(77156001)(92566001)(83322001)(76482001)(46102001)(88136002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB388;H:[IPv6:2601:2:5800:3f7:55b5:c8fb:7ca4:3149];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394647664-8258-4-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 14:56 +1000, Benjamin Herrenschmidt wrote:
-> On Wed, 2014-03-19 at 17:05 -0500, Scott Wood wrote:
-> > On Wed, 2014-03-19 at 22:52 +0100, Christophe Leroy wrote:
-> > > This patch provides VIRT_CPU_ACCOUTING to PPC32 architecture.
-> > > Unlike PPC64, PPC32 doesn't provide the PACA register. Therefore the
-> > > implementation is similar to the one done in the IA64 architecture.
-> > > It is based on additional information added to the Task Info structure.
-> > 
-> > PACA isn't a register -- just a convention for how Linux uses a GPR.
-> > Maybe it's time to use it on PPC32 as well?
+On Wed, Mar 12, 2014 at 07:07:38PM +0100, Boris BREZILLON wrote:
+> Add a function to retrieve NAND timing mode (ONFI timing mode) from a given
+> DT node.
 > 
-> PACA is actually a data structure and you really really don't want it
-> on ppc32 :-) Having a register point to current works, having a register
-> point to per-cpu data instead works too (ie, change what we do today),
-> but don't introduce a PACA *please* :-)
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+> ---
+>  drivers/of/of_mtd.c    |   19 +++++++++++++++++++
+>  include/linux/of_mtd.h |    8 ++++++++
+>  2 files changed, 27 insertions(+)
+> 
+> diff --git a/drivers/of/of_mtd.c b/drivers/of/of_mtd.c
+> index b7361ed..8bdaa0b 100644
+> --- a/drivers/of/of_mtd.c
+> +++ b/drivers/of/of_mtd.c
+> @@ -117,3 +117,22 @@ bool of_get_nand_on_flash_bbt(struct device_node *np)
+>  	return of_property_read_bool(np, "nand-on-flash-bbt");
+>  }
+>  EXPORT_SYMBOL_GPL(of_get_nand_on_flash_bbt);
+> +
+> +/**
+> + * of_get_nand_timings - Get nand timings for the given device_node
+> + * @np:	Pointer to the given device_node
+> + *
+> + * return 0 on success errno other wise
+> + */
+> +int of_get_nand_onfi_timing_mode(struct device_node *np)
+> +{
+> +	int err;
+> +	u32 mode;
+> +
+> +	err = of_property_read_u32(np, "onfi,nand-timing-mode", &mode);
+> +	if (err)
+> +		return err;
+> +
+> +	return mode;
 
-What is special about 64-bit that warrants doing things differently from
-32-bit?
+To fit the style of the rest of this file (and to save some lines) this
+might as well be:
 
-What is the difference between PACA and "per-cpu data", other than the
-obscure name?
- 
--Scott
+	return ret ? ret : mode;
 
+> +}
+> +EXPORT_SYMBOL_GPL(of_get_nand_onfi_timing_mode);
+> diff --git a/include/linux/of_mtd.h b/include/linux/of_mtd.h
+> index e266caa..c8310ae 100644
+> --- a/include/linux/of_mtd.h
+> +++ b/include/linux/of_mtd.h
+> @@ -9,6 +9,8 @@
+>  #ifndef __LINUX_OF_MTD_H
+>  #define __LINUX_OF_MTD_H
+>  
+> +#include <linux/mtd/nand.h>
+> +
 
+What's this header used for here? I think you can drop it.
+
+>  #ifdef CONFIG_OF_MTD
+>  
+>  #include <linux/of.h>
+> @@ -17,6 +19,7 @@ int of_get_nand_ecc_step_size(struct device_node *np);
+>  int of_get_nand_ecc_strength(struct device_node *np);
+>  int of_get_nand_bus_width(struct device_node *np);
+>  bool of_get_nand_on_flash_bbt(struct device_node *np);
+> +int of_get_nand_onfi_timing_mode(struct device_node *np);
+>  
+>  #else /* CONFIG_OF_MTD */
+>  
+> @@ -45,6 +48,11 @@ static inline bool of_get_nand_on_flash_bbt(struct device_node *np)
+>  	return false;
+>  }
+>  
+> +static inline int of_get_nand_onfi_timing_mode(struct device_node *np)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>  #endif /* CONFIG_OF_MTD */
+>  
+>  #endif /* __LINUX_OF_MTD_H */
+
+Brian
