@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355AbaD3KMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:12:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31302 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330AbaD3KMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:12:15 -0400
-Date: Wed, 30 Apr 2014 12:11:49 +0200
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL 0/6] perf/core improvements and fixes
-Message-ID: <1398779270-10271-1-git-send-email-jolsa@kernel.org>
+	id S1758490AbaD3KQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:16:05 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:52710
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751702AbaD3KQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 06:16:04 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] regmap: Fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Wed, 30 Apr 2014 17:31:08 +0800
+Message-ID: <1398850268-22258-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(84676001)(83072002)(62966002)(92726001)(85852003)(89996001)(77156001)(47776003)(74502001)(87936001)(76482001)(87286001)(88136002)(80022001)(36756003)(74662001)(31966008)(50226001)(79102001)(46102001)(92566001)(81542001)(99396002)(20776003)(77096999)(80976001)(19580395003)(19580405001)(86362001)(2009001)(93916002)(97736001)(81342001)(48376002)(44976005)(50466002)(77982001)(83322001)(101416001)(50986999)(6806004);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB512;H:tx30smr01.am.freescale.net;FPR:74BFD35C.30E82621.F9D62958.8BD60AD1.2018B;MLV:sfv;PTR:ErrorRetry;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Forefront-PRVS: 0197AFBD92
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling
+Since we cannot make sure the 'len = pair_size * num_regs' will always
+be none zero from the users, and then if 'num_regs' equals to zero by
+mistake or other reasons, the kzalloc() will return ZERO_SIZE_PTR, which
+equals to ((void *)16).
 
-resending 0/6.. it got lost somehow from previous post..
+So this patch fix this with just doing the 'len' zero check before calling
+kzalloc().
 
-thanks,
-jirka
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regmap.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 18d193f..4ef7a24 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1685,6 +1685,9 @@ static int _regmap_raw_multi_reg_write(struct regmap *map,
+ 	size_t pair_size = reg_bytes + pad_bytes + val_bytes;
+ 	size_t len = pair_size * num_regs;
+ 
++	if (!len)
++		return -EINVAL;
++
+ 	buf = kzalloc(len, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+-- 
+1.8.4
 
-The following changes since commit 201131998fbf074b03679afedcc29948e63331ef:
-
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-04-29 08:41:21 +0200)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to 8ab596afb97bc9e2f9140dc1d993e81749acff42:
-
-  perf tools ARM64: Wire up perf_regs and unwind support (2014-04-29 15:31:19 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-. Wire up perf_regs and unwind support for ARM64 (Jean Pihet)
-
-. Move u64_swap union to its single user's header, evsel.h (Borislav Petkov)
-
-. Fix for s390 to properly parse tracepoints plus test code (Alexander Yarygin)
-
-. Handle EINTR error for readn/writen (Namhyung Kim)
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-
-----------------------------------------------------------------
-Alexander Yarygin (3):
-      perf tools: Parse tracepoints with '-' in system name
-      perf tests: Add numeric identifier to evlist_test
-      perf tests: Add a test of kvm-390: trace event
-
-Borislav Petkov (1):
-      perf tools: Move u64_swap union
-
-Jean Pihet (1):
-      perf tools ARM64: Wire up perf_regs and unwind support
-
-Namhyung Kim (1):
-      perf tools: Handle EINTR error for readn/writen
-
- tools/perf/arch/arm64/Makefile                |   7 ++
- tools/perf/arch/arm64/include/perf_regs.h     |  88 ++++++++++++++++
- tools/perf/arch/arm64/util/dwarf-regs.c       |  80 +++++++++++++++
- tools/perf/arch/arm64/util/unwind-libunwind.c |  82 +++++++++++++++
- tools/perf/config/Makefile                    |   8 +-
- tools/perf/tests/parse-events.c               | 142 ++++++++++++++++++--------
- tools/perf/util/evsel.h                       |   5 +
- tools/perf/util/parse-events.y                |  12 +++
- tools/perf/util/types.h                       |   5 -
- tools/perf/util/util.c                        |   2 +
- 10 files changed, 380 insertions(+), 51 deletions(-)
- create mode 100644 tools/perf/arch/arm64/Makefile
- create mode 100644 tools/perf/arch/arm64/include/perf_regs.h
- create mode 100644 tools/perf/arch/arm64/util/dwarf-regs.c
- create mode 100644 tools/perf/arch/arm64/util/unwind-libunwind.c
