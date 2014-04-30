@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737AbaD3OTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:19:21 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:57265 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933552AbaD3OTT (ORCPT
+	id S933801AbaD3OTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:19:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:39374 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933754AbaD3OTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:19:19 -0400
-Message-ID: <5361065E.80304@monstr.eu>
-Date: Wed, 30 Apr 2014 16:19:10 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 30 Apr 2014 10:19:22 -0400
+Date: Wed, 30 Apr 2014 10:19:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Nicholas Mc Guire <der.herr@hofr.at>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140430101919.70b2f622@gandalf.local.home>
+In-Reply-To: <1398866403.26071.125.camel@marge.simpson.net>
+References: <20140411185739.GA6644@linutronix.de>
+	<1397918766.5436.16.camel@marge.simpson.net>
+	<1398411635.11930.45.camel@marge.simpson.net>
+	<1398501491.12941.5.camel@marge.simpson.net>
+	<1398520699.28726.22.camel@marge.simpson.net>
+	<1398661784.30930.33.camel@marge.simpson.net>
+	<1398676186.30930.49.camel@marge.simpson.net>
+	<20140428101805.75032f45@gandalf.local.home>
+	<1398695832.14475.10.camel@marge.simpson.net>
+	<1398748869.5514.81.camel@marge.simpson.net>
+	<20140429201308.63292691@gandalf.local.home>
+	<1398843793.26071.52.camel@marge.simpson.net>
+	<1398863189.26071.97.camel@marge.simpson.net>
+	<20140430091550.1177bc90@gandalf.local.home>
+	<1398866403.26071.125.camel@marge.simpson.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Srikanth Thokala <sthokal@xilinx.com>, bhelgaas@google.com
-CC: grant.likely@linaro.org, robh+dt@kernel.org,
-        jgunthorpe@obsidianresearch.com, linux-pci@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v3] pcie: Add Xilinx PCIe Host Bridge IP driver
-References: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
-In-Reply-To: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="RRHm6IoEN7DfJnpVAh13IietsX9aHf5dv"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---RRHm6IoEN7DfJnpVAh13IietsX9aHf5dv
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, 30 Apr 2014 16:00:03 +0200
+Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-Hi Bjorn,
+> On Wed, 2014-04-30 at 09:15 -0400, Steven Rostedt wrote: 
+> > On Wed, 30 Apr 2014 15:06:29 +0200
+> > Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+> > 
+> > 
+> > > The End.. I hope.  I've had enough hotplug entertainment for a while.
+> > 
+> > Not for me. 3.14-rt stress-cpu-hotplug crashes quickly. But it's a
+> > different issues than what my patch addressed. I'm still debugging it.
+> 
+> If you didn't fix the two bugs I showed, and (wisely) didn't look at the
+> beautiful lglock patches I posted (no frozen shark, I'm disappointed;),
+> your patch won't help.
 
-On 04/15/2014 01:38 PM, Srikanth Thokala wrote:
-> This is the driver for Xilinx AXI PCIe Host Bridge Soft IP
->=20
-> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-> ---
-> Changes in v3:
-> - Rebased on v3.15.0-rc1
-> - Added support for interrupt-map DT functionality.
-> - Removed map_irq() wrapper, instead using of_irq_parse_and_map_pci().
-> - Modified resource mapping logic as per the series
->   "PCI: ARM: add support for generic PCI host controller"
-> - Modified devicetree binding documentation to update with interrupt-
->   map properties.
-> - Use devm calls wherever applicable.
-> - Fixed minor comments from Jason
-> - Thanks Jason for the review and suggestions.
->=20
-> Changes in v2:
-> - Rebased on v3.14.0-rc8
-> - Removed IP specific DT properties like include-rc, axibar-num etc.,
->   as suggested by Jason and Bjorn, Thanks
-> ---
->  .../devicetree/bindings/pci/xilinx-pcie.txt        |   62 ++
->  drivers/pci/host/Kconfig                           |    7 +
->  drivers/pci/host/Makefile                          |    1 +
->  drivers/pci/host/pci-xilinx.c                      |  999 ++++++++++++=
-++++++++
->  4 files changed, 1069 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pci/xilinx-pcie.t=
-xt
->  create mode 100644 drivers/pci/host/pci-xilinx.c
+Mike,
 
-Any comment on this patch?
+I'm testing it now. But could you please post them as regular patches.
+They were attachments to this thread, and were not something that stood
+out.
 
 Thanks,
-Michal
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---RRHm6IoEN7DfJnpVAh13IietsX9aHf5dv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNhBl8ACgkQykllyylKDCH49wCfWE9bLKJgU6Lc/gbyIX3o9pJT
-WuoAniVKqqaWYKicccMgCkg8MSz8En7u
-=t95h
------END PGP SIGNATURE-----
-
---RRHm6IoEN7DfJnpVAh13IietsX9aHf5dv--
+-- Steve
