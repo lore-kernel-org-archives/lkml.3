@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758389AbaD3IvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:51:20 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:59206 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758346AbaD3IvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:51:15 -0400
+	id S932442AbaD3Ivl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:51:41 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:34779 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757983AbaD3Ivh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 04:51:37 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Jan Moskyto Matejka'" <mq@suse.cz>, Alexey Charkov <alchark@gmail.com>,
+        Roger Luethi <rl@hellgate.ch>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: via-rhine: fix compiler warning
+Thread-Topic: [PATCH] net: via-rhine: fix compiler warning
+Thread-Index: AQHPY9FWWp1qfKJ7c0OzzdAVAe6qrZsp2FVQ
+Date: Wed, 30 Apr 2014 08:49:39 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F702C5F@AcuExch.aculab.com>
+References: <1398792971-10379-1-git-send-email-mq@suse.cz>
+In-Reply-To: <1398792971-10379-1-git-send-email-mq@suse.cz>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <cover.1398072824.git.viresh.kumar@linaro.org>
-References: <cover.1398072824.git.viresh.kumar@linaro.org>
-Date: Wed, 30 Apr 2014 14:21:15 +0530
-Message-ID: <CAKohpok5O_6Bv_q7Xbhzyt15AL-cU4-L9CQj-6sv+_EFwq=Cew@mail.gmail.com>
-Subject: Re: [PATCH V2 00/19] tick: cleanups (Shouldn't change code behavior)
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3U8pk3t005956
 
-On 21 April 2014 15:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> As suggested by you (https://lkml.org/lkml/2014/4/14/797), this is the second
-> lot of changes I have. I have divided the earlier patchset into three parts:
-> - Bugfixes, already merged
-> - Code cleanups which shouldn't have any functional change
-> - Code cleanups which may have any functional change
->
-> This patchset is targeting the second part now. Its just about moving the code
-> around to make it more readable and obvious. Not removing any code at all, that
-> will be addressed in next series.
->
-> V1->V2: Actually V1 was never reviewed and so it is mostly a resend of V1. Some
-> rearrangement of patches is done though.
->
-> Viresh Kumar (19):
+From: Jan Moskyto Matejka
+> Fixed different size cast warning:
+> 
+> 	drivers/net/ethernet/via/via-rhine.c: In function rhine_init_one_platform:
+> 	drivers/net/ethernet/via/via-rhine.c:1132:13: warning: cast from pointer to integer of different
+> size [-Wpointer-to-int-cast]
+> 	  revision = (u32)match->data;
+> 		     ^
+> 
+> That code was added in commit 2d283862dc62daead9db0dc89cd0d0351e91f765
+> ("net: via-rhine: add OF bus binding").
+...
+> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+> index 4fa9201..76d18e0 100644
+> --- a/drivers/net/ethernet/via/via-rhine.c
+> +++ b/drivers/net/ethernet/via/via-rhine.c
+> @@ -288,7 +288,7 @@ MODULE_DEVICE_TABLE(pci, rhine_pci_tbl);
+>   * (for quirks etc.)
+>   */
+>  static struct of_device_id rhine_of_tbl[] = {
+> -	{ .compatible = "via,vt8500-rhine", .data = (void *)0x84 },
+> +	{ .compatible = "via,vt8500-rhine", .data = (u32 []) { 0x84 } },
+>  	{ }	/* terminate list */
+>  };
+>  MODULE_DEVICE_TABLE(of, rhine_of_tbl);
+> @@ -1129,7 +1129,7 @@ static int rhine_init_one_platform(struct platform_device *pdev)
+>  	if (!irq)
+>  		return -EINVAL;
+> 
+> -	revision = (u32)match->data;
+> +	revision = *((u32 *) match->data);
+>  	if (!revision)
+>  		return -EINVAL;
 
-Hi Thomas,
+Both those casts look horrid.
+I'm not entirely convinced that the first is valid C - It would have to be
+something specific to C99 initialisers.
+Casts like *(u32 *)foo are also likely to be bugs (esp. on BE systems)
+so themselves start ringing alarm bells.
 
-Any inputs on these ?
+So why not just:
+	revision = (unsigned long)match->data;
+and add a comment that the 0x84 is the revision - #define ??
+
+	David
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
