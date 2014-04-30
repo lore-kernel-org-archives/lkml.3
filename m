@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686AbaD3IZZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 04:25:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35673 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983AbaD3IZW (ORCPT
+	id S1758116AbaD3I0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 04:26:34 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42021 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758079AbaD3I0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 04:25:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-Date: Wed, 30 Apr 2014 13:55:21 +0530
-X-Google-Sender-Auth: YfVvEW4lt6XqgbjZg40BKhBRMB8
-Message-ID: <CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 Apr 2014 04:26:33 -0400
+Message-ID: <1398846369.19894.21.camel@paszta.hi.pengutronix.de>
+Subject: Re: [PATCH 1/3] of: Add vendor prefix for Linear Technology
+ Corporation
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        Tim Harvey <tharvey@gateworks.com>
+Date: Wed, 30 Apr 2014 10:26:09 +0200
+In-Reply-To: <CAL_JsqJLhino_s+BhiApRYBtbUvyrn4KF0Zax7YKP_HYLye5gw@mail.gmail.com>
+References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+	 <CAL_JsqJLhino_s+BhiApRYBtbUvyrn4KF0Zax7YKP_HYLye5gw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am Dienstag, den 29.04.2014, 15:44 -0500 schrieb Rob Herring:
+> On Tue, Apr 29, 2014 at 11:37 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> > Add Linear Technology Corporation to the list of device tree vendor prefixes.
+> >
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> >  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+> >  1 file changed, 1 insertion(+)
+> >
+> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > index 0f01c9b..3d27991 100644
+> > --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> > @@ -65,6 +65,7 @@ lantiq        Lantiq Semiconductor
+> >  lg     LG Corporation
+> >  linux  Linux-specific binding
+> >  lsi    LSI Corp. (LSI Logic)
+> > +ltc    Linear Technology Corporation
+> 
+> 
+> Following the use of stock symbols, this should be lltc. Is this already in use?
 
-This isn't a very big patchset and this patch is very much required to
-understand other patches and so please cc all people from other
-list here as well..
+[Added Tim Harvey to Cc]
 
-On Wed, Apr 30, 2014 at 11:58 AM, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> In the frequency table dts file, the frequencies are arranged in
+That depends on the definition of 'in use'.
 
-Improve your logs a bit. Which dts file are you talking about here ?
-How would anybody know that you are talking about exynos here?
+grep found arch/arm/boot/dts/imx6qdl-gw5[123]xx.dtsi containing
+a "ltc,ltc3676" compatible, but I haven't seen the corresponding
+driver yet. I suspect at this point we still can switch to use lltc
+instead of ltc as vendor prefix without hurting anybody.
 
-Also, you shouldn't mention that here, just tell the kind of requirement
-platforms may have. i.e. people may want to keep the opp list in the
-same order in which it came from DT.
+regards
+Philipp
 
-> descending order which maps 1 to 1 with other frequency parameter to
-> be calculated and programmed in some registers.
-> But the OPP library works by generating the frequencies in ascending
-> order which breaks the above logic.
-> So added OPP_TABLE_ORDER_DESCEND flag to consider descending order.
-
-So, create three flags:
-OPP_TABLE_ORDER_ASCENDING              0
-OPP_TABLE_ORDER_DESCENDING            1
-OPP_TABLE_ORDER_ORIGINAL                  2 (And use this for your case.)
-
-> Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  drivers/base/power/opp.c |   17 ++++++++++++++++-
->  include/linux/pm_opp.h   |    7 +++++--
->  2 files changed, 21 insertions(+), 3 deletions(-)
-
-You are changing prototype of a function and so all other files which are using
-this routine will break after this patch and we can't afford it as we
-want git bisect
-to work properly.
-
-So, fix all platforms here in this patch only, i.e. part of 2/3 and
-complete 3/3 should
-have been merged into this one.
-
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 2553867..ec7d553 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -18,6 +18,7 @@
->  #include <linux/cpufreq.h>
->  #include <linux/device.h>
->  #include <linux/list.h>
-> +#include <linux/list_sort.h>
->  #include <linux/rculist.h>
->  #include <linux/rcupdate.h>
->  #include <linux/pm_opp.h>
-> @@ -597,10 +598,21 @@ int dev_pm_opp_disable(struct device *dev, unsigned
-> long freq)
->  EXPORT_SYMBOL_GPL(dev_pm_opp_disable);
->
->  #ifdef CONFIG_CPU_FREQ
-> +
-> +static int opp_descend_cmp(void *priv, struct list_head *a,
-> +                                        struct list_head *b)
-> +{
-> +        struct dev_pm_opp *ra = list_entry(a, struct dev_pm_opp, node);
-> +        struct dev_pm_opp *rb = list_entry(b, struct dev_pm_opp, node);
-> +
-> +        return rb->rate - ra->rate;
-> +}
-> +
->  /**
->   * dev_pm_opp_init_cpufreq_table() - create a cpufreq table for a device
->   * @dev:       device for which we do this operation
->   * @table:     Cpufreq table returned back to caller
-> + * @flags:     OPP_TABLE_ORDER_DESCEND or zero
->   *
->   * Generate a cpufreq table for a provided device- this assumes that the
->   * opp list is already initialized and ready for usage.
-> @@ -622,7 +634,7 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_disable);
->   * or in contexts where mutex locking cannot be used.
->   */
->  int dev_pm_opp_init_cpufreq_table(struct device *dev,
-> -                           struct cpufreq_frequency_table **table)
-> +               struct cpufreq_frequency_table **table, unsigned char flags)
-
-You are targeting the wrong routine. Fix of_init_opp_table() instead and
-things would work automatically then..
-
-And please don't change prototype of dev_pm_opp_add() for now and
-just define __dev_pm_opp_add() which will be called from
-dev_pm_opp_add() and of_init_opp_table() with 'int order' parameter.
