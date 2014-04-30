@@ -1,97 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841AbaD3Cgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Apr 2014 22:36:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:18580 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753501AbaD3Cf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Apr 2014 22:35:59 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-f5-5360618ccaa4
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 4/4] f2fs: decrease the lock granularity during write_begin
-Date: Wed, 30 Apr 2014 11:33:43 +0900
-Message-id: <1398825223-23062-4-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-In-reply-to: <1398825223-23062-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1398825223-23062-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t8zY92exIRggy0LdCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyph3LLegh7Ni39OJ
-	bA2MS9i7GDk4JARMJO7vkOxi5AQyxSQu3FvP1sXIxSEksIxRYuO9NSwQCROJt90X2SESixgl
-	Tn04CJYQEuhkkljzqAJkEJuAtsTm/QYgYREBZokFU88zgtQzC0xglPi/6D1YvbCAt8S5o6vZ
-	QOpZBFQlzpyqBQnzCrhLHO1/zAqxS1ti2/OJjCA2p4CHxMXXFxkhVrlL7HtzEOw4CYHfbBKP
-	r5wFa2AREJD4NvkQC8QzshKbDjBDzJGUOLjiBssERuEFjAyrGEVTC5ILipPSiwz1ihNzi0vz
-	0vWS83M3MUKCtXcH4+0D1ocYk4HGTWSWEk3OBwZ7Xkm8obGZkYWpiamxkbmlGWnCSuK8SQ+T
-	goQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwRj86fGxa0Vw9zX0GEgHuPzSWXnrbG+LzxXhp
-	RUx70LEf+0N0OftTbuxaYeO3MkNwxWqVhg99TzdtdPnb6rX7Q/LRHUuXHvnJVLWa3VdoxbXT
-	qh7MWTEhSk8yDG5e/TRHRc2o0V9sT9rtwMuTjnvaGeQI6Idd5Q7I7tg2YVrx1eBqcbvlkgv+
-	KrEUZyQaajEXFScCAO/48fxsAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAd2exIRgg9svNSyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8yYdyy3oIezYt/TiWwNjEvYuxg5OSQETCTedl+EssUkLtxbz9bFyMUhJLCI
-	UeLUh4MsIAkhgU4miTWPKroYOTjYBLQlNu83AAmLCDBLLJh6nhGknllgAqPE/0XvweqFBbwl
-	zh1dzQZSzyKgKnHmVC1ImFfAXeJo/2NWiF3aEtueT2QEsTkFPCQuvr7ICLHKXWLfm4NsExh5
-	FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjoZnUjsYVzZYHGIU4GBU4uEV2BofLMSa
-	WFZcmXuIUYKDWUmElzkgIViINyWxsiq1KD++qDQntfgQYzLQUROZpUST84GRmlcSb2hsYmZk
-	aWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjFrGc1e0/dwSa/1Fm8GoXvfT
-	y0fMay7wGvz+8jOmqso2cvYBhvR/t398Olas/YtTVpX3JeOlDNuu9TIcgpFyLOamFUsudq5w
-	jnPTuTB72syjieEdh64H7kkW+3xrV+PnBxWGAmn7nzJ9vvjwTszBhwVTtqae+f+SK/3hZ+18
-	pXY+m2OuV5+ErFNiKc5INNRiLipOBAAyN9r5ygIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	id S932198AbaD3CiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Apr 2014 22:38:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:51952 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758AbaD3CiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Apr 2014 22:38:01 -0400
+Date: Wed, 30 Apr 2014 12:37:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with the
+ drm-intel-fixes tree
+Message-Id: <20140430123753.16dd13b23d29e09548a4bd56@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reduces the lock granularity during write_begin.
-When the system is under memory pressure, it would be better to reduce
-the locking time for the data pages.
+--Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/data.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+Hi all,
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 91ff104..a7bb98f 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -909,6 +909,10 @@ repeat:
- 	page = grab_cache_page_write_begin(mapping, index, flags);
- 	if (!page)
- 		return -ENOMEM;
-+
-+	/* to avoid latency during memory pressure */
-+	unlock_page(page);
-+
- 	*pagep = page;
- 
- 	if (f2fs_has_inline_data(inode) && (pos + len) <= MAX_INLINE_DATA)
-@@ -920,10 +924,18 @@ repeat:
- 	f2fs_unlock_op(sbi);
- 
- 	if (err) {
--		f2fs_put_page(page, 1);
-+		f2fs_put_page(page, 0);
- 		return err;
- 	}
- inline_data:
-+	lock_page(page);
-+	if (unlikely(page->mapping != mapping)) {
-+		f2fs_put_page(page, 1);
-+		goto repeat;
-+	}
-+
-+	f2fs_wait_on_page_writeback(page, DATA);
-+
- 	if ((len == PAGE_CACHE_SIZE) || PageUptodate(page))
- 		return 0;
- 
--- 
-1.8.4.474.g128a96c
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/i915_gem_gtt.c between commitcfa7c862982b
+("drm/i915: Sanitize the enable_ppgtt module option once") from the
+drm-intel-fixes tree tree and commit 5db6c735ead5 ("drm/i915: dmesg
+output for VT-d testing") from the drm-intel tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/i915/i915_gem_gtt.c
+index 154b0f8bb88d,496916298e8a..000000000000
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@@ -62,62 -48,13 +62,9 @@@ static int sanitize_enable_ppgtt(struc
+  	}
+  #endif
+ =20
+ -	/* Full ppgtt disabled by default for now due to issues. */
+ -	if (full)
+ -		return HAS_PPGTT(dev) && (i915.enable_ppgtt =3D=3D 2);
+ -	else
+ -		return HAS_ALIASING_PPGTT(dev);
+ +	return HAS_ALIASING_PPGTT(dev) ? 1 : 0;
+  }
+ =20
+- #define GEN6_PPGTT_PD_ENTRIES 512
+- #define I915_PPGTT_PT_ENTRIES (PAGE_SIZE / sizeof(gen6_gtt_pte_t))
+- typedef uint64_t gen8_gtt_pte_t;
+- typedef gen8_gtt_pte_t gen8_ppgtt_pde_t;
+-=20
+- /* PPGTT stuff */
+- #define GEN6_GTT_ADDR_ENCODE(addr)	((addr) | (((addr) >> 28) & 0xff0))
+- #define HSW_GTT_ADDR_ENCODE(addr)	((addr) | (((addr) >> 28) & 0x7f0))
+-=20
+- #define GEN6_PDE_VALID			(1 << 0)
+- /* gen6+ has bit 11-4 for physical addr bit 39-32 */
+- #define GEN6_PDE_ADDR_ENCODE(addr)	GEN6_GTT_ADDR_ENCODE(addr)
+-=20
+- #define GEN6_PTE_VALID			(1 << 0)
+- #define GEN6_PTE_UNCACHED		(1 << 1)
+- #define HSW_PTE_UNCACHED		(0)
+- #define GEN6_PTE_CACHE_LLC		(2 << 1)
+- #define GEN7_PTE_CACHE_L3_LLC		(3 << 1)
+- #define GEN6_PTE_ADDR_ENCODE(addr)	GEN6_GTT_ADDR_ENCODE(addr)
+- #define HSW_PTE_ADDR_ENCODE(addr)	HSW_GTT_ADDR_ENCODE(addr)
+-=20
+- /* Cacheability Control is a 4-bit value. The low three bits are stored i=
+n *
+-  * bits 3:1 of the PTE, while the fourth bit is stored in bit 11 of the P=
+TE.
+-  */
+- #define HSW_CACHEABILITY_CONTROL(bits)	((((bits) & 0x7) << 1) | \
+- 					 (((bits) & 0x8) << (11 - 3)))
+- #define HSW_WB_LLC_AGE3			HSW_CACHEABILITY_CONTROL(0x2)
+- #define HSW_WB_LLC_AGE0			HSW_CACHEABILITY_CONTROL(0x3)
+- #define HSW_WB_ELLC_LLC_AGE0		HSW_CACHEABILITY_CONTROL(0xb)
+- #define HSW_WB_ELLC_LLC_AGE3		HSW_CACHEABILITY_CONTROL(0x8)
+- #define HSW_WT_ELLC_LLC_AGE0		HSW_CACHEABILITY_CONTROL(0x6)
+- #define HSW_WT_ELLC_LLC_AGE3		HSW_CACHEABILITY_CONTROL(0x7)
+-=20
+- #define GEN8_PTES_PER_PAGE		(PAGE_SIZE / sizeof(gen8_gtt_pte_t))
+- #define GEN8_PDES_PER_PAGE		(PAGE_SIZE / sizeof(gen8_ppgtt_pde_t))
+-=20
+- /* GEN8 legacy style addressis defined as a 3 level page table:
+-  * 31:30 | 29:21 | 20:12 |  11:0
+-  * PDPE  |  PDE  |  PTE  | offset
+-  * The difference as compared to normal x86 3 level page table is the PDP=
+Es are
+-  * programmed via register.
+-  */
+- #define GEN8_PDPE_SHIFT			30
+- #define GEN8_PDPE_MASK			0x3
+- #define GEN8_PDE_SHIFT			21
+- #define GEN8_PDE_MASK			0x1ff
+- #define GEN8_PTE_SHIFT			12
+- #define GEN8_PTE_MASK			0x1ff
+-=20
+- #define PPAT_UNCACHED_INDEX		(_PAGE_PWT | _PAGE_PCD)
+- #define PPAT_CACHED_PDE_INDEX		0 /* WB LLC */
+- #define PPAT_CACHED_INDEX		_PAGE_PAT /* WB LLCeLLC */
+- #define PPAT_DISPLAY_ELLC_INDEX		_PAGE_PCD /* WT eLLC */
+ =20
+  static void ppgtt_bind_vma(struct i915_vma *vma,
+  			   enum i915_cache_level cache_level,
+@@@ -2041,14 -1971,10 +1981,18 @@@ int i915_gem_gtt_init(struct drm_devic
+  		 gtt->base.total >> 20);
+  	DRM_DEBUG_DRIVER("GMADR size =3D %ldM\n", gtt->mappable_end >> 20);
+  	DRM_DEBUG_DRIVER("GTT stolen size =3D %zdM\n", gtt->stolen_size >> 20);
+ +	/*
+ +	 * i915.enable_ppgtt is read-only, so do an early pass to validate the
+ +	 * user's requested state against the hardware/driver capabilities.  We
+ +	 * do this now so that we can print out any log messages once rather
+ +	 * than every time we check intel_enable_ppgtt().
+ +	 */
+ +	i915.enable_ppgtt =3D sanitize_enable_ppgtt(dev, i915.enable_ppgtt);
+ +	DRM_DEBUG_DRIVER("ppgtt mode: %i\n", i915.enable_ppgtt);
++ #ifdef CONFIG_INTEL_IOMMU
++ 	if (intel_iommu_gfx_mapped)
++ 		DRM_INFO("VT-d active for gfx access\n");
++ #endif
+ =20
+  	return 0;
+  }
+
+--Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTYGIGAAoJEMDTa8Ir7ZwVHrIP/2Mvt6zorQK9C9Cnd4X4Cw05
+bjUJOzMvpQro8Q5ho3xXJgMfHAaG0XN2FyBln1JHup1nXKhlWVrsKiFa/AsdSOVX
+B6CxMkbQ1/l1MNSrssk8HnR2+9tT5zYBd3tl8+htmiW/EQigLvr0R+3QgY1JVamn
+xdQ2U3R40foSCELFcbkmMsgHJ95ZRQXTRZLxf0MGAUSbFXSE7gUomCiBYSvA7YV0
++Cfuslz7eXJdrr6TdVo5PGBId0kkklKAG2azMHG+SKukUTVkFKE9GgbbhUukfEnr
+ASo8ux0Hgh3Ye227SUV1cz8b45+fFAFctjcJ2TfE/E0VQYl4s+nXc1Nz+nfUCQtJ
+3bYhHgUVoXDHjoreN3YsZER3j0G9hHtT3iYlWJjoW0gHhlErGDiPN8zW8W5rSSKy
+M5zw28yzcdTqtjj4y+aro1Dr7FZF74tBoMhJAgb927tqE4nYVtZ98515bqkWu7Qa
+MIMS6YyRCWRyy6Kb6K7BfWy9BrIsc9+xpvGwWKTDaXlPXNlAHI76AOB9hJQ6ejbl
+VoS+Mxl+mKO7OUybnYjs7yBy/Tkommr4Nw0M2PpER1YUntnR83LH1VMU2+gT7tuL
+Qmf8FHgEZCx0bJYaKjoXobgfQrX9Ki0cluMQr08TxRrr9vrQkiLj7QZZLsKFZHIe
+pnSYLfDG5YfbTMbgQIn5
+=PyIM
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__30_Apr_2014_12_37_53_+1000_pqN4Wux4IR7CmFMp--
