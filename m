@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbaD3FyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 01:54:24 -0400
-Received: from smtp.newterm.pl ([79.187.237.18]:60234 "EHLO apollo.newterm.pl"
+	id S1753887AbaD3F4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 01:56:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1698 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787AbaD3FyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 01:54:22 -0400
-Date: Wed, 30 Apr 2014 07:54:18 +0200
-From: Darek Marcinkiewicz <reksio@newterm.pl>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] Driver for Beckhoff CX5020 EtherCAT master module.
-Message-ID: <20140430055418.GC20080@newterm.pl>
-References: <20140428053658.GA20916@newterm.pl>
- <20140429.154508.1310732534931361787.davem@davemloft.net>
+	id S1751899AbaD3F4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 01:56:11 -0400
+Date: Wed, 30 Apr 2014 13:55:03 +0800
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: [Patch v2] lapic need be checked if available when initialize acpi
+ processor id
+Message-ID: <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140429.154508.1310732534931361787.davem@davemloft.net>
+In-Reply-To: <1397519754-10205-1-git-send-email-bhe@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 03:45:08PM -0400, David Miller wrote:
-> From: Darek Marcinkiewicz <reksio@newterm.pl>
-> Date: Mon, 28 Apr 2014 07:36:58 +0200
-> 
-> > +void *ec_bh_alloc_dma_mem(struct bh_priv *priv,
-> > +			     int channel,
-> > +			     u8 **buf,
-> > +			     dma_addr_t *phys,
-> > +			     dma_addr_t *phys_buf,
-> > +			     size_t *len) {
-> > +	u32 mask;
-> > +	int offset = channel * DMA_CHAN_SIZE + DMA_CHAN_OFFSET;
-> > +
-> > +	iowrite32(0xffffffff, priv->dma_io + offset);
-> > +
-> > +	mask = ioread32(priv->dma_io + offset);
-> > +	mask &= 0xfffffffc;
-> > +	dev_info(PRIV_TO_DEV(priv),
-> > +		 "Read mask %x for channel %d\n",
-> > +		 mask, channel);
-> > +	*len = ~mask + 1;
-> > +
-> > +	dev_info(PRIV_TO_DEV(priv),
-> > +		 "Allocating %d bytes for channel %d",
-> > +		 (int)*len, channel);
-> > +	*buf = pci_alloc_consistent(priv->dev,
-> > +				    *len * 2,
-> > +				    phys_buf);
-> 
-> This is really confusing, the log message says that it allocates
-> "*len" bytes, but actually you are allocating "*len * 2" bytes as
-> per the arguments you are passing into pci_alloc_consistent.
-> 
-> Either one or the other is wrong, and if "*len * 2" is the correct
-> size then it should be explained why you're doubling this value
-> but providing just plain "*len" to the caller.
-> 
-> All of these *len values seem to be doubled over and over again,
-> in the memset() calls, in the pci_free_consistent() calls during
-> resource release on probe error and driver shutdown.
-> 
-> Why not just assign X * 2 to *len and get rid of this doubling all
-> over the place?
-> 
-This device imposes some limitations on location and size of the buffers
-that it dma data from/to. It has a "mask" parameter saying two things:
-1. RX/TX buffers have to be aligned to "mask" bits.
-2. Their max size is 2^mask.
-In order to have a buffer meeting above criteria driver allocates
-chunk of size 2 * max buffer size, and half of this chunk gets
-used later on. So, len here is the size of that aligned buffer, whereas
-2 * len is how much memory was actually allocated. 
+In acpi_processor_get_info(), acpi processor info is initialized including
+id, namely cpu index. Currently, if on UP system running SMP kerenl with
+no LAPIC in MADT, cpu0_initialized is checked if acpi processor id is
+initialized.
 
-So, yes, this is a little bit confusing. I'll try to clean this up
-a little bit and send updated patch.
+However this check maybe is not correct for kdump kernel. Most of time
+only 1 CPU is supported because of known problems. So in 1st kernel
+multiple CPUs are present, then crash happened in one specific CPU,
+say 2nd CPU. Then it jump into kdump kernel with "nr_cpus=1" specified
+in cmdline. In this situation, since kdump kernel is warm reset, it will
+reuse the ACPI resource passed from crashed kernel directly, namely 1st
+kernel. It means in MADT all LAPIC is enabled while only 1 CPU is
+present in running system. The kdump kernel usually is the same as the
+crashed 1st kernel. So now in kdump kernel, x86_cpu_to_apicid stored the
+apicid and its related cpu id. If only check cpu0_initialized, it will
+assign 0 to the acpi processor id of 1st CPU, it's not correct.
 
-Thank you!
+So in this patch, check acpi_lapic too. If acpi_lapic is 0, then LAPIC in
+MADT is not available, assigne 0 to the handling acpi processor. If
+acpi_lapic is 1, then LAPIC in MADT is available, let's get apic processor
+id from x86_cpu_to_apicid.
 
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ drivers/acpi/acpi_processor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index c29c2c3..33f934d 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	pr->apic_id = apic_id;
+ 
+ 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+-	if (!cpu0_initialized) {
++	if (!cpu0_initialized && !acpi_lapic) {
+ 		cpu0_initialized = 1;
+ 		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+ 		if ((cpu_index == -1) && (num_online_cpus() == 1))
 -- 
-DM
+1.8.5.3
 
