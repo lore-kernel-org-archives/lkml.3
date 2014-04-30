@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453AbaD3SjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 14:39:12 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:40903 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758836AbaD3SjK (ORCPT
+	id S964983AbaD3Sk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 14:40:29 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:43822 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759085AbaD3Sk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 14:39:10 -0400
+	Wed, 30 Apr 2014 14:40:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140422194313.GQ27882@wotan.suse.de>
+In-Reply-To: <CAB=NE6WKyQbh9Eih05szW6708fVTNPgTe62SU5tC2dQkqwJApg@mail.gmail.com>
 References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
- <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com>
- <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com>
- <20140315013940.GA28801@wotan.suse.de> <CAHA+R7MRVyjAN7w_qPxSxkrjo939bNEc3Ej+O3yH-oWj4gGJxw@mail.gmail.com>
- <20140318212243.GD28471@garbanzo.do-not-panic.com> <20140422194313.GQ27882@wotan.suse.de>
+ <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com>
+ <20140318201056.7b876394@nehalam.linuxnetplumber.net> <20140320020540.GF28801@wotan.suse.de>
+ <CAB=NE6WKyQbh9Eih05szW6708fVTNPgTe62SU5tC2dQkqwJApg@mail.gmail.com>
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 30 Apr 2014 11:38:44 -0700
-X-Google-Sender-Auth: veXfW9zjzuw6NsXDZXCNzXnyTFM
-Message-ID: <CAB=NE6U3o62mbDbL7Uaoe1r44xAXqW+iYM6y9jxP+UvM4kvYHw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port changes
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
+Date: Wed, 30 Apr 2014 11:40:04 -0700
+X-Google-Sender-Auth: Zwthb-83t0xzV5zCWBbhK_XrcjU
+Message-ID: <CAB=NE6VZNiJaag7mzMxk02+EjXLoyK=Uwe+YK+M+54UcVV_AEw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
         bridge@lists.linux-foundation.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 12:43 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> On Tue, Mar 18, 2014 at 02:22:43PM -0700, Luis R. Rodriguez wrote:
->> On Tue, Mar 18, 2014 at 01:46:49PM -0700, Cong Wang wrote:
->> > On Fri, Mar 14, 2014 at 6:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->> > > On Thu, Mar 13, 2014 at 11:26:25AM -0700, Cong Wang wrote:
->> > >> On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
->> > >> <mcgrof@do-not-panic.com> wrote:
->> > >> >                         spin_unlock_bh(&p->br->lock);
->> > >> > +                       if (changed)
->> > >> > +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
->> > >> > +                                                        p->br->dev);
->> > >> > +                       netdev_update_features(p->br->dev);
->> > >>
->> > >> I think this is supposed to be in netdev event handler of br->dev
->> > >> instead of here.
->> > >
->> > > Do you mean netdev_update_features() ? I mimic'd what was being done on
->> > > br_del_if() given that root blocking is doing something similar. If
->> > > we need to change something for the above then I suppose it means we need
->> > > to change br_del_if() too. Let me know if you see any reason for something
->> > > else.
->> > >
->> >
->> > Yeah, for me it looks like it's better to call netdev_update_features()
->> > in the event handler of br->dev, rather than where calling
->> > call_netdevice_notifiers(..., br->dev);.
->>
->> I still don't see why, in fact trying to verify this I am wondering now
->> if instead we should actually fix br_features_recompute() to take into
->> consideration BR_ROOT_BLOCK as below. Notice how netdev_update_features()
->> is called above even if the MAC address did not change, just as is done
->> on br_del_if(). There is an NETDEV_FEAT_CHANGE event so would it be more
->> appropriate we just call
->>
->> call_netdevice_notifiers(NETDEV_FEAT_CHANGE, p->br->dev)
->>
->> for both the above then and also br_del_if()? How about the below
->> change?
->>
->> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
->> index 54d207d..dcd9378 100644
->> --- a/net/bridge/br_if.c
->> +++ b/net/bridge/br_if.c
->> @@ -315,6 +315,8 @@ netdev_features_t br_features_recompute(struct net_bridge *br,
->>       features &= ~NETIF_F_ONE_FOR_ALL;
->>
->>       list_for_each_entry(p, &br->port_list, list) {
->> +             if (p->flags & BR_ROOT_BLOCK)
->> +                     continue;
->>               features = netdev_increment_features(features,
->>                                                    p->dev->features, mask);
->>       }
->
-> Cong, can you provide feedback on this? I tried to grow confidence on the
-> hunk above but its not clear but the other points still hold and I'd love
-> your feedback on those.
+On Tue, Apr 22, 2014 at 12:41 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> Stephen, I'd like to respin this series to address all pending
+> feedback, I'd still like your feedback / call / judgement on this
+> part. I'm fine either way, just wanted to ensure I highlight the
+> reasoning of why I kept the original random MAC address.
 
 Re-poke.
 
