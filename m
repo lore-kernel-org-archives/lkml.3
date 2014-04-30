@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758AbaD3Khq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 06:37:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48259 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757213AbaD3Khp (ORCPT
+	id S1758794AbaD3Khz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 06:37:55 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:44594 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758769AbaD3Khv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 06:37:45 -0400
-Date: Wed, 30 Apr 2014 03:37:20 -0700
-From: tip-bot for Stuart Hayes <tipbot@zytor.com>
-Message-ID: <tip-6c6c0d5a1c949d2e084706f9e5fb1fccc175b265@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stuart.w.hayes@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stuart.w.hayes@gmail.com, tglx@linutronix.de
-In-Reply-To: <53602DC6.2060101@gmail.com>
-References: <53602DC6.2060101@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/urgent] hrtimer:
-  Prevent all reprogramming if hang detected
-Git-Commit-ID: 6c6c0d5a1c949d2e084706f9e5fb1fccc175b265
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 30 Apr 2014 06:37:51 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <5360CF8A.5010809@gmail.com>
+References: <1398848110-6152-1-git-send-email-gautam.vivek@samsung.com>
+	<1398848110-6152-4-git-send-email-gautam.vivek@samsung.com>
+	<5360CF8A.5010809@gmail.com>
+Date: Wed, 30 Apr 2014 16:07:50 +0530
+X-Google-Sender-Auth: lKb5ZASbAQl1gaBqM458u96E9MA
+Message-ID: <CAFp+6iGDoMQO2-BMdOJjnjnb6_cO1VUTLX2MjRksHmPqYTEq9g@mail.gmail.com>
+Subject: Re: [PATCH 3/4] ARM: dts: Add usb2phy support on exynos5420
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Arun Kumar K <arunkk.samsung@gmail.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kamil Debski <k.debski@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Praveen Paneri <p.paneri@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kishon <kishon@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6c6c0d5a1c949d2e084706f9e5fb1fccc175b265
-Gitweb:     http://git.kernel.org/tip/6c6c0d5a1c949d2e084706f9e5fb1fccc175b265
-Author:     Stuart Hayes <stuart.w.hayes@gmail.com>
-AuthorDate: Tue, 29 Apr 2014 17:55:02 -0500
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 30 Apr 2014 12:34:51 +0200
+Hi Arun,
 
-hrtimer: Prevent all reprogramming if hang detected
 
-If the last hrtimer interrupt detected a hang it sets hang_detected=1
-and programs the clock event device with a delay to let the system
-make progress.
+On Wed, Apr 30, 2014 at 3:55 PM, Arun Kumar K <arunkk.samsung@gmail.com> wrote:
+> Hi Vivek,
+>
+> On 04/30/14 14:25, Vivek Gautam wrote:
+>> Add required device node for usb2phy to let enable USB 2.0
+>> support.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  arch/arm/boot/dts/exynos5420.dtsi |   10 ++++++++++
+>>  1 file changed, 10 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
+>> index cfa3755..16b860a 100644
+>> --- a/arch/arm/boot/dts/exynos5420.dtsi
+>> +++ b/arch/arm/boot/dts/exynos5420.dtsi
+>> @@ -737,4 +737,14 @@
+>>               clock-names = "secss";
+>>               samsung,power-domain = <&g2d_pd>;
+>>       };
+>> +
+>> +     phy@12130000 {
+>
+> As we will be changing over to reference-based updation of nodes in the
+> board dts files, it would be good to add node reference also while
+> adding new nodes. Like : usb_phy: phy@12130000 {
 
-If hang_detected == 1, we prevent reprogramming of the clock event
-device in hrtimer_reprogram() but not in hrtimer_force_reprogram().
+Sure, i will add node-references to phy as well as the usb nodes in
+the subsequent patch.
 
-This can lead to the following situation:
+[snip]
 
-hrtimer_interrupt()
-   hang_detected = 1;
-   program ce device to Xms from now (hang delay)
 
-We have two timers pending:
-   T1 expires 50ms from now
-   T2 expires 5s from now
-
-Now T1 gets canceled, which causes hrtimer_force_reprogram() to be
-invoked, which in turn programs the clock event device to T2 (5
-seconds from now).
-
-Any hrtimer_start after that will not reprogram the hardware due to
-hang_detected still being set. So we effectivly block all timers until
-the T2 event fires and cleans up the hang situation.
-
-Add a check for hang_detected to hrtimer_force_reprogram() which
-prevents the reprogramming of the hang delay in the hardware
-timer. The subsequent hrtimer_interrupt will resolve all outstanding
-issues.
-
-[ tglx: Rewrote subject and changelog and fixed up the comment in
-  	hrtimer_force_reprogram() ]
-
-Signed-off-by: Stuart Hayes <stuart.w.hayes@gmail.com>
-Link: http://lkml.kernel.org/r/53602DC6.2060101@gmail.com
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/hrtimer.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index d55092c..e3724fd 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -569,6 +569,23 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
- 
- 	cpu_base->expires_next.tv64 = expires_next.tv64;
- 
-+	/*
-+	 * If a hang was detected in the last timer interrupt then we
-+	 * leave the hang delay active in the hardware. We want the
-+	 * system to make progress. That also prevents the following
-+	 * scenario:
-+	 * T1 expires 50ms from now
-+	 * T2 expires 5s from now
-+	 *
-+	 * T1 is removed, so this code is called and would reprogram
-+	 * the hardware to 5s from now. Any hrtimer_start after that
-+	 * will not reprogram the hardware due to hang_detected being
-+	 * set. So we'd effectivly block all timers until the T2 event
-+	 * fires.
-+	 */
-+	if (cpu_base->hang_detected)
-+		return;
-+
- 	if (cpu_base->expires_next.tv64 != KTIME_MAX)
- 		tick_program_event(cpu_base->expires_next, 1);
- }
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
