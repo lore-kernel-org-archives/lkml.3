@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909AbaD3Nd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 09:33:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:57459 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaD3Ndz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 09:33:55 -0400
-Date: Wed, 30 Apr 2014 13:33:48 +0000
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>,
-        Marian Marinov <mm@1h.com>, containers@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        lxc-devel <lxc-devel@lists.sourceforge.net>
-Subject: Re: ioctl CAP_LINUX_IMMUTABLE is checked in the wrong namespace
-Message-ID: <20140430133348.GB29994@ubuntumail>
-References: <20140429183534.GB19325@thunk.org>
- <20140429185251.GA27969@ubuntumail>
- <53601E5B.5050004@1h.com>
- <20140429220234.GC28410@ubuntumail>
- <536026B3.1020905@1h.com>
- <20140429222913.GD28410@ubuntumail>
- <53602B84.1020304@mit.edu>
- <20140430001641.GA28969@ubuntumail>
- <20140430003236.GA6472@thunk.org>
- <87ha5bntqm.fsf@x220.int.ebiederm.org>
+	id S1758938AbaD3NgX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 09:36:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751602AbaD3NgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 09:36:22 -0400
+Date: Wed, 30 Apr 2014 09:35:55 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140430133554.GB61249@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+ <20140422211647.GO8488@redhat.com>
+ <87lhuwr2pk.fsf@sejong.aot.lge.com>
+ <20140423125828.GL5328@redhat.com>
+ <1398346899.1681.18.camel@leonhard>
+ <20140424210015.GJ8488@redhat.com>
+ <20140428194642.GQ5328@redhat.com>
+ <878uqpos3k.fsf@sejong.aot.lge.com>
+ <20140429172735.GD32375@redhat.com>
+ <874n1bpuzh.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ha5bntqm.fsf@x220.int.ebiederm.org>
+In-Reply-To: <874n1bpuzh.fsf@sejong.aot.lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric W. Biederman (ebiederm@xmission.com):
-> Theodore Ts'o <tytso@mit.edu> writes:
+On Wed, Apr 30, 2014 at 08:38:10AM +0900, Namhyung Kim wrote:
+> Hi Don,
 > 
-> > On Wed, Apr 30, 2014 at 12:16:41AM +0000, Serge Hallyn wrote:
-> >> I forget the details, but there was another case where I wanted to
-> >> have the userns which 'owns' the whole fs available.  I guess we'd
-> >> have to check against that instead of using inode_capable.
+> On Tue, 29 Apr 2014 13:27:35 -0400, Don Zickus wrote:
+> > On Tue, Apr 29, 2014 at 10:13:35AM +0900, Namhyung Kim wrote:
+> >> >        /*
+> >> >         * Addresses with no major/minor numbers are assumed to be
+> >> >         * anonymous in userspace.  Sort those on pid then address.
+> >> >         *
+> >> >         * The kernel and non-zero major/minor mapped areas are
+> >> >         * assumed to be unity mapped.  Sort those on address.
+> >> >         */
+> >> >
+> >> >        if ((left->cpumode != PERF_RECORD_MISC_KERNEL) &&
+> >> >            !l_map->maj && !l_map->min && !l_map->ino &&
+> >> >            !l_map->ino_generation) {
+> >> >                /* userspace anonymous */
+> >> >
+> >> >                if (left->thread->pid_ > right->thread->pid_) return -1;
+> >> >                if (left->thread->pid_ < right->thread->pid_) return 1;
+> >> 
+> >> Isn't it necessary to check whether the address is in a same map in case
+> >> of anon pages?  I mean the daddr.al_addr is a map-relative offset so it
+> >> might have same value for different maps.
 > >
-> > Yes, that sounds right.
+> > That's why I sort on pids here.  Because the anon address might have the
+> > same value for different maps.  The thought was to group all the pid
+> > addresses together to keep things seperated.
 > >
-> > And *please* tell me that that under no circumstances can anyone other
-> > than root@init_user_ns is allowed to use mknod....
+> > Do you see a different way to solve the problem?  I am not sure al_addr
+> > vs. addr will make much difference here.
 > 
-> Nope.  mknod not allowed.  capable(CAP_MKNOD) is required is required
-> and I can't see any reason to change that.
-> 
-> As a rule of thumb, the only additional actions allowed in a user
-> namespace above and beyond what an ordinary unpriviliged user would be
-> allowed to do are those things which we only don't allow because they
-> could confuse a setuid root executable.
-> 
-> 
-> If we ever allow the creation of immutable files by unprivileged users
-> those files would at least have to be kept completely separate from the
-> files the global root encounters (aka a disjoint mount namespace).
-> 
-> I do not currently see a path to safely using immutable files with just
-> user namespace root permission.
+> I'm not saying to get rid of the pid check, I'm saying that it might
+> need to add another check for maps (i.e. start address) as there might
+> be many maps in a single address space.
 
-It's very far off, but I think the path is:
+Hmm, I guess I would need to see an example.  While I agree there might be
+many maps in a single address space (/proc/<pid>/maps demonstrates that),
+I understood them to map to a unique location (ie no overlap) unless they
+are shared.
 
-1. at first mount of a blockdev, note the cred (or just userns) which
-mounted it
-2. work on auditing superblock readers so we can start allowing some
-blockdev mounts in user namespaces :)
-3. check for privilege against the userns owning a superblock
+I am willing to believe I missed scenario when sorting, I just can't think
+of it (so I wouldn't know how to fix it).  That's why I was looking for an
+example to make it more obvious to me.  Sorry for being slow..
 
--serge
+Cheers,
+Don
