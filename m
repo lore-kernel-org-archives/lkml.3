@@ -1,97 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759167AbaD3Qvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 12:51:52 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:35852 "EHLO vps0.lunn.ch"
+	id S933829AbaD3QzC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 12:55:02 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34294 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758909AbaD3Qvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 12:51:50 -0400
-Date: Wed, 30 Apr 2014 18:49:04 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/15] Kirkwood DT fix and cleanup round 1
-Message-ID: <20140430164904.GC3082@lunn.ch>
-References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752084AbaD3Qy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 12:54:59 -0400
+Date: Wed, 30 Apr 2014 11:54:37 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: sundeep subbaraya <sundeep.lkml@gmail.com>
+CC: "balbi@ti.com" <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+Message-ID: <20140430165437.GO23679@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140421160802.GA22794@saruman.home>
+ <Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
+ <CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
+ <20140422144944.GF5524@saruman.home>
+ <CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5PFZVUeDPxlnBcQp"
 Content-Disposition: inline
-In-Reply-To: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 02:56:27PM +0200, Sebastian Hesselbarth wrote:
-> This is a patch set starting Kirkwood DT cleanup since over time some
-> cleanup potential piled up on it. Also, now that Barebox is going to
-> reuse the same DT code basis, we need some lowlevel property
-> improvements, that we ignore(d) on Linux up to now.
-> 
-> The patches are based on recent mvebu/dt to ease integration by Jason
-> since there are some Kirkwood dts related patches already queued up
-> for v3.16.
-> 
-> The first patch is a real fix and should be treated accordingly. We
-> moved pcie-controller nodes to mbus node a while ago. Somehow, we missed
-> two boards that should have broken pcie since then. A formal Tested-by
-> would be nice by someone who has one of the affected boards.
-> 
-> Basically, cleanup patches 2-13 up to now comprise:
-> - Patch 2 adds node labels for all common and SoC-specific nodes to ease
->   further cleanup series I have in mind:
->   MVEBU maintainers will know, current ocp@f1000000 isn't really correct
->   but should be moved to mbus/internal-regs instead. Unfortunately, there
->   are some 40+ boards replaying ocp bus node. 
->   I _plan_ to convert boards ocp nodes to node label references in
->   subsequent patch sets to finally move the ocp bus nodes to
->   mbus/internal-regs more easily.
-> - Patch 3 adds stdout-path to all boards with ttyS0 bootargs:
->   Linux currently doesn't really care about stdout-path property set, but
->   Barebox does. ePAPR explicitly names it, so set it now and ease Barebox
->   progress at least.
-> - Patch 4 removes clock-frequency from UART nodes:
->   Back when we didn't have DT clock providers for Kirkwood, TCLK was
->   spread over UART nodes in board files. Just remove the now unnecessary
->   clock-frequency property, as we reference TCLK in the SoCs UART nodes.
-> - Patches 5-7 consolidate common pinctrl settings:
->   First, rename the pinctrl node to a more appropriate name as recommended
->   by ePAPR, then add a minimal stub to the toplevel SoC DT include. That
->   stub then gets filled with common pinctrl settings that are currently
->   spead over SoC-specific includes or even board files. Again, this also
->   eases Barebox progress, as pinctrl for a bootloader is a really
->   important property.
-> - Patches 8-13 set default pinctrl properties for some nodes:
->   With pinctrl settings in common SoC DT, we can now reference them in the
->   device nodes also located there. If there are other possible pinctrl
->   settings, put a note in front of the corresponding pinctrl node and
->   overwrite the pinctrl setting in the board file.
-> - Patches 14 and 15 set some lowlevel properties for Guruplug ethernet:
->   While working with Barebox, I noticed missing phy-connection-type
->   and non-standard PHY's compatible on Guruplug. This also applies to
->   most of the other boards, but Guruplug is the only board I use Barebox
->   on and have the required information.
-> 
-> Overall commit stats aren't as bad as I initially thought:
-> 218 insertions and 300 deletions still is ~25% less LOC :)
+--5PFZVUeDPxlnBcQp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Sebastian
+Hi,
 
-Apart from the one patch i raised a question about:
+On Wed, Apr 23, 2014 at 09:57:52AM +0530, sundeep subbaraya wrote:
+> >> > I get the impression that the two of you are arguing past each other.
+> >> > It appears that Sundeep is talking about transferring data from the
+> >> > gadget driver's buffer to an internal buffer in the UDC hardware, but
+> >> > Felipe is talking about transferring data from the UDC to the host.
+> >> >
+> >> > As I understand it, Sundeep said that when the gadget driver queues a
+> >> > data-IN request, the UDC driver copies as much of the data buffer as
+> >> > possible into a hardware FIFO.  If it succeeds in copying all the da=
+ta
+> >> > into the FIFO then the request's completion routine gets called
+> >> > immediately, even though the data doesn't get sent from the FIFO to =
+the
+> >> > host until the host asks for it.
+> >> >
+> >> > If only part of the data can be copied into the FIFO then the request
+> >> > is added to the ep's request queue before the usb_ep_queue() call
+> >> > returns.  When space becomes available in the FIFO, the data will be
+> >> > copied and eventually sent to the host.  When all the data has been
+> >> > copied to the FIFO, the request's completion routine will be called.
+> >
+> > there seems to be a slight problem with this approach: how will the IP
+> > know that even though you copied X bytes into the FIFO, it should wait
+> > for another Y bytes before shifting data to the wire ? How will it know
+> > that it shouldn't generate CRC yet because there's still data to be
+> > added ?
+>=20
+> No. IP does/need not know that it has to wait for Y bytes.We just
+> write X bytes into
+> HW buffer and count as X in buffer count register. IP generates CRC
+> for bytes based
+> on Count register and sends data to Host. Let us consider this
+> scenario of bulk IN transfer:
+> req.length =3D 5120 and   wMaxPacketSize =3D 512, ep_queue is called once
+> and is returned with
+> status 0. In ep_queue this code snippet,
+>                if (xudc_write_fifo(ep, req) =3D=3D 1)
+>                         req =3D NULL;
+>                if(req !=3D NULL)
+>                          list_add_tail(&req->queue, &ep->queue);
+>=20
+> xudc_write_fifo does the following if HW buffers not busy:
+>      copies 512 bytes to HW buffer
+>      set count and ready registers so that IP can start data transfer to =
+host
+>      changes req.actual to 512 and returns 0(if req.length >
+> wMaxPacketSize) and 1(if req.length < wMaxPacketSize).
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+you should return a proper error code, not 1.
 
-Over the weekend i will try to do some testing with the hardware i
-have.
+> Since return is zero this request is added to queue. When data
+> transfer to host is completed IP generates
+> an interrupt. In the interrupt handler we again call write_fifo if
+> request list is not empty.
+>        if (list_empty(&ep->queue))
+>                 req =3D NULL;
+>         else
+>                 req =3D list_entry(ep->queue.next, struct xusb_req, queue=
+);
+>         if (!req)
+>                 return;
 
-	Thanks
-		Andrew
+okay, this can be improved a bit though:
+
+	if (list_empty(&ep->queue))
+		return;
+
+	req =3D list_first_entry(&ep->queue, struct xusb_req, queue);
+
+>         if (ep->is_in)
+>                 xudc_write_fifo(ep, req);
+>         else
+>                 xudc_read_fifo(ep, req);
+>=20
+> This happens 10 times(since length 5120) and completion is called.
+
+ok.
+
+> > If there's no space in the FIFO yet, why copy data at all ?
+>=20
+> If HW buffers are busy(IP is still transferring previous data to Host
+> from buffer) then xudc_write_fifo returns 0 without changing
+> req.actual. When previous data transfer completes then Interrupt then
+> again write_fifo from handler.
+
+ok, sounds good to me.
+
+> >> > Thus there never is any need for the gadget driver to queue the requ=
+est
+> >> > again.
+>=20
+> Yes
+>=20
+> >> >An incomplete transfer means the FIFO didn't have enough room
+> >> > when the request was submitted; it doesn't mean that the data didn't
+> >> > eventually get sent to the host.
+> >>
+> >> Exactly Alan,this is what I was trying to say. Probably I was not
+> >> clear in explaining. I didnt see any harm this way and even this
+> >> implementation is same like at91_udc.c. I have been reading
+> >> mas_storage to understand when does gadget driver tries to enqueue a
+> >> request again. Since different gadget drivers might have different
+> >> requirements (agree with Felipe), wanted to know criteria for queuing
+> >> a same request again.
+> >>
+> >> I will change this implementation as per Felipe comments and test with
+> >> some of the gadgets.
+> >
+> > Let's see, please help me understand the questions above.
+>=20
+> Hope this helps.
+
+it does, but please sort out the small comments I had above.
+
+cheers
+
+--=20
+balbi
+
+--5PFZVUeDPxlnBcQp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTYSrNAAoJEIaOsuA1yqREkF4P/RZSzrk6ZZO0+zhw8fAcM7Ot
+Q0beJ0VuMONNZ2IXKMovd1WDvIAMGn7orBySUFqvP1FzLxGP05NagbRr7X+8mFGl
+ulRtXkuLcmGqkzXvP8BsNwE0vTad4ND1eWOyReSuskY1HmSjkyl0c/zE0+As2IBm
+PuR2u7bgZzsoNPd0nYRdkPkYJ1f/7ezmqsbw0B6webk+LBpe3a3bHX+xpYf7oupO
+8A+hmN2QFVzZOx13erefAapJQJ7y5fs/xjGQhWnzfCn8QVWL/CD+/aipiFvbZLfz
+TuXHqGBHI1lY1d5gP5/QxUZb6CUr+evrvASHTveNmrxS5BPXMTY97WBKO2vElhj7
+md6nu5sNOm5e68QSVcELgANV2OQcgk4N1PLc2Nap7wCGo9zc2EGR6toU7M6GLVH6
+/5v+V8bUM/0GdHQ5b06VclFMNgWscbkNQdt37Y7wh93NxdEz8ZkWikcU7Vir3NUP
+Of7GR2YPn79uqJs6HPc/Yq3yZba1sota3YkElT5hMEHRXqZ2Fa3mjO5CDtJQrRok
+a8thvXHZ2vqkqwwwJItuCq+Jbxx7ZmkyzKZwhL/StwJT5zTDUb6BfOHnrJgy3GgJ
+Pk1EwZYHF3/tbLLdUOB2KiBXP39cDcJRosvhXyeRcXc6lr5DFxzAxT28UpUPNyMu
+mdUKzJoLNeFk9GRZrDYW
+=9bo9
+-----END PGP SIGNATURE-----
+
+--5PFZVUeDPxlnBcQp--
