@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759193AbaD3O3b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 10:29:31 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:35675 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160AbaD3O33 (ORCPT
+	id S1759266AbaD3Oay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 10:30:54 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:52334 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758933AbaD3Oav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 10:29:29 -0400
-Date: Wed, 30 Apr 2014 15:29:22 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arm@kernel.org" <arm@kernel.org>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 02/10] mfd: vexpress: Convert custom func API to regmap
-Message-ID: <20140430142922.GU29462@lee--X1>
-References: <1398707877-22596-1-git-send-email-pawel.moll@arm.com>
- <1398707877-22596-3-git-send-email-pawel.moll@arm.com>
- <20140430135855.GO29462@lee--X1>
- <1398867224.24255.22.camel@hornet>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398867224.24255.22.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 Apr 2014 10:30:51 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [RFC 02/16] ftrace: Make ftrace_is_dead available globally
+Date: Wed, 30 Apr 2014 16:30:35 +0200
+Message-Id: <1398868249-26169-3-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > MFD diffstat looks great and the changes look sensible:
-> >   Acked-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Thanks!
-> 
-> > I guess someone will need to create a branch for us all to pull from.
-> > I'm happy to do it if needs be.
-> 
-> I was thinking that, with enough acks (and I'm counting on one from you
-> for "[PATCH 04/10] mfd: vexpress: Define the device as MFD cells" :-),
+Kgr wants to test whether ftrace is OK with patching. If not, we just
+bail out and will not initialize at all.
 
-That won't happen right away - it's another 500+ line patch and
-contary to popular believe I do have my own work to contend with too.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+---
+ include/linux/ftrace.h | 3 +++
+ kernel/trace/trace.h   | 2 --
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-> merging the whole series (or at least patches 1-4 and 7-8) through
-> arm-soc tree would be the simplest option. I have no problem with the
-> independent bits (clk, clocksource, hwmon and the mfd/HBI change) going
-> through appropriate subsystems.
-
-I have no problem with that as long as one of the ARM-SoC guys can
-provide a branch where the other subsystems can pull from.  If they
-have no time, my offer still stands.
-
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 8b447493b6a5..720b7be77615 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -144,6 +144,8 @@ enum ftrace_tracing_type_t {
+ /* Current tracing type, default is FTRACE_TYPE_ENTER */
+ extern enum ftrace_tracing_type_t ftrace_tracing_type;
+ 
++extern int ftrace_is_dead(void);
++
+ /**
+  * ftrace_stop - stop function tracer.
+  *
+@@ -245,6 +247,7 @@ static inline int ftrace_nr_registered_ops(void)
+ 	return 0;
+ }
+ static inline void clear_ftrace_function(void) { }
++static inline int ftrace_is_dead(void) { return 0; }
+ static inline void ftrace_kill(void) { }
+ static inline void ftrace_stop(void) { }
+ static inline void ftrace_start(void) { }
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 2e29d7ba5a52..e3d867571ffc 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -819,7 +819,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
+ 
+ 	return test_tsk_trace_trace(task);
+ }
+-extern int ftrace_is_dead(void);
+ int ftrace_create_function_files(struct trace_array *tr,
+ 				 struct dentry *parent);
+ void ftrace_destroy_function_files(struct trace_array *tr);
+@@ -828,7 +827,6 @@ static inline int ftrace_trace_task(struct task_struct *task)
+ {
+ 	return 1;
+ }
+-static inline int ftrace_is_dead(void) { return 0; }
+ static inline int
+ ftrace_create_function_files(struct trace_array *tr,
+ 			     struct dentry *parent)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.2
+
