@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaD3E5o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 00:57:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45512 "EHLO mail.zytor.com"
+	id S1755497AbaD3E57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 00:57:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45517 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754095AbaD3E5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 00:57:43 -0400
-Message-ID: <536082B3.5010208@zytor.com>
-Date: Tue, 29 Apr 2014 21:57:23 -0700
+	id S1755146AbaD3E55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 00:57:57 -0400
+Message-ID: <536082CA.40905@zytor.com>
+Date: Tue, 29 Apr 2014 21:57:46 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 5/7] x86: Make old K8 swapgs workaround conditional
-References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-6-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1398723161-21968-6-git-send-email-andi@firstfloor.org>
+To: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@amacapital.net>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
+References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-5-git-send-email-andi@firstfloor.org> <535FED4D.5000703@amacapital.net> <20140429233950.GE2382@two.firstfloor.org> <53608180.5070800@zytor.com>
+In-Reply-To: <53608180.5070800@zytor.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -23,33 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 03:12 PM, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 04/29/2014 09:52 PM, H. Peter Anvin wrote:
 > 
-> Every gs selector/index reload always paid an extra MFENCE
-> between the two SWAPGS. This was to work around an old
-> bug in early K8 steppings.  All other CPUs don't need the extra
-> mfence. Patch the extra MFENCE only in for K8.
+> It matters -- greatly -- if (and only if) we can enter the kernel with
+> usergs == kernelgs and then want to change usergs inside a paranoid
+> routine.  At that point we risk being upside down, which basically means
+> we're rooted.
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/include/asm/cpufeature.h |  1 +
->  arch/x86/kernel/cpu/amd.c         |  3 +++
->  arch/x86/kernel/entry_64.S        | 10 +++++++++-
->  3 files changed, 13 insertions(+), 1 deletion(-)
+> However, I believe this patchset also means only IST entries can be
+> paranoid, which in turn means we can't sleep inside them.  To the very
+> best of my knowledge the only times we change usergs is on context
+> switch or inside a system call.  We need to make sure that is actually
+> the case, though.
 > 
-> diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-> index 89270b4..eb4bb46 100644
-> --- a/arch/x86/include/asm/cpufeature.h
-> +++ b/arch/x86/include/asm/cpufeature.h
-> @@ -102,6 +102,7 @@
->  #define X86_FEATURE_APERFMPERF	(3*32+28) /* APERFMPERF */
->  #define X86_FEATURE_EAGER_FPU	(3*32+29) /* "eagerfpu" Non lazy FPU restore */
->  #define X86_FEATURE_NONSTOP_TSC_S3 (3*32+30) /* TSC doesn't stop in S3 state */
-> +#define X86_FEATURE_SWAPGS_MFENCE (3*32+31) /* SWAPGS may need MFENCE */
->  
+> I'm at ELC for a few days, so I'll have limited decent-sized-monitor
+> time, but it shouldn't be too hard to convince ourselves of... mostly a
+> matter of making sure something like ptrace can't to stupid crap.
+> 
 
-Nitpick: should be an X86_BUG_ instead.
+Just in case anyone is getting the wrong impression: this is a
+discussion about details.  I'm glad to see this work getting done.
 
 	-hpa
 
