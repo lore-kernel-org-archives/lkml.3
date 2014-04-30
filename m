@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911AbaD3Tcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 15:32:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932186AbaD3Tcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 15:32:50 -0400
-Message-ID: <53614F3C.8020009@redhat.com>
-Date: Wed, 30 Apr 2014 15:30:04 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1945992AbaD3Tcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 15:32:55 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54795 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933945AbaD3Tcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 15:32:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
+Date: Wed, 30 Apr 2014 21:49:23 +0200
+Message-ID: <1507574.Y0KFKOdI6F@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140430150844.GA10621@mwanda>
+References: <20140430150844.GA10621@mwanda>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Michal Hocko <mhocko@suse.cz>, Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
-        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        fengguang.wu@intel.com, mpatlasov@parallels.com,
-        Motohiro.Kosaki@us.fujitsu.com
-Subject: Re: [PATCH v3] mm,writeback: fix divide by zero in pos_ratio_polynom
-References: <20140429151910.53f740ef@annuminas.surriel.com>	<5360C9E7.6010701@jp.fujitsu.com>	<20140430093035.7e7226f2@annuminas.surriel.com>	<20140430134826.GH4357@dhcp22.suse.cz>	<20140430104114.4bdc588e@cuia.bos.redhat.com> <20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-In-Reply-To: <20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 03:00 PM, Andrew Morton wrote:
-> On Wed, 30 Apr 2014 10:41:14 -0400 Rik van Riel <riel@redhat.com> wrote:
->
->> It is possible for "limit - setpoint + 1" to equal zero, leading to a
->> divide by zero error. Blindly adding 1 to "limit - setpoint" is not
->> working, so we need to actually test the divisor before calling div64.
->>
->> ...
->>
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -598,10 +598,15 @@ static inline long long pos_ratio_polynom(unsigned long setpoint,
->>   					  unsigned long limit)
->>   {
->>   	long long pos_ratio;
->> +	long divisor;
->>   	long x;
->>
->> +	divisor = limit - setpoint;
->> +	if (!(s32)divisor)
->> +		divisor = 1;	/* Avoid div-by-zero */
->> +
->>   	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
->> -		    limit - setpoint + 1);
->> +		    (s32)divisor);
->
-> Doesn't this just paper over the bug one time in four billion?  The
-> other 3999999999 times, pos_ratio_polynom() returns an incorect result?
->
-> If it is indeed the case that pos_ratio_polynom() callers are
-> legitimately passing a setpoint which is more than 2^32 less than limit
-> then it would be better to handle that input correctly.
+On Wednesday, April 30, 2014 06:08:44 PM Dan Carpenter wrote:
+> There are sometimes where we know that we are doing an strcpy() into a
+> fixed length buffer.  In those cases, we could verify that the strcpy()
+> doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
+> if you want to check for that.  The downside is that it makes strcpy
+> slower.
+> 
+> I introduced __compiletime_size() to make this work.  It returns the
+> size of the destination buffer or zero if the size isn't known.  The
+> __compiletime_object_size() is similar but if you pass it a struct
+> member then it returns the size of everything from there to the end of
+> the struct.  Another difference is __compiletime_object_size() returns
+> -1 for unknown sizes.
+> 
+> If you pass a char pointer to __compiletime_size() then it returns zero.
+> 
+> The strcpy() check ignores buffers with just one byte because people
+> often use those for variable length strings at the end of a struct.
+> 
+> I have tested this patch lightly and created some bugs for it to detect
+> but I have not detected any real life overflows.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
+> index e863dd5..5e0fc2b 100644
+> --- a/include/acpi/platform/acenv.h
+> +++ b/include/acpi/platform/acenv.h
 
-The easy way would be by calling div64_s64 and div64_u64,
-which are 64 bit all the way through.
+This is an ACPICA header and changes to it need to be submitted to the ACPICA
+maintainers (as per MAINTAINERS).  We only get ACPICA changes from the
+upstream project (except for really special situations).
 
-Any objections?
+> @@ -320,7 +320,7 @@
+>  #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
+>  #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
+>  #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
+> -#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
+> +#define ACPI_STRCPY(d,s)        strcpy((d), (s))
+>  #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
+>  #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
+>  #define ACPI_STRCMP(d,s)        strcmp((d), (s))
 
-The inlined bits seem to be stubs calling the _rem variants
-of the functions, and discarding the remainder.
+Thanks!
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
