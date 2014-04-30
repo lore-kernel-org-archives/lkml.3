@@ -1,151 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296AbaD3PdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:33:25 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:46284 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759262AbaD3PdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:33:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140430150844.GA10621@mwanda>
-References: <20140430150844.GA10621@mwanda>
-Date: Wed, 30 Apr 2014 08:33:21 -0700
-X-Google-Sender-Auth: S3_B76sXWV7o4GmunaOpqGyb-Vw
-Message-ID: <CAGXu5jL+VLb_+ZJd6-L5P+Bdxmw+i7j2cLyPOT4rwfE6iqHuRA@mail.gmail.com>
-Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
-From: Kees Cook <keescook@chromium.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        devel@acpica.org,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1759319AbaD3Pdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:33:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60668 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759243AbaD3PdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 11:33:24 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>
+Subject: [PATCH 7/7] perf tests x86: Fix stack map lookup in dwarf unwind test
+Date: Wed, 30 Apr 2014 17:32:51 +0200
+Message-Id: <1398871971-381-8-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1398871971-381-1-git-send-email-jolsa@kernel.org>
+References: <1398871971-381-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 8:08 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> There are sometimes where we know that we are doing an strcpy() into a
-> fixed length buffer.  In those cases, we could verify that the strcpy()
-> doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> if you want to check for that.  The downside is that it makes strcpy
-> slower.
->
-> I introduced __compiletime_size() to make this work.  It returns the
-> size of the destination buffer or zero if the size isn't known.  The
-> __compiletime_object_size() is similar but if you pass it a struct
-> member then it returns the size of everything from there to the end of
-> the struct.  Another difference is __compiletime_object_size() returns
-> -1 for unknown sizes.
->
-> If you pass a char pointer to __compiletime_size() then it returns zero.
->
-> The strcpy() check ignores buffers with just one byte because people
-> often use those for variable length strings at the end of a struct.
->
-> I have tested this patch lightly and created some bugs for it to detect
-> but I have not detected any real life overflows.
+Previous commit 'perf x86: Fix perf to use non-executable stack, again'
+moved stack map into MAP__VARIABLE map type again. Fixing the dwarf
+unwind test stack map lookup appropriately.
 
-Cool, we should absolutely have this. And that's good news that it
-didn't trip anything. :)
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Link: http://lkml.kernel.org/n/tip-ttzyhbe4zls24z7ednkmhvxl@git.kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/arch/x86/tests/dwarf-unwind.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/include/acpi/platform/acenv.h b/include/acpi/platform/acenv.h
-> index e863dd5..5e0fc2b 100644
-> --- a/include/acpi/platform/acenv.h
-> +++ b/include/acpi/platform/acenv.h
-> @@ -320,7 +320,7 @@
->  #define ACPI_STRSTR(s1,s2)      strstr((s1), (s2))
->  #define ACPI_STRCHR(s1,c)       strchr((s1), (c))
->  #define ACPI_STRLEN(s)          (acpi_size) strlen((s))
-> -#define ACPI_STRCPY(d,s)        (void) strcpy((d), (s))
-> +#define ACPI_STRCPY(d,s)        strcpy((d), (s))
->  #define ACPI_STRNCPY(d,s,n)     (void) strncpy((d), (s), (acpi_size)(n))
->  #define ACPI_STRNCMP(d,s,n)     strncmp((d), (s), (acpi_size)(n))
->  #define ACPI_STRCMP(d,s)        strcmp((d), (s))
-> diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-> index 2507fd2..1fb7fd0 100644
-> --- a/include/linux/compiler-gcc4.h
-> +++ b/include/linux/compiler-gcc4.h
-> @@ -16,6 +16,9 @@
->  #if GCC_VERSION >= 40100 && GCC_VERSION < 40600
->  # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
->  #endif
-> +#if GCC_VERSION > 40600
-> +# define __compiletime_size(obj) __builtin_object_size(obj, 3)
-> +#endif
->
->  #if GCC_VERSION >= 40300
->  /* Mark functions as cold. gcc will assume any path leading to a call
-> diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-> index ee7239e..b615964 100644
-> --- a/include/linux/compiler.h
-> +++ b/include/linux/compiler.h
-> @@ -318,6 +318,9 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
->  #ifndef __compiletime_object_size
->  # define __compiletime_object_size(obj) -1
->  #endif
-> +#ifndef __compiletime_size
-> +# define __compiletime_size(obj) 0
-> +#endif
->  #ifndef __compiletime_warning
->  # define __compiletime_warning(message)
->  #endif
-> diff --git a/include/linux/string.h b/include/linux/string.h
-> index ac889c5..fc126a1 100644
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -154,4 +154,13 @@ static inline const char *kbasename(const char *path)
->         return tail ? tail + 1 : path;
->  }
->
-> +#if CONFIG_DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> +#define strcpy(dest, src) do {                                         \
-> +       int len = __compiletime_size(dest);                             \
-> +       if (len > 1 && strlen(src) >= len)                              \
-> +               WARN_ONCE(1, "strcpy() overflow copying \"%s\"\n", src);        \
-
-This should probably BUG. An overflowing strcpy shouldn't be allowed
-to continue.
-
-> +       strcpy(dest, src);                                              \
-> +} while (0)
-> +#endif
-> +
->  #endif /* _LINUX_STRING_H_ */
-> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-> index 819ac51..94db086 100644
-> --- a/lib/Kconfig.debug
-> +++ b/lib/Kconfig.debug
-> @@ -1431,6 +1431,15 @@ config DEBUG_STRICT_USER_COPY_CHECKS
->
->           If unsure, say N.
->
-> +config DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> +       bool "Strict checks for strcpy() overflows"
-> +       depends on DEBUG_KERNEL
-> +       help
-> +         Enabling this option adds some extra sanity checks when strcpy() is
-> +         called().  This will slow down the kernel a bit.
-
-Isn't this an entirely compile-time check? I would expect it to be
-entirely optimized by the compiler. In fact, could this be turned into
-a build failure instead?
-
-> +
-> +         If unsure, say N.
-> +
->  source kernel/trace/Kconfig
->
->  menu "Runtime Testing"
-
--Kees
-
+diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
+index b8c0102..83bc238 100644
+--- a/tools/perf/arch/x86/tests/dwarf-unwind.c
++++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
+@@ -23,7 +23,7 @@ static int sample_ustack(struct perf_sample *sample,
+ 
+ 	sp = (unsigned long) regs[PERF_REG_X86_SP];
+ 
+-	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
++	map = map_groups__find(&thread->mg, MAP__VARIABLE, (u64) sp);
+ 	if (!map) {
+ 		pr_debug("failed to get stack map\n");
+ 		free(buf);
 -- 
-Kees Cook
-Chrome OS Security
+1.8.3.1
+
