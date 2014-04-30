@@ -1,152 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891AbaD3J4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 05:56:53 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:62103 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964815AbaD3J4u (ORCPT
+	id S933596AbaD3J51 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 05:57:27 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:61575 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198AbaD3J5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 05:56:50 -0400
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, tim.bird@sonymobile.com
-Cc: gkulkarni@caviumnetworks.com, dsaxena@linaro.org, arndb@arndb.de,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org,
-        AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v8 8/8] arm64: ftrace: Add system call tracepoint
-Date: Wed, 30 Apr 2014 18:54:36 +0900
-Message-Id: <1398851676-16389-9-git-send-email-takahiro.akashi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
-References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
- <1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+	Wed, 30 Apr 2014 05:57:25 -0400
+Date: Wed, 30 Apr 2014 10:57:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        angus.clark@st.com, kernel@stlinux.com, linux-mtd@lists.infradead.org,
+        pekon@ti.com, dwmw2@infradead.org
+Subject: Re: [RFC 00/47] mtd: nand: Add new driver supporting ST's BCH h/w
+Message-ID: <20140430095718.GJ29462@lee--X1>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <20140325125050.GB665@arch.cereza>
+ <20140325131139.GB24823@lee--X1>
+ <20140325220045.GA12185@arch.cereza>
+ <20140326072805.GB31517@norris-Latitude-E6410>
+ <20140327102835.GA17779@lee--X1>
+ <20140401112926.GB24013@lee--X1>
+ <20140410200004.GP32070@ld-irv-0074>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140410200004.GP32070@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows system call entry or exit to be traced as ftrace events,
-ie. sys_enter_*/sys_exit_*, if CONFIG_FTRACE_SYSCALLS is enabled.
-Those events appear and can be controlled under
-    ${sysfs}/tracing/events/syscalls/
+> > > The BBT requirements are somewhere more complex. To provide you with
+> > > the complete picture, a little knowledge of driver history is
+> > > required. When it was initially created the MTD core only supported
+> > > OOB BBTs, but the ST BCH Controller doesn't support OOB access, so
+> > > Angus wrote his on In-Band (IB) implementation. Unfortunately the IB
+> > > support which _is_ now present in the kernel doesn't match the
+> > > internal implementation. Normally this wouldn't be an issue in itself,
+> > > but ST's boot-stack and tooling (Primary Bootloader, U-Boot, various
+> > > Programmers, etc) are aware of the internal IB BTT and utilise it
+> > > in varying ways. Shifting over to the Mainline version in
+> > > one-foul-swoop _will_ cause lots of pain and will probably result in
+> > > the disownership of driver we're trying to Mainline today. Naturally
+> > > I'm keen to avoid this.
+> > 
+> > Just looking into this now. Can I add support for a vendor specific
+> > signature extension? ST's flashers, bootloaders and tooling currently
+> > use the format:
+> > 
+> > /* Extend IBBT header with some stm-nand-bch niceties */
+> > struct nand_ibbt_bch_header {
+> > 	uint8_t signature[4];           /* "Bbt0" or "1tbB" signature */
+> > 	uint8_t version;                /* BBT version ("age") */
+> > 	uint8_t reserved[3];            /* padding */
+> > 	uint8_t baseschema[4];          /* "base" schema (x4) */
+> > 	uint8_t privschema[4];          /* "private" schema (x4) */
+> 
+> Not sure what these schema mean.
 
-Please note that we can't trace compat system calls here because
-AArch32 mode does not share the same syscall table with AArch64.
-Just define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS in order to avoid unexpected
-results (bogus syscalls reported or even hang-up).
+To be honest, me either, but I know that they are used by ST's
+tooling; flashers, bootloaders and debuggers.
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
----
- arch/arm64/Kconfig               |    1 +
- arch/arm64/include/asm/ftrace.h  |   18 ++++++++++++++++++
- arch/arm64/include/asm/syscall.h |    1 +
- arch/arm64/include/asm/unistd.h  |    2 ++
- arch/arm64/kernel/ptrace.c       |    9 +++++++++
- 5 files changed, 31 insertions(+)
+> > 	uint8_t ecc_size[4];            /* ECC bytes (0, 32, 54) (x4) */
+> > 	char    author[64];             /* Arbitrary string for S/W to use */
+> > }; __attribute__((__packed__))
+> 
+> Nit: that would just be __packed (see compiler-gcc.h).
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 438a4ea..0e9b8ce 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -48,6 +48,7 @@ config ARM64
- 	select HAVE_PERF_EVENTS
- 	select HAVE_PERF_REGS
- 	select HAVE_PERF_USER_STACK_DUMP
-+	select HAVE_SYSCALL_TRACEPOINTS
- 	select IRQ_DOMAIN
- 	select MODULES_USE_ELF_RELA
- 	select NO_BOOTMEM
-diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
-index 41e8670..c5534fa 100644
---- a/arch/arm64/include/asm/ftrace.h
-+++ b/arch/arm64/include/asm/ftrace.h
-@@ -17,6 +17,8 @@
- #define MCOUNT_INSN_SIZE	AARCH64_INSN_SIZE
- 
- #ifndef __ASSEMBLY__
-+#include <linux/compat.h>
-+
- extern void _mcount(unsigned long);
- extern void *return_address(unsigned int);
- 
-@@ -36,6 +38,22 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
- }
- 
- #define ftrace_return_address(n) return_address(n)
-+
-+/*
-+ * Because AArch32 mode does not share the same syscall table with AArch64,
-+ * tracing compat syscalls may result in reporting bogus syscalls or even
-+ * hang-up, so just do not trace them.
-+ * See kernel/trace/trace_syscalls.c
-+ *
-+ * x86 code says:
-+ * If the user realy wants these, then they should use the
-+ * raw syscall tracepoints with filtering.
-+ */
-+#define ARCH_TRACE_IGNORE_COMPAT_SYSCALLS
-+static inline bool arch_trace_is_compat_syscall(struct pt_regs *regs)
-+{
-+	return is_compat_task();
-+}
- #endif /* ifndef __ASSEMBLY__ */
- 
- #endif /* __ASM_FTRACE_H */
-diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
-index 70ba9d4..383771e 100644
---- a/arch/arm64/include/asm/syscall.h
-+++ b/arch/arm64/include/asm/syscall.h
-@@ -18,6 +18,7 @@
- 
- #include <linux/err.h>
- 
-+extern const void *sys_call_table[];
- 
- static inline int syscall_get_nr(struct task_struct *task,
- 				 struct pt_regs *regs)
-diff --git a/arch/arm64/include/asm/unistd.h b/arch/arm64/include/asm/unistd.h
-index a4654c6..e5f47df 100644
---- a/arch/arm64/include/asm/unistd.h
-+++ b/arch/arm64/include/asm/unistd.h
-@@ -29,3 +29,5 @@
- #endif
- #define __ARCH_WANT_SYS_CLONE
- #include <uapi/asm/unistd.h>
-+
-+#define NR_syscalls (__NR_syscalls)
-diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-index 4b58e81..0bf1955 100644
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -42,6 +42,9 @@
- #include <asm/traps.h>
- #include <asm/system_misc.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/syscalls.h>
-+
- /*
-  * TODO: does not yet catch signals sent when the child dies.
-  * in exit.c or in signal.c.
-@@ -1091,11 +1094,17 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- 	if (test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
- 
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		trace_sys_enter(regs, regs->syscallno);
-+
- 	return regs->syscallno;
- }
- 
- asmlinkage void syscall_trace_exit(struct pt_regs *regs)
- {
-+	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-+		trace_sys_exit(regs, regs_return_value(regs));
-+
- 	if (test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall(regs, PTRACE_SYSCALL_EXIT);
- }
+Okay.
+
+> In principle, I'm OK with extending the BBT somewhat. Preferably, this
+> would provide some extensibility, so that other custom formats can use
+> the same base code. For instance, it looks like many of these fields
+> would be fixed, and specific to your platform. So (from nand_bbt's
+> perspective) these could just be consolidated int a field:
+> 
+> 	u8 custom[76];
+> 
+> Or make it variable-length, with the length provided by the driver?
+> nand_bbt would just know not to check for it when scanning, and it
+> would know to program it to flash when updating.
+> 
+> > It would be great if we can support this with a descriptor option or
+> > suchlike, as it would a) save me a lot of aggravation and b) continue
+> > to support ST with their current use-case.
+> 
+> Yeah, I realize you can't just jump over to the current format for
+> production systems. And there are admittedly some rough spots in our
+> current nand_bbt; it's not perfect.
+> 
+> Some random notes (not necessarily your problem; but things to be aware
+> of): nand_bbt could use some additional robustness checks, I think. Like
+> a CRC field, and maybe a versioning system for allowing
+> (backwards-compatible) changes in the format. To make
+> backwards-compatible changes, though, the original format needs to have
+> reserved space, or at least an 'offset' field, which would point to
+> where the actual BBT starts--not just a fixed offset.
+> 
+> There's also still a bit of cruft that really can be removed from
+> nand_bbt (the handling of bad block markers, which is duplicated in
+> nand_base). It's a low-priority item on my plate, but I think it might
+> be a good first step before trying to expand nand_bbt much.
+
+So I've been looking into the differences between the Mainline and
+ST's implementation.  I've concluded that the transition over to
+Mainline's version is best dealt with in the device driver.
+
+I have depicted the differences between the two versions at [1].
+You'll see that the BBT header and BBT data have been separated into
+different pages the ST version.  This hardens the process against
+power failures whilst creating the BBT by only writing the pattern
+once the BBT data has been successfully applied to flash.  A small
+corner-case perhaps, but these things do happen.
+
+What I'd like to do is supply our own scan_bbt() call.  This is
+supported by the framework already, so no extra modifications are
+required.  Converting nand_bbt to add support for our (and other)
+formats would be fairly intrusive.  The framework already allows us to
+search from the last block backwards, which is great, but that same
+functionality is missing for searching from the last page in the
+block.  The ability to separate header from data is also vacant,
+which we require for the aforementioned reasons.
+
+In our scan_bbt() I would like to start off by only supporting solely
+the ST schema, then over time search in both locations but preferring
+ST's.  Subsequently the choice should be version number based, with a
+view to phasing out ST's implementation completely once we've had a
+change to adapt the tooling which currently use only ST's
+implementation.
+
+I'm hoping to submit the next version either today or tomorrow, which
+will conform to the proposal above.  I hope that you find this
+adequate.
+
+[1] goo.gl/WnGLVQ
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
