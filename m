@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933966AbaD3UDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 16:03:43 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:42526 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752199AbaD3UDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 16:03:42 -0400
-Date: Wed, 30 Apr 2014 21:03:32 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [GIT PULL] EFI changes for arm64
-Message-ID: <20140430200332.GO26088@console-pimps.org>
+	id S1945956AbaD3UEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 16:04:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46553 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759118AbaD3UEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 16:04:02 -0400
+Date: Wed, 30 Apr 2014 15:03:53 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Zhuang Jin Can <jin.can.zhuang@intel.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: gadget: fix burst size corruption
+Message-ID: <20140430200353.GC3839@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140501071604.GB30575@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="W5WqUoFLvi1M7tJE"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140501071604.GB30575@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks,
+--W5WqUoFLvi1M7tJE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I pulled the arm64 EFI changes into the following topic branch. Catalin
-was happy for this to go through tip, which definitely makes things
-easier for the next merge window because of the dependency these patches
-have on tip/x86/efi.
+On Thu, May 01, 2014 at 03:16:04AM -0400, Zhuang Jin Can wrote:
+> endpoint.maxburst may be 0 if a gadget doesn't call config_ep_by_speed()
+> to update it from the companion descriptor.
+> And endpoint.maxburst - 1 returns 11111b which wrongly sets bit
+> 26 of endpoint parameter 0.
+> This sets a wrong endpoint state and will cause "Get Endpoint State"
+> command can't get the corret endpoint state and "Set Endpoint Config"
+> command can't restore the correct endpoint state during hibernation
+> resume flow.
+> Thus, when endpoint.maxburst is 0, we should set burst as 0 directly.
+>=20
+> Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+> ---
+>  drivers/usb/dwc3/gadget.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+> index 70715ee..44eca95 100644
+> --- a/drivers/usb/dwc3/gadget.c
+> +++ b/drivers/usb/dwc3/gadget.c
+> @@ -440,7 +440,8 @@ static int dwc3_gadget_set_ep_config(struct dwc3 *dwc=
+, struct dwc3_ep *dep,
+> =20
+>  	/* Burst size is only needed in SuperSpeed mode */
+>  	if (dwc->gadget.speed =3D=3D USB_SPEED_SUPER) {
+> -		u32 burst =3D dep->endpoint.maxburst - 1;
+> +		u32 burst =3D dep->endpoint.maxburst ?
+> +				dep->endpoint.maxburst - 1 : 0;
 
-The following changes since commit e33655a386ed3b26ad36fb97a47ebb1c2ca1e928:
+again, you found a bug on the gadget driver. Fix that. composite.c
+guarantees that for those functions which don't pass bMaxBurst,
+gadget->maxburst will be set to *at least* 1.
 
-  efivars: Add compatibility code for compat tasks (2014-04-17 13:53:53 +0100)
+--=20
+balbi
 
-are available in the git repository at:
+--W5WqUoFLvi1M7tJE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git arm64-efi
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-for you to fetch changes up to 345c736edd07b657a8c48190baed2719b85d0938:
+iQIcBAEBAgAGBQJTYVcpAAoJEIaOsuA1yqREn2sP/jRP2GT4ONO7CxVaauLiS/BW
+Z1LcuKQ5hNlR8Z+AxePMuwoGmxJEx2V8/E2bN504i6F8kgo30aXb89trMUb2qV6m
+Y874pnsg6037CrHPHwi3VzK229XiXp7LtNwnszPoSVbH2Hdg62wKwb59GWFTPniX
+MwVi6sh3bvC6kWa+JTEpKvDphHgB6d91UlZJEFJ8FBUSLUf5kR/lH9ycIPEKpO8c
+Ko1j0k9KKysfylJflc+v8dOgS5uTMOXd4MOeVSOZfhMYHdz5s5yge2bauBqTiVwi
+CxREzBH5jdTIJaXKgTu+/HJY6el8bx1izIX13urrxxt0Ciz0sN8HrrvYHRsGHax6
+QyIMM5EGtXTa7/8FICHU1yJftBnLEnai9CV0Mooa6llNmxUaCg0UXOIAoN+HC0FV
+mBfaWwSSDTfrm6gG3CqIt+0XjacUhHFvRRmw2z8HOWdd4atnpdRIPIr1yTV+Etl2
+gBKiVtA9en4RKic4GAJISWcI6efApPlKsk994YotyDGetQSHL/qIohwxZUy1lQZt
+yVmT8HGgJLm/GBhWVxN2++zu5rXfcqY7LeN3xs0E28+vBMwXji2d8rC8kk+EJ1Pt
+TSL4GI3nkUYiFsuITBMG2h9pRKN33SOwDiarCYMGeZ9YhvakogLCm4Uwx9g3CLVF
+WW/QDL/l1blfCpzZDY7O
+=Xr9Z
+-----END PGP SIGNATURE-----
 
-  efi/arm64: ignore dtb= when UEFI SecureBoot is enabled (2014-04-30 19:57:06 +0100)
-
-----------------------------------------------------------------
-Ard Biesheuvel (1):
-      efi/arm64: ignore dtb= when UEFI SecureBoot is enabled
-
-Leif Lindholm (1):
-      doc: arm: add UEFI support documentation
-
-Mark Salter (6):
-      lib: add fdt_empty_tree.c
-      efi: add helper function to get UEFI params from FDT
-      arm64: Add function to create identity mappings
-      arm64: add EFI runtime services
-      arm64: efi: add EFI stub
-      doc: arm64: add description of EFI stub support
-
-Roy Franz (2):
-      doc: efi-stub.txt updates for ARM
-      efi: Add shared FDT related functions for ARM/ARM64
-
- Documentation/arm/00-INDEX      |   2 +
- Documentation/arm/uefi.txt      |  64 ++++++
- Documentation/arm64/booting.txt |   4 +
- Documentation/efi-stub.txt      |  33 ++-
- arch/arm64/Kconfig              |  16 ++
- arch/arm64/include/asm/efi.h    |  14 ++
- arch/arm64/include/asm/mmu.h    |   2 +
- arch/arm64/kernel/Makefile      |   3 +
- arch/arm64/kernel/efi-entry.S   | 109 ++++++++++
- arch/arm64/kernel/efi-stub.c    |  81 +++++++
- arch/arm64/kernel/efi.c         | 466 ++++++++++++++++++++++++++++++++++++++++
- arch/arm64/kernel/head.S        | 112 ++++++++++
- arch/arm64/kernel/setup.c       |   5 +
- arch/arm64/mm/mmu.c             |  65 ++++--
- drivers/firmware/efi/Kconfig    |   7 +
- drivers/firmware/efi/arm-stub.c | 278 ++++++++++++++++++++++++
- drivers/firmware/efi/efi.c      |  79 +++++++
- drivers/firmware/efi/fdt.c      | 285 ++++++++++++++++++++++++
- include/linux/efi.h             |  12 ++
- lib/Makefile                    |   3 +-
- lib/fdt_empty_tree.c            |   2 +
- 21 files changed, 1616 insertions(+), 26 deletions(-)
- create mode 100644 Documentation/arm/uefi.txt
- create mode 100644 arch/arm64/include/asm/efi.h
- create mode 100644 arch/arm64/kernel/efi-entry.S
- create mode 100644 arch/arm64/kernel/efi-stub.c
- create mode 100644 arch/arm64/kernel/efi.c
- create mode 100644 drivers/firmware/efi/arm-stub.c
- create mode 100644 drivers/firmware/efi/fdt.c
- create mode 100644 lib/fdt_empty_tree.c
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+--W5WqUoFLvi1M7tJE--
