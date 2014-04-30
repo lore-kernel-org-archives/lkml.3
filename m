@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280AbaD3PlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 11:41:09 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58561 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759061AbaD3PlG (ORCPT
+	id S1759303AbaD3PlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 11:41:17 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:57826 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758922AbaD3PlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 11:41:06 -0400
+	Wed, 30 Apr 2014 11:41:14 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: kgdb-bugreport@lists.sourceforge.net,
         Jason Wessel <jason.wessel@windriver.com>
@@ -19,9 +19,9 @@ Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
         Hedi Berriche <hedi@sgi.com>, John Stultz <john.stultz@linaro.org>,
         Anton Vorontsov <anton.vorontsov@linaro.org>,
         Colin Cross <ccross@android.com>, kernel-team@android.com
-Subject: [PATCH 1/3] kdb: Add framework to display sequence files
-Date: Wed, 30 Apr 2014 16:40:25 +0100
-Message-Id: <1398872427-18435-2-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH 3/3] kdb: Implement seq_file command
+Date: Wed, 30 Apr 2014 16:40:27 +0100
+Message-Id: <1398872427-18435-4-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1398872427-18435-1-git-send-email-daniel.thompson@linaro.org>
 References: <1398781841-15152-1-git-send-email-daniel.thompson@linaro.org>
@@ -30,107 +30,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lots of useful information about the system is held in pseudo filesystems
-and presented using the seq_file mechanism. Unfortunately during both boot
-up and kernel panic (both good times to break out kdb) it is difficult to
-examine these files. This patch introduces a means to display sequence
-files via kdb.
+Combining the kdb seq_file infrastructure with its symbolic lookups allows
+a good sub-set of files held in pseudo filesystems to be displayed by
+kdb. The seq_file command does exactly this and allows a significant
+subset of pseudo files to be safely examined whilst debugging (and in
+the hands of a brave expert an even bigger subset can be unsafely
+examined).
+
+Good arguments to try with this command include: cpuinfo_op,
+gpiolib_seq_ops and vmalloc_op.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
 ---
- include/linux/kdb.h       |  5 +++++
- kernel/debug/kdb/kdb_io.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 56 insertions(+)
+ kernel/debug/kdb/kdb_io.c   |  6 ++++--
+ kernel/debug/kdb/kdb_main.c | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index 290db12..fb46dd4 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -25,6 +25,7 @@ typedef int (*kdb_func_t)(int, const char **);
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/atomic.h>
-+#include <linux/seq_file.h>
- 
- #define KDB_POLL_FUNC_MAX	5
- extern int kdb_poll_idx;
-@@ -117,6 +118,8 @@ extern __printf(1, 0) int vkdb_printf(const char *fmt, va_list args);
- extern __printf(1, 2) int kdb_printf(const char *, ...);
- typedef __printf(1, 2) int (*kdb_printf_t)(const char *, ...);
- 
-+extern int kdb_print_seq_file(const struct seq_operations *ops);
-+
- extern void kdb_init(int level);
- 
- /* Access to kdb specific polling devices */
-@@ -151,6 +154,8 @@ extern int kdb_register_repeat(char *, kdb_func_t, char *, char *,
- extern int kdb_unregister(char *);
- #else /* ! CONFIG_KGDB_KDB */
- static inline __printf(1, 2) int kdb_printf(const char *fmt, ...) { return 0; }
-+static inline int
-+kdb_print_seq_file(const struct seq_operations *ops) { return 0; }
- static inline void kdb_init(int level) {}
- static inline int kdb_register(char *cmd, kdb_func_t func, char *usage,
- 			       char *help, short minlen) { return 0; }
 diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
-index 14ff484..c68c223 100644
+index c68c223..5863180 100644
 --- a/kernel/debug/kdb/kdb_io.c
 +++ b/kernel/debug/kdb/kdb_io.c
-@@ -850,3 +850,54 @@ int kdb_printf(const char *fmt, ...)
- 	return r;
+@@ -878,8 +878,10 @@ int kdb_print_seq_file(const struct seq_operations *ops)
+ 	struct seq_file m = {
+ 		.buf = seq_buf,
+ 		.size = sizeof(seq_buf),
+-		/* .lock is deliberately uninitialized to help reveal
+-		 * unsupportable show methods
++		/* .lock is deliberately left uninitialized because it is
++		 * used by seq_file read/lseek wrapper functions. It cannot be
++		 * used from any of the seq_operations (assuming the ops are
++		 * deadlock free with the normal interface).
+ 		 */
+ 		.op = ops,
+ 	};
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 0b097c8..d87731c 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1734,6 +1734,32 @@ static int kdb_mm(int argc, const char **argv)
  }
- EXPORT_SYMBOL_GPL(kdb_printf);
+ 
+ /*
++ * kdb_seq_file - This function implements the 'seq_file' command.
++ *	seq_file address-expression
++ */
++static int kdb_seq_file(int argc, const char **argv)
++{
++	int diag;
++	unsigned long addr;
++	int nextarg;
++	long offset;
++	char *name;
++	const struct seq_operations *ops;
++
++	nextarg = 1;
++	diag = kdbgetaddrarg(argc, argv, &nextarg, &addr, &offset, &name);
++	if (diag)
++		return diag;
++
++	if (nextarg != argc+1)
++		return KDB_ARGCOUNT;
++
++	ops = (const struct seq_operations *) (addr + offset);
++	kdb_printf("Using sequence_ops at 0x%p (%s)\n", ops, name);
++	return kdb_print_seq_file(ops);
++}
 +
 +/*
-+ * Display a seq_file on the kdb console.
-+ */
-+
-+static int __kdb_print_seq_file(struct seq_file *m, void *v)
-+{
-+	int i, res;
-+
-+	res = m->op->show(m, v);
-+	if (0 != res)
-+		return KDB_BADLENGTH;
-+
-+	for (i = 0; i < m->count && !KDB_FLAG(CMD_INTERRUPT); i++)
-+		kdb_printf("%c", m->buf[i]);
-+	m->count = 0;
-+
-+	return 0;
-+}
-+
-+int kdb_print_seq_file(const struct seq_operations *ops)
-+{
-+	static char seq_buf[4096];
-+	static DEFINE_SPINLOCK(seq_buf_lock);
-+	unsigned long flags;
-+	struct seq_file m = {
-+		.buf = seq_buf,
-+		.size = sizeof(seq_buf),
-+		/* .lock is deliberately uninitialized to help reveal
-+		 * unsupportable show methods
-+		 */
-+		.op = ops,
-+	};
-+	loff_t pos = 0;
-+	void *v;
-+	int res = 0;
-+
-+	v = ops->start(&m, &pos);
-+	while (v) {
-+		spin_lock_irqsave(&seq_buf_lock, flags);
-+		res = __kdb_print_seq_file(&m, v);
-+		spin_unlock_irqrestore(&seq_buf_lock, flags);
-+		if (res != 0 || KDB_FLAG(CMD_INTERRUPT))
-+			break;
-+
-+		v = ops->next(&m, v, &pos);
-+	}
-+	ops->stop(&m, v);
-+
-+	return res;
-+}
+  * kdb_go - This function implements the 'go' command.
+  *	go [address-expression]
+  */
+@@ -2838,6 +2864,8 @@ static void __init kdb_inittab(void)
+ 	  "Display per_cpu variables", 3, KDB_REPEAT_NONE);
+ 	kdb_register_repeat("grephelp", kdb_grep_help, "",
+ 	  "Display help on | grep", 0, KDB_REPEAT_NONE);
++	kdb_register_repeat("seq_file", kdb_seq_file, "",
++	  "Show a seq_file using struct seq_operations", 3, KDB_REPEAT_NONE);
+ }
+ 
+ /* Execute any commands defined in kdb_cmds.  */
 -- 
 1.9.0
 
