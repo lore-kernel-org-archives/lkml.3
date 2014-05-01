@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaEAURD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 16:17:03 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:47776 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790AbaEAURB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 16:17:01 -0400
+	id S1752044AbaEAURu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 16:17:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41239 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790AbaEAURt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 16:17:49 -0400
+Date: Thu, 1 May 2014 22:17:44 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
+In-Reply-To: <20140501142414.GA31611@htj.dyndns.org>
+Message-ID: <alpine.LNX.2.00.1405012206430.29834@pobox.suse.cz>
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz> <1398868249-26169-10-git-send-email-jslaby@suse.cz> <20140501142414.GA31611@htj.dyndns.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20140501192618.GA25829@thunk.org>
-References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com>
- <20140501192618.GA25829@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 1 May 2014 13:16:40 -0700
-Message-ID: <CALCETrX=0uA6CCg4UeeV8KgGAq6fxUSiGOw5Gzte4OSHrDWMqA@mail.gmail.com>
-Subject: Re: random: Providing a seed value to VM guests
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, kvm list <kvm@vger.kernel.org>,
-        Florian Weimer <fweimer@redhat.com>, Kees Cook <kees@outflux.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 1, 2014 12:26 PM, <tytso@mit.edu> wrote:
->
-> On Thu, May 01, 2014 at 12:02:49PM -0700, Andy Lutomirski wrote:
-> >
-> > Is RDSEED really reasonable here?  Won't it slow down by several
-> > orders of magnitude?
->
-> That is I think the biggest problem; RDRAND and RDSEED are fast if
-> they are native, but they will involve a VM exit if they need to be
-> emulated.  So when an OS might want to use RDRAND and RDSEED might be
-> quite different if we know they are being emulated.
->
-> Using the RDRAND and RDSEED "api" certainly makes sense, at least for
-> x86, but I suspect we might want to use a different way of signalling
-> that a VM guest can use RDRAND and RDSEED if they are running on a CPU
-> which doesn't provide that kind of access.  Maybe a CPUID extended
-> function parameter, if one could be allocated for use by a Linux
-> hypervisor?
->
+On Thu, 1 May 2014, Tejun Heo wrote:
 
-I'm still not convinced.  This will affect userspace as well as the
-guest kernel, and I don't see why guest user code should be able to
-access this API.  RDRAND for CPL0 only would work, but that seems odd.
+> > Some threads do not use kthread_should_stop. Before we enable a
+> 
+> Haven't really following kgraft development but is it safe to assume
+> that all kthread_should_stop() usages are clean side-effect-less
+> boundaries?  If so, why is that property guaranteed?  Is there any
+> mechanism for sanity checks?  Maybe I'm just failing to understand how
+> the whole thing is supposed to work but this looks like it could
+> devolve into something more broken than the freezer which we haven't
+> fully recovered from yet.
 
-And I think that RDSEED emulation is asking for trouble.  RDSEED is
-synchronous, but /dev/random is asynchronous.  And making bootup wait
-for even a single byte from /dev/random seems bad.  In any event,
-virtio-rng should be a better interface for this.
+Hi Tejun,
 
->                                                 - Ted
->
+first, thanks a lot for review.
+
+I agree that this expectation might really somewhat implicit and is not 
+probably properly documented anywhere. The basic observation is "whenever 
+kthread_should_stop() is being called, all data structures are in a 
+consistent state and don't need any further updates in order to achieve 
+consistency, because we can exit the loop immediately here", as 
+kthread_should_stop() is the very last thing every freezable kernel thread 
+is calling before starting a new iteration.
+
+For the sake of collecting data points -- do you happen to have any 
+counter-example to the assumption?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
