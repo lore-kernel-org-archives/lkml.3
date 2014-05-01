@@ -1,118 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbaEAXCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:02:24 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61098 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750904AbaEAXCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:02:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] cpufreq: intel_pstate: Change the calculation of next pstate
-Date: Fri, 02 May 2014 01:18:54 +0200
-Message-ID: <21200760.cENPVVrS5i@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5362BD02.5020006@gmail.com>
-References: <5362B5F5.1020706@semaphore.gr> <5362BD02.5020006@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1751760AbaEAXFT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:05:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45420 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750782AbaEAXFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 19:05:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,967,1389772800"; 
+   d="scan'208";a="504623057"
+Subject: Re: [PATCH] rwsem: Comments to explain the meaning of the rwsem's
+ count field
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <5362AC24.9050508@hurleysoftware.com>
+References: <1398966637.2970.129.camel@schen9-DESK>
+	 <5362AC24.9050508@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 May 2014 16:05:13 -0700
+Message-ID: <1398985513.2970.141.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 01, 2014 02:30:42 PM Dirk Brandewie wrote:
-> On 05/01/2014 02:00 PM, Stratos Karafotis wrote:
-> > Currently the driver calculates the next pstate proportional to
-> > core_busy factor, scaled by the ratio max_pstate / current_pstate.
-> >
-> > Using the scaled load (core_busy) to calculate the next pstate
-> > is not always correct, because there are cases that the load is
-> > independent from current pstate. For example, a tight 'for' loop
-> > through many sampling intervals will cause a load of 100% in
-> > every pstate.
-> >
-> > So, change the above method and calculate the next pstate with
-> > the assumption that the next pstate should not depend on the
-> > current pstate. The next pstate should only be directly
-> > proportional to measured load.
-> >
-> > Tested on Intel i7-3770 CPU @ 3.40GHz.
-> > Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> > increase ~1.5% in performance. Below the test results using turbostat
-> > (5 iterations):
-> >
-> > Without patch:
-> >
-> > Ph. avg Time	Total time	PkgWatt		Total Energy
-> > 	79.63	266.416		57.74		15382.85984
-> > 	79.63	265.609		57.87		15370.79283
-> > 	79.57	266.994		57.54		15362.83476
-> > 	79.53	265.304		57.83		15342.53032
-> > 	79.71	265.977		57.76		15362.83152
-> > avg	79.61	266.06		57.74		15364.36985
-> >
-> > With patch:
-> >
-> > Ph. avg Time	Total time	PkgWatt		Total Energy
-> > 	78.23	258.826		59.14		15306.96964
-> > 	78.41	259.110		59.15		15326.35650
-> > 	78.40	258.530		59.26		15320.48780
-> > 	78.46	258.673		59.20		15313.44160
-> > 	78.19	259.075		59.16		15326.87700
-> > avg	78.34	258.842		59.18		15318.82650
-> >
-> > The total test time reduced by ~2.6%, while the total energy
-> > consumption during a test iteration reduced by ~0.35%
-> >
-> > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> > ---
-> >
-> > Changes v1 -> v2
-> > 	- Enhance change log as Rafael and Viresh suggested
-> >
-> >
-> >   drivers/cpufreq/intel_pstate.c | 15 +++++++--------
-> >   1 file changed, 7 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> > index 0999673..8e309db 100644
-> > --- a/drivers/cpufreq/intel_pstate.c
-> > +++ b/drivers/cpufreq/intel_pstate.c
-> > @@ -608,28 +608,27 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
-> >   	mod_timer_pinned(&cpu->timer, jiffies + delay);
-> >   }
-> >
-> > -static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
-> > +static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
-> >   {
-> > -	int32_t core_busy, max_pstate, current_pstate;
-> > +	int32_t core_busy, max_pstate;
-> >
-> >   	core_busy = cpu->sample.core_pct_busy;
-> >   	max_pstate = int_tofp(cpu->pstate.max_pstate);
-> > -	current_pstate = int_tofp(cpu->pstate.current_pstate);
-> > -	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
-> > +	core_busy = mul_fp(core_busy, max_pstate);
+On Thu, 2014-05-01 at 16:18 -0400, Peter Hurley wrote:
+> On 05/01/2014 01:50 PM, Tim Chen wrote:
+> > It takes me a while to understand how rwsem's count field mainifest
+> > itself in different scenarios.  I'm adding comments to provide a quick
+> > reference on the the rwsem's count field for each scenario where readers
+> > and writers are contending/holding the lock.  Hopefully it will be useful
+> > for future maintenance of the code and for people to get up to speed on
+> > how the logic in the code works.
 > 
-> NAK,  The goal of this code is to find out how busy the core is at the current
-> P state. This change will return a value WAY too high.
+> Except there are a lot of transition states for the count that look like
+> stable states for some other condition, and vice versa.
 > 
-> Assume core_busy is 100 and the max non-turbo P state is 34 (3.4GHz) this code
-> would return a busy value of 3400. The PID  is trying to keep the busy value
-> at the setpoint any value of ~3% will drive the P state to the highest turbo
-> P state in this example.
+> For example, 0xffff000X could be:
+> 1. stable state as described below.
+> 2. 1 or more (but not X) readers active,
+>     1 writer which failed to acquire and has not yet backed out the adjustment
+>     0 or more readers which failed to acquire because of the waiting writer
+>         and have not yet backed out
+> 3. 1 writer active,
+>     1 or more readers which failed to acquire because of the active writer and
+>         have not yet backed out
+> 4. maybe more states where a owning writer has just dropped the lock
 
-Well, the problem is that the numbers above indicate an improvement in energy
-efficiency as a result of this patch and we need to explain that result.
+Thanks for the feedback.  Yes, one thing I missed was to account for the
+readers and writers who are actively attempting to lock by adding
+ACTIVE_BIAS or ACTIVE_WRITE_BIAS to the count.  Once we account for
+those we should take care of the transition states. 
+The revised comments also look at the readers and writers actively
+attempting the lock.
 
+> 
+> Because of this, it's hazardous to infer lock state except for the specific
+> existing tests (eg., the count observed by a failed reader after it has
+> acquired the wait_lock).
+
+Thanks.
+
+Tim
+
+---
+
+It takes me quite a while to understand how rwsem's count field mainifest
+itself in different scenarios.  I'm adding comments to provide a quick
+reference on the the rwsem's count field for each scenario where readers
+and writers are contending for the lock.  Hopefully it will be useful
+for future maintenance of the code and for people to get up to speed on
+how the logic in the code works.
+
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ kernel/locking/rwsem-xadd.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index 1d66e08..b92a403 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -12,6 +12,54 @@
+ #include <linux/export.h>
+ 
+ /*
++ * Guide to the rw_semaphore's count field for common values.
++ * (32 bit case illustrated, similar for 64 bit)
++ *
++ * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
++ *		    X = #active_readers + #readers attempting to lock
++ *		    (X*ACTIVE_BIAS)
++ *
++ * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
++ *		attempting to read lock or write lock.
++ *
++ * 0xffff000X	(1) X readers active or attempt lock, there are waiters for lock
++ *		    X = #active readers + # readers attempting lock
++ *		    (X*ACTIVE_BIAS + WAITING_BIAS)
++ *		(2) 1 writer attempting lock, no waiters for lock
++ *		    X-1 = #active readers + #readers attempting lock
++ *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
++ *		(3) 1 writer active, no waiters for lock
++ *		    X-1 = #active readers + #readers attempting lock
++ *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
++ *
++ * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
++ *		    (WAITING_BIAS + ACTIVE_BIAS)
++ *		(2) 1 writer active or attempt lock, no waiters for lock
++ *		    (ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
++ *
++ * 0xffff0000	(1) There are writers or readers queued but none active
++ *		    or in the process of attempting lock.
++ *		    (WAITING_BIAS)
++ *		Note: writer can attempt to steal lock for this count by adding
++ *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
++ *
++ * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
++ *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
++ *
++ * Note: Reader attempt to lock by adding ACTIVE_BIAS in down_read and checking
++ *	 the count becomes more than 0, i.e. the case where there are only
++ *	 readers or no body has lock. (1st and 2nd case above)
++ *
++ *	 Writer attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
++ *	 checking the count becomes ACTIVE_WRITE_BIAS for succesful lock
++ *	 acquisition (i.e. nobody else has lock or attempts lock).  If
++ *	 unsuccessful, in rwsem_down_write_failed, we'll check to see if there
++ *	 are only waiters but none active (5th case above), and attempt to
++ *	 steal the lock.
++ *
++ */
++
++/*
+  * Initialize an rwsem:
+  */
+ void __init_rwsem(struct rw_semaphore *sem, const char *name,
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.11.7
+
+
+
+
+
+
