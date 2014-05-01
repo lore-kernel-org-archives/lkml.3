@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934AbaEAMPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 08:15:08 -0400
-Received: from smtp.swpp.com ([72.16.254.66]:3767 "EHLO exchange.swpp.com"
+	id S1752264AbaEAMWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 08:22:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775AbaEAMOw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 08:14:52 -0400
-X-Greylist: delayed 846 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 08:14:52 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1750842AbaEAMWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 08:22:34 -0400
+Date: Thu, 1 May 2014 14:22:17 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, Larry.Finger@lwfinger.net,
+        Jes.Sorensen@redhat.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8723au: fix potential leak in
+ update_bcn_wps_ie()
+Message-ID: <20140501122216.GC1806@mguzik.redhat.com>
+References: <20140501135727.467d6bf2@spike>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: Hi
-To: bvlfna@gmail.com
-From: bvlfna@gmail.com
-Date: Thu, 01 May 2014 06:00:13 -0600
-Reply-To: bavelfinan@gmail.com
-Message-ID: <EXCHANGEVLEFN03a5sq00000d57@exchange.swpp.com>
-X-OriginalArrivalTime: 01 May 2014 12:00:28.0673 (UTC) FILETIME=[F1D0C710:01CF6534]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140501135727.467d6bf2@spike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Client
+On Thu, May 01, 2014 at 01:57:27PM +0200, Christian Engelmayer wrote:
+> Fix a potential leak in the error path of function update_bcn_wps_ie().
+> Make sure that allocated memory for 'pbackup_remainder_ie' is freed
+> upon return. Detected by Coverity - CID 1077718.
+> 
 
-Do you need a quick loan to establish, for estate license, to buy car, house, no problem  we 
-offer Personal loan, Business loan Student loan and General loan,  
-Why not take off for a little while, get away and enjoy yourself we also offer loan for vacation.
+        if (remainder_ielen > 0) {
+                pbackup_remainder_ie = kmalloc(remainder_ielen, GFP_ATOMIC);
+                if (pbackup_remainder_ie)
+                        memcpy(pbackup_remainder_ie, premainder_ie,
+                               remainder_ielen);
+        }
 
-For more information contact us
+        pwps_ie_src = pmlmepriv->wps_beacon_ie;
+        if (pwps_ie_src == NULL)
+                return;
 
-(BAF INC TERM)
-Bavel Alliance Finance Inc 
-Tel: +34 602 161 422
-Fax: +34 917 903 750
-E-mail: bavelfinan@gmail.com
 
+Maybe just check pwps_ie_src earlier?
+
+-- 
+Mateusz Guzik
