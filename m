@@ -1,104 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaEACdN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 22:33:13 -0400
-Received: from mail-bn1bon0076.outbound.protection.outlook.com ([157.56.111.76]:13856
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750810AbaEACdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 22:33:11 -0400
-X-Greylist: delayed 86546 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Apr 2014 22:33:11 EDT
-From: "Austin, Brian" <Brian.Austin@cirrus.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Sangbeom Kim <sbkim73@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Timur Tabi <timur@tabi.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, Ben Dooks <ben-linux@fluff.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "Liam Girdwood" <lrg@slimlogic.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Xia Kaixu <kaixu.xia@linaro.org>
-Subject: Re: [alsa-devel] [PATCH 01/15] ASoC: CS42L51 and WM8962 codecs
- depend on INPUT
-Thread-Topic: [alsa-devel] [PATCH 01/15] ASoC: CS42L51 and WM8962 codecs
- depend on INPUT
-Thread-Index: AQHPZBwr9n+W/dYh4k6F7qQ+0txF0JsrRaCA//+ymgmAAFoUAA==
-Date: Thu, 1 May 2014 02:16:27 +0000
-Message-ID: <08914164-8CE6-4170-BC21-9E2840FFA05E@cirrus.com>
-References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
- <1398770316-19715-2-git-send-email-kaixu.xia@linaro.org>
- <alpine.DEB.2.02.1404292124270.31465@heelrod>,
- <20140501013103.GK3245@sirena.org.uk>
- <13D36045-EE68-418B-983B-2704C52391E3@cirrus.com>
-In-Reply-To: <13D36045-EE68-418B-983B-2704C52391E3@cirrus.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.131.3.55]
-Content-Type: multipart/signed;
-	boundary="Apple-Mail=_8BADDBDF-DC81-44DD-AFC5-FABB77EAC2F0";
-	protocol="application/pgp-signature"; micalg=pgp-sha512
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:141.131.128.20;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(377454003)(189002)(55674002)(51704005)(199002)(24454002)(77982001)(31966008)(46102001)(69556001)(92726001)(80976001)(66066001)(81542001)(81342001)(92566001)(80022001)(33656001)(71186001)(87936001)(4396001)(2656002)(74502001)(83072002)(83322001)(84326002)(99936001)(74662001)(19580405001)(76176999)(19580395003)(99396002)(82746002)(20776003)(83716003)(512944002)(86362001)(54356999)(76482001)(50986999)(44976005)(36756003)(6806004)(568964001)(79102001)(100906001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB013;H:mail2.cirrus.com;FPR:AC86D274.8E1C4DD2.F1ED9344.4A2EE4D.20183;MLV:sfv;PTR:mail2.cirrus.com;MX:1;A:1;LANG:en;
-X-OriginatorOrg: cirrus4.onmicrosoft.com
-X-Forefront-PRVS: 01986AE76B
+	id S1751716AbaEACdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 22:33:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:40359 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaEACdl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 22:33:41 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-49-5361b28352f3
+From: Jungseok Lee <jays.lee@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        steve.capper@linaro.org, sungjinn.chung@samsung.com,
+        Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
+        ilho215.lee@samsung.com
+Subject: [PATCH v5 0/6] Support 4 levels of translation tables for ARM64
+Date: Thu, 01 May 2014 11:33:39 +0900
+Message-id: <000001cf64e5$c2d71e40$48855ac0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9k4VuMfvO6jN3EQ3m9HsdKdi/goQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zA93mTYnBBu8WmFv8nXSM3eL9sh5G
+	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
+	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG
+	xxUnmQr+S1ZcfDyFrYFxh3AXIyeHhICJxJqZK5ggbDGJC/fWs4HYQgLLGCXudIt0MXKA1fyb
+	JN7FyAUUng4UXjiHEcL5wyjx+tE8VpAGNgFNiUd3e9hBEiICOxglJq9dxAriMAs8ZJT4+XY/
+	M0iVsICHxM+ZZ8A6WARUJRYcbgGzeQUsJU5efs8EYQtK/Jh8jwXEZhbQkli/8zgThC0vsXnN
+	W2aIUxUkdpx9zQhiiwjoSRyatRSqXkRi34t3YOdJCHRySEzad5IFYpmAxLfJh1gg/pGV2HQA
+	ao6kxMEVN1gmMIrNQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsY
+	IVE9YQfjvQPWhxiTgdZPZJYSTc4HJoW8knhDYzMjC1MTU2Mjc0sz0oSVxHnVHiUFCQmkJ5ak
+	ZqemFqQWxReV5qQWH2Jk4uCUamAMsu0IsWxTfu3DyOMS46Jp33Y/oMOjcOLZrEvn9ouK8ifw
+	xIW9mVrspCiqfvmzqMBql9OTRapYZy0+cPkT/0OLqN28e29XxHt8ZnVyduGxFLUz6ylmcvTV
+	erbdrCa8/yz/t38rjjpxCv/fVyo070TanS0/bI4YbNx7f/2avg9SN0tEs2YcLFBiKc5INNRi
+	LipOBABPgN+DAAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNKsWRmVeSWpSXmKPExsVy+t9jQd3mTYnBBhM/Glr8nXSM3eL9sh5G
+	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
+	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7VAOjTUZqYkpqkUJqXnJ+
+	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QpUoKZYk5pUChgMTiYiV9O0wT
+	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjI8rTjIV/JesuPh4ClsD4w7hLkYODgkBE4l/k8S7GDmB
+	TDGJC/fWs3UxcnEICUxnlLizcA4jhPOHUeL1o3msIFVsApoSj+72sIMkRAR2MEpMXruIFcRh
+	FnjIKPHz7X5mkCphAQ+JnzPPgHWwCKhKLDjcAmbzClhKnLz8ngnCFpT4MfkeC4jNLKAlsX7n
+	cSYIW15i85q3zBA3KUjsOPuaEcQWEdCTODRrKVS9iMS+F+8YJzAKzEIyahaSUbOQjJqFpGUB
+	I8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOCk8Ux6B+OqBotDjAIcjEo8vBPYEoOFWBPL
+	iitzDzFKcDArifAGrwEK8aYkVlalFuXHF5XmpBYfYkwG+nQis5Rocj4woeWVxBsam5gZWRqZ
+	WRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6OxaZLD1j13WBo7mLYt3pDmt9Hy
+	ltABdgkntnA9saZn/Df5tkrd2hh9T8hh1bpICbs9J0rWHQi5wb2HOSZjl/qOWH2hpmlc9u9y
+	/XdOuyZWxFYU7swq/1QlP565Z/mfxjecGgcNGLZqR9w9KvP43bOKDTyufQdX5BZIb3vXv0aO
+	iWlH8+T0i0osxRmJhlrMRcWJAPeYMWJeAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Apple-Mail=_8BADDBDF-DC81-44DD-AFC5-FABB77EAC2F0
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain;
-	charset=windows-1252
+Hi All,
+
+This v5 patchset supports 4 levels of tranlsation tables for ARM64.
+
+Firstly, the patchset introduces virtual address space size and
+translation level options as taking account into the comment from
+Catalin Marinas:
+http://www.spinics.net/linux/lists/arm-kernel/msg319552.html
+
+Then, it implements 4 levels of translation tables for native, HYP and
+stage2 sides.
+
+All ARMv8 and ARMv7 related changes are validated with FastModels+kvmtool and
+A15+QEMU, respectively.
+
+Changes since v1:
+- fixed unmatched data types as per Steve's comment
+- removed unnecessary #ifdef in arch/arm64/mm/* as per Steve's comment
+- revised create_pgd_entry to deal with PUD entry as per Steve's comment
+- introduced a macro for initial memblock limit as per Steve's comment
+- dropped "Fix line length exceeding 80 characters" patch as per Marc's comment
+- removed unnecessary #ifdef in arch/arm/kvm/mmu.c as per Marc's comment
+- added a macro for a number of objects of as per Marc's comment
+
+Changes since v2:
+- revised some macros in a generic way as per Marc's comment
+- added a 2 level option for kvm mmu cache allocation as per Marc's comment
+
+Changes since v3:
+- added #ifdef to decide swapper and idmap size as per Steve's comment
+- introduced Steve's create_pgd_entry
+
+Changes since v4:
+- hided translation level options from menuconfig as per Catalin's comment
+- dropped some printk changes as per Mitchel's comment
+- squashed VA_BITS related patches into a single patch
+
+Jungseok Lee (6):
+  arm64: Use pr_* instead of printk
+  arm64: Introduce VA_BITS and translation level options
+  arm64: Add a description on 48-bit address space with 4KB pages
+  arm64: Add 4 levels of page tables definition with 4KB pages
+  arm64: mm: Implement 4 levels of translation tables
+  arm64: KVM: Implement 4 levels of translation tables for HYP and
+    stage2
+
+ Documentation/arm64/memory.txt                |   59 ++++++++++++++---
+ arch/arm/include/asm/kvm_mmu.h                |   10 +++
+ arch/arm/kvm/mmu.c                            |   88 +++++++++++++++++++++----
+ arch/arm64/Kconfig                            |   53 ++++++++++++++-
+ arch/arm64/include/asm/kvm_arm.h              |   34 ++++++++--
+ arch/arm64/include/asm/kvm_mmu.h              |   12 ++++
+ arch/arm64/include/asm/memblock.h             |    6 ++
+ arch/arm64/include/asm/memory.h               |    6 +-
+ arch/arm64/include/asm/page.h                 |    6 +-
+ arch/arm64/include/asm/pgalloc.h              |   24 ++++++-
+ arch/arm64/include/asm/pgtable-4level-hwdef.h |   50 ++++++++++++++
+ arch/arm64/include/asm/pgtable-4level-types.h |   71 ++++++++++++++++++++
+ arch/arm64/include/asm/pgtable-hwdef.h        |    8 ++-
+ arch/arm64/include/asm/pgtable.h              |   53 +++++++++++++--
+ arch/arm64/include/asm/tlb.h                  |   11 +++-
+ arch/arm64/kernel/head.S                      |   46 ++++++++++---
+ arch/arm64/kernel/traps.c                     |   13 ++--
+ arch/arm64/mm/fault.c                         |    1 +
+ arch/arm64/mm/mmu.c                           |   16 +++--
+ 19 files changed, 507 insertions(+), 60 deletions(-)
+ create mode 100644 arch/arm64/include/asm/pgtable-4level-hwdef.h
+ create mode 100644 arch/arm64/include/asm/pgtable-4level-types.h
+
+-- 
+1.7.10.4
 
 
-On Apr 30, 2014, at 8:54 PM, Austin, Brian <Brian.Austin@cirrus.com> =
-wrote:
-
->=20
->=20
->> On Apr 30, 2014, at 20:31, "Mark Brown" <broonie@kernel.org> wrote:
->>=20
->>> On Tue, Apr 29, 2014 at 09:31:30PM -0500, Brian Austin wrote:
->>>=20
->>> I assume you mean the CS42L52 instead of the L51. INPUT is used for =
-a BEEP
->>> Generator but when I disable CONFIG_INPUT I do not get an error. Is =
-there
->>> any information available on what the error is?
->>=20
->> I suspect it's ASoC built in and INPUT build as a module.
-> Ok, I'll try that next.
-> Doesn't IS_ENABLED cover that?
-Apparently not.
-I would like to come up with a better solution than making INPUT a =
-requirement. I just need some time.
-In the meantime I suppose it=92s OK to apply it?=20
-
---Apple-Mail=_8BADDBDF-DC81-44DD-AFC5-FABB77EAC2F0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="signature.asc"
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Message signed with OpenPGP using GPGMail
-
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - https://gpgtools.org
-
-iQEcBAEBCgAGBQJTYa56AAoJEHdXZdGWfiO75eUH/2wC5eynvf3HIrcEfjHgrXS/
-bZgi2r31Mp9wlvgmdLXj4gPgYs6kNIiHM/xMkcP9jnvCallm14WhdZMqy23gEult
-40nwiLrJOp5VGTTQl5l5s0XWhG9J1WR1AI1g2mPKw0+6b1Sw1dOf0mOLzppGy8/6
-jWRnGb6KULv1aXZJPkDUtl+z8h9E1s6F5TN10eFcONOxBLrFtyEl++obURdBgb/R
-YW7QMDmf1cXl7ubuqG6Il2nbZQ6CPzJCcIInrWiHLYTjUDwstdijhvSfJcGoTwjO
-7ppEyPmildJbE5mKBZyyq7BwhxDFLc4A33EN6Sk14NBWTb5LlGvhjHyJs6vmq7E=
-=wNJa
------END PGP SIGNATURE-----
-
---Apple-Mail=_8BADDBDF-DC81-44DD-AFC5-FABB77EAC2F0--
