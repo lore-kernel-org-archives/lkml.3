@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750929AbaEAFhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 01:37:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57717 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720AbaEAFhW convert rfc822-to-8bit (ORCPT
+	id S1750928AbaEAFs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 01:48:28 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33727 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEAFs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 01:37:22 -0400
+	Thu, 1 May 2014 01:48:26 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAD=FV=U-_0FWNHrqWp+rfmucKO5GQibCr8N09M8NVSb180ieBQ@mail.gmail.com>
+References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com> <1398850015-17761-6-git-send-email-ch.naveen@samsung.com> <536161F5.7090508@kernel.org> <CAD=FV=U-_0FWNHrqWp+rfmucKO5GQibCr8N09M8NVSb180ieBQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain;
-	charset=us-ascii
-Mime-Version: 1.0 (1.0)
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-From: "H. Peter Anvin" <hpa@zytor.com>
-X-Mailer: iPad Mail (11D201)
-In-Reply-To: <20140501020627.GA25248@thunk.org>
-Date: Wed, 30 Apr 2014 22:37:00 -0700
-Cc: Andy Lutomirski <luto@amacapital.net>, Florian Weimer <fweimer@redhat.com>,
+ charset=UTF-8
+Subject: Re: [PATCH 5/5 v3] iio: exynos_adc: do a reinit_completion before the conversion
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Thu, 01 May 2014 06:48:19 +0100
+To: Doug Anderson <dianders@chromium.org>
+CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <kees@outflux.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FDF79354-1CD5-4DFF-AC5A-32D8C00CFCB7@zytor.com>
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com> <20140428214112.GC7857@thunk.org> <535FE68C.8060002@redhat.com> <20140429182610.GA19325@thunk.org> <53616293.3080308@mit.edu> <20140501020627.GA25248@thunk.org>
-To: "Theodore Ts'o" <tytso@mit.edu>
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Message-ID: <dbdb414d-81d9-453b-871e-d5d0359f7efe@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To do something cross-arch putting it in memory and having something point to it is probably easiest, but again, with an in-VM boot loader the command line rather sucks.  This then becomes a matter for device tree/ACPI with all that entails.
 
-In that sense it would be better to do something arch-specififc, because what is easy to do early is rather inherently arch-specific.
 
-Sent from my tablet, pardon any formatting problems.
+On May 1, 2014 12:23:27 AM GMT+01:00, Doug Anderson <dianders@chromium.org> wrote:
+>Jonathan,
+>
+>On Wed, Apr 30, 2014 at 1:49 PM, Jonathan Cameron <jic23@kernel.org>
+>wrote:
+>> On 30/04/14 10:26, Naveen Krishna Chatradhi wrote:
+>>>
+>>> Add reinit_completion() before the wait_for_completion_timeout in
+>>> raw_read() call.
+>>>
+>>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>>> Reviewed-by: Doug Anderson <dianders@chromium.org>
+>>
+>> Applied to the togreg branch of iio.git
+>> I wasn't sure if this one was technically a fix, but as it isn't
+>> marked clearly as such it can go in during the next merge window.
+>> I won't have pushed this out to a non rebasing branch until tomorrow
+>> so if this fixes an observed issue then let me know and it might move
+>> to the fixes-togreg branch.
+>
+>As far as I know this doesn't fix an observed issue.  I believe it was
+>requested as part of a previous review and is finally reposted.  I
+>believe it's just extra precautions to make sure that some old IRQ
+>didn't accidentally complete us between the last transaction and this
+>one.
+>
+>Old discussion is somewhere around here
+><https://patchwork.kernel.org/patch/2279591/>
+Thanks for clarifying this.
 
-> On Apr 30, 2014, at 19:06, "Theodore Ts'o" <tytso@mit.edu> wrote:
-> 
->> On Wed, Apr 30, 2014 at 01:52:35PM -0700, Andy Lutomirski wrote:
->> 
->> 1. It simply doesn't work on my system.  In particular, it never returns
->> entropy.  It just blocks forever.
-> 
-> Why?  Is this a bug in qemu?  The host OS?  The guest OS?  It is qemu
-> trying to use /dev/random instead of /dev/urandom?  Any thing else?
-> 
->> 3. There should be a way to provide some entropy-free cryptographically
->> secure data, too.  Regardless of the speed of the hosts's /dev/random,
->> the guest should start with at least 256 bits of cryptographically
->> secure seed material IMO.
-> 
-> Well, the simplest way to do this is to pass it in via the command
-> line, and then have the the kernel make sure it gets obscured so it's
-> not exposed via /proc/cmdline.
-> 
-> Otherwise we would have to define an extension where we pass 32 bytes
-> or so after the boot command line.  But the downside of doing that is
-> we would have to modify every single architecture to define where
-> those 32 bytes could be found.
-> 
-> Aside from passing it on the command line as being a bit grotty, the
-> other big problem this is that some architectures only have 256 bytes
-> of command line, and if we use a base 64 encoding, 256 bits will take
-> 43 characters.  Not a problem on x86, and it seems rather unlikely
-> that people would want to virtualize a m68k or avr32 CPU.  It just
-> feels really unclean.
-> 
-> I've cc'ed Peter Anvin for his opinion about extending Linux boot
-> parameter protocol.  I agree it would be a lot simpler and easier to
-> enable things like Kernel ASLR with real randomness on guest OS's if
-> we didn't have to erect the whole virtio-pci infrastructure during
-> early boot.  :-)
-> 
->                         -Ted
+J
+>
+>Thanks!
+>
+>-Doug
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
