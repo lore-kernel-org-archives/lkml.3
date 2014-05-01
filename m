@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098AbaEAIsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 04:48:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57722 "EHLO mx2.suse.de"
+	id S1755442AbaEAItU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 04:49:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421AbaEAIpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 04:45:00 -0400
+	id S1754365AbaEAIo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 04:44:58 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>,
         Linux-FSDevel <linux-fsdevel@vger.kernel.org>
@@ -13,9 +13,9 @@ Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
         Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
         Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
         Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/17] mm: page_alloc: Lookup pageblock migratetype with IRQs enabled during free
-Date: Thu,  1 May 2014 09:44:41 +0100
-Message-Id: <1398933888-4940-11-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set pageblock bitmaps
+Date: Thu,  1 May 2014 09:44:39 +0100
+Message-Id: <1398933888-4940-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1398933888-4940-1-git-send-email-mgorman@suse.de>
 References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
@@ -23,29 +23,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_pageblock_migratetype() is called during free with IRQs disabled. This
-is unnecessary and disables IRQs for longer than necessary.
+The test_bit operations in get/set pageblock flags are expensive. This patch
+reads the bitmap on a word basis and use shifts and masks to isolate the bits
+of interest. Similarly masks are used to set a local copy of the bitmap and then
+use cmpxchg to update the bitmap if there have been no other changes made in
+parallel.
+
+In a test running dd onto tmpfs the overhead of the pageblock-related
+functions went from 1.27% in profiles to 0.5%.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/mmzone.h          |  7 +++++-
+ include/linux/pageblock-flags.h | 39 +++++++++++++++++++++++++++-----
+ mm/page_alloc.c                 | 49 +++++++++++++++++++++++++----------------
+ 3 files changed, 69 insertions(+), 26 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index fac5509..c84703d 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -75,9 +75,14 @@ enum {
+ 
+ extern int page_group_by_mobility_disabled;
+ 
++#define NR_MIGRATETYPE_BITS (PB_migrate_end - PB_migrate + 1)
++#define MIGRATETYPE_MASK ((1UL << NR_MIGRATETYPE_BITS) - 1)
++
+ static inline int get_pageblock_migratetype(struct page *page)
+ {
+-	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
++	BUILD_BUG_ON(PB_migrate_end - PB_migrate != 2);
++	return get_pageblock_flags_mask(page, PB_migrate_end,
++					NR_MIGRATETYPE_BITS, MIGRATETYPE_MASK);
+ }
+ 
+ struct free_area {
+diff --git a/include/linux/pageblock-flags.h b/include/linux/pageblock-flags.h
+index 2ee8cd2..bc37036 100644
+--- a/include/linux/pageblock-flags.h
++++ b/include/linux/pageblock-flags.h
+@@ -30,9 +30,12 @@ enum pageblock_bits {
+ 	PB_migrate,
+ 	PB_migrate_end = PB_migrate + 3 - 1,
+ 			/* 3 bits required for migrate types */
+-#ifdef CONFIG_COMPACTION
+ 	PB_migrate_skip,/* If set the block is skipped by compaction */
+-#endif /* CONFIG_COMPACTION */
++
++	/*
++	 * Assume the bits will always align on a word. If this assumption
++	 * changes then get/set pageblock needs updating.
++	 */
+ 	NR_PAGEBLOCK_BITS
+ };
+ 
+@@ -62,11 +65,35 @@ extern int pageblock_order;
+ /* Forward declaration */
+ struct page;
+ 
++unsigned long get_pageblock_flags_mask(struct page *page,
++				unsigned long end_bitidx,
++				unsigned long nr_flag_bits,
++				unsigned long mask);
++void set_pageblock_flags_mask(struct page *page,
++				unsigned long flags,
++				unsigned long end_bitidx,
++				unsigned long nr_flag_bits,
++				unsigned long mask);
++
+ /* Declarations for getting and setting flags. See mm/page_alloc.c */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx);
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx);
++static inline unsigned long get_pageblock_flags_group(struct page *page,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	return get_pageblock_flags_mask(page, end_bitidx, nr_flag_bits, mask);
++}
++
++static inline void set_pageblock_flags_group(struct page *page,
++					unsigned long flags,
++					int start_bitidx, int end_bitidx)
++{
++	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
++	unsigned long mask = (1 << nr_flag_bits) - 1;
++
++	set_pageblock_flags_mask(page, flags, end_bitidx, nr_flag_bits, mask);
++}
+ 
+ #ifdef CONFIG_COMPACTION
+ #define get_pageblock_skip(page) \
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 61d45fd..2e55bc8 100644
+index dc123ff..2cf1558 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -773,9 +773,9 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	if (!free_pages_prepare(page, order))
- 		return;
+@@ -6032,25 +6032,26 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
+  * @end_bitidx: The last bit of interest
+  * returns pageblock_bits flags
+  */
+-unsigned long get_pageblock_flags_group(struct page *page,
+-					int start_bitidx, int end_bitidx)
++unsigned long get_pageblock_flags_mask(struct page *page,
++					unsigned long end_bitidx,
++					unsigned long nr_flag_bits,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long flags = 0;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long word;
  
-+	migratetype = get_pfnblock_migratetype(page, pfn);
- 	local_irq_save(flags);
- 	__count_vm_events(PGFREE, 1 << order);
--	migratetype = get_pfnblock_migratetype(page, pfn);
- 	set_freepage_migratetype(page, migratetype);
- 	free_one_page(page_zone(page), page, pfn, order, migratetype);
- 	local_irq_restore(flags);
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (test_bit(bitidx + start_bitidx, bitmap))
+-			flags |= value;
+-
+-	return flags;
++	word = bitmap[word_bitidx];
++	bitidx += end_bitidx;
++	return (word >> (BITS_PER_LONG - bitidx - 1)) & mask;
+ }
+ 
+ /**
+@@ -6060,25 +6061,35 @@ unsigned long get_pageblock_flags_group(struct page *page,
+  * @end_bitidx: The last bit of interest
+  * @flags: The flags to set
+  */
+-void set_pageblock_flags_group(struct page *page, unsigned long flags,
+-					int start_bitidx, int end_bitidx)
++void set_pfnblock_flags_group(struct page *page, unsigned long flags,
++					unsigned long end_bitidx,
++					unsigned long nr_flag_bits,
++					unsigned long mask)
+ {
+ 	struct zone *zone;
+ 	unsigned long *bitmap;
+-	unsigned long pfn, bitidx;
+-	unsigned long value = 1;
++	unsigned long pfn, bitidx, word_bitidx;
++	unsigned long old_word, new_word;
++
++	BUILD_BUG_ON(NR_PAGEBLOCK_BITS != 4);
+ 
+ 	zone = page_zone(page);
+ 	pfn = page_to_pfn(page);
+ 	bitmap = get_pageblock_bitmap(zone, pfn);
+ 	bitidx = pfn_to_bitidx(zone, pfn);
++	word_bitidx = bitidx / BITS_PER_LONG;
++	bitidx &= (BITS_PER_LONG-1);
++
+ 	VM_BUG_ON_PAGE(!zone_spans_pfn(zone, pfn), page);
+ 
+-	for (; start_bitidx <= end_bitidx; start_bitidx++, value <<= 1)
+-		if (flags & value)
+-			__set_bit(bitidx + start_bitidx, bitmap);
+-		else
+-			__clear_bit(bitidx + start_bitidx, bitmap);
++	bitidx += end_bitidx;
++	mask <<= (BITS_PER_LONG - bitidx - 1);
++	flags <<= (BITS_PER_LONG - bitidx - 1);
++
++	do {
++		old_word = ACCESS_ONCE(bitmap[word_bitidx]);
++		new_word = (old_word & ~mask) | flags;
++	} while (cmpxchg(&bitmap[word_bitidx], old_word, new_word) != old_word);
+ }
+ 
+ /*
 -- 
 1.8.4.5
 
