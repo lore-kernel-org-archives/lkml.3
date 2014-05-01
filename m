@@ -1,113 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbaEALu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 07:50:58 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53683 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752403AbaEALu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 07:50:56 -0400
-Date: Thu, 1 May 2014 13:50:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-Message-ID: <20140501115042.GC13658@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu>
- <20140429094632.GP27561@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
- <20140429190108.GB30445@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu>
- <20140430184437.GH17778@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1404301701260.15279@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1404302310530.6261@ionos.tec.linutronix.de>
- <20140501102602.GP11096@twins.programming.kicks-ass.net>
+	id S1753848AbaEAL5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 07:57:38 -0400
+Received: from mout.gmx.net ([212.227.15.18]:52986 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753379AbaEAL5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 07:57:37 -0400
+Date: Thu, 1 May 2014 13:57:27 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: devel@driverdev.osuosl.org
+Cc: Larry.Finger@lwfinger.net, Jes.Sorensen@redhat.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8723au: fix potential leak in
+ update_bcn_wps_ie()
+Message-ID: <20140501135727.467d6bf2@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501102602.GP11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/iN0f5=1Ehj/Mw38nbbr6BH2"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:3F+HfKpvGtuqoLxES4dV6aL7zaWBumcNbKseyugeTAScDo7cOIB
+ B0v067fY1Ytjo34TaG1BY7sIIeOo1b+mmIPlqMKhJ7Kcd/ebd2xKA9UstoAz4jTbocRFPw7
+ veKRk8fs5H2TbflfhCg3WwgeRs/U6sbtkQAasj7oTKfbmPqhvAmXeZaAv2GNLMjto6Wqce4
+ s67+DMCtgk+HIqImZzidQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 12:26:02PM +0200, Peter Zijlstra wrote:
-> On Thu, May 01, 2014 at 12:51:33AM +0200, Thomas Gleixner wrote:
-> > And that's the issue which puzzles us. Let's look at what we expect:
-> > 
-> > Now the trace shows a different story:
-> > 
-> >      perf_fuzzer-4387  [001]  1802.628659: sys_enter:            NR 298 (69bb58, 0, ffffffff, 12, 0, 0)
-> 
-> That's a per-cpu event (.pid = -1, .cpu = 12), they don't get inherited,
-> so the only thing keeping it alive is the fd the child got. So
-> exit_files() killing this thing makes perfect sense.
-> 
-> Onwards to find another funny.
+--Sig_/iN0f5=1Ehj/Mw38nbbr6BH2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-awk '/alloc/ { 
-	for(i=1; i<=NF; i++) { 
-		if ($i ~ /^ptr=/) { 
-			ptr=gensub("^ptr=","","g",$i); 
-			if (ptr ~ /nil/) break; 
-			seen[ptr]=1; 
-			m = ++memory[ptr]; 
-			if (m != 1) { 
-				printf "alloc: %d ptr=%s\n", m, ptr; 
-				memory[ptr] = 0; 
-			} 
-			break; 
-		}
-	}
-}
-/free/ { 
-	for(i=1; i<=NF; i++) { 
-		if ($i ~ /^ptr=/) { 
-			ptr=gensub("^ptr=","","g",$i); 
-			if (ptr ~ /nil/) 
-				break; 
-			m = --memory[ptr]; 
-			if (m != 0) { 
-				memory[ptr] = 0; 
-				s = seen[ptr]; 
-				seen[ptr] = 1; 
-				if (!s) 
-					break; 
-				printf "free: %d ptr=%s\n", m, ptr; 
-			} 
-			break; 
-		}
-	}
-}' bug.out | less
+Fix a potential leak in the error path of function update_bcn_wps_ie().
+Make sure that allocated memory for 'pbackup_remainder_ie' is freed
+upon return. Detected by Coverity - CID 1077718.
 
-Gives fun things like:
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+Compile tested and applies against branch staging-next of tree
+git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+---
+ drivers/staging/rtl8723au/core/rtw_ap.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-alloc: 2 ptr=0xffff880118fda000
-free: -1 ptr=0xffff880118fda000
-alloc: 2 ptr=0xffff880118fda000
+diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8=
+723au/core/rtw_ap.c
+index 9b31412..f2c78a7 100644
+--- a/drivers/staging/rtl8723au/core/rtw_ap.c
++++ b/drivers/staging/rtl8723au/core/rtw_ap.c
+@@ -1276,7 +1276,7 @@ static void update_bcn_wps_ie(struct rtw_adapter *pad=
+apter)
+=20
+ 	pwps_ie_src =3D pmlmepriv->wps_beacon_ie;
+ 	if (pwps_ie_src =3D=3D NULL)
+-		return;
++		goto exit;
+=20
+ 	wps_ielen =3D (uint)pwps_ie_src[1];/* to get ie data len */
+ 	if ((wps_offset+wps_ielen+2+remainder_ielen)<=3D MAX_IE_SZ)
+@@ -1291,8 +1291,8 @@ static void update_bcn_wps_ie(struct rtw_adapter *pad=
+apter)
+ 		pnetwork->IELength =3D wps_offset + (wps_ielen+2) + remainder_ielen;
+ 	}
+=20
+-	if (pbackup_remainder_ie)
+-		kfree(pbackup_remainder_ie);
++exit:
++	kfree(pbackup_remainder_ie);
+ }
+=20
+ static void update_bcn_p2p_ie(struct rtw_adapter *padapter)
+--=20
+1.9.1
 
+--Sig_/iN0f5=1Ehj/Mw38nbbr6BH2
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-And if we then look at
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-grep ptr=0xffff880118fda000 bug.out | less
+iQIcBAEBAgAGBQJTYjanAAoJEKssnEpaPQKErmkP/jO5Xf02HrsyIAwWoySIpVo0
+FpCgvXfxkG6D2/Mf5w8aJFqcsYZPE6M+4sotN76B1KUl2MEPlRww99INj3gtLaGl
+lgUDXD/Ut+oFWVTxDP+mPPhln17FMSGarKPlatdmqgJB8U4ALiW8wpH98Ny46hgs
+IuKMjAMtB8qoJlqqfFhbn1xQMh0tHCvcjDF5rFQnD7nL8FBs7ByyLFgSXEz8udhB
+xdCRs7Ao09BC7UwYAbzD696Ff1DaaD+QkiivJbfYp7ShPEvs4V22pDIQYeNdN+8e
+yFuzO8h6M8JeBVRSUaTj+gqFWq3Ud3koqc5aNQtX8D0KeExdhXutcDFcyLTypOUF
+NCS3YMI75YpOmopfNFEL6RWuTLi/X/QMFUsfPcgRpXKoe7Do0Z/R7RiPNl6legCm
+r62Y4ZrRJrgxGilC08tQ1pu20VRMh8e4k+KRr9v6poAHNT+g8XK4ev15+6CfoQL9
+afWU5q7VgRuwH1CY/wVux1gDIib7sGw8XdMgR0eZT4KWhBZ+O4UwLGNX/X+RtTzL
+hEwGOaG9eeMqaqmGutz92C5dUVj88gptFKu6lA8iRi5UXkr1m/fvJgGuES9S4DXa
+BRLGynVG6nbW/V37FpVFvf8zGRwcSGFrYnEfF4zLUeYeNp1jq/1vZ8Wlih2orpUd
+vynFVUp9SdnrxvvI6TRu
+=c2FW
+-----END PGP SIGNATURE-----
 
-We find lovely bits such as:
-
-     perf_fuzzer-4387  [001]  1773.427175: kmalloc:              (perf_event_alloc+0x5a) call_site=ffffffff8113a8fa ptr=0xffff880118fda000 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-     ksoftirqd/6-38    [006]  1773.457770: kfree:                (free_event_rcu+0x2f) call_site=ffffffff8113177f ptr=0xffff880118fda000
-          <idle>-0     [007]  1774.020378: kfree:                (free_event_rcu+0x2f) call_site=ffffffff8113177f ptr=0xffff880118fda000
-     perf_fuzzer-4387  [000]  1774.096354: kmalloc:              (perf_event_alloc+0x5a) call_site=ffffffff8113a8fa ptr=0xffff880118fda000 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-
-
-That's almost half a second between the double free, Vince, is your TSC
-solid?
-
-# grep sched_clock_stable /proc/sched_debug 
-sched_clock_stable()                    : 1
-
-Should tell, if that's a 0 reading the trace becomes a whole lot more
-'interesting'.
-
-
+--Sig_/iN0f5=1Ehj/Mw38nbbr6BH2--
