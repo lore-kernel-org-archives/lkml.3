@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaEAJ1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:27:32 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:53145 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753063AbaEAJ1a (ORCPT
+	id S1754816AbaEAJ32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 05:29:28 -0400
+Received: from forward8l.mail.yandex.net ([84.201.143.141]:49053 "EHLO
+	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667AbaEAJ31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:27:30 -0400
-Message-ID: <1398936447.4121.12.camel@x220>
-Subject: Re: [4/5] IBM Akebono: Add the Akebono platform
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Thu, 01 May 2014 11:27:27 +0200
-In-Reply-To: <1394077948-8395-5-git-send-email-alistair@popple.id.au>
-References: <1394077948-8395-5-git-send-email-alistair@popple.id.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Thu, 1 May 2014 05:29:27 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 05:29:26 EDT
+X-Yandex-Uniq: 3f0d7500-c92f-43c2-a677-b3076b35b665
+Authentication-Results: smtp17.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <5362122B.8060305@yandex.ru>
+Date: Thu, 01 May 2014 13:21:47 +0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [RFC] rtmutex: Do not boost fair tasks each other
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 May 2014 09:27:28.0143 (UTC) FILETIME=[91CB11F0:01CF651F]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-06 at 14:52 +1100, Alistair Popple wrote:
-> This patch adds support for the IBM Akebono board.
+Higher priority does not provide exclusive privilege
+of one fair task over the other. In this case priority
+boosting looks excess.
 
-This patch just landed in linux-next (ie, in next-20140501).
+On RT patch with enabled PREEMPT_RT_FULL I see a lot of
+rt_mutex_setprio() actions like
 
-> Signed-off-by: Alistair Popple <alistair@popple.id.au>
->[...]
-> --- a/arch/powerpc/platforms/44x/Kconfig
-> +++ b/arch/powerpc/platforms/44x/Kconfig
-> @@ -199,6 +199,32 @@ config CURRITUCK
->  	help
->  	  This option enables support for the IBM Currituck (476fpe) evaluation board
->  
-> +config AKEBONO
-> +	bool "IBM Akebono (476gtr) Support"
-> +	depends on PPC_47x
-> +	default n
-> +	select SWIOTLB
-> +	select 476FPE
-> +	select PPC4xx_PCI_EXPRESS
-> +	select I2C
-> +	select I2C_IBM_IIC
-> +	select NETDEVICES
-> +	select ETHERNET
-> +	select NET_VENDOR_IBM
-> +	select IBM_EMAC_EMAC4
-> +	select IBM_EMAC_RGMII_WOL
+	120 -> 118
+	118 -> 120
 
-The patch that added this symbol (and the related driver) was submitted
-in https://lkml.org/lkml/2014/2/21/25 . It's not (yet) included in
-linux-next. Is it queued somewhere else?
+They harm RT tasks.
 
-> +	select USB
-> +	select USB_OHCI_HCD_PLATFORM
-> +	select USB_EHCI_HCD_PLATFORM
-> +	select MMC_SDHCI
-> +	select MMC_SDHCI_PLTFM
-> +	select MMC_SDHCI_OF_476GTR
+RT patch has lazy preemtion feature, so if idea is we care
+about excess preemption inside fair class, we should care
+about excess priority inheritance too.
 
-The plan to add MMC_SDHCI_OF_476GTR seems to have been abandoned (see
-the discussion of https://lkml.org/lkml/2014/2/21/24 ). So this select
-is not needed. Should I submit a trivial patch to drop this select?
+In case of vanila kernel the problem is the same, but there
+are no so many rt mutexes. Do I skip anything?
 
-> +	select ATA
-> +	select SATA_AHCI_PLATFORM
-> +	help
-> +	  This option enables support for the IBM Akebono (476gtr) evaluation board
-> +
-> +
->  config ICON
->  	bool "Icon"
->  	depends on 44x
+Kirill
+---
+ kernel/locking/rtmutex.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
+diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
+index aa4dff0..609a57e 100644
+--- a/kernel/locking/rtmutex.c
++++ b/kernel/locking/rtmutex.c
+@@ -197,11 +197,14 @@ rt_mutex_dequeue_pi(struct task_struct *task,
+struct rt_mutex_waiter *waiter)
+  */
+ int rt_mutex_getprio(struct task_struct *task)
+ {
+-	if (likely(!task_has_pi_waiters(task)))
+-		return task->normal_prio;
++	if (unlikely(task_has_pi_waiters(task))) {
++		int prio = task_top_pi_waiter(task)->prio;
++
++		if (rt_prio(prio) || dl_prio(prio))
++			return min(prio, task->normal_prio);
++	}
 
-Paul Bolle
+-	return min(task_top_pi_waiter(task)->prio,
+-		   task->normal_prio);
++	return task->normal_prio;
+ }
 
+ struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
+@@ -218,10 +221,14 @@ struct task_struct *rt_mutex_get_top_task(struct
+task_struct *task)
+  */
+ int rt_mutex_check_prio(struct task_struct *task, int newprio)
+ {
+-	if (!task_has_pi_waiters(task))
+-		return 0;
++	if (unlikely(task_has_pi_waiters(task))) {
++		int prio = task_top_pi_waiter(task)->task->prio;
+
+-	return task_top_pi_waiter(task)->task->prio <= newprio;
++		if (rt_prio(prio) || dl_prio(prio))
++			return prio <= newprio;
++	}
++
++	return 0;
+ }
+
+ /*
