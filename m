@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502AbaEAGc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 02:32:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58231 "EHLO
+	id S1754533AbaEAGdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 02:33:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58258 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaEAGc4 (ORCPT
+	with ESMTP id S1752171AbaEAGdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 02:32:56 -0400
-Date: Wed, 30 Apr 2014 23:32:30 -0700
-From: tip-bot for Richard Yao <tipbot@zytor.com>
-Message-ID: <tip-61d4290cc1f10588147b76b385875f06827d47ff@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, ryao@gentoo.org, tglx@linutronix.de,
-        namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, ryao@gentoo.org, tglx@linutronix.de,
-        namhyung@kernel.org
-In-Reply-To: <1398532675-13684-1-git-send-email-ryao@gentoo.org>
-References: <1398532675-13684-1-git-send-email-ryao@gentoo.org>
+	Thu, 1 May 2014 02:33:20 -0400
+Date: Wed, 30 Apr 2014 23:32:57 -0700
+From: tip-bot for Mathias Krause <tipbot@zytor.com>
+Message-ID: <tip-6392b4ebdc1acfbed605d68c437ff5597d0a8d95@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        acme@kernel.org, minipli@googlemail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
+        acme@kernel.org, minipli@googlemail.com, tglx@linutronix.de
+In-Reply-To: <1398617466-22749-1-git-send-email-minipli@googlemail.com>
+References: <1398617466-22749-1-git-send-email-minipli@googlemail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf machine: Search for modules in %s/lib/
- modules/%s
-Git-Commit-ID: 61d4290cc1f10588147b76b385875f06827d47ff
+Subject: [tip:perf/core] perf x86: Fix perf to use non-executable stack,
+  again
+Git-Commit-ID: 6392b4ebdc1acfbed605d68c437ff5597d0a8d95
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,78 +34,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  61d4290cc1f10588147b76b385875f06827d47ff
-Gitweb:     http://git.kernel.org/tip/61d4290cc1f10588147b76b385875f06827d47ff
-Author:     Richard Yao <ryao@gentoo.org>
-AuthorDate: Sat, 26 Apr 2014 13:17:55 -0400
+Commit-ID:  6392b4ebdc1acfbed605d68c437ff5597d0a8d95
+Gitweb:     http://git.kernel.org/tip/6392b4ebdc1acfbed605d68c437ff5597d0a8d95
+Author:     Mathias Krause <minipli@googlemail.com>
+AuthorDate: Sun, 27 Apr 2014 18:51:05 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Wed, 30 Apr 2014 16:49:29 +0200
+CommitDate: Wed, 30 Apr 2014 17:02:30 +0200
 
-perf machine: Search for modules in %s/lib/modules/%s
+perf x86: Fix perf to use non-executable stack, again
 
-Modules installed outside of the kernel's build system should go into
-"%s/lib/modules/%s/extra", but at present, perf will only look at them
-when they are in "%s/lib/modules/%s/kernel". Lets encourage good
-citizenship by relaxing this requirement to "%s/lib/modules/%s". This
-way open source modules that are out-of-tree have no incentive to start
-populating a directory reserved for in-kernel modules and I can stop
-hex-editing my system's perf binary when profiling OSS out-of-tree
-modules.
+arch/x86/tests/regs_load.S is missing the linker note about the stack
+requirements, therefore making the linker fall back to an executable
+stack. As this object gets linked against the final perf binary, it'll
+needlessly end up with an executable stack. Fix this by adding the
+appropriate linker note.
 
-Feedback from Namhyung Kim correctly revealed that the hex-edits that I
-had been doing meant that perf was also traversing the build and source
-symlinks in %s/lib/modules/%s. That is undesireable, so we explicitly
-exclude them from traversal with a minor tweak to the traversal routine.
+Also add a global linker flag to prevent future regressions, as
+suggested by Jiri. This way perf won't get an executable stack even if
+we fail to add the .GNU-stack linker note to future assembler files.
+Though, doing so might create regressions the other way around, when
+(statically) linking against libraries needing an executable stack.
+But, apparently, regressing in that direction is wanted as it is an
+indicator of poor code quality -- or just missing linker notes.
 
-Signed-off-by: Richard Yao <ryao@gentoo.org>
-Acked-by: Namhyung kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398532675-13684-1-git-send-email-ryao@gentoo.org
+Fixes: 3c8b06f981 ("perf tests x86: Introduce perf_regs_load function")
+
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1398617466-22749-1-git-send-email-minipli@googlemail.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/machine.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ tools/perf/arch/x86/tests/regs_load.S | 8 +++++++-
+ tools/perf/config/Makefile            | 4 ++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a53cd0b..27c2a5e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -717,7 +717,7 @@ static char *get_kernel_version(const char *root_dir)
- }
+diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
+index 99167bf..60875d5 100644
+--- a/tools/perf/arch/x86/tests/regs_load.S
++++ b/tools/perf/arch/x86/tests/regs_load.S
+@@ -1,4 +1,3 @@
+-
+ #include <linux/linkage.h>
  
- static int map_groups__set_modules_path_dir(struct map_groups *mg,
--				const char *dir_name)
-+				const char *dir_name, int depth)
- {
- 	struct dirent *dent;
- 	DIR *dir = opendir(dir_name);
-@@ -742,7 +742,15 @@ static int map_groups__set_modules_path_dir(struct map_groups *mg,
- 			    !strcmp(dent->d_name, ".."))
- 				continue;
- 
--			ret = map_groups__set_modules_path_dir(mg, path);
-+			/* Do not follow top-level source and build symlinks */
-+			if (depth == 0) {
-+				if (!strcmp(dent->d_name, "source") ||
-+				    !strcmp(dent->d_name, "build"))
-+					continue;
-+			}
+ #define AX	 0
+@@ -90,3 +89,10 @@ ENTRY(perf_regs_load)
+ 	ret
+ ENDPROC(perf_regs_load)
+ #endif
 +
-+			ret = map_groups__set_modules_path_dir(mg, path,
-+							       depth + 1);
- 			if (ret < 0)
- 				goto out;
- 		} else {
-@@ -786,11 +794,11 @@ static int machine__set_modules_path(struct machine *machine)
- 	if (!version)
- 		return -1;
++/*
++ * We need to provide note.GNU-stack section, saying that we want
++ * NOT executable stack. Otherwise the final linking will assume that
++ * the ELF stack should not be restricted at all and set it RWX.
++ */
++.section .note.GNU-stack,"",@progbits
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index a57d59e..802cf54 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -117,6 +117,10 @@ CFLAGS += -Wall
+ CFLAGS += -Wextra
+ CFLAGS += -std=gnu99
  
--	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s/kernel",
-+	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s",
- 		 machine->root_dir, version);
- 	free(version);
++# Enforce a non-executable stack, as we may regress (again) in the future by
++# adding assembler files missing the .GNU-stack linker note.
++LDFLAGS += -Wl,-z,noexecstack
++
+ EXTLIBS = -lelf -lpthread -lrt -lm -ldl
  
--	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path);
-+	return map_groups__set_modules_path_dir(&machine->kmaps, modules_path, 0);
- }
- 
- static int machine__create_module(void *arg, const char *name, u64 start)
+ ifneq ($(OUTPUT),)
