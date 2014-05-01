@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaEACJl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 22:09:41 -0400
-Received: from ozlabs.org ([103.22.144.67]:40978 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaEACJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 22:09:39 -0400
-Date: Thu, 1 May 2014 12:09:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Stratos Karafotis <stratosk@semaphore.gr>
-Subject: linux-next: manual merge of the pm tree with the mips tree
-Message-Id: <20140501120932.ff26772f983a436b4453c915@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn"
+	id S1751942AbaEACK2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 22:10:28 -0400
+Received: from mail-bn1on0075.outbound.protection.outlook.com ([157.56.110.75]:34612
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750816AbaEACK0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 22:10:26 -0400
+From: "Austin, Brian" <Brian.Austin@cirrus.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Xia Kaixu <kaixu.xia@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, "arnd@arndb.de" <arnd@arndb.de>,
+        Sangbeom Kim <sbkim73@samsung.com>, "Timur Tabi" <timur@tabi.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [alsa-devel] [PATCH 01/15] ASoC: CS42L51 and WM8962 codecs
+ depend on INPUT
+Thread-Topic: [alsa-devel] [PATCH 01/15] ASoC: CS42L51 and WM8962 codecs
+ depend on INPUT
+Thread-Index: AQHPZBwr9n+W/dYh4k6F7qQ+0txF0JsrRaCA//+ymgk=
+Date: Thu, 1 May 2014 01:54:00 +0000
+Message-ID: <13D36045-EE68-418B-983B-2704C52391E3@cirrus.com>
+References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+ <1398770316-19715-2-git-send-email-kaixu.xia@linaro.org>
+ <alpine.DEB.2.02.1404292124270.31465@heelrod>,<20140501013103.GK3245@sirena.org.uk>
+In-Reply-To: <20140501013103.GK3245@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:141.131.128.20;CTRY:US;IPV:NLI;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(24454002)(189002)(51704005)(199002)(23726002)(92566001)(76482001)(54356999)(82746002)(99396002)(50466002)(83716003)(92726001)(31966008)(6806004)(19580395003)(19580405001)(44976005)(83322001)(46102001)(47776003)(97756001)(76176999)(77982001)(81542001)(36756003)(46406003)(74662001)(2656002)(20776003)(81342001)(80022001)(33656001)(4396001)(80976001)(79102001)(87936001)(83072002)(74502001)(50986999)(86362001)(100906001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB020;H:mail2.cirrus.com;FPR:AC864274.8CB48ED2.F9DF1326.4E2EB41.20114;MLV:sfv;PTR:mail2.cirrus.com;MX:1;A:1;LANG:en;
+X-OriginatorOrg: cirrus4.onmicrosoft.com
+X-Forefront-PRVS: 01986AE76B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Rafael,
 
-Today's linux-next merge of the pm tree got a conflict in
-arch/mips/loongson/lemote-2f/clock.c between commit a68ce6507a45
-("MIPS/loongson2_cpufreq: Fix CPU clock rate setting") from the mips tree
-and commit 4966ee4037fe ("mips: lemote 2f: Use cpufreq_for_each_entry
-macro for iteration") from the pm tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/mips/loongson/lemote-2f/clock.c
-index 67dd94ef28e6,1eed38e28b1e..000000000000
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@@ -91,10 -91,9 +91,10 @@@ EXPORT_SYMBOL(clk_put)
- =20
-  int clk_set_rate(struct clk *clk, unsigned long rate)
-  {
- +	unsigned int rate_khz =3D rate / 1000;
-+ 	struct cpufreq_frequency_table *pos;
-  	int ret =3D 0;
-  	int regval;
-- 	int i;
- =20
-  	if (likely(clk->ops && clk->ops->set_rate)) {
-  		unsigned long flags;
-@@@ -107,15 -106,10 +107,10 @@@
-  	if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
-  		propagate_rate(clk);
- =20
-- 	for (i =3D 0; loongson2_clockmod_table[i].frequency !=3D CPUFREQ_TABLE_E=
-ND;
-- 	     i++) {
-- 		if (loongson2_clockmod_table[i].frequency =3D=3D
-- 		    CPUFREQ_ENTRY_INVALID)
-- 			continue;
-- 		if (rate_khz =3D=3D loongson2_clockmod_table[i].frequency)
-+ 	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
- -		if (rate =3D=3D pos->frequency)
-++		if (rate_khz =3D=3D pos->frequency)
-  			break;
-- 	}
-- 	if (rate_khz !=3D loongson2_clockmod_table[i].frequency)
- -	if (rate !=3D pos->frequency)
-++	if (rate_khz !=3D pos->frequency)
-  		return -ENOTSUPP;
- =20
-  	clk->rate =3D rate;
-
---Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTYazgAAoJEMDTa8Ir7ZwVrJwP/RFrn/rh2YO1BSHg3kHzp5Ys
-+fEFSQA1lAjkbPsSDBTrTPGSF8Ap02OZa9apU+0uK5ojzkDKbNVygZgjE9xKcSb4
-VHzKuhyGO5DbtqJ9sWjCjAPZR5yIsteunkAy8r6YaITY3HBTKJEFO7LxtalEVrdZ
-koTVQ5JH1oZqi+8L5ZWiitNfbMhrsk3VWgz3j+OqO2rFeTr459ghF/vXBEtb7F+C
-cPd9W9ueqVNJooEgBnwEXHBH40mN2CLk+pbFhAEjthlkXyH2u0S1Q+8aW0xF5kLT
-tE5TnuoLGZk1h4yL4kuOMfwlotHaIcrC/ydTLa4PcmU5q8QQPgczPvXdRtKEwUxE
-0JC1OnB1jgs8KybpdyqLhdBGAHm0shRjU2imn1urHQB+2oqABsng6z8V4jLVy4FX
-X89+ICxnlZy5ts9jbsI4E4NE8OBGOD4DIHoaAxBC49XEw0tBZNgZPgudCEJypGrr
-u4AQ3Z4INhgpEcV0F0sK3UVpW/HigdBAhuFOXTnBrNbUS1riesxCgBKEaQrXbtr0
-F/nsNtwJ6CGuBL2tkB0FM8F/2TP/7k1FBqHhEV96JSI2sS/lX4UGg6UXXq2Gxxkc
-uPTK3Yd+8wncyTeAPC/ZX3PK+6AcKJbcyM8og+XOjuH3w2xaWSrG5GfNgSBdvY1J
-FvZQKI75k7/wDu9j70Nl
-=FHF+
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn--
+> On Apr 30, 2014, at 20:31, "Mark Brown" <broonie@kernel.org> wrote:
+> 
+>> On Tue, Apr 29, 2014 at 09:31:30PM -0500, Brian Austin wrote:
+>> 
+>> I assume you mean the CS42L52 instead of the L51. INPUT is used for a BEEP
+>> Generator but when I disable CONFIG_INPUT I do not get an error. Is there
+>> any information available on what the error is?
+> 
+> I suspect it's ASoC built in and INPUT build as a module.
+Ok, I'll try that next.
+Doesn't IS_ENABLED cover that?
