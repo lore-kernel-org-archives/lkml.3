@@ -1,166 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042AbaEAKKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 06:10:41 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:34304 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667AbaEAJ5M (ORCPT
+	id S1755898AbaEAKM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 06:12:28 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:52694 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751942AbaEAKM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:57:12 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        devicetree@vger.kernel.org
-Subject: [PATCH 02/47] mtd: nand: stm_nand_bch: provide Device Tree documentation
-Date: Thu,  1 May 2014 10:56:09 +0100
-Message-Id: <1398938214-17847-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
-References: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
+	Thu, 1 May 2014 06:12:26 -0400
+Date: Thu, 1 May 2014 11:12:20 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, akpm@linux-foundation.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] earlyprintk=efi,keep fix
+Message-ID: <20140501101220.GP26088@console-pimps.org>
+References: <20140430021303.GA12316@darkstar.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430021303.GA12316@darkstar.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where we describe the different new and generic options used by
-the ST BCH driver.
+On Wed, 30 Apr, at 10:13:03AM, Dave Young wrote:
+> 
+> earlyprintk=efi,keep will cause kernel hangs while freeing initmem like below:
+> [    2.826089] VFS: Mounted root (ext4 filesystem) readonly on device 254:2.
+> [    2.846592] devtmpfs: mounted
+> [    2.856974] Freeing unused kernel memory: 880K (ffffffff817d4000 - ffffffff818b0000)
+> 
+> It is caused by efi earlyprintk use __init function which will be freed later.
+> Such as early_efi_write is marked as __init, also it will use early_ioremap
+> which is init function as well.
+> 
+> To fix this issue, I added one early initcall efi_ioremap_fb which will map the whole
+> efi fb for later use. OTOH, adding a wrapper function efi_ioremap which will call
+> early_ioremap before ioremap is available.
+> 
+> With this patch applied efi boot ok with earlyprintk=efi,keep console=efi
+> 
+> Signed-off-by: Dave Young <dyoung@redhat.com>
+> ---
+>  arch/x86/platform/efi/early_printk.c |   54 +++++++++++++++++++++++++++--------
+>  1 file changed, 42 insertions(+), 12 deletions(-)
+ 
+Thanks Dave, good catch. I've got a few comments below.
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/mtd/stm-nand.txt | 123 +++++++++++++++++++++
- 1 file changed, 123 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/stm-nand.txt
+> +static __init int efi_ioremap_fb(void)
+> +{
+> +	unsigned long base, size;
+> +
+> +	base = boot_params.screen_info.lfb_base;
+> +	size = boot_params.screen_info.lfb_size;
+> +	efi_fb = ioremap(base, size);
+> +
+> +	return efi_fb ? 0 : -ENOMEM;
+> +}
+> +early_initcall(efi_ioremap_fb);
 
-diff --git a/Documentation/devicetree/bindings/mtd/stm-nand.txt b/Documentation/devicetree/bindings/mtd/stm-nand.txt
-new file mode 100644
-index 0000000..9f9325f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/stm-nand.txt
-@@ -0,0 +1,123 @@
-+STM BCH NAND Support
-+--------------------
-+
-+Required properties:
-+
-+- compatible		: Should be "st,nand-bch"
-+- reg			: Should contain register's location and length
-+- reg-names		: "nand_mem" - NAND Controller register map
-+			  "nand_dma" - BCH Controller DMA configuration map
-+- interrupts		: Interrupt number
-+- interrupt-names	: "nand_irq" - NAND Controller IRQ
-+- st,nand-banks		: Subnode representing one or more "banks" of NAND
-+                          Flash, connected to an STM NAND Controller (see
-+                          description below).
-+- nand-ecc-strength	: Generic NAND property (See mtd/nand.txt)
-+- st,bch-bitflip-threshold
-+			: The threshold at which the number of corrected bit-
-+			  flips per sector is deemed to have reached an
-+			  excessive level (triggers '-EUCLEAN' to be returned
-+			  to the caller).  The value should be in the range 1
-+			  to <ecc-strength> where <ecc-strength> is 18 or 30,
-+			  depending on the BCH ECC mode in operation.  A value
-+			  of 0, or if left unspecified, is interpreted by the
-+			  driver as <ecc-strength>.
-+
-+Properties describing Bank of NAND Flash ("st,nand-banks"):
-+
-+- st,nand-csn		: Chip select associated with the Bank.
-+- st,nand-timing-spec	: [Optional] NAND Device Timing Data.  All times
-+                          expressed in ns, except where stated otherwise:
-+
-+                            tR           : Max Page Read delay [us]
-+                            tCLS         : Min CLE setup time
-+                            tCS          : Min CE setup time
-+                            tALS         : Min ALE setup time
-+                            tDS          : Min Data setup time
-+                            tWP          : Min WE pulse width
-+                            tCLH         : Min CLE hold time
-+                            tCH          : Min CE hold time
-+                            tALH         : Min ALE hold time
-+                            tDH          : Min Data hold time
-+                            tWB          : Max WE high to busy
-+                            tWH          : Min WE hold time
-+                            tWC          : Min Write cycle time
-+                            tRP          : Min RE pulse width
-+                            tREH         : Min RE high hold time
-+                            tRC          : Min Read cycle time
-+                            tREA         : Max Read access time
-+                            tRHOH        : Min RE high to output hold
-+                            tCEA         : Max CE access time
-+                            tCOH         : Min CE high to output hold
-+                            tCHZ         : Max CE high to output high Z
-+                            tCSD         : Min CE high to ALE/CLE don't care
-+
-+- st,nand-timing-relax	: [Optional] Number of IP clock cycles by which to
-+			  "relax" timing configuration.  Required on some boards
-+			  to accommodate board-level limitations. Applies to
-+			  'st,nand-timing-spec' and ONFI timing mode
-+			  configuration.
-+
-+- nand-on-flash-bbt	: Generic NAND property (See mtd/nand.txt)
-+
-+- partitions		: [Optional] Subnode describing MTD partition map
-+                          (see mtd/partition.txt)
-+
-+Note, during initialisation, the NAND Controller timing registers are configured
-+according to one of the following methods, in order of precedence:
-+
-+           1. Configuration based on "st,nand_timing_spec" if supplied.
-+
-+           2. Configuration based on ONFI timing mode, as advertised by the
-+              device during ONFI-probing (ONFI-compliant NAND only).
-+
-+           3. Use reset/safe timing values
-+
-+Example:
-+
-+	nandbch: nand-bch {
-+	        compatible = "st,nand-bch";
-+	        reg = <0xfe901000 0x1000>, <0xfef00800 0x0800>;
-+	        reg-names = "nand_mem", "nand_dma";
-+	        interrupts = <0 139 0x0>;
-+	        interrupt-names = "nand_irq";
-+		nand-ecc-strength = <30>;
-+	        st,nand-banks = <&nand_banks>;
-+
-+	        status = "okay";
-+	};
-+
-+	nand_banks: nand-banks {
-+		bank0 {
-+			/* NAND_BBT_USE_FLASH */
-+			nand-on-flash-bbt;
-+			st,nand-csn		= <0>;
-+			st,nand-timing-data	= <&nand_timing0>;
-+
-+			partitions {
-+				#address-cells = <1>;
-+				#size-cells = <1>;
-+
-+				partition@0{
-+					label = "NAND Flash 1";
-+					reg = <0x00000000 0x00800000>;
-+				};
-+				partition@800000{
-+					label = "NAND Flash 2";
-+					reg = <0x00800000 0x0F800000>;
-+				};
-+			};
-+		};
-+	};
-+
-+	nand_timing0: nand-timing {
-+		sig-setup	= <10>;
-+		sig-hold	= <10>;
-+		CE-deassert	= <0>;
-+		WE-to-RBn	= <100>;
-+		wr-on		= <10>;
-+		wr-off		= <30>;
-+		rd-on		= <10>;
-+		rd-off		= <30>;
-+		chip-delay	= <30>;		/* delay in us */
-+	};
+So, here you're actually ioremap'ing the framebuffer irrespective of
+whether anyone passed earlyprintk=efi,keep on the command line.
+Furthermore, you'll perform the ioremap() even if some error was
+encountered in early_efi_setup().
+
+You need a way to figure out whether the ioremap() is actually needed.
+
+Please document this function to explain why we need to ioremap() the
+framebuffer from an early_initcall().
+
+Oh and as a side note, please prefix functions in this file with
+early_efi_*. Yeah, I realise that I suggested efi_ioremap() as a name -
+my bad.
+
+> +static __init_refok void *efi_ioremap(unsigned long start, unsigned long len)
+> +{
+> +	unsigned long base;
+> +
+> +	base = boot_params.screen_info.lfb_base;
+> +	if (efi_fb)
+> +		return (efi_fb + start - base);
+> +	else
+> +		return early_ioremap(start, len);
+> +}
+
+Adding .lfb_base in the caller and then subtracting here seems
+needlessly complicated. Instead I'd suggest making early_efi_map() take
+an offset and a length, and document when each framebuffer is used.
+
 -- 
-1.8.3.2
-
+Matt Fleming, Intel Open Source Technology Center
