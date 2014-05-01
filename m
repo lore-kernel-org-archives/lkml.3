@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaEAIEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 04:04:43 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46791 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753318AbaEAIEk (ORCPT
+	id S1753679AbaEAIP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 04:15:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43447 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807AbaEAIPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 04:04:40 -0400
-Date: Thu, 1 May 2014 10:04:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] SCHED: allow wait_on_bit_action functions to support a
- timeout.
-Message-ID: <20140501080430.GL11096@twins.programming.kicks-ass.net>
-References: <20140501124143.5712eb96@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501124143.5712eb96@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 1 May 2014 04:15:24 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: linux-spi@vger.kernel.org, broonie@kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] spi: Fix hung task timeout when initialization fails
+Date: Thu,  1 May 2014 10:15:15 +0200
+Message-Id: <1398932115-11646-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 12:41:43PM +1000, NeilBrown wrote:
-> diff --git a/include/linux/wait.h b/include/linux/wait.h
-> index 438dc6044587..162cbcde9dae 100644
-> --- a/include/linux/wait.h
-> +++ b/include/linux/wait.h
-> @@ -25,6 +25,7 @@ struct wait_bit_key {
->  	void			*flags;
->  	int			bit_nr;
->  #define WAIT_ATOMIC_T_BIT_NR	-1
-> +	unsigned long		private;
->  };
->  
->  struct wait_bit_queue {
-> @@ -147,12 +148,12 @@ void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode, int nr, void *k
->  void __wake_up_locked(wait_queue_head_t *q, unsigned int mode, int nr);
->  void __wake_up_sync(wait_queue_head_t *q, unsigned int mode, int nr);
->  void __wake_up_bit(wait_queue_head_t *, void *, int);
-> -int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
-> -int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, int (*)(void *), unsigned);
-> +int __wait_on_bit(wait_queue_head_t *, struct wait_bit_queue *, int (*)(struct wait_bit_key *), unsigned);
-> +int __wait_on_bit_lock(wait_queue_head_t *, struct wait_bit_queue *, int (*)(struct wait_bit_key *), unsigned);
+If kthread_run on spi_init_queue() fails, spi_destroy_queue can lead to
+hang timeout.
 
+Before 786235eeba0e1e85e5cbbb9f97d1087ad03dfa21 kthread:
+make kthread_create() killable" it was very unlikely that kthread_run
+would fail, but after that patch a kill to modprobe can lead to this
+kind of error. Udev kills modprobe after 30 seconds.
 
-Would something like:
+When this happens, spi_destroy_queue() leads to a hung process that
+outputs a error message and avoids the computer to be halted/rebooted.
 
-typedef int (*wait_bit_action_f)(struct wait_bit_key *);
+This bug is particulary critical on machines that relay on the spi
+subsystem to hold a file system (MTD over SPI).
 
-make sense?
+[   95.900328] spi_master spi32765: failed to create message pump task
+[   95.900358] spi_master spi32765: problem initializing queue
+[   95.912333] qtec_pcie b0030000.pcie_bridge: Axi-pcie bridge supervisor
+[  240.463698] INFO: task udevd:129 blocked for more than 120 seconds.
+[  240.463733] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  240.463807] Call Trace:
+[  240.463968]  [<ffffffff8178c22d>] wait_for_completion+0x1d/0x20
+[  240.464036]  [<ffffffff8146c637>] spi_destroy_queue+0x27/0x60
+[  240.464050]  [<ffffffff8146cc46>] spi_register_master+0x5d6/0x900
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+
+v2: Comment by Mark Brown:
+-Improve commit message
+
+ drivers/spi/spi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 4eb9bf0..8331556 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1114,8 +1114,10 @@ static int spi_destroy_queue(struct spi_master *master)
+ 		return ret;
+ 	}
+ 
+-	flush_kthread_worker(&master->kworker);
+-	kthread_stop(master->kworker_task);
++	if (!IS_ERR(master->kworker_task)) {
++		flush_kthread_worker(&master->kworker);
++		kthread_stop(master->kworker_task);
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.9.2
+
