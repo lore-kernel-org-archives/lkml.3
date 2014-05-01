@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaEAUgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 16:36:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61278 "EHLO mx1.redhat.com"
+	id S1752326AbaEAUgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 16:36:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44452 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670AbaEAUgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 16:36:20 -0400
-Message-ID: <1398976597.18595.32.camel@localhost.localdomain>
-Subject: Re: [PATCH] PCI/shpchp: fix a bus speed issue on hotplug
-From: Marcel Apfelbaum <marcel.a@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 01 May 2014 23:36:37 +0300
-In-Reply-To: <CAErSpo6SOc-OPQDyjweAataRXwjPYgXM3+P1nhK7zQ2vRjRE2g@mail.gmail.com>
-References: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
-	 <CAErSpo4KLq7m8PXzAEhv20e29Wk=sAtageDf3CgziDLno0JUCw@mail.gmail.com>
-	 <1398968025.18595.22.camel@localhost.localdomain>
-	 <1398970625.18595.24.camel@localhost.localdomain>
-	 <CAErSpo6SOc-OPQDyjweAataRXwjPYgXM3+P1nhK7zQ2vRjRE2g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1751670AbaEAUgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 16:36:37 -0400
+Subject: [PATCH] PCI: quirk RTL8110SC INTx masking
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org
+Cc: nic_swsd@realtek.com, linux-kernel@vger.kernel.org
+Date: Thu, 01 May 2014 14:36:31 -0600
+Message-ID: <20140501203525.27822.98248.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-01 at 14:00 -0600, Bjorn Helgaas wrote:
-> On Thu, May 1, 2014 at 12:57 PM, Marcel Apfelbaum
-> <marcel.apfelbaum@gmail.com> wrote:
-> > On Thu, 2014-05-01 at 21:13 +0300, Marcel Apfelbaum wrote:
-> >> On Thu, 2014-05-01 at 12:02 -0600, Bjorn Helgaas wrote:
-> >> > On Thu, May 1, 2014 at 8:35 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
-> >> > > When a board is added, the shpchp driver checks if there
-> >> > > is a mismatch between the bridge's adapter and the bus speed.
-> >> > > If there is, it sets the subordinate speed (if there is no device on it).
-> >> > >
-> >> > > However, it takes the reference of the board speed from the primary bus
-> >> > > and not from the subordinate. If the primary bus is PCI and not PCIX/PCIe,
-> >> > > its speed is not updated and remains 0xff. As a result hotplug fails
-> >> > > with error: "Speed of bus ff and adapter 0 mismatch".
-> >> >
-> >> > It'd be cool to have a bugzilla for this with lspci and dmesg output.
-> >> > I'll also have to check the other hotplug drivers for similar issues,
-> >> > unless you've already done that.
-> >> I'll open a BZ with the details, sure.
-> > Done: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-> > If you need further details, please let me know.
-> 
-> Thanks.  Would you mind attaching the "lspci -vv" output?  That should
-> show more details, including the information used to compute the bus
-> speed.
-Sure, done.
+INTx masking does not work on this device.  To see this, configure
+the network device UP on an active network, note that the interrupt
+count continues to increment for the device in /proc/interrupts.  Use
+setpci to set the PCI_COMMAND_INTX_DISABLE bit in the PCI_COMMAND
+register.  As expected, the interrupt count ceases to increment.
+However, reading the PCI_STATUS_INTERRUPT bit of the PCI_STATUS
+register does not indicate that interrupts are pending and clearing
+PCI_COMMAND_INTX_DISABLE in the PCI_COMMAND register does not allow
+the device to continue operation.
 
-> 
-> Also, you checked the "regression" box.  Can you confirm that and
-> identify a known-working kernel?  If we know which kernels are broken,
-> we can potentially mark the fix to be backported to them.
-I checked the regression box based on Michael's comment that in early 2009 it did work.
-He pointed out a commit he thinks that caused this regression.
+This does not affect operation of the host r8169 driver, but it does
+prevent the device from being functional when assigned to a VM, such
+as with QEMU and VFIO.  The guest driver successfully probes the
+device, but there is no traffic.  Mark INTx masking as broken,
+allowing the more restrictive APIC masking to be used instead.
 
-I think it can be backported to all the relevant stable versions since
-the commit that introduced the code mentioned in the patch.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ drivers/pci/quirks.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Thanks,
-Marcel
-
-> 
-> Bjorn
-
-
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index ea55b0f..e15a5da 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2991,6 +2991,14 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_CHELSIO, 0x0030,
+ 			 quirk_broken_intx_masking);
+ DECLARE_PCI_FIXUP_HEADER(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
+ 			 quirk_broken_intx_masking);
++/*
++ * Realtek RTL8169 PCI Gigabit Ethernet Controller (rev 10)
++ * Subsystem: Realtek RTL8169/8110 Family PCI Gigabit Ethernet NIC
++ *
++ * RTL8110SC - Fails under PCI device assignment using DisINTx masking.
++ */
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_REALTEK, 0x8169,
++			 quirk_broken_intx_masking);
+ 
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
 
