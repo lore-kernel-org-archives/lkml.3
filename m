@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaEAR7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 13:59:50 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:53775 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738AbaEAR7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 13:59:48 -0400
-Date: Thu, 1 May 2014 11:59:46 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/3] mtd: nand: add randomizer support
-Message-ID: <20140501175946.GA14539@obsidianresearch.com>
-References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
- <20140501163407.GB3296@obsidianresearch.com>
- <536284E1.50001@free-electrons.com>
-MIME-Version: 1.0
+	id S1751537AbaEASAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:00:22 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:45379 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186AbaEASAU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 14:00:20 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <536284E1.50001@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCHv3 resend 1/2] dt/bindings: Add the DT binding documentation for endianness
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1398847921-9322-2-git-send-email-Li.Xiubo@freescale.com>
+Date: Thu, 1 May 2014 11:00:14 -0700
+Cc: mark.rutland@arm.com, broonie@kernel.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        richardcochran@gmail.com, gregkh@linuxfoundation.org,
+        mpa@pengutronix.de, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A2CD6B78-31B7-467D-943C-48A17FD596B4@codeaurora.org>
+References: <1398847921-9322-1-git-send-email-Li.Xiubo@freescale.com> <1398847921-9322-2-git-send-email-Li.Xiubo@freescale.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 07:31:13PM +0200, Boris BREZILLON wrote:
 
-> I totally agree with you, this is not a randomizer but rather a scrambler.
-> The reason I chose the "randomizer" word is that all the documents I
-> read are talking about randomizers.
-> But, other than I don't have any concern about changing all references
-> to "randomizer" into "scrambler" ;-).
+On Apr 30, 2014, at 1:52 AM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
 
-If nobody else says anything, Scrambler is at least consistent with
-Wikipedia..
-
-and 'descrambler' sounds better than 'unrandomizer' :)
- 
-> > BTW, there are security concerns here. The scrambler PRBS must not be
-> > predictable by the user, otherwise they can write data that undoes the
-> > scramble and defeat it, ie deliberately writing the last 2k of a 4k
-> > write block as all 0's after scrambling could cause the first 2k to be
-> > lost. That feels like something that could be scary ..
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+> .../devicetree/bindings/endianness/endianness.txt  | 47 ++++++++++++++++++++++
+> 1 file changed, 47 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
 > 
-> AFAICT, the scramblers/randomizers used in NAND applications are all
-> predictable, which means the scrambler state does not depend on the last
-> data being scrambled.
+> diff --git a/Documentation/devicetree/bindings/endianness/endianness.txt b/Documentation/devicetree/bindings/endianness/endianness.txt
+> new file mode 100644
+> index 0000000..49458a1
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/endianness/endianness.txt
+> @@ -0,0 +1,47 @@
+> +Device-Tree binding for device endianness
+> +
+> +The endianness mode of CPU & Device scenarios:
+> +Index    CPU       Device     Endianess flag for DT bool property
+> +------------------------------------------------------------
+> +1        LE        LE         -
+> +2        LE        BE         'big-endian{,-*}'
+> +3        BE        BE         -
+> +4        BE        LE         'little-endian{,-*}'
+> +
+> +For one device driver, which will run in different scenarios above
+> +on different SoCs using the devicetree, we need one way to simplify
+> +this.
+> +
+> +Required properties:
+> +- {big,little}-endian{,-*}: this is one boolean property.
+> +
 
-Right, I'm not surprised storage would use a synchronous scrambler,
-self-synchronizing scramblers make the most sense for communication..
+what is the {,-*} all about?
 
-However, with a synchronous scrambler the security concern boils down
-to how robust and unpredictable is the PRBS.
+> +Examples:
+> +Scenario 1 : CPU in LE mode & device in LE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +};
+> +
+> +Scenario 2 : CPU in LE mode & device in BE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      big-endian{,-*};
+> +};
+> +
+> +Scenario 3 : CPU in BE mode & device in BE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +};
+> +
+> +Scenario 4 : CPU in BE mode & device in LE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      little-endian{,-*};
+> +};
+> -- 
+> 1.8.4
+> 
 
-For instance, re-using the same PRBS seed and staring point for every
-block is probably a bad idea.
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
-At the very least I would think the block number should be included in
-the per-block seed of the PRBS.
-
-And also a per-parition/device global seed..
-
-I suspect even a properly seeded LFSR is sufficent, but by no means
-have I studied this :)
-
-> For example, the sunxi HW scrambler is using a Fibonacci LFSR [1].
-> Do you have any example of non predictable scrambler that are used to
-> scramble NAND data ?
-
-The benifit here is that the scrambled data is completely private to
-the driver and flash chip. So any attack on the scrambler would have
-to use the driver as some kind of oracle to search for
-synchornization. Eg running through the full keyspace of an N-Bit LFSR
-by writing an anti-scrambled block, reading it back and checking if it
-is corrupted.
-
-This is why per-block randomization of the PRBS is very important - if
-the attacker has only filesytems access then they don't know the block
-number and now have to attack the filesystem block allocator as well
-as the LFSR block-independent seed to generate an anti-scrambler data
-pattern.
-
-But that is just an off the cuff feeling. It would be smart to study
-it further :)
-
-Regards,
-Jason
