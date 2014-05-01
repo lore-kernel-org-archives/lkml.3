@@ -1,79 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755773AbaEAPuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:50:13 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42294 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755303AbaEAPuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:50:09 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <20140428235849.GN15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140427222019.GF15995@dastard> <87zjj6auvv.fsf@linux.vnet.ibm.com> <20140428235849.GN15995@dastard>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 01 May 2014 21:19:56 +0530
-Message-ID: <874n19bisb.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050115-8878-0000-0000-00000C36A921
+	id S1754926AbaEAPw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:52:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22075 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751860AbaEAPw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:52:27 -0400
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Date: Thu,  1 May 2014 10:52:04 -0500
+Message-Id: <cover.1398958771.git.jpoimboe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+Hi,
 
-> On Mon, Apr 28, 2014 at 10:54:52AM +0530, Aneesh Kumar K.V wrote:
->> Dave Chinner <david@fromorbit.com> writes:
->> > On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
->> >> Hi
->> >> 
->> >> As per LSF/MM summit discussion I am reposting the richacl patchset for
->> >> upstream inclusion. The patchset includes minimal changes required to implement
->> >> a new acl model similar to NFSv4 ACL. The acl model selection is based on
->> >> file system feature flag. 
->> >> 
->> >> The following set of patches implements VFS and ext4 changes needed to implement
->> >> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
->> >> extended by file masks to fit into the standard POSIX file permission model.
->> >> They are designed to work seamlessly locally as well as across the NFSv4 and
->> >> CIFS/SMB2 network file system protocols.
->> >> 
->> >> A user-space utility for displaying and changing richacls is available at [1]
->> >> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> ....
->> >> More details regarding richacl can be found at
->> >> http://acl.bestbits.at/richacl/
->> >> 
->> >> Previous posting of the patchset can be found at:
->> >> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
->> >> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
->> >> 
->> >> The complete patchset can also be found at:
->> >> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
->> >
->> > Where are the tests? We need comprehensive coverage in xfstests so
->> > we can validate that it works the way it is supposed to and that we
->> > don't break it in future, and that all filesystems behave the same
->> > way....
->> >
->> 
->> https://github.com/kvaneesh/richacl-tools/tree/master/test
->
-> FYI, I doubt very much that anyone will run a stand-alone richacls
-> test suite regularly.  Can you please work to integrate this into
-> xfstests so it becomes a regular part of a filesystem developer's
-> daily workflow?
->
+Since Jiri posted the kGraft patches [1], I wanted to share an
+alternative live patching solution called kpatch, which is something
+we've been working on at Red Hat for quite a while.
 
-Will update xfstest based on the progress made with this patchset.
+The kernel piece of it ("kpatch core module") is completely
+self-contained in a GPL module.  It compiles and works without needing
+to change any kernel code, and in fact we already have it working fine
+with Fedora 20 [2] without any distro kernel patches needed.  We'd
+definitely like to see it (or some combination of it and kGraft) merged
+into Linux.
 
--aenesh
+This patch set is for the core module, which provides the kernel
+infrastructure for kpatch.  It has a kpatch_register() interface which
+allows kernel modules ("patch modules") to replace old functions with
+new functions which are loaded with the modules.
+
+There are also some user space tools [2] which aren't included in this
+patch set, which magically generate binary patch modules from source
+diffs, and manage the loading and unloading of these modules.   I didn't
+include them here because I think we should agree on what the kernel
+parts should look like before trying to discuss the user space tools
+(and whether they should be in-tree).
+
+
+kpatch vs kGraft
+----------------
+
+I think the biggest difference between kpatch and kGraft is how they
+ensure that the patch is applied atomically and safely.
+
+kpatch checks the backtraces of all tasks in stop_machine() to ensure
+that no instances of the old function are running when the new function
+is applied.  I think the biggest downside of this approach is that
+stop_machine() has to idle all other CPUs during the patching process,
+so it inserts a small amount of latency (a few ms on an idle system).
+
+Instead, kGraft uses per-task consistency: each task either sees the old
+version or the new version of the function.  This gives a consistent
+view with respect to functions, but _not_ data, because the old and new
+functions are allowed to run simultaneously and share data.  This could
+be dangerous if a patch changes how a function uses a data structure.
+The new function could make a data change that the old function wasn't
+expecting.
+
+With kpatch, that's not an issue because all the functions are patched
+at the same time.  So kpatch is safer with respect to data interactions.
+
+Other advantages of the kpatch stop_machine() approach:
+
+- IMO, the kpatch code is much simpler than kGraft.  The implementation
+  is very straightforward and is completely self-contained.  It requires
+  zero changes to the kernel.
+ 
+  (However a new TAINT_KPATCH flag would be a good idea, and we do
+  anticipate some minor changes to kprobes and ftrace for better
+  compatibility.)
+
+- The use of stop_machine() will enable an important not-yet-implemented
+  feature to call a user-supplied callback function at loading time
+  which can be used to atomically update data structures when applying a
+  patch.  I don't see how such a feature would be possible with the
+  kGraft approach.
+
+- kpatch applies patches immediately without having to send signals to
+  sleeping processes, and without having to hope that those processes
+  handle the signal appropriately.
+
+- kpatch's patching behavior is more deterministic because
+  stop_machine() ensures that all tasks are sleeping and interrupts are
+  disabled when the patching occurs.
+
+- kpatch already supports other cool features like:
+    - removing patches and rolling back to the original functions
+    - atomically replacing existing patches
+    - incremental patching
+    - loading multiple patch modules
+
+
+TODO
+----
+
+Here are the only outstanding issues:
+
+- A new FTRACE_OPS_FL_PERMANENT flag is needed to tell ftrace to never
+  disable the handler.  Otherwise a patch could be temporarily or
+  permanently removed in certain situations.
+
+- A few kprobes compatibility issues:
+    - Patching of a kprobed function doesn't take effect until the
+      kprobe is removed.
+    - kretprobes removes the probed function's calling function's IP
+      from the stack, which could lead to a false negative in the kpatch
+      backtrace safety check.
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1694304
+[2] https://github.com/dynup/kpatch
+
+
+Josh Poimboeuf (2):
+  kpatch: add TAINT_KPATCH flag
+  kpatch: add kpatch core module
+
+ Documentation/kpatch.txt        | 193 +++++++++++++
+ Documentation/oops-tracing.txt  |   3 +
+ Documentation/sysctl/kernel.txt |   1 +
+ MAINTAINERS                     |   9 +
+ arch/Kconfig                    |  14 +
+ include/linux/kernel.h          |   1 +
+ include/linux/kpatch.h          |  61 ++++
+ kernel/Makefile                 |   1 +
+ kernel/kpatch/Makefile          |   1 +
+ kernel/kpatch/kpatch.c          | 615 ++++++++++++++++++++++++++++++++++++++++
+ kernel/panic.c                  |   2 +
+ 11 files changed, 901 insertions(+)
+ create mode 100644 Documentation/kpatch.txt
+ create mode 100644 include/linux/kpatch.h
+ create mode 100644 kernel/kpatch/Makefile
+ create mode 100644 kernel/kpatch/kpatch.c
+
+-- 
+1.9.0
 
