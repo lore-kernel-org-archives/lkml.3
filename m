@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515AbaEAGb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 02:31:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58157 "EHLO
+	id S1754627AbaEAGbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 02:31:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58168 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410AbaEAGbX (ORCPT
+	with ESMTP id S1754556AbaEAGbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 02:31:23 -0400
-Date: Wed, 30 Apr 2014 23:31:11 -0700
-From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
-Message-ID: <tip-c0bc8c6d4a2e18e54ef7854a86bc5a47a8e3d04e@git.kernel.org>
+	Thu, 1 May 2014 02:31:44 -0400
+Date: Wed, 30 Apr 2014 23:31:22 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-88080ce7f6af1ad99ad4b2825938411975910116@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, yarygin@linux.vnet.ibm.com, tglx@linutronix.de
+        jolsa@kernel.org, tglx@linutronix.de, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yarygin@linux.vnet.ibm.com, jolsa@kernel.org, tglx@linutronix.de
-In-Reply-To: <1398440047-6641-4-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1398440047-6641-4-git-send-email-yarygin@linux.vnet.ibm.com>
+        jolsa@kernel.org, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <tip-9os1chjyz12upubfsjc71d99@git.kernel.org>
+References: <tip-9os1chjyz12upubfsjc71d99@git.kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Add a test of kvm-390: trace event
-Git-Commit-ID: c0bc8c6d4a2e18e54ef7854a86bc5a47a8e3d04e
+Subject: [tip:perf/core] perf tools: Move u64_swap union
+Git-Commit-ID: 88080ce7f6af1ad99ad4b2825938411975910116
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,40 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c0bc8c6d4a2e18e54ef7854a86bc5a47a8e3d04e
-Gitweb:     http://git.kernel.org/tip/c0bc8c6d4a2e18e54ef7854a86bc5a47a8e3d04e
-Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-AuthorDate: Fri, 25 Apr 2014 17:34:07 +0200
+Commit-ID:  88080ce7f6af1ad99ad4b2825938411975910116
+Gitweb:     http://git.kernel.org/tip/88080ce7f6af1ad99ad4b2825938411975910116
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 14 Apr 2014 17:38:39 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 29 Apr 2014 14:30:43 +0200
+CommitDate: Tue, 29 Apr 2014 15:30:21 +0200
 
-perf tests: Add a test of kvm-390: trace event
+perf tools: Move u64_swap union
 
-Add a s390 specific test of a hardcoded trace event with '-'
-in the name.
+... to its single user's header, evsel.h.
 
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1398440047-6641-4-git-send-email-yarygin@linux.vnet.ibm.com
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/tip-9os1chjyz12upubfsjc71d99@git.kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/tests/parse-events.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ tools/perf/util/evsel.h | 5 +++++
+ tools/perf/util/types.h | 5 -----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 81dbd5a..deba669 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1389,6 +1389,13 @@ static struct evlist_test test__events[] = {
- 		.check = test__pinned_group,
- 		.id    = 41,
- 	},
-+#if defined(__s390x__)
-+	{
-+		.name  = "kvm-s390:kvm_s390_create_vm",
-+		.check = test__checkevent_tracepoint,
-+		.id    = 100,
-+	},
-+#endif
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 0c9926c..0c581d0 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -91,6 +91,11 @@ struct perf_evsel {
+ 	char			*group_name;
  };
  
- static struct evlist_test test__events_pmu[] = {
++union u64_swap {
++	u64 val64;
++	u32 val32[2];
++};
++
+ #define hists_to_evsel(h) container_of(h, struct perf_evsel, hists)
+ 
+ struct cpu_map;
+diff --git a/tools/perf/util/types.h b/tools/perf/util/types.h
+index c51fa6b..5f3689a 100644
+--- a/tools/perf/util/types.h
++++ b/tools/perf/util/types.h
+@@ -16,9 +16,4 @@ typedef signed short	   s16;
+ typedef unsigned char	   u8;
+ typedef signed char	   s8;
+ 
+-union u64_swap {
+-	u64 val64;
+-	u32 val32[2];
+-};
+-
+ #endif /* __PERF_TYPES_H */
