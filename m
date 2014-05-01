@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135AbaEAEqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 00:46:12 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40236 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750757AbaEAEqL (ORCPT
+	id S1751473AbaEAEtv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 00:49:51 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:54776 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaEAEtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 00:46:11 -0400
-X-Sasl-enc: Y49ylyMsyGkD1GG67V2+ghAYGiezBRzyzswDtLxFPhDR 1398919569
-Date: Wed, 30 Apr 2014 21:47:07 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Jonathan Cameron <jic23@kernel.org>, Jean Delvare <jdelvare@suse.de>
-Subject: Re: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-ID: <20140501044707.GB6918@kroah.com>
-References: <20140501143726.13b4ea03f25679d3e0a78fed@canb.auug.org.au>
+	Thu, 1 May 2014 00:49:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501143726.13b4ea03f25679d3e0a78fed@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140428114437.GK19455@ulmo>
+References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
+ <1398060142-7937-5-git-send-email-acourbot@nvidia.com> <20140422104052.GB22426@ulmo>
+ <53572077.6090305@nvidia.com> <CAAVeFuKscuN-=HJOarbzFkG1ARq6-Nfc2pf1ibam9b61Cjbs6Q@mail.gmail.com>
+ <20140428114437.GK19455@ulmo>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 1 May 2014 13:49:28 +0900
+Message-ID: <CAAVeFuJrs8Sv9UZg=Tj6gJeHOXj9YSX4gT1TNdrfXvVfrBHerQ@mail.gmail.com>
+Subject: Re: [PATCH v2 04/10] drm/nouveau/fb: add GK20A support
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 02:37:26PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> drivers/iio/adc/Kconfig between commit bbc28134e915 ("iio: adc: Nothing
-> in ADC should be a bool CONFIG") from the staging.current tree and commit
-> 9ef080ec0c5e ("iio: adc: Fix exynos_adc dependencies") from the staging
-> tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+On Mon, Apr 28, 2014 at 8:44 PM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Wed, Apr 23, 2014 at 03:11:01PM +0900, Alexandre Courbot wrote:
+>> On Wed, Apr 23, 2014 at 11:07 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> > On 04/22/2014 07:40 PM, Thierry Reding wrote:
+>> >>
+>> >> * PGP Signed by an unknown key
+>> >>
+>> >>
+>> >> On Mon, Apr 21, 2014 at 03:02:16PM +0900, Alexandre Courbot wrote:
+>> >> [...]
+>> >>>
+>> >>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
+>> >>> b/drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
+>> >>
+>> >> [...]
+>> >>>
+>> >>> +               pages = dma_alloc_from_contiguous(dev, ncmin, order);
+>> >>> +               if (!pages) {
+>> >>> +                       gk20a_ram_put(pfb, &mem);
+>> >>> +                       return -ENOMEM;
+>> >>> +               }
+>> >>> +
+>> >>> +               dma_addr = pfn_to_dma(nv_device_base(nv_device(pfb)),
+>> >>> +                                     page_to_pfn(pages));
+>> >>
+>> >>
+>> >> This breaks compilation on x86 because neither pfn_to_dma() nor
+>> >> dma_to_pfn() are available. Is there some other way this can be
+>> >> allocated so that these functions don't need to be called?
+>> >
+>> >
+>> > Mmm, this is bad. There is probably another more portable way to do this.
+>> > Let me look for it.
+>>
+>> page_to_phys()/phys_to_page() can be used by drivers and will work
+>> just fine here since the CPU and GPU use the same physical addresses
+>> to access memory.
+>
+> I'm wondering how this is going to pan out when we try adding IOMMU
+> support. But I guess we can cross that bridge when we come to it.
 
-Looks good, thanks.
-
-greg k-h
+Agreed. Besides I hope the day won't come where we have to go through
+2 layers of memory translation for the GPU...
