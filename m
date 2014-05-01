@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639AbaEAVas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:30:48 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:55955 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871AbaEAVap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:30:45 -0400
-Message-ID: <5362BD02.5020006@gmail.com>
-Date: Thu, 01 May 2014 14:30:42 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752649AbaEAVbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:31:51 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:38486 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692AbaEAVbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:31:50 -0400
+Date: Thu, 1 May 2014 15:31:48 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 0/3] mtd: nand: add randomizer support
+Message-ID: <20140501213148.GA1563@obsidianresearch.com>
+References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
+ <20140501163407.GB3296@obsidianresearch.com>
+ <536284E1.50001@free-electrons.com>
+ <20140501175946.GA14539@obsidianresearch.com>
+ <5362B4E6.7010009@free-electrons.com>
 MIME-Version: 1.0
-To: Stratos Karafotis <stratosk@semaphore.gr>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-CC: dirk.brandewie@gmail.com,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] cpufreq: intel_pstate: Change the calculation of next
- pstate
-References: <5362B5F5.1020706@semaphore.gr>
-In-Reply-To: <5362B5F5.1020706@semaphore.gr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5362B4E6.7010009@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 02:00 PM, Stratos Karafotis wrote:
-> Currently the driver calculates the next pstate proportional to
-> core_busy factor, scaled by the ratio max_pstate / current_pstate.
->
-> Using the scaled load (core_busy) to calculate the next pstate
-> is not always correct, because there are cases that the load is
-> independent from current pstate. For example, a tight 'for' loop
-> through many sampling intervals will cause a load of 100% in
-> every pstate.
->
-> So, change the above method and calculate the next pstate with
-> the assumption that the next pstate should not depend on the
-> current pstate. The next pstate should only be directly
-> proportional to measured load.
->
-> Tested on Intel i7-3770 CPU @ 3.40GHz.
-> Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
-> increase ~1.5% in performance. Below the test results using turbostat
-> (5 iterations):
->
-> Without patch:
->
-> Ph. avg Time	Total time	PkgWatt		Total Energy
-> 	79.63	266.416		57.74		15382.85984
-> 	79.63	265.609		57.87		15370.79283
-> 	79.57	266.994		57.54		15362.83476
-> 	79.53	265.304		57.83		15342.53032
-> 	79.71	265.977		57.76		15362.83152
-> avg	79.61	266.06		57.74		15364.36985
->
-> With patch:
->
-> Ph. avg Time	Total time	PkgWatt		Total Energy
-> 	78.23	258.826		59.14		15306.96964
-> 	78.41	259.110		59.15		15326.35650
-> 	78.40	258.530		59.26		15320.48780
-> 	78.46	258.673		59.20		15313.44160
-> 	78.19	259.075		59.16		15326.87700
-> avg	78.34	258.842		59.18		15318.82650
->
-> The total test time reduced by ~2.6%, while the total energy
-> consumption during a test iteration reduced by ~0.35%
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->
-> Changes v1 -> v2
-> 	- Enhance change log as Rafael and Viresh suggested
->
->
->   drivers/cpufreq/intel_pstate.c | 15 +++++++--------
->   1 file changed, 7 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index 0999673..8e309db 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -608,28 +608,27 @@ static inline void intel_pstate_set_sample_time(struct cpudata *cpu)
->   	mod_timer_pinned(&cpu->timer, jiffies + delay);
->   }
->
-> -static inline int32_t intel_pstate_get_scaled_busy(struct cpudata *cpu)
-> +static inline int32_t intel_pstate_get_busy(struct cpudata *cpu)
->   {
-> -	int32_t core_busy, max_pstate, current_pstate;
-> +	int32_t core_busy, max_pstate;
->
->   	core_busy = cpu->sample.core_pct_busy;
->   	max_pstate = int_tofp(cpu->pstate.max_pstate);
-> -	current_pstate = int_tofp(cpu->pstate.current_pstate);
-> -	core_busy = mul_fp(core_busy, div_fp(max_pstate, current_pstate));
-> +	core_busy = mul_fp(core_busy, max_pstate);
+On Thu, May 01, 2014 at 10:56:06PM +0200, Boris BREZILLON wrote:
 
-NAK,  The goal of this code is to find out how busy the core is at the current
-P state. This change will return a value WAY too high.
+> > However, with a synchronous scrambler the security concern boils down
+> > to how robust and unpredictable is the PRBS.
+> 
+> I'm not sure security is the main concern here.
+> AFAICT, NAND scramblers (note that I stopped using the name "randomizer"
+> :-)) is mainly used to avoid large island of identical data, because
+> some NAND chips are sensible to such patterns (see [1] page 14).
 
-Assume core_busy is 100 and the max non-turbo P state is 34 (3.4GHz) this code
-would return a busy value of 3400. The PID  is trying to keep the busy value
-at the setpoint any value of ~3% will drive the P state to the highest turbo
-P state in this example.
+Right, if you send to the flash 'the wrong data' then some combination of:
+1) Retention time till ECC failure is reduced
+2) The flash block is permanently damaged early
+3) A 'nearby', unrelated flash block has ECC failure due to interference
 
+So, if someone deliberately and maliciously defeats the scrambler and
+deliberately sends in wrong data what happens?
+ 1/3) Delibrate, predictable file system corruption
+ 2) Create device damage and significantly early replacement of the device.
+All could lead to a DOS attack of some sort, at a minimum.
 
->   	return FP_ROUNDUP(core_busy);
->   }
->
->   static inline void intel_pstate_adjust_busy_pstate(struct cpudata *cpu)
->   {
-> -	int32_t busy_scaled;
-> +	int32_t busy;
->   	struct _pid *pid;
->   	signed int ctl = 0;
->   	int steps;
->
->   	pid = &cpu->pid;
-> -	busy_scaled = intel_pstate_get_scaled_busy(cpu);
-> +	busy = intel_pstate_get_busy(cpu);
->
-> -	ctl = pid_calc(pid, busy_scaled);
-> +	ctl = pid_calc(pid, busy);
->
->   	steps = abs(ctl);
->
-> @@ -651,7 +650,7 @@ static void intel_pstate_timer_func(unsigned long __data)
->   	intel_pstate_adjust_busy_pstate(cpu);
->
->   	trace_pstate_sample(fp_toint(sample->core_pct_busy),
-> -			fp_toint(intel_pstate_get_scaled_busy(cpu)),
-> +			fp_toint(intel_pstate_get_busy(cpu)),
->   			cpu->pstate.current_pstate,
->   			sample->mperf,
->   			sample->aperf,
->
+FWIW, there was a similar attack against a certain communication
+system. The line scrambler was statistically predictable, and if an
+attacker sent enough packets that were the predictable anti-scramble
+then enough would align with the scamble pattern and the
+communication channel would fail and retrain creating a DOS vector.
 
+For this reason these days com systems tend to use a 58 bit
+self-synchronous LFSR for scrambling purposes.
+
+> And this is exactly what's done in the sunxi HW  scrambler
+> implementation, or at least you can do it based on what you're
+> specifying in your DT (see the "nand-randomizer-seeds" in the 3rd
+> patch): you can define a seed table and the seed is selected based on
+> the page number you're reading or writing.
+
+Well, re-using fixed (and public) seeds:
+
+ state = rnd->seeds[page % rnd->nseeds];
+
+Just changes the probabilities. For instance, some filesystems can be
+asked to create extents with a large alignment (like 2M) to speed IOs,
+and a small seeds table means the seeds within such a file will be
+fully predictable.
+
+If you are already stuck with this, then fine, it can be a driver
+specific binding - but if this is a new green-field design, intended
+to be broadly used as a core MTD feature:
+
+I'd suggest just seeding with the block number xor some value, and
+using a LFSR with a state space larger than the number of blocks in
+the device, and don't specify a seeds array in DT.
+
+Regards,
+Jason
