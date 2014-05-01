@@ -1,133 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaEAKcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 06:32:39 -0400
-Received: from mout.gmx.net ([212.227.15.19]:54971 "EHLO mout.gmx.net"
+	id S1755081AbaEAKcz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 06:32:55 -0400
+Received: from mout.gmx.net ([212.227.15.18]:52366 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037AbaEAKci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 06:32:38 -0400
-Date: Thu, 1 May 2014 12:30:57 +0200
+	id S1754816AbaEAKcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 06:32:54 -0400
+Date: Thu, 1 May 2014 11:45:00 +0200
 From: Christian Engelmayer <cengelma@gmx.at>
 To: devel@driverdev.osuosl.org
-Cc: dan.carpenter@oracle.com, mcgrof@do-not-panic.com,
-        gregkh@linuxfoundation.org, oat.elena@gmail.com,
-        Larry.Finger@lwfinger.net, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: rtl8188eu: fix potential leak in rtw_set_key()
-Message-ID: <20140501123057.5f00e30d@spike>
+Cc: Larry.Finger@lwfinger.net, florian.c.schilhabel@googlemail.com,
+        gregkh@linuxfoundation.org, linuxgeek@gmail.com,
+        paul.gortmaker@windriver.com, andriy.shevchenko@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8712: fix potential leak in
+ r871x_wx_set_enc_ext()
+Message-ID: <20140501114500.756b95d0@spike>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/MQoNQntfOAaEPIPc7QSKQIj"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:BZJ7tT6pZeqo7aeWDflsdJkPtc1OYgUsTcm1+CbWExJMRfrbowX
- A3wu8t4HxMMIKytLY85mXe561Rk3xRiN386CGRJcY92Fm5Rvqi+7lKXZVZqEyqwCVDR90/y
- uU9WPICbCE7N0CYU19DjgadDOlS8Na9VOfaY31g0HFybCtYYrs1LqVfu4WX/T16DM+SIBAI
- AHgKs4CDd6AD69nSFfovA==
+ boundary="Sig_/Zs+z7Uh4nzgdCOPFSW5mnEu"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:g2LUCNaicOI8U1xj2Z32jS+LZ2RVVIe5ZKUsD89p+k9NAswaPg5
+ 8/cD6eKc+Ckp5uvzYm4lOaO427NHIL6hi5OljlCq4e/zaDnzy4xmV5DVjvBp6yb3OcBq5rE
+ ZoBTfsaX/iV9C6d1IwlWOahFAVQ6BZHQgy6PqVMunhtCa/bZ/iZItqgAG4YaocnUMUbTT2D
+ 8Q8dnBRy438Xc3n5Rt9dg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/MQoNQntfOAaEPIPc7QSKQIj
+--Sig_/Zs+z7Uh4nzgdCOPFSW5mnEu
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Fix a potential leak in the error path of rtw_set_key(). In case the reques=
-ted
-algorithm is not supported by the driver, the function returns without
-enqueuing or freeing the already allocated command and parameter structs. U=
-se
-a centralized exit path and make sure that all memory is freed correctly.
-Detected by Coverity - CID 1077716, 1077717.
+Fix a potential leak in the error path of r871x_wx_set_enc_ext(). In case t=
+he
+requested algorithm is not supported by the driver, the function returns
+without freeing the already allocated 'param' struct. Move the input
+verification to the beginning of the function so that the direct return is
+safe. Detected by Coverity - CID 144373.
 
 Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
-v2: Added changes requested by Dan Carpenter:
-
-   * Just return directly where no cleanup is needed.
-   * Prefer naming labels by the labeled action rather than the goto locati=
-on.
-
 Compile tested and applies against branch staging-next of tree
 git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
 ---
- drivers/staging/rtl8188eu/core/rtw_mlme.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/staging/rtl8712/rtl871x_ioctl_linux.c | 16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rt=
-l8188eu/core/rtw_mlme.c
-index 769d4dd..155282e 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -1727,15 +1727,13 @@ int rtw_set_key(struct adapter *adapter, struct sec=
-urity_priv *psecuritypriv, in
- 	int	res =3D _SUCCESS;
+diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/stagin=
+g/rtl8712/rtl871x_ioctl_linux.c
+index 23d539d..1eca992 100644
+--- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
++++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+@@ -1801,13 +1801,6 @@ static int r871x_wx_set_enc_ext(struct net_device *d=
+ev,
+ 	u32 param_len;
+ 	int ret =3D 0;
 =20
- 	pcmd =3D (struct	cmd_obj *)rtw_zmalloc(sizeof(struct	cmd_obj));
--	if (pcmd =3D=3D NULL) {
--		res =3D _FAIL;  /* try again */
--		goto exit;
--	}
-+	if (pcmd =3D=3D NULL)
-+		return _FAIL;  /* try again */
-+
- 	psetkeyparm =3D (struct setkey_parm *)rtw_zmalloc(sizeof(struct setkey_pa=
-rm));
- 	if (psetkeyparm =3D=3D NULL) {
--		kfree(pcmd);
- 		res =3D _FAIL;
--		goto exit;
-+		goto err_free_cmd;
+-	param_len =3D sizeof(struct ieee_param) + pext->key_len;
+-	param =3D (struct ieee_param *)_malloc(param_len);
+-	if (param =3D=3D NULL)
+-		return -ENOMEM;
+-	memset(param, 0, param_len);
+-	param->cmd =3D IEEE_CMD_SET_ENCRYPTION;
+-	memset(param->sta_addr, 0xff, ETH_ALEN);
+ 	switch (pext->alg) {
+ 	case IW_ENCODE_ALG_NONE:
+ 		alg_name =3D "none";
+@@ -1824,6 +1817,15 @@ static int r871x_wx_set_enc_ext(struct net_device *d=
+ev,
+ 	default:
+ 		return -EINVAL;
  	}
-=20
- 	_rtw_memset(psetkeyparm, 0, sizeof(struct setkey_parm));
-@@ -1784,7 +1782,7 @@ int rtw_set_key(struct adapter *adapter, struct secur=
-ity_priv *psecuritypriv, in
- 			 ("\n rtw_set_key:psecuritypriv->dot11PrivacyAlgrthm=3D%x (must be 1 or=
- 2 or 4 or 5)\n",
- 			 psecuritypriv->dot11PrivacyAlgrthm));
- 		res =3D _FAIL;
--		goto exit;
-+		goto err_free_parm;
- 	}
- 	pcmd->cmdcode =3D _SetKey_CMD_;
- 	pcmd->parmbuf =3D (u8 *)psetkeyparm;
-@@ -1793,7 +1791,12 @@ int rtw_set_key(struct adapter *adapter, struct secu=
-rity_priv *psecuritypriv, in
- 	pcmd->rspsz =3D 0;
- 	_rtw_init_listhead(&pcmd->list);
- 	res =3D rtw_enqueue_cmd(pcmdpriv, pcmd);
--exit:
-+	return res;
 +
-+err_free_parm:
-+	kfree(psetkeyparm);
-+err_free_cmd:
-+	kfree(pcmd);
- 	return res;
- }
-=20
++	param_len =3D sizeof(struct ieee_param) + pext->key_len;
++	param =3D (struct ieee_param *)_malloc(param_len);
++	if (param =3D=3D NULL)
++		return -ENOMEM;
++	memset(param, 0, param_len);
++	param->cmd =3D IEEE_CMD_SET_ENCRYPTION;
++	memset(param->sta_addr, 0xff, ETH_ALEN);
++
+ 	strncpy((char *)param->u.crypt.alg, alg_name, IEEE_CRYPT_ALG_NAME_LEN);
+ 	if (pext->ext_flags & IW_ENCODE_EXT_GROUP_KEY)
+ 		param->u.crypt.set_tx =3D 0;
 --=20
 1.9.1
 
---Sig_/MQoNQntfOAaEPIPc7QSKQIj
+--Sig_/Zs+z7Uh4nzgdCOPFSW5mnEu
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTYiJhAAoJEKssnEpaPQKEa6sP/RTCBVW8bLf4nUW4Oa/Al8OG
-zK1k4EWSgqehlBIjmb7vrt74+Syqa2Nl9YA2CWuydIaEA8l5hw2MknghEU+XqjXM
-zONARIogAxBiGI6382NyiEQldpq/R7bzSvs6qkyvBL3uYrMJfL6GG4GSG9qQglDU
-zo3CghutfmNamUBbqCdNY1q8terSiAenLA/qnEUfe3olBRwkj0bpugXLckWn+rj0
-yyg1Sw9xX4kYdaLb5bMDteor7lWfLZAH96knrHLnYeWfdP1heA/tT0+t79Y9yCM6
-0Q4kreSLqcSLsCuxkdN35iwXvZbYiuwU4/S1fzU+Zvbz7unjitJsykgSJ3p4IJYW
-au/Z+IIg5xop66FbO+Ct4DBrmD4Qn600njr+JdOgWwo9MiemvR2B2hO1aDUWH7Fe
-QBki9179Yy6cpOl4sPya6sH2/gw5ZMRUym1tv0ia/0gC6z/Tki/UJSvfH4a6u7g+
-8SuLpNR7tzGA0pZ/+7WpdlVmtITskbFNM98u1o4YIcBENx0cBv3+2PUnl5PdTwFd
-gkDyMIACGJKdMAPvcrHCp7HQ0KRhxZDTWk+Eo4GHSLGx1QG7TgOObuwizydQhcRw
-eUqwbe2Ctq2MtrXcpp47rJFijrVUGxUfRocuYW2CAZ8/c9pvonUOrjagQOnJnmOE
-Kr/+KobVXcLKBga2zPsE
-=/io+
+iQIcBAEBAgAGBQJTYhecAAoJEKssnEpaPQKEjrkQALgRLA3K/wp8ODXxuRn0rlr6
+BmMc85mbdNpoTDx07JUvPzydtDuycMH6czwWVamSgMLIj6DNhR+mK7lwhKhJ6bAY
+YFiZmuQ9TUKHxAlWFDn5Aluuf5dPcSEBLXeVTJebhfNOy5t/ylfkmGYSxigMFk62
+nFBLovgdAcf5jaRcFjHZEbGhzrYPfaogVydvhAI4+RExNkcGF0hfQ2YUUiSrJ1CC
+UNb4LLB/9gVEwGC/TUEWnsaXdNB7/+He3fbVx3gxGRmfjb14iJ8qUrvcHL1Q9aY/
+NxSQxWQpLnXXBUmSiMaenZ0Lo0b0ehsn2W56GubFvAHRSAqR8Kw+LLl+Q7Pb7/Uk
+UqJUzbpPojllAucfzLZgOSQI8Yw4vMJ2MV0/EyIW2OpGJebmWP4VYIst9ktGno10
+P7xy3nyz7ZNnQSoUgXFTIKECTHa/SXQaNKXWvxVyevtBLxSiyHTaSdzTbr7A2PH9
+tMWVb3SUG5H5SNpeD8Bkoe8S4Bab8xvRdTQEZIcvDNvxk2o6oPh3pa4HZS+QquNt
+izfi2K8sP2L5C/r51MXiIyj6J7uthszr7nLX8KaIwwqSd7uSxZ63uLyeeWVYL02r
+ohF9Ai8phWs08/IDPQx7M5UYGEUoaODo1DIjR6pShFEBawtYEaUXNungdG/XqZbg
+/K8cHllFt9KQj7+qVDIG
+=sDlK
 -----END PGP SIGNATURE-----
 
---Sig_/MQoNQntfOAaEPIPc7QSKQIj--
+--Sig_/Zs+z7Uh4nzgdCOPFSW5mnEu--
