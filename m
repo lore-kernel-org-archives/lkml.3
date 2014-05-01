@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014AbaEAAhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 20:37:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54147 "EHLO bear.ext.ti.com"
+	id S1752806AbaEAAgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 20:36:05 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54117 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753881AbaEAAg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 20:36:59 -0400
+	id S1752605AbaEAAgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 20:36:01 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
         Kumar Gala <galak@codeaurora.org>
@@ -13,9 +13,9 @@ CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
         Bjorn Andersson <bjorn@kryo.se>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv5 RFC 11/15] hwspinlock/core: add support for reserved locks
-Date: Wed, 30 Apr 2014 19:34:32 -0500
-Message-ID: <1398904476-26200-12-git-send-email-s-anna@ti.com>
+Subject: [PATCHv5 05/15] hwspinlock/omap: add support for dt nodes
+Date: Wed, 30 Apr 2014 19:34:26 -0500
+Message-ID: <1398904476-26200-6-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398904476-26200-1-git-send-email-s-anna@ti.com>
 References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
@@ -25,190 +25,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The HwSpinlock core allows requesting either a specific lock or an
-available normal lock. The specific locks are usually reserved during
-board init time, while the normal available locks are intended to be
-assigned at runtime.
-
-The HwSpinlock core has been enhanced to:
-  1. allow the platform implementations to register a set of 'reserved'
-     locks
-  2. restrict the anonymous hwspin_lock_request() API to allocate only
-     from non-reserved locks
-  3. limit these reserved locks to be allocated only using the
-     _request_specific() API variants.
-
-The existing platform implementations have also been updated to adjust
-for the change of the registration API.
+HwSpinlock IP is present only on OMAP4 and other newer SoCs,
+which are all device-tree boot only. This patch adds the
+base support for parsing the DT nodes, and removes the code
+dealing with the traditional platform device instantiation.
 
 Signed-off-by: Suman Anna <s-anna@ti.com>
+[tony@atomide.com: ack for legacy file removal]
+Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/hwspinlock/hwspinlock_core.c     | 20 ++++++++++++++++----
- drivers/hwspinlock/hwspinlock_internal.h |  3 +++
- drivers/hwspinlock/omap_hwspinlock.c     |  4 ++--
- drivers/hwspinlock/u8500_hsem.c          |  3 ++-
- include/linux/hwspinlock.h               | 10 +++++++---
- 5 files changed, 30 insertions(+), 10 deletions(-)
+ MAINTAINERS                          |  1 -
+ arch/arm/mach-omap2/Makefile         |  3 --
+ arch/arm/mach-omap2/hwspinlock.c     | 60 ------------------------------------
+ drivers/hwspinlock/omap_hwspinlock.c | 18 ++++++++---
+ 4 files changed, 14 insertions(+), 68 deletions(-)
+ delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
 
-diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
-index c2063bc..e05cea8 100644
---- a/drivers/hwspinlock/hwspinlock_core.c
-+++ b/drivers/hwspinlock/hwspinlock_core.c
-@@ -432,6 +432,8 @@ static int hwspinlock_device_add(struct hwspinlock_device *bank)
-  * @ops: hwspinlock handlers for this device
-  * @base_id: id of the first hardware spinlock in this bank
-  * @num_locks: number of hwspinlocks provided by this device
-+ * @num_reserved_locks: number of reserved hwspinlocks starting from @base_id
-+ *			on this device
-  *
-  * This function should be called from the underlying platform-specific
-  * implementation, to register a new hwspinlock device instance.
-@@ -441,13 +443,15 @@ static int hwspinlock_device_add(struct hwspinlock_device *bank)
-  * Returns 0 on success, or an appropriate error code on failure
-  */
- int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
--		const struct hwspinlock_ops *ops, int base_id, int num_locks)
-+		const struct hwspinlock_ops *ops, int base_id, int num_locks,
-+		int num_reserved_locks)
- {
- 	struct hwspinlock *hwlock;
- 	int ret = 0, i;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e67ea24..5147902 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6355,7 +6355,6 @@ M:	Ohad Ben-Cohen <ohad@wizery.com>
+ L:	linux-omap@vger.kernel.org
+ S:	Maintained
+ F:	drivers/hwspinlock/omap_hwspinlock.c
+-F:	arch/arm/mach-omap2/hwspinlock.c
  
- 	if (!bank || !ops || !dev || !num_locks || !ops->trylock ||
--	    !ops->unlock || (dev->of_node && !ops->of_xlate)) {
-+	    !ops->unlock || (dev->of_node && !ops->of_xlate) ||
-+	    (num_locks < num_reserved_locks)) {
- 		pr_err("invalid parameters\n");
- 		return -EINVAL;
- 	}
-@@ -456,6 +460,7 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- 	bank->ops = ops;
- 	bank->base_id = base_id;
- 	bank->num_locks = num_locks;
-+	bank->num_reserved_locks = num_reserved_locks;
+ OMAP MMC SUPPORT
+ M:	Jarkko Lavinen <jarkko.lavinen@nokia.com>
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 8421f38..9f4b6dd 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -289,9 +289,6 @@ obj-y					+= $(smc91x-m) $(smc91x-y)
  
- 	mutex_lock(&hwspinlock_tree_lock);
- 	ret = hwspinlock_device_add(bank);
-@@ -468,7 +473,8 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ smsc911x-$(CONFIG_SMSC911X)		:= gpmc-smsc911x.o
+ obj-y					+= $(smsc911x-m) $(smsc911x-y)
+-ifneq ($(CONFIG_HWSPINLOCK_OMAP),)
+-obj-y					+= hwspinlock.o
+-endif
  
- 		spin_lock_init(&hwlock->lock);
- 		hwlock->bank = bank;
--		hwlock->type = HWSPINLOCK_UNUSED;
-+		hwlock->type = (i < num_reserved_locks ?
-+				HWSPINLOCK_RESERVED : HWSPINLOCK_UNUSED);
- 
- 		ret = hwspin_lock_register_single(hwlock, base_id + i);
- 		if (ret)
-@@ -651,7 +657,13 @@ struct hwspinlock *hwspin_lock_request_specific(unsigned int id)
- 	/* sanity check (this shouldn't happen) */
- 	WARN_ON(hwlock_to_id(hwlock) != id);
- 
--	/* make sure this hwspinlock is unused */
-+	if (hwlock->type != HWSPINLOCK_RESERVED) {
-+		pr_warn("hwspinlock %u is not a reserved lock\n", id);
-+		hwlock = NULL;
-+		goto out;
-+	}
-+
-+	/* make sure this hwspinlock is an unused reserved lock */
- 	ret = radix_tree_tag_get(&hwspinlock_tree, id, hwlock->type);
- 	if (ret == 0) {
- 		pr_warn("hwspinlock %u is already in use\n", id);
-diff --git a/drivers/hwspinlock/hwspinlock_internal.h b/drivers/hwspinlock/hwspinlock_internal.h
-index 1be32ca..570e876 100644
---- a/drivers/hwspinlock/hwspinlock_internal.h
-+++ b/drivers/hwspinlock/hwspinlock_internal.h
-@@ -64,6 +64,8 @@ struct hwspinlock {
-  * @ops: platform-specific hwspinlock handlers
-  * @base_id: id index of the first lock in this device
-  * @num_locks: number of locks in this device
-+ * @num_reserved_locks: number of reserved locks in this device starting
-+ *			from @base_id
-  * @lock: dynamically allocated array of 'struct hwspinlock'
-  */
- struct hwspinlock_device {
-@@ -72,6 +74,7 @@ struct hwspinlock_device {
- 	const struct hwspinlock_ops *ops;
- 	int base_id;
- 	int num_locks;
-+	int num_reserved_locks;
- 	struct hwspinlock lock[0];
- };
- 
+ emac-$(CONFIG_TI_DAVINCI_EMAC)		:= am35xx-emac.o
+ obj-y					+= $(emac-m) $(emac-y)
+diff --git a/arch/arm/mach-omap2/hwspinlock.c b/arch/arm/mach-omap2/hwspinlock.c
+deleted file mode 100644
+index ef175ac..0000000
+--- a/arch/arm/mach-omap2/hwspinlock.c
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+- * OMAP hardware spinlock device initialization
+- *
+- * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
+- *
+- * Contact: Simon Que <sque@ti.com>
+- *          Hari Kanigeri <h-kanigeri2@ti.com>
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * version 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful, but
+- * WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- * General Public License for more details.
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-#include <linux/err.h>
+-#include <linux/hwspinlock.h>
+-
+-#include "soc.h"
+-#include "omap_hwmod.h"
+-#include "omap_device.h"
+-
+-static struct hwspinlock_pdata omap_hwspinlock_pdata __initdata = {
+-	.base_id = 0,
+-};
+-
+-static int __init hwspinlocks_init(void)
+-{
+-	int retval = 0;
+-	struct omap_hwmod *oh;
+-	struct platform_device *pdev;
+-	const char *oh_name = "spinlock";
+-	const char *dev_name = "omap_hwspinlock";
+-
+-	/*
+-	 * Hwmod lookup will fail in case our platform doesn't support the
+-	 * hardware spinlock module, so it is safe to run this initcall
+-	 * on all omaps
+-	 */
+-	oh = omap_hwmod_lookup(oh_name);
+-	if (oh == NULL)
+-		return -EINVAL;
+-
+-	pdev = omap_device_build(dev_name, 0, oh, &omap_hwspinlock_pdata,
+-				sizeof(struct hwspinlock_pdata));
+-	if (IS_ERR(pdev)) {
+-		pr_err("Can't build omap_device for %s:%s\n", dev_name,
+-								oh_name);
+-		retval = PTR_ERR(pdev);
+-	}
+-
+-	return retval;
+-}
+-/* early board code might need to reserve specific hwspinlock instances */
+-omap_postcore_initcall(hwspinlocks_init);
 diff --git a/drivers/hwspinlock/omap_hwspinlock.c b/drivers/hwspinlock/omap_hwspinlock.c
-index 7764291..1d0c78e 100644
+index 292869c..9f56fb2 100644
 --- a/drivers/hwspinlock/omap_hwspinlock.c
 +++ b/drivers/hwspinlock/omap_hwspinlock.c
-@@ -88,7 +88,7 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
+@@ -1,7 +1,7 @@
+ /*
+  * OMAP hardware spinlock driver
+  *
+- * Copyright (C) 2010 Texas Instruments Incorporated - http://www.ti.com
++ * Copyright (C) 2010-2014 Texas Instruments Incorporated - http://www.ti.com
+  *
+  * Contact: Simon Que <sque@ti.com>
+  *          Hari Kanigeri <h-kanigeri2@ti.com>
+@@ -27,6 +27,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/hwspinlock.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ 
+ #include "hwspinlock_internal.h"
+@@ -76,18 +77,20 @@ static const struct hwspinlock_ops omap_hwspinlock_ops = {
+ 	.trylock = omap_hwspinlock_trylock,
+ 	.unlock = omap_hwspinlock_unlock,
+ 	.relax = omap_hwspinlock_relax,
++	.of_xlate = of_hwspin_lock_simple_xlate,
+ };
+ 
+ static int omap_hwspinlock_probe(struct platform_device *pdev)
+ {
+-	struct hwspinlock_pdata *pdata = pdev->dev.platform_data;
++	struct device_node *node = pdev->dev.of_node;
+ 	struct hwspinlock_device *bank;
+ 	struct hwspinlock *hwlock;
  	struct resource *res;
  	void __iomem *io_base;
  	int num_locks, i, ret;
--	int base_id = 0;
-+	int base_id = 0, reserved_locks = 0;
++	int base_id = 0;
  
- 	if (!node)
+-	if (!pdata)
++	if (!node)
  		return -ENODEV;
-@@ -144,7 +144,7 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
- 		hwlock->priv = io_base + LOCK_BASE_OFFSET + sizeof(u32) * i;
  
- 	ret = hwspin_lock_register(bank, &pdev->dev, &omap_hwspinlock_ops,
--						base_id, num_locks);
-+					base_id, num_locks, reserved_locks);
- 	if (ret)
- 		goto reg_fail;
- 
-diff --git a/drivers/hwspinlock/u8500_hsem.c b/drivers/hwspinlock/u8500_hsem.c
-index 401c33b..2b4f001 100644
---- a/drivers/hwspinlock/u8500_hsem.c
-+++ b/drivers/hwspinlock/u8500_hsem.c
-@@ -134,7 +134,8 @@ static int u8500_hsem_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -128,7 +131,7 @@ static int omap_hwspinlock_probe(struct platform_device *pdev)
  	pm_runtime_enable(&pdev->dev);
  
- 	ret = hwspin_lock_register(bank, &pdev->dev, &u8500_hwspinlock_ops,
+ 	ret = hwspin_lock_register(bank, &pdev->dev, &omap_hwspinlock_ops,
 -						pdata->base_id, num_locks);
-+					pdata->base_id, num_locks,
-+					pdata->num_reserved_locks);
++						base_id, num_locks);
  	if (ret)
  		goto reg_fail;
  
-diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
-index 4857728..d120035 100644
---- a/include/linux/hwspinlock.h
-+++ b/include/linux/hwspinlock.h
-@@ -35,6 +35,7 @@ struct hwspinlock_ops;
- /**
-  * struct hwspinlock_pdata - platform data for hwspinlock drivers
-  * @base_id: base id for this hwspinlock device
-+ * @num_reserved_locks: number of reserved locks starting from @base_id
-  *
-  * hwspinlock devices provide system-wide hardware locks that are used
-  * by remote processors that have no other way to achieve synchronization.
-@@ -53,11 +54,13 @@ struct hwspinlock_ops;
-  *
-  * This platform data structure should be used to provide the base id
-  * for each device (which is trivially 0 when only a single hwspinlock
-- * device exists). It can be shared between different platforms, hence
-- * its location.
-+ * device exists). It should also be used to provide the number of reserved
-+ * locks for non-DT based devices. It can be shared between different
-+ * platforms, hence its location.
-  */
- struct hwspinlock_pdata {
- 	int base_id;
-+	int num_reserved_locks;
+@@ -161,12 +164,19 @@ static int omap_hwspinlock_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static const struct of_device_id omap_hwspinlock_of_match[] = {
++	{ .compatible = "ti,omap4-hwspinlock", },
++	{ /* end */ },
++};
++MODULE_DEVICE_TABLE(of, omap_hwspinlock_of_match);
++
+ static struct platform_driver omap_hwspinlock_driver = {
+ 	.probe		= omap_hwspinlock_probe,
+ 	.remove		= omap_hwspinlock_remove,
+ 	.driver		= {
+ 		.name	= "omap_hwspinlock",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(omap_hwspinlock_of_match),
+ 	},
  };
  
- #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
-@@ -67,7 +70,8 @@ int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
- int of_hwspin_lock_get_base_id(struct device_node *dn);
- int of_hwspin_lock_get_num_locks(struct device_node *dn);
- int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
--		const struct hwspinlock_ops *ops, int base_id, int num_locks);
-+		const struct hwspinlock_ops *ops, int base_id, int num_locks,
-+		int num_reserved_locks);
- int hwspin_lock_unregister(struct hwspinlock_device *bank);
- struct hwspinlock *hwspin_lock_request(void);
- struct hwspinlock *hwspin_lock_request_specific(unsigned int id);
 -- 
 1.9.2
 
