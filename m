@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907AbaEAPxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:53:45 -0400
-Received: from mout.gmx.net ([212.227.15.18]:56048 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755862AbaEAPxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:53:43 -0400
-Message-ID: <53626DFC.6050200@gmx.de>
-Date: Thu, 01 May 2014 17:53:32 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	id S932130AbaEAPyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:54:19 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37164 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755929AbaEAPyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:54:16 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Fwd: Re: [PATCH 1/1] fanotify: for FAN_MARK_FLUSH check flags
-References: <1398290151-6502-1-git-send-email-xypron.glpk@gmx.de> <20140424100300.GL17824@quack.suse.cz>
-In-Reply-To: <20140424100300.GL17824@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:E71VCDTQ8VaXBkotSsvXAgVMvSOMbhI5n8UdyAmCmIZKUjd9gqi
- F3ouZDpT434yX9zL+IvLY0RFcvKqZLhMY+QSOAFN5XKtt2NbKLCrIeQBBEC7cMEt4MTYJHN
- hD4QN6z1gXiRy4C5LdtxLAyNTeW5jhwQU83o0cifrRTmR3qlAauwGATL07eQcxlGGTHNIDO
- 5vlT3nXBz1yJ2yJaicoFw==
+In-Reply-To: <20140501141510.GW3245@sirena.org.uk>
+References: <1398243705-31151-1-git-send-email-tushar.behera@linaro.org>
+	<20140424133920.GA12304@sirena.org.uk>
+	<5359E18B.60600@linaro.org>
+	<20140429222915.GU15125@sirena.org.uk>
+	<5360E5E7.8090807@linaro.org>
+	<20140430180314.GA3245@sirena.org.uk>
+	<53623004.5010805@linaro.org>
+	<20140501141510.GW3245@sirena.org.uk>
+Date: Thu, 1 May 2014 08:54:14 -0700
+X-Google-Sender-Auth: 5CQQWk3rc428qo2wIzZkT-JXkWo
+Message-ID: <CAD=FV=Wa4CovkxBng0SkUUAryiFqa=m63tro1Yv1jRgp4e95aw@mail.gmail.com>
+Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, alsa-devel@alsa-project.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        sbkim73@samsung.com, Randy Dunlap <rdunlap@infradead.org>,
+        Mike Turquette <mturquette@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+Hi,
 
-the patch below was
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-https://lkml.org/lkml/2014/4/24/23
-Acked-by: Jan Kara <jack@suse.cz>
-https://lkml.org/lkml/2014/4/24/1048
-
-Please, consider it for inclusion in the mm tree.
-
-Best regards
-
-Heinrich Schuchardt
-
-
-On 24.04.2014 12:03, Jan Kara wrote:
-> On Wed 23-04-14 23:55:51, Heinrich Schuchardt wrote:
->> If fanotify_mark is called with illegal value of arguments flags and marks
->> it usually returns EINVAL.
->>
->> When fanotify_mark is called with FAN_MARK_FLUSH the argument flags is not
->> checked for irrelevant flags like FAN_MARK_IGNORED_MASK.
->>
->> The patch removes this inconsistency.
->>
->> If an irrelevant flag is set error EINVAL is returned.
->    OK, as Michael I think this shouldn't cause real userspace breakage and
-> it's better to have the flags checked. So feel free to add:
-> Acked-by: Jan Kara <jack@suse.cz>
+On Thu, May 1, 2014 at 7:15 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, May 01, 2014 at 04:59:08PM +0530, Tushar Behera wrote:
 >
-> 							Honza
+>> Okay, I will extend the existing clock driver to support XCLKOUT.
 >
->>
->> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
->> ---
->>   fs/notify/fanotify/fanotify_user.c | 3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
->> index 287a22c..8bba549 100644
->> --- a/fs/notify/fanotify/fanotify_user.c
->> +++ b/fs/notify/fanotify/fanotify_user.c
->> @@ -819,7 +819,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->>   	case FAN_MARK_REMOVE:
->>   		if (!mask)
->>   			return -EINVAL;
->> +		break;
->>   	case FAN_MARK_FLUSH:
->> +		if (flags & ~(FAN_MARK_MOUNT | FAN_MARK_FLUSH))
->> +			return -EINVAL;
->>   		break;
->>   	default:
->>   		return -EINVAL;
->> --
->> 1.9.2
->>
+> It may make more sense to add another clock driver for this clock
+> depending on how things are done, I don't know.
+>
+>> Of the many parents of XCLKOUT, we need to set XXTI clock as the parent.
+>> Is it okay if we pass two clocks "mclk" (XCLKOUT) and "mclk_parent"
+>> (XXTI) to sound-card driver via DT and do the necessary reparenting
+>> during the sound-card driver probe call?
+>
+> No, that's not OK at all, it won't allow for configuration of the
+> system.  This is what I was talking about when I was talking the clock
+> framework extensions to allow the clock tree to be configured using DT,
+> that would allow the settings to be put in DT.
+>
+>> Else, we can push that change to bootloader (to set the XCLKOUT mux
+>> register) and only enable/disable the clock in sound-card driver.
+>
+> That's not going to work given that the existing bootloaders don't do
+> this.
 
+This is exactly the thing (expected clock parenting) we agreed could
+be put in the device tree I think.  ...but I don't know that anyone
+proposed exactly how that would work.
+
+NOTE: in existing ChromeOS this type of thing is done a tiny amount in
+<https://chromium.googlesource.com/chromiumos/third_party/kernel-next/+/chromeos-3.8/arch/arm/mach-exynos/mach-exynos5-dt.c>.
+ See apply_clock_muxing().
+
+-Doug
