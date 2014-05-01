@@ -1,58 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbaEAW2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:28:37 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44680 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762AbaEAW2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:28:35 -0400
-Date: Thu, 1 May 2014 22:28:32 +0000
-From: tytso@mit.edu
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>,
-        Kees Cook <kees@outflux.net>
-Subject: Re: random: Providing a seed value to VM guests
-Message-ID: <20140501222832.GD25829@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Andy Lutomirski <luto@amacapital.net>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	kvm list <kvm@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>,
-	Kees Cook <kees@outflux.net>
-References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com>
- <20140501192618.GA25829@thunk.org>
- <CALCETrX=0uA6CCg4UeeV8KgGAq6fxUSiGOw5Gzte4OSHrDWMqA@mail.gmail.com>
- <900441a0-24e8-4976-ad35-3971805b9f34@email.android.com>
- <CALCETrV1HUA-JRAj9UicD3woqec7mSJLoT9CkQq=dOCpdPg4hw@mail.gmail.com>
- <20140501203910.GB25829@thunk.org>
- <CALCETrUr7NXkkN27v2Uf-puEtSXbgp=E+99aC_SdTc6puR8+CA@mail.gmail.com>
- <5362B618.50602@zytor.com>
- <CALCETrXu_bFjemS3TZNDDes=cBgkUXtDH-6cA84JcNjD0AdZ7A@mail.gmail.com>
+	id S1752351AbaEAWcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:32:15 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38637
+	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207AbaEAWcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 18:32:13 -0400
+Date: Fri, 2 May 2014 00:32:12 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+Message-ID: <20140501223212.GA25669@mail.hallyn.com>
+References: <cover.1398176489.git.rgb@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrXu_bFjemS3TZNDDes=cBgkUXtDH-6cA84JcNjD0AdZ7A@mail.gmail.com>
+In-Reply-To: <cover.1398176489.git.rgb@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 02:06:13PM -0700, Andy Lutomirski wrote:
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> I saw no replies to my questions when I replied a year after Aris' posting, so
+> I don't know if it was ignored or got lost in stale threads:
+>         https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
+>         https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
+> 	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
+>         https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
 > 
-> I still don't see the point.  What does this do better than virtio-rng?
+> I've tried to answer a number of questions that were raised in that thread.
+> 
+> The goal is not quite identical to Aris' patchset.
+> 
+> The purpose is to track namespaces in use by logged processes from the
+> perspective of init_*_ns.  The first patch defines a function to list them.
+> The second patch provides an example of usage for audit_log_task_info() which
+> is used by syscall audits, among others.  audit_log_task() and
+> audit_common_recv_message() would be other potential use cases.
+> 
+> Use a serial number per namespace (unique across one boot of one kernel)
+> instead of the inode number (which is claimed to have had the right to change
+> reserved and is not necessarily unique if there is more than one proc fs).  It
+> could be argued that the inode numbers have now become a defacto interface and
+> can't change now, but I'm proposing this approach to see if this helps address
+> some of the objections to the earlier patchset.
+> 
+> There could also have messages added to track the creation and the destruction
+> of namespaces, listing the parent for hierarchical namespaces such as pidns,
+> userns, and listing other ids for non-hierarchical namespaces, as well as other
+> information to help identify a namespace.
+> 
+> There has been some progress made for audit in net namespaces and pid
+> namespaces since this previous thread.  net namespaces are now served as peers
+> by one auditd in the init_net namespace with processes in a non-init_net
+> namespace being able to write records if they are in the init_user_ns and have
+> CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
+> records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
+> of userspace processes that try to join netlink broadcast groups.
+> 
+> 
+> Questions:
+> Is there a way to link serial numbers of namespaces involved in migration of a
+> container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> identifier for each running instance of a kernel?  Or at least some identifier
+> within the container migration realm?
 
-I believe you had been complaining about how complicated it was to set
-up virtio?  And this complexity is also an issue if we want to use it
-to initialize the RNG used for the kernel text ASLR --- which has to
-be done very early in the boot process, and where making something as
-simple as possible is a Good Thing.
+Eric Biederman has always been adamantly opposed to adding new namespaces
+of namespaces, so the fact that you're asking this question concerns me.
 
-And since we would want to use RDRAND/RDSEED if it is available
-*anyway*, perhaps in combination with other things, why not use the
-RDRAND/RDSEED interface?
+The way things are right now, since audit belongs to the init userns,
+we can get away with saying if a container 'migrates', the new kernel
+will see a different set of serials, and noone should care.  However,
+if we're going to be allowing containers to have their own audit
+namespace/layer/whatever, then this becomes more of a concern.
 
-							- Ted
+That said, I'll now look at the patches while pretending that problem
+does not exist :)  If I ack, it'll be on correctness of the code, but
+we'll still have to deal with this issue.
+
+> What additional events should list this information?
+> 
+> Does this present any kind of information leak?  Only CAP_AUDIT_CONTROL (and
+> proposed CAP_AUDIT_READ) in init_user_ns can get to this information in the
+> init namespace at the moment.
+> 
+> 
+> Proposed output format:
+> This differs slightly from Aristeu's patch because of the label conflict with
+> "pid=" due to including it in existing records rather than it being a seperate
+> record:
+>         type=SYSCALL msg=audit(1398112249.996:65): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=566 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" mntns=5 netns=97 utsns=2 ipcns=1 pidns=4 userns=3 subj=system_u:system_r:init_t:s0 key=(null)
+> 
+> 
+> Note: This set does not try to solve the non-init namespace audit messages and
+> auditd problem yet.  That will come later, likely with additional auditd
+> instances running in another namespace with a limited ability to influence the
+> master auditd.  I echo Eric B's idea that messages destined for different
+> namespaces would have to be tailored for that namespace with references that
+> make sense (such as the right pid number reported to that pid namespace, and
+> not leaking info about parents or peers).
+> 
+> 
+> Richard Guy Briggs (2):
+>   namespaces: give each namespace a serial number
+>   audit: log namespace serial numbers
+> 
+>  fs/mount.h                     |    1 +
+>  fs/namespace.c                 |    1 +
+>  include/linux/audit.h          |    7 +++++++
+>  include/linux/ipc_namespace.h  |    1 +
+>  include/linux/nsproxy.h        |    8 ++++++++
+>  include/linux/pid_namespace.h  |    1 +
+>  include/linux/user_namespace.h |    1 +
+>  include/linux/utsname.h        |    1 +
+>  include/net/net_namespace.h    |    1 +
+>  init/version.c                 |    1 +
+>  ipc/msgutil.c                  |    1 +
+>  ipc/namespace.c                |    2 ++
+>  kernel/audit.c                 |   38 ++++++++++++++++++++++++++++++++++++++
+>  kernel/nsproxy.c               |   24 ++++++++++++++++++++++++
+>  kernel/pid.c                   |    1 +
+>  kernel/pid_namespace.c         |    2 ++
+>  kernel/user.c                  |    1 +
+>  kernel/user_namespace.c        |    2 ++
+>  kernel/utsname.c               |    2 ++
+>  net/core/net_namespace.c       |    4 +++-
+>  20 files changed, 99 insertions(+), 1 deletions(-)
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
