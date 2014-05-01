@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274AbaEAOMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 10:12:22 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53918 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaEAOMT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 10:12:19 -0400
-Date: Thu, 1 May 2014 07:11:56 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20140501141156.GV3245@sirena.org.uk>
-References: <1398854171-5187-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140501013402.GL3245@sirena.org.uk>
- <CAPybu_3g=VBW+gGhveBJoc7=tCiPurP_r_+hqOU78bvsg8QJWw@mail.gmail.com>
+	id S1755255AbaEAON1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 10:13:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523AbaEAON0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 10:13:26 -0400
+Message-ID: <53625681.8010905@redhat.com>
+Date: Thu, 01 May 2014 15:13:21 +0100
+From: Pedro Alves <palves@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YnIutncTLXsDZs5t"
-Content-Disposition: inline
-In-Reply-To: <CAPybu_3g=VBW+gGhveBJoc7=tCiPurP_r_+hqOU78bvsg8QJWw@mail.gmail.com>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 31.71.205.29
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: Fix hung task timeout when initialization fails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
+Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
+ documentation
+References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
+> The current documentation is bit misleading and does not explicitly
+> specify that iov.len need to be initialized failing which kernel
+> may just ignore the ptrace request and never read from/write into
+> the user specified buffer. This patch fixes the documentation.
 
---YnIutncTLXsDZs5t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well, it kind of does, here:
 
-On Thu, May 01, 2014 at 07:53:58AM +0200, Ricardo Ribalda Delgado wrote:
+*      struct iovec iov = { buf, len};
 
-> Thanks for your comments. This fix does not avoid the task being
-> killed (which is not an error). What it does is that IF the task is
-> killed or we are out of memory we will exit with all the resources
-> properly released and no locks helds, giving the user a chance to
-> reload/rebind the module instead of getting and unstable system that
-> cannot even reboot without a powercycle.
+> @@ -43,8 +43,12 @@
+>   *
+>   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+>   *
+> - * On the successful completion, iov.len will be updated by the kernel,
+> - * specifying how much the kernel has written/read to/from the user's iov.buf.
+> + * A non-zero value upto the max size of data expected to be written/read by the
+> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
+> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
+> + * read from or write into the user buffer specified. On successful completion,
+> + * iov.len will be updated by the kernel, specifying how much the kernel has
+> + * written/read to/from the user's iov.buf.
 
-How does it ensure that?  What's to stop the task being killed after we
-check to see if the task was killed.
+I really appreciate that you're trying to make this clearer, but I
+find the new sentence very hard to read/reason.  :-/
 
---YnIutncTLXsDZs5t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I suggest:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ * This interface usage is as follows:
+- *      struct iovec iov = { buf, len};
++ *      struct iovec iov = { buf, len };
+ *
+ *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
+ *
+- * On the successful completion, iov.len will be updated by the kernel,
+- * specifying how much the kernel has written/read to/from the user's iov.buf.
++ * On entry, iov describes the buffer's address and length.  The buffer's
++ * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
++ * On successful completion, iov.len is updated by the kernel, specifying how
++ * much the kernel has written/read to/from the user's iov.buf.
 
-iQIcBAEBAgAGBQJTYlYpAAoJELSic+t+oim9CiQP/2Ie7FrfCtO+X5us/U8GDgba
-ps+h4ZNWwGzBVIVnidT1/1LogzICAVVd1Co+epQ36rHP3SLUXL7WX2jbitjEk0HY
-vWqfxt+n1uRtAsGCYLNKQ23jydaGz7RZ8I47d/dw/hsX6HiE0Q0CvUNwboz8EJ4W
-d+25woaVMzXu22rGt/jdHU+fGXomcYr9D7aDZAuyHiVy65derXEBHCSvyZitDEMl
-VpMcVnzER85VD4MRqjS+BWTejCXkq5zI8p/6iwID999ZoamOHN775NJm9ByFwAD5
-loU6OH70Yi/HZXgJGDfloNEl7DE2lIkE2jdICGlDR2l+ZP1q0wq4mc+gec8xbLa3
-015JPym5soDh/Jf8WgiRFT3SNK2XC3MicOOpWS+v5yen+BP85aSIdE4iLCNgjm0L
-RG9KZTK+BxqQgL9I3yBU09Sbt9v/piOMi22Bh2PWSup3MPuHAb1FnjuYhSvzCLPQ
-choixUNvOLTgd4og2S2Hxb5+3YJHSJiPcssimXOpvYeO7iPhybzI3y5JOAd6UkUL
-aW+bSoOeFfntHkW5U9xGLOSVJ+C2mMTEeW9P/Yd8DHznB+jvDuNwZpJKqAqt2UOn
-7FNmpD3T26iGiHv2NKfQdtjMfbUygp9RP4zwtWGlfRE8sTfoS2HZRhWYlP7kzUB7
-5LeUr7Jh+Yh/XNSjFsyo
-=zmMX
------END PGP SIGNATURE-----
+I'm not sure I understood what you're saying correctly, though.  Specifically,
+I don't know whether the buffer's length must really be shorter than the
+size of the NT_XXX_TYPE regset.
 
---YnIutncTLXsDZs5t--
+> The current documentation is bit misleading and does not explicitly
+> specify that iov.len need to be initialized failing which kernel
+> may just ignore the ptrace request and never read from/write into
+> the user specified buffer.
+
+You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
+then the kernel returns _success_, but actually doesn't fill the
+buffer?  That sounds like a bug to me.
+
+-- 
+Pedro Alves
+
