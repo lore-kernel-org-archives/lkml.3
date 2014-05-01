@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaEAON1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 10:13:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27230 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523AbaEAON0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 10:13:26 -0400
-Message-ID: <53625681.8010905@redhat.com>
-Date: Thu, 01 May 2014 15:13:21 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754810AbaEAOOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 10:14:44 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:33903 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522AbaEAOOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 10:14:43 -0400
+Message-ID: <536256EC.1060909@windriver.com>
+Date: Thu, 1 May 2014 10:15:08 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
-Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
- documentation
-References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
-In-Reply-To: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Bristot de Oliveira <bristot@redhat.com>,
+        <linux-rt-users@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH RT] netconsole: enable netconsole on PREEMPT_RT
+References: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
+In-Reply-To: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
-> The current documentation is bit misleading and does not explicitly
-> specify that iov.len need to be initialized failing which kernel
-> may just ignore the ptrace request and never read from/write into
-> the user specified buffer. This patch fixes the documentation.
+On 14-04-29 01:55 PM, Daniel Bristot de Oliveira wrote:
+> Dear RT Folks,
+> 
+> This patch enables the netconsole on PREEMPT_RT_FULL, netconsole
+> was disabled on commit:
+> cb7cb77 kconfig-disable-a-few-options-rt.patch
+> 
+> I tested the netconsole on three machines:
+> 
+> - Intel Core i5 (4 cpus) - Local network
+> - Intel Xeon (32 cpus)   - Remote network
+> - KVM VM (on a Core i7)  - Virtual network
 
-Well, it kind of does, here:
+Chances are the two real targets above were using the
+same igb network driver.  I wonder if it matters what
+underlying nic is used for netconsole?
 
-*      struct iovec iov = { buf, len};
+It is probably worthwhile to do some data mining into why
+it was disabled in the 1st place.  I can't say I recall, and
+it is possible that the reason has long since become irrelevant,
+even though the patch has been carried forward over time.
 
-> @@ -43,8 +43,12 @@
->   *
->   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->   *
-> - * On the successful completion, iov.len will be updated by the kernel,
-> - * specifying how much the kernel has written/read to/from the user's iov.buf.
-> + * A non-zero value upto the max size of data expected to be written/read by the
-> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
-> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
-> + * read from or write into the user buffer specified. On successful completion,
-> + * iov.len will be updated by the kernel, specifying how much the kernel has
-> + * written/read to/from the user's iov.buf.
+Or it may be that your testing simply doesn't cover the use
+case where netconsole will spew sleeping while atomic...
 
-I really appreciate that you're trying to make this clearer, but I
-find the new sentence very hard to read/reason.  :-/
+P.
+--
 
-I suggest:
-
- * This interface usage is as follows:
-- *      struct iovec iov = { buf, len};
-+ *      struct iovec iov = { buf, len };
- *
- *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
- *
-- * On the successful completion, iov.len will be updated by the kernel,
-- * specifying how much the kernel has written/read to/from the user's iov.buf.
-+ * On entry, iov describes the buffer's address and length.  The buffer's
-+ * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
-+ * On successful completion, iov.len is updated by the kernel, specifying how
-+ * much the kernel has written/read to/from the user's iov.buf.
-
-I'm not sure I understood what you're saying correctly, though.  Specifically,
-I don't know whether the buffer's length must really be shorter than the
-size of the NT_XXX_TYPE regset.
-
-> The current documentation is bit misleading and does not explicitly
-> specify that iov.len need to be initialized failing which kernel
-> may just ignore the ptrace request and never read from/write into
-> the user specified buffer.
-
-You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
-then the kernel returns _success_, but actually doesn't fill the
-buffer?  That sounds like a bug to me.
-
--- 
-Pedro Alves
-
+> 
+> On these machines I build the kernel 3.10.34-rt34 + netconsole
+> built as module. In order to execute some printks, I run a small
+> benchmark that runs as a module. To analyse the output I captured
+> the netconsole messages using Wireshark.
+> 
+> On all cases, the tests passed without any error:
+> 
+> - No error messages from the kernel
+> - No missed messages
+> - No out of order messages
+> 
+> I ran +1 hour tests on each machine. The test using the Xeon machine
+> ran by around 10 hours. On this test I received 317149 netconsole's
+> messages.
+> 
+> I also read the code and ran some traces (using the ftrace's
+> function_graph). In the traces that I read, the netconsole code never
+> broke the rt lock assumptions.
+> 
+> Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
+> ---
+>  drivers/net/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+> index 096de88..3835321 100644
+> --- a/drivers/net/Kconfig
+> +++ b/drivers/net/Kconfig
+> @@ -164,7 +164,6 @@ config VXLAN
+>  
+>  config NETCONSOLE
+>  	tristate "Network console logging support"
+> -	depends on !PREEMPT_RT_FULL
+>  	---help---
+>  	If you want to log kernel messages over the network, enable this.
+>  	See <file:Documentation/networking/netconsole.txt> for details.
+> 
