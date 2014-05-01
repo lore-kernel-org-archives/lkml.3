@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaEAJ6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:58:09 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:46769 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897AbaEAJ6F (ORCPT
+	id S1756673AbaEAKDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 06:03:00 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39102 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755897AbaEAJ6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:58:05 -0400
+	Thu, 1 May 2014 05:58:12 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
         kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 27/47] mtd: nand: stm_nand_bch: find IBBT signature
-Date: Thu,  1 May 2014 10:56:34 +0100
-Message-Id: <1398938214-17847-28-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 31/47] mtd: nand: stm_nand_bch: update flash-resident BBT(s)
+Date: Thu,  1 May 2014 10:56:38 +0100
+Message-Id: <1398938214-17847-32-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
 References: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
@@ -21,123 +21,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan block for IBBT signature, either "Bbt0" or "1tbB" from
-pre-specified data block.
+Search for suitable block, erase and write table data to flash. If any
+errors occur on selected block, mark it as bad and select another one.
+Keep trying until both the Primary and Mirror BBTs are a) synced and
+b) written successfully to flash.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 91 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 91 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 143 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 143 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index e875446..83faffe 100644
+index 8b70a36..e909d80 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -43,6 +43,37 @@ static int bch_ecc_sizes[] = {
- 	[BCH_NO_ECC] = 0,
+@@ -59,6 +59,11 @@ static uint8_t ibbt_sigs[2][NAND_IBBT_SIGLEN] = {
+ 	{'1', 't', 'b', 'B'},
  };
  
-+/*
-+ * Inband Bad Block Table (IBBT)
-+ */
-+#define NAND_IBBT_NBLOCKS	4
-+#define NAND_IBBT_SIGLEN	4
-+#define NAND_IBBT_PRIMARY	0
-+#define NAND_IBBT_MIRROR	1
-+#define NAND_IBBT_SCHEMA	0x10
-+#define NAND_IBBT_BCH_SCHEMA	0x10
-+
-+static uint8_t ibbt_sigs[2][NAND_IBBT_SIGLEN] = {
-+	{'B', 'b', 't', '0'},
-+	{'1', 't', 'b', 'B'},
++static char *bbt_strs[] = {
++	"primary",
++	"mirror",
 +};
 +
-+/* IBBT header */
-+struct nand_ibbt_header {
-+	uint8_t	signature[4];		/* "Bbt0" or "1tbB" signature */
-+	uint8_t version;		/* BBT version ("age") */
-+	uint8_t reserved[3];		/* padding */
-+	uint8_t schema[4];		/* "base" schema (x4) */
-+} __packed;
-+
-+/* Extend IBBT header with some stm-nand-bch niceties */
-+struct nand_ibbt_bch_header {
-+	struct nand_ibbt_header base;
-+	uint8_t schema[4];		/* "private" schema (x4) */
-+	uint8_t ecc_size[4];		/* ECC bytes (0, 32, 54) (x4) */
-+	char	author[64];		/* Arbitrary string for S/W to use */
-+} __packed;
-+
- /* Bad Block Table (BBT) */
- struct nandi_bbt_info {
- 	uint32_t	bbt_size;		/* Size of bad-block table */
-@@ -681,6 +712,66 @@ static int bch_write(struct mtd_info *mtd, struct nand_chip *chip,
+ /* IBBT header */
+ struct nand_ibbt_header {
+ 	uint8_t	signature[4];		/* "Bbt0" or "1tbB" signature */
+@@ -787,6 +792,144 @@ static int bch_write_bbt_data(struct nandi_controller *nandi,
  	return 0;
  }
  
-+/* Scan block for IBBT signature */
-+static int bch_find_ibbt_sig(struct nandi_controller *nandi,
-+			     uint32_t block, int *bak, uint8_t *vers,
-+			     char *author)
++/*
++ * Update Flash-resident BBT:
++ *   erase/search suitable block, and write table data to Flash
++ */
++static int bch_update_bbt(struct nandi_controller *nandi,
++			 struct nandi_bbt_info *bbt_info,
++			 int bak, uint8_t vers)
 +{
-+	struct mtd_info *mtd = &nandi->info.mtd;
-+	struct nand_ibbt_bch_header *ibbt_header;
 +	loff_t offs;
-+	uint8_t *buf = nandi->page_buf;
-+	int match_sig;
-+	unsigned int b;
-+	unsigned int i;
++	uint32_t block;
++	uint32_t block_lower;
++	uint32_t block_other;
 +
-+	nandi->cached_page = -1;
++	block_other = bbt_info->bbt_block[(bak+1)%2];
++	block_lower = nandi->blocks_per_device - NAND_IBBT_NBLOCKS;
 +
-+	/* Load last page of block */
-+	offs = (loff_t)block << nandi->block_shift;
-+	offs += mtd->erasesize - mtd->writesize;
-+	if (bch_read_page(nandi, offs, buf) < 0) {
-+		dev_info(nandi->dev,
-+			 "Uncorrectable ECC error while scanning BBT signature at block %u [0x%012llx]\n",
-+			 block, offs);
-+		return 0;
++	for (block = bbt_info->bbt_block[bak]; block >= block_lower;  block--) {
++		offs = (loff_t)block << nandi->block_shift;
++
++		/* Skip if block used by other table */
++		if (block == block_other)
++			continue;
++
++		/* Skip if block is marked bad */
++		if (bbt_is_block_bad(bbt_info->bbt, block))
++			continue;
++
++		/* Erase block, mark bad and skip on failure */
++		if (bch_erase_block(nandi, offs) & NAND_STATUS_FAIL) {
++			dev_info(nandi->dev,
++				 "failed to erase block [%u:0x%012llx] while updating BBT\n",
++				 block, offs);
++			vers++;
++			bbt_set_block_mark(bbt_info->bbt, block,
++					   BBT_MARK_BAD_WEAR);
++			continue;
++		}
++
++		/* Write BBT, mark bad and skip on failure */
++		if (bch_write_bbt_data(nandi, bbt_info, block, bak, vers)) {
++			dev_info(nandi->dev,
++				 "failed to write BBT to block [%u:0x%012llx]\n",
++				 block, offs);
++			vers++;
++			bbt_set_block_mark(bbt_info->bbt, block,
++					   BBT_MARK_BAD_WEAR);
++			continue;
++		}
++
++		/* Success */
++		bbt_info->bbt_block[bak] = block;
++		bbt_info->bbt_vers[bak] = vers;
++		break;
 +	}
-+	ibbt_header = (struct nand_ibbt_bch_header *)buf;
 +
-+	/* Test IBBT signature */
-+	match_sig = 0;
-+	for (b = 0; b < 2 && !match_sig; b++) {
-+		match_sig = 1;
-+		for (i = 0; i < NAND_IBBT_SIGLEN; i++) {
-+			if (ibbt_header->base.signature[i] != ibbt_sigs[b][i]) {
-+				match_sig = 0;
-+				break;
++	/* No space in BBT area */
++	if (block < block_lower) {
++		dev_err(nandi->dev, "no space left in BBT area\n");
++		dev_err(nandi->dev, "failed to update %s BBT\n", bbt_strs[bak]);
++		return -ENOSPC;
++	}
++
++	dev_info(nandi->dev, "wrote BBT [%s:%u] at 0x%012llx [%u]\n",
++		 bbt_strs[bak], vers, offs, block);
++
++	return 0;
++}
++
++#define NAND_IBBT_UPDATE_PRIMARY	0x1
++#define NAND_IBBT_UPDATE_MIRROR		0x2
++#define NAND_IBBT_UPDATE_BOTH		(NAND_IBBT_UPDATE_PRIMARY | \
++					 NAND_IBBT_UPDATE_MIRROR)
++static char *bbt_update_strs[] = {
++	"",
++	"primary",
++	"mirror",
++	"both",
++};
++
++/*
++ * Update Flash-resident BBT(s):
++ *   incrementing 'vers' number if required, and ensuring Primary
++ *   and Mirror are kept in sync
++ */
++static int bch_update_bbts(struct nandi_controller *nandi,
++			   struct nandi_bbt_info *bbt_info,
++			   unsigned int update, uint8_t vers)
++{
++	int err;
++
++	dev_info(nandi->dev, "updating %s BBT(s)\n", bbt_update_strs[update]);
++
++	do {
++		/* Update Primary if specified */
++		if (update & NAND_IBBT_UPDATE_PRIMARY) {
++			err = bch_update_bbt(nandi, bbt_info, NAND_IBBT_PRIMARY,
++					     vers);
++			/* Bail out on error (e.g. no space left in BBT area) */
++			if (err)
++				return err;
++
++			/*
++			 * If update resulted in a new BBT version
++			 * (e.g. Erase/Write fail on BBT block) update version
++			 * here, and force update of other table.
++			 */
++			if (bbt_info->bbt_vers[NAND_IBBT_PRIMARY] != vers) {
++				vers = bbt_info->bbt_vers[NAND_IBBT_PRIMARY];
++				update = NAND_IBBT_UPDATE_MIRROR;
 +			}
 +		}
 +
-+	}
++		/* Update Mirror if specified */
++		if (update & NAND_IBBT_UPDATE_MIRROR) {
++			err = bch_update_bbt(nandi, bbt_info, NAND_IBBT_MIRROR,
++					     vers);
++			/* Bail out on error (e.g. no space left in BBT area) */
++			if (err)
++				return err;
 +
-+	if (!match_sig)
-+		return 0; /* Failed to match IBBT signature */
++			/*
++			 * If update resulted in a new BBT version
++			 * (e.g. Erase/Write fail on BBT block) update version
++			 * here, and force update of other table.
++			 */
++			if (bbt_info->bbt_vers[NAND_IBBT_MIRROR] != vers) {
++				vers = bbt_info->bbt_vers[NAND_IBBT_MIRROR];
++				update = NAND_IBBT_UPDATE_PRIMARY;
++			}
++		}
 +
-+	/* Test IBBT schema */
-+	for (i = 0; i < 4; i++)
-+		if (ibbt_header->base.schema[i] != NAND_IBBT_SCHEMA)
-+			return 0;
++		/* Continue, until Primary and Mirror versions are in sync */
++	} while (bbt_info->bbt_vers[NAND_IBBT_PRIMARY] !=
++		 bbt_info->bbt_vers[NAND_IBBT_MIRROR]);
 +
-+	/* Test IBBT BCH schema */
-+	for (i = 0; i < 4; i++)
-+		if (ibbt_header->schema[i] != NAND_IBBT_BCH_SCHEMA)
-+			return 0;
-+
-+	/* We have a match */
-+	*vers = ibbt_header->base.version;
-+	*bak = b - 1;
-+	strncpy(author, ibbt_header->author, 64);
-+
-+	return 1;
++	return 0;
 +}
 +
- /*
-  * Initialisation
-  */
+ /* Scan block for IBBT signature */
+ static int bch_find_ibbt_sig(struct nandi_controller *nandi,
+ 			     uint32_t block, int *bak, uint8_t *vers,
 -- 
 1.8.3.2
 
