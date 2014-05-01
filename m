@@ -1,180 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaEAPtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:49:16 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:46913 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaEAPtO (ORCPT
+	id S1755773AbaEAPuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:50:13 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:42294 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755303AbaEAPuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:49:14 -0400
+	Thu, 1 May 2014 11:50:09 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andreas Dilger <adilger@dilger.ca>
+To: Dave Chinner <david@fromorbit.com>
 Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
         viro@zeniv.linux.org.uk, dhowells@redhat.com,
         linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 22/22] ext4: Add Ext4 compat richacl feature flag
-In-Reply-To: <88FB2DB7-126A-400E-9B44-19E99A553B2B@dilger.ca>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1398615293-22931-23-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <88FB2DB7-126A-400E-9B44-19E99A553B2B@dilger.ca>
+Subject: Re: [PATCH -V1 00/22]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <20140428235849.GN15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140427222019.GF15995@dastard> <87zjj6auvv.fsf@linux.vnet.ibm.com> <20140428235849.GN15995@dastard>
 User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 01 May 2014 21:18:51 +0530
-Message-ID: <877g65biu4.fsf@linux.vnet.ibm.com>
+Date: Thu, 01 May 2014 21:19:56 +0530
+Message-ID: <874n19bisb.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050115-3864-0000-0000-00000DFB05B4
+x-cbid: 14050115-8878-0000-0000-00000C36A921
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andreas Dilger <adilger@dilger.ca> writes:
+Dave Chinner <david@fromorbit.com> writes:
 
-> On Apr 27, 2014, at 10:14 AM, Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> This feature flag can be used to enable richacl on
->> the file system. Once enabled the "acl" mount option
->> will enable richacl instead of posix acl
->
-> I was going to complain about this patch, because re-using the "acl"
-> mount option to specify richacl instead of POSIX ACL would be very
-> confusing, since older kernels used the "acl" mount option to enable
-> POSIX ACLs.
->
-> Looking closer, I see that "acl" and "noacl" just means enable or disable
-> the ACL functionality on the filesystem.  Please fix up the commit
-> comment.
-
-Will clarify in the commit message.
-
->
-> Some more comments inline.
->
->> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
->> index 6f9e6fadac04..2a0221652d79 100644
->> --- a/fs/ext4/super.c
->> +++ b/fs/ext4/super.c
->> @@ -1274,6 +1274,30 @@ static ext4_fsblk_t get_sb_block(void **data)
->> 	return sb_block;
->> }
+> On Mon, Apr 28, 2014 at 10:54:52AM +0530, Aneesh Kumar K.V wrote:
+>> Dave Chinner <david@fromorbit.com> writes:
+>> > On Sun, Apr 27, 2014 at 09:44:31PM +0530, Aneesh Kumar K.V wrote:
+>> >> Hi
+>> >> 
+>> >> As per LSF/MM summit discussion I am reposting the richacl patchset for
+>> >> upstream inclusion. The patchset includes minimal changes required to implement
+>> >> a new acl model similar to NFSv4 ACL. The acl model selection is based on
+>> >> file system feature flag. 
+>> >> 
+>> >> The following set of patches implements VFS and ext4 changes needed to implement
+>> >> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+>> >> extended by file masks to fit into the standard POSIX file permission model.
+>> >> They are designed to work seamlessly locally as well as across the NFSv4 and
+>> >> CIFS/SMB2 network file system protocols.
+>> >> 
+>> >> A user-space utility for displaying and changing richacls is available at [1]
+>> >> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> ....
+>> >> More details regarding richacl can be found at
+>> >> http://acl.bestbits.at/richacl/
+>> >> 
+>> >> Previous posting of the patchset can be found at:
+>> >> http://mid.gmane.org/1319391835-5829-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com
+>> >> "[PATCH -V8 00/26]  New ACL format for better NFSv4 acl interoperability"
+>> >> 
+>> >> The complete patchset can also be found at:
+>> >> https://github.com/kvaneesh/linux/commits/richacl-for-upstream
+>> >
+>> > Where are the tests? We need comprehensive coverage in xfstests so
+>> > we can validate that it works the way it is supposed to and that we
+>> > don't break it in future, and that all filesystems behave the same
+>> > way....
+>> >
 >> 
->> +static void enable_acl(struct super_block *sb)
->> +{
->> +#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
->> +	return;
->> +#endif
->> +	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
->> +		sb->s_flags |= MS_RICHACL;
->> +		sb->s_flags &= ~MS_POSIXACL;
->> +	} else {
->> +		sb->s_flags |= MS_POSIXACL;
->> +		sb->s_flags &= ~MS_RICHACL;
->> +	}
+>> https://github.com/kvaneesh/richacl-tools/tree/master/test
 >
-> This should put the #ifdef around the code that is being enabled/disabled,
-> otherwise it just becomes dead code:
->
-> static int enable_acl(struct super_block *sb)
-> {
-> 	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
-> #if defined(CONFIG_EXT4_FS_RICHACL)
-> 		sb->s_flags |= MS_RICHACL;
-> 		sb->s_flags &= ~MS_POSIXACL;
-> #else
-> 		return -EOPNOTSUPP;
-> #endif
-> 	} else {
-> #if defined(CONFIG_EXT4_FS_POSIX_ACL)
-> 		sb->s_flags |= MS_POSIXACL;
-> 		sb->s_flags &= ~MS_RICHACL;
-> #else
-> 		return -EOPNOTSUPP;
-> #endif
-> 	}
-> 	return 0;
-> }
-
-That is too much #ifdef with no real benefit ?
-
->
->> +
->> +static void disable_acl(struct super_block *sb)
->> +{
->> +#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
->> +	return;
->> +#endif
->> +	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
->> +	return;
->> +}
->
-> "return" is not needed at the end of void functions. Same comment on
-> #ifdef:
-
-ok
-
->
-> static void disable_acl(struct super_block *sb)
-> {
-> #if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
-> 	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
-> #endif
-> }
->
->
->> +
->> #define DEFAULT_JOURNAL_IOPRIO (IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, 3))
->> static char deprecated_msg[] = "Mount option \"%s\" will be removed by %s\n"
->> 	"Contact linux-ext4@vger.kernel.org if you think we should keep it.\n";
->> @@ -1417,9 +1441,9 @@ static const struct mount_opts {
->> 	 MOPT_NO_EXT2 | MOPT_DATAJ},
->> 	{Opt_user_xattr, EXT4_MOUNT_XATTR_USER, MOPT_SET},
->> 	{Opt_nouser_xattr, EXT4_MOUNT_XATTR_USER, MOPT_CLEAR},
-
-....
-
->> 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
->> 		set_opt(sb, JOURNAL_DATA);
->> @@ -3569,8 +3593,12 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->> 			clear_opt(sb, DELALLOC);
->> 	}
->> 
->> -	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
->> -		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
->> +	/*
->> +	 * clear ACL flags
->> +	 */
->> +	disable_acl(sb);
->
-> Is there any expectation that the flags would be set on a newly mounted
-> filesystem?
->
->> +	if (test_opt(sb, ACL))
->> +		enable_acl(sb);
->> 
->> 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
->> 	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
->> @@ -4844,8 +4872,9 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
->> 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
->> 		ext4_abort(sb, "Abort forced by user");
->> 
->> -	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
->> -		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
->> +	disable_acl(sb);
->> +	if (test_opt(sb, ACL))
->> +		enable_acl(sb);
->
-> Similarly, it seems racy to me to disable ACL support and then re-enable
-> it here during remount, since that might cause some concurrent operations
-> to fail.  It seems like enable_acl() already handles clearing the flags
-> correctly, so something like the following would be better:
->
-> 	if (test_opt(sb, ACL))
-> 		enable_acl(sb);
-> 	else
-> 		disable_acl(sb);
->
+> FYI, I doubt very much that anyone will run a stand-alone richacls
+> test suite regularly.  Can you please work to integrate this into
+> xfstests so it becomes a regular part of a filesystem developer's
+> daily workflow?
 >
 
-ok
+Will update xfstest based on the progress made with this patchset.
 
--aneesh
+-aenesh
 
