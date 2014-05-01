@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343AbaEAWF3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:05:29 -0400
-Received: from us-mx2.synaptics.com ([192.147.44.131]:53421 "EHLO
-	us-mx2.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511AbaEAWF1 (ORCPT
+	id S1752462AbaEAWGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:06:31 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:64393 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaEAWGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:05:27 -0400
-X-Greylist: delayed 595 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 18:05:27 EDT
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 01 May 2014 14:55:38 -0700
-From: Andrew Duggan <aduggan@synaptics.com>
-To: <benjamin.tissoires@redhat.com>, <cheiny@synaptics.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andrew Duggan <aduggan@synaptics.com>
-Subject: [PATCH] HID: rmi: check for the existence of some optional queries before reading query 12
-Date: Thu, 1 May 2014 14:49:17 -0700
-Message-ID: <1398980957-10385-1-git-send-email-aduggan@synaptics.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 1 May 2014 18:06:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.2.20.38]
+In-Reply-To: <5362C37E.2090603@zytor.com>
+References: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
+ <1398723161-21968-5-git-send-email-andi@firstfloor.org> <535FED4D.5000703@amacapital.net>
+ <20140429233950.GE2382@two.firstfloor.org> <53608180.5070800@zytor.com>
+ <CALCETrVQiZPb1M183Fq61dbFAjnJScuB2y+rdH8BQ+yp-MO+Mw@mail.gmail.com>
+ <20140501211554.GH2382@two.firstfloor.org> <5362C37E.2090603@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 1 May 2014 15:06:09 -0700
+Message-ID: <CALCETrV=8NBb+VfmYwzh+YhjLAO_XsCszG-W2QR-BK2dWDjfYg@mail.gmail.com>
+Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rmi4 spec defines some optional query registers in F11 which appear before
-query 12. This patch checks for the existence of some of the lesser used queries to
- compute the location of query12 and all subsequent query registers.
+On Thu, May 1, 2014 at 2:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/01/2014 02:15 PM, Andi Kleen wrote:
+>>> If usergs == kernelgs, then ebx will always be 1 and we'll never end
+>>> up in paranoid_userspace.
+>>
+>> You may miss a reschedule in this obscure case. It shouldn't really
+>> happen because loading a kernel pointer is not useful for user space.
+>>
+>> Doesn't seem like a real issue to me.
+>>
+>> We only happen need to handle it to avoid crashing.
+>>
+>
+> No, it would be a rootable security hole, not just a crash.
+>
+>>> Alternatively, what if the paranoid entry checked whether we're coming
+>>> from userspace at the very beginning and, if so, just jumped to the
+>>> non-paranoid entry?
+>>
+>> That would work, but I doubt it would be worth it.
+>
+> If that would solve the problem it is simple enough, but the tricky part
+> is when we end up in a "crack" where we are in kernel mode with the user GS.
+>
+> I haven't looked through the flows (I'm at LCE so I have limited screen
+> bandwidth) to see how that would be handled in this case, but in the
+> general paranoid case it comes down to the fact that in this particular
+> subcase we don't necessarily know exactly how many SWAPGS are between us
+> and userspace after we IRET.
 
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
----
- drivers/hid/hid-rmi.c | 33 +++++++++++++++++++++++++++++----
- 1 file changed, 29 insertions(+), 4 deletions(-)
+The current code looks like it will never try to reschedule on
+paranoid exit unless it came from user *CS*, in which case there
+shouldn't be any weird gs issues.  Given that the current code won't
+reschedule even on a paranoid entry that hits during interruptable
+kernel code, I find it unlikely that this code is important.  You
+probably know more about its history and significance than I do.
 
-diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-index 90ae5eb..912e008 100644
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -546,9 +546,12 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 	struct rmi_data *data = hid_get_drvdata(hdev);
- 	u8 buf[20];
- 	int ret;
-+	bool has_query9;
-+	bool has_query11;
- 	bool has_query12;
- 	bool has_physical_props;
- 	unsigned x_size, y_size;
-+	u16 query12_offset;
- 
- 	if (!data->f11.query_base_addr) {
- 		hid_err(hdev, "No 2D sensor found, giving up.\n");
-@@ -561,6 +564,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 		hid_err(hdev, "can not get query 0: %d.\n", ret);
- 		return ret;
- 	}
-+	has_query9 = !!(buf[0] & BIT(3));
-+	has_query11 = !!(buf[0] & BIT(4));
- 	has_query12 = !!(buf[0] & BIT(5));
- 
- 	/* query 1 to get the max number of fingers */
-@@ -582,11 +587,30 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 	}
- 
- 	/*
--	 * query 12 to know if the physical properties are reported
--	 * (query 12 is at offset 10 for HID devices)
-+	 * At least 8 queries are guaranteed to be present in F11
-+	 * +1 for query12.
- 	 */
-+	query12_offset = 9;
-+
-+	if (has_query9)
-+		++query12_offset;
-+
-+	/* query 8 to find out if query 10 exists */
-+	ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
-+	if (ret) {
-+		hid_err(hdev, "can not read gesture information: %d.\n", ret);
-+		return ret;
-+	}
-+	if (!!(buf[0] & BIT(2)))
-+		++query12_offset;
-+
-+	if (has_query11)
-+		++query12_offset;
-+
-+	/* query 12 to know if the physical properties are reported */
- 	if (has_query12) {
--		ret = rmi_read(hdev, data->f11.query_base_addr + 10, buf);
-+		ret = rmi_read(hdev, data->f11.query_base_addr
-+				+ query12_offset, buf);
- 		if (ret) {
- 			hid_err(hdev, "can not get query 12: %d.\n", ret);
- 			return ret;
-@@ -595,7 +619,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
- 
- 		if (has_physical_props) {
- 			ret = rmi_read_block(hdev,
--					data->f11.query_base_addr + 11, buf, 4);
-+					data->f11.query_base_addr
-+						+ query12_offset + 1, buf, 4);
- 			if (ret) {
- 				hid_err(hdev, "can not read query 15-18: %d.\n",
- 					ret);
--- 
-1.9.1
+What happens when ftrace or perf tries to wake a task from a debug
+interrupt or NMI?
 
+--Andy
