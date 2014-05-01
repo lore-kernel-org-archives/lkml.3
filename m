@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028AbaEAVJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:09:48 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46359 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaEAVJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:09:47 -0400
-Date: Thu, 1 May 2014 17:09:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
-        Michael Matz <matz@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC 09/16] kgr: mark task_safe in some kthreads
-Message-ID: <20140501210943.GB28948@mtj.dyndns.org>
-References: <1398868249-26169-1-git-send-email-jslaby@suse.cz>
- <1398868249-26169-10-git-send-email-jslaby@suse.cz>
- <20140501142414.GA31611@htj.dyndns.org>
- <alpine.LNX.2.00.1405012206430.29834@pobox.suse.cz>
- <20140501210242.GA28948@mtj.dyndns.org>
+	id S1752228AbaEAVLf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:11:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58289 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751247AbaEAVLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:11:33 -0400
+Date: Thu, 1 May 2014 17:11:28 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Ben Zhang <benzh@chromium.org>
+Subject: Re: [PATCH] watchdog: print all locks on a softlock
+Message-ID: <20140501211128.GC198341@redhat.com>
+References: <1398970535-6880-1-git-send-email-eparis@redhat.com>
+ <20140501191720.GA198341@redhat.com>
+ <20140501200858.GA27787@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140501210242.GA28948@mtj.dyndns.org>
+In-Reply-To: <20140501200858.GA27787@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 05:02:42PM -0400, Tejun Heo wrote:
-> Hello, Jiri.
+On Thu, May 01, 2014 at 10:09:01PM +0200, Frederic Weisbecker wrote:
+> On Thu, May 01, 2014 at 03:17:20PM -0400, Don Zickus wrote:
+> > On Thu, May 01, 2014 at 02:55:35PM -0400, Eric Paris wrote:
+> > > If the CPU hits a softlockup this patch will also have it print the
+> > > information about all locks being held on the system.  This might help
+> > > determine if a lock is being held too long leading to this problem.
+> > 
+> > I am not sure this helps you.  A softlockup is the result of pre-emption
+> > disabled, ie the scheduler not being called after 60 seconds.  Holding a
+> > lock does not disable pre-emption usually.  So I don't think this is going
+> > to add anything.
+> > 
+> > Are you trying to debug a hung task?  The the hung_task thread checks to
+> > see if a task hasn't scheduled in 2 minutes or so.  That could be the
+> > result of long lock (but that output already dumps the lockdep stuff).
 > 
-> On Thu, May 01, 2014 at 10:17:44PM +0200, Jiri Kosina wrote:
-> > I agree that this expectation might really somewhat implicit and is not 
-> > probably properly documented anywhere. The basic observation is "whenever 
-> > kthread_should_stop() is being called, all data structures are in a 
-> > consistent state and don't need any further updates in order to achieve 
-> > consistency, because we can exit the loop immediately here", as 
-> > kthread_should_stop() is the very last thing every freezable kernel thread 
+> There may be some deadlocks that lockdep doesn't detect yet. 2 example:
 > 
-> But kthread_should_stop() doesn't necessarily imply that "we can exit
-> the loop *immediately*" at all.  It just indicates that it should
-> terminate in finite amount of time.  I don't think it'd be too
+> 1) spinlock <-> IPI dependency
+> 
+> 
+>         CPU 0                                            CPU 1
+>         --------------------------------------------------------
+>         spin_lock_irq(A)
+>         smp_send_function_single_async(CPU 1, func)
+>                                                          //IPI
+>                                                          func {
+>                                                             spin_lock(1)
+>                                                          }
+> 
+> But this should be resolved with a virtual lock on the IPI functions.
+> I should try that.
+> 
+> 2) rwlock <-> IPI
+> 
+>         CPU 0                                            CPU 1
+>         --------------------------------------------------------
+>         read_lock(A)
+>                                                          write_lock_irq(A)
+>         smp_send_function_single(CPU 1, func)
+>                                                          //IPI never happens
 
-Just a bit of addition.  Please note that kthread_should_stop(), along
-with the freezer test, is actually trickier than it seems.  It's very
-easy to write code which works most of the time but misses wake up
-from kill when the timing is just right (or wrong).  It should be
-interlocked with set_current_state() and other related queueing data
-structure accesses.  This was several years ago but when I audited
-most kthread users in kernel, especially in combination with the
-freezer test which also has similar requirement, surprising percentage
-of users (at least several tens of pct) were getting it slightly
-wrong, so kthread_should_stop() really isn't used as "we can exit
-*immediately*".  It just isn't that simple.
+The hardlockup detector would go off here.  And dumping all the cpus in
+the system (something we don't do today), would show this scenario.  I see
+this scenario a lot during page flushes on RHEL (a lot being once every
+other month or so).
 
-Thanks.
+Cheers,
+Don
 
--- 
-tejun
+> 
+> This one is much trickier.
+> 
+> Anyway those are the only scenario I know of but there may be more. When possible
+> we want to extend lockdep to detect new scenarios of deadlock but we don't have the
+> guarantee that it can detect everything.
+> 
+> So, could be useful...
