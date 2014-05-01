@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906AbaEAGdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 02:33:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58266 "EHLO
+	id S1754944AbaEAGd4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 02:33:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58279 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861AbaEAGd0 (ORCPT
+	with ESMTP id S1753528AbaEAGdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 02:33:26 -0400
-Date: Wed, 30 Apr 2014 23:33:09 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-ttzyhbe4zls24z7ednkmhvxl@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        jean.pihet@linaro.org, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
+	Thu, 1 May 2014 02:33:54 -0400
+Date: Wed, 30 Apr 2014 23:32:44 -0700
+From: tip-bot for Xia Kaixu <tipbot@zytor.com>
+Message-ID: <tip-603940b6b8b1347ec13a628165c00194ebc17ed2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, xiakaixu@huawei.com, tglx@linutronix.de,
+        namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, xiakaixu@huawei.com, tglx@linutronix.de,
+        namhyung@kernel.org
+In-Reply-To: <535B6660.2060001@huawei.com>
+References: <535B6660.2060001@huawei.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests x86:
-  Fix stack map lookup in dwarf unwind test
-Git-Commit-ID: 9a126728165eef9b1e9349fe57b9747ac6c6f7e3
+Subject: [tip:perf/core] perf tools: Remove extra '/'
+  character in events file path
+Git-Commit-ID: 603940b6b8b1347ec13a628165c00194ebc17ed2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,44 +34,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9a126728165eef9b1e9349fe57b9747ac6c6f7e3
-Gitweb:     http://git.kernel.org/tip/9a126728165eef9b1e9349fe57b9747ac6c6f7e3
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Wed, 30 Apr 2014 16:39:44 +0200
+Commit-ID:  603940b6b8b1347ec13a628165c00194ebc17ed2
+Gitweb:     http://git.kernel.org/tip/603940b6b8b1347ec13a628165c00194ebc17ed2
+Author:     Xia Kaixu <xiakaixu@huawei.com>
+AuthorDate: Sat, 26 Apr 2014 15:55:12 +0800
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Wed, 30 Apr 2014 17:02:31 +0200
+CommitDate: Wed, 30 Apr 2014 17:02:24 +0200
 
-perf tests x86: Fix stack map lookup in dwarf unwind test
+perf tools: Remove extra '/' character in events file path
 
-Previous commit 'perf x86: Fix perf to use non-executable stack, again'
-moved stack map into MAP__VARIABLE map type again. Fixing the dwarf
-unwind test stack map lookup appropriately.
+The array debugfs_known_mountpoints[] will cause extra '/'
+character output.
+Remove it.
 
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Link: http://lkml.kernel.org/n/tip-ttzyhbe4zls24z7ednkmhvxl@git.kernel.org
+pre:
+$ perf probe -l
+/sys/kernel/debug//tracing/uprobe_events file does not exist -
+please rebuild kernel with CONFIG_UPROBE_EVENTS.
+
+post:
+$ perf probe -l
+/sys/kernel/debug/tracing/uprobe_events file does not exist -
+please rebuild kernel with CONFIG_UPROBE_EVENTS.
+
+Signed-off-by: Xia Kaixu <xiakaixu@huawei.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/535B6660.2060001@huawei.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/arch/x86/tests/dwarf-unwind.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/lib/api/fs/debugfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
-index b8c0102..83bc238 100644
---- a/tools/perf/arch/x86/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
-@@ -23,7 +23,7 @@ static int sample_ustack(struct perf_sample *sample,
+diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
+index 7c43479..a74fba6 100644
+--- a/tools/lib/api/fs/debugfs.c
++++ b/tools/lib/api/fs/debugfs.c
+@@ -12,8 +12,8 @@
+ char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
  
- 	sp = (unsigned long) regs[PERF_REG_X86_SP];
+ static const char * const debugfs_known_mountpoints[] = {
+-	"/sys/kernel/debug/",
+-	"/debug/",
++	"/sys/kernel/debug",
++	"/debug",
+ 	0,
+ };
  
--	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
-+	map = map_groups__find(&thread->mg, MAP__VARIABLE, (u64) sp);
- 	if (!map) {
- 		pr_debug("failed to get stack map\n");
- 		free(buf);
