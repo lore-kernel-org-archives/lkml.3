@@ -1,130 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006AbaEAHC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 03:02:56 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:51841 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750851AbaEAHCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 03:02:55 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvkLAEjxYVNXQ4cE/2dsb2JhbABZgwarZwMBAQEBAQQBmgqBFxd0glMTPxiBAiQTiEUByiWFVYh8hEABA48TihYBinqHcoM1Ow
-Date: Thu, 1 May 2014 09:02:40 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 1/1] ARCH/M68K/AMIGA: convert printk to pr_foo()
-Message-Id: <20140501090240.49bc6c280cb6c093980d26f3@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753380AbaEAHEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 03:04:24 -0400
+Received: from mx3.wp.pl ([212.77.101.9]:34485 "EHLO mx3.wp.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796AbaEAHEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 03:04:22 -0400
+Message-ID: <5361F1F3.7070005@wp.pl>
+Date: Thu, 01 May 2014 09:04:19 +0200
+From: Andrzej Hajda <andrzej.hajda@wp.pl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        David Airlie <airlied@linux.ie>, Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Tomasz Stansislawski <t.stanislaws@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [RFC PATCH 0/4] drivers/base: Generic framework for tracking
+ internal interfaces
+References: <1398866574-27001-1-git-send-email-a.hajda@samsung.com> <20140430154914.GA898@kroah.com> <53616E31.3050404@wp.pl> <20140430222839.GE26756@n2100.arm.linux.org.uk>
+In-Reply-To: <20140430222839.GE26756@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
+X-WP-SPAM: NO 0000009 [EUWF]                               
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--no level printk converted to pr_warn/pr_info
--fixed a small identation problem
+Russell King - ARM Linux wrote, On 01.05.2014 00:28:
+> On Wed, Apr 30, 2014 at 11:42:09PM +0200, Andrzej Hajda wrote:
+>> The main problem with component framework is that componentization
+>> significantly changes every driver and changes it in a way which is not
+>> compatible with traditional drivers, so devices which are intended to
+>> work with different DRM masters are hard to componentize if some of DRMs
+>> are componentized and some not.
+> Many of the problems which the component helpers are designed to solve
+> are those where you need the drm_device structure (or snd_card, or whatever
+> subsystem specific card/device representation structure) pre-created in
+> order to initialise the components.
+>
+> In the case of DRM, you can't initialise encoders or connectors without
+> their drm_device structure pre-existing - because these components are
+> attached to the drm_device.
+>
+> Your solution to that is to delay those calls, but the DRM subsystem is
+> not designed to cope like that - it's designed such that when the
+> connector or encoder initialisation functions are called, it is assumed
+> that the driver is initialising its state. (I've raised this point before
+> but you've just fobbed it off in the past.)
+>
+> Another issue here is that the order of initialisation matters greatly.
+> Take CRTCs for example.  In DRM, the order of attachment of CRTCs defines
+> their identity, changing the order changes their identity, and changes
+> how they are bound to their respective connectors.
+>
+The two problems you show here are not a real problems in this framework:
+1. making real device initialization during drm initialization - 
+decision is left
+to driver developer what should be done in probe, what should be done in
+'bind', I guess this is also true for components, at least the framework 
+allows it.
+2. initialization order - if you put initialization into components 
+'bind' function,
+master can choose any order of calls to 'bind'.
 
-This is untested
+Anyway you can implement the same behaviour as components with
+interface_tracker. Just simple proof of concept, how to convert 
+componentized
+drivers to interface_tracker:
+Components:
+1. you can reuse component_ops
+2. You replace calls of component_add and component_del with calls
+to interface_tracker_ifup(dev, INTERFACE_TRACKER_TYPE_COMPONENT, 
+&specific_component_ops),
+or interface_tracker_ifdown.
+Thats all for components.
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- arch/m68k/amiga/amisound.c |  2 +-
- arch/m68k/amiga/config.c   | 20 ++++++++++----------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+Master:
+1. you register callback for tracking all components.
+2. in the callback you check if all components are up, if yes you do the
+same as in component framework initialization, to simplify it
+helper function can be added.
 
-diff --git a/arch/m68k/amiga/amisound.c b/arch/m68k/amiga/amisound.c
-index 2559eef..90a60d7 100644
---- a/arch/m68k/amiga/amisound.c
-+++ b/arch/m68k/amiga/amisound.c
-@@ -51,7 +51,7 @@ void __init amiga_init_sound(void)
- 
- 	snd_data = amiga_chip_alloc_res(sizeof(sine_data), &beep_res);
- 	if (!snd_data) {
--		printk (KERN_CRIT "amiga init_sound: failed to allocate chipmem\n");
-+		pr_crit("amiga init_sound: failed to allocate chipmem\n");
- 		return;
- 	}
- 	memcpy (snd_data, sine_data, sizeof(sine_data));
-diff --git a/arch/m68k/amiga/config.c b/arch/m68k/amiga/config.c
-index 9625b71..024d7f9 100644
---- a/arch/m68k/amiga/config.c
-+++ b/arch/m68k/amiga/config.c
-@@ -183,7 +183,7 @@ int __init amiga_parse_bootinfo(const struct bi_record *record)
- 			dev->boardaddr = be32_to_cpu(cd->cd_BoardAddr);
- 			dev->boardsize = be32_to_cpu(cd->cd_BoardSize);
- 		} else
--			printk("amiga_parse_bootinfo: too many AutoConfig devices\n");
-+			pr_warn("amiga_parse_bootinfo: too many AutoConfig devices\n");
- #endif /* CONFIG_ZORRO */
- 		break;
- 
-@@ -209,9 +209,9 @@ static void __init amiga_identify(void)
- 
- 	memset(&amiga_hw_present, 0, sizeof(amiga_hw_present));
- 
--	printk("Amiga hardware found: ");
-+	pr_info("Amiga hardware found: ");
- 	if (amiga_model >= AMI_500 && amiga_model <= AMI_DRACO) {
--		printk("[%s] ", amiga_models[amiga_model-AMI_500]);
-+		pr_info("[%s] ", amiga_models[amiga_model-AMI_500]);
- 		strcat(amiga_model_name, amiga_models[amiga_model-AMI_500]);
- 	}
- 
-@@ -322,7 +322,7 @@ static void __init amiga_identify(void)
- 
- #define AMIGAHW_ANNOUNCE(name, str)		\
- 	if (AMIGAHW_PRESENT(name))		\
--		printk(str)
-+		pr_info(str)
- 
- 	AMIGAHW_ANNOUNCE(AMI_VIDEO, "VIDEO ");
- 	AMIGAHW_ANNOUNCE(AMI_BLITTER, "BLITTER ");
-@@ -354,8 +354,8 @@ static void __init amiga_identify(void)
- 	AMIGAHW_ANNOUNCE(MAGIC_REKICK, "MAGIC_REKICK ");
- 	AMIGAHW_ANNOUNCE(PCMCIA, "PCMCIA ");
- 	if (AMIGAHW_PRESENT(ZORRO))
--		printk("ZORRO%s ", AMIGAHW_PRESENT(ZORRO3) ? "3" : "");
--	printk("\n");
-+		pr_info("ZORRO%s ", AMIGAHW_PRESENT(ZORRO3) ? "3" : "");
-+	pr_info("\n");
- 
- #undef AMIGAHW_ANNOUNCE
- }
-@@ -424,7 +424,7 @@ void __init config_amiga(void)
- 			if (m68k_memory[i].addr < 16*1024*1024) {
- 				if (i == 0) {
- 					/* don't cut off the branch we're sitting on */
--					printk("Warning: kernel runs in Zorro II memory\n");
-+					pr_warn("Warning: kernel runs in Zorro II memory\n");
- 					continue;
- 				}
- 				disabled_z2mem += m68k_memory[i].size;
-@@ -435,8 +435,8 @@ void __init config_amiga(void)
- 			}
- 		}
- 		if (disabled_z2mem)
--		printk("%dK of Zorro II memory will not be used as system memory\n",
--		disabled_z2mem>>10);
-+			pr_info("%dK of Zorro II memory will not be used as system memory\n",
-+				disabled_z2mem>>10);
- 	}
- 
- 	/* request all RAM */
-@@ -475,7 +475,7 @@ static void __init amiga_sched_init(irq_handler_t timer_routine)
- 	jiffy_ticks = DIV_ROUND_CLOSEST(amiga_eclock, HZ);
- 
- 	if (request_resource(&mb_resources._ciab, &sched_res))
--		printk("Cannot allocate ciab.ta{lo,hi}\n");
-+		pr_warn("Cannot allocate ciab.ta{lo,hi}\n");
- 	ciab.cra &= 0xC0;   /* turn off timer A, continuous mode, from Eclk */
- 	ciab.talo = jiffy_ticks % 256;
- 	ciab.tahi = jiffy_ticks / 256;
--- 
-1.9.1
+I guess it should work the same way, if there is interest in it I can 
+develop the
+helper next week, I hope.
 
+What is the benefit of interface_tracker:
+1. interface_tracker is more generic - it can track not only components.
+2. you put component initialization code into helper function - sounds 
+like mid-layer removal,
+developer can choose different helper if it suits better.
+
+So from component point of view interface_tracker can be treated as kind 
+of extensions
+of the component framework.
+
+I hope I have answerer all your concerns.
+
+I have holidays till Sunday and I am not sure if I will be able to 
+answer next emails before
+Monday.
+
+Regards
+Andrzej
