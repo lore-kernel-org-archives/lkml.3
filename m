@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242AbaEAVCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:02:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917AbaEAVCP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:02:15 -0400
-Date: Thu, 1 May 2014 16:01:54 -0500
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140501210154.GC3907@treble.redhat.com>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <87ppjxcjo2.fsf@tassilo.jf.intel.com>
+	id S1752312AbaEAVCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:02:36 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58452 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101AbaEAVCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:02:35 -0400
+Date: Thu, 1 May 2014 14:02:32 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, vbabka@suse.cz, iamjoonsoo.kim@lge.com,
+        gthelen@google.com, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch 1/2] mm, migration: add destination page freeing
+ callback
+In-Reply-To: <5361d71e.236ec20a.1b3d.ffffc8aeSMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1405011402160.32268@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <5361d71e.236ec20a.1b3d.ffffc8aeSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <87ppjxcjo2.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 01:45:33PM -0700, Andi Kleen wrote:
-> Josh Poimboeuf <jpoimboe@redhat.com> writes:
-> >
-> > kpatch checks the backtraces of all tasks in stop_machine() to ensure
-> > that no instances of the old function are running when the new function
-> > is applied.
-> 
-> How does that work for tail calls? 
-> 
->       call foo
-> foo:
->       ...
->       jmp bar
-> 
-> bar:
->       ... code executing ...
-> 
-> When you backtrace you will see foo, but you are running in bar.
+On Thu, 1 May 2014, Naoya Horiguchi wrote:
 
-> Note that tail calls can be indirect, so they cannot be resolved
-> statically.
+> Looks good to me.
+> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 > 
-> CONFIG_DEBUG_INFO usually disables tail calls, but not supporting 
-> it would seem like a large limitation, as the cost can be high.
-> 
-> It wouldn't surprise me if there are some similar special cases that
-> can even happen with them disabled.
-> 
-> In theory you could read LBRs, but even that may miss some extreme
-> cases.
 
-When bar returns, would it skip foo and go straight back to foo's
-caller?  If so, then it should be safe to patch foo after it jumps to
-bar.
+Thanks!
 
--- 
-Josh
+> I have one comment below ...
+> 
+> [snip]
+> 
+> > @@ -1056,20 +1059,30 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+> >  	if (!page_mapped(hpage))
+> >  		rc = move_to_new_page(new_hpage, hpage, 1, mode);
+> >  
+> > -	if (rc)
+> > +	if (rc != MIGRATEPAGE_SUCCESS)
+> >  		remove_migration_ptes(hpage, hpage);
+> >  
+> >  	if (anon_vma)
+> >  		put_anon_vma(anon_vma);
+> >  
+> > -	if (!rc)
+> > +	if (rc == MIGRATEPAGE_SUCCESS)
+> >  		hugetlb_cgroup_migrate(hpage, new_hpage);
+> >  
+> >  	unlock_page(hpage);
+> >  out:
+> >  	if (rc != -EAGAIN)
+> >  		putback_active_hugepage(hpage);
+> > -	put_page(new_hpage);
+> > +
+> > +	/*
+> > +	 * If migration was not successful and there's a freeing callback, use
+> > +	 * it.  Otherwise, put_page() will drop the reference grabbed during
+> > +	 * isolation.
+> > +	 */
+> 
+> This comment is true both for normal page and huge page, and people more likely
+> to see unmap_and_move() at first, so this had better be (also) in unmap_and_move().
+> 
+
+Ok!
