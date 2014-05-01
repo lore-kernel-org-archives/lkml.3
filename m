@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaEASvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:51:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075AbaEASvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:51:13 -0400
-Date: Thu, 1 May 2014 20:50:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCHv4] uprobes: simplify rip-relative handling
-Message-ID: <20140501185058.GA17450@redhat.com>
-References: <1398955966-7771-1-git-send-email-dvlasenk@redhat.com>
+	id S1751438AbaEASwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:52:32 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:54775 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaEASw3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 14:52:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398955966-7771-1-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140501184941.GV3245@sirena.org.uk>
+References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
+	<1397689950-1568-5-git-send-email-dianders@chromium.org>
+	<20140423115102.GO21613@lee--X1>
+	<CAD=FV=WN4hVibiK_8+mpNfO7UQnd35ZT9EXA9fuw-mnBzzb1cA@mail.gmail.com>
+	<CAOesGMiMiqk1mKcVF8SwePhUS-8cAmM3Ut3f+qRvjz27iw7CTA@mail.gmail.com>
+	<20140501184941.GV3245@sirena.org.uk>
+Date: Thu, 1 May 2014 11:52:28 -0700
+X-Google-Sender-Auth: tdByy1zllVMdS4-zpAuf_VKToWo
+Message-ID: <CAD=FV=W3qxMqM+cu-gEKkL4kNB-Jvo6-0tdt=L2madA8RLbfkw@mail.gmail.com>
+Subject: Re: [PATCH v3 4/5] regulator: tps65090: Allow setting the overcurrent
+ wait time
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
+        Sean Paul <seanpaul@chromium.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I hope that Jim's ack still applies to this version.
+Mark,
 
-On 05/01, Denys Vlasenko wrote:
+On Thu, May 1, 2014 at 11:49 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, May 01, 2014 at 11:17:58AM -0700, Olof Johansson wrote:
 >
-> v4: Changed arch_uprobe_xol_was_trapped() comment to reflect new logic.
+>> so it looks like tps_pdata is NULL. Should likely be a check for it?
+>
+> Yes, just about to post a fix.
 
-Hmm. I guess you meant arch_uprobe_post_xol()... please see below.
+Doh, was working on it at the same time.
 
->  static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  {
->  	struct uprobe_task *utask = current->utask;
-> -	long correction = (long)(utask->vaddr - utask->xol_vaddr);
->  
-> -	riprel_post_xol(auprobe, regs, &correction);
-> +	riprel_post_xol(auprobe, regs);
->  	if (auprobe->def.fixups & UPROBE_FIX_IP) {
-> +		long correction = (long)(utask->vaddr - utask->xol_vaddr);
+https://patchwork.kernel.org/patch/4099981/
 
-Can't resist, I'll remove this pointless cast ;)
+Sorry for the bug.  :(  Thanks for the report!
 
->   * If the original instruction was a rip-relative instruction such as
->   * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
-> - * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
-> - * We need to restore the contents of the scratch register and adjust
-> - * the ip, keeping in mind that the instruction we executed is 4 bytes
-> - * shorter than the original instruction (since we squeezed out the offset
-> - * field).  (FIX_RIP_AX or FIX_RIP_CX)
-> + * instruction using a scratch register -- e.g., "movl %edx,0xnnnn(%rax)".
-> + * We need to restore the contents of the scratch register
-> + * (FIX_RIP_AX or FIX_RIP_CX).
->   */
->  int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
-
-Perhaps it makes sense to move this part of the comment above
-default_post_xol_op() which actually does this...
-
-I won't insist, I do not really care because I almost never read the comments
-anyway ;)
-
-Oleg.
-
+-Doug
