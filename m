@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933AbaEAPf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:35:57 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64549 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752140AbaEAPf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:35:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140501150549.GA24388@thunk.org>
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
- <20140428214112.GC7857@thunk.org> <535FE68C.8060002@redhat.com>
- <20140429182610.GA19325@thunk.org> <53616293.3080308@mit.edu>
- <20140501020627.GA25248@thunk.org> <1be5350d-89f9-44b9-8d1b-e3e591741940@email.android.com>
- <20140501150549.GA24388@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 1 May 2014 08:35:35 -0700
-Message-ID: <CALCETrUQRqKEbWps5Nxqk57vCYmuvcA6pYAL7OiqJy8sE8yh=g@mail.gmail.com>
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-To: "Theodore Ts'o" <tytso@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Florian Weimer <fweimer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <kees@outflux.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1755323AbaEAPgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:36:13 -0400
+Received: from mout.gmx.net ([212.227.15.18]:57907 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755209AbaEAPgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:36:09 -0400
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] fanotify: check file flags passed in fanotify_init
+Date: Thu,  1 May 2014 17:35:32 +0200
+Message-Id: <1398958532-11221-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.9.2
+X-Provags-ID: V03:K0:tK8Jy3I4eN4a850Gis1Z4cz7h3fcTXTRzPbY04IWBn3PKDykXRU
+ XKjT0+hDGTDTemzUIXLJjt/sp8vXPGJo9AnZtg1JvrNJcq19t+Edw/jpmG50sHc0Xo13+0/
+ Hm/vEJ0xWGREjl8moYzs0RFZ9cVq92LLHS9Gyb57q/AJujcZsDgf+RLd1Us2XQcFk2OGBqs
+ EkQyDwOwj1tiYAyj5X9Nw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 8:05 AM,  <tytso@mit.edu> wrote:
-> On Wed, Apr 30, 2014 at 09:05:00PM -0700, H. Peter Anvin wrote:
->>
->> Giving the guest a seed would be highly useful, though.  There are a
->> number of ways to do that; changing the boot protocol is probably
->> only useful if Qemu itself bouts the kernel as opposed to an in-VM
->> bootloader.
->
-> So how about simply passing a memory address and an optional offset on
-> the boot command line?  That way the hypervisor can drop the seed in
-> some convenient real memory location, and the kernel can just copy it
-> someplace safe, or in the case of kernel ASLR, the relocator can use
-> it to seed its CRNG, and then after it relocates the kernel, it can
-> crank the CRNG to pass a seed to the kernel's urandom driver.
->
-> That way, we don't have to do something which is ACPI or DT dependent.
-> Maybe there will be embedded architectures where using DT might be
-> more convenient, but this would probably be simplest for KVM/qumu-based
-> VM's, I would think.
+Without this patch fanotify_init does not validate the value passed in
+event_f_flags.
 
-One problem with passing a seed in memory like this is that it
-provides no benefit if the guest reboots without restarting the
-hypervisor.  Using an MSR or something avoids that issue.
+When a fanotify event is read from the fanotify file descriptor a new file
+descriptor is created where file.f_flags = event_f_flags.
 
-Passing an address in I/O space that can be read to synchronously
-obtain a seed would work, but it could still be messy to get the
-address to propagate through the booatloader and the reboot process.
+Internal and external open flags are stored together in field f_flags of
+struct file. Hence, an application might create file descriptors with
+internal flags like FMODE_EXEC, FMODE_NOCMTIME set.
 
---Andy
+With the patch the value of event_f_flags is checked. Only external open flags
+are allowed. When specifying an invalid value error EINVAL is returned.
+
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ fs/notify/fanotify/fanotify_user.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 4e565c8..3e456d7 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -25,6 +25,21 @@
+ #define FANOTIFY_DEFAULT_MAX_MARKS	8192
+ #define FANOTIFY_DEFAULT_MAX_LISTENERS	128
+ 
++/*
++ * All flags that may be specified in parameter event_f_flags of fanotify_init.
++ * 
++ * Internal and external open flags are stored together in field f_flags of
++ * struct file. Only external open flags shall be allowed in event_f_flags.
++ * Internal flags like FMODE_EXEC shall be excluded.
++ */
++#define FANOTIFY_INIT_ALL_EVENT_F_FLAGS				( \
++		O_RDONLY	| O_WRONLY	| O_RDWR	| \
++		O_CREAT		| O_EXCL	| O_NOCTTY	| \
++		O_TRUNC		| O_APPEND	| O_NONBLOCK	| \
++		__O_SYNC	| O_DSYNC	| FASYNC	| \
++		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	| \
++		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	| \
++		O_PATH		| __O_TMPFILE	| O_NDELAY	)
+ extern const struct fsnotify_ops fanotify_fsnotify_ops;
+ 
+ static struct kmem_cache *fanotify_mark_cache __read_mostly;
+@@ -669,6 +684,9 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+ 	if (flags & ~FAN_ALL_INIT_FLAGS)
+ 		return -EINVAL;
+ 
++	if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_FLAGS)
++		return -EINVAL;
++
+ 	user = get_current_user();
+ 	if (atomic_read(&user->fanotify_listeners) > FANOTIFY_DEFAULT_MAX_LISTENERS) {
+ 		free_uid(user);
+-- 
+1.9.2
+
