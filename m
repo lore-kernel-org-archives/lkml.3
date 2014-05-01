@@ -1,79 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384AbaEAPrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:47:19 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:47104 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaEAPrS (ORCPT
+	id S1755479AbaEAPtQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:49:16 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:46913 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaEAPtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:47:18 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 1 May 2014 11:50:54 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140501150948.GR11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu> <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 1 May 2014 11:49:14 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 22/22] ext4: Add Ext4 compat richacl feature flag
+In-Reply-To: <88FB2DB7-126A-400E-9B44-19E99A553B2B@dilger.ca>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1398615293-22931-23-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <88FB2DB7-126A-400E-9B44-19E99A553B2B@dilger.ca>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 01 May 2014 21:18:51 +0530
+Message-ID: <877g65biu4.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050115-3864-0000-0000-00000DFB05B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 May 2014, Peter Zijlstra wrote:
-> 
-> But yes please!
+Andreas Dilger <adilger@dilger.ca> writes:
 
-OK, sorry for the delay, had forgotten to re-enable -pg for perf in the 
-makefile when I applied your patch so had to re-build the kernel.
+> On Apr 27, 2014, at 10:14 AM, Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>> This feature flag can be used to enable richacl on
+>> the file system. Once enabled the "acl" mount option
+>> will enable richacl instead of posix acl
+>
+> I was going to complain about this patch, because re-using the "acl"
+> mount option to specify richacl instead of POSIX ACL would be very
+> confusing, since older kernels used the "acl" mount option to enable
+> POSIX ACLs.
+>
+> Looking closer, I see that "acl" and "noacl" just means enable or disable
+> the ACL functionality on the filesystem.  Please fix up the commit
+> comment.
 
-The trace is here:
-	www.eece.maine.edu/~vweaver/junk/pzbug.out.bz2
+Will clarify in the commit message.
 
-No analysis so hopefully it's good, I've got an event to go to in a few 
-minutes.
+>
+> Some more comments inline.
+>
+>> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+>> index 6f9e6fadac04..2a0221652d79 100644
+>> --- a/fs/ext4/super.c
+>> +++ b/fs/ext4/super.c
+>> @@ -1274,6 +1274,30 @@ static ext4_fsblk_t get_sb_block(void **data)
+>> 	return sb_block;
+>> }
+>> 
+>> +static void enable_acl(struct super_block *sb)
+>> +{
+>> +#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
+>> +	return;
+>> +#endif
+>> +	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
+>> +		sb->s_flags |= MS_RICHACL;
+>> +		sb->s_flags &= ~MS_POSIXACL;
+>> +	} else {
+>> +		sb->s_flags |= MS_POSIXACL;
+>> +		sb->s_flags &= ~MS_RICHACL;
+>> +	}
+>
+> This should put the #ifdef around the code that is being enabled/disabled,
+> otherwise it just becomes dead code:
+>
+> static int enable_acl(struct super_block *sb)
+> {
+> 	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_RICHACL)) {
+> #if defined(CONFIG_EXT4_FS_RICHACL)
+> 		sb->s_flags |= MS_RICHACL;
+> 		sb->s_flags &= ~MS_POSIXACL;
+> #else
+> 		return -EOPNOTSUPP;
+> #endif
+> 	} else {
+> #if defined(CONFIG_EXT4_FS_POSIX_ACL)
+> 		sb->s_flags |= MS_POSIXACL;
+> 		sb->s_flags &= ~MS_RICHACL;
+> #else
+> 		return -EOPNOTSUPP;
+> #endif
+> 	}
+> 	return 0;
+> }
 
-The messages:
+That is too much #ifdef with no real benefit ?
 
-[  634.846367] ------------[ cut here ]------------
-[  634.851477] WARNING: CPU: 6 PID: 2915 at kernel/events/core.c:3232 __free_event+0x93/0xa0()
-[  634.860583] Modules linked in: fuse snd_hda_codec_hdmi x86_pkg_temp_thermal intel_powerclamp coretemp kvm crct10dif_pclmul snd_hda_codec_realtek snd_hda_codec_generic i915 drm_kms_helper crc32_pclmul snd_hda_intel snd_hda_controller ghash_clmulni_intel aesni_intel snd_hda_codec aes_x86_64 drm snd_hwdep evdev psmouse iTCO_wdt iTCO_vendor_support lrw gf128mul glue_helper snd_pcm pcspkr serio_raw i2c_i801 ablk_helper tpm_tis parport_pc parport cryptd snd_seq snd_timer snd_seq_device video battery button snd i2c_algo_bit i2c_core tpm mei_me mei lpc_ich mfd_core processor wmi soundcore sg sd_mod sr_mod crc_t10dif crct10dif_common cdrom ehci_pci ahci xhci_hcd e1000e libahci ehci_hcd libata usbcore ptp crc32c_intel pps_core scsi_mod usb_common thermal fan thermal_sys
-[  634.935276] CPU: 6 PID: 2915 Comm: perf_fuzzer Not tainted 3.15.0-rc1+ #94
-[  634.942754] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-[  634.950728]  0000000000000009 ffff8801174b7b78 ffffffff81649bf0 0000000000000000
-[  634.958795]  ffff8801174b7bb0 ffffffff810646ad ffff8800cef05000 0000000000000000
-[  634.966855]  ffff8800cd47be10 ffff880036c7b388 ffff8800cef052a0 ffff8801174b7bc0
-[  634.974858] Call Trace:
-[  634.977482]  [<ffffffff81649bf0>] dump_stack+0x45/0x56
-[  634.983007]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
-[  634.989447]  [<ffffffff8106478a>] warn_slowpath_null+0x1a/0x20
-[  634.995674]  [<ffffffff811330e3>] __free_event+0x93/0xa0
-[  635.001429]  [<ffffffff81133cce>] _free_event+0xce/0x210
-[  635.007180]  [<ffffffff81133f90>] put_event+0x180/0x1f0
-[  635.012796]  [<ffffffff81133e80>] ? put_event+0x70/0x1f0
-[  635.018487]  [<ffffffff81134037>] perf_release+0x17/0x20
-[  635.024228]  [<ffffffff811b694c>] __fput+0xdc/0x1e0
-[  635.029457]  [<ffffffff811b6a9e>] ____fput+0xe/0x10
-[  635.034719]  [<ffffffff81085137>] task_work_run+0xa7/0xe0
-[  635.040524]  [<ffffffff81066d5c>] do_exit+0x2cc/0xa50
-[  635.045978]  [<ffffffff81076949>] ? get_signal_to_deliver+0x249/0x650
-[  635.052880]  [<ffffffff8106756c>] do_group_exit+0x4c/0xc0
-[  635.058669]  [<ffffffff81076991>] get_signal_to_deliver+0x291/0x650
-[  635.065384]  [<ffffffff81012438>] do_signal+0x48/0x990
-[  635.070911]  [<ffffffff8101f516>] ? ftrace_raw_event_sys_exit+0x56/0x80
-[  635.077994]  [<ffffffff81012df0>] do_notify_resume+0x70/0xa0
-[  635.084059]  [<ffffffff81651f3c>] retint_signal+0x48/0x8c
-[  635.089912] ---[ end trace bf0bdbfdb698177c ]---
-[  635.995839] Slab corruption (Tainted: G        W    ): kmalloc-2048 start=ffff8800cef05000, len=2048
-[  636.006669] 040: 6b 6b 6b 6b 6b 6b 6b 6b a8 75 90 17 01 88 ff ff  kkkkkkkk.u......
-[  636.017593] Next obj: start=ffff8800cef05800, len=2048
-[  636.024510] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-[  636.035462] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>
+>> +
+>> +static void disable_acl(struct super_block *sb)
+>> +{
+>> +#if !defined(CONFIG_EXT4_FS_POSIX_ACL) && !defined(CONFIG_EXT4_FS_RICHACL)
+>> +	return;
+>> +#endif
+>> +	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
+>> +	return;
+>> +}
+>
+> "return" is not needed at the end of void functions. Same comment on
+> #ifdef:
+
+ok
+
+>
+> static void disable_acl(struct super_block *sb)
+> {
+> #if defined(CONFIG_EXT4_FS_POSIX_ACL) || defined(CONFIG_EXT4_FS_RICHACL)
+> 	sb->s_flags &= ~(MS_POSIXACL | MS_RICHACL);
+> #endif
+> }
+>
+>
+>> +
+>> #define DEFAULT_JOURNAL_IOPRIO (IOPRIO_PRIO_VALUE(IOPRIO_CLASS_BE, 3))
+>> static char deprecated_msg[] = "Mount option \"%s\" will be removed by %s\n"
+>> 	"Contact linux-ext4@vger.kernel.org if you think we should keep it.\n";
+>> @@ -1417,9 +1441,9 @@ static const struct mount_opts {
+>> 	 MOPT_NO_EXT2 | MOPT_DATAJ},
+>> 	{Opt_user_xattr, EXT4_MOUNT_XATTR_USER, MOPT_SET},
+>> 	{Opt_nouser_xattr, EXT4_MOUNT_XATTR_USER, MOPT_CLEAR},
+
+....
+
+>> 	if ((def_mount_opts & EXT4_DEFM_JMODE) == EXT4_DEFM_JMODE_DATA)
+>> 		set_opt(sb, JOURNAL_DATA);
+>> @@ -3569,8 +3593,12 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>> 			clear_opt(sb, DELALLOC);
+>> 	}
+>> 
+>> -	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+>> -		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+>> +	/*
+>> +	 * clear ACL flags
+>> +	 */
+>> +	disable_acl(sb);
+>
+> Is there any expectation that the flags would be set on a newly mounted
+> filesystem?
+>
+>> +	if (test_opt(sb, ACL))
+>> +		enable_acl(sb);
+>> 
+>> 	if (le32_to_cpu(es->s_rev_level) == EXT4_GOOD_OLD_REV &&
+>> 	    (EXT4_HAS_COMPAT_FEATURE(sb, ~0U) ||
+>> @@ -4844,8 +4872,9 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>> 	if (sbi->s_mount_flags & EXT4_MF_FS_ABORTED)
+>> 		ext4_abort(sb, "Abort forced by user");
+>> 
+>> -	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+>> -		(test_opt(sb, POSIX_ACL) ? MS_POSIXACL : 0);
+>> +	disable_acl(sb);
+>> +	if (test_opt(sb, ACL))
+>> +		enable_acl(sb);
+>
+> Similarly, it seems racy to me to disable ACL support and then re-enable
+> it here during remount, since that might cause some concurrent operations
+> to fail.  It seems like enable_acl() already handles clearing the flags
+> correctly, so something like the following would be better:
+>
+> 	if (test_opt(sb, ACL))
+> 		enable_acl(sb);
+> 	else
+> 		disable_acl(sb);
+>
+>
+
+ok
+
+-aneesh
 
