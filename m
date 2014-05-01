@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaEAIo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 04:44:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57698 "EHLO mx2.suse.de"
+	id S1754662AbaEAIpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 04:45:07 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53325 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917AbaEAIov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 04:44:51 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 01/17] mm: page_alloc: Do not update zlc unless the zlc is active
-Date: Thu,  1 May 2014 09:44:32 +0100
-Message-Id: <1398933888-4940-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1398933888-4940-1-git-send-email-mgorman@suse.de>
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+	id S1754492AbaEAIpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 04:45:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,964,1389772800"; 
+   d="scan'208";a="532928258"
+Date: Thu, 1 May 2014 16:44:52 -0400
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH] usb: dwc3: gadget: giveback request if start transfer
+ fail
+Message-ID: <20140501204452.GD30575@intel.com>
+Reply-To: jin.can.zhuang@intel.com
+References: <20140501063608.GA30575@intel.com>
+ <20140430195829.GA3839@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430195829.GA3839@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The zlc is used on NUMA machines to quickly skip over zones that are full.
-However it is always updated, even for the first zone scanned when the
-zlc might not even be active. As it's a write to a bitmap that potentially
-bounces cache line it's deceptively expensive and most machines will not
-care. Only update the zlc if it was active.
+Hi Balbi,
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Apr 30, 2014 at 02:58:29PM -0500, Felipe Balbi wrote:
+> On Thu, May 01, 2014 at 02:36:08AM -0400, Zhuang Jin Can wrote:
+> > At least we should giveback the current request to the
+> > gadget. Otherwise, the gadget will be stuck without knowing
+> > anything.
+> > 
+> > It was oberved that the failure can happen if the request is
+> > queued when the run/stop bit of controller is not set.
+> 
+> why is your gadget queueing any requests before calling ->udc_start() ?
+> 
+> A better question, what modification have you done to udc-core.c which
+> broke this ? udc-core *always* calls ->udc_start() by the time you load
+> a gadget driver so this case will *never* happen. Whatever modification
+> you did, broke this assumption and I will *not* accept this patch
+> because the bug is elsewhere and *not* in mainline kernel.
+> 
+It's found in Android using kernel 3.10.20. Android has its own
+usb_composite_driver usb/gadget/android.c (not in mainline), and it
+allows userspace to disconnect the pullup (i.e clear run/stop bit in dwc3)
+and remove the gadget functions like adb, mtp and then add new functions
+like rndis, acm. The problem is when you disconnect the pullup, a gadget
+maybe in the middle of queuing a request, and result in the "start
+transfer cmd failure". I think this is also a common issue for other
+usb_composite_drivers too. Normally, if one of the gadget deactivate its
+own function, the pullup will be disconnected, other gadgets won't get
+notified until their requests are failed. So it makes dwc3 more robust
+to deal with these situations.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5dba293..f8b80c3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2044,7 +2044,7 @@ try_this_zone:
- 		if (page)
- 			break;
- this_zone_full:
--		if (IS_ENABLED(CONFIG_NUMA))
-+		if (IS_ENABLED(CONFIG_NUMA) && zlc_active)
- 			zlc_mark_zone_full(zonelist, z);
- 	}
- 
--- 
-1.8.4.5
+> > Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
+> > ---
+> >  drivers/usb/dwc3/gadget.c |    4 +---
+> >  1 file changed, 1 insertion(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
+> > index 70715ee..8d0c3c7 100644
+> > --- a/drivers/usb/dwc3/gadget.c
+> > +++ b/drivers/usb/dwc3/gadget.c
+> > @@ -1000,9 +1000,7 @@ static int __dwc3_gadget_kick_transfer(struct dwc3_ep *dep, u16 cmd_param,
+> >  		 * here and stop, unmap, free and del each of the linked
+> >  		 * requests instead of what we do now.
+> >  		 */
+> > -		usb_gadget_unmap_request(&dwc->gadget, &req->request,
+> > -				req->direction);
+> > -		list_del(&req->list);
+> > +		dwc3_gadget_giveback(dep, req, -ESHUTDOWN);
+> >  		return ret;
+> >  	}
+> >  
+> > -- 
+> > 1.7.9.5
+> > 
 
+Jincan
