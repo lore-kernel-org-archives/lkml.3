@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaEAQD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 12:03:59 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54028 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaEAQD5 (ORCPT
+	id S1755473AbaEAQEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 12:04:31 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:58311 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaEAQE3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 12:03:57 -0400
-Date: Thu, 1 May 2014 09:03:38 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <20140501160338.GA3245@sirena.org.uk>
-References: <1398854171-5187-1-git-send-email-ricardo.ribalda@gmail.com>
- <20140501013402.GL3245@sirena.org.uk>
- <CAPybu_3g=VBW+gGhveBJoc7=tCiPurP_r_+hqOU78bvsg8QJWw@mail.gmail.com>
- <20140501141156.GV3245@sirena.org.uk>
- <CAMuHMdUeFJDq8TMQn=D+y_nWVy-puZDYekV3cPhHTnDF+ebKJA@mail.gmail.com>
+	Thu, 1 May 2014 12:04:29 -0400
+X-Google-Original-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Message-ID: <53627089.8010908@intel.com>
+Date: Thu, 01 May 2014 09:04:25 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrEcvySKR+fOA8iz"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdUeFJDq8TMQn=D+y_nWVy-puZDYekV3cPhHTnDF+ebKJA@mail.gmail.com>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 12.104.145.3
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: Fix hung task timeout when initialization fails
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Stratos Karafotis <stratosk@semaphore.gr>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: dirk.j.brandewie@intel.com,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: intel_pstate: Remove sample parameter in intel_pstate_calc_busy
+References: <535FE72D.2020402@semaphore.gr>
+In-Reply-To: <535FE72D.2020402@semaphore.gr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/29/2014 10:53 AM, Stratos Karafotis wrote:
+> Since commit d37e2b7644 ("intel_pstate: remove unneeded sample buffers")
+> we use only one sample. So, there is no need to pass the sample
+> pointer to intel_pstate_calc_busy. Instead, get the pointer from
+> cpudata. Also, remove the unused SAMPLE_COUNT macro.
+>
+> While at it, reformat the first line in this function.
+>
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 
---yrEcvySKR+fOA8iz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-On Thu, May 01, 2014 at 04:33:58PM +0200, Geert Uytterhoeven wrote:
-> On Thu, May 1, 2014 at 4:11 PM, Mark Brown <broonie@kernel.org> wrote:
+> ---
+>   drivers/cpufreq/intel_pstate.c | 11 ++++-------
+>   1 file changed, 4 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 95b3958..8192ff1 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -32,8 +32,6 @@
+>   #include <asm/msr.h>
+>   #include <asm/cpu_device_id.h>
+>
+> -#define SAMPLE_COUNT		3
+> -
+>   #define BYT_RATIOS		0x66a
+>   #define BYT_VIDS		0x66b
+>   #define BYT_TURBO_RATIOS	0x66c
+> @@ -553,14 +551,13 @@ static void intel_pstate_get_cpu_pstates(struct cpudata *cpu)
+>   	intel_pstate_set_pstate(cpu, cpu->pstate.max_pstate);
+>   }
+>
+> -static inline void intel_pstate_calc_busy(struct cpudata *cpu,
+> -					struct sample *sample)
+> +static inline void intel_pstate_calc_busy(struct cpudata *cpu)
+>   {
+> +	struct sample *sample = &cpu->sample;
+>   	int32_t core_pct;
+>   	int32_t c0_pct;
+>
+> -	core_pct = div_fp(int_tofp((sample->aperf)),
+> -			int_tofp((sample->mperf)));
+> +	core_pct = div_fp(int_tofp(sample->aperf), int_tofp(sample->mperf));
+>   	core_pct = mul_fp(core_pct, int_tofp(100));
+>   	FP_ROUNDUP(core_pct);
+>
+> @@ -595,7 +592,7 @@ static inline void intel_pstate_sample(struct cpudata *cpu)
+>   	cpu->sample.mperf -= cpu->prev_mperf;
+>   	cpu->sample.tsc -= cpu->prev_tsc;
+>
+> -	intel_pstate_calc_busy(cpu, &cpu->sample);
+> +	intel_pstate_calc_busy(cpu);
+>
+>   	cpu->prev_aperf = aperf;
+>   	cpu->prev_mperf = mperf;
+>
 
-> master->kworker_task is set like this:
-
->     master->kworker_task = kthread_run(...)
-
-> so it just contains the status of the creation of the kthread, not if it was
-> killed, right? Hence we don't check if it was killed.
-
-> So Ricardo's patch prevents the stopping and destruction of the thread
-> if it failed to be _created_.
-
-OK, so that means that the description is very confusing then since it's
-talking about the issue being due to kthread_run being killed.
-
-> What if it is killed? I suppose the kthread API handles that internally, as it
-> could happen to any thread (e.g. OOM)?
-
-I'm not 100% clear on this to be honest.  Since I'm at ELC I've not
-investigated fully yet and I'm mostly going on the patch descriptions
-here.
-
---yrEcvySKR+fOA8iz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTYnBXAAoJELSic+t+oim93V8P/ie/2R5Q3VKwOMzugPUCJbR1
-ln9p7Qg+oiikOfApn6I7EYiCU/K1Gi5dEWvwWqnIekG0ryU1Rsksqdn2p6a7bwhh
-T6/nu4k7yRHLmpbKiDTJzqap9n/1IFtvrXcj/KgqzVj4S9YQUag/cgDOmF5QPonm
-7iXzqPAMUPDPQFaVT5KuHWV02amrR72L2Nq7JpJd6TBSAFBnpKsPprI4lnU9KpiM
-XWShbA33CTd7P2EtoIHSNBVFr43YwIHFc1m0Dj/3z2r6Ec3tvH0TsOi0mWQzVsOs
-VlSL5Dg55laQwNTkz/ym1dBxn5qg6sE8alQtSDGlzLWhZu4Uc+q1Bfd0IJnu0bWF
-XauMJRqaKGHYvt+x9yGiKyW7fu2X5L9RJS5QMgmpoMMn9+FGcscrpgAupZ32T0AC
-u1mlY9+93LkztuO26qsuoajYYUIdRxV5m+acda2BoDcHZ6o5Mi2NumHCv796PEd8
-gi9MeCdbdjyePDwM+6v/FfyGdvtuT9J5qqxqMvI+pfNgPFdcGBKdbveTMWP4hMgP
-TKWNQki5GOxvcR57ozMuBs9Ly4ym09/9g2umHwPyf1piVqmweHMGjtRCe26jP866
-nSdiqJ/06RZPYdXc1LByIjmcekYAhggse4jPdaVt1S4pQgX1IJ8CABVT3SPSObue
-5hisNczFGlkLFLSnjimn
-=2C3a
------END PGP SIGNATURE-----
-
---yrEcvySKR+fOA8iz--
