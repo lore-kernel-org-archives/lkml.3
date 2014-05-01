@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405AbaEAJbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:31:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60302 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199AbaEAJbt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:31:49 -0400
-Date: Thu, 1 May 2014 11:31:40 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140501093140.GN11096@twins.programming.kicks-ass.net>
-References: <20140501123738.3e64b2d2@notabene.brown>
- <20140501074257.GK11096@twins.programming.kicks-ass.net>
- <20140501192605.6b5383f8@notabene.brown>
+	id S1755007AbaEAJdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 05:33:01 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:52739 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754273AbaEAJc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 05:32:59 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Alexey Charkov'" <alchark@gmail.com>, Roger Luethi <rl@hellgate.ch>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jan Moskyto Matejka" <mq@suse.cz>
+Subject: RE: [PATCH] net: via-rhine: Fix compiler warning re: pointer
+ casting on 64bit
+Thread-Topic: [PATCH] net: via-rhine: Fix compiler warning re: pointer
+ casting on 64bit
+Thread-Index: AQHPZGx7cEiQwilsXEOcYzELSJTgfZsrdpMg
+Date: Thu, 1 May 2014 09:30:58 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F703980@AcuExch.aculab.com>
+References: <063D6719AE5E284EB5DD2968C1650D6D0F702D00@AcuExch.aculab.com>
+ <1398859589-22346-1-git-send-email-alchark@gmail.com>
+In-Reply-To: <1398859589-22346-1-git-send-email-alchark@gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501192605.6b5383f8@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s419XBAW013278
 
-On Thu, May 01, 2014 at 07:26:05PM +1000, NeilBrown wrote:
-> On Thu, 1 May 2014 09:42:57 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Thu, May 01, 2014 at 12:37:38PM +1000, NeilBrown wrote:
-> > > +static inline int
-> > > +wait_on_bit(void *word, int bit, unsigned mode)
-> > > +{
-> > > +	if (!test_bit(bit, word))
-> > > +		return 0;
-> > > +	return out_of_line_wait_on_bit(word, bit,
-> > > +				       bit_wait,
-> > > +				       mode & 65535);
-> > > +}
-> > 
-> > Still puzzled by the 16 bit mask there ;-)
-> 
-> I clearly remember removing that!
-> And I've just done it again.
-> I hope it doesn't re-reappear!
-> :-)
-> NeilBrown
+From: Alexey Charkov [mailto:alchark@gmail.com]
+...
+> This patch removes the cast altogether, and instead stores an actual
+> pointer to u8 in match->data. All instances of 'revision' are also
+> unified to u8 instead of an assortment of different integer types,
+> in line with the definition of 'revision' in struct pci_dev.
+...
+> +static u8 vt8500_revision = 0x84;
+>  static struct of_device_id rhine_of_tbl[] = {
+> -	{ .compatible = "via,vt8500-rhine", .data = (void *)0x84 },
+> +	{ .compatible = "via,vt8500-rhine", .data = &vt8500_revision },
+>  	{ }	/* terminate list */
 
-Seems dead now, I'll hold out for a little while so that dhowells can
-explain this fscache thing.
+Actually the above looks strange.
+Why does the vt8500 have a revision number of 0x84 ?
+Surely it should be 0x85, or even 0x8500 (or decimal 85000).
 
-Then I'll queue it. Ingo is currently enjoying a long weekend and is
-fighting (well I am now) a stability issue in -tip kernels, so it might
-be a little while before it actually shows up in the git tree.
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
