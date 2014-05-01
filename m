@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaEAVjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:39:44 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:40104 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbaEAVjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:39:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140501211554.GH2382@two.firstfloor.org>
-References: <1398723161-21968-1-git-send-email-andi@firstfloor.org>
- <1398723161-21968-5-git-send-email-andi@firstfloor.org> <535FED4D.5000703@amacapital.net>
- <20140429233950.GE2382@two.firstfloor.org> <53608180.5070800@zytor.com>
- <CALCETrVQiZPb1M183Fq61dbFAjnJScuB2y+rdH8BQ+yp-MO+Mw@mail.gmail.com> <20140501211554.GH2382@two.firstfloor.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 1 May 2014 14:39:20 -0700
-Message-ID: <CALCETrXFO3Y5iVxn_J0-8h=sEU9TFbBk6F3J7dRXu+b0HsBE=A@mail.gmail.com>
-Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
+	id S1752681AbaEAVju (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:39:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752384AbaEAVjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:39:48 -0400
+Date: Thu, 1 May 2014 16:39:29 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Cc: Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140501213929.GE3907@treble.redhat.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+ <87ppjxcjo2.fsf@tassilo.jf.intel.com>
+ <20140501210154.GC3907@treble.redhat.com>
+ <20140501210601.GG2382@two.firstfloor.org>
+ <20140501212746.GD3907@treble.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140501212746.GD3907@treble.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 2:15 PM, Andi Kleen <andi@firstfloor.org> wrote:
->> If usergs == kernelgs, then ebx will always be 1 and we'll never end
->> up in paranoid_userspace.
->
-> You may miss a reschedule in this obscure case. It shouldn't really
-> happen because loading a kernel pointer is not useful for user space.
->
-> Doesn't seem like a real issue to me.
->
-> We only happen need to handle it to avoid crashing.
+On Thu, May 01, 2014 at 04:27:46PM -0500, Josh Poimboeuf wrote:
+> On Thu, May 01, 2014 at 11:06:01PM +0200, Andi Kleen wrote:
+> > > When bar returns, would it skip foo and go straight back to foo's
+> > > caller?  If so, then it should be safe to patch foo after it jumps to
+> > > bar.
+> > 
+> > foo is no problem, you see it in the backtrace.
+> > But you don't see bar.
+> 
+> Sorry, I missed your point the first time.  Good question.
+> 
+> stop_machine schedules a high priority thread on each CPU, which means
+> every other task will be waiting in a schedule() call (assuming a
+> non-preemptible kernel).  In my local kernel, a quick grep of the
+> disassembly doesn't show any jumps to schedule:
+> 
+>   $ egrep 'j.*<.*>' vmlinux.asm |grep -v '\+' |grep schedule
+>   ffffffff816b89b5:	e9 e2 fe ff ff       	jmpq   ffffffff816b889c <retint_with_reschedule>
+>   ffffffff816b8cec:	75 1e                	jne    ffffffff816b8d0c <paranoid_schedule>
+> 
+> But yes, that would be a problem if any tail call jumps to schedule()
+> ever showed up.  We may need to detect that case in our patch generation
+> tooling and fail to create the patch module binary if the patch affects
+> a function which does this.
 
-Allowing userspace to prevent itself from being rescheduled by loading
-something strange into gsbase seems unfortunate.
-
---Andy
-
->
->> Alternatively, what if the paranoid entry checked whether we're coming
->> from userspace at the very beginning and, if so, just jumped to the
->> non-paranoid entry?
->
-> That would work, but I doubt it would be worth it.
->
-
-
-> -Andi
-
-
+Thinking more about this... Even if it jumps to schedule(), I think
+there's no problem, since the function is basically done, and we already
+know not to patch schedule().
 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+Josh
