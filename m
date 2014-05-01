@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750928AbaEAFs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 01:48:28 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:33727 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbaEAFs0 (ORCPT
+	id S1751135AbaEAFyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 01:54:20 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:56511 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEAFyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 01:48:26 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAD=FV=U-_0FWNHrqWp+rfmucKO5GQibCr8N09M8NVSb180ieBQ@mail.gmail.com>
-References: <1398850015-17761-1-git-send-email-ch.naveen@samsung.com> <1398850015-17761-6-git-send-email-ch.naveen@samsung.com> <536161F5.7090508@kernel.org> <CAD=FV=U-_0FWNHrqWp+rfmucKO5GQibCr8N09M8NVSb180ieBQ@mail.gmail.com>
+	Thu, 1 May 2014 01:54:19 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH 5/5 v3] iio: exynos_adc: do a reinit_completion before the conversion
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Thu, 01 May 2014 06:48:19 +0100
-To: Doug Anderson <dianders@chromium.org>
-CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Message-ID: <dbdb414d-81d9-453b-871e-d5d0359f7efe@email.android.com>
+In-Reply-To: <20140501013402.GL3245@sirena.org.uk>
+References: <1398854171-5187-1-git-send-email-ricardo.ribalda@gmail.com> <20140501013402.GL3245@sirena.org.uk>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Thu, 1 May 2014 07:53:58 +0200
+Message-ID: <CAPybu_3g=VBW+gGhveBJoc7=tCiPurP_r_+hqOU78bvsg8QJWw@mail.gmail.com>
+Subject: Re: [PATCH] spi: Fix hung task timeout when initialization fails
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Mark
+
+Thanks for your comments. This fix does not avoid the task being
+killed (which is not an error). What it does is that IF the task is
+killed or we are out of memory we will exit with all the resources
+properly released and no locks helds, giving the user a chance to
+reload/rebind the module instead of getting and unstable system that
+cannot even reboot without a powercycle.
+
+The mention of 786235eeba0e1e85e5cbbb9f97d1087ad03dfa2 is because the condition
+
+if (IS_ERR(master->kworker_task)) {
+dev_err(&master->dev, "failed to create message pump task\n");
+return -ENOMEM;
+}
+
+was very unlikely to happen/difficult to force .
+
+I will reword the message and clean out he backtrace and upload a v2.
+
+Thanks!
 
 
-On May 1, 2014 12:23:27 AM GMT+01:00, Doug Anderson <dianders@chromium.org> wrote:
->Jonathan,
+On Thu, May 1, 2014 at 3:34 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Apr 30, 2014 at 12:36:11PM +0200, Ricardo Ribalda Delgado wrote:
 >
->On Wed, Apr 30, 2014 at 1:49 PM, Jonathan Cameron <jic23@kernel.org>
->wrote:
->> On 30/04/14 10:26, Naveen Krishna Chatradhi wrote:
->>>
->>> Add reinit_completion() before the wait_for_completion_timeout in
->>> raw_read() call.
->>>
->>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->>> Reviewed-by: Doug Anderson <dianders@chromium.org>
->>
->> Applied to the togreg branch of iio.git
->> I wasn't sure if this one was technically a fix, but as it isn't
->> marked clearly as such it can go in during the next merge window.
->> I won't have pushed this out to a non rebasing branch until tomorrow
->> so if this fixes an observed issue then let me know and it might move
->> to the fixes-togreg branch.
+>> Since "786235eeba0e1e85e5cbbb9f97d1087ad03dfa21 kthread:
+>> make kthread_create() killable" kthread_run can be killed by the user,
+>> ie, by killing modprobe.
 >
->As far as I know this doesn't fix an observed issue.  I believe it was
->requested as part of a previous review and is finally reposted.  I
->believe it's just extra precautions to make sure that some old IRQ
->didn't accidentally complete us between the last transaction and this
->one.
+>> -     flush_kthread_worker(&master->kworker);
+>> -     kthread_stop(master->kworker_task);
+>> +     if (!IS_ERR(master->kworker_task)) {
+>> +             flush_kthread_worker(&master->kworker);
+>> +             kthread_stop(master->kworker_task);
+>> +     }
 >
->Old discussion is somewhere around here
-><https://patchwork.kernel.org/patch/2279591/>
-Thanks for clarifying this.
+> How does this fix avoid racing with the task being killed?  It will
+> improve things but it doesn't look like a full fix.
+>
+> Please don't include entire backtraces in commit messages, they're
+> typically extremely long and don't really add anything - edited
+> highlights are fine but try to keep it to the point.
 
-J
->
->Thanks!
->
->-Doug
+
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Ricardo Ribalda
