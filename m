@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274AbaEAGbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 02:31:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58138 "EHLO
+	id S1754355AbaEAGbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 02:31:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58146 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaEAGbD (ORCPT
+	with ESMTP id S1751837AbaEAGbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 02:31:03 -0400
-Date: Wed, 30 Apr 2014 23:30:48 -0700
+	Thu, 1 May 2014 02:31:11 -0400
+Date: Wed, 30 Apr 2014 23:30:59 -0700
 From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
-Message-ID: <tip-2b9032e0ecb57de819bcf40b440e7cbd2d8f3a8c@git.kernel.org>
+Message-ID: <tip-615b8f99f755f8e2701f08cef9c56bd3033891a5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, yarygin@linux.vnet.ibm.com, tglx@linutronix.de,
-        borntraeger@de.ibm.com
+        jolsa@kernel.org, yarygin@linux.vnet.ibm.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yarygin@linux.vnet.ibm.com, jolsa@kernel.org, tglx@linutronix.de,
-        borntraeger@de.ibm.com
-In-Reply-To: <1398440047-6641-2-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1398440047-6641-2-git-send-email-yarygin@linux.vnet.ibm.com>
+        yarygin@linux.vnet.ibm.com, jolsa@kernel.org, tglx@linutronix.de
+In-Reply-To: <1398440047-6641-3-git-send-email-yarygin@linux.vnet.ibm.com>
+References: <1398440047-6641-3-git-send-email-yarygin@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Parse tracepoints with '-'
-  in system name
-Git-Commit-ID: 2b9032e0ecb57de819bcf40b440e7cbd2d8f3a8c
+Subject: [tip:perf/core] perf tests: Add numeric identifier to evlist_test
+Git-Commit-ID: 615b8f99f755f8e2701f08cef9c56bd3033891a5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,54 +31,328 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b9032e0ecb57de819bcf40b440e7cbd2d8f3a8c
-Gitweb:     http://git.kernel.org/tip/2b9032e0ecb57de819bcf40b440e7cbd2d8f3a8c
+Commit-ID:  615b8f99f755f8e2701f08cef9c56bd3033891a5
+Gitweb:     http://git.kernel.org/tip/615b8f99f755f8e2701f08cef9c56bd3033891a5
 Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-AuthorDate: Fri, 25 Apr 2014 17:34:05 +0200
+AuthorDate: Fri, 25 Apr 2014 17:34:06 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Tue, 29 Apr 2014 14:27:23 +0200
+CommitDate: Tue, 29 Apr 2014 14:29:48 +0200
 
-perf tools: Parse tracepoints with '-' in system name
+perf tests: Add numeric identifier to evlist_test
 
-Trace events potentially can have a '-' in their trace system name,
-e.g. kvm on s390 defines kvm-s390:* tracepoints.
-We could not parse them, because there was no rule for this:
-  $ sudo ./perf top -e "kvm-s390:*"
-  invalid or unsupported event: 'kvm-s390:*'
+In tests/parse-events.c test cases are declared in evlist_test[]
+arrays. Elements of arrays are initialized in following pattern:
+	[i] = {
+ 		.name  = ...,
+ 		.check = ...,
+ 	},
 
-This patch adds an extra rule to event_legacy_tracepoint which handles
-those cases. Without the patch, perf will not accept such tracepoints in
-the -e option.
+When perf-test is running with '-v' option, 'i' variable will be
+printed for every existing test.
+
+However, we can't add any arch specific tests inside #ifdefs, because it
+will create collision between the element number inside #ifdef and the
+next one outside.
+
+This patch adds 'id' field in evlist_test, uses it as a test
+identifier and removes explicit numbering of array elements. This helps
+to number tests with gaps.
 
 Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Link: http://lkml.kernel.org/r/1398440047-6641-2-git-send-email-yarygin@linux.vnet.ibm.com
+Link: http://lkml.kernel.org/r/1398440047-6641-3-git-send-email-yarygin@linux.vnet.ibm.com
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/parse-events.y | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ tools/perf/tests/parse-events.c | 135 ++++++++++++++++++++++++++--------------
+ 1 file changed, 90 insertions(+), 45 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index 4eb67ec..ac9db9f 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -299,6 +299,18 @@ PE_PREFIX_MEM PE_VALUE sep_dc
- }
+diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
+index 8605ff5..81dbd5a 100644
+--- a/tools/perf/tests/parse-events.c
++++ b/tools/perf/tests/parse-events.c
+@@ -1174,188 +1174,233 @@ static int test__all_tracepoints(struct perf_evlist *evlist)
+ struct evlist_test {
+ 	const char *name;
+ 	__u32 type;
++	const int id;
+ 	int (*check)(struct perf_evlist *evlist);
+ };
  
- event_legacy_tracepoint:
-+PE_NAME '-' PE_NAME ':' PE_NAME
-+{
-+	struct parse_events_evlist *data = _data;
-+	struct list_head *list;
-+	char sys_name[128];
-+	snprintf(&sys_name, 128, "%s-%s", $1, $3);
-+
-+	ALLOC_LIST(list);
-+	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, &sys_name, $5));
-+	$$ = list;
-+}
-+|
- PE_NAME ':' PE_NAME
- {
- 	struct parse_events_evlist *data = _data;
+ static struct evlist_test test__events[] = {
+-	[0] = {
++	{
+ 		.name  = "syscalls:sys_enter_open",
+ 		.check = test__checkevent_tracepoint,
++		.id    = 0,
+ 	},
+-	[1] = {
++	{
+ 		.name  = "syscalls:*",
+ 		.check = test__checkevent_tracepoint_multi,
++		.id    = 1,
+ 	},
+-	[2] = {
++	{
+ 		.name  = "r1a",
+ 		.check = test__checkevent_raw,
++		.id    = 2,
+ 	},
+-	[3] = {
++	{
+ 		.name  = "1:1",
+ 		.check = test__checkevent_numeric,
++		.id    = 3,
+ 	},
+-	[4] = {
++	{
+ 		.name  = "instructions",
+ 		.check = test__checkevent_symbolic_name,
++		.id    = 4,
+ 	},
+-	[5] = {
++	{
+ 		.name  = "cycles/period=100000,config2/",
+ 		.check = test__checkevent_symbolic_name_config,
++		.id    = 5,
+ 	},
+-	[6] = {
++	{
+ 		.name  = "faults",
+ 		.check = test__checkevent_symbolic_alias,
++		.id    = 6,
+ 	},
+-	[7] = {
++	{
+ 		.name  = "L1-dcache-load-miss",
+ 		.check = test__checkevent_genhw,
++		.id    = 7,
+ 	},
+-	[8] = {
++	{
+ 		.name  = "mem:0",
+ 		.check = test__checkevent_breakpoint,
++		.id    = 8,
+ 	},
+-	[9] = {
++	{
+ 		.name  = "mem:0:x",
+ 		.check = test__checkevent_breakpoint_x,
++		.id    = 9,
+ 	},
+-	[10] = {
++	{
+ 		.name  = "mem:0:r",
+ 		.check = test__checkevent_breakpoint_r,
++		.id    = 10,
+ 	},
+-	[11] = {
++	{
+ 		.name  = "mem:0:w",
+ 		.check = test__checkevent_breakpoint_w,
++		.id    = 11,
+ 	},
+-	[12] = {
++	{
+ 		.name  = "syscalls:sys_enter_open:k",
+ 		.check = test__checkevent_tracepoint_modifier,
++		.id    = 12,
+ 	},
+-	[13] = {
++	{
+ 		.name  = "syscalls:*:u",
+ 		.check = test__checkevent_tracepoint_multi_modifier,
++		.id    = 13,
+ 	},
+-	[14] = {
++	{
+ 		.name  = "r1a:kp",
+ 		.check = test__checkevent_raw_modifier,
++		.id    = 14,
+ 	},
+-	[15] = {
++	{
+ 		.name  = "1:1:hp",
+ 		.check = test__checkevent_numeric_modifier,
++		.id    = 15,
+ 	},
+-	[16] = {
++	{
+ 		.name  = "instructions:h",
+ 		.check = test__checkevent_symbolic_name_modifier,
++		.id    = 16,
+ 	},
+-	[17] = {
++	{
+ 		.name  = "faults:u",
+ 		.check = test__checkevent_symbolic_alias_modifier,
++		.id    = 17,
+ 	},
+-	[18] = {
++	{
+ 		.name  = "L1-dcache-load-miss:kp",
+ 		.check = test__checkevent_genhw_modifier,
++		.id    = 18,
+ 	},
+-	[19] = {
++	{
+ 		.name  = "mem:0:u",
+ 		.check = test__checkevent_breakpoint_modifier,
++		.id    = 19,
+ 	},
+-	[20] = {
++	{
+ 		.name  = "mem:0:x:k",
+ 		.check = test__checkevent_breakpoint_x_modifier,
++		.id    = 20,
+ 	},
+-	[21] = {
++	{
+ 		.name  = "mem:0:r:hp",
+ 		.check = test__checkevent_breakpoint_r_modifier,
++		.id    = 21,
+ 	},
+-	[22] = {
++	{
+ 		.name  = "mem:0:w:up",
+ 		.check = test__checkevent_breakpoint_w_modifier,
++		.id    = 22,
+ 	},
+-	[23] = {
++	{
+ 		.name  = "r1,syscalls:sys_enter_open:k,1:1:hp",
+ 		.check = test__checkevent_list,
++		.id    = 23,
+ 	},
+-	[24] = {
++	{
+ 		.name  = "instructions:G",
+ 		.check = test__checkevent_exclude_host_modifier,
++		.id    = 24,
+ 	},
+-	[25] = {
++	{
+ 		.name  = "instructions:H",
+ 		.check = test__checkevent_exclude_guest_modifier,
++		.id    = 25,
+ 	},
+-	[26] = {
++	{
+ 		.name  = "mem:0:rw",
+ 		.check = test__checkevent_breakpoint_rw,
++		.id    = 26,
+ 	},
+-	[27] = {
++	{
+ 		.name  = "mem:0:rw:kp",
+ 		.check = test__checkevent_breakpoint_rw_modifier,
++		.id    = 27,
+ 	},
+-	[28] = {
++	{
+ 		.name  = "{instructions:k,cycles:upp}",
+ 		.check = test__group1,
++		.id    = 28,
+ 	},
+-	[29] = {
++	{
+ 		.name  = "{faults:k,cache-references}:u,cycles:k",
+ 		.check = test__group2,
++		.id    = 29,
+ 	},
+-	[30] = {
++	{
+ 		.name  = "group1{syscalls:sys_enter_open:H,cycles:kppp},group2{cycles,1:3}:G,instructions:u",
+ 		.check = test__group3,
++		.id    = 30,
+ 	},
+-	[31] = {
++	{
+ 		.name  = "{cycles:u,instructions:kp}:p",
+ 		.check = test__group4,
++		.id    = 31,
+ 	},
+-	[32] = {
++	{
+ 		.name  = "{cycles,instructions}:G,{cycles:G,instructions:G},cycles",
+ 		.check = test__group5,
++		.id    = 32,
+ 	},
+-	[33] = {
++	{
+ 		.name  = "*:*",
+ 		.check = test__all_tracepoints,
++		.id    = 33,
+ 	},
+-	[34] = {
++	{
+ 		.name  = "{cycles,cache-misses:G}:H",
+ 		.check = test__group_gh1,
++		.id    = 34,
+ 	},
+-	[35] = {
++	{
+ 		.name  = "{cycles,cache-misses:H}:G",
+ 		.check = test__group_gh2,
++		.id    = 35,
+ 	},
+-	[36] = {
++	{
+ 		.name  = "{cycles:G,cache-misses:H}:u",
+ 		.check = test__group_gh3,
++		.id    = 36,
+ 	},
+-	[37] = {
++	{
+ 		.name  = "{cycles:G,cache-misses:H}:uG",
+ 		.check = test__group_gh4,
++		.id    = 37,
+ 	},
+-	[38] = {
++	{
+ 		.name  = "{cycles,cache-misses,branch-misses}:S",
+ 		.check = test__leader_sample1,
++		.id    = 38,
+ 	},
+-	[39] = {
++	{
+ 		.name  = "{instructions,branch-misses}:Su",
+ 		.check = test__leader_sample2,
++		.id    = 39,
+ 	},
+-	[40] = {
++	{
+ 		.name  = "instructions:uDp",
+ 		.check = test__checkevent_pinned_modifier,
++		.id    = 40,
+ 	},
+-	[41] = {
++	{
+ 		.name  = "{cycles,cache-misses,branch-misses}:D",
+ 		.check = test__pinned_group,
++		.id    = 41,
+ 	},
+ };
+ 
+ static struct evlist_test test__events_pmu[] = {
+-	[0] = {
++	{
+ 		.name  = "cpu/config=10,config1,config2=3,period=1000/u",
+ 		.check = test__checkevent_pmu,
++		.id    = 0,
+ 	},
+-	[1] = {
++	{
+ 		.name  = "cpu/config=1,name=krava/u,cpu/config=2/u",
+ 		.check = test__checkevent_pmu_name,
++		.id    = 1,
+ 	},
+ };
+ 
+@@ -1402,7 +1447,7 @@ static int test_events(struct evlist_test *events, unsigned cnt)
+ 	for (i = 0; i < cnt; i++) {
+ 		struct evlist_test *e = &events[i];
+ 
+-		pr_debug("running test %d '%s'\n", i, e->name);
++		pr_debug("running test %d '%s'\n", e->id, e->name);
+ 		ret1 = test_event(e);
+ 		if (ret1)
+ 			ret2 = ret1;
