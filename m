@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaEAXS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:18:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29827 "EHLO
+	id S1753059AbaEAXVP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:21:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29828 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaEAXS5 (ORCPT
+	with ESMTP id S1752692AbaEAXS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 May 2014 19:18:57 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
-Subject: [PATCH 4/8] s390: Mark bits in allocated_irqs in general code
-Date: Thu,  1 May 2014 16:18:18 -0700
-Message-Id: <1398986302-30455-5-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 8/8] irq: Do not free unallocated irq descriptors
+Date: Thu,  1 May 2014 16:18:22 -0700
+Message-Id: <1398986302-30455-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
 References: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
@@ -24,89 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Second irq_reserve_irqs calling is from arch s390, and
-s390 does not use SPARSE_IRQ yet.
+Hot-added interrupt controllers can reserve a range of interrupt
+numbers, but only allocate some of them. To simplify the release on
+hot-remove allow them to iterate over the reserved range, let the
+free_desc() code return early when the descriptor does not exist
 
-We could set bits for legacy bits early in !SPARSE_IRQ version
-early_irq_init() directly instead of calling irq_reserve_irqs later.
-
-Adding weak version arch_proble_early_allocate_nr_irqs() for
-!SPARESE_IRQ, and let s390 to have specific version to
-pass correct irq number that need to be marked in allocated_irqs.
+-v2: changelog from tglx
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
 ---
- arch/s390/kernel/irq.c |  6 +++++-
- include/linux/irq.h    |  1 +
- kernel/irq/irqdesc.c   | 10 ++++++++++
- 3 files changed, 16 insertions(+), 1 deletion(-)
+ kernel/irq/irqdesc.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
-index c7463aa..47e29be 100644
---- a/arch/s390/kernel/irq.c
-+++ b/arch/s390/kernel/irq.c
-@@ -90,9 +90,13 @@ static const struct irq_class irqclass_sub_desc[NR_ARCH_IRQS] = {
- 	[CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
- };
- 
-+int arch_probe_early_allocate_nr_irqs(void)
-+{
-+	return THIN_INTERRUPT;
-+}
-+
- void __init init_IRQ(void)
- {
--	irq_reserve_irqs(0, THIN_INTERRUPT);
- 	init_cio_interrupts();
- 	init_airq_interrupts();
- 	init_ext_interrupts();
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 10a0b1a..28cbd3e 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -624,6 +624,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 
- void irq_free_descs(unsigned int irq, unsigned int cnt);
- int irq_reserve_irqs(unsigned int from, unsigned int cnt);
-+int arch_probe_early_allocate_nr_irqs(void);
- 
- static inline void irq_free_desc(unsigned int irq)
- {
 diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index a7174617..dfb971c 100644
+index 1a7e663..c3e1f7b 100644
 --- a/kernel/irq/irqdesc.c
 +++ b/kernel/irq/irqdesc.c
-@@ -248,10 +248,16 @@ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
- 	}
- };
- 
-+int __weak arch_probe_early_allocate_nr_irqs(void)
-+{
-+	return 0;
-+}
-+
- int __init early_irq_init(void)
+@@ -166,6 +166,9 @@ static void free_desc(unsigned int irq)
  {
- 	int count, i, node = first_online_node;
- 	struct irq_desc *desc;
-+	int nr = arch_probe_early_allocate_nr_irqs();
+ 	struct irq_desc *desc = irq_to_desc(irq);
  
- 	init_irq_default_affinity();
- 
-@@ -267,6 +273,10 @@ int __init early_irq_init(void)
- 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
- 		desc_set_defaults(i, &desc[i], node, NULL);
- 	}
++	if (!desc)
++		return;
 +
-+	for (i = 0; i < nr; i++)
-+		set_bit(i, allocated_irqs);
-+
- 	return arch_early_irq_init();
- }
+ 	unregister_irq_proc(irq, desc);
  
+ 	mutex_lock(&sparse_irq_lock);
 -- 
 1.8.4.5
 
