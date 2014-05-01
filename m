@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaEAX3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:29:45 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:41005 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710AbaEAX3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:29:43 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] of: add bq and radxa vendor prefixes
-Date: Fri, 02 May 2014 01:32:37 +0200
-Message-ID: <2225372.rvnmuAdhHE@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1398973835-26303-1-git-send-email-b.galvani@gmail.com>
-References: <1398973835-26303-1-git-send-email-b.galvani@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752784AbaEAXgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:36:25 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54169 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760AbaEAXgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 19:36:24 -0400
+Subject: Re: [PATCHv4] uprobes: simplify rip-relative handling
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+In-Reply-To: <20140501185058.GA17450@redhat.com>
+References: <1398955966-7771-1-git-send-email-dvlasenk@redhat.com>
+	 <20140501185058.GA17450@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 May 2014 16:35:23 -0700
+Message-ID: <1398987323.4908.5.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050123-0928-0000-0000-000001A19EC0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Beniamino,
+On Thu, 2014-05-01 at 20:50 +0200, Oleg Nesterov wrote:
+> Thanks, I hope that Jim's ack still applies to this version.
 
-Am Donnerstag, 1. Mai 2014, 21:50:34 schrieb Beniamino Galvani:
-> Add new vendor prefixes for:
+Yes.  v4 looks fine, although Oleg has a good point about moving the
+comment.  But I'd move more of the comment, starting with
+ * We have to fix things up as follows:
+
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+
+
+> On 05/01, Denys Vlasenko wrote:
+> >
+> > v4: Changed arch_uprobe_xol_was_trapped() comment to reflect new logic.
 > 
->     * bq, a company that sells multimedia devices and 3D printers
-
-bq is actually only a brandname. The company itself is "Mundo Reader S.L.".
-I'm not sure what the actual policy is concerning the vendor prefix, i.e. if it 
-should use the visible brand name or the actual company name.
-
-I.e. another possibility would be to add the vendor prefix
-	mundoreader	Mundo Reader S.L.
-and name the currie
-	mundoreader,bq-curie2
-
-
-Heiko
-
->     * Radxa, manufacturer of ARM boards
+> Hmm. I guess you meant arch_uprobe_post_xol()... please see below.
 > 
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> ---
->  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
->  1 file changed, 2 insertions(+)
+> >  static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> >  {
+> >  	struct uprobe_task *utask = current->utask;
+> > -	long correction = (long)(utask->vaddr - utask->xol_vaddr);
+> >  
+> > -	riprel_post_xol(auprobe, regs, &correction);
+> > +	riprel_post_xol(auprobe, regs);
+> >  	if (auprobe->def.fixups & UPROBE_FIX_IP) {
+> > +		long correction = (long)(utask->vaddr - utask->xol_vaddr);
 > 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
-> abc3080..6f8177c 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -21,6 +21,7 @@ atmel	Atmel Corporation
->  auo	AU Optronics Corporation
->  avago	Avago Technologies
->  bosch	Bosch Sensortec GmbH
-> +bq	bq
->  brcm	Broadcom Corporation
->  buffalo	Buffalo, Inc.
->  calxeda	Calxeda
-> @@ -98,6 +99,7 @@ powervr	PowerVR (deprecated, use img)
->  qca	Qualcomm Atheros, Inc.
->  qcom	Qualcomm Technologies, Inc
->  qnap	QNAP Systems, Inc.
-> +radxa	Radxa
->  raidsonic	RaidSonic Technology GmbH
->  ralink	Mediatek/Ralink Technology Corp.
->  ramtron	Ramtron International
+> Can't resist, I'll remove this pointless cast ;)
+> 
+> >   * If the original instruction was a rip-relative instruction such as
+> >   * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
+> > - * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
+> > - * We need to restore the contents of the scratch register and adjust
+> > - * the ip, keeping in mind that the instruction we executed is 4 bytes
+> > - * shorter than the original instruction (since we squeezed out the offset
+> > - * field).  (FIX_RIP_AX or FIX_RIP_CX)
+> > + * instruction using a scratch register -- e.g., "movl %edx,0xnnnn(%rax)".
+> > + * We need to restore the contents of the scratch register
+> > + * (FIX_RIP_AX or FIX_RIP_CX).
+> >   */
+> >  int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> 
+> Perhaps it makes sense to move this part of the comment above
+> default_post_xol_op() which actually does this...
+> 
+> I won't insist, I do not really care because I almost never read the comments
+> anyway ;)
+> 
+> Oleg.
+> 
+
 
