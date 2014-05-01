@@ -1,129 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaEAWfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:35:04 -0400
-Received: from mail.phunq.net ([184.71.0.62]:43071 "EHLO starbase.phunq.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752603AbaEAWfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:35:02 -0400
-Message-ID: <5362CC05.8060801@partner.samsung.com>
-Date: Thu, 01 May 2014 15:34:45 -0700
-From: Daniel Phillips <d.phillips@partner.samsung.com>
-Reply-To: daniel@phunq.net
-Organization: Samsung
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752534AbaEAWgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:36:09 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:53073 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaEAWgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 18:36:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Xia Kaixu <kaixu.xia@linaro.org>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 13/15] ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
+Date: Fri, 02 May 2014 00:35:21 +0200
+Message-ID: <7071653.m3UbztQEJc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140501191125.GB3245@sirena.org.uk>
+References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org> <1398770316-19715-14-git-send-email-kaixu.xia@linaro.org> <20140501191125.GB3245@sirena.org.uk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, tux3@tux3.org
-Subject: Subject: Tux3 May Day Festivities
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:FaToEfQgKkAq9eq9ex4bJBjI0Lg+Obyd3w6fqE5o2wU
+ jMjiQ4K0uKwZGnFw26ugUOBH8+SMUuZty5z4YNGPhpAMZf7vFa
+ 8ema2PSI1XxBI29LG9ovGg4LSh7Oj56aNmp/I44V7JtH04L2m1
+ rs+245cmDiXm2y/YN+S46C5xbQwBCvv4zEL8ZX9EEXRCexZNim
+ chT3zTdjVxLEB+BFzKv5i0f6rrdPrRRrrZzHwY+9jHnm7nLQ2P
+ 17e0ixTOykeRPhnnxNoLiDQH4dHZwDHoYtOS5mY86Yec94XKey
+ 047M9T8+Xlg08onu93COp7p9XPKDjNgfgs8k6foV9DZLpi9E4U
+ jrBzMbp7qCx1w22aerX8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today is May Day, an ancient festival day. A time for dancing, singing,
-feasting and refactoring repository topology. We are preparing Tux3
-now for review with a view to mainline merge.
+On Thursday 01 May 2014 12:11:25 Mark Brown wrote:
+> On Tue, Apr 29, 2014 at 07:18:34PM +0800, Xia Kaixu wrote:
+> > From: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > SND_S3C_DMA_LEGACY can only be set on S3C24xx, which does not
+> > (yet) support the dmaengine framework, so samsung_dma_get_ops()
+> > fails to link if S3C24XX_DMA is disabled:
+> 
+> Why is the fix for this not to ensure that s3c24xx always enables the
+> DMA controller - how likely is it that it would be sane to build a
+> kernel without DMA after all?
 
-Our repository is currently on Github:
+S3C24XX_DMA is only needed for ASoC and for s3cmci. The latter
+uses 'depends on S3C24XX_DMA'. arch/arm/configs/tct_hammer_defconfig
+is an example of a configuration that does not include DMA because
+it uses neither of the two drivers.
 
-https://github.com/OGAWAHirofumi/tux3
+On a related topic, I looked at the overall DMA situation for
+plat-samsung again now, and it looks much nicer now than it used to,
+with mach-s3c64xx fully migrated to dmaengine, so there might be an
+even better way to deal with this.
 
-This repository needs some refactoring to cast away its out of tree
-legacy and get set for a hopefully harmonious future life as a proper
-kernel citizen. Our development tree currently has the structure:
+>From all I can tell, sound/soc/samsung is the only remaining user
+of the plat/dma.h interfaces, and there is only one other  driver
+using the s3c24xx_dma interface directly, drivers/mmc/host/s3cmci.c.
 
-     tux3
-     |-- doc
-     `-- user
-         |-- kernel
-         `-- tests
+How about the patch below?
+8<-------
+ASoC: s3c24xx: use legacy DMA interface directly
 
-The Makefile in kernel is a normal kernel makefile that builds a module
-for the currently running kernel. Tux3 is also able to run in userspace,
-either under Fuse or as a command line utility, and we have automated
-unit testing of the kernel code in userspace. Most of our kernel code
-is "dual mode", that is, everything not inside "ifdef __KERNEL__" will
-compile and run in userspace. This is a cool and powerful feature that
-we want to preserve. This imposes unique requirements for our
-repository structure, the topic of this mail.
+The samsung platform code has a wrapper around the legacy s3c24xx
+DMA API as an alternative to the dmaengine API. This is only used
+by the legacy s3c24xx sound support, which is never used in combination
+with the dmaengine API.
 
-We want to continue maintaining all our userspace and kernel code in a
-single repository, which must be pullable and therefore must be a
-branch of linux.git with the form:
+We can simplify the ASoC code significantly, and thereby completely
+obsoleting arch/arm/plat-samsung/dma-ops.c,
+arch/arm/plat-samsung/s3c-dma-ops.c and
+arch/arm/plat-samsung/include/plat/dma-ops.h.
 
-     linux (branch: tux3)
-     `-- fs
-         `-- tux3
+This patch achieves this by open-coding the implementation of this
+wrapper, which ends up saving us more code than we have to add.
+s3c24xx does not support cyclic DMA, so anything referring to that
+gets deleted in the process.
 
-We would maintain a branch of this for mainline pulls. So far, just like
-every other filesystem. To accommodate our unique workflow, we have in
-mind another branch with the extended form:
+The plat-samsung dma wrapper code is now dead code and can be removed
+subsequently.
 
-     linux (branch: tux3-all)
-     `-- fs
-         `-- tux3 (kernel files)
-             |-- doc
-             `-- user (utilities and fuse)
-                 `-- tests
+Signed-off--by: Arnd Bergmann <arnd@arndb.de>
+---
 
-By being in the same repository, merging to the kernel-only branch per
-mainline code drop should be easy. The challenge is, how do we change
-our current repository to that form while preserving our history?
+ sound/soc/samsung/ac97.c | 10 ++----
+ sound/soc/samsung/dma.c  | 79 +++++++++++++++---------------------------------
+ sound/soc/samsung/dma.h  |  2 --
+ 3 files changed, 27 insertions(+), 64 deletions(-)
 
-I found one way to do it. First, create the tux3-full branch and create
-linux/fs/tux3. Then pull our whole repository into the root of mainline.
-Luckily, there are no files in our own root and the two directories
-(user and doc) do not collide. So continue with:
+diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
+index 76b072b..28fe097 100644
+--- a/sound/soc/samsung/ac97.c
++++ b/sound/soc/samsung/ac97.c
+@@ -253,10 +253,7 @@ static int s3c_ac97_trigger(struct snd_pcm_substream *substream, int cmd,
+ 
+ 	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
+ 
+-	if (!dma_data->ops)
+-		dma_data->ops = samsung_dma_get_ops();
+-
+-	dma_data->ops->started(dma_data->channel);
++	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
+ 
+ 	return 0;
+ }
+@@ -287,10 +284,7 @@ static int s3c_ac97_mic_trigger(struct snd_pcm_substream *substream,
+ 
+ 	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
+ 
+-	if (!dma_data->ops)
+-		dma_data->ops = samsung_dma_get_ops();
+-
+-	dma_data->ops->started(dma_data->channel);
++	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
+ 
+ 	return 0;
+ }
+diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
+index dc09b71..3c6e2f2 100644
+--- a/sound/soc/samsung/dma.c
++++ b/sound/soc/samsung/dma.c
+@@ -54,8 +54,6 @@ struct runtime_data {
+ 	struct s3c_dma_params *params;
+ };
+ 
+-static void audio_buffdone(void *data);
+-
+ /* dma_enqueue
+  *
+  * place a dma buffer onto the queue for the dma system
+@@ -66,7 +64,6 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+ 	struct runtime_data *prtd = substream->runtime->private_data;
+ 	dma_addr_t pos = prtd->dma_pos;
+ 	unsigned int limit;
+-	struct samsung_dma_prep dma_info;
+ 
+ 	pr_debug("Entered %s\n", __func__);
+ 
+@@ -75,33 +72,11 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+ 	pr_debug("%s: loaded %d, limit %d\n",
+ 				__func__, prtd->dma_loaded, limit);
+ 
+-	dma_info.cap = (samsung_dma_has_circular() ? DMA_CYCLIC : DMA_SLAVE);
+-	dma_info.direction =
+-		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+-		? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
+-	dma_info.fp = audio_buffdone;
+-	dma_info.fp_param = substream;
+-	dma_info.period = prtd->dma_period;
+-	dma_info.len = prtd->dma_period*limit;
+-
+-	if (dma_info.cap == DMA_CYCLIC) {
+-		dma_info.buf = pos;
+-		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
+-		prtd->dma_loaded += limit;
+-		return;
+-	}
+-
+ 	while (prtd->dma_loaded < limit) {
+ 		pr_debug("dma_loaded: %d\n", prtd->dma_loaded);
+ 
+-		if ((pos + dma_info.period) > prtd->dma_end) {
+-			dma_info.period  = prtd->dma_end - pos;
+-			pr_debug("%s: corrected dma len %ld\n",
+-					__func__, dma_info.period);
+-		}
+-
+-		dma_info.buf = pos;
+-		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
++		s3c2410_dma_enqueue(prtd->params->channel, substream, pos,
++				    prtd->dma_period * limit);
+ 
+ 		prtd->dma_loaded++;
+ 		pos += prtd->dma_period;
+@@ -112,7 +87,8 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
+ 	prtd->dma_pos = pos;
+ }
+ 
+-static void audio_buffdone(void *data)
++static void audio_buffdone(struct s3c2410_dma_chan *channel, void *data,
++		       int size, enum s3c2410_dma_buffresult res)
+ {
+ 	struct snd_pcm_substream *substream = data;
+ 	struct runtime_data *prtd = substream->runtime->private_data;
+@@ -128,10 +104,8 @@ static void audio_buffdone(void *data)
+ 			snd_pcm_period_elapsed(substream);
+ 
+ 		spin_lock(&prtd->lock);
+-		if (!samsung_dma_has_circular()) {
+-			prtd->dma_loaded--;
+-			dma_enqueue(substream);
+-		}
++		prtd->dma_loaded--;
++		dma_enqueue(substream);
+ 		spin_unlock(&prtd->lock);
+ 	}
+ }
+@@ -145,8 +119,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
+ 	unsigned long totbytes = params_buffer_bytes(params);
+ 	struct s3c_dma_params *dma =
+ 		snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
+-	struct samsung_dma_req req;
+-	struct samsung_dma_config config;
++	enum dma_transfer_direction direction;
+ 
+ 	pr_debug("Entered %s\n", __func__);
+ 
+@@ -164,24 +137,22 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
+ 		pr_debug("params %p, client %p, channel %d\n", prtd->params,
+ 			prtd->params->client, prtd->params->channel);
+ 
+-		prtd->params->ops = samsung_dma_get_ops();
+-
+-		req.cap = (samsung_dma_has_circular() ?
+-			DMA_CYCLIC : DMA_SLAVE);
+-		req.client = prtd->params->client;
+-		config.direction =
+-			(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
++		direction = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK
+ 			? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
+-		config.width = prtd->params->dma_size;
+-		config.fifo = prtd->params->dma_addr;
+-		prtd->params->ch = prtd->params->ops->request(
+-				prtd->params->channel, &req, rtd->cpu_dai->dev,
+-				prtd->params->ch_name);
+-		if (!prtd->params->ch) {
++
++		if (s3c2410_dma_request(prtd->params->channel,
++					(void*)prtd->params->client, NULL) < 0) {
+ 			pr_err("Failed to allocate DMA channel\n");
++			s3c2410_dma_free(prtd->params->channel,
++					 (void*)prtd->params->client);
+ 			return -ENXIO;
+ 		}
+-		prtd->params->ops->config(prtd->params->ch, &config);
++		s3c2410_dma_devconfig(prtd->params->channel, direction,
++				      prtd->params->dma_addr);
++		s3c2410_dma_config(prtd->params->channel,
++				   prtd->params->dma_size);
++		s3c2410_dma_set_buffdone_fn(prtd->params->channel,
++					    audio_buffdone);
+ 	}
+ 
+ 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
+@@ -208,9 +179,9 @@ static int dma_hw_free(struct snd_pcm_substream *substream)
+ 	snd_pcm_set_runtime_buffer(substream, NULL);
+ 
+ 	if (prtd->params) {
+-		prtd->params->ops->flush(prtd->params->ch);
+-		prtd->params->ops->release(prtd->params->ch,
+-					prtd->params->client);
++		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
++		s3c2410_dma_free(prtd->params->channel,
++				 (void*)prtd->params->client);
+ 		prtd->params = NULL;
+ 	}
+ 
+@@ -230,7 +201,7 @@ static int dma_prepare(struct snd_pcm_substream *substream)
+ 		return 0;
+ 
+ 	/* flush the DMA channel */
+-	prtd->params->ops->flush(prtd->params->ch);
++	s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
+ 
+ 	prtd->dma_loaded = 0;
+ 	prtd->dma_pos = prtd->dma_start;
+@@ -253,12 +224,12 @@ static int dma_trigger(struct snd_pcm_substream *substream, int cmd)
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 		prtd->state |= ST_RUNNING;
+-		prtd->params->ops->trigger(prtd->params->ch);
++		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_START);
+ 		break;
+ 
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 		prtd->state &= ~ST_RUNNING;
+-		prtd->params->ops->stop(prtd->params->ch);
++		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_STOP);
+ 		break;
+ 
+ 	default:
+diff --git a/sound/soc/samsung/dma.h b/sound/soc/samsung/dma.h
+index ad7c0f0..c52fa86 100644
+--- a/sound/soc/samsung/dma.h
++++ b/sound/soc/samsung/dma.h
+@@ -23,8 +23,6 @@ struct s3c_dma_params {
+ 	int channel;				/* Channel ID */
+ 	dma_addr_t dma_addr;
+ 	int dma_size;			/* Size of the DMA transfer */
+-	unsigned ch;
+-	struct samsung_dma_ops *ops;
+ 	char *ch_name;
+ 	struct snd_dmaengine_dai_dma_data dma_data;
+ };
 
-   1. Git mv linux/user/kernel/* to linux/fs/tux3/*
-   2. Git mv linux/user to linux/fs/tux3/user
-   3. Git mv linux/doc to linux/fs/tux3/user/doc
-
-A trivial patch repoints the userspace includes at fs/tux3 to make our
-user code buildable again, and Tux3 thus arrives at its new home.
-
-This approach is a bit clunky, but it is robust, fast and accurate,
-unlike my first attempt using format-patch and am. That almost worked,
-but was dead slow and ran aground on a few instances of parallel
-development that a simple linear patch series cannot represent.
-
-So other than a minor wart in our history with an 80 thousand line file
-move diff, this approach gets us what we want. But is there a better Git
-way to do it? Perhaps some magic to pull directly to the directory we
-really want? I can see how something like that might be useful in more
-than just our case.
-
-As for what is in the repository, and whether it is worth merging to
-mainline, that is a question to address soon after. There is no doubt
-that our development pace will pick up a lot after merge. Even the mere
-mention of an upcoming email to Linus was enough to inspire Darrick Wong
-to build the code, run it through an xfs test suite (thanks Dave) and
-submit two bug reports (one trivial, one deep). Elapsed time: 1.5 hours.
-This would be a taste of what we have been missing by being out of tree.
-
-Tux3 coding style has come a long way since our last review, five years
-ago. My, how time flies. Back then, there were a lot of intrusions
-of userspace idioms and just plain bad taste into our kernel code. That
-is fixed now. Userspace now adapts to kernel idioms, not the other way
-round. We generally keep it sparse-clean and lindent-clean and printable
-on 80 column punch cards, though some cruft has probably crept in since
-the last housecleaning.
-
-On the functionality front, the only critical omission now is ENOSPC
-handling, which was deferred these past few weeks while we tackled
-some far more engaging performance questions. We decided not to delay
-Tux3 for review any further, and do the ENOSPC work in parallel. The
-consequence is that Tux3 currently reports out of space by going BUG.
-Which is maybe a good way to keep users from taking unwarranted risks
-with their valuable data for the time being. That, and only being
-buildable for kernels that are months away from landing in distros.
-
-There are lots of good and interesting things to say about Tux3, but May
-Day is traditionally not a day for advertising. Today is a day for
-celebrating and repository refactoring.
-
-Regards,
-
-Daniel
