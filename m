@@ -1,80 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaEAN4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:56:32 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:65375 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724AbaEAN43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:56:29 -0400
+	id S1755108AbaEAN5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 09:57:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754810AbaEAN5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 09:57:08 -0400
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        JBottomley@parallels.com, hch@lst.de, linux-scsi@vger.kernel.org,
+        kmo@daterainc.com, linux-kernel@vger.kernel.org,
+        m.lombardi85@gmail.com
+Subject: [PATCH V3] bio: modify __bio_add_page() to accept pages that don't start a new segment
+Date: Thu,  1 May 2014 15:56:55 +0200
+Message-Id: <1398952615-22034-1-git-send-email-mlombard@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXbJrnNPyPmD-rcGN-M4ybFtrS3FCuvegJue1Pe-ae8SQ@mail.gmail.com>
-References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
- <1398334403-26181-4-git-send-email-geert+renesas@glider.be>
- <7hoazpdldx.fsf@paris.lan> <20140429131610.29859C4094A@trevor.secretlab.ca>
- <CAMuHMdUdnoah1uZbMn_xONXZ2i8wG5kY7msMzCdBwS+xt9tmDA@mail.gmail.com>
- <20140501080331.D3CFAC409DA@trevor.secretlab.ca> <CAMuHMdXbJrnNPyPmD-rcGN-M4ybFtrS3FCuvegJue1Pe-ae8SQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 1 May 2014 14:56:08 +0100
-X-Google-Sender-Auth: J3YtbilsIXEafXdvC6ctkleDKhE
-Message-ID: <CACxGe6sy-fumkNPRcQqB8G4so85dHW_5pZSv+cQDqzJfoneZ+A@mail.gmail.com>
-Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
- with the PM core
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Kevin Hilman <khilman@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 2:41 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> Hi Grant,
->
-> On Thu, May 1, 2014 at 10:03 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Wed, 30 Apr 2014 23:54:37 +0200, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>> On Tue, Apr 29, 2014 at 3:16 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> > I also don't like that it tries to set up every clock, but there is no
->>> > guarantee that the driver will even use it. I would rather see this
->>> > behaviour linked into the function that obtains the clock at driver
->>> > .probe() time. That way it can handle deferred probe correctly and it
->>> > only sets up clocks that are actually used by the driver.
->>>
->>> Not every clock. Only the clocks that are advertised by the clock driver as
->>> being suitable for runtime_pm management. These are typically module
->>> clocks, that must be enabled for the module to work. The driver doesn't
->>> always want to handle these explicitly.
->>
->> Help me out here becasue I don't understand how that works with this
->> patch set. From my, admittedly naive, reading it looks like the setup is
->> being done at device creation time, but if the driver (or module) gets
->> to declare which clocks need to be enabled in order to work, then that
->> information is not available at device creation time.
->
-> Setup is indeed done at registration time. Note the check calling
-> clk_may_runtime_pm(), which is introduced in "[PATCH/RFC 1/4] clk: Add
-> CLK_RUNTIME_PM and clk_may_runtime_pm()".
->
-> Clock drivers are initialized much earlier, so they can set the CLK_RUNTIME_PM
-> flag for suitable clocks before platform devices are created from DT, cfr. the
-> example for shmobile MSTP clocks in "[PATCH/RFC 4/4] clk: shmobile: mstp:
-> Set CLK_RUNTIME_PM flag".
+The original behaviour is to refuse to add a new page if the maximum number
+of segments has been reached, regardless of the fact the page we are
+going to add can be merged into the last segment or not.
 
-This is where I have issue. You're *assuming* clock drivers are
-initialized much earlier. That is not guaranteed. It is perfectly
-valid for clocks to be set up by a normal device driver, just like for
-interrupt controllers or gpio controllers.
+Unfortunately, when the system runs under heavy memory fragmentation conditions,
+a driver may try to add multiple pages to the last segment.
+The original code won't accept them and EBUSY will be reported to
+userspace.
 
-g.
+This patch modifies the function so it refuses to add a page
+only in case the latter starts a new segment and the maximum number
+of segments has already been reached.
+
+The bug can be easily reproduced with the st driver:
+
+1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
+2) modprobe st buffer_kbs=1024
+3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
+   dd: error writing ‘/dev/st0’: Device or resource busy
+
+Changes in V3:
+
+In case of error, V2 restored the previous number of segments but left
+the BIO_SEG_FLAG set.
+To avoid problems, after the page is removed from the bio vec,
+V3 performs a recount of the segments in the error code path.
+
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+---
+ fs/bio.c | 48 ++++++++++++++++++++++++++----------------------
+ 1 file changed, 26 insertions(+), 22 deletions(-)
+
+diff --git a/fs/bio.c b/fs/bio.c
+index 6f0362b..9bf512e 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -750,29 +750,31 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		return 0;
+ 
+ 	/*
+-	 * we might lose a segment or two here, but rather that than
+-	 * make this too complex.
++	 * setup the new entry, we might clear it again later if we
++	 * cannot add the page
++	 */
++	bvec = &bio->bi_io_vec[bio->bi_vcnt];
++	bvec->bv_page = page;
++	bvec->bv_len = len;
++	bvec->bv_offset = offset;
++	bio->bi_vcnt++;
++	bio->bi_phys_segments++;
++
++	/*
++	 * Perform a recount if the number of segments is greater
++	 * than queue_max_segments(q).
+ 	 */
+ 
+-	while (bio->bi_phys_segments >= queue_max_segments(q)) {
++	while (bio->bi_phys_segments > queue_max_segments(q)) {
+ 
+ 		if (retried_segments)
+-			return 0;
++			goto failed;
+ 
+ 		retried_segments = 1;
+ 		blk_recount_segments(q, bio);
+ 	}
+ 
+ 	/*
+-	 * setup the new entry, we might clear it again later if we
+-	 * cannot add the page
+-	 */
+-	bvec = &bio->bi_io_vec[bio->bi_vcnt];
+-	bvec->bv_page = page;
+-	bvec->bv_len = len;
+-	bvec->bv_offset = offset;
+-
+-	/*
+ 	 * if queue has other restrictions (eg varying max sector size
+ 	 * depending on offset), it can specify a merge_bvec_fn in the
+ 	 * queue to get further control
+@@ -789,23 +791,25 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		 * merge_bvec_fn() returns number of bytes it can accept
+ 		 * at this offset
+ 		 */
+-		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
+-			bvec->bv_page = NULL;
+-			bvec->bv_len = 0;
+-			bvec->bv_offset = 0;
+-			return 0;
+-		}
++		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
++			goto failed;
+ 	}
+ 
+ 	/* If we may be able to merge these biovecs, force a recount */
+-	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
++	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
+ 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 
+-	bio->bi_vcnt++;
+-	bio->bi_phys_segments++;
+  done:
+ 	bio->bi_iter.bi_size += len;
+ 	return len;
++
++ failed:
++	bvec->bv_page = NULL;
++	bvec->bv_len = 0;
++	bvec->bv_offset = 0;
++	bio->bi_vcnt--;
++	blk_recount_segments(q, bio);
++	return 0;
+ }
+ 
+ /**
+-- 
+Maurizio Lombardi
+
