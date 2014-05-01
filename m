@@ -1,33 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaEAJna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:43:30 -0400
-Received: from mail.ndcp.edu.ph ([121.58.235.59]:63262 "EHLO mail.ndcp.edu.ph"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754755AbaEAJn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:43:29 -0400
-X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 05:43:29 EDT
-To: undisclosed-recipients:;
-Subject: My name is Lisa from North Africa .
-MIME-Version: 1.0
-Date: Thu, 01 May 2014 17:35:27 +0800
-From: Lisa Kuku <lisakuku@outlook.com>
-Reply-To: lisakuku@outlook.com
-Message-ID: <fa3fa797c7924a1fd576428cf011cb57@mail.ndcp.edu.ph>
-User-Agent: RoundCube Webmail/0.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+	id S1754421AbaEAJ5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 05:57:10 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40609 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844AbaEAJ5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 05:57:08 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: computersforpeace@gmail.com, linux-mtd@lists.infradead.org,
+        kernel@stlinux.com
+Subject: [PATCH 00/47] mtd: nand: Add new driver supporting ST's BCH h/w
+Date: Thu,  1 May 2014 10:56:07 +0100
+Message-Id: <1398938214-17847-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+MTD Folks,
 
+This driver is now at v1.  Suggestions from the RFC patch-set have now
+been applied.  None of the framework internals are now exported for use
+within the driver, as it now uses the 'ecc' call-backs provided.
+Hopefully the driver now conforms to what's expected and will be suitable
+to be merged.
 
--- 
-Hello ,
-My name is Lisa from North Africa . I am a woman seeking for true
-friendship and partner, please if you don't mind I will like you
-to respond to my mail so I can send you my pictures and tell you more
-about myself,
-Lisa.
+NB: This driver is based on a patch written, but not yet submitted by
+Brian Norris which renames .erase_cmd() to .erase() and places
+responsibility of .waitfunc() functionality into those call-backs.
+
+Kind regards,
+Lee
+
+ Documentation/devicetree/bindings/mtd/stm-nand.txt |  123 +
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |   39 +
+ drivers/mtd/nand/Kconfig                           |   14 +
+ drivers/mtd/nand/Makefile                          |    2 +
+ drivers/mtd/nand/stm_nand_bch.c                    | 2437 ++++++++++++++++++++
+ drivers/mtd/nand/stm_nand_dt.c                     |  149 ++
+ drivers/mtd/nand/stm_nand_dt.h                     |   39 +
+ drivers/mtd/nand/stm_nand_regs.h                   |  332 +++
+ include/linux/mtd/stm_nand.h                       |  104 +
+ 9 files changed, 3239 insertions(+)
 
