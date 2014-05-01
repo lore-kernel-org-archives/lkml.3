@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaEARSv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 13:18:51 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:45205 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaEARSt (ORCPT
+	id S1751217AbaEARYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 13:24:38 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:59434 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaEARYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 13:18:49 -0400
-Message-ID: <536281F4.1000402@gmail.com>
-Date: Thu, 01 May 2014 19:18:44 +0200
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 1 May 2014 13:24:37 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 2/3] of: mtd: add NAND randomizer mode retrieval
-References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>	<1398906592-24677-3-git-send-email-b.brezillon.dev@gmail.com> <20140501131605.9CB7CC409DA@trevor.secretlab.ca>
-In-Reply-To: <20140501131605.9CB7CC409DA@trevor.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <534F858B.4060208@ladisch.de>
+References: <534F01D1.9000206@gmail.com>
+	<534F858B.4060208@ladisch.de>
+Date: Thu, 1 May 2014 10:24:36 -0700
+X-Google-Sender-Auth: WNkv4M1CBgCxS6O8EgMIobgey_4
+Message-ID: <CAA9_cmdoWEHRLFnbr-cnogEqGq7rE+2zyjuJyXZLX+4kDgiorA@mail.gmail.com>
+Subject: Re: debug_dma_assert_idle - snd_hda_intel - cpu touching an active
+ dma mapped cacheline
+From: Dan Williams <dan.j.williams@intel.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: poma <pomidorabelisima@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 17, 2014 at 12:40 AM, Clemens Ladisch <clemens@ladisch.de> wrote:
+> poma wrote:
+>> Sound whispers,
+>
+> ???
+>
+>>  WARNING: CPU: 3 PID: 900 at lib/dma-debug.c:593 debug_dma_assert_idle+0x159/0x1d0()
+>>  snd_hda_intel 0000:00:07.0: DMA-API: cpu touching an active dma mapped cacheline [cln=0x03014000]
+>>  ...
+>>  Mapped at:
+>>   [<c074ec12>] debug_dma_alloc_coherent+0x22/0x70
+>
+> "Coherent" means "touching DMA mappings is allowed".
+> Why does dma-debug complain about that?
 
-On 01/05/2014 15:16, Grant Likely wrote:
-> On Thu,  1 May 2014 03:09:51 +0200, Boris BREZILLON <b.brezillon.dev@gmail.com> wrote:
->> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
->> ---
-> No commit message? Immediate NAK. Please, make sure you write a
-> description for each and every patch. This is not optional. Future
-> readers want to know what this patch solves and any other information
-> you can provide without having to read the diff.
+Right, but coherency does not follow copy-on-write.  The check is
+there to catch cases where a page is COW'd while an active dma mapping
+on the source page is present.  Sure, the write is coherent, but due
+to the COW it's going to the wrong page, so you are potentially
+missing data in the new mapping.
 
-My bad. I just sent a commit I forgot to rework to add a proper commit
-message.
-I'll add a commit message describing the different options for the
-"nand-rnd-mode" property and update the nand DT bindings documentation.
+See how NET_DMA inspired this check:
 
-Best Regards,
-
-Boris
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/dma/Kconfig?id=77873803363c
