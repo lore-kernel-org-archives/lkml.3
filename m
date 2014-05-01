@@ -1,51 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaEATGk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 15:06:40 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54412 "EHLO
+	id S1751854AbaEATJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 15:09:17 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54427 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaEATGh (ORCPT
+	with ESMTP id S1750851AbaEATJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 15:06:37 -0400
-Date: Thu, 1 May 2014 12:05:40 -0700
+	Thu, 1 May 2014 15:09:14 -0400
+Date: Thu, 1 May 2014 12:08:42 -0700
 From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
-        Sean Paul <seanpaul@chromium.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Message-ID: <20140501190540.GY3245@sirena.org.uk>
-References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
- <1397689950-1568-5-git-send-email-dianders@chromium.org>
- <20140423115102.GO21613@lee--X1>
- <CAD=FV=WN4hVibiK_8+mpNfO7UQnd35ZT9EXA9fuw-mnBzzb1cA@mail.gmail.com>
- <CAOesGMiMiqk1mKcVF8SwePhUS-8cAmM3Ut3f+qRvjz27iw7CTA@mail.gmail.com>
- <20140501184941.GV3245@sirena.org.uk>
- <CAD=FV=W3qxMqM+cu-gEKkL4kNB-Jvo6-0tdt=L2madA8RLbfkw@mail.gmail.com>
+To: Xia Kaixu <kaixu.xia@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        arnd@arndb.de, Liam Girdwood <lgirdwood@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Message-ID: <20140501190842.GZ3245@sirena.org.uk>
+References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+ <1398770316-19715-12-git-send-email-kaixu.xia@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rPU94QKZZSDlQsx2"
+	protocol="application/pgp-signature"; boundary="VGJtZYeI3LbW67dD"
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=W3qxMqM+cu-gEKkL4kNB-Jvo6-0tdt=L2madA8RLbfkw@mail.gmail.com>
+In-Reply-To: <1398770316-19715-12-git-send-email-kaixu.xia@linaro.org>
 X-Cookie: Keep it short for pithy sake.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 209.133.115.210
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 4/5] regulator: tps65090: Allow setting the
- overcurrent wait time
+Subject: Re: [PATCH 11/15] ASoC: WM0010 needs SPI
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -53,39 +36,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rPU94QKZZSDlQsx2
+--VGJtZYeI3LbW67dD
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, May 01, 2014 at 11:52:28AM -0700, Doug Anderson wrote:
+On Tue, Apr 29, 2014 at 07:18:32PM +0800, Xia Kaixu wrote:
 
-> > Yes, just about to post a fix.
+> @@ -201,7 +201,7 @@ config SND_SOC_SPEYSIDE
+>  	select SND_SAMSUNG_I2S
+>  	select SND_SOC_WM8996
+>  	select SND_SOC_WM9081
+> -	select SND_SOC_WM0010
+> +	select SND_SOC_WM0010 if SPI
+>  	select SND_SOC_WM1250_EV1
 
-> Doh, was working on it at the same time.
+No, this is broken.  The driver won't work if all the components it uses
+don't load and the dependency for SPI isn't SPI, it's SPI_MASTER.
 
-No worries, I dropped my patch in favour of yours now (though they look
-to be identical apart from the metadata!).
-
---rPU94QKZZSDlQsx2
+--VGJtZYeI3LbW67dD
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTYpsBAAoJELSic+t+oim92xEQAJWmyGoqjVxxTy4gcE7qs43A
-C39YCGn3jWd+AgipaURFjDiRt7cNoEJjR/W+foFZGvDcgp6f7OEsyh65fXMyiiZS
-NZ8K+8GhT/bwXYxBQ5REczD+o9MWWSXCT7z4YVz5U/6bnWx1weeiZ0kJ3Ii3ujyq
-E50WiTICmGtjy/VF4S2LKMI0FiMyOOv0H2betc0Kq6ng84AF4i7S1U859vXuhee0
-tsPg/IdC7PO1gV/DYbm+8IekHhQxoPQwdkbNec1Nmqz/CYLzDJXMT0e7CEAUBPS2
-Rt20SRFMgoViZHWvSSvic+Ww1z520C0Pw39zcBkyb268aD04+d6Gli5VUGNw3fRK
-MZnJsiGco0g1Cjr45oh7yIR2BgAmuudw0rHKXIingpHPYLO94R3BT9PutpXBVXzW
-RmAX+yRjYSEt+mJ3sF2NeATEk97A2bMM771lLR2ZvxbPPlvXES+os7ZZ0LeFBCY8
-ZFUyM/L6XZMtrAfocR/unbvqDNgRDoQBke1RSAf0jg4jSs2SaoxXqdvuEVIf/YU4
-IgrmqMA7lGVjA2Ab+QTEapIk+Y6Le7TaJIZC8AhMiehxIpCvfYFHjgGVyECJgEdH
-PxMTroCXhMnQm5t/eqwXdovM08LbAC4KW5ygitPT1m/tRlAZZ4iP/o8wBIuReRS9
-JLy1r3PAZteDQc/7b9kz
-=S8jw
+iQIcBAEBAgAGBQJTYpu3AAoJELSic+t+oim9KJ4P/3LmQ+4hfHyEpaoZ1c5NtgIJ
+2g3k6VLcChLiBKOKMh/Z4WRUZcF8PuQGkLj6hUHOwVIs6/j2FFJHjN5FMc6KGQ5s
+vvFx9e11SUWrufAzFZ2CuU1l2V0a0neGOpPKZlDUhOm7GM6ioUCbIAfyajHjKUp4
+0seIH0VQiJ7g2mhksVGdqYRF9yAZxoihxzWHCARwu9zx7Zc9LCaMooLrUYK1tZiP
+VU6YB/0hxrhmWBdXcrTlTZ5+GI4O/kRRwBGabcowWiO28NhJF8P9yKJ8tyqHze41
+Q4aQNMMX4Apb+nus489SvIYCu36KBCzrnSbhyP+wA86lj8xQ2GXtCh5mTxXKh3sm
+/zT6Xhh63sF7h2lTCSNCqUGtibPSi72zIuQD56wJXOcZSQ4PdgCDF+Q99r+UkJuo
+HHWPVX0YIBZ4KKZfaT7l7nMNekALMcuLMf2tqlrm94laQ6g2us+ilExL9tma5T/l
+gLyxRG11uwUU2rV/j87t2w7J3cHe0XdUxfj3GeqgtWR5wi24/jmGU/7Z2VSRiPDL
+vLSRL3M9UNTEobnCzHJRtCLXDagWUL6/WKdxYQY5wG2zRkW+CYgZL9RMlkhDqC20
+8VaeXLMtV47htm6HDen1O+Hs0g+d3xt+eGi+7Bj7+WtIaCAjtqoTxBPk1CbzUC4P
+g6xIbzyGVg16+lU4/Hfu
+=8FMB
 -----END PGP SIGNATURE-----
 
---rPU94QKZZSDlQsx2--
+--VGJtZYeI3LbW67dD--
