@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaEAPF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:05:56 -0400
-Received: from imap.thunk.org ([74.207.234.97]:43889 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751298AbaEAPFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:05:55 -0400
-Date: Thu, 1 May 2014 15:05:49 +0000
-From: tytso@mit.edu
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Florian Weimer <fweimer@redhat.com>,
-        linux-kernel@vger.kernel.org, Kees Cook <kees@outflux.net>
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-Message-ID: <20140501150549.GA24388@thunk.org>
-Mail-Followup-To: tytso@mit.edu, "H. Peter Anvin" <hpa@zytor.com>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org,
-	Kees Cook <kees@outflux.net>
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
- <20140428214112.GC7857@thunk.org>
- <535FE68C.8060002@redhat.com>
- <20140429182610.GA19325@thunk.org>
- <53616293.3080308@mit.edu>
- <20140501020627.GA25248@thunk.org>
- <1be5350d-89f9-44b9-8d1b-e3e591741940@email.android.com>
+	id S1754897AbaEAPJa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:09:30 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:59775 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaEAPJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:09:29 -0400
+Date: Thu, 1 May 2014 17:09:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/4] workqueue: Create low-level unbound workqueues
+ cpumask
+Message-ID: <20140501150918.GE25369@localhost.localdomain>
+References: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
+ <1398350256-7834-2-git-send-email-fweisbec@gmail.com>
+ <20140424153716.GG14460@htj.dyndns.org>
+ <20140501150114.GD25369@localhost.localdomain>
+ <20140501150231.GD31611@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1be5350d-89f9-44b9-8d1b-e3e591741940@email.android.com>
+In-Reply-To: <20140501150231.GD31611@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 09:05:00PM -0700, H. Peter Anvin wrote:
+On Thu, May 01, 2014 at 11:02:31AM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> Giving the guest a seed would be highly useful, though.  There are a
-> number of ways to do that; changing the boot protocol is probably
-> only useful if Qemu itself bouts the kernel as opposed to an in-VM
-> bootloader.
+> On Thu, May 01, 2014 at 05:01:17PM +0200, Frederic Weisbecker wrote:
+> > > Another thing with naming is that I didn't anticipate having
+> > > attributes at the top directory so the workqueue directories aren't
+> > > namespaced.  Maybe we want to namespace top level knobs?
+> > > "system_cpumask" maybe?  Any better ideas?
+> > 
+> > Not sure why you want that. It makes sense on directories grouping
+> > file for different subsystem. But here?
+> 
+> Worried about possible conflicts with workqueue names if we end up
+> with more attributes.
 
-So how about simply passing a memory address and an optional offset on
-the boot command line?  That way the hypervisor can drop the seed in
-some convenient real memory location, and the kernel can just copy it
-someplace safe, or in the case of kernel ASLR, the relocator can use
-it to seed its CRNG, and then after it relocates the kernel, it can
-crank the CRNG to pass a seed to the kernel's urandom driver.
-
-That way, we don't have to do something which is ACPI or DT dependent.
-Maybe there will be embedded architectures where using DT might be
-more convenient, but this would probably be simplest for KVM/qumu-based
-VM's, I would think.
-
-     	     	   	      		- Ted
+But they are already protected in their own directories. Also having
+the same file attribute names in root and in individual directories
+suggests that root attributes primes on the childs.
