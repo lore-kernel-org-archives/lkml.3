@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaEAPLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:11:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721AbaEAPLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:11:21 -0400
-Date: Thu, 1 May 2014 16:11:16 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/17] mm: page_alloc: Use unsigned int for order in more
- places
-Message-ID: <20140501151116.GM23991@suse.de>
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
- <1398933888-4940-12-git-send-email-mgorman@suse.de>
- <53625BC3.3000804@intel.com>
+	id S1755391AbaEAPNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:13:09 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:52145 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbaEAPNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:13:06 -0400
+Date: Thu, 1 May 2014 11:13:02 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 1/4] workqueue: Create low-level unbound workqueues
+ cpumask
+Message-ID: <20140501151302.GE31611@htj.dyndns.org>
+References: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
+ <1398350256-7834-2-git-send-email-fweisbec@gmail.com>
+ <20140424153716.GG14460@htj.dyndns.org>
+ <20140501150114.GD25369@localhost.localdomain>
+ <20140501150231.GD31611@htj.dyndns.org>
+ <20140501150918.GE25369@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53625BC3.3000804@intel.com>
+In-Reply-To: <20140501150918.GE25369@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 07:35:47AM -0700, Dave Hansen wrote:
-> On 05/01/2014 01:44 AM, Mel Gorman wrote:
-> > X86 prefers the use of unsigned types for iterators and there is a
-> > tendency to mix whether a signed or unsigned type if used for page
-> > order. This converts a number of sites in mm/page_alloc.c to use
-> > unsigned int for order where possible.
+On Thu, May 01, 2014 at 05:09:20PM +0200, Frederic Weisbecker wrote:
+> > > Not sure why you want that. It makes sense on directories grouping
+> > > file for different subsystem. But here?
+> > 
+> > Worried about possible conflicts with workqueue names if we end up
+> > with more attributes.
 > 
-> Does this actually generate any different code?  I'd actually expect
-> something like 'order' to be one of the easiest things for the compiler
-> to figure out an absolute range on.
-> 
+> But they are already protected in their own directories. Also having
+> the same file attribute names in root and in individual directories
+> suggests that root attributes primes on the childs.
 
-Yeah, it generates different code. Considering that this patch affects an
-API that can be called external to the code block how would the compiler
-know what the range of order would be in all cases?
+Yeah but workqueues already tend to have pretty short and fundamental
+names, and it can get confusing to have mix of files and directories
+all with short names without much recognizable pattern.  I don't know.
+Maybe I'm worrying too much but I'd really hate to be in a situation
+where an attribute has to be renamed because it conflicts with a
+workqueue name.
 
 -- 
-Mel Gorman
-SUSE Labs
+tejun
