@@ -1,324 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaEAVX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:23:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16844 "EHLO mx1.redhat.com"
+	id S1752273AbaEAV2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36475 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728AbaEAVXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:23:55 -0400
-Date: Thu, 1 May 2014 23:24:44 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
-        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
- stealing tags
-Message-ID: <20140501212442.GA17436@dhcp-26-207.brq.redhat.com>
-References: <cover.1395840483.git.agordeev@redhat.com>
- <20140422115629.GI11182@twins.programming.kicks-ass.net>
+	id S1751736AbaEAV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:28:06 -0400
+Date: Thu, 1 May 2014 16:27:46 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140501212746.GD3907@treble.redhat.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+ <87ppjxcjo2.fsf@tassilo.jf.intel.com>
+ <20140501210154.GC3907@treble.redhat.com>
+ <20140501210601.GG2382@two.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140422115629.GI11182@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140501210601.GG2382@two.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 01:56:29PM +0200, Peter Zijlstra wrote:
-> I've not had time to revisit/finish them, but you should definitely
-> clean up the percpu_ida stuff and reduce existing contention before
-> going overboard.
+On Thu, May 01, 2014 at 11:06:01PM +0200, Andi Kleen wrote:
+> > When bar returns, would it skip foo and go straight back to foo's
+> > caller?  If so, then it should be safe to patch foo after it jumps to
+> > bar.
+> 
+> foo is no problem, you see it in the backtrace.
+> But you don't see bar.
 
-Hi Peter,
+Sorry, I missed your point the first time.  Good question.
 
-I tried to combine your series into a single patch against 3.15-rc3.
+stop_machine schedules a high priority thread on each CPU, which means
+every other task will be waiting in a schedule() call (assuming a
+non-preemptible kernel).  In my local kernel, a quick grep of the
+disassembly doesn't show any jumps to schedule:
 
-I hope, it looks like you intended and my comments in follow-up
-message make sense.
+  $ egrep 'j.*<.*>' vmlinux.asm |grep -v '\+' |grep schedule
+  ffffffff816b89b5:	e9 e2 fe ff ff       	jmpq   ffffffff816b889c <retint_with_reschedule>
+  ffffffff816b8cec:	75 1e                	jne    ffffffff816b8d0c <paranoid_schedule>
 
-Thanks!
-
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 93d145e..14f5151 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -51,6 +51,15 @@ static inline void move_tags(unsigned *dst, unsigned *dst_nr,
- 	*dst_nr += nr;
- }
- 
-+static inline void double_lock(spinlock_t *l1, spinlock_t *l2)
-+{
-+	if (l1 > l2)
-+		swap(l1, l2);
-+
-+	spin_lock(l1);
-+	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
-+}
-+
- /*
-  * Try to steal tags from a remote cpu's percpu freelist.
-  *
-@@ -84,7 +93,7 @@ static inline void steal_tags(struct percpu_ida *pool,
- 		if (remote == tags)
- 			continue;
- 
--		spin_lock(&remote->lock);
-+		double_lock(&tags->lock, &remote->lock);
- 
- 		if (remote->nr_free) {
- 			memcpy(tags->freelist,
-@@ -96,36 +105,81 @@ static inline void steal_tags(struct percpu_ida *pool,
- 		}
- 
- 		spin_unlock(&remote->lock);
-+		spin_unlock(&tags->lock);
- 
- 		if (tags->nr_free)
- 			break;
- 	}
- }
- 
--/*
-- * Pop up to IDA_PCPU_BATCH_MOVE IDs off the global freelist, and push them onto
-- * our percpu freelist:
-- */
--static inline void alloc_global_tags(struct percpu_ida *pool,
--				     struct percpu_ida_cpu *tags)
-+static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
- {
--	move_tags(tags->freelist, &tags->nr_free,
--		  pool->freelist, &pool->nr_free,
--		  min(pool->nr_free, pool->percpu_batch_size));
-+	int tag = -ENOSPC;
-+
-+	spin_lock(&tags->lock);
-+	if (tags->nr_free)
-+		tag = tags->freelist[--tags->nr_free];
-+	spin_unlock(&tags->lock);
-+
-+	return tag;
- }
- 
--static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
-+static inline int alloc_local_tag(struct percpu_ida *pool)
- {
-+	struct percpu_ida_cpu *tags;
-+	unsigned long flags;
- 	int tag = -ENOSPC;
- 
-+	local_irq_save(flags);
-+	tags = this_cpu_ptr(pool->tag_cpu);
- 	spin_lock(&tags->lock);
- 	if (tags->nr_free)
- 		tag = tags->freelist[--tags->nr_free];
--	spin_unlock(&tags->lock);
-+	spin_unlock_irqrestore(&tags->lock, flags);
- 
- 	return tag;
- }
- 
-+static inline int alloc_global_tag(struct percpu_ida *pool)
-+{
-+	struct percpu_ida_cpu *tags;
-+	unsigned long flags;
-+ 	int tag = -ENOSPC;
-+ 
-+	spin_lock_irqsave(&pool->lock, flags);
-+	tags = this_cpu_ptr(pool->tag_cpu);
-+
-+	if (!tags->nr_free) {
-+		/*
-+		 * Move tags from the global-, onto our percpu-freelist.
-+		 */
-+		move_tags(tags->freelist, &tags->nr_free,
-+			  pool->freelist, &pool->nr_free,
-+			  min(pool->nr_free, pool->percpu_batch_size));
-+	}
-+
-+	spin_unlock(&pool->lock);
-+
-+	if (!tags->nr_free)
-+		steal_tags(pool, tags);
-+
-+	if (tags->nr_free) {
-+		spin_lock(&tags->lock);
-+		if (tags->nr_free) {
-+	 		tag = tags->freelist[--tags->nr_free];
-+			if (tags->nr_free) {
-+				cpumask_set_cpu(smp_processor_id(),
-+						&pool->cpus_have_tags);
-+			}
-+		}
-+		spin_unlock(&tags->lock);
-+	}
-+
-+	local_irq_restore(flags);
-+ 
-+ 	return tag;
-+}
-+
- /**
-  * percpu_ida_alloc - allocate a tag
-  * @pool: pool to allocate from
-@@ -146,66 +200,26 @@ static inline unsigned alloc_local_tag(struct percpu_ida_cpu *tags)
-  */
- int percpu_ida_alloc(struct percpu_ida *pool, int state)
- {
--	DEFINE_WAIT(wait);
--	struct percpu_ida_cpu *tags;
--	unsigned long flags;
--	int tag;
--
--	local_irq_save(flags);
--	tags = this_cpu_ptr(pool->tag_cpu);
--
--	/* Fastpath */
--	tag = alloc_local_tag(tags);
--	if (likely(tag >= 0)) {
--		local_irq_restore(flags);
--		return tag;
--	}
--
--	while (1) {
--		spin_lock(&pool->lock);
--
--		/*
--		 * prepare_to_wait() must come before steal_tags(), in case
--		 * percpu_ida_free() on another cpu flips a bit in
--		 * cpus_have_tags
--		 *
--		 * global lock held and irqs disabled, don't need percpu lock
--		 */
--		if (state != TASK_RUNNING)
--			prepare_to_wait(&pool->wait, &wait, state);
--
--		if (!tags->nr_free)
--			alloc_global_tags(pool, tags);
--		if (!tags->nr_free)
--			steal_tags(pool, tags);
--
--		if (tags->nr_free) {
--			tag = tags->freelist[--tags->nr_free];
--			if (tags->nr_free)
--				cpumask_set_cpu(smp_processor_id(),
--						&pool->cpus_have_tags);
--		}
--
--		spin_unlock(&pool->lock);
--		local_irq_restore(flags);
--
--		if (tag >= 0 || state == TASK_RUNNING)
--			break;
--
--		if (signal_pending_state(state, current)) {
--			tag = -ERESTARTSYS;
--			break;
--		}
--
--		schedule();
--
--		local_irq_save(flags);
--		tags = this_cpu_ptr(pool->tag_cpu);
--	}
--	if (state != TASK_RUNNING)
--		finish_wait(&pool->wait, &wait);
--
--	return tag;
-+	int ret;
-+
-+	ret = alloc_local_tag(pool);
-+	if (likely(ret >= 0))
-+		return ret;
-+
-+	if (state != TASK_RUNNING) {
-+		int tag;
-+ 
-+		ret = ___wait_event(pool->wait,
-+				    (tag = alloc_global_tag(pool)) >= 0,
-+				    state, 0, 0, schedule());
-+ 
-+		if (tag >= 0)
-+			ret = tag;
-+	} else {
-+		ret = alloc_global_tag(pool);
-+ 	}
-+ 
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(percpu_ida_alloc);
- 
-@@ -239,12 +253,19 @@ void percpu_ida_free(struct percpu_ida *pool, unsigned tag)
- 		wake_up(&pool->wait);
- 	}
- 
-+	/*
-+	 * No point in waking when 1 < n < max_size free, because steal_tags()
-+	 * will assume max_size per set bit, having more free will not make it
-+	 * more or less likely it will visit this cpu.
-+	 */
-+
- 	if (nr_free == pool->percpu_max_size) {
- 		spin_lock(&pool->lock);
- 
- 		/*
--		 * Global lock held and irqs disabled, don't need percpu
--		 * lock
-+		 * Global lock held and irqs disabled, don't need percpu lock
-+		 * because everybody accessing remote @tags will hold
-+		 * pool->lock -- steal_tags().
- 		 */
- 		if (tags->nr_free == pool->percpu_max_size) {
- 			move_tags(pool->freelist, &pool->nr_free,
-@@ -344,33 +365,31 @@ EXPORT_SYMBOL_GPL(__percpu_ida_init);
- int percpu_ida_for_each_free(struct percpu_ida *pool, percpu_ida_cb fn,
- 	void *data)
- {
--	unsigned long flags;
- 	struct percpu_ida_cpu *remote;
--	unsigned cpu, i, err = 0;
-+	unsigned long flags;
-+	int cpu, i, err = 0;
- 
--	local_irq_save(flags);
- 	for_each_possible_cpu(cpu) {
- 		remote = per_cpu_ptr(pool->tag_cpu, cpu);
--		spin_lock(&remote->lock);
-+		spin_lock_irqsave(&remote->lock, flags);
- 		for (i = 0; i < remote->nr_free; i++) {
- 			err = fn(remote->freelist[i], data);
- 			if (err)
- 				break;
- 		}
--		spin_unlock(&remote->lock);
-+		spin_unlock_irqrestore(&remote->lock, flags);
- 		if (err)
--			goto out;
-+			return err;
- 	}
- 
--	spin_lock(&pool->lock);
-+	spin_lock_irqsave(&pool->lock, flags);
- 	for (i = 0; i < pool->nr_free; i++) {
- 		err = fn(pool->freelist[i], data);
- 		if (err)
- 			break;
- 	}
--	spin_unlock(&pool->lock);
--out:
--	local_irq_restore(flags);
-+	spin_unlock_irqrestore(&pool->lock, flags);
-+
- 	return err;
- }
- EXPORT_SYMBOL_GPL(percpu_ida_for_each_free);
--- 
-1.7.7.6
-
+But yes, that would be a problem if any tail call jumps to schedule()
+ever showed up.  We may need to detect that case in our patch generation
+tooling and fail to create the patch module binary if the patch affects
+a function which does this.
 
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Josh
