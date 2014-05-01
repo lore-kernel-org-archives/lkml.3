@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaEAWpu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:45:50 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26683 "EHLO mga03.intel.com"
+	id S1752781AbaEAWqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:46:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41526 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752264AbaEAWpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:45:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,967,1389772800"; 
-   d="scan'208";a="426563672"
-From: Andi Kleen <andi@firstfloor.org>
-To: hpa@zytor.com
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/3] Revert "lto: Make asmlinkage __visible"
-Date: Fri,  2 May 2014 00:44:36 +0200
-Message-Id: <1398984278-29319-2-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <1398984278-29319-1-git-send-email-andi@firstfloor.org>
-References: <1398984278-29319-1-git-send-email-andi@firstfloor.org>
+	id S1752512AbaEAWqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 18:46:43 -0400
+Message-ID: <5362CEBC.9090705@zytor.com>
+Date: Thu, 01 May 2014 15:46:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>,
+        Kees Cook <kees@outflux.net>
+Subject: Re: random: Providing a seed value to VM guests
+References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com> <20140501192618.GA25829@thunk.org> <CALCETrX=0uA6CCg4UeeV8KgGAq6fxUSiGOw5Gzte4OSHrDWMqA@mail.gmail.com> <900441a0-24e8-4976-ad35-3971805b9f34@email.android.com> <CALCETrV1HUA-JRAj9UicD3woqec7mSJLoT9CkQq=dOCpdPg4hw@mail.gmail.com> <20140501203910.GB25829@thunk.org> <CALCETrUr7NXkkN27v2Uf-puEtSXbgp=E+99aC_SdTc6puR8+CA@mail.gmail.com> <5362B618.50602@zytor.com> <CALCETrXu_bFjemS3TZNDDes=cBgkUXtDH-6cA84JcNjD0AdZ7A@mail.gmail.com> <20140501222832.GD25829@thunk.org> <CALCETrUe_pFgn27HP4JQ7XpUVJJJoj1PXU5PnznRCEY7mCaaWg@mail.gmail.com>
+In-Reply-To: <CALCETrUe_pFgn27HP4JQ7XpUVJJJoj1PXU5PnznRCEY7mCaaWg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 05/01/2014 03:32 PM, Andy Lutomirski wrote:
+> On Thu, May 1, 2014 at 3:28 PM,  <tytso@mit.edu> wrote:
+>> On Thu, May 01, 2014 at 02:06:13PM -0700, Andy Lutomirski wrote:
+>>>
+>>> I still don't see the point.  What does this do better than virtio-rng?
+>>
+>> I believe you had been complaining about how complicated it was to set
+>> up virtio?  And this complexity is also an issue if we want to use it
+>> to initialize the RNG used for the kernel text ASLR --- which has to
+>> be done very early in the boot process, and where making something as
+>> simple as possible is a Good Thing.
+> 
+> It's complicated, so it won't be up until much later in the boot
+> process.  This is completely fine for /dev/random, but it's a problem
+> for /dev/urandom, ASLR, and such.
+> 
+>>
+>> And since we would want to use RDRAND/RDSEED if it is available
+>> *anyway*, perhaps in combination with other things, why not use the
+>> RDRAND/RDSEED interface?
+> 
+> Because it's awkward.  I don't think it simplifies anything.
+> 
 
-As requested by Linus, revert adding __visible to asmlinkage.
-Instead we add __visible explicitely to all the symbols
-that need it.
+It greatly simplifies discovery, which is a Big Deal[TM] in early code.
 
-This reverts commit 128ea04a9885af9629059e631ddf0cab4815b589.
----
- include/linux/linkage.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+	-hpa
 
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index 34a513a..a6a42dd 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -12,9 +12,9 @@
- #endif
- 
- #ifdef __cplusplus
--#define CPP_ASMLINKAGE extern "C" __visible
-+#define CPP_ASMLINKAGE extern "C"
- #else
--#define CPP_ASMLINKAGE __visible
-+#define CPP_ASMLINKAGE
- #endif
- 
- #ifndef asmlinkage
--- 
-1.8.5.2
 
