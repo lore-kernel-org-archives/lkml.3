@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090AbaEAPNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:13:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60435 "EHLO arroyo.ext.ti.com"
+	id S1755463AbaEAPPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:15:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40169 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062AbaEAPNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:13:31 -0400
-Date: Thu, 1 May 2014 10:13:28 -0500
+	id S1751833AbaEAPPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:15:07 -0400
+Date: Thu, 1 May 2014 10:15:00 -0500
 From: Felipe Balbi <balbi@ti.com>
-To: Zhuang Jin Can <jin.can.zhuang@intel.com>
-CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] usb: dwc3: gadget: giveback request if start transfer
- fail
-Message-ID: <20140501151328.GB6355@saruman.home>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Zhuang Jin Can <jin.can.zhuang@intel.com>, Felipe Balbi <balbi@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: dwc3: gadget: fix burst size corruption
+Message-ID: <20140501151500.GC6355@saruman.home>
 Reply-To: <balbi@ti.com>
-References: <20140501063608.GA30575@intel.com>
- <20140430195829.GA3839@saruman.home>
- <20140501204452.GD30575@intel.com>
+References: <20140501211424.GE30575@intel.com>
+ <Pine.LNX.4.44L0.1405010941550.1152-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VrqPEDrXMn8OVzN4"
+	protocol="application/pgp-signature"; boundary="NKoe5XOeduwbEQHU"
 Content-Disposition: inline
-In-Reply-To: <20140501204452.GD30575@intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1405010941550.1152-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VrqPEDrXMn8OVzN4
+--NKoe5XOeduwbEQHU
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Thu, May 01, 2014 at 04:44:52PM -0400, Zhuang Jin Can wrote:
-> On Wed, Apr 30, 2014 at 02:58:29PM -0500, Felipe Balbi wrote:
-> > On Thu, May 01, 2014 at 02:36:08AM -0400, Zhuang Jin Can wrote:
-> > > At least we should giveback the current request to the
-> > > gadget. Otherwise, the gadget will be stuck without knowing
-> > > anything.
+On Thu, May 01, 2014 at 09:45:17AM -0400, Alan Stern wrote:
+> On Thu, 1 May 2014, Zhuang Jin Can wrote:
+>=20
+> > > again, you found a bug on the gadget driver. Fix that. composite.c
+> > > guarantees that for those functions which don't pass bMaxBurst,
+> > > gadget->maxburst will be set to *at least* 1.
 > > >=20
-> > > It was oberved that the failure can happen if the request is
-> > > queued when the run/stop bit of controller is not set.
-> >=20
-> > why is your gadget queueing any requests before calling ->udc_start() ?
-> >=20
-> > A better question, what modification have you done to udc-core.c which
-> > broke this ? udc-core *always* calls ->udc_start() by the time you load
-> > a gadget driver so this case will *never* happen. Whatever modification
-> > you did, broke this assumption and I will *not* accept this patch
-> > because the bug is elsewhere and *not* in mainline kernel.
-> >=20
-> It's found in Android using kernel 3.10.20. Android has its own
-> usb_composite_driver usb/gadget/android.c (not in mainline), and it
+> > I agree the real fix should be in the gadget driver. The patch intents
+> > to prevent hibernatition from being corrupted by a bad gadget driver.
+> > If OEMs develop their own gadget driver forgetting to call
+> > config_ep_by_speed(), it'll turn out to be everything works except
+> > dwc3 hibernation, and they'll complain to dwc3. f_ffs is an
+> > example has SuperSpeed support but doesn't call config_ep_by_speed().
+> > It's just for robustness, and dwc3 is not doing anything wrong.
+> > It did cause me a long time to figure out why the hibernation was broke=
+n.
+>=20
+> You could include the check, for the sake of robustness, in dwc3 -- but
+> if it fails, you should write a message to the kernel log saying that
+> the gadget driver needs to be fixed.
 
-so you found something on an old kernel using an out-of-tree gadget
-driver.
+Also, if we're adding something to dwc3, we need to add to other
+USB3-capable UDCs too. Namely dummy and marvel's.
 
-> allows userspace to disconnect the pullup (i.e clear run/stop bit in dwc3)
-> and remove the gadget functions like adb, mtp and then add new functions
-> like rndis, acm. The problem is when you disconnect the pullup, a gadget
-> maybe in the middle of queuing a request, and result in the "start
-> transfer cmd failure". I think this is also a common issue for other
-
-Android gadget needs to learn how to cope with that.
-
-> usb_composite_drivers too. Normally, if one of the gadget deactivate its
-> own function, the pullup will be disconnected, other gadgets won't get
-> notified until their requests are failed. So it makes dwc3 more robust
-> to deal with these situations.
-
-Right, but Android gadget can run on top of several other UDCs and you
-want to have a single one of them cope with android's bug ?
-
-You'd be better off getting google to accept a bugfix to the android
-gadget, since that's where the problem lies.
+cheers
 
 --=20
 balbi
 
---VrqPEDrXMn8OVzN4
+--NKoe5XOeduwbEQHU
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTYmSYAAoJEIaOsuA1yqRES5AQALZg0XKhhTipPYgcoUUDnkP2
-oV354oGahLfm/96geEYmKyUAdDKP6RicOz6R8AjCeRBwAH2Fg/56sHZ83hYBeY6K
-Bpb/6/H2VnwNIHIntKnt8flkERkw4pO8QJfY4hsyMCT/7IyN6cYTXSO5N3CZ5pI3
-5PKv0GJgPd0LKfyaTo49sgWu6iaFMmgeNdUoHRfL+enOxBCwwd69vcLdcS9U7IP8
-sXnDcr6JagxDC9cAt7jvSBrHVfk2XAOHnXZ9WUHtoATz7oD11F1xmkxKhowK2ztM
-AESu8rylBcK68bmt5+vPC4+I1G5tLg0xE6l2PvgTamAazDX4uR8G40D26FIl80lS
-Tw8LCfUAHq0LFJQD7QVNXXrwxCgKRAEvR8Ipf1B1ZGsI5pPflK1Bi4MlGeqpEqzL
-DPrH19P3dw8gjkaZ/RFZ/U9BHiM3Ynqvz32jMeYmnZMUrVYQ37lFcPO+6EmJm1my
-+w+UfBbsL9S17IAT1KXCcQwd60YqSTvVupyw3L1D9LRxQYorflPORXlFVAo1Y4E/
-t7i9kPOkbDDhvqCe9ejPMg9uIiZZsjsHJD7rgXycEc3elYg6hi0F4k8qJmtHwqDG
-ZLmHDIclyk185hlBnmUIYevnvOl7kj62Zq5ZyAi7dCtDtFBQbiWRCnPZPz2BAkq/
-FEjLb8+83LHlfoZiYwR0
-=DE1I
+iQIcBAEBAgAGBQJTYmT0AAoJEIaOsuA1yqREwpQQAKC9G6VYzp+l3IILP8SRaxqE
+AMaU93d07t8b8jSUHVlmWHjkhQcZC2hvLZ1RXiQKALeqvXeIuZlZ9T/s5IEOpAUC
+qAMt+MDIkZYE+rgUP9vn+4qo/c57J+Cs+0OJUwdv9EBCgBbwCHLLxMHD/Um5qLoP
+a4/9VMfecjMeqMI2Mfb2FRPOvMiKQwdG+NIjBNTEfeI0Q3bk1m8djGoxgzXEgnWC
+D4sRq2SsFP3Q0nlzEVRtfG0uqFewj+SOPOHO/4342tj/psLzjXQAo4mD0JPD1aI4
+tuk/0EupPCoNsgFNieWxBqOzFDVTOcOzIkpwPyi13LAkQjI6HHiPKweBC2PY07YS
+hY+88bQuhsg6WipVNxbsHFtbwtBZABLvpjcMSPYN/ddRgTyihmzY1ACFeicflsy/
+sz9NvavqSBpO7AwneIkB0mB+gDbLFR+X3c0/5iVM2M2x5pgughWNqD/bYJ7R2HFq
+KnajoKuLg0LfUl6ZwRf5UCG7r6kRdetp0yAqhWVyGHAefGtZy3UJV3qX5mbd4vFe
+5Haw7bK4baxtkbJkCxI7GJCljqbLOcHiBoDzktuKiZWPssf52+Rc0w0CLPqhDS9F
+nItf2C2jYLSGUh5g9XlQrPZUwokRoGHQOBMvyKMB8779LveoRtwd/Dl8ZJaVRQHV
+oMSeF43BIfvPegtZCFJ/
+=stcS
 -----END PGP SIGNATURE-----
 
---VrqPEDrXMn8OVzN4--
+--NKoe5XOeduwbEQHU--
