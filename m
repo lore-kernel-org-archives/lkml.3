@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaEAVLf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:11:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58289 "EHLO mx1.redhat.com"
+	id S1751995AbaEAVPP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:15:15 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53323 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247AbaEAVLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:11:33 -0400
-Date: Thu, 1 May 2014 17:11:28 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Ben Zhang <benzh@chromium.org>
-Subject: Re: [PATCH] watchdog: print all locks on a softlock
-Message-ID: <20140501211128.GC198341@redhat.com>
-References: <1398970535-6880-1-git-send-email-eparis@redhat.com>
- <20140501191720.GA198341@redhat.com>
- <20140501200858.GA27787@localhost.localdomain>
+	id S1751247AbaEAVPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:15:14 -0400
+Date: Thu, 1 May 2014 14:15:02 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH] lockd: avoid warning when CONFIG_SYSCTL undefined
+Message-ID: <20140501211502.GA31844@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140501200858.GA27787@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 10:09:01PM +0200, Frederic Weisbecker wrote:
-> On Thu, May 01, 2014 at 03:17:20PM -0400, Don Zickus wrote:
-> > On Thu, May 01, 2014 at 02:55:35PM -0400, Eric Paris wrote:
-> > > If the CPU hits a softlockup this patch will also have it print the
-> > > information about all locks being held on the system.  This might help
-> > > determine if a lock is being held too long leading to this problem.
-> > 
-> > I am not sure this helps you.  A softlockup is the result of pre-emption
-> > disabled, ie the scheduler not being called after 60 seconds.  Holding a
-> > lock does not disable pre-emption usually.  So I don't think this is going
-> > to add anything.
-> > 
-> > Are you trying to debug a hung task?  The the hung_task thread checks to
-> > see if a task hasn't scheduled in 2 minutes or so.  That could be the
-> > result of long lock (but that output already dumps the lockdep stuff).
-> 
-> There may be some deadlocks that lockdep doesn't detect yet. 2 example:
-> 
-> 1) spinlock <-> IPI dependency
-> 
-> 
->         CPU 0                                            CPU 1
->         --------------------------------------------------------
->         spin_lock_irq(A)
->         smp_send_function_single_async(CPU 1, func)
->                                                          //IPI
->                                                          func {
->                                                             spin_lock(1)
->                                                          }
-> 
-> But this should be resolved with a virtual lock on the IPI functions.
-> I should try that.
-> 
-> 2) rwlock <-> IPI
-> 
->         CPU 0                                            CPU 1
->         --------------------------------------------------------
->         read_lock(A)
->                                                          write_lock_irq(A)
->         smp_send_function_single(CPU 1, func)
->                                                          //IPI never happens
+When building without CONFIG_SYSCTL, the compiler saw an unused
+label. This moves the label into the #ifdef it is used under.
 
-The hardlockup detector would go off here.  And dumping all the cpus in
-the system (something we don't do today), would show this scenario.  I see
-this scenario a lot during page flushes on RHEL (a lot being once every
-other month or so).
+fs/lockd/svc.c: In function ‘init_nlm’:
+fs/lockd/svc.c:626:1: warning: label ‘err_sysctl’ defined but not used [-Wunused-label]
 
-Cheers,
-Don
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/lockd/svc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> 
-> This one is much trickier.
-> 
-> Anyway those are the only scenario I know of but there may be more. When possible
-> we want to extend lockdep to detect new scenarios of deadlock but we don't have the
-> guarantee that it can detect everything.
-> 
-> So, could be useful...
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 6bf06a07f3e0..2b431f7266c3 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -622,8 +622,8 @@ static int __init init_nlm(void)
+ err_pernet:
+ #ifdef CONFIG_SYSCTL
+ 	unregister_sysctl_table(nlm_sysctl_table);
+-#endif
+ err_sysctl:
++#endif
+ 	return err;
+ }
+ 
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
