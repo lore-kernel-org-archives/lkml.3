@@ -1,134 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbaEANQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:16:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54904 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711AbaEANQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:16:53 -0400
-Message-ID: <5362491C.9020402@ti.com>
-Date: Thu, 1 May 2014 09:16:12 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754014AbaEANTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 09:19:20 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:48661 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEANTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 09:19:19 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 1 May 2014 09:22:48 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140501102602.GP11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405010921550.18142@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu> <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404301701260.15279@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1404302310530.6261@ionos.tec.linutronix.de> <20140501102602.GP11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@linaro.org>, <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>	<1398353407-2345-5-git-send-email-santosh.shilimkar@ti.com>	<20140429144147.004EEC40992@trevor.secretlab.ca> <53610663.7070305@ti.com> <20140501131210.CCC13C409DA@trevor.secretlab.ca>
-In-Reply-To: <20140501131210.CCC13C409DA@trevor.secretlab.ca>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 May 2014 09:12 AM, Grant Likely wrote:
-> On Wed, 30 Apr 2014 10:19:15 -0400, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->> Hi Grant,
->>
->> On Tuesday 29 April 2014 10:41 AM, Grant Likely wrote:
->>> On Thu, 24 Apr 2014 11:30:04 -0400, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
->>>> Retrieve DMA configuration from DT and setup platform device's DMA
->>>> parameters. The DMA configuration in DT has to be specified using
->>>> "dma-ranges" and "dma-coherent" properties if supported.
->>>>
->>>> We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
->>>> using "dma-coherent" device tree properties.
->>>>
->>>> The set_arch_dma_coherent_ops macro has to be defined by arch if
->>>> it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
->>>> declared as nop.
->>>>
->>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Olof Johansson <olof@lixom.net>
->>>> Cc: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>>> Cc: Linus Walleij <linus.walleij@linaro.org>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> ---
->>>>  drivers/of/platform.c       |   48 ++++++++++++++++++++++++++++++++++++++++---
->>>>  include/linux/dma-mapping.h |    7 +++++++
->>>>  2 files changed, 52 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->>>> index 48de98f..270c0b9 100644
->>>> --- a/drivers/of/platform.c
->>>> +++ b/drivers/of/platform.c
->>>> @@ -187,6 +187,50 @@ struct platform_device *of_device_alloc(struct device_node *np,
->>>>  EXPORT_SYMBOL(of_device_alloc);
->>>>  
->>>>  /**
->>>> + * of_dma_configure - Setup DMA configuration
->>>> + * @dev:	Device to apply DMA configuration
->>>> + *
->>>> + * Try to get devices's DMA configuration from DT and update it
->>>> + * accordingly.
->>>> + *
->>>> + * In case if platform code need to use own special DMA configuration,it
->>>> + * can use Platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE event
->>>> + * to fix up DMA configuration.
->>>> + */
->>>> +static void of_dma_configure(struct device *dev)
->>>> +{
->>>> +	u64 dma_addr, paddr, size;
->>>> +	int ret;
->>>> +
->>>> +	dev->coherent_dma_mask = DMA_BIT_MASK(32);
->>>> +	if (!dev->dma_mask)
->>>> +		dev->dma_mask = &dev->coherent_dma_mask;
->>>> +
->>>> +	/*
->>>> +	 * if dma-coherent property exist, call arch hook to setup
->>>> +	 * dma coherent operations.
->>>> +	 */
->>>> +	if (of_dma_is_coherent(dev->of_node)) {
->>>> +		set_arch_dma_coherent_ops(dev);
->>>> +		dev_dbg(dev, "device is dma coherent\n");
->>>> +	}
->>>> +
->>>> +	/*
->>>> +	 * if dma-ranges property doesn't exist - just return else
->>>> +	 * setup the dma offset
->>>> +	 */
->>>> +	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
->>>> +	if ((ret == -ENODEV) || (ret < 0)) {
->>>> +		dev_dbg(dev, "no dma range information to setup\n");
->>>> +		return;
->>>> +	}
->>>> +
->>>> +	/* DMA ranges found. Calculate and set dma_pfn_offset */
->>>> +	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
->>>> +	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
->>>
->>> I've got two concerns here. of_dma_get_range() retrieves only the first
->>> tuple from the dma-ranges property, but it is perfectly valid for
->>> dma-ranges to contain multiple tuples. How should we handle it if a
->>> device has multiple ranges it can DMA from?
->>>
->>
->> We've not found any cases in current Linux where more than one dma-ranges
->> would be used. Moreover, The MM (definitely for ARM) isn't supported such
->> cases at all (if i understand everything right).
->> - there are only one arm_dma_pfn_limit
->> - there is only one MM zone is used for ARM
->> - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
->>   DMA & DMA32, but they configured once and forever per arch.
-> 
-> Okay. If anyone ever does implement multiple ranges then this code will
-> need to be revisited.
->
-Sure. Thanks for the review !!
- 
-Regards,
-Santosh
+On Thu, 1 May 2014, Peter Zijlstra wrote:
 
+> On Thu, May 01, 2014 at 12:51:33AM +0200, Thomas Gleixner wrote:
+> > And that's the issue which puzzles us. Let's look at what we expect:
+> > 
+> > Now the trace shows a different story:
+> > 
+> >      perf_fuzzer-4387  [001]  1802.628659: sys_enter:            
+> NR 298 (69bb58, 0, ffffffff, 12, 0, 0)
+> 
+> That's a per-cpu event (.pid = -1, .cpu = 12), they don't get inherited,
+> so the only thing keeping it alive is the fd the child got. So
+> exit_files() killing this thing makes perfect sense.
+
+wait, are you sure?  Isn't that pid=0, cpu=-1, group_fd=12?
+
+my machine only has 8 cpus...
+
+Vince
