@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750795AbaEAEM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 00:12:56 -0400
-Received: from mother.openwall.net ([195.42.179.200]:62685 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750710AbaEAEMy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 00:12:54 -0400
-Date: Thu, 1 May 2014 08:06:02 +0400
-From: Solar Designer <solar@openwall.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
-        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
-Message-ID: <20140501040602.GA24961@openwall.com>
-References: <20140430150844.GA10621@mwanda>
+	id S1750792AbaEAEhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 00:37:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:43903 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750706AbaEAEhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 00:37:33 -0400
+Date: Thu, 1 May 2014 14:37:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Jonathan Cameron <jic23@kernel.org>, Jean Delvare <jdelvare@suse.de>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20140501143726.13b4ea03f25679d3e0a78fed@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430150844.GA10621@mwanda>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_May_2014_14_37_26_+1000_Qi85KDme0QDrn4n2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 06:08:44PM +0300, Dan Carpenter wrote:
-> There are sometimes where we know that we are doing an strcpy() into a
-> fixed length buffer.  In those cases, we could verify that the strcpy()
-> doesn't overflow.  This patch introduces DEBUG_STRICT_SLOW_STRCPY_CHECKS
-> if you want to check for that.
+--Signature=_Thu__1_May_2014_14_37_26_+1000_Qi85KDme0QDrn4n2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FWIW, I had posted similar macros for userland strcpy() and friends to
-the security-audit list (now defunct) in 1998.  Someone preserved a copy
-here (although the indentation is lost):
+Hi Greg,
 
-http://www.opennet.ru/soft/0432.html
+Today's linux-next merge of the staging tree got a conflict in
+drivers/iio/adc/Kconfig between commit bbc28134e915 ("iio: adc: Nothing
+in ADC should be a bool CONFIG") from the staging.current tree and commit
+9ef080ec0c5e ("iio: adc: Fix exynos_adc dependencies") from the staging
+tree.
 
-In (weird) use, with proper indentation:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-http://www.merit.edu/mail.archives/nanog/2000-02/msg00366.html
-https://github.com/tureba/trinoo/blob/master/strfix.h
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Personally, I was using this at the time for building known-broken
-software like wu-ftpd, where the risk of false positives felt lower than
-the risk of buffer overflow bugs being in fact present in the code.
+diff --cc drivers/iio/adc/Kconfig
+index 24c28e3f93a3,6cbf34a90c04..000000000000
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@@ -106,8 -117,8 +117,8 @@@ config AT91_AD
+  	  Say yes here to build support for Atmel AT91 ADC.
+ =20
+  config EXYNOS_ADC
+ -	bool "Exynos ADC driver support"
+ +	tristate "Exynos ADC driver support"
+- 	depends on OF
++ 	depends on ARCH_EXYNOS || (OF && COMPILE_TEST)
+  	help
+  	  Core support for the ADC block found in the Samsung EXYNOS series
+  	  of SoCs for drivers such as the touchscreen and hwmon to use to share
 
-I used gcc's Statement Exprs extension, which is also used in the Linux
-kernel a lot:
+--Signature=_Thu__1_May_2014_14_37_26_+1000_Qi85KDme0QDrn4n2
+Content-Type: application/pgp-signature
 
-http://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-So maybe you should, too.  (That is, if you want to go ahead with this
-approach for code that isn't meant to be as broken as wu-ftpd was.)
-This lets us propagate the original return value.
+iQIcBAEBCAAGBQJTYc+LAAoJEMDTa8Ir7ZwVRuoP/ArtJNBZl/nz0d3dpfmu3Ruu
+kfQs2QdtjyCfBv7rT/OdLDWxEDX5/ieFbvlrqOvPmxL2+97PlpUqNBL19koBDPtT
+Ow9iThru9RTVAHyNojH0WTpKFIG8LP+NLY1WJcDpp934mszDzl5UTfPUUi51/22u
+mFedFxV9QEp/8VU2GE1KX/ss1J9y3ELJnYTXaMQ0IxDtU/qmFROQNVm2dP4JF20r
+x5eYA+0W9/2EVkf/BTWY27Ea40w63AF6YoPWaaanTNKCMo++0vDN+HSpfAMWZJy2
+kC4Be0gVIjlFfzXtzw/3+Iaab7nQ2bNfOkV4ZnnJP/Q4cT8wraKLWJG+ojXnVgDc
+Iwv2iYKrdzi5DvV5McMgxSFOKVHCfeHMs55qaMu/i+yXhFZmZ89J/QEV3b3V8v6p
+7cWcWCPuvTh63mTy5maUvdT+IE9mfIy4QBsoDy+FeM1QQn0CVkpQUelUXvXFVFAP
+gJGtz4vuMPYFxuPuFB3YPGl1wYUG+X2uGoc0t7sa+qjZw9+ENeDDchQnSGUbV9IY
+AgR4SYsj2FBpRk4XWTe2DdGoX28FXd03FTD1VZYZlU6gwMZ2PCb9etHfLFviDd23
+dUtewQg96UBkFUqYhwoEUoUcZG3nSV1GqwUSyEJVlxkC8GFks8etQUmk6uiJeOgP
+0qDEszyWWMMxaOBRiakW
+=hsVT
+-----END PGP SIGNATURE-----
 
-To determine the destination buffer size, I simply used sizeof() and
-skipped my added protection in case the size looked like that of a
-pointer.  Now you have those nice new gcc features instead. :-)
-
-> The downside is that it makes strcpy slower.
-
-I guess the slowdown is mostly from the added strlen().  I avoided it by
-using strncat(), so I had truncation instead of detection.  It is
-unclear which is better.
-
-Other functions I did this for are strcat(), sprintf(), vsprintf().
-
-Alexander
+--Signature=_Thu__1_May_2014_14_37_26_+1000_Qi85KDme0QDrn4n2--
