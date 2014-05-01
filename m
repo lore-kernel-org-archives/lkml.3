@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898AbaEAKM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 06:12:28 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:52694 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751942AbaEAKM0 (ORCPT
+	id S1754528AbaEAK0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 06:26:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39609 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906AbaEAK0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 06:12:26 -0400
-Date: Thu, 1 May 2014 11:12:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Dave Young <dyoung@redhat.com>
-Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] earlyprintk=efi,keep fix
-Message-ID: <20140501101220.GP26088@console-pimps.org>
-References: <20140430021303.GA12316@darkstar.redhat.com>
+	Thu, 1 May 2014 06:26:21 -0400
+Date: Thu, 1 May 2014 12:26:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140501102602.GP11096@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu>
+ <20140429094632.GP27561@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
+ <20140429190108.GB30445@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu>
+ <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404301701260.15279@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1404302310530.6261@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140430021303.GA12316@darkstar.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1404302310530.6261@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr, at 10:13:03AM, Dave Young wrote:
+On Thu, May 01, 2014 at 12:51:33AM +0200, Thomas Gleixner wrote:
+> And that's the issue which puzzles us. Let's look at what we expect:
 > 
-> earlyprintk=efi,keep will cause kernel hangs while freeing initmem like below:
-> [    2.826089] VFS: Mounted root (ext4 filesystem) readonly on device 254:2.
-> [    2.846592] devtmpfs: mounted
-> [    2.856974] Freeing unused kernel memory: 880K (ffffffff817d4000 - ffffffff818b0000)
+> Now the trace shows a different story:
 > 
-> It is caused by efi earlyprintk use __init function which will be freed later.
-> Such as early_efi_write is marked as __init, also it will use early_ioremap
-> which is init function as well.
-> 
-> To fix this issue, I added one early initcall efi_ioremap_fb which will map the whole
-> efi fb for later use. OTOH, adding a wrapper function efi_ioremap which will call
-> early_ioremap before ioremap is available.
-> 
-> With this patch applied efi boot ok with earlyprintk=efi,keep console=efi
-> 
-> Signed-off-by: Dave Young <dyoung@redhat.com>
-> ---
->  arch/x86/platform/efi/early_printk.c |   54 +++++++++++++++++++++++++++--------
->  1 file changed, 42 insertions(+), 12 deletions(-)
- 
-Thanks Dave, good catch. I've got a few comments below.
+>      perf_fuzzer-4387  [001]  1802.628659: sys_enter:            NR 298 (69bb58, 0, ffffffff, 12, 0, 0)
 
-> +static __init int efi_ioremap_fb(void)
-> +{
-> +	unsigned long base, size;
-> +
-> +	base = boot_params.screen_info.lfb_base;
-> +	size = boot_params.screen_info.lfb_size;
-> +	efi_fb = ioremap(base, size);
-> +
-> +	return efi_fb ? 0 : -ENOMEM;
-> +}
-> +early_initcall(efi_ioremap_fb);
+That's a per-cpu event (.pid = -1, .cpu = 12), they don't get inherited,
+so the only thing keeping it alive is the fd the child got. So
+exit_files() killing this thing makes perfect sense.
 
-So, here you're actually ioremap'ing the framebuffer irrespective of
-whether anyone passed earlyprintk=efi,keep on the command line.
-Furthermore, you'll perform the ioremap() even if some error was
-encountered in early_efi_setup().
+Onwards to find another funny.
 
-You need a way to figure out whether the ioremap() is actually needed.
 
-Please document this function to explain why we need to ioremap() the
-framebuffer from an early_initcall().
-
-Oh and as a side note, please prefix functions in this file with
-early_efi_*. Yeah, I realise that I suggested efi_ioremap() as a name -
-my bad.
-
-> +static __init_refok void *efi_ioremap(unsigned long start, unsigned long len)
-> +{
-> +	unsigned long base;
-> +
-> +	base = boot_params.screen_info.lfb_base;
-> +	if (efi_fb)
-> +		return (efi_fb + start - base);
-> +	else
-> +		return early_ioremap(start, len);
-> +}
-
-Adding .lfb_base in the caller and then subtracting here seems
-needlessly complicated. Instead I'd suggest making early_efi_map() take
-an offset and a length, and document when each framebuffer is used.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
