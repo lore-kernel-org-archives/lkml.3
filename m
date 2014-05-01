@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750892AbaEAWvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:51:18 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:38846
-	"EHLO mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaEAWvR (ORCPT
+	id S1751434AbaEAWw4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:52:56 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:46057 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaEAWwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:51:17 -0400
-Date: Fri, 2 May 2014 00:51:16 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
-Subject: Re: [PATCH 1/2] namespaces: give each namespace a serial number
-Message-ID: <20140501225116.GB25669@mail.hallyn.com>
-References: <cover.1398176489.git.rgb@redhat.com>
- <be1358c6da51252cd79c51a51bb30bf157624ccd.1398176489.git.rgb@redhat.com>
+	Thu, 1 May 2014 18:52:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <be1358c6da51252cd79c51a51bb30bf157624ccd.1398176489.git.rgb@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140501210522.GC18016@ZenIV.linux.org.uk>
+References: <CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
+	<CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
+	<20140430234341.GX18016@ZenIV.linux.org.uk>
+	<CA+55aFyb7TPkOXmOiNQojnW-Fb-uunbqdMgiF13hE-o1t5rmcQ@mail.gmail.com>
+	<20140501025105.GY18016@ZenIV.linux.org.uk>
+	<CA+55aFzN=ERrtWUwAQv0ry-ZzX2k7dz3JZQT6q5zjp_ABwMg6Q@mail.gmail.com>
+	<20140501031251.GZ18016@ZenIV.linux.org.uk>
+	<20140501094252.GE3113@tucsk.piliscsaba.szeredi.hu>
+	<20140501143434.GA18016@ZenIV.linux.org.uk>
+	<20140501210233.GB18016@ZenIV.linux.org.uk>
+	<20140501210522.GC18016@ZenIV.linux.org.uk>
+Date: Thu, 1 May 2014 15:52:54 -0700
+X-Google-Sender-Auth: jDHNddugiAKd3dZM5cMPW1ouu9U
+Message-ID: <CA+55aFyoXfk3t34NS5vAHqAXWsfDLgc_the_u+PryZt3XKQBKg@mail.gmail.com>
+Subject: Re: dcache shrink list corruption?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Richard Guy Briggs (rgb@redhat.com):
+On Thu, May 1, 2014 at 2:05 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> ... and so has this one, the bounce being
 
-Most of this looks reasonable, but I'm curious about something,
+I actually got all three messages despite the bounces. But I seem to
+have gotten at least the first one through lkml.
 
-> +/**
-> + * ns_serial - compute a serial number for the namespace
-> + *
-> + * Compute a serial number for the namespace to uniquely identify it in
-> + * audit records.
-> + */
-> +unsigned int ns_serial(void)
-> +{
-> +	static DEFINE_SPINLOCK(serial_lock);
-> +	static unsigned int serial = 4; /* reserved for IPC, UTS, user, PID */
-> +
-> +	unsigned long flags;
-> +	unsigned int ret;
-> +
-> +	spin_lock_irqsave(&serial_lock, flags);
-> +	do {
-> +		ret = ++serial;
-> +	} while (unlikely(!ret));
+Your email is lacking SPF or any other authentication, so it may be
+gmail being pissy about that, though:
 
-Why exactly are you doing this?  Surely if serial is going to
-wrap around we've got a bigger problem than just wanting go
-bump one more time?
+  Received-SPF: none (google.com: viro@ftp.linux.org.uk does not
+designate permitted sender hosts) client-ip=195.92.253.2;
 
-> +	spin_unlock_irqrestore(&serial_lock, flags);
-> +
-> +	return ret;
-> +}
+especially if your IP is in a block where other people send spam,
+gmail has been known to just say "that ISP is clearly bad".
+
+              Linus
