@@ -1,76 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaEAUJH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 16:09:07 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:62749 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247AbaEAUJF (ORCPT
+	id S1751931AbaEAUKK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 16:10:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33628 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaEAUKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 16:09:05 -0400
-Date: Thu, 1 May 2014 22:09:01 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Ben Zhang <benzh@chromium.org>
-Subject: Re: [PATCH] watchdog: print all locks on a softlock
-Message-ID: <20140501200858.GA27787@localhost.localdomain>
-References: <1398970535-6880-1-git-send-email-eparis@redhat.com>
- <20140501191720.GA198341@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501191720.GA198341@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 May 2014 16:10:07 -0400
+Date: Thu, 1 May 2014 13:10:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Pekka Enberg <penberg@kernel.org>, akpm@linuxfoundation.org
+Subject: Re: fs: dcookie: freeing active timer
+Message-Id: <20140501131005.2aca98242477d8f98e33b19f@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.10.1404301819140.27262@gentwo.org>
+References: <53594244.6070305@oracle.com>
+	<20140424172708.GY18016@ZenIV.linux.org.uk>
+	<53594B16.4000901@oracle.com>
+	<20140424215558.GZ18016@ZenIV.linux.org.uk>
+	<20140424234941.GA18016@ZenIV.linux.org.uk>
+	<5359D70B.2070604@oracle.com>
+	<53616F92.4020709@oracle.com>
+	<alpine.DEB.2.10.1404301819140.27262@gentwo.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 03:17:20PM -0400, Don Zickus wrote:
-> On Thu, May 01, 2014 at 02:55:35PM -0400, Eric Paris wrote:
-> > If the CPU hits a softlockup this patch will also have it print the
-> > information about all locks being held on the system.  This might help
-> > determine if a lock is being held too long leading to this problem.
+On Wed, 30 Apr 2014 18:19:56 -0500 (CDT) Christoph Lameter <cl@linux.com> wrote:
+
+> On Wed, 30 Apr 2014, Sasha Levin wrote:
 > 
-> I am not sure this helps you.  A softlockup is the result of pre-emption
-> disabled, ie the scheduler not being called after 60 seconds.  Holding a
-> lock does not disable pre-emption usually.  So I don't think this is going
-> to add anything.
+> > > Could someone pretty please merge that patch? Specially since Greg acked it?
+> >
+> > Ping?
 > 
-> Are you trying to debug a hung task?  The the hung_task thread checks to
-> see if a task hasn't scheduled in 2 minutes or so.  That could be the
-> result of long lock (but that output already dumps the lockdep stuff).
+> Ok please repost. Andrew or Pekka can merge it.
 
-There may be some deadlocks that lockdep doesn't detect yet. 2 example:
+OK, I seem to have pieced it all together.  The changelog sucked :( I
+fixed it up a bit but I still don't see why we added that
+SLAB_SUPPORTS_SYSFS thing.  Why do slab and slub differ here?  What
+about slob?
 
-1) spinlock <-> IPI dependency
+A number of rejects had to be fixed.  Please check this over carefully.
+
+From: Christoph Lameter <cl@linux.com>
+Subject: slub: use sysfs'es release mechanism for kmem_cache
+
+debugobjects warning during netfilter exit:
+
+[  418.311956] ------------[ cut here ]------------
+[  418.312449] WARNING: CPU: 6 PID: 4178 at lib/debugobjects.c:260 debug_print_object+0x8d/0xb0()
+[  418.313243] ODEBUG: free active (active state 0) object type: timer_list hint: 
+delayed_work_timer_fn+0x0/0x20
+[  418.314038] Modules linked in:
+[  418.314038] CPU: 6 PID: 4178 Comm: kworker/u16:2 Tainted: G        W 
+3.11.0-next-20130906-sasha #3984
+[  418.314038] Workqueue: netns cleanup_net
+[  418.314038]  0000000000000104 ffff880410371a58 ffffffff841b7815 0000000000000104
+[  418.314038]  ffff880410371aa8 ffff880410371a98 ffffffff8112540c ffff880410371a78
+[  418.314038]  ffffffff853ea0ab ffff8800bdc68b80 ffffffff85a65c00 ffffffff87676658
+[  418.314038] Call Trace:
+[  418.314038]  [<ffffffff841b7815>] dump_stack+0x52/0x87
+[  418.320315]  [<ffffffff8112540c>] warn_slowpath_common+0x8c/0xc0
+[  418.321040]  [<ffffffff811254f6>] warn_slowpath_fmt+0x46/0x50
+[  418.321101]  [<ffffffff81a60ded>] debug_print_object+0x8d/0xb0
+[  418.321101]  [<ffffffff811444e0>] ? __queue_work+0x390/0x390
+[  418.321101]  [<ffffffff81a61605>] __debug_check_no_obj_freed+0xa5/0x220
+[  418.321101]  [<ffffffff81249e76>] ? kmem_cache_destroy+0x86/0xe0
+[  418.321101]  [<ffffffff81a61795>] debug_check_no_obj_freed+0x15/0x20
+[  418.321101]  [<ffffffff812874d7>] kmem_cache_free+0x197/0x340
+[  418.321101]  [<ffffffff81249e76>] kmem_cache_destroy+0x86/0xe0
+[  418.321101]  [<ffffffff83d5d681>] nf_conntrack_cleanup_net_list+0x131/0x170
+[  418.321101]  [<ffffffff83d5ec5d>] nf_conntrack_pernet_exit+0x5d/0x70
+[  418.321101]  [<ffffffff83cda1ce>] ops_exit_list+0x5e/0x70
+[  418.321101]  [<ffffffff83cda80b>] cleanup_net+0xfb/0x1c0
+[  418.321101]  [<ffffffff81145c28>] process_one_work+0x338/0x550
+[  418.321101]  [<ffffffff81145b50>] ? process_one_work+0x260/0x550
+[  418.321883]  [<ffffffff81147605>] worker_thread+0x215/0x350
+[  418.321883]  [<ffffffff811473f0>] ? manage_workers+0x180/0x180
+[  418.321883]  [<ffffffff81150887>] kthread+0xe7/0xf0
+[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
+[  418.321883]  [<ffffffff841c7a2c>] ret_from_fork+0x7c/0xb0
+[  418.321883]  [<ffffffff811507a0>] ? __init_kthread_worker+0x70/0x70
+
+Also during dkkokie cleanup:
+
+[  191.835040] WARNING: CPU: 12 PID: 9725 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
+[  191.838129] ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x20
+[  191.840545] Modules linked in:
+[  191.841297] CPU: 12 PID: 9725 Comm: trinity-c141 Not tainted 3.15.0-rc2-next-20140423-sasha-00018-gc4ff6c4 #408
+[  191.842479]  0000000000000009 ffff88000a8ebc38 ffffffff975271f2 0000000000000001
+[  191.842479]  ffff88000a8ebc88 ffff88000a8ebc78 ffffffff9415afcc ffff88000a8a3d98
+[  191.842479]  ffff8801b3ad5140 ffffffff98e76200 ffffffff988dc502 ffffffff9b70c870
+[  191.842479] Call Trace:
+[  191.842479] dump_stack (lib/dump_stack.c:52)
+[  191.842479] warn_slowpath_common (kernel/panic.c:430)
+[  191.842479] warn_slowpath_fmt (kernel/panic.c:445)
+[  191.842479] debug_print_object (lib/debugobjects.c:262)
+[  191.842479] ? __queue_work (kernel/workqueue.c:1452)
+[  191.842479] __debug_check_no_obj_freed (lib/debugobjects.c:697)
+[  191.842479] debug_check_no_obj_freed (lib/debugobjects.c:726)
+[  191.842479] kmem_cache_free (mm/slub.c:2689 mm/slub.c:2717)
+[  191.871535] ? kmem_cache_destroy (mm/slab_common.c:363)
+[  191.871535] kmem_cache_destroy (mm/slab_common.c:363)
+[  191.871535] dcookie_unregister (fs/dcookies.c:302 fs/dcookies.c:343)
+[  191.871535] event_buffer_release (arch/x86/oprofile/../../../drivers/oprofile/event_buffer.c:153)
+[  191.871535] __fput (fs/file_table.c:217)
+[  191.871535] ____fput (fs/file_table.c:253)
+[  191.871535] task_work_run (kernel/task_work.c:125 (discriminator 1))
+[  191.871535] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:751)
+[  191.871535] int_signal (arch/x86/kernel/entry_64.S:807)
 
 
-        CPU 0                                            CPU 1
-        --------------------------------------------------------
-        spin_lock_irq(A)
-        smp_send_function_single_async(CPU 1, func)
-                                                         //IPI
-                                                         func {
-                                                            spin_lock(1)
-                                                         }
+Sysfs has a release mechanism. Use that to release the kmem_cache structure
+if CONFIG_SYSFS is enabled.
 
-But this should be resolved with a virtual lock on the IPI functions.
-I should try that.
+Signed-off-by: Christoph Lameter <cl@linux.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Acked-by: Greg KH <greg@kroah.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-2) rwlock <-> IPI
+ include/linux/slub_def.h |    4 ++++
+ mm/slab.h                |    2 ++
+ mm/slab_common.c         |   13 +++++++++++--
+ mm/slub.c                |   28 ++++++++--------------------
+ 4 files changed, 25 insertions(+), 22 deletions(-)
 
-        CPU 0                                            CPU 1
-        --------------------------------------------------------
-        read_lock(A)
-                                                         write_lock_irq(A)
-        smp_send_function_single(CPU 1, func)
-                                                         //IPI never happens
+diff -puN include/linux/slub_def.h~slub-use-sysfses-release-mechanism-for-kmem_cache include/linux/slub_def.h
+--- a/include/linux/slub_def.h~slub-use-sysfses-release-mechanism-for-kmem_cache
++++ a/include/linux/slub_def.h
+@@ -101,4 +101,8 @@ struct kmem_cache {
+ 	struct kmem_cache_node *node[MAX_NUMNODES];
+ };
+ 
++#ifdef CONFIG_SYSFS
++#define SLAB_SUPPORTS_SYSFS
++#endif
++
+ #endif /* _LINUX_SLUB_DEF_H */
+diff -puN mm/slab.h~slub-use-sysfses-release-mechanism-for-kmem_cache mm/slab.h
+--- a/mm/slab.h~slub-use-sysfses-release-mechanism-for-kmem_cache
++++ a/mm/slab.h
+@@ -57,6 +57,7 @@ struct mem_cgroup;
+ struct kmem_cache *
+ __kmem_cache_alias(const char *name, size_t size, size_t align,
+ 		   unsigned long flags, void (*ctor)(void *));
++void sysfs_slab_remove(struct kmem_cache *);
+ #else
+ static inline struct kmem_cache *
+ __kmem_cache_alias(const char *name, size_t size, size_t align,
+@@ -91,6 +92,7 @@ __kmem_cache_alias(const char *name, siz
+ #define CACHE_CREATE_MASK (SLAB_CORE_FLAGS | SLAB_DEBUG_FLAGS | SLAB_CACHE_FLAGS)
+ 
+ int __kmem_cache_shutdown(struct kmem_cache *);
++void slab_kmem_cache_release(struct kmem_cache *);
+ 
+ struct seq_file;
+ struct file;
+diff -puN mm/slab_common.c~slub-use-sysfses-release-mechanism-for-kmem_cache mm/slab_common.c
+--- a/mm/slab_common.c~slub-use-sysfses-release-mechanism-for-kmem_cache
++++ a/mm/slab_common.c
+@@ -323,6 +323,12 @@ static int kmem_cache_destroy_memcg_chil
+ }
+ #endif /* CONFIG_MEMCG_KMEM */
+ 
++void slab_kmem_cache_release(struct kmem_cache *s)
++{
++	kfree(s->name);
++	kmem_cache_free(kmem_cache, s);
++}
++
+ void kmem_cache_destroy(struct kmem_cache *s)
+ {
+ 	get_online_cpus();
+@@ -352,8 +358,11 @@ void kmem_cache_destroy(struct kmem_cach
+ 		rcu_barrier();
+ 
+ 	memcg_free_cache_params(s);
+-	kfree(s->name);
+-	kmem_cache_free(kmem_cache, s);
++#ifdef SLAB_SUPPORTS_SYSFS
++	sysfs_slab_remove(s);
++#else
++	slab_kmem_cache_release();
++#endif
+ 	goto out_put_cpus;
+ 
+ out_unlock:
+diff -puN mm/slub.c~slub-use-sysfses-release-mechanism-for-kmem_cache mm/slub.c
+--- a/mm/slub.c~slub-use-sysfses-release-mechanism-for-kmem_cache
++++ a/mm/slub.c
+@@ -210,7 +210,6 @@ enum track_item { TRACK_ALLOC, TRACK_FRE
+ #ifdef CONFIG_SYSFS
+ static int sysfs_slab_add(struct kmem_cache *);
+ static int sysfs_slab_alias(struct kmem_cache *, const char *);
+-static void sysfs_slab_remove(struct kmem_cache *);
+ static void memcg_propagate_slab_attrs(struct kmem_cache *s);
+ #else
+ static inline int sysfs_slab_add(struct kmem_cache *s) { return 0; }
+@@ -3238,24 +3237,7 @@ static inline int kmem_cache_close(struc
+ 
+ int __kmem_cache_shutdown(struct kmem_cache *s)
+ {
+-	int rc = kmem_cache_close(s);
+-
+-	if (!rc) {
+-		/*
+-		 * Since slab_attr_store may take the slab_mutex, we should
+-		 * release the lock while removing the sysfs entry in order to
+-		 * avoid a deadlock. Because this is pretty much the last
+-		 * operation we do and the lock will be released shortly after
+-		 * that in slab_common.c, we could just move sysfs_slab_remove
+-		 * to a later point in common code. We should do that when we
+-		 * have a common sysfs framework for all allocators.
+-		 */
+-		mutex_unlock(&slab_mutex);
+-		sysfs_slab_remove(s);
+-		mutex_lock(&slab_mutex);
+-	}
+-
+-	return rc;
++	return kmem_cache_close(s);
+ }
+ 
+ /********************************************************************
+@@ -5122,6 +5104,11 @@ static void memcg_propagate_slab_attrs(s
+ #endif
+ }
+ 
++static void kmem_cache_release(struct kobject *k)
++{
++	slab_kmem_cache_release(to_slab(k));
++}
++
+ static const struct sysfs_ops slab_sysfs_ops = {
+ 	.show = slab_attr_show,
+ 	.store = slab_attr_store,
+@@ -5129,6 +5116,7 @@ static const struct sysfs_ops slab_sysfs
+ 
+ static struct kobj_type slab_ktype = {
+ 	.sysfs_ops = &slab_sysfs_ops,
++	.release = kmem_cache_release,
+ };
+ 
+ static int uevent_filter(struct kset *kset, struct kobject *kobj)
+@@ -5255,7 +5243,7 @@ out_put_kobj:
+ 	goto out;
+ }
+ 
+-static void sysfs_slab_remove(struct kmem_cache *s)
++void sysfs_slab_remove(struct kmem_cache *s)
+ {
+ 	if (slab_state < FULL)
+ 		/*
+_
 
-This one is much trickier.
-
-Anyway those are the only scenario I know of but there may be more. When possible
-we want to extend lockdep to detect new scenarios of deadlock but we don't have the
-guarantee that it can detect everything.
-
-So, could be useful...
