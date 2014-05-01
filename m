@@ -1,300 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaEAWgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:36:09 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:53073 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887AbaEAWgG (ORCPT
+	id S1752448AbaEAWkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:40:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54440 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752044AbaEAWkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:36:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Thu, 1 May 2014 18:40:18 -0400
+Date: Thu, 1 May 2014 15:36:29 -0700
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Mark Brown <broonie@kernel.org>
-Cc: Xia Kaixu <kaixu.xia@linaro.org>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 13/15] ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
-Date: Fri, 02 May 2014 00:35:21 +0200
-Message-ID: <7071653.m3UbztQEJc@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140501191125.GB3245@sirena.org.uk>
-References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org> <1398770316-19715-14-git-send-email-kaixu.xia@linaro.org> <20140501191125.GB3245@sirena.org.uk>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+Message-ID: <20140501223629.GJ3000@lukather>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140429183758.GH15125@sirena.org.uk>
+ <20140430180609.GC3000@lukather>
+ <20140501011811.GF3245@sirena.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FaToEfQgKkAq9eq9ex4bJBjI0Lg+Obyd3w6fqE5o2wU
- jMjiQ4K0uKwZGnFw26ugUOBH8+SMUuZty5z4YNGPhpAMZf7vFa
- 8ema2PSI1XxBI29LG9ovGg4LSh7Oj56aNmp/I44V7JtH04L2m1
- rs+245cmDiXm2y/YN+S46C5xbQwBCvv4zEL8ZX9EEXRCexZNim
- chT3zTdjVxLEB+BFzKv5i0f6rrdPrRRrrZzHwY+9jHnm7nLQ2P
- 17e0ixTOykeRPhnnxNoLiDQH4dHZwDHoYtOS5mY86Yec94XKey
- 047M9T8+Xlg08onu93COp7p9XPKDjNgfgs8k6foV9DZLpi9E4U
- jrBzMbp7qCx1w22aerX8=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BFVE2HhgxTpCzM8t"
+Content-Disposition: inline
+In-Reply-To: <20140501011811.GF3245@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 May 2014 12:11:25 Mark Brown wrote:
-> On Tue, Apr 29, 2014 at 07:18:34PM +0800, Xia Kaixu wrote:
-> > From: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > SND_S3C_DMA_LEGACY can only be set on S3C24xx, which does not
-> > (yet) support the dmaengine framework, so samsung_dma_get_ops()
-> > fails to link if S3C24XX_DMA is disabled:
-> 
-> Why is the fix for this not to ensure that s3c24xx always enables the
-> DMA controller - how likely is it that it would be sane to build a
-> kernel without DMA after all?
 
-S3C24XX_DMA is only needed for ASoC and for s3cmci. The latter
-uses 'depends on S3C24XX_DMA'. arch/arm/configs/tct_hammer_defconfig
-is an example of a configuration that does not include DMA because
-it uses neither of the two drivers.
+--BFVE2HhgxTpCzM8t
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On a related topic, I looked at the overall DMA situation for
-plat-samsung again now, and it looks much nicer now than it used to,
-with mach-s3c64xx fully migrated to dmaengine, so there might be an
-even better way to deal with this.
+On Wed, Apr 30, 2014 at 06:18:11PM -0700, Mark Brown wrote:
+> On Wed, Apr 30, 2014 at 11:06:09AM -0700, Maxime Ripard wrote:
+> > On Tue, Apr 29, 2014 at 11:37:58AM -0700, Mark Brown wrote:
+>=20
+> > > Why can we not handle this by using sysfs to bind spidev to the
+> > > device?
+>=20
+> > I just tried it, and apparently, you can't really use this, since spi
+> > devices are created from the device tree (or ACPI) whenever the master
+> > registers.
+>=20
+> Can you be more specific as to what the issue is here?  If we actually
+> have a specific kernel driver for a device I would strongly expect that
+> we would want to use it and not spidev, if we don't have one I don't see
+> the issue.
+>
+> > It doesn't really work either for a device that would be bound to a
+> > driver, that you unbind, and then try to bind to spidev instead. It
+> > looks like the device is released whenever you unbind it, so you can't
+> > really use it afterwards.
+>=20
+> I guess this is the issue...  what exactly is the use case here?  I
+> would only expect spidev to be used if there is no in kernel driver for
+> a device.
 
->From all I can tell, sound/soc/samsung is the only remaining user
-of the plat/dma.h interfaces, and there is only one other  driver
-using the s3c24xx_dma interface directly, drivers/mmc/host/s3cmci.c.
+The issue and use case is this: we don't have an upstreamable way to
+use spidev.
 
-How about the patch below?
-8<-------
-ASoC: s3c24xx: use legacy DMA interface directly
+You suggested a while back to add the compatibles of devices we would
+want to drive with spidev in the spidev compatible list. It's fine for
+devices where we should have a driver, but don't, or devices that will
+never ever be handled by the kernel.
 
-The samsung platform code has a wrapper around the legacy s3c24xx
-DMA API as an alternative to the dmaengine API. This is only used
-by the legacy s3c24xx sound support, which is never used in combination
-with the dmaengine API.
+But it actually doesn't work in a case where you can't really predict
+what is on the other side of the bus. Either because, on the board
+you're using the pins are exposed and it's pretty much up to the user
+to know what to put on it. That could be handled by DT overlays
+though.
 
-We can simplify the ASoC code significantly, and thereby completely
-obsoleting arch/arm/plat-samsung/dma-ops.c,
-arch/arm/plat-samsung/s3c-dma-ops.c and
-arch/arm/plat-samsung/include/plat/dma-ops.h.
+What never works is where the device on the other side is so generic
+that you really can't tell what it does. Think of a microcontroller
+that would behave as a SPI slave. It's behaviour and what it does is
+pretty much dependant of what we flashed on it, and suddenly the
+compatible string is not the proper reprensentation anymore.
 
-This patch achieves this by open-coding the implementation of this
-wrapper, which ends up saving us more code than we have to add.
-s3c24xx does not support cyclic DMA, so anything referring to that
-gets deleted in the process.
+i2c-dev works great in these cases, because you always have access to
+all the bus, and all the devices, except if the device is already used
+by someone. The patch I suggested is an attempt to mimic this.
 
-The plat-samsung dma wrapper code is now dead code and can be removed
-subsequently.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Signed-off--by: Arnd Bergmann <arnd@arndb.de>
----
+--BFVE2HhgxTpCzM8t
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- sound/soc/samsung/ac97.c | 10 ++----
- sound/soc/samsung/dma.c  | 79 +++++++++++++++---------------------------------
- sound/soc/samsung/dma.h  |  2 --
- 3 files changed, 27 insertions(+), 64 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
-index 76b072b..28fe097 100644
---- a/sound/soc/samsung/ac97.c
-+++ b/sound/soc/samsung/ac97.c
-@@ -253,10 +253,7 @@ static int s3c_ac97_trigger(struct snd_pcm_substream *substream, int cmd,
- 
- 	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
- 
--	if (!dma_data->ops)
--		dma_data->ops = samsung_dma_get_ops();
--
--	dma_data->ops->started(dma_data->channel);
-+	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
- 
- 	return 0;
- }
-@@ -287,10 +284,7 @@ static int s3c_ac97_mic_trigger(struct snd_pcm_substream *substream,
- 
- 	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
- 
--	if (!dma_data->ops)
--		dma_data->ops = samsung_dma_get_ops();
--
--	dma_data->ops->started(dma_data->channel);
-+	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
- 
- 	return 0;
- }
-diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-index dc09b71..3c6e2f2 100644
---- a/sound/soc/samsung/dma.c
-+++ b/sound/soc/samsung/dma.c
-@@ -54,8 +54,6 @@ struct runtime_data {
- 	struct s3c_dma_params *params;
- };
- 
--static void audio_buffdone(void *data);
--
- /* dma_enqueue
-  *
-  * place a dma buffer onto the queue for the dma system
-@@ -66,7 +64,6 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
- 	struct runtime_data *prtd = substream->runtime->private_data;
- 	dma_addr_t pos = prtd->dma_pos;
- 	unsigned int limit;
--	struct samsung_dma_prep dma_info;
- 
- 	pr_debug("Entered %s\n", __func__);
- 
-@@ -75,33 +72,11 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
- 	pr_debug("%s: loaded %d, limit %d\n",
- 				__func__, prtd->dma_loaded, limit);
- 
--	dma_info.cap = (samsung_dma_has_circular() ? DMA_CYCLIC : DMA_SLAVE);
--	dma_info.direction =
--		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
--		? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
--	dma_info.fp = audio_buffdone;
--	dma_info.fp_param = substream;
--	dma_info.period = prtd->dma_period;
--	dma_info.len = prtd->dma_period*limit;
--
--	if (dma_info.cap == DMA_CYCLIC) {
--		dma_info.buf = pos;
--		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
--		prtd->dma_loaded += limit;
--		return;
--	}
--
- 	while (prtd->dma_loaded < limit) {
- 		pr_debug("dma_loaded: %d\n", prtd->dma_loaded);
- 
--		if ((pos + dma_info.period) > prtd->dma_end) {
--			dma_info.period  = prtd->dma_end - pos;
--			pr_debug("%s: corrected dma len %ld\n",
--					__func__, dma_info.period);
--		}
--
--		dma_info.buf = pos;
--		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
-+		s3c2410_dma_enqueue(prtd->params->channel, substream, pos,
-+				    prtd->dma_period * limit);
- 
- 		prtd->dma_loaded++;
- 		pos += prtd->dma_period;
-@@ -112,7 +87,8 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
- 	prtd->dma_pos = pos;
- }
- 
--static void audio_buffdone(void *data)
-+static void audio_buffdone(struct s3c2410_dma_chan *channel, void *data,
-+		       int size, enum s3c2410_dma_buffresult res)
- {
- 	struct snd_pcm_substream *substream = data;
- 	struct runtime_data *prtd = substream->runtime->private_data;
-@@ -128,10 +104,8 @@ static void audio_buffdone(void *data)
- 			snd_pcm_period_elapsed(substream);
- 
- 		spin_lock(&prtd->lock);
--		if (!samsung_dma_has_circular()) {
--			prtd->dma_loaded--;
--			dma_enqueue(substream);
--		}
-+		prtd->dma_loaded--;
-+		dma_enqueue(substream);
- 		spin_unlock(&prtd->lock);
- 	}
- }
-@@ -145,8 +119,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
- 	unsigned long totbytes = params_buffer_bytes(params);
- 	struct s3c_dma_params *dma =
- 		snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
--	struct samsung_dma_req req;
--	struct samsung_dma_config config;
-+	enum dma_transfer_direction direction;
- 
- 	pr_debug("Entered %s\n", __func__);
- 
-@@ -164,24 +137,22 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
- 		pr_debug("params %p, client %p, channel %d\n", prtd->params,
- 			prtd->params->client, prtd->params->channel);
- 
--		prtd->params->ops = samsung_dma_get_ops();
--
--		req.cap = (samsung_dma_has_circular() ?
--			DMA_CYCLIC : DMA_SLAVE);
--		req.client = prtd->params->client;
--		config.direction =
--			(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
-+		direction = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK
- 			? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
--		config.width = prtd->params->dma_size;
--		config.fifo = prtd->params->dma_addr;
--		prtd->params->ch = prtd->params->ops->request(
--				prtd->params->channel, &req, rtd->cpu_dai->dev,
--				prtd->params->ch_name);
--		if (!prtd->params->ch) {
-+
-+		if (s3c2410_dma_request(prtd->params->channel,
-+					(void*)prtd->params->client, NULL) < 0) {
- 			pr_err("Failed to allocate DMA channel\n");
-+			s3c2410_dma_free(prtd->params->channel,
-+					 (void*)prtd->params->client);
- 			return -ENXIO;
- 		}
--		prtd->params->ops->config(prtd->params->ch, &config);
-+		s3c2410_dma_devconfig(prtd->params->channel, direction,
-+				      prtd->params->dma_addr);
-+		s3c2410_dma_config(prtd->params->channel,
-+				   prtd->params->dma_size);
-+		s3c2410_dma_set_buffdone_fn(prtd->params->channel,
-+					    audio_buffdone);
- 	}
- 
- 	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
-@@ -208,9 +179,9 @@ static int dma_hw_free(struct snd_pcm_substream *substream)
- 	snd_pcm_set_runtime_buffer(substream, NULL);
- 
- 	if (prtd->params) {
--		prtd->params->ops->flush(prtd->params->ch);
--		prtd->params->ops->release(prtd->params->ch,
--					prtd->params->client);
-+		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
-+		s3c2410_dma_free(prtd->params->channel,
-+				 (void*)prtd->params->client);
- 		prtd->params = NULL;
- 	}
- 
-@@ -230,7 +201,7 @@ static int dma_prepare(struct snd_pcm_substream *substream)
- 		return 0;
- 
- 	/* flush the DMA channel */
--	prtd->params->ops->flush(prtd->params->ch);
-+	s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
- 
- 	prtd->dma_loaded = 0;
- 	prtd->dma_pos = prtd->dma_start;
-@@ -253,12 +224,12 @@ static int dma_trigger(struct snd_pcm_substream *substream, int cmd)
- 	switch (cmd) {
- 	case SNDRV_PCM_TRIGGER_START:
- 		prtd->state |= ST_RUNNING;
--		prtd->params->ops->trigger(prtd->params->ch);
-+		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_START);
- 		break;
- 
- 	case SNDRV_PCM_TRIGGER_STOP:
- 		prtd->state &= ~ST_RUNNING;
--		prtd->params->ops->stop(prtd->params->ch);
-+		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_STOP);
- 		break;
- 
- 	default:
-diff --git a/sound/soc/samsung/dma.h b/sound/soc/samsung/dma.h
-index ad7c0f0..c52fa86 100644
---- a/sound/soc/samsung/dma.h
-+++ b/sound/soc/samsung/dma.h
-@@ -23,8 +23,6 @@ struct s3c_dma_params {
- 	int channel;				/* Channel ID */
- 	dma_addr_t dma_addr;
- 	int dma_size;			/* Size of the DMA transfer */
--	unsigned ch;
--	struct samsung_dma_ops *ops;
- 	char *ch_name;
- 	struct snd_dmaengine_dai_dma_data dma_data;
- };
+iQIcBAEBAgAGBQJTYsxtAAoJEBx+YmzsjxAgPaoP/1yT1gi1QB0SMFK+pVWqhW2Y
+fNPA4556SH973n6hsDY1H4MQLmb7vPdTn2htOPAq0Ew3ngEDenZNeWDv4RYwGR/m
+SWU3Mdkddc7kvawfhNFkAQdGH3zaAxnkaT2Rk5slUftqFOJiVhm5RjcoyvQal5Ay
+9BD15JtxxO9vGGI78nsTRuMbaRhX7uqEAy1Jp8Ku2U6YZd7zvxqI4BUsxZ/ionTt
+Ph96jrCGpCdcqJSIc9i6EH5iERPKs85rn+fCLwSCQTxK5aIt8OasWiUHZ++sxOgQ
+D4XHNcsEj3dPhSFeNUYLgrh9Gd7slcfhtNUdt10hkDrroCCD5fSqPEU+wSe5YoXQ
+9rrLUo+7K4lTxDgAqFfvz3NJskR6spKdPsvvsE2yadXhkCE7jMi05/RMrqcN82t8
+osDUAV3LrSg1xnY3UeNnRSCvYqvv3iFZPbt1HwvSSvLoM8ZM8bab6RIi76hstn5C
+jlVWQ9kOsSw39Qtte4CUWWw98djnY9ikl3nwanqEawLIFexRHc1ol+xTbRx70P2/
+l5LL2QG06lyvNUXBj0Iv0nxzHxDkXTE1ZCb1XKkqefmzJ8C/FiDW/T4QGXO3AMW1
+YskVhDB1nxJkCFynG5AAnygPbTQRFBoW96zu01obbN0Jj+N8TeKNxfQKC8bNRnkk
+CAzLvJIEl+/Pc8knv+8d
+=k3eJ
+-----END PGP SIGNATURE-----
 
+--BFVE2HhgxTpCzM8t--
