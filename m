@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaEAVgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:36:14 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:51027 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433AbaEAVfw (ORCPT
+	id S1752558AbaEAVje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:39:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42734 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752147AbaEAVjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:35:52 -0400
-Date: Thu, 1 May 2014 14:35:48 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [patch v2 4/4] mm, thp: do not perform sync compaction on
- pagefault
-In-Reply-To: <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1405011435210.23898@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 1 May 2014 17:39:32 -0400
+Date: Thu, 1 May 2014 17:39:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flags to speed up suspend-resume
+ of runtime-suspended devices
+In-Reply-To: <2381177.mrXhZ4Wotn@vostro.rjw.lan>
+Message-ID: <Pine.LNX.4.44L0.1405011613200.881-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Synchronous memory compaction can be very expensive: it can iterate an enormous 
-amount of memory without aborting, constantly rescheduling, waiting on page
-locks and lru_lock, etc, if a pageblock cannot be defragmented.
+On Fri, 25 Apr 2014, Rafael J. Wysocki wrote:
 
-Unfortunately, it's too expensive for pagefault for transparent hugepages and 
-it's much better to simply fallback to pages.  On 128GB machines, we find that 
-synchronous memory compaction can take O(seconds) for a single thp fault.
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> resume all runtime-suspended devices during system suspend, mostly
+> because those devices may need to be reprogrammed due to different
+> wakeup settings for system sleep and for runtime PM.  However, at
+> least in some cases, that isn't really necessary, because the wakeup
+> settings may not be really different.
+> 
+> The idea here is that subsystems should know whether or not it is
+> necessary to reprogram a given device during system suspend and they
+> should be able to tell the PM core about that.  For that reason, add
+> two new device PM flags, power.resume_not_needed and
+> power.use_runtime_resume, such that:
+> 
+>  (1) If power.resume_not_needed is set for the given device and for
+>      all of its children and the device is runtime-suspended during
+>      device_suspend(), the remaining device's system suspend/resume
+>      callbacks need not be executed.
 
-Now that async compaction remembers where it left off without strictly relying
-on sync compaction, this makes thp allocations best-effort without causing
-egregious latency during pagefault.
+The patch doesn't do that last part.  That is, it still invokes the 
+callbacks even when resume_not_needed is set.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/page_alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm not sure that you should skip the resume callbacks.  We expect
+devices to be resumed during system resume even if they were in runtime
+suspend beforehand.  Yes, this means calling resume_noirq without
+calling suspend_noirq (ditto for the other callbacks).  Think of it as
+a form of optimization -- we could have called suspend_noirq, but we
+know that the subsystem would have seen that the device was already in
+runtime suspend and then returned immediately.  By not calling
+suspend_noirq, we spare the subsystem from testing the runtime status.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2656,7 +2656,7 @@ rebalance:
- 		/* Wait for some write requests to complete then retry */
- 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
- 		goto rebalance;
--	} else {
-+	} else if (!(gfp_mask & __GFP_NO_KSWAPD)) {
- 		/*
- 		 * High-order allocations do not necessarily loop after
- 		 * direct reclaim and reclaim/compaction depends on compaction
+(And I also think "resume_not_needed" is too general.  It should be 
+something more like "runtime_resume_not_needed_during_system_suspend", 
+only not quite so long.)
+
+>  (2) If power.use_runtime_resume is set for the given device and the
+>      device is runtime-suspended in device_suspend_late(), its late/early
+>      and noirq system suspend/resume callbacks should be skipped and
+>      it should be resumed through pm_runtime_resume() in device_resume().
+
+IMO this should be a separate patch.  It has no direct connection with 
+the main goal of providing subsystems with a mechanism to avoid waking 
+up devices for reprogramming during system suspend.
+
+The main goal of this other patch will be to allow devices which were
+in runtime suspend throughout the system suspend phases to remain in
+runtime suspend throughout the system resume.  When they do finally get
+resumed, it will be by a ->runtime_resume() callback, not ->resume().
+
+This will require coordination with the child devices.  If the 
+child expects the parent always to be resumed during the resume_early 
+phase, we mustn't skip the resume_early callback.  I'm not sure if the 
+coordination provided by the resume_not_needed flag is sufficient.
+
+("use_runtime_resume" is also too general.  
+"remain_in_runtime_suspend_during_system_resume"?)
+
+Alan Stern
+
