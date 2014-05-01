@@ -1,46 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaEAHnG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 03:43:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39436 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaEAHnE (ORCPT
+	id S1753739AbaEAHph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 03:45:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29289 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807AbaEAHpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 03:43:04 -0400
-Date: Thu, 1 May 2014 09:42:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>, dm-devel@redhat.com,
-        Chris Mason <clm@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Ingo Molnar <mingo@redhat.com>, Roland McGrath <roland@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] SCHED: remove proliferation of wait_on_bit action
- functions.
-Message-ID: <20140501074257.GK11096@twins.programming.kicks-ass.net>
-References: <20140501123738.3e64b2d2@notabene.brown>
+	Thu, 1 May 2014 03:45:36 -0400
+Date: Thu, 1 May 2014 10:45:01 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Solar Designer <solar@openwall.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, devel@acpica.org,
+        kernel-hardening@lists.openwall.com, Kees Cook <keescook@chromium.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] lib: check for strcpy() overflows to fixed length buffers
+Message-ID: <20140501074501.GY4963@mwanda>
+References: <20140430150844.GA10621@mwanda>
+ <20140501040602.GA24961@openwall.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140501123738.3e64b2d2@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140501040602.GA24961@openwall.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 12:37:38PM +1000, NeilBrown wrote:
-> +static inline int
-> +wait_on_bit(void *word, int bit, unsigned mode)
-> +{
-> +	if (!test_bit(bit, word))
-> +		return 0;
-> +	return out_of_line_wait_on_bit(word, bit,
-> +				       bit_wait,
-> +				       mode & 65535);
-> +}
+Ah.  Fantastic.  That's all great stuff.  I'm on holiday today but I'll
+send a new later in the week.
 
-Still puzzled by the 16 bit mask there ;-)
+regards,
+dan carpenter
+
