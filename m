@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751994AbaEAAtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 20:49:07 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:56976 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaEAAtD (ORCPT
+	id S1753258AbaEAAuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 20:50:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:3884 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752081AbaEAAuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 20:49:03 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
-Subject: [PATCH 2/2] tty/serial: fix generic earlycon option parsing
-Date: Wed, 30 Apr 2014 19:48:29 -0500
-Message-Id: <1398905309-24843-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398905309-24843-1-git-send-email-robherring2@gmail.com>
-References: <1398905309-24843-1-git-send-email-robherring2@gmail.com>
+	Wed, 30 Apr 2014 20:50:07 -0400
+Message-Id: <20140501004757.583708392@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 30 Apr 2014 20:47:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH RT 0/3] Linux 3.12.15-rt26-rc1
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
 
-Commit 9aac5887595 (tty/serial: add generic serial earlycon) moved
-console option parsing from 8250_early.c and converted to kstrto*
-functions from simple_strtoul along the way. However, kstrto* functions
-are not equivalent in that they do not allow non-convertible characters
-at the end such as "115200n8". Fix this by changing back to
-simple_strtoul and ignore what checkpatch.pl says.
+Dear RT Folks,
 
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
+The 3.12-rt kernel is entering the stable phase. But instead of
+just pulling the last development version into stable, there
+were a few bugs that needed to be fixed first. The 3.12.15-rt26
+will go through an rc phase before it is officially released as
+stable.
+
+This is the RT stable review cycle of patch 3.12.15-rt26-rc1.
+
+Please scream at me if I messed something up. Please test the patches too.
+
+The -rc release will be uploaded to kernel.org and will be deleted when
+the final release is out. This is just a review release (or release candidate).
+
+The pre-releases will not be pushed to the git repository, only the
+final release is.
+
+If all goes well, this patch will be converted to the next main release
+on 5/2/2014.
+
+Enjoy,
+
+-- Steve
+
+
+To build 3.12.15-rt26-rc1 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.12.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.12.15.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/patch-3.12.15-rt26-rc1.patch.xz
+
+You can also build from 3.12.15-rt25 by applying the incremental patch:
+
+http://www.kernel.org/pub/linux/kernel/projects/rt/3.12/incr/patch-3.12.15-rt25-rt26-rc1.patch.xz
+
+
+Changes from 3.12.15-rt25:
+
 ---
- drivers/tty/serial/earlycon.c | 18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-index 73bf1e2..c92e830 100644
---- a/drivers/tty/serial/earlycon.c
-+++ b/drivers/tty/serial/earlycon.c
-@@ -53,7 +53,7 @@ static int __init parse_options(struct earlycon_device *device,
- 				char *options)
- {
- 	struct uart_port *port = &device->port;
--	int mmio, mmio32, length, ret;
-+	int mmio, mmio32, length;
- 	unsigned long addr;
- 
- 	if (!options)
-@@ -64,25 +64,19 @@ static int __init parse_options(struct earlycon_device *device,
- 	if (mmio || mmio32) {
- 		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
- 		options += mmio ? 5 : 7;
--		ret = kstrtoul(options, 0, &addr);
--		if (ret)
--			return ret;
-+		addr = simple_strtoul(options, NULL, 0);
- 		port->mapbase = addr;
- 		if (mmio32)
- 			port->regshift = 2;
- 	} else if (!strncmp(options, "io,", 3)) {
- 		port->iotype = UPIO_PORT;
- 		options += 3;
--		ret = kstrtoul(options, 0, &addr);
--		if (ret)
--			return ret;
-+		addr = simple_strtoul(options, NULL, 0);
- 		port->iobase = addr;
- 		mmio = 0;
- 	} else if (!strncmp(options, "0x", 2)) {
- 		port->iotype = UPIO_MEM;
--		ret = kstrtoul(options, 0, &addr);
--		if (ret)
--			return ret;
-+		addr = simple_strtoul(options, NULL, 0);
- 		port->mapbase = addr;
- 	} else {
- 		return -EINVAL;
-@@ -93,9 +87,7 @@ static int __init parse_options(struct earlycon_device *device,
- 	options = strchr(options, ',');
- 	if (options) {
- 		options++;
--		ret = kstrtouint(options, 0, &device->baud);
--		if (ret)
--			return ret;
-+		device->baud = simple_strtoul(options, NULL, 0);
- 		length = min(strcspn(options, " ") + 1,
- 			     (size_t)(sizeof(device->options)));
- 		strlcpy(device->options, options, length);
--- 
-1.9.1
 
+Steven Rostedt (1):
+      rt: Move migrate_disable up in trylocks
+
+Steven Rostedt (Red Hat) (2):
+      net: gianfar: Fix missing return of gfar_clean_tx_ring()
+      Linux 3.12.15-rt26-rc1
+
+----
+ drivers/net/ethernet/freescale/gianfar.c |  1 +
+ kernel/rt.c                              | 20 ++++++++++++--------
+ localversion-rt                          |  2 +-
+ 3 files changed, 14 insertions(+), 9 deletions(-)
