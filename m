@@ -1,199 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaEANO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:14:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21892 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167AbaEANO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:14:28 -0400
-Date: Thu, 1 May 2014 21:15:48 +0800
-From: Dave Young <dyoung@redhat.com>
-To: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, akpm@linux-foundation.org, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2] earlyprintk=efi,keep fix
-Message-ID: <20140501131548.GA15258@darkstar.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753902AbaEANQW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 09:16:22 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:50302 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaEANQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 09:16:20 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [RFC PATCH 2/3] of: mtd: add NAND randomizer mode retrieval
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: devicetree@vger.kernel.org, Boris BREZILLON <b.brezillon.dev@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1398906592-24677-3-git-send-email-b.brezillon.dev@gmail.com>
+References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
+	<1398906592-24677-3-git-send-email-b.brezillon.dev@gmail.com>
+Date: Thu, 01 May 2014 14:16:05 +0100
+Message-Id: <20140501131605.9CB7CC409DA@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  1 May 2014 03:09:51 +0200, Boris BREZILLON <b.brezillon.dev@gmail.com> wrote:
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+> ---
 
-earlyprintk=efi,keep will cause kernel hangs while freeing initmem like below:
-[    2.826089] VFS: Mounted root (ext4 filesystem) readonly on device 254:2.
-[    2.846592] devtmpfs: mounted
-[    2.856974] Freeing unused kernel memory: 880K (ffffffff817d4000 - ffffffff818b0000)
+No commit message? Immediate NAK. Please, make sure you write a
+description for each and every patch. This is not optional. Future
+readers want to know what this patch solves and any other information
+you can provide without having to read the diff.
 
-It is caused by efi earlyprintk use __init function which will be freed later.
-Such as early_efi_write is marked as __init, also it will use early_ioremap
-which is init function as well.
+>  drivers/of/of_mtd.c    | 35 +++++++++++++++++++++++++++++++++++
+>  include/linux/of_mtd.h |  6 ++++++
 
-To fix this issue, I added early initcall early_efi_map_fb which maps the whole
-efi fb for later use. OTOH, adding a wrapper function early_efi_map which calls
-early_ioremap before ioremap is available.
+Don't forget to update Documentation/devicetree/bindings/mtd/nand.txt
 
-With this patch applied efi boot ok with earlyprintk=efi,keep console=efi
+g.
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- arch/x86/platform/efi/early_printk.c |   83 ++++++++++++++++++++++++++---------
- 1 file changed, 64 insertions(+), 19 deletions(-)
+>  2 files changed, 41 insertions(+)
+> 
+> diff --git a/drivers/of/of_mtd.c b/drivers/of/of_mtd.c
+> index a862c08..f941a5e 100644
+> --- a/drivers/of/of_mtd.c
+> +++ b/drivers/of/of_mtd.c
+> @@ -84,6 +84,41 @@ int of_get_nand_ecc_strength(struct device_node *np)
+>  EXPORT_SYMBOL_GPL(of_get_nand_ecc_strength);
+>  
+>  /**
+> + * It maps 'enum nand_rnd_modes_t' found in include/linux/mtd/nand.h
+> + * into the device tree binding of 'nand-rnd', so that MTD
+> + * device driver can get nand rnd from device tree.
+> + */
+> +static const char * const nand_rnd_modes[] = {
+> +	[NAND_RND_NONE]		= "none",
+> +	[NAND_RND_SOFT]		= "soft",
+> +	[NAND_RND_HW]		= "hw",
+> +};
+> +
+> +/**
+> + * of_get_nand_rnd_mode - Get nand randomizer mode for given device_node
+> + * @np:	Pointer to the given device_node
+> + *
+> + * The function gets randomizer mode string from property 'nand-rnd-mode',
+> + * and return its index in nand_rnd_modes table, or errno in error case.
+> + */
+> +int of_get_nand_rnd_mode(struct device_node *np)
+> +{
+> +	const char *pm;
+> +	int err, i;
+> +
+> +	err = of_property_read_string(np, "nand-rnd-mode", &pm);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(nand_rnd_modes); i++)
+> +		if (!strcasecmp(pm, nand_rnd_modes[i]))
+> +			return i;
+> +
+> +	return -ENODEV;
+> +}
+> +EXPORT_SYMBOL_GPL(of_get_nand_rnd_mode);
+> +
+> +/**
+>   * of_get_nand_bus_width - Get nand bus witdh for given device_node
+>   * @np:	Pointer to the given device_node
+>   *
+> diff --git a/include/linux/of_mtd.h b/include/linux/of_mtd.h
+> index d0145fb..2f43362 100644
+> --- a/include/linux/of_mtd.h
+> +++ b/include/linux/of_mtd.h
+> @@ -15,6 +15,7 @@
+>  int of_get_nand_ecc_mode(struct device_node *np);
+>  int of_get_nand_ecc_step_size(struct device_node *np);
+>  int of_get_nand_ecc_strength(struct device_node *np);
+> +int of_get_nand_rnd_mode(struct device_node *np);
+>  int of_get_nand_bus_width(struct device_node *np);
+>  bool of_get_nand_on_flash_bbt(struct device_node *np);
+>  int of_get_nand_onfi_timing_mode(struct device_node *np);
+> @@ -36,6 +37,11 @@ static inline int of_get_nand_ecc_strength(struct device_node *np)
+>  	return -ENOSYS;
+>  }
+>  
+> +static inline int of_get_nand_rnd_mode(struct device_node *np)
+> +{
+> +	return -ENOSYS;
+> +}
+> +
+>  static inline int of_get_nand_bus_width(struct device_node *np)
+>  {
+>  	return -ENOSYS;
+> -- 
+> 1.8.3.2
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
---- linux-2.6.orig/arch/x86/platform/efi/early_printk.c
-+++ linux-2.6/arch/x86/platform/efi/early_printk.c
-@@ -14,48 +14,92 @@
- 
- static const struct font_desc *font;
- static u32 efi_x, efi_y;
-+static void *efi_fb;
-+static bool early_efi_keep;
- 
--static __init void early_efi_clear_scanline(unsigned int y)
-+/*
-+ * efi earlyprintk need use early_ioremap to map the framebuffer.
-+ * But early_ioremap is not usable for earlyprintk=efi,keep, ioremap should
-+ * be used instead. ioremap will be available after paging_init() which is
-+ * earlier than initcall callbacks. Thus adding this early initcall function
-+ * early_efi_map_fb to map the whole efi framebuffer.
-+ */
-+static __init int early_efi_map_fb(void)
- {
--	unsigned long base, *dst;
--	u16 len;
-+	unsigned long base, size;
-+
-+	if (!early_efi_keep)
-+		return 0;
- 
- 	base = boot_params.screen_info.lfb_base;
--	len = boot_params.screen_info.lfb_linelength;
-+	size = boot_params.screen_info.lfb_size;
-+	efi_fb = ioremap(base, size);
-+
-+	return efi_fb ? 0 : -ENOMEM;
-+}
-+early_initcall(early_efi_map_fb);
-+
-+/*
-+ * early_efi_map maps efi framebuffer region [start, start + len -1]
-+ * In case earlyprintk=efi,keep we have the whole framebuffer mapped already
-+ * so just return the offset efi_fb + start.
-+ */
-+static __init_refok void *early_efi_map(unsigned long start, unsigned long len)
-+{
-+	unsigned long base;
-+
-+	base = boot_params.screen_info.lfb_base;
-+
-+	if (efi_fb)
-+		return (efi_fb + start);
-+	else
-+		return early_ioremap(base + start, len);
-+}
-+
-+static __init_refok void early_efi_unmap(void *addr, unsigned long len)
-+{
-+	if (!efi_fb)
-+		early_iounmap(addr, len);
-+}
- 
--	dst = early_ioremap(base + y*len, len);
-+static void early_efi_clear_scanline(unsigned int y)
-+{
-+	unsigned long *dst;
-+	u16 len;
-+
-+	len = boot_params.screen_info.lfb_linelength;
-+	dst = early_efi_map(y*len, len);
- 	if (!dst)
- 		return;
- 
- 	memset(dst, 0, len);
--	early_iounmap(dst, len);
-+	early_efi_unmap(dst, len);
- }
- 
--static __init void early_efi_scroll_up(void)
-+static void early_efi_scroll_up(void)
- {
--	unsigned long base, *dst, *src;
-+	unsigned long *dst, *src;
- 	u16 len;
- 	u32 i, height;
- 
--	base = boot_params.screen_info.lfb_base;
- 	len = boot_params.screen_info.lfb_linelength;
- 	height = boot_params.screen_info.lfb_height;
- 
- 	for (i = 0; i < height - font->height; i++) {
--		dst = early_ioremap(base + i*len, len);
-+		dst = early_efi_map(i*len, len);
- 		if (!dst)
- 			return;
- 
--		src = early_ioremap(base + (i + font->height) * len, len);
-+		src = early_efi_map((i + font->height) * len, len);
- 		if (!src) {
--			early_iounmap(dst, len);
-+			early_efi_unmap(dst, len);
- 			return;
- 		}
- 
- 		memmove(dst, src, len);
- 
--		early_iounmap(src, len);
--		early_iounmap(dst, len);
-+		early_efi_unmap(src, len);
-+		early_efi_unmap(dst, len);
- 	}
- }
- 
-@@ -79,16 +123,14 @@ static void early_efi_write_char(u32 *ds
- 	}
- }
- 
--static __init void
-+static void
- early_efi_write(struct console *con, const char *str, unsigned int num)
- {
- 	struct screen_info *si;
--	unsigned long base;
- 	unsigned int len;
- 	const char *s;
- 	void *dst;
- 
--	base = boot_params.screen_info.lfb_base;
- 	si = &boot_params.screen_info;
- 	len = si->lfb_linelength;
- 
-@@ -109,7 +151,7 @@ early_efi_write(struct console *con, con
- 		for (h = 0; h < font->height; h++) {
- 			unsigned int n, x;
- 
--			dst = early_ioremap(base + (efi_y + h) * len, len);
-+			dst = early_efi_map((efi_y + h) * len, len);
- 			if (!dst)
- 				return;
- 
-@@ -123,7 +165,7 @@ early_efi_write(struct console *con, con
- 				s++;
- 			}
- 
--			early_iounmap(dst, len);
-+			early_efi_unmap(dst, len);
- 		}
- 
- 		num -= count;
-@@ -179,6 +221,9 @@ static __init int early_efi_setup(struct
- 	for (i = 0; i < (yres - efi_y) / font->height; i++)
- 		early_efi_scroll_up();
- 
-+	/* early_console_register will unset CON_BOOT in case ,keep */
-+	if (!(con->flags & CON_BOOT))
-+		early_efi_keep = true;
- 	return 0;
- }
- 
