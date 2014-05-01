@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaEANgM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:36:12 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60078 "EHLO zene.cmpxchg.org"
+	id S1754782AbaEANjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 09:39:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34054 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaEANgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:36:10 -0400
-Date: Thu, 1 May 2014 09:36:03 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Jianyu Zhan <nasa4836@gmail.com>, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
- mem_cgroup_zoneinfo_zone()
-Message-ID: <20140501133603.GA25536@cmpxchg.org>
-References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
- <20140422095923.GD29311@dhcp22.suse.cz>
- <20140428150426.GB24807@dhcp22.suse.cz>
- <20140501125450.GA23420@cmpxchg.org>
+	id S1750852AbaEANjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 09:39:43 -0400
+Date: Thu, 1 May 2014 14:39:38 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Jan Kara <jack@suse.cz>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 14/17] mm: Do not use atomic operations when releasing
+ pages
+Message-ID: <20140501133938.GK23991@suse.de>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+ <1398933888-4940-15-git-send-email-mgorman@suse.de>
+ <20140501132922.GD23420@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140501125450.GA23420@cmpxchg.org>
+In-Reply-To: <20140501132922.GD23420@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[fix Andrew's email address]
-
-On Thu, May 01, 2014 at 08:54:50AM -0400, Johannes Weiner wrote:
-> On Mon, Apr 28, 2014 at 05:04:26PM +0200, Michal Hocko wrote:
-> > On Tue 22-04-14 11:59:23, Michal Hocko wrote:
-> > > On Sat 19-04-14 07:01:43, Jianyu Zhan wrote:
-> > > > introduce helper mem_cgroup_zoneinfo_zone(). This will make
-> > > > mem_cgroup_iter() code more compact.
-> > > 
-> > > I dunno. Helpers are usually nice but this one adds more code then it
-> > > removes. It also doesn't help the generated code.
-> > > 
-> > > So I don't see any reason to merge it.
+On Thu, May 01, 2014 at 09:29:22AM -0400, Johannes Weiner wrote:
+> On Thu, May 01, 2014 at 09:44:45AM +0100, Mel Gorman wrote:
+> > There should be no references to it any more and a parallel mark should
+> > not be reordered against us. Use non-locked varient to clear page active.
 > > 
-> > So should we drop it from mmotm?
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/swap.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/swap.c b/mm/swap.c
+> > index f2228b7..7a5bdd7 100644
+> > --- a/mm/swap.c
+> > +++ b/mm/swap.c
+> > @@ -854,7 +854,7 @@ void release_pages(struct page **pages, int nr, bool cold)
+> >  		}
+> >  
+> >  		/* Clear Active bit in case of parallel mark_page_accessed */
+> > -		ClearPageActive(page);
+> > +		__ClearPageActive(page);
 > 
-> Yes, please.
-> 
-> > > > Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> > > > ---
-> > > >  mm/memcontrol.c | 15 +++++++++++----
-> > > >  1 file changed, 11 insertions(+), 4 deletions(-)
-> 
-> This helper adds no value, but more code and indirection.
-> 
-> Cc'd Andrew - this is about
-> mm-memcontrolc-introduce-helper-mem_cgroup_zoneinfo_zone.patch
-> mm-memcontrolc-introduce-helper-mem_cgroup_zoneinfo_zone-checkpatch-fixes.patch
-> 
-> Thanks!
+> Shouldn't this comment be removed also?
+
+Why? We're still clearing the active bit.
+
+-- 
+Mel Gorman
+SUSE Labs
