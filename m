@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008AbaEAXVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:21:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:40219 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702AbaEAXS5 (ORCPT
+	id S1752830AbaEAX2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:28:30 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:60081 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752AbaEAX20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:18:57 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 5/8] irq: Kill irq_reserve_irq/irq_reserve_irqs
-Date: Thu,  1 May 2014 16:18:19 -0700
-Message-Id: <1398986302-30455-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
-References: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 1 May 2014 19:28:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140501223629.GJ3000@lukather>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+	<20140429183758.GH15125@sirena.org.uk>
+	<20140430180609.GC3000@lukather>
+	<20140501011811.GF3245@sirena.org.uk>
+	<20140501223629.GJ3000@lukather>
+Date: Fri, 2 May 2014 01:28:26 +0200
+X-Google-Sender-Auth: IdatgL55bOAmA2IEQQV6xsfBrKQ
+Message-ID: <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No user any more.
+Hi Maxime,
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- include/linux/irq.h  |  6 ------
- kernel/irq/irqdesc.c | 25 -------------------------
- 2 files changed, 31 deletions(-)
+On Fri, May 2, 2014 at 12:36 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> But it actually doesn't work in a case where you can't really predict
+> what is on the other side of the bus. Either because, on the board
+> you're using the pins are exposed and it's pretty much up to the user
+> to know what to put on it. That could be handled by DT overlays
+> though.
+>
+> What never works is where the device on the other side is so generic
+> that you really can't tell what it does. Think of a microcontroller
+> that would behave as a SPI slave. It's behaviour and what it does is
+> pretty much dependant of what we flashed on it, and suddenly the
+> compatible string is not the proper reprensentation anymore.
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 28cbd3e..02dc0e4 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -623,7 +623,6 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 	irq_alloc_descs(-1, from, cnt, node)
- 
- void irq_free_descs(unsigned int irq, unsigned int cnt);
--int irq_reserve_irqs(unsigned int from, unsigned int cnt);
- int arch_probe_early_allocate_nr_irqs(void);
- 
- static inline void irq_free_desc(unsigned int irq)
-@@ -631,11 +630,6 @@ static inline void irq_free_desc(unsigned int irq)
- 	irq_free_descs(irq, 1);
- }
- 
--static inline int irq_reserve_irq(unsigned int irq)
--{
--	return irq_reserve_irqs(irq, 1);
--}
--
- #ifndef irq_reg_writel
- # define irq_reg_writel(val, addr)	writel(val, addr)
- #endif
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index dfb971c..49bf891 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -400,31 +400,6 @@ err:
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
- 
- /**
-- * irq_reserve_irqs - mark irqs allocated
-- * @from:	mark from irq number
-- * @cnt:	number of irqs to mark
-- *
-- * Returns 0 on success or an appropriate error code
-- */
--int irq_reserve_irqs(unsigned int from, unsigned int cnt)
--{
--	unsigned int start;
--	int ret = 0;
--
--	if (!cnt || (from + cnt) > nr_irqs)
--		return -EINVAL;
--
--	mutex_lock(&sparse_irq_lock);
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
--	if (start == from)
--		bitmap_set(allocated_irqs, start, cnt);
--	else
--		ret = -EEXIST;
--	mutex_unlock(&sparse_irq_lock);
--	return ret;
--}
--
--/**
-  * irq_get_next_irq - get next allocated irq number
-  * @offset:	where to start the search
-  *
--- 
-1.8.4.5
+So you will (hopefully soon) use overlay DT to change the DTS to match what's
+connected?
 
+And then you want spidev to bind to it. Would it help if DT offered a feature
+to add a compatible entry to a driver at runtime, cfr.
+/sys/bus/pci/drivers/.../new_id on PCI?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
