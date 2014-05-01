@@ -1,63 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbaEAX2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:28:30 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:60081 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaEAX20 (ORCPT
+	id S1752796AbaEAX23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:28:29 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:57206 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaEAX20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 May 2014 19:28:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140501223629.GJ3000@lukather>
-References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
-	<20140429183758.GH15125@sirena.org.uk>
-	<20140430180609.GC3000@lukather>
-	<20140501011811.GF3245@sirena.org.uk>
-	<20140501223629.GJ3000@lukather>
-Date: Fri, 2 May 2014 01:28:26 +0200
-X-Google-Sender-Auth: IdatgL55bOAmA2IEQQV6xsfBrKQ
-Message-ID: <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
-Subject: Re: [PATCH] spi: Force the registration of the spidev devices
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+From: Andy Lutomirski <luto@amacapital.net>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] fs,net: Add MS_NOIPCCONNECT to block existing FIFOs and sockets
+Date: Thu,  1 May 2014 16:28:22 -0700
+Message-Id: <c4006d98a202e5a9db57e24dd7922704d78ae60f.1398986696.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+An MS_RDONLY mount disallows binding unix sockets and creating
+FIFOs, but it does not prevent opening existing FIFOs and connecting
+to unix sockets.  Containers and other sandbox-like applications may
+want to block IPC to the outside world.  Network namespaces can
+control access to abstract namespace unix sockets, but there is
+currently no way to control access to FIFOs and sockets with paths
+other than relying on DAC or MAC rules.
 
-On Fri, May 2, 2014 at 12:36 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> But it actually doesn't work in a case where you can't really predict
-> what is on the other side of the bus. Either because, on the board
-> you're using the pins are exposed and it's pretty much up to the user
-> to know what to put on it. That could be handled by DT overlays
-> though.
->
-> What never works is where the device on the other side is so generic
-> that you really can't tell what it does. Think of a microcontroller
-> that would behave as a SPI slave. It's behaviour and what it does is
-> pretty much dependant of what we flashed on it, and suddenly the
-> compatible string is not the proper reprensentation anymore.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ fs/namei.c              |  2 ++
+ fs/namespace.c          |  4 +++-
+ fs/proc_namespace.c     |  1 +
+ include/linux/mount.h   | 15 ++++++++-------
+ include/uapi/linux/fs.h |  1 +
+ net/unix/af_unix.c      |  6 ++++++
+ 6 files changed, 21 insertions(+), 8 deletions(-)
 
-So you will (hopefully soon) use overlay DT to change the DTS to match what's
-connected?
+diff --git a/fs/namei.c b/fs/namei.c
+index c6157c8..e082c60 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2546,6 +2546,8 @@ static int may_open(struct path *path, int acc_mode, int flag)
+ 		/*FALLTHRU*/
+ 	case S_IFIFO:
+ 	case S_IFSOCK:
++		if (path->mnt->mnt_flags & MNT_NOIPCCONNECT)
++			return -EACCES;
+ 		flag &= ~O_TRUNC;
+ 		break;
+ 	}
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 182bc41..49f9b1b 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2435,10 +2435,12 @@ long do_mount(const char *dev_name, const char *dir_name,
+ 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
+ 	if (flags & MS_RDONLY)
+ 		mnt_flags |= MNT_READONLY;
++	if (flags & MS_NOIPCCONNECT)
++		mnt_flags |= MNT_NOIPCCONNECT;
+ 
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_NOIPCCONNECT);
+ 
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 1a81373..2aaf478 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -65,6 +65,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
+ 		{ MNT_NOATIME, ",noatime" },
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
++		{ MNT_NOIPCCONNECT, ",noipcconnect" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 839bac2..78007eb 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -21,13 +21,14 @@ struct vfsmount;
+ struct dentry;
+ struct mnt_namespace;
+ 
+-#define MNT_NOSUID	0x01
+-#define MNT_NODEV	0x02
+-#define MNT_NOEXEC	0x04
+-#define MNT_NOATIME	0x08
+-#define MNT_NODIRATIME	0x10
+-#define MNT_RELATIME	0x20
+-#define MNT_READONLY	0x40	/* does the user want this to be r/o? */
++#define MNT_NOSUID		0x01
++#define MNT_NODEV		0x02
++#define MNT_NOEXEC		0x04
++#define MNT_NOATIME		0x08
++#define MNT_NODIRATIME		0x10
++#define MNT_RELATIME		0x20
++#define MNT_READONLY		0x40	/* does the user want this to be r/o? */
++#define MNT_NOIPCCONNECT	0x80
+ 
+ #define MNT_SHRINKABLE	0x100
+ #define MNT_WRITE_HOLD	0x200
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index ca1a11b..c4502cc 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -89,6 +89,7 @@ struct inodes_stat_t {
+ #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+ #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+ #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
++#define MS_NOIPCCONNECT	(1<<25) /* Disallow connecting to pipes and sockets */
+ 
+ /* These sb flags are internal to the kernel */
+ #define MS_NOSEC	(1<<28)
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index bb7e8ba..e24b682 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -783,6 +783,12 @@ static struct sock *unix_find_other(struct net *net,
+ 		err = kern_path(sunname->sun_path, LOOKUP_FOLLOW, &path);
+ 		if (err)
+ 			goto fail;
++
++		if (path.mnt->mnt_flags & MNT_NOIPCCONNECT) {
++			err = -EACCES;
++			goto put_fail;
++		}
++
+ 		inode = path.dentry->d_inode;
+ 		err = inode_permission(inode, MAY_WRITE);
+ 		if (err)
+-- 
+1.9.0
 
-And then you want spidev to bind to it. Would it help if DT offered a feature
-to add a compatible entry to a driver at runtime, cfr.
-/sys/bus/pci/drivers/.../new_id on PCI?
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
