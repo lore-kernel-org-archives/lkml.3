@@ -1,135 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaEAXTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:19:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29825 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaEAXS5 (ORCPT
+	id S1752907AbaEAXUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:20:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57049 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752884AbaEAXUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:18:57 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 6/8] irq: Add new reserved_irqs clear/mark functions
-Date: Thu,  1 May 2014 16:18:20 -0700
-Message-Id: <1398986302-30455-7-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
-References: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 1 May 2014 19:20:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flags to speed up suspend-resume of runtime-suspended devices
+Date: Fri, 02 May 2014 01:36:38 +0200
+Message-ID: <1898485.lQeVbtvK4U@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2117270.jlg4ZsaoxL@vostro.rjw.lan>
+References: <Pine.LNX.4.44L0.1405011613200.881-100000@iolanthe.rowland.org> <2117270.jlg4ZsaoxL@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for ioapic hotplug.
+On Friday, May 02, 2014 01:15:14 AM Rafael J. Wysocki wrote:
+> On Thursday, May 01, 2014 05:39:31 PM Alan Stern wrote:
+> > On Fri, 25 Apr 2014, Rafael J. Wysocki wrote:
+> > 
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > 
+> > > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
+> > > resume all runtime-suspended devices during system suspend, mostly
+> > > because those devices may need to be reprogrammed due to different
+> > > wakeup settings for system sleep and for runtime PM.  However, at
+> > > least in some cases, that isn't really necessary, because the wakeup
+> > > settings may not be really different.
+> > > 
+> > > The idea here is that subsystems should know whether or not it is
+> > > necessary to reprogram a given device during system suspend and they
+> > > should be able to tell the PM core about that.  For that reason, add
+> > > two new device PM flags, power.resume_not_needed and
+> > > power.use_runtime_resume, such that:
+> > > 
+> > >  (1) If power.resume_not_needed is set for the given device and for
+> > >      all of its children and the device is runtime-suspended during
+> > >      device_suspend(), the remaining device's system suspend/resume
+> > >      callbacks need not be executed.
+> > 
+> > The patch doesn't do that last part.  That is, it still invokes the 
+> > callbacks even when resume_not_needed is set.
+> 
+> Yes, it does and the above paragraph doesn't say that it won't.  It only
+> says that the flag indicates no need to do that.
+> 
+> > I'm not sure that you should skip the resume callbacks.
+> 
+> The reason why is that if the device were suspended using ->runtime_suspend(),
+> its driver (or bus type) may be confused if ->runtime_resume() is not used
+> to resume it.
+> 
+> > We expect devices to be resumed during system resume even if they were in
+> > runtime suspend beforehand.  Yes, this means calling resume_noirq without
+> > calling suspend_noirq (ditto for the other callbacks).  Think of it as
+> > a form of optimization -- we could have called suspend_noirq, but we
+> > know that the subsystem would have seen that the device was already in
+> > runtime suspend and then returned immediately.  By not calling
+> > suspend_noirq, we spare the subsystem from testing the runtime status.
+> 
+> The driver/subsystem has the right to expect that ->resume_noirq() will
+> always be called after ->suspend_noirq() (if both are implemented).  Thus
+> calling the former without the latter may be a bug (for the particular
+> driver).  Since we've always had symmetry there, the risk of breaking stuff
+> if we change that is relatively high.
+> 
+> On the other hand, ->runtime_resume() should not make any assumptions
+> about the hardware state when it is called anyway, so it should handle
+> the device during system resume properly, given that the last PM callback
+> executed for it was ->runtime_suspend(), regardless of what the firmware
+> did to it in the meantime.
+> 
+> > (And I also think "resume_not_needed" is too general.  It should be 
+> > something more like "runtime_resume_not_needed_during_system_suspend", 
+> > only not quite so long.)
+> 
+> Well, I can agree with that, but I couldn't invent a better name. In particular,
+> one that wouldn't be too long. :-)
+> 
+> > >  (2) If power.use_runtime_resume is set for the given device and the
+> > >      device is runtime-suspended in device_suspend_late(), its late/early
+> > >      and noirq system suspend/resume callbacks should be skipped and
+> > >      it should be resumed through pm_runtime_resume() in device_resume().
+> > 
+> > IMO this should be a separate patch.  It has no direct connection with 
+> > the main goal of providing subsystems with a mechanism to avoid waking 
+> > up devices for reprogramming during system suspend.
+> 
+> I'm not sure what you mean, honestly.  The main goal here is to allow
+> devices that were runtime suspended to stay that way throughout system
+> suspend and resume up until device_resume() is called for them.
+> 
+> > The main goal of this other patch will be to allow devices which were
+> > in runtime suspend throughout the system suspend phases to remain in
+> > runtime suspend throughout the system resume.  When they do finally get
+> > resumed, it will be by a ->runtime_resume() callback, not ->resume().
+> 
+> Yes, and that's what *this* patch does, isn't it?
+> 
+> I have no idea how to split it so that both parts still make sense.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- include/linux/irq.h  |  3 +++
- kernel/irq/irqdesc.c | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 71 insertions(+)
+OK, I guess you mean that the first flag (resume_not_needed) should be introduced
+by one patch and the second one by another, but I'm not sure if that would really
+make any difference.  Both of them are needed anyway and resume_not_needed without
+the other flag wouldn't have any effect.
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 02dc0e4..2ba3245 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -603,6 +603,9 @@ static inline u32 irq_get_trigger_type(unsigned int irq)
- 	return d ? irqd_get_trigger_type(d) : 0;
- }
- 
-+int irq_clear_reserved_irqs(unsigned int from, unsigned int cnt);
-+int irq_mark_reserved_irqs(int irq, unsigned int from, unsigned int cnt);
-+
- int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 		struct module *owner);
- 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 49bf891..865ebc0 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -97,6 +97,7 @@ int nr_irqs = NR_IRQS;
- EXPORT_SYMBOL_GPL(nr_irqs);
- 
- static DEFINE_MUTEX(sparse_irq_lock);
-+static DECLARE_BITMAP(reserved_irqs, IRQ_BITMAP_BITS);
- static DECLARE_BITMAP(allocated_irqs, IRQ_BITMAP_BITS);
- 
- #ifdef CONFIG_SPARSE_IRQ
-@@ -400,6 +401,73 @@ err:
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
- 
- /**
-+ * irq_clear_reserved_irqs - clear irqs reserved
-+ * @from:	clear from irq number
-+ * @cnt:	number of irqs to clear
-+ *
-+ * Returns 0 on success or an appropriate error code
-+ */
-+int irq_clear_reserved_irqs(unsigned int from, unsigned int cnt)
-+{
-+	if (!cnt || (from + cnt) > nr_irqs)
-+		return -EINVAL;
-+
-+	mutex_lock(&sparse_irq_lock);
-+	bitmap_clear(reserved_irqs, from, cnt);
-+	mutex_unlock(&sparse_irq_lock);
-+
-+	return 0;
-+}
-+
-+/**
-+ * irq_mark_reserved_irqs - mark irqs reserved
-+ * @irq:	Allocate for specific irq number if irq >= 0
-+ * @from:	mark from irq number
-+ * @cnt:	number of irqs to mark
-+ *
-+ * Returns the first irq number or error code
-+ */
-+int irq_mark_reserved_irqs(int irq, unsigned int from, unsigned int cnt)
-+{
-+	unsigned int start, reserve;
-+	int ret;
-+
-+	if (!cnt)
-+		return -EINVAL;
-+
-+	if (irq >= 0) {
-+		if (from > irq)
-+			return -EINVAL;
-+		from = irq;
-+	}
-+
-+	mutex_lock(&sparse_irq_lock);
-+	start = bitmap_find_next_zero_area(allocated_irqs, IRQ_BITMAP_BITS,
-+						from, cnt, 0);
-+	ret = -EEXIST;
-+	if (irq >= 0 && start != irq)
-+		goto err;
-+
-+	if (start + cnt > nr_irqs) {
-+		ret = irq_expand_nr_irqs(start + cnt);
-+		if (ret)
-+			goto err;
-+	}
-+
-+	reserve = bitmap_find_next_zero_area(reserved_irqs, nr_irqs, start,
-+						cnt, 0);
-+	if (reserve == start) {
-+		ret = start;
-+		bitmap_set(reserved_irqs, start, cnt);
-+	} else
-+		ret = -EEXIST;
-+
-+err:
-+	mutex_unlock(&sparse_irq_lock);
-+	return ret;
-+}
-+
-+/**
-  * irq_get_next_irq - get next allocated irq number
-  * @offset:	where to start the search
-  *
--- 
-1.8.4.5
+Well, perhaps I should make __device_suspend() check that use_runtime_resume is
+only set when resume_not_needed is set too and return an error if that's not
+the case.
+
+Rafael
 
