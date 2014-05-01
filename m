@@ -1,125 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaEAXUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:20:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57049 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752884AbaEAXUH (ORCPT
+	id S1752946AbaEAXU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:20:29 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:58762 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752921AbaEAXU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:20:07 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flags to speed up suspend-resume of runtime-suspended devices
-Date: Fri, 02 May 2014 01:36:38 +0200
-Message-ID: <1898485.lQeVbtvK4U@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2117270.jlg4ZsaoxL@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1405011613200.881-100000@iolanthe.rowland.org> <2117270.jlg4ZsaoxL@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 1 May 2014 19:20:26 -0400
+X-Greylist: delayed 93207 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 19:20:26 EDT
+Message-ID: <1398985916.1789.75.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 5/5] x86: initialize secondary CPU only if master CPU
+ will wait for it
+From: Toshi Kani <toshi.kani@hp.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Date: Thu, 01 May 2014 17:11:56 -0600
+In-Reply-To: <1397488277-14865-6-git-send-email-imammedo@redhat.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	 <1397488277-14865-6-git-send-email-imammedo@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 02, 2014 01:15:14 AM Rafael J. Wysocki wrote:
-> On Thursday, May 01, 2014 05:39:31 PM Alan Stern wrote:
-> > On Fri, 25 Apr 2014, Rafael J. Wysocki wrote:
-> > 
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > 
-> > > Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-> > > resume all runtime-suspended devices during system suspend, mostly
-> > > because those devices may need to be reprogrammed due to different
-> > > wakeup settings for system sleep and for runtime PM.  However, at
-> > > least in some cases, that isn't really necessary, because the wakeup
-> > > settings may not be really different.
-> > > 
-> > > The idea here is that subsystems should know whether or not it is
-> > > necessary to reprogram a given device during system suspend and they
-> > > should be able to tell the PM core about that.  For that reason, add
-> > > two new device PM flags, power.resume_not_needed and
-> > > power.use_runtime_resume, such that:
-> > > 
-> > >  (1) If power.resume_not_needed is set for the given device and for
-> > >      all of its children and the device is runtime-suspended during
-> > >      device_suspend(), the remaining device's system suspend/resume
-> > >      callbacks need not be executed.
-> > 
-> > The patch doesn't do that last part.  That is, it still invokes the 
-> > callbacks even when resume_not_needed is set.
+On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
+> Hang is observed on virtual machines during CPU hotplug,
+> especially in big guests with many CPUs. (It reproducible
+> more often if host is over-committed).
 > 
-> Yes, it does and the above paragraph doesn't say that it won't.  It only
-> says that the flag indicates no need to do that.
+> It happens because master CPU gives up waiting on
+> secondary CPU and allows it to run wild. As result
+> AP causes locking or crashing system. For example
+> as described here: https://lkml.org/lkml/2014/3/6/257
 > 
-> > I'm not sure that you should skip the resume callbacks.
-> 
-> The reason why is that if the device were suspended using ->runtime_suspend(),
-> its driver (or bus type) may be confused if ->runtime_resume() is not used
-> to resume it.
-> 
-> > We expect devices to be resumed during system resume even if they were in
-> > runtime suspend beforehand.  Yes, this means calling resume_noirq without
-> > calling suspend_noirq (ditto for the other callbacks).  Think of it as
-> > a form of optimization -- we could have called suspend_noirq, but we
-> > know that the subsystem would have seen that the device was already in
-> > runtime suspend and then returned immediately.  By not calling
-> > suspend_noirq, we spare the subsystem from testing the runtime status.
-> 
-> The driver/subsystem has the right to expect that ->resume_noirq() will
-> always be called after ->suspend_noirq() (if both are implemented).  Thus
-> calling the former without the latter may be a bug (for the particular
-> driver).  Since we've always had symmetry there, the risk of breaking stuff
-> if we change that is relatively high.
-> 
-> On the other hand, ->runtime_resume() should not make any assumptions
-> about the hardware state when it is called anyway, so it should handle
-> the device during system resume properly, given that the last PM callback
-> executed for it was ->runtime_suspend(), regardless of what the firmware
-> did to it in the meantime.
-> 
-> > (And I also think "resume_not_needed" is too general.  It should be 
-> > something more like "runtime_resume_not_needed_during_system_suspend", 
-> > only not quite so long.)
-> 
-> Well, I can agree with that, but I couldn't invent a better name. In particular,
-> one that wouldn't be too long. :-)
-> 
-> > >  (2) If power.use_runtime_resume is set for the given device and the
-> > >      device is runtime-suspended in device_suspend_late(), its late/early
-> > >      and noirq system suspend/resume callbacks should be skipped and
-> > >      it should be resumed through pm_runtime_resume() in device_resume().
-> > 
-> > IMO this should be a separate patch.  It has no direct connection with 
-> > the main goal of providing subsystems with a mechanism to avoid waking 
-> > up devices for reprogramming during system suspend.
-> 
-> I'm not sure what you mean, honestly.  The main goal here is to allow
-> devices that were runtime suspended to stay that way throughout system
-> suspend and resume up until device_resume() is called for them.
-> 
-> > The main goal of this other patch will be to allow devices which were
-> > in runtime suspend throughout the system suspend phases to remain in
-> > runtime suspend throughout the system resume.  When they do finally get
-> > resumed, it will be by a ->runtime_resume() callback, not ->resume().
-> 
-> Yes, and that's what *this* patch does, isn't it?
-> 
-> I have no idea how to split it so that both parts still make sense.
+> If master CPU have sent STARTUP IPI successfully,
+> and AP signalled to master CPU that it's ready
+> to start initialization, make master CPU wait
+> indefinitely till AP is onlined.
+> To ensure that AP won't ever run wild, make it
+> wait at early startup till master CPU confirms its
+> intention to wait for AP.
 
-OK, I guess you mean that the first flag (resume_not_needed) should be introduced
-by one patch and the second one by another, but I'm not sure if that would really
-make any difference.  Both of them are needed anyway and resume_not_needed without
-the other flag wouldn't have any effect.
+Please also add description that the master CPU times out when an AP
+does not start initialization within 10 seconds.
 
-Well, perhaps I should make __device_suspend() check that use_runtime_resume is
-only set when resume_not_needed is set too and return an error if that's not
-the case.
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+> v2:
+>  - ammend comment in cpu_init()
+> v3:
+>  - leave timeouts in do_boot_cpu(), so that master CPU
+>    won't hang if AP doesn't respond, use cpu_initialized_mask
+>    as a way for AP to signal to master CPU that it's ready
+>    to start initialzation.
+> v4:
+>  - move common code in cpu_init() for x32/x64 in shared
+>    helper function wait_for_master_cpu()
+>  - add WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+>    to wait_formaster_cpu()
+> ---
+>  arch/x86/kernel/cpu/common.c |   27 +++++++-----
+>  arch/x86/kernel/smpboot.c    |   98 +++++++++++++-----------------------------
+>  2 files changed, 46 insertions(+), 79 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index a135239..a4bcbac 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -1221,6 +1221,17 @@ static void dbg_restore_debug_regs(void)
+>  #define dbg_restore_debug_regs()
+>  #endif /* ! CONFIG_KGDB */
+>  
+> +static void wait_for_master_cpu(int cpu)
+> +{
+> +	/*
+> +	 * wait for ACK from master CPU before continuing
+> +	 * with AP initialization
+> +	 */
+> +	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
+> +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> +		cpu_relax();
+> +}
+> +
+>  /*
+>   * cpu_init() initializes state that is per-CPU. Some data is already
+>   * initialized (naturally) in the bootstrap process, such as the GDT
+> @@ -1236,16 +1247,17 @@ void cpu_init(void)
+>  	struct task_struct *me;
+>  	struct tss_struct *t;
+>  	unsigned long v;
+> -	int cpu;
+> +	int cpu = stack_smp_processor_id();
+>  	int i;
+>  
+> +	wait_for_master_cpu(cpu);
+> +
+>  	/*
+>  	 * Load microcode on this cpu if a valid microcode is available.
+>  	 * This is early microcode loading procedure.
+>  	 */
+>  	load_ucode_ap();
+>  
+> -	cpu = stack_smp_processor_id();
+>  	t = &per_cpu(init_tss, cpu);
+>  	oist = &per_cpu(orig_ist, cpu);
+>  
+> @@ -1257,9 +1269,6 @@ void cpu_init(void)
+>  
+>  	me = current;
+>  
+> -	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+> -		panic("CPU#%d already initialized!\n", cpu);
+> -
+>  	pr_debug("Initializing CPU#%d\n", cpu);
+>  
+>  	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+> @@ -1336,13 +1345,9 @@ void cpu_init(void)
+>  	struct tss_struct *t = &per_cpu(init_tss, cpu);
+>  	struct thread_struct *thread = &curr->thread;
+>  
+> -	show_ucode_info_early();
+> +	wait_for_master_cpu(cpu);
+>  
+> -	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+> -		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+> -		for (;;)
+> -			local_irq_enable();
+> -	}
+> +	show_ucode_info_early();
+>  
+>  	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+>  
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index ae2fd97..44903ad 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -111,7 +111,6 @@ atomic_t init_deasserted;
+>  static void smp_callin(void)
+>  {
+>  	int cpuid, phys_id;
+> -	unsigned long timeout;
+>  
+>  	/*
+>  	 * If waken up by an INIT in an 82489DX configuration
+> @@ -130,37 +129,6 @@ static void smp_callin(void)
+>  	 * (This works even if the APIC is not enabled.)
+>  	 */
+>  	phys_id = read_apic_id();
+> -	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+> -		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+> -					phys_id, cpuid);
+> -	}
+> -	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
+> -
+> -	/*
+> -	 * STARTUP IPIs are fragile beasts as they might sometimes
+> -	 * trigger some glue motherboard logic. Complete APIC bus
+> -	 * silence for 1 second, this overestimates the time the
+> -	 * boot CPU is spending to send the up to 2 STARTUP IPIs
+> -	 * by a factor of two. This should be enough.
+> -	 */
+> -
+> -	/*
+> -	 * Waiting 2s total for startup (udelay is not yet working)
+> -	 */
+> -	timeout = jiffies + 2*HZ;
+> -	while (time_before(jiffies, timeout)) {
+> -		/*
+> -		 * Has the boot CPU finished it's STARTUP sequence?
+> -		 */
+> -		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
+> -			break;
+> -		cpu_relax();
+> -	}
+> -
+> -	if (!time_before(jiffies, timeout)) {
+> -		panic("%s: CPU%d started up but did not get a callout!\n",
+> -		      __func__, cpuid);
+> -	}
+>  
+>  	/*
+>  	 * the boot CPU has finished the init stage and is spinning
+> @@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+>  	unsigned long start_ip = real_mode_header->trampoline_start;
+>  
+>  	unsigned long boot_error = 0;
+> -	int timeout;
+>  	int cpu0_nmi_registered = 0;
+> +	unsigned long timeout;
+>  
+>  	/* Just in case we booted with a single CPU. */
+>  	alternatives_enable_smp();
+> @@ -799,6 +767,14 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+>  	}
+>  
+>  	/*
+> +	 * AP might wait on cpu_callout_mask in cpu_init() with
+> +	 * cpu_initialized_mask set if previous attempt to online
+> +	 * it timed-out. Clear cpu_initialized_mask so that after
+> +	 * INIT/SIPI it could start with a clean state.
+> +	 */
+> +	cpumask_clear_cpu(cpu, cpu_initialized_mask);
 
-Rafael
+I think smp_mb() should be added here to ensure that the target AP sees
+this change.
+
+> +
+> +	/*
+>  	 * Wake up a CPU in difference cases:
+>  	 * - Use the method in the APIC driver if it's defined
+>  	 * Otherwise,
+> @@ -810,55 +786,41 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+>  		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
+>  						     &cpu0_nmi_registered);
+>  
+> +
+>  	if (!boot_error) {
+>  		/*
+> -		 * allow APs to start initializing.
+> +		 * Wait 10s total for a response from AP
+>  		 */
+> -		pr_debug("Before Callout %d\n", cpu);
+> -		cpumask_set_cpu(cpu, cpu_callout_mask);
+> -		pr_debug("After Callout %d\n", cpu);
+> +		boot_error = -1;
+> +		timeout = jiffies + 10*HZ;
+> +		while (time_before(jiffies, timeout)) {
+> +			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
+> +				/*
+> +				 * Tell AP to proceed with initialization
+> +				 */
+> +				cpumask_set_cpu(cpu, cpu_callout_mask);
+> +				boot_error = 0;
+> +				break;
+> +			}
+> +			udelay(100);
+> +			schedule();
+> +		}
+> +	}
+
+When 10s passed, the master could set a new flag, ex.
+cpu_callout_error_mask, which wait_for_master_cpu() checks and call
+play_dead() when it is set.  This avoids AP to spin forever when 10s
+becomes not long enough.  But it does not have to be part of this
+patchset, though.  
+
+> +	if (!boot_error) {
+>  		/*
+> -		 * Wait 5s total for a response
+> +		 * Wait till AP completes initial initialization
+
+We should generally avoid such wait w/o a timeout condition, but since
+native_cpu_up() waits till cpu_online(cpu) anyway after this point, this
+seems OK...  I wonder if we need touch_nmi_watchdog(), though.
+
+Thanks,
+-Toshi
+
 
