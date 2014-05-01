@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaEAT0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 15:26:34 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44333 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727AbaEAT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 15:26:33 -0400
-Date: Thu, 1 May 2014 19:26:18 +0000
-From: tytso@mit.edu
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Florian Weimer <fweimer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <kees@outflux.net>, kvm list <kvm@vger.kernel.org>
-Subject: Re: random: Providing a seed value to VM guests
-Message-ID: <20140501192618.GA25829@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Andy Lutomirski <luto@amacapital.net>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Florian Weimer <fweimer@redhat.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Kees Cook <kees@outflux.net>, kvm list <kvm@vger.kernel.org>
-References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com>
+	id S1751662AbaEATaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 15:30:22 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43512 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaEATaV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 15:30:21 -0400
+Date: Thu, 1 May 2014 14:29:17 -0500
+From: Brian W Hart <hartb@linux.vnet.ibm.com>
+To: tj@kernel.org, rusty@trustcorp.com.au, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: [PATCH] cpumask.h: silence warning with -Wsign-compare
+Message-ID: <20140501192916.GA6495@oc3347516403.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050119-8236-0000-0000-000001FAF97F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 12:02:49PM -0700, Andy Lutomirski wrote:
-> 
-> Is RDSEED really reasonable here?  Won't it slow down by several
-> orders of magnitude?
+Silence the warning when building with -Wsign-compare when cpumask.h
+is included:
 
-That is I think the biggest problem; RDRAND and RDSEED are fast if
-they are native, but they will involve a VM exit if they need to be
-emulated.  So when an OS might want to use RDRAND and RDSEED might be
-quite different if we know they are being emulated.
+include/linux/cpumask.h: In function ‘cpumask_parse’:
+include/linux/cpumask.h:603:26: warning: signed and unsigned type in conditional expression [-Wsign-compare]
+  int len = nl ? nl - buf : strlen(buf);
+                          ^
 
-Using the RDRAND and RDSEED "api" certainly makes sense, at least for
-x86, but I suspect we might want to use a different way of signalling
-that a VM guest can use RDRAND and RDSEED if they are running on a CPU
-which doesn't provide that kind of access.  Maybe a CPUID extended
-function parameter, if one could be allocated for use by a Linux
-hypervisor?
+Signed-off-by: Brian W Hart <hartb@linux.vnet.ibm.com>
+---
+Compile tested only.
 
-						- Ted
+ include/linux/cpumask.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index d08e4d2..0928ce7 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -600,7 +600,7 @@ static inline int cpulist_scnprintf(char *buf, int len,
+ static inline int cpumask_parse(const char *buf, struct cpumask *dstp)
+ {
+ 	char *nl = strchr(buf, '\n');
+-	int len = nl ? nl - buf : strlen(buf);
++	int len = nl ? nl - buf : (int)strlen(buf);
+ 
+ 	return bitmap_parse(buf, len, cpumask_bits(dstp), nr_cpumask_bits);
+ }
 
