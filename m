@@ -1,138 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaEANJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:09:05 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:57137 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaEANJD (ORCPT
+	id S1753450AbaEANMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 09:12:25 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:58466 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEANMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:09:03 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv5 2/2] arm: Get rid of meminfo
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
+	Thu, 1 May 2014 09:12:23 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-In-Reply-To: <1396544698-15596-3-git-send-email-lauraa@codeaurora.org>
-References: <1396544698-15596-1-git-send-email-lauraa@codeaurora.org>
-	<1396544698-15596-3-git-send-email-lauraa@codeaurora.org>
-Date: Thu, 01 May 2014 14:08:49 +0100
-Message-Id: <20140501130849.C093DC409DA@trevor.secretlab.ca>
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+In-Reply-To: <53610663.7070305@ti.com>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
+	<1398353407-2345-5-git-send-email-santosh.shilimkar@ti.com>
+	<20140429144147.004EEC40992@trevor.secretlab.ca> <53610663.7070305@ti.com>
+Date: Thu, 01 May 2014 14:12:10 +0100
+Message-Id: <20140501131210.CCC13C409DA@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Apr 2014 10:04:58 -0700, Laura Abbott <lauraa@codeaurora.org> wrote:
-> memblock is now fully integrated into the kernel and is the prefered
-> method for tracking memory. Rather than reinvent the wheel with
-> meminfo, migrate to using memblock directly instead of meminfo as
-> an intermediate.
+On Wed, 30 Apr 2014 10:19:15 -0400, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> Hi Grant,
 > 
-> Change-Id: I9d04e636f43bf939e13b4934dc23da0c076811d2
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Tested-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> On Tuesday 29 April 2014 10:41 AM, Grant Likely wrote:
+> > On Thu, 24 Apr 2014 11:30:04 -0400, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> >> Retrieve DMA configuration from DT and setup platform device's DMA
+> >> parameters. The DMA configuration in DT has to be specified using
+> >> "dma-ranges" and "dma-coherent" properties if supported.
+> >>
+> >> We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
+> >> using "dma-coherent" device tree properties.
+> >>
+> >> The set_arch_dma_coherent_ops macro has to be defined by arch if
+> >> it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
+> >> declared as nop.
+> >>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> Cc: Russell King <linux@arm.linux.org.uk>
+> >> Cc: Arnd Bergmann <arnd@arndb.de>
+> >> Cc: Olof Johansson <olof@lixom.net>
+> >> Cc: Grant Likely <grant.likely@linaro.org>
+> >> Cc: Rob Herring <robh+dt@kernel.org>
+> >> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> >> Cc: Linus Walleij <linus.walleij@linaro.org>
+> >> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> >> ---
+> >>  drivers/of/platform.c       |   48 ++++++++++++++++++++++++++++++++++++++++---
+> >>  include/linux/dma-mapping.h |    7 +++++++
+> >>  2 files changed, 52 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> >> index 48de98f..270c0b9 100644
+> >> --- a/drivers/of/platform.c
+> >> +++ b/drivers/of/platform.c
+> >> @@ -187,6 +187,50 @@ struct platform_device *of_device_alloc(struct device_node *np,
+> >>  EXPORT_SYMBOL(of_device_alloc);
+> >>  
+> >>  /**
+> >> + * of_dma_configure - Setup DMA configuration
+> >> + * @dev:	Device to apply DMA configuration
+> >> + *
+> >> + * Try to get devices's DMA configuration from DT and update it
+> >> + * accordingly.
+> >> + *
+> >> + * In case if platform code need to use own special DMA configuration,it
+> >> + * can use Platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE event
+> >> + * to fix up DMA configuration.
+> >> + */
+> >> +static void of_dma_configure(struct device *dev)
+> >> +{
+> >> +	u64 dma_addr, paddr, size;
+> >> +	int ret;
+> >> +
+> >> +	dev->coherent_dma_mask = DMA_BIT_MASK(32);
+> >> +	if (!dev->dma_mask)
+> >> +		dev->dma_mask = &dev->coherent_dma_mask;
+> >> +
+> >> +	/*
+> >> +	 * if dma-coherent property exist, call arch hook to setup
+> >> +	 * dma coherent operations.
+> >> +	 */
+> >> +	if (of_dma_is_coherent(dev->of_node)) {
+> >> +		set_arch_dma_coherent_ops(dev);
+> >> +		dev_dbg(dev, "device is dma coherent\n");
+> >> +	}
+> >> +
+> >> +	/*
+> >> +	 * if dma-ranges property doesn't exist - just return else
+> >> +	 * setup the dma offset
+> >> +	 */
+> >> +	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+> >> +	if ((ret == -ENODEV) || (ret < 0)) {
+> >> +		dev_dbg(dev, "no dma range information to setup\n");
+> >> +		return;
+> >> +	}
+> >> +
+> >> +	/* DMA ranges found. Calculate and set dma_pfn_offset */
+> >> +	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
+> >> +	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+> > 
+> > I've got two concerns here. of_dma_get_range() retrieves only the first
+> > tuple from the dma-ranges property, but it is perfectly valid for
+> > dma-ranges to contain multiple tuples. How should we handle it if a
+> > device has multiple ranges it can DMA from?
+> > 
+> 
+> We've not found any cases in current Linux where more than one dma-ranges
+> would be used. Moreover, The MM (definitely for ARM) isn't supported such
+> cases at all (if i understand everything right).
+> - there are only one arm_dma_pfn_limit
+> - there is only one MM zone is used for ARM
+> - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
+>   DMA & DMA32, but they configured once and forever per arch.
 
-Tested-by: Grant Likely <grant.likely@linaro.org>
+Okay. If anyone ever does implement multiple ranges then this code will
+need to be revisited.
 
-Tiny nit-picking comment below, but this patch looks really good.
-What's the state on merging this?
+> > Second, while the pfn offset is being determined, I don't see anything
+> > making use of either the base address or size. How is the device
+> > constrained to only getting DMA buffers from within that range? Is the
+> > driver expected to manage that directly?
+> > 
+> Drivers don't have to do anything special apart from setting
+> the correct mask. The pfn_offset case, we use DMA_ZONE which takes
+> care of masks already. Size is suppose to be used for dma_mask
+> setup which we discussed in previous threads.
 
-> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> index 97c293e..40e14a1 100644
-> --- a/arch/arm/mm/init.c
-> +++ b/arch/arm/mm/init.c
-> @@ -415,54 +400,53 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
->  /*
->   * The mem_map array can get very big.  Free the unused area of the memory map.
->   */
-> -static void __init free_unused_memmap(struct meminfo *mi)
-> +static void __init free_unused_memmap(void)
->  {
-> -	unsigned long bank_start, prev_bank_end = 0;
-> -	unsigned int i;
-> +	unsigned long start, prev_end = 0;
-> +	struct memblock_region *reg;
->  
->  	/*
->  	 * This relies on each bank being in address order.
->  	 * The banks are sorted previously in bootmem_init().
->  	 */
-> -	for_each_bank(i, mi) {
-> -		struct membank *bank = &mi->bank[i];
-> -
-> -		bank_start = bank_pfn_start(bank);
-> +	for_each_memblock(memory, reg) {
-> +		start = memblock_region_memory_base_pfn(reg);
->  
->  #ifdef CONFIG_SPARSEMEM
->  		/*
->  		 * Take care not to free memmap entries that don't exist
->  		 * due to SPARSEMEM sections which aren't present.
->  		 */
-> -		bank_start = min(bank_start,
-> -				 ALIGN(prev_bank_end, PAGES_PER_SECTION));
-> +		start = min(start,
-> +				 ALIGN(prev_end, PAGES_PER_SECTION));
+okay.
 
-Nit: The line doesn't need to be split anymore.
-
->  #else
->  		/*
->  		 * Align down here since the VM subsystem insists that the
->  		 * memmap entries are valid from the bank start aligned to
->  		 * MAX_ORDER_NR_PAGES.
->  		 */
-> -		bank_start = round_down(bank_start, MAX_ORDER_NR_PAGES);
-> +		start = round_down(start, MAX_ORDER_NR_PAGES);
->  #endif
->  		/*
->  		 * If we had a previous bank, and there is a space
->  		 * between the current bank and the previous, free it.
->  		 */
-> -		if (prev_bank_end && prev_bank_end < bank_start)
-> -			free_memmap(prev_bank_end, bank_start);
-> +		if (prev_end && prev_end < start)
-> +			free_memmap(prev_end, start);
->  
->  		/*
->  		 * Align up here since the VM subsystem insists that the
->  		 * memmap entries are valid from the bank end aligned to
->  		 * MAX_ORDER_NR_PAGES.
->  		 */
-> -		prev_bank_end = ALIGN(bank_pfn_end(bank), MAX_ORDER_NR_PAGES);
-> +		prev_end = ALIGN(memblock_region_memory_end_pfn(reg),
-> +				 MAX_ORDER_NR_PAGES);
->  	}
->  
->  #ifdef CONFIG_SPARSEMEM
-> -	if (!IS_ALIGNED(prev_bank_end, PAGES_PER_SECTION))
-> -		free_memmap(prev_bank_end,
-> -			    ALIGN(prev_bank_end, PAGES_PER_SECTION));
-> +	if (!IS_ALIGNED(prev_end, PAGES_PER_SECTION))
-> +		free_memmap(prev_end,
-> +			    ALIGN(prev_end, PAGES_PER_SECTION));
-
-Ditto
-
+g.
