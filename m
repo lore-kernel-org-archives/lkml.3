@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbaEAPlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:41:47 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:55125 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaEAPlp (ORCPT
+	id S1755209AbaEAPlw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:41:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:34454 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaEAPlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:41:45 -0400
+	Thu, 1 May 2014 11:41:49 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Wim Van Sebroeck <wim@iguana.be>,
@@ -16,37 +16,115 @@ Cc: Wim Van Sebroeck <wim@iguana.be>,
         Russell King <linux@arm.linux.org.uk>,
         Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [RFC PATCH 0/5] watchdog: Add reboot API
-Date: Thu,  1 May 2014 08:41:28 -0700
-Message-Id: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
+Subject: [RFC PATCH 1/5] watchdog: Add API to trigger reboots
+Date: Thu,  1 May 2014 08:41:29 -0700
+Message-Id: <1398958893-30049-2-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
+In-Reply-To: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
+References: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some hardware implements reboot through its watchdog hardware, for example
-by triggering a watchdog timeout or by writing into its watchdog register
-set. Platform specific code starts to spread into watchdog drivers,
-typically by setting pointers to a callback function which is then called
-from the architecture's reset handler.
+Some hardware implements reboot through its watchdog hardware,
+for example by triggering a watchdog timeout. Platform specific
+code starts to spread into watchdog drivers, typically by setting
+pointers to a callback functions which is then called from the
+platform reset handler.
 
-While global and exported callback function pointers (such as arm_pm_restart)
-may be acceptable as long as they are used from platform and/or architecture
-code, using such a mechanism across subsystems and drivers is less than
-desirable. Ultimately, we'll need a better solution.
+To simplify code and provide a unified API to trigger reboots by
+watchdog drivers, provide a single API to trigger such reboots
+through the watchdog subsystem.
 
-This patch series is an attempt to provide such a solution. It extends
-the watchdog subsystem to support reboot functionality, provides an
-API function call to trigger reboots, adds support for the new API
-to arm and arm64, and converts the drivers providing reboot functionality
-to use the new infrastructure.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/watchdog/watchdog_core.c |   17 +++++++++++++++++
+ include/linux/watchdog.h         |   11 +++++++++++
+ 2 files changed, 28 insertions(+)
 
-The first patch in the series implements the new API. The second and third
-patch modify the arm and arm64 architecture reset handlers to call the
-added API function. The final two patches register the reboot handlers
-in the sunxi and moxart watchdog drivers with the watchdog subsystem.
+diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+index cec9b55..4ec6e2f 100644
+--- a/drivers/watchdog/watchdog_core.c
++++ b/drivers/watchdog/watchdog_core.c
+@@ -43,6 +43,17 @@
+ static DEFINE_IDA(watchdog_ida);
+ static struct class *watchdog_class;
+ 
++static struct watchdog_device *wdd_reboot_dev;
++
++void watchdog_do_reboot(enum reboot_mode mode, const char *cmd)
++{
++	if (wdd_reboot_dev) {
++		if (wdd_reboot_dev->ops->reboot)
++			wdd_reboot_dev->ops->reboot(wdd_reboot_dev, mode, cmd);
++	}
++}
++EXPORT_SYMBOL(watchdog_do_reboot);
++
+ static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
+ {
+ 	/*
+@@ -162,6 +173,9 @@ int watchdog_register_device(struct watchdog_device *wdd)
+ 		return ret;
+ 	}
+ 
++	if (wdd->ops->reboot)
++		wdd_reboot_dev = wdd;
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(watchdog_register_device);
+@@ -181,6 +195,9 @@ void watchdog_unregister_device(struct watchdog_device *wdd)
+ 	if (wdd == NULL)
+ 		return;
+ 
++	if (wdd == wdd_reboot_dev)
++		wdd_reboot_dev = NULL;
++
+ 	devno = wdd->cdev.dev;
+ 	ret = watchdog_dev_unregister(wdd);
+ 	if (ret)
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 2a3038e..0d204af 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -12,6 +12,7 @@
+ #include <linux/bitops.h>
+ #include <linux/device.h>
+ #include <linux/cdev.h>
++#include <linux/reboot.h>
+ #include <uapi/linux/watchdog.h>
+ 
+ struct watchdog_ops;
+@@ -23,6 +24,7 @@ struct watchdog_device;
+  * @start:	The routine for starting the watchdog device.
+  * @stop:	The routine for stopping the watchdog device.
+  * @ping:	The routine that sends a keepalive ping to the watchdog device.
++ * @reboot:	The routine for rebooting the system
+  * @status:	The routine that shows the status of the watchdog device.
+  * @set_timeout:The routine for setting the watchdog devices timeout value.
+  * @get_timeleft:The routine that get's the time that's left before a reset.
+@@ -42,6 +44,8 @@ struct watchdog_ops {
+ 	int (*stop)(struct watchdog_device *);
+ 	/* optional operations */
+ 	int (*ping)(struct watchdog_device *);
++	void (*reboot)(struct watchdog_device *, enum reboot_mode,
++		       const char *);
+ 	unsigned int (*status)(struct watchdog_device *);
+ 	int (*set_timeout)(struct watchdog_device *, unsigned int);
+ 	unsigned int (*get_timeleft)(struct watchdog_device *);
+@@ -142,4 +146,11 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
+ extern int watchdog_register_device(struct watchdog_device *);
+ extern void watchdog_unregister_device(struct watchdog_device *);
+ 
++#ifdef CONFIG_WATCHDOG_CORE
++extern void watchdog_do_reboot(enum reboot_mode mode, const char *cmd);
++#else
++static inline void watchdog_do_reboot(enum reboot_mode mode,
++				      const char *cmd) { }
++#endif
++
+ #endif  /* ifndef _LINUX_WATCHDOG_H */
+-- 
+1.7.9.7
 
-The sunxi patche depends on the most recent patch series sumitted by
-Maxime Ripard.
-
-Compile tested only.
