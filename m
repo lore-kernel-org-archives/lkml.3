@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662AbaEAIpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 04:45:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53325 "EHLO mga02.intel.com"
+	id S1754811AbaEAIpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 04:45:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57756 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754492AbaEAIpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 04:45:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,964,1389772800"; 
-   d="scan'208";a="532928258"
-Date: Thu, 1 May 2014 16:44:52 -0400
-From: Zhuang Jin Can <jin.can.zhuang@intel.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>
-Subject: Re: [PATCH] usb: dwc3: gadget: giveback request if start transfer
- fail
-Message-ID: <20140501204452.GD30575@intel.com>
-Reply-To: jin.can.zhuang@intel.com
-References: <20140501063608.GA30575@intel.com>
- <20140430195829.GA3839@saruman.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430195829.GA3839@saruman.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754613AbaEAIpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 04:45:06 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 15/17] mm: Do not use unnecessary atomic operations when adding pages to the LRU
+Date: Thu,  1 May 2014 09:44:46 +0100
+Message-Id: <1398933888-4940-16-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbi,
+When adding pages to the LRU we clear the active bit unconditionally. As the
+page could be reachable from other paths we cannot use unlocked operations
+without risk of corruption such as a parallel mark_page_accessed. This
+patch test if is necessary to clear the atomic flag before using an atomic
+operation. In the unlikely even this races with mark_page_accesssed the
+consequences are simply that the page may be promoted to the active list
+that might have been left on the inactive list before the patch. This is
+a marginal consequence.
 
-On Wed, Apr 30, 2014 at 02:58:29PM -0500, Felipe Balbi wrote:
-> On Thu, May 01, 2014 at 02:36:08AM -0400, Zhuang Jin Can wrote:
-> > At least we should giveback the current request to the
-> > gadget. Otherwise, the gadget will be stuck without knowing
-> > anything.
-> > 
-> > It was oberved that the failure can happen if the request is
-> > queued when the run/stop bit of controller is not set.
-> 
-> why is your gadget queueing any requests before calling ->udc_start() ?
-> 
-> A better question, what modification have you done to udc-core.c which
-> broke this ? udc-core *always* calls ->udc_start() by the time you load
-> a gadget driver so this case will *never* happen. Whatever modification
-> you did, broke this assumption and I will *not* accept this patch
-> because the bug is elsewhere and *not* in mainline kernel.
-> 
-It's found in Android using kernel 3.10.20. Android has its own
-usb_composite_driver usb/gadget/android.c (not in mainline), and it
-allows userspace to disconnect the pullup (i.e clear run/stop bit in dwc3)
-and remove the gadget functions like adb, mtp and then add new functions
-like rndis, acm. The problem is when you disconnect the pullup, a gadget
-maybe in the middle of queuing a request, and result in the "start
-transfer cmd failure". I think this is also a common issue for other
-usb_composite_drivers too. Normally, if one of the gadget deactivate its
-own function, the pullup will be disconnected, other gadgets won't get
-notified until their requests are failed. So it makes dwc3 more robust
-to deal with these situations.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/swap.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> > Signed-off-by: Zhuang Jin Can <jin.can.zhuang@intel.com>
-> > ---
-> >  drivers/usb/dwc3/gadget.c |    4 +---
-> >  1 file changed, 1 insertion(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> > index 70715ee..8d0c3c7 100644
-> > --- a/drivers/usb/dwc3/gadget.c
-> > +++ b/drivers/usb/dwc3/gadget.c
-> > @@ -1000,9 +1000,7 @@ static int __dwc3_gadget_kick_transfer(struct dwc3_ep *dep, u16 cmd_param,
-> >  		 * here and stop, unmap, free and del each of the linked
-> >  		 * requests instead of what we do now.
-> >  		 */
-> > -		usb_gadget_unmap_request(&dwc->gadget, &req->request,
-> > -				req->direction);
-> > -		list_del(&req->list);
-> > +		dwc3_gadget_giveback(dep, req, -ESHUTDOWN);
-> >  		return ret;
-> >  	}
-> >  
-> > -- 
-> > 1.7.9.5
-> > 
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index da8a250..395dcab 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -329,13 +329,15 @@ extern void add_page_to_unevictable_list(struct page *page);
+  */
+ static inline void lru_cache_add_anon(struct page *page)
+ {
+-	ClearPageActive(page);
++	if (PageActive(page))
++		ClearPageActive(page);
+ 	__lru_cache_add(page);
+ }
+ 
+ static inline void lru_cache_add_file(struct page *page)
+ {
+-	ClearPageActive(page);
++	if (PageActive(page))
++		ClearPageActive(page);
+ 	__lru_cache_add(page);
+ }
+ 
+-- 
+1.8.4.5
 
-Jincan
