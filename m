@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaEAVBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:01:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40685 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203AbaEAVBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:01:32 -0400
-Message-ID: <5362B618.50602@zytor.com>
-Date: Thu, 01 May 2014 14:01:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752180AbaEAVCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:02:05 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:50232 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670AbaEAVCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 17:02:03 -0400
+Date: Thu, 1 May 2014 14:02:00 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, vbabka@suse.cz, iamjoonsoo.kim@lge.com,
+        gthelen@google.com, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch 2/2] mm, compaction: return failed migration target pages
+ back to freelist
+In-Reply-To: <5361dae9.4781e00a.74f8.ffff8c8eSMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1405011401040.32268@chino.kir.corp.google.com>
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1404301744400.8415@chino.kir.corp.google.com> <5361dae9.4781e00a.74f8.ffff8c8eSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm list <kvm@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>,
-        Kees Cook <kees@outflux.net>
-Subject: Re: random: Providing a seed value to VM guests
-References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com> <20140501192618.GA25829@thunk.org> <CALCETrX=0uA6CCg4UeeV8KgGAq6fxUSiGOw5Gzte4OSHrDWMqA@mail.gmail.com> <900441a0-24e8-4976-ad35-3971805b9f34@email.android.com> <CALCETrV1HUA-JRAj9UicD3woqec7mSJLoT9CkQq=dOCpdPg4hw@mail.gmail.com> <20140501203910.GB25829@thunk.org> <CALCETrUr7NXkkN27v2Uf-puEtSXbgp=E+99aC_SdTc6puR8+CA@mail.gmail.com>
-In-Reply-To: <CALCETrUr7NXkkN27v2Uf-puEtSXbgp=E+99aC_SdTc6puR8+CA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 01:56 PM, Andy Lutomirski wrote:
+On Thu, 1 May 2014, Naoya Horiguchi wrote:
+
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -797,6 +797,19 @@ static struct page *compaction_alloc(struct page *migratepage,
+> >  }
+> >  
+> >  /*
+> > + * This is a migrate-callback that "frees" freepages back to the isolated
+> > + * freelist.  All pages on the freelist are from the same zone, so there is no
+> > + * special handling needed for NUMA.
+> > + */
+> > +static void compaction_free(struct page *page, unsigned long data)
+> > +{
+> > +	struct compact_control *cc = (struct compact_control *)data;
+> > +
+> > +	list_add(&page->lru, &cc->freepages);
+> > +	cc->nr_freepages++;
 > 
-> Even if we could emulate RDSEED effectively**, I don't really
-> understand what the guest is expected to do with it.  And I generally
-> dislike defining an interface with no known sensible users, because it
-> means that there's a good chance that the interface won't end up
-> working.
->
-> ** Doing this sensibly in the host will be awkward.  Is the host
-> supposed to use non-blocking reads of /dev/random?  Getting anything
-> remotely fair may be difficult.
+> With this change, migration_page() handles cc->nr_freepages consistently, so
+> we don't have to run over freelist to update this count in update_nr_listpages()?
+> 
 
-The host can use nonblocking reads of /dev/random.  Fairness would have
-to be implemented at the host level, but that is true for anything.
-
-	-hpa
-
-
+Good optimization, I'll add it!
