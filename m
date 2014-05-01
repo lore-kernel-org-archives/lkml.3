@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaEAF3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 01:29:04 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:49663 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaEAF3C (ORCPT
+	id S1750929AbaEAFhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 01:37:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57717 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750720AbaEAFhW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 01:29:02 -0400
-Message-ID: <5361DB14.7010406@synopsys.com>
-Date: Thu, 1 May 2014 10:56:44 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: <mingo@kernel.org>, <torvalds@linux-foundation.org>,
-        <rusty@rustcorp.com.au>, <rdunlap@infradead.org>, <jeremy@goop.org>,
-        <arnd@arndb.de>, <dl9pf@gmx.de>, <akpm@linux-foundation.org>,
-        <sparse@chrisli.org>, <tglx@linutronix.de>, <hpa@zytor.com>,
-        <linux-kernel@vger.kernel.org>, <anil.s.keshavamurthy@intel.com>,
-        <davem@davemloft.net>, <ananth@in.ibm.com>,
-        <masami.hiramatsu.pt@hitachi.com>, <chrisw@sous-sol.org>,
-        <akataria@vmware.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        anton Kolesov <Anton.Kolesov@synopsys.com>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: kprobes broken in linux-next (was Re: [tip:perf/kprobes] kprobes:
- Introduce NOKPROBE_SYMBOL()  macro to maintain kprobes blacklist)
-References: <20140417081705.26341.96719.stgit@ltc230.yrl.intra.hitachi.co.jp> <tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org>
-In-Reply-To: <tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
+	Thu, 1 May 2014 01:37:22 -0400
+Content-Type: text/plain;
+	charset=us-ascii
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH] random: Add "initialized" variable to proc
+From: "H. Peter Anvin" <hpa@zytor.com>
+X-Mailer: iPad Mail (11D201)
+In-Reply-To: <20140501020627.GA25248@thunk.org>
+Date: Wed, 30 Apr 2014 22:37:00 -0700
+Cc: Andy Lutomirski <luto@amacapital.net>, Florian Weimer <fweimer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kees Cook <kees@outflux.net>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FDF79354-1CD5-4DFF-AC5A-32D8C00CFCB7@zytor.com>
+References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com> <20140428214112.GC7857@thunk.org> <535FE68C.8060002@redhat.com> <20140429182610.GA19325@thunk.org> <53616293.3080308@mit.edu> <20140501020627.GA25248@thunk.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 24 April 2014 04:28 PM, tip-bot for Masami Hiramatsu wrote:
-> Commit-ID:  376e242429bf8539ef39a080ac113c8799840b13
-> Gitweb:     http://git.kernel.org/tip/376e242429bf8539ef39a080ac113c8799840b13
-> Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> AuthorDate: Thu, 17 Apr 2014 17:17:05 +0900
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 24 Apr 2014 10:02:56 +0200
+To do something cross-arch putting it in memory and having something point to it is probably easiest, but again, with an in-VM boot loader the command line rather sucks.  This then becomes a matter for device tree/ACPI with all that entails.
+
+In that sense it would be better to do something arch-specififc, because what is easy to do early is rather inherently arch-specific.
+
+Sent from my tablet, pardon any formatting problems.
+
+> On Apr 30, 2014, at 19:06, "Theodore Ts'o" <tytso@mit.edu> wrote:
 > 
-> kprobes: Introduce NOKPROBE_SYMBOL() macro to maintain kprobes blacklist
+>> On Wed, Apr 30, 2014 at 01:52:35PM -0700, Andy Lutomirski wrote:
+>> 
+>> 1. It simply doesn't work on my system.  In particular, it never returns
+>> entropy.  It just blocks forever.
 > 
-> Introduce NOKPROBE_SYMBOL() macro which builds a kprobes
-> blacklist at kernel build time.
+> Why?  Is this a bug in qemu?  The host OS?  The guest OS?  It is qemu
+> trying to use /dev/random instead of /dev/urandom?  Any thing else?
 > 
-....
-
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index 146e4ff..40ceb3c 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -109,6 +109,14 @@
->  #define BRANCH_PROFILE()
->  #endif
->  
-> +#ifdef CONFIG_KPROBES
-> +#define KPROBE_BLACKLIST()	VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
-> +				*(_kprobe_blacklist)			      \
-> +				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
-> +#else
-> +#define KPROBE_BLACKLIST()
-> +#endif
-> +
->  #ifdef CONFIG_EVENT_TRACING
->  #define FTRACE_EVENTS()	. = ALIGN(8);					\
->  			VMLINUX_SYMBOL(__start_ftrace_events) = .;	\
-> @@ -507,6 +515,7 @@
->  	*(.init.rodata)							\
->  	FTRACE_EVENTS()							\
->  	TRACE_SYSCALLS()						\
-> +	KPROBE_BLACKLIST()						\
->  	MEM_DISCARD(init.rodata)					\
->  	CLK_OF_TABLES()							\
->  	RESERVEDMEM_OF_TABLES()						\
-
-Linux-next fails to boot on ARC due to misaligned __start_kprobe_blacklist. Patch
-below fixes it.
-
------------------------->
->From c5afc4ebf9c1c094a260e2aaff6c5b3106063039 Mon Sep 17 00:00:00 2001
-From: Vineet Gupta <vgupta@synopsys.com>
-Date: Thu, 1 May 2014 10:47:29 +0530
-Subject: [PATCH] kprobes: Ensure blacklist data is aligned
-
-ARC Linux (not supporting native unaligned access) was failing to boot
-because __start_kprobe_blacklist was not aligned.
-
-This was because per generated vmlinux.lds it was emitted right next
-to .rodata with strings etc hence could be randomly unaligned.
-
-Fix that by ensuring a word alignment. While 4 would suffice for 32bit
-arches and problem at hand, it is probably better to put 8.
-
-| Path: (null) CPU: 0 PID: 1 Comm: swapper Not tainted
-| 3.15.0-rc3-next-20140430 #2
-| task: 8f044000 ti: 8f01e000 task.ti: 8f01e000
-|
-| [ECR   ]: 0x00230400 => Misaligned r/w from 0x800fb0d3
-| [EFA   ]: 0x800fb0d3
-| [BLINK ]: do_one_initcall+0x86/0x1bc
-| [ERET  ]: init_kprobes+0x52/0x120
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- include/asm-generic/vmlinux.lds.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 40ceb3ceba79..8e0204a68c74 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -110,7 +110,8 @@
- #endif
-
- #ifdef CONFIG_KPROBES
--#define KPROBE_BLACKLIST()	VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
-+#define KPROBE_BLACKLIST()	. = ALIGN(8);				      \
-+				VMLINUX_SYMBOL(__start_kprobe_blacklist) = .; \
- 				*(_kprobe_blacklist)			      \
- 				VMLINUX_SYMBOL(__stop_kprobe_blacklist) = .;
- #else
--- 
-1.8.3.2
-
-
-
+>> 3. There should be a way to provide some entropy-free cryptographically
+>> secure data, too.  Regardless of the speed of the hosts's /dev/random,
+>> the guest should start with at least 256 bits of cryptographically
+>> secure seed material IMO.
+> 
+> Well, the simplest way to do this is to pass it in via the command
+> line, and then have the the kernel make sure it gets obscured so it's
+> not exposed via /proc/cmdline.
+> 
+> Otherwise we would have to define an extension where we pass 32 bytes
+> or so after the boot command line.  But the downside of doing that is
+> we would have to modify every single architecture to define where
+> those 32 bytes could be found.
+> 
+> Aside from passing it on the command line as being a bit grotty, the
+> other big problem this is that some architectures only have 256 bytes
+> of command line, and if we use a base 64 encoding, 256 bits will take
+> 43 characters.  Not a problem on x86, and it seems rather unlikely
+> that people would want to virtualize a m68k or avr32 CPU.  It just
+> feels really unclean.
+> 
+> I've cc'ed Peter Anvin for his opinion about extending Linux boot
+> parameter protocol.  I agree it would be a lot simpler and easier to
+> enable things like Kernel ASLR with real randomness on guest OS's if
+> we didn't have to erect the whole virtio-pci infrastructure during
+> early boot.  :-)
+> 
+>                         -Ted
