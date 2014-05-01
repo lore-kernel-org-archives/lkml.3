@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaEASAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:00:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45379 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186AbaEASAU convert rfc822-to-8bit (ORCPT
+	id S1751554AbaEASDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:03:12 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59063 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaEASDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:00:20 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCHv3 resend 1/2] dt/bindings: Add the DT binding documentation for endianness
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1398847921-9322-2-git-send-email-Li.Xiubo@freescale.com>
-Date: Thu, 1 May 2014 11:00:14 -0700
-Cc: mark.rutland@arm.com, broonie@kernel.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        richardcochran@gmail.com, gregkh@linuxfoundation.org,
-        mpa@pengutronix.de, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <A2CD6B78-31B7-467D-943C-48A17FD596B4@codeaurora.org>
-References: <1398847921-9322-1-git-send-email-Li.Xiubo@freescale.com> <1398847921-9322-2-git-send-email-Li.Xiubo@freescale.com>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 1 May 2014 14:03:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
+References: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 1 May 2014 12:02:49 -0600
+Message-ID: <CAErSpo4KLq7m8PXzAEhv20e29Wk=sAtageDf3CgziDLno0JUCw@mail.gmail.com>
+Subject: Re: [PATCH] PCI/shpchp: fix a bus speed issue on hotplug
+To: Marcel Apfelbaum <marcel.a@redhat.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>, "Michael S. Tsirkin" <mst@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 1, 2014 at 8:35 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
+> When a board is added, the shpchp driver checks if there
+> is a mismatch between the bridge's adapter and the bus speed.
+> If there is, it sets the subordinate speed (if there is no device on it).
+>
+> However, it takes the reference of the board speed from the primary bus
+> and not from the subordinate. If the primary bus is PCI and not PCIX/PCIe,
+> its speed is not updated and remains 0xff. As a result hotplug fails
+> with error: "Speed of bus ff and adapter 0 mismatch".
 
-On Apr 30, 2014, at 1:52 AM, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+It'd be cool to have a bugzilla for this with lspci and dmesg output.
+I'll also have to check the other hotplug drivers for similar issues,
+unless you've already done that.
 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Fixed that by checking the speed against the subordinate bus.
+>
+> Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> Acked-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
-> .../devicetree/bindings/endianness/endianness.txt  | 47 ++++++++++++++++++++++
-> 1 file changed, 47 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/endianness/endianness.txt b/Documentation/devicetree/bindings/endianness/endianness.txt
-> new file mode 100644
-> index 0000000..49458a1
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/endianness/endianness.txt
-> @@ -0,0 +1,47 @@
-> +Device-Tree binding for device endianness
-> +
-> +The endianness mode of CPU & Device scenarios:
-> +Index    CPU       Device     Endianess flag for DT bool property
-> +------------------------------------------------------------
-> +1        LE        LE         -
-> +2        LE        BE         'big-endian{,-*}'
-> +3        BE        BE         -
-> +4        BE        LE         'little-endian{,-*}'
-> +
-> +For one device driver, which will run in different scenarios above
-> +on different SoCs using the devicetree, we need one way to simplify
-> +this.
-> +
-> +Required properties:
-> +- {big,little}-endian{,-*}: this is one boolean property.
-> +
-
-what is the {,-*} all about?
-
-> +Examples:
-> +Scenario 1 : CPU in LE mode & device in LE mode.
-> +dev: dev@40031000 {
-> +	      compatible = "name";
-> +	      reg = <0x40031000 0x1000>;
-> +	      ...
-> +};
-> +
-> +Scenario 2 : CPU in LE mode & device in BE mode.
-> +dev: dev@40031000 {
-> +	      compatible = "name";
-> +	      reg = <0x40031000 0x1000>;
-> +	      ...
-> +	      big-endian{,-*};
-> +};
-> +
-> +Scenario 3 : CPU in BE mode & device in BE mode.
-> +dev: dev@40031000 {
-> +	      compatible = "name";
-> +	      reg = <0x40031000 0x1000>;
-> +	      ...
-> +};
-> +
-> +Scenario 4 : CPU in BE mode & device in LE mode.
-> +dev: dev@40031000 {
-> +	      compatible = "name";
-> +	      reg = <0x40031000 0x1000>;
-> +	      ...
-> +	      little-endian{,-*};
-> +};
-> -- 
-> 1.8.4
-> 
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+>  drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
+> index 5849927..6efc2ec 100644
+> --- a/drivers/pci/hotplug/shpchp_ctrl.c
+> +++ b/drivers/pci/hotplug/shpchp_ctrl.c
+> @@ -282,8 +282,8 @@ static int board_added(struct slot *p_slot)
+>                 return WRONG_BUS_FREQUENCY;
+>         }
+>
+> -       bsp = ctrl->pci_dev->bus->cur_bus_speed;
+> -       msp = ctrl->pci_dev->bus->max_bus_speed;
+> +       bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
+> +       msp = ctrl->pci_dev->subordinate->max_bus_speed;
+>
+>         /* Check if there are other slots or devices on the same bus */
+>         if (!list_empty(&ctrl->pci_dev->subordinate->devices))
+> --
+> 1.8.3.1
+>
