@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaEAPRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:17:35 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:44469 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225AbaEAPRd (ORCPT
+	id S1755666AbaEAPST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:18:19 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:51274 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754776AbaEAPSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:17:33 -0400
-Message-ID: <53626583.5030604@kernel.dk>
-Date: Thu, 01 May 2014 09:17:23 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 1 May 2014 11:18:17 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, dhowells@redhat.com,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V1 06/22] vfs: Add delete child and delete self permission flags
+In-Reply-To: <20140429000758.GP15995@dastard>
+References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1398615293-22931-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140429000758.GP15995@dastard>
+User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 01 May 2014 20:48:04 +0530
+Message-ID: <87lhulbk9f.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>, linux-kernel@vger.kernel.org
-CC: Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] block: null_blk: fix use after free
-References: <1398928356-24390-1-git-send-email-tom.leiming@gmail.com>
-In-Reply-To: <1398928356-24390-1-git-send-email-tom.leiming@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050115-5140-0000-0000-00000509BC03
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 01:12 AM, Ming Lei wrote:
-> entry(cmd->ll_list) may belong to new request once end_cmd()
-> returns, so fix the bug with the patch.
-> 
-> Without the change, it is easy to observe oops when
-> doing null_blk(timer) test.
-> 
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> ---
->  drivers/block/null_blk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/block/null_blk.c b/drivers/block/null_blk.c
-> index 8e7e3a0..e932398 100644
-> --- a/drivers/block/null_blk.c
-> +++ b/drivers/block/null_blk.c
-> @@ -203,8 +203,8 @@ static enum hrtimer_restart null_cmd_timer_expired(struct hrtimer *timer)
->  		entry = llist_reverse_order(entry);
->  		do {
->  			cmd = container_of(entry, struct nullb_cmd, ll_list);
-> -			end_cmd(cmd);
->  			entry = entry->next;
-> +			end_cmd(cmd);
->  		} while (entry);
->  	}
+Dave Chinner <david@fromorbit.com> writes:
 
-Good catch, applied.
+> On Sun, Apr 27, 2014 at 09:44:37PM +0530, Aneesh Kumar K.V wrote:
+>> From: Andreas Gruenbacher <agruen@kernel.org>
+>> 
+>> Normally, deleting a file requires write access to the parent directory.
+>> Some permission models use a different permission on the parent
+>> directory to indicate delete access.  In addition, a process can have
+>> per-file delete access even without delete access on the parent
+>> directory.
+>> 
+>> Introduce two new inode_permission() mask flags and use them in
+>> may_delete()
+>> 
+>> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
+>> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>  fs/namei.c         | 45 ++++++++++++++++++++++++++++++++++-----------
+>>  include/linux/fs.h |  2 ++
+>>  2 files changed, 36 insertions(+), 11 deletions(-)
+>> 
+>> diff --git a/fs/namei.c b/fs/namei.c
+>> index 028bc8bcf77c..56ac7613fbca 100644
+>> --- a/fs/namei.c
+>> +++ b/fs/namei.c
+>> @@ -446,7 +446,7 @@ static int sb_permission(struct super_block *sb, struct inode *inode, int mask)
+>>   * changing the "normal" UIDs which are used for other things.
+>>   *
+>>   * When checking for MAY_APPEND, MAY_CREATE_FILE, MAY_CREATE_DIR,
+>> - * MAY_WRITE must also be set in @mask.
+>> + * MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_WRITE must also be set in @mask.
+>>   */
+>>  int inode_permission(struct inode *inode, int mask)
+>>  {
+>> @@ -2366,11 +2366,25 @@ kern_path_mountpoint(int dfd, const char *name, struct path *path,
+>>  }
+>>  EXPORT_SYMBOL(kern_path_mountpoint);
+>>  
+>> +
+>> +/*
+>> + * We should have exec permission on directory and MAY_DELETE_SELF
+>> + * on the object being deleted.
+>> + */
+>> +static int richacl_may_selfdelete(struct inode *dir,
+>> +				  struct inode *inode, int replace_mask)
+>> +{
+>> +	return (IS_RICHACL(inode) &&
+>> +		(inode_permission(dir, MAY_EXEC | replace_mask) == 0) &&
+>> +		(inode_permission(inode, MAY_DELETE_SELF) == 0));
+>> +}
+>
+> Can't say I like these "richacl" prefixes. Why not just "may_*"
+> like all the other permission checks?
 
--- 
-Jens Axboe
+Will update.
+
+>
+>
+>> @@ -2414,13 +2431,19 @@ static int may_delete(struct inode *dir, struct dentry *victim, bool isdir)
+>>  	BUG_ON(victim->d_parent->d_inode != dir);
+>>  	audit_inode_child(dir, victim, AUDIT_TYPE_CHILD_DELETE);
+>>  
+>> -	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+>> +	mask = MAY_WRITE | MAY_EXEC | MAY_DELETE_CHILD;
+>> +	if (replace)
+>> +		replace_mask = S_ISDIR(inode->i_mode) ?
+>> +				MAY_CREATE_DIR : MAY_CREATE_FILE;
+>> +	error = inode_permission(dir, mask | replace_mask);
+>> +	if (error && richacl_may_selfdelete(dir, inode, replace_mask))
+>> +		error = 0;
+
+....
+
+>>  
+>>  		if (!(flags & RENAME_EXCHANGE))
+>> -			error = may_delete(new_dir, new_dentry, is_dir);
+>> +			error = may_delete(new_dir, new_dentry, is_dir, 1);
+>>  		else
+>> -			error = may_delete(new_dir, new_dentry, new_is_dir);
+>> +			error = may_delete(new_dir, new_dentry, new_is_dir, 1);
+>
+> Another boolean parameter that means nothing at the call site.  This
+> should really be passing a flags field, not a bunch of booleans that
+> are simply evaluated into flags...
+>
+
+Will update
+
+Thanks
+-aneesh
 
