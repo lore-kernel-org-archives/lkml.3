@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaEAAfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 20:35:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:51348 "EHLO arroyo.ext.ti.com"
+	id S1752270AbaEAAfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 20:35:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51353 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869AbaEAAfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 20:35:42 -0400
+	id S1751869AbaEAAfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 20:35:47 -0400
 From: Suman Anna <s-anna@ti.com>
 To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
         Kumar Gala <galak@codeaurora.org>
@@ -13,9 +13,9 @@ CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
         Bjorn Andersson <bjorn@kryo.se>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, Suman Anna <s-anna@ti.com>
-Subject: [PATCHv5 03/15] hwspinlock/core: maintain a list of registered hwspinlock banks
-Date: Wed, 30 Apr 2014 19:34:24 -0500
-Message-ID: <1398904476-26200-4-git-send-email-s-anna@ti.com>
+Subject: [PATCHv5 04/15] hwspinlock/core: add common OF helpers
+Date: Wed, 30 Apr 2014 19:34:25 -0500
+Message-ID: <1398904476-26200-5-git-send-email-s-anna@ti.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398904476-26200-1-git-send-email-s-anna@ti.com>
 References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
@@ -25,161 +25,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hwspinlock_device structure is used for registering a bank of
-locks with the driver core. The structure already contains the
-necessary members to identify the bank of locks. The core does not
-maintain the hwspinlock_devices itself, but maintains only a radix
-tree for all the registered locks. A specific lock can be requested
-by users using a global lock id, and any device-specific fields
-can be retrieved through a reference to the hwspinlock_device in
-each lock.
+This patch adds three new OF helper functions to use/request
+locks from a hwspinlock device instantiated through a
+device-tree blob.
 
-The global lock id, however, is not friendly to be requested for
-users using the device-tree model. The device-tree representation
-will typically have each of the hwspinlock devices represented as
-a DT node, and a specific lock can be requested using the device's
-phandle and a lock specifier. Add support to the core therefore to
-maintain all the registered hwspinlock_devices, so that a device
-can be looked up and a specific lock belonging to the device
-requested through a phandle + args approach.
+1. The of_hwspin_lock_get_num_locks() is a common helper
+   function to read the common 'hwlock-num-locks' property.
+2. The of_hwspin_lock_simple_xlate() is a simple default
+   translator function for hwspinlock provider implementations
+   that use a single cell number for requesting a specific lock
+   (relatively indexed) within a hwlock bank.
+3. The of_hwspin_lock_request_specific() API can be used by
+   hwspinlock clients to request a specific lock using the
+   phandle + args specifier. This function relies on the
+   implementation providing back a relative hwlock id within
+   the bank from the args specifier.
 
 Signed-off-by: Suman Anna <s-anna@ti.com>
 ---
- Documentation/hwspinlock.txt             |  2 ++
- drivers/hwspinlock/hwspinlock_core.c     | 51 ++++++++++++++++++++++++++++++++
- drivers/hwspinlock/hwspinlock_internal.h |  2 ++
- 3 files changed, 55 insertions(+)
+ Documentation/hwspinlock.txt             |  34 ++++++++++-
+ drivers/hwspinlock/hwspinlock_core.c     | 100 ++++++++++++++++++++++++++++++-
+ drivers/hwspinlock/hwspinlock_internal.h |   4 ++
+ include/linux/hwspinlock.h               |  22 ++++++-
+ 4 files changed, 155 insertions(+), 5 deletions(-)
 
 diff --git a/Documentation/hwspinlock.txt b/Documentation/hwspinlock.txt
-index 62f7d4e..640ae47 100644
+index 640ae47..903d477 100644
 --- a/Documentation/hwspinlock.txt
 +++ b/Documentation/hwspinlock.txt
-@@ -251,6 +251,7 @@ implementation using the hwspin_lock_register() API.
+@@ -48,6 +48,15 @@ independent, drivers.
+      ids for predefined purposes.
+      Should be called from a process context (might sleep).
  
- /**
-  * struct hwspinlock_device - a device which usually spans numerous hwspinlocks
-+ * @list: list element to link hwspinlock devices together
-  * @dev: underlying device, will be used to invoke runtime PM api
-  * @ops: platform-specific hwspinlock handlers
-  * @base_id: id index of the first lock in this device
-@@ -258,6 +259,7 @@ implementation using the hwspin_lock_register() API.
-  * @lock: dynamically allocated array of 'struct hwspinlock'
-  */
- struct hwspinlock_device {
-+	struct list_head list;
- 	struct device *dev;
- 	const struct hwspinlock_ops *ops;
- 	int base_id;
++  struct hwspinlock *of_hwspin_lock_request_specific(
++		struct device_node *np,	const char *propname, int index);
++   - assign a specific hwspinlock id and return its address, or NULL
++     if that hwspinlock is already in use. This function is the OF
++     equivalent of hwspin_lock_request_specific() function, and provides
++     a means for users of the hwspinlock module to request a specific
++     hwspinlock using the phandle of the hwspinlock device.
++     Should be called from a process context (might sleep).
++
+   int hwspin_lock_free(struct hwspinlock *hwlock);
+    - free a previously-assigned hwspinlock; returns 0 on success, or an
+      appropriate error code on failure (e.g. -EINVAL if the hwspinlock
+@@ -243,6 +252,23 @@ int hwspinlock_example2(void)
+      Returns the address of hwspinlock on success, or NULL on error (e.g.
+      if the hwspinlock is still in use).
+ 
++  int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
++				  const struct of_phandle_args *hwlock_spec);
++   - is a simple default OF translate helper function that can be plugged in
++     as the underlying vendor-specific implementation's of_xlate ops function.
++     This can be used by implementations that use a single integer argument in
++     the DT node argument specifier, that indicates the hwlock index number.
++     Returns a hwlock index within a bank, or appropriate error code on
++     failure.
++
++  int of_hwspin_lock_get_num_locks(struct device_node *dn);
++   - is a common OF helper function that can be used by some underlying
++     vendor-specific implementations. This can be used by implementations
++     that require and define the number of locks supported within a hwspinlock
++     bank as a device tree node property. This function should be called by
++     needed implementations before registering a hwspinlock device with the
++     core.
++
+ 5. Important structs
+ 
+ struct hwspinlock_device is a device which usually contains a bank
+@@ -288,12 +314,14 @@ initialized by the hwspinlock core itself.
+ 
+ 6. Implementation callbacks
+ 
+-There are three possible callbacks defined in 'struct hwspinlock_ops':
++There are four possible callbacks defined in 'struct hwspinlock_ops':
+ 
+ struct hwspinlock_ops {
+ 	int (*trylock)(struct hwspinlock *lock);
+ 	void (*unlock)(struct hwspinlock *lock);
+ 	void (*relax)(struct hwspinlock *lock);
++	int (*of_xlate)(struct hwspinlock_device *bank,
++			const struct of_phandle_args *hwlock_spec);
+ };
+ 
+ The first two callbacks are mandatory:
+@@ -307,3 +335,7 @@ may _not_ sleep.
+ The ->relax() callback is optional. It is called by hwspinlock core while
+ spinning on a lock, and can be used by the underlying implementation to force
+ a delay between two successive invocations of ->trylock(). It may _not_ sleep.
++
++The ->of_xlate() callback is mandatory to support requesting hwlocks through
++device-tree nodes. It is called by hwspinlock core to retrieve the relative
++lock index within a bank from the underlying implementation.
 diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
-index 461a0d7..48f7866 100644
+index 48f7866..3966c0c 100644
 --- a/drivers/hwspinlock/hwspinlock_core.c
 +++ b/drivers/hwspinlock/hwspinlock_core.c
-@@ -59,6 +59,11 @@ static RADIX_TREE(hwspinlock_tree, GFP_KERNEL);
-  */
- static DEFINE_MUTEX(hwspinlock_tree_lock);
+@@ -27,6 +27,7 @@
+ #include <linux/hwspinlock.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/mutex.h>
++#include <linux/of.h>
  
-+/*
-+ * A linked list for maintaining all the registered hwspinlock devices.
-+ * The list is maintained in an ordered-list of the supported locks group.
-+ */
-+static LIST_HEAD(hwspinlock_devices);
+ #include "hwspinlock_internal.h"
  
- /**
-  * __hwspin_trylock() - attempt to lock a specific hwspinlock
-@@ -307,6 +312,40 @@ out:
- 	return hwlock;
+@@ -262,6 +263,33 @@ void __hwspin_unlock(struct hwspinlock *hwlock, int mode, unsigned long *flags)
  }
+ EXPORT_SYMBOL_GPL(__hwspin_unlock);
  
-+/*
-+ * Add a new hwspinlock device to the global list, keeping the list of
-+ * devices sorted by base order.
++/**
++ * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
++ * @dn: device node pointer
 + *
-+ * Returns 0 on success, or -EBUSY if the new device overlaps with some
-+ * other device's lock space.
++ * This is an OF helper function that can be called by the underlying
++ * platform-specific implementations, to retrieve the number of locks
++ * present within a hwspinlock device instance. The hwlock-num-locks
++ * DT property may be optional for some platforms, while mandatory for
++ * some others, so this function is typically called only by needed
++ * platform-specific implementations.
++ *
++ * Returns a positive number of locks on success, -ENODEV on generic
++ * failure or an appropriate error code as returned by the OF layer
 + */
-+static int hwspinlock_device_add(struct hwspinlock_device *bank)
++int of_hwspin_lock_get_num_locks(struct device_node *dn)
 +{
-+	struct list_head *entry = &hwspinlock_devices;
-+	struct hwspinlock_device *_bank;
-+	int ret = 0;
++	unsigned int val;
++	int ret = -ENODEV;
 +
-+	list_for_each(entry, &hwspinlock_devices) {
-+		_bank = list_entry(entry, struct hwspinlock_device, list);
-+		if (_bank->base_id >= bank->base_id + bank->num_locks)
-+			break;
-+	}
-+
-+	if (entry != &hwspinlock_devices &&
-+	    entry->prev != &hwspinlock_devices) {
-+		_bank = list_entry(entry->prev, struct hwspinlock_device, list);
-+		if (_bank->base_id + _bank->num_locks > bank->base_id) {
-+			dev_err(bank->dev, "hwlock space overlap, cannot add device\n");
-+			ret = -EBUSY;
-+		}
-+	}
-+
++	ret = of_property_read_u32(dn, "hwlock-num-locks", &val);
 +	if (!ret)
-+		list_add_tail(&bank->list, entry);
++		ret = val ? val : -ENODEV;
 +
 +	return ret;
 +}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_locks);
 +
- /**
-  * hwspin_lock_register() - register a new hw spinlock device
-  * @bank: the hwspinlock device, which usually provides numerous hw locks
-@@ -339,6 +378,12 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- 	bank->base_id = base_id;
- 	bank->num_locks = num_locks;
- 
-+	mutex_lock(&hwspinlock_tree_lock);
-+	ret = hwspinlock_device_add(bank);
-+	mutex_unlock(&hwspinlock_tree_lock);
-+	if (ret)
-+		return ret;
-+
- 	for (i = 0; i < num_locks; i++) {
- 		hwlock = &bank->lock[i];
- 
-@@ -355,6 +400,9 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
- reg_failed:
- 	while (--i >= 0)
- 		hwspin_lock_unregister_single(base_id + i);
-+	mutex_lock(&hwspinlock_tree_lock);
-+	list_del(&bank->list);
-+	mutex_unlock(&hwspinlock_tree_lock);
- 	return ret;
+ static int hwspin_lock_register_single(struct hwspinlock *hwlock, int id)
+ {
+ 	struct hwspinlock *tmp;
+@@ -312,6 +340,31 @@ out:
+ 	return hwlock;
  }
- EXPORT_SYMBOL_GPL(hwspin_lock_register);
-@@ -386,6 +434,9 @@ int hwspin_lock_unregister(struct hwspinlock_device *bank)
- 		WARN_ON(tmp != hwlock);
+ 
++/**
++ * of_hwspin_lock_simple_xlate - translate hwlock_spec to return a lock id
++ * @bank: the hwspinlock device bank
++ * @hwlock_spec: hwlock specifier as found in the device tree
++ *
++ * This is a simple translation function, suitable for hwspinlock platform
++ * drivers that only has a lock specifier length of 1.
++ *
++ * Returns a negative value on error, and a relative index of the lock within
++ * a specified bank on success.
++ */
++int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
++				const struct of_phandle_args *hwlock_spec)
++{
++	/* sanity check (these shouldn't happen) */
++	if (WARN_ON(!bank->dev->of_node))
++		return -EINVAL;
++
++	if (WARN_ON(hwlock_spec->args_count != 1))
++		return -EINVAL;
++
++	return hwlock_spec->args[0];
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_simple_xlate);
++
+ /*
+  * Add a new hwspinlock device to the global list, keeping the list of
+  * devices sorted by base order.
+@@ -368,7 +421,7 @@ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 	int ret = 0, i;
+ 
+ 	if (!bank || !ops || !dev || !num_locks || !ops->trylock ||
+-							!ops->unlock) {
++	    !ops->unlock || (dev->of_node && !ops->of_xlate)) {
+ 		pr_err("invalid parameters\n");
+ 		return -EINVAL;
  	}
+@@ -592,6 +645,51 @@ out:
+ EXPORT_SYMBOL_GPL(hwspin_lock_request_specific);
  
+ /**
++ * of_hwspin_lock_request_specific() - request a OF phandle-based specific lock
++ * @np: device node from which to request the specific hwlock
++ * @propname: property name containing hwlock specifier(s)
++ * @index: index of the hwlock
++ *
++ * This function is the OF equivalent of hwspin_lock_request_specific(). This
++ * function provides a means for users of the hwspinlock module to request a
++ * specific hwspinlock using the phandle of the hwspinlock device. The requested
++ * lock number is indexed relative to the hwspinlock device, unlike the
++ * hwspin_lock_request_specific() which is an absolute lock number.
++ *
++ * Returns the address of the assigned hwspinlock, or NULL on error
++ */
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++						   const char *propname,
++						   int index)
++{
++	struct hwspinlock_device *bank;
++	struct of_phandle_args args;
++	int id;
++	int ret;
++
++	ret = of_parse_phandle_with_args(np, propname, "#hwlock-cells", index,
++					 &args);
++	if (ret)
++		return NULL;
++
 +	mutex_lock(&hwspinlock_tree_lock);
-+	list_del(&bank->list);
++	list_for_each_entry(bank, &hwspinlock_devices, list)
++		if (bank->dev->of_node == args.np)
++			break;
 +	mutex_unlock(&hwspinlock_tree_lock);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(hwspin_lock_unregister);
++	if (&bank->list == &hwspinlock_devices)
++		return NULL;
++
++	id = bank->ops->of_xlate(bank, &args);
++	if (id < 0 || id >= bank->num_locks)
++		return NULL;
++
++	id += bank->base_id;
++	return hwspin_lock_request_specific(id);
++}
++EXPORT_SYMBOL_GPL(of_hwspin_lock_request_specific);
++
++/**
+  * hwspin_lock_free() - free a specific hwspinlock
+  * @hwlock: the specific hwspinlock to free
+  *
 diff --git a/drivers/hwspinlock/hwspinlock_internal.h b/drivers/hwspinlock/hwspinlock_internal.h
-index d26f78b..aff560c 100644
+index aff560c..5e42613 100644
 --- a/drivers/hwspinlock/hwspinlock_internal.h
 +++ b/drivers/hwspinlock/hwspinlock_internal.h
-@@ -53,6 +53,7 @@ struct hwspinlock {
+@@ -32,11 +32,15 @@ struct hwspinlock_device;
+  * @relax:   optional, platform-specific relax handler, called by hwspinlock
+  *	     core while spinning on a lock, between two successive
+  *	     invocations of @trylock. may _not_ sleep.
++ * @of_xlate: platform-specific hwlock specifier translate function, to
++ *	      return the relative index of the lock within a bank
+  */
+ struct hwspinlock_ops {
+ 	int (*trylock)(struct hwspinlock *lock);
+ 	void (*unlock)(struct hwspinlock *lock);
+ 	void (*relax)(struct hwspinlock *lock);
++	int (*of_xlate)(struct hwspinlock_device *bank,
++			const struct of_phandle_args *hwlock_spec);
+ };
  
  /**
-  * struct hwspinlock_device - a device which usually spans numerous hwspinlocks
-+ * @list: list element to link hwspinlock devices together
-  * @dev: underlying device, will be used to invoke runtime PM api
-  * @ops: platform-specific hwspinlock handlers
-  * @base_id: id index of the first lock in this device
-@@ -60,6 +61,7 @@ struct hwspinlock {
-  * @lock: dynamically allocated array of 'struct hwspinlock'
-  */
- struct hwspinlock_device {
-+	struct list_head list;
- 	struct device *dev;
- 	const struct hwspinlock_ops *ops;
- 	int base_id;
+diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+index 3343298..068e628 100644
+--- a/include/linux/hwspinlock.h
++++ b/include/linux/hwspinlock.h
+@@ -26,6 +26,8 @@
+ #define HWLOCK_IRQ	0x02	/* Disable interrupts, don't save state */
+ 
+ struct device;
++struct device_node;
++struct of_phandle_args;
+ struct hwspinlock;
+ struct hwspinlock_device;
+ struct hwspinlock_ops;
+@@ -60,11 +62,17 @@ struct hwspinlock_pdata {
+ 
+ #if defined(CONFIG_HWSPINLOCK) || defined(CONFIG_HWSPINLOCK_MODULE)
+ 
++int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
++				const struct of_phandle_args *hwlock_spec);
++int of_hwspin_lock_get_num_locks(struct device_node *dn);
+ int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+ 		const struct hwspinlock_ops *ops, int base_id, int num_locks);
+ int hwspin_lock_unregister(struct hwspinlock_device *bank);
+ struct hwspinlock *hwspin_lock_request(void);
+ struct hwspinlock *hwspin_lock_request_specific(unsigned int id);
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++						   const char *propname,
++						   int index);
+ int hwspin_lock_free(struct hwspinlock *hwlock);
+ int hwspin_lock_get_id(struct hwspinlock *hwlock);
+ int __hwspin_lock_timeout(struct hwspinlock *, unsigned int, int,
+@@ -80,9 +88,9 @@ void __hwspin_unlock(struct hwspinlock *, int, unsigned long *);
+  * code path get compiled away. This way, if CONFIG_HWSPINLOCK is not
+  * required on a given setup, users will still work.
+  *
+- * The only exception is hwspin_lock_register/hwspin_lock_unregister, with which
+- * we _do_ want users to fail (no point in registering hwspinlock instances if
+- * the framework is not available).
++ * The only exception is hwspin_lock_register/hwspin_lock_unregister and
++ * associated OF helpers, with which we _do_ want users to fail (no point
++ * in registering hwspinlock instances if the framework is not available).
+  *
+  * Note: ERR_PTR(-ENODEV) will still be considered a success for NULL-checking
+  * users. Others, which care, can still check this with IS_ERR.
+@@ -97,6 +105,14 @@ static inline struct hwspinlock *hwspin_lock_request_specific(unsigned int id)
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline
++struct hwspinlock *of_hwspin_lock_request_specific(struct device_node *np,
++						   const char *propname,
++						   int index)
++{
++	return ERR_PTR(-ENODEV);
++}
++
+ static inline int hwspin_lock_free(struct hwspinlock *hwlock)
+ {
+ 	return 0;
 -- 
 1.9.2
 
