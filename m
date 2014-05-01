@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750763AbaEAEDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 00:03:45 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47412 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaEAEDo (ORCPT
+	id S1750859AbaEAEFQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 00:05:16 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:54696 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaEAEFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 00:03:44 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Jan Kara <jack@suse.cz>
-Cc: Fabio Estevam <festevam@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Warning from kernel/printk/printk.c in linux-next
-In-Reply-To: Your message of "Tue, 29 Apr 2014 23:11:28 +0200."
-             <20140429211128.GF29634@quack.suse.cz>
-From: Valdis.Kletnieks@vt.edu
-References: <CAOMZO5Bb3P20S15Hi8fKO1r8-JOQa3j8GekNBiABVb9XXN0hZw@mail.gmail.com>
-            <20140429211128.GF29634@quack.suse.cz>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1398916856_2015P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 1 May 2014 00:05:14 -0400
+Message-ID: <5361C7F9.5060405@gmail.com>
+Date: Thu, 01 May 2014 12:05:13 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] unicore32: About toolchain issues and source code.
+References: <53604E82.1040407@gmail.com> <20140430184804.GA5733@roeck-us.net>
+In-Reply-To: <20140430184804.GA5733@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 01 May 2014 00:00:56 -0400
-Message-ID: <3758.1398916856@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1398916856_2015P
-Content-Type: text/plain; charset=us-ascii
+On 05/01/2014 02:48 AM, Guenter Roeck wrote:
+> On Wed, Apr 30, 2014 at 09:14:42AM +0800, Chen Gang wrote:
+>> Hello Maintainers:
+>>
+>>   - Toolchain information:
+>>
+>>     root@gchen:/upstream/toolchain/binutils/gas# /upstream/toolchain/unicore32/pi3dian14-beyondmind/prebuilt/linux-x86/toolchain/uc4-1.0-beta-hard-RHELAS4/bin/unicore32-linux-gcc -v
+>>     Using built-in specs.
+>>     Target: unicore32-linux
+>>     Configured with: /home/ghb/trunk/gcc-4.4.2/configure --target=unicore32-linux --prefix=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4 --enable-clocale=gnu --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-languages=c,c++,fortran --disable-multilib --disable-libstdcxx-pch --with-headers=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4/unicore32-linux/include --with-pkgversion=UC4_1.0-beta_20100415
+>>     Thread model: posix
+>>     gcc version 4.4.2 (UC4_1.0-beta_20100415) 
+> 
+> That is an old version of the toolchain. Latest version I can find is 1.0.5.
+> Google for "unicore32 toolchain" or pick it up from
+> 	http://mprc.pku.edu.cn/~guanxuetao/linux/uc4-1.0.5-hard.tgz
+> 
+> Having said that, I don't find a single kernel version (3.2 and later)
+> which builds unicore32:defconfig. Wonder if that architecture is still
+> supported (or if there is some secret to get it compiled.
+> 
+> Build results are at http://server.roeck-us.net:8010/builders.
+> 
+> Guenter
+> 
 
-On Tue, 29 Apr 2014 23:11:28 +0200, Jan Kara said:
+Thank you very much!
 
+I will try it.
 
-> > 5dc90cb49691755faa ("printk: enable interrupts before calling
-> > console_trylock_for_printk()") I get the following warning:
->   Thanks for report. Attached patch should fix the problem I hope.
+Thanks.
+-- 
+Chen Gang
 
-
-> Content-Disposition: attachment; filename="0001-printk-Fix-lockdep-instrument
-ation-of-console_sem.patch"
->
-> From 02e7e0901329f6b9ac3392be41a72b3cee4ac995 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Mon, 28 Apr 2014 21:09:26 +0200
-> Subject: [PATCH] printk: Fix lockdep instrumentation of console_sem
-
-I was seeing this same exact traceback on next-20140429.  Can confirm
-the message is gone after applying this patch.  If you haven't pushed it
-upstream, feel free to add:
-
-Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-
---==_Exmh_1398916856_2015P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBU2HG+AdmEQWDXROgAQJn3g/9EzP6oK00CPXUOdLgizXP/GeZshXMHpV9
-sDnqzb6Iu6/78mLO+JguI6GT/VgpjyGWGIo9/oGWFCCzvxAQ+t7Vuc/JAsUd765c
-gBvc6eXYw5+lLfrRxvuPhKjzqZBObQDD4MgcP3oPsufclrRu8rM/9eepsdP79KBJ
-CDIhcOA9O+/gp56zx/bZWXwaiA7sjVOcouNFffNYQ7Lrk7d4t6XzY+uXg0dOxoIc
-qKz/5/WB4FL1QHVqInOu4ZjNgaSCifMBY8Qmv7BTo2c4S9D1NVKHbVbfSRuU6ggQ
-WRkZmoxgbiO4UBML8WxfwFcLCMAyr3nSyIBVFS+AkYKD28qyaA2vhQVqcOc38bUR
-QJg9rQRxm8Z9zIFNxI2kN62guwuTdWn79quwn5CHnLYHP65LlnqnBVApD17CVZi6
-HRaQpa9Kil/5LFbGCxe3BCvEbbsDCnPnMk7AC8elQlGUPpOSXl4S+K4Od9KK+mq1
-OBfL9NrvQxZsu0Q+dl02OX18dDtpOTzSjPgfxTeKDHDRXIoxT+HPSa4YhKlVYG9q
-K/DaksUb8f3C2VfQ8q18UR8yDew1cU1c8N4312Qt49MGXJiq1XQJMn53xPQd2d6O
-xhyoCKX6Uz2UJ5eEv1ORbSuZsLGaz+5tMFsJPzAsa8ebhfapcZUs6f4Usn2YtxDO
-73pfPoCxbQY=
-=0poZ
------END PGP SIGNATURE-----
-
---==_Exmh_1398916856_2015P--
+Open, share and attitude like air, water and life which God blessed
