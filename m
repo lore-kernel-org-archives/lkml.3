@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbaEAQba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 12:31:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34152 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395AbaEAQb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 12:31:29 -0400
-Date: Thu, 1 May 2014 18:31:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu> <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751834AbaEAQeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 12:34:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:35665 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751337AbaEAQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 12:34:13 -0400
+Date: Thu, 1 May 2014 10:34:07 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Boris BREZILLON <b.brezillon.dev@gmail.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 0/3] mtd: nand: add randomizer support
+Message-ID: <20140501163407.GB3296@obsidianresearch.com>
+References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 May 2014, Vince Weaver wrote:
-
-> On Thu, 1 May 2014, Peter Zijlstra wrote:
-> > 
-> > But yes please!
+On Thu, May 01, 2014 at 03:09:49AM +0200, Boris BREZILLON wrote:
+> Hello,
 > 
-> OK, sorry for the delay, had forgotten to re-enable -pg for perf in the 
-> makefile when I applied your patch so had to re-build the kernel.
-> 
-> The trace is here:
-> 	www.eece.maine.edu/~vweaver/junk/pzbug.out.bz2
-> 
-> No analysis so hopefully it's good, I've got an event to go to in a few 
-> minutes.
-> 
-> The messages:
-> 
-> [  634.846367] ------------[ cut here ]------------
-> [  634.851477] WARNING: CPU: 6 PID: 2915 at kernel/events/core.c:3232 __free_event+0x93/0xa0()
+> This series is a proposal to add support for randomizers (either software
+> or hardware) to NAND flash controller drivers.
 
-So we are on the right track:
+FWIW, I think the term for reversibly combining a PRBS with data is
+'scrambling', it is often used in communication systems for similar
+reasons - probabilisticly increasing transition density.
 
-     perf_fuzzer-2915  [006]   634.846280: bprint:               _free_event: freeing with 0 refs; ptr=0x0xffff8800cef05000
+randomizing is something else entirely :)
 
-> [  634.935276] CPU: 6 PID: 2915 Comm: perf_fuzzer Not tainted 3.15.0-rc1+ #94
-> [  634.942754] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
-> [  634.950728]  0000000000000009 ffff8801174b7b78 ffffffff81649bf0 0000000000000000
-> [  634.958795]  ffff8801174b7bb0 ffffffff810646ad ffff8800cef05000 0000000000000000
+BTW, there are security concerns here. The scrambler PRBS must not be
+predictable by the user, otherwise they can write data that undoes the
+scramble and defeat it, ie deliberately writing the last 2k of a 4k
+write block as all 0's after scrambling could cause the first 2k to be
+lost. That feels like something that could be scary ..
 
-----------------------------------------------------^^^^^^^^^^^^^^^^
-
-> [  634.966855]  ffff8800cd47be10 ffff880036c7b388 ffff8800cef052a0 ffff8801174b7bc0
-
-And the corrupted element:
-
-> [  635.995839] Slab corruption (Tainted: G        W    ): kmalloc-2048 start=ffff8800cef05000, len=2048
-
-The same address.
-
-Heading out now and postponing the chase for tomorrow morning.
-
-Thanks,
-
-	tglx
+Jason
