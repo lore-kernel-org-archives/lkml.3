@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaEAAI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 20:08:56 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34721 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaEAAIz (ORCPT
+	id S1752071AbaEAAMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 20:12:10 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:41213 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaEAAMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 20:08:55 -0400
-Subject: Re: [PATCH 2/3] uprobes/x86: Kill the "autask" arg of
- riprel_pre_xol()
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20140428063541.GB5015@linux.vnet.ibm.com>
-References: <20140427165200.GA3956@redhat.com>
-	 <20140427165227.GA4016@redhat.com>
-	 <20140428063541.GB5015@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Apr 2014 17:07:51 -0700
-Message-ID: <1398902871.4878.25.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+	Wed, 30 Apr 2014 20:12:08 -0400
+Message-ID: <53619153.8020404@gmail.com>
+Date: Wed, 30 Apr 2014 20:12:03 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        bridge@lists.linux-foundation.org
+Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port changes
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com> <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com> <20140315013940.GA28801@wotan.suse.de> <CAHA+R7MRVyjAN7w_qPxSxkrjo939bNEc3Ej+O3yH-oWj4gGJxw@mail.gmail.com> <20140318212243.GD28471@garbanzo.do-not-panic.com> <20140422194313.GQ27882@wotan.suse.de> <53615752.5040106@gmail.com> <20140430225920.GJ11838@wotan.suse.de>
+In-Reply-To: <20140430225920.GJ11838@wotan.suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050100-0928-0000-0000-0000019A7AB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 12:05 +0530, Srikar Dronamraju wrote:
-> * Oleg Nesterov <oleg@redhat.com> [2014-04-27 18:52:27]:
+On 04/30/2014 06:59 PM, Luis R. Rodriguez wrote:
+> On Wed, Apr 30, 2014 at 04:04:34PM -0400, Vlad Yasevich wrote:
+>> On 04/22/2014 03:43 PM, Luis R. Rodriguez wrote:
+>>> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+>>> index 54d207d..dcd9378 100644
+>>> --- a/net/bridge/br_if.c
+>>> +++ b/net/bridge/br_if.c
+>>> @@ -315,6 +315,8 @@ netdev_features_t br_features_recompute(struct net_bridge *br,
+>>>  	features &= ~NETIF_F_ONE_FOR_ALL;
+>>>  
+>>>  	list_for_each_entry(p, &br->port_list, list) {
+>>> +		if (p->flags & BR_ROOT_BLOCK)
+>>> +			continue;
+>>>  		features = netdev_increment_features(features,
+>>>  						     p->dev->features, mask);
+>>>  	}
+>>>
+>> Hi Luis
+>>
+>> The hunk above isn't right.  Just because you set ROOT_BLOCK on the port
+>> doesn't mean that you should ignore it's device features.  If the device
+>> you just added happens to disable or enable some device offload feature,
+>> you should take that into account.
 > 
-> > default_pre_xol_op() passes &current->utask->autask to riprel_pre_xol()
-> > and this is just ugly because it still needs to load current->utask to
-> > read ->vaddr.
-> > 
-> > Remove this argument, change riprel_pre_xol() to use current->utask.
-> > 
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> OK thanks, how about this part:
 > 
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> On 04/22/2014 03:43 PM, Luis R. Rodriguez wrote:
+>> On Tue, Mar 18, 2014 at 02:22:43PM -0700, Luis R. Rodriguez wrote:
+>> On Tue, Mar 18, 2014 at 01:46:49PM -0700, Cong Wang wrote:
+>>> On Fri, Mar 14, 2014 at 6:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+>>>> On Thu, Mar 13, 2014 at 11:26:25AM -0700, Cong Wang wrote:
+>>>>> On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
+>>>>> <mcgrof@do-not-panic.com> wrote:
+>>>>>>                         spin_unlock_bh(&p->br->lock);
+>>>>>> +                       if (changed)
+>>>>>> +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
+>>>>>> +                                                        p->br->dev);
+>>>>>> +                       netdev_update_features(p->br->dev);
+>>>>>
+
+This is actually just a part of it.  You also need to handle the sysfs
+changing the flag.
+
+Look at the first 2 patches in this series:
+http://www.spinics.net/lists/netdev/msg280863.html
+
+You might need that functionality.
+
+-vlad
+
+
+>>>>> I think this is supposed to be in netdev event handler of br->dev
+>>>>> instead of here.
+>>>>
+>>>> Do you mean netdev_update_features() ? I mimic'd what was being done on
+>>>> br_del_if() given that root blocking is doing something similar. If
+>>>> we need to change something for the above then I suppose it means we need
+>>>> to change br_del_if() too. Let me know if you see any reason for something
+>>>> else.
+>>>>
+>>>
+>>> Yeah, for me it looks like it's better to call netdev_update_features()
+>>> in the event handler of br->dev, rather than where calling
+>>> call_netdevice_notifiers(..., br->dev);.
+>>
+>> I still don't see why, in fact trying to verify this I am wondering now
+>> if instead we should actually fix br_features_recompute() to take into
+>> consideration BR_ROOT_BLOCK as below. Notice how netdev_update_features()
+>> is called above even if the MAC address did not change, just as is done
+>> on br_del_if(). There is an NETDEV_FEAT_CHANGE event so would it be more
+>> appropriate we just call
+>>
+>> call_netdevice_notifiers(NETDEV_FEAT_CHANGE, p->br->dev)
+>>
+>> for both the above then and also br_del_if()?
 > 
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+>   Luis
+> 
 
