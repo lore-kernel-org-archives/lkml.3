@@ -1,53 +1,73 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460AbaFACbK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 May 2014 22:31:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49637 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793AbaFACbI (ORCPT
+	id S1752062AbaEAUa0 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 1 May 2014 16:30:26 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54504 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481AbaEAUaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 May 2014 22:31:08 -0400
-Date: Sat, 31 May 2014 19:31:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Philipp Hachtmann <hachti@hachti.de>
-Cc: jhovold@gmail.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] usb/ftdi_sio: Add support for setting CBUS pins on
- FT232H
-Message-ID: <20140601023106.GA4961@kroah.com>
-References: <1401579066-8298-1-git-send-email-hachti@hachti.de>
- <1401579066-8298-3-git-send-email-hachti@hachti.de>
- <20140601000059.27360.qmail@stuge.se>
- <538A7063.8010205@hachti.de>
+	Thu, 1 May 2014 16:30:24 -0400
+Date: Thu, 1 May 2014 13:29:32 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Xia Kaixu <kaixu.xia@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        arnd@arndb.de, Liam Girdwood <lgirdwood@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Message-ID: <20140501202932.GC3245@sirena.org.uk>
+References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
+ <1398770316-19715-11-git-send-email-kaixu.xia@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0f/6N2HXQdCYc9N1"
 Content-Disposition: inline
-In-Reply-To: <538A7063.8010205@hachti.de>
+In-Reply-To: <1398770316-19715-11-git-send-email-kaixu.xia@linaro.org>
+X-Cookie: Keep it short for pithy sake.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 209.133.115.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 10/15] ASoC: TLV320AIC23 and Simtec Hermes audio
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 01, 2014 at 02:14:27AM +0200, Philipp Hachtmann wrote:
-> On 01.06.2014 02:00, Peter Stuge wrote:
-> >Philipp Hachtmann wrote:
-> >>This patch adds a sysfs attribute "cbus" which allows to set the
-> >>four CBUS pins on the FT232H.
-> >
-> >I think this should be implemented with the gpio subsystem instead.
-> The GPIO subsystem seems to be made for GPIO pins connected directly to the
-> computer. The Beaglebone with its AM335x SoC seems to be a good example of
-> a computer with many GPIOs in the sense of the GPIO subsystem.
-> And the GPIO pins have fixed unique numbers. No, I don't think that the GPIO
-> subsystem has anything to do with the additional pins on some USB device.
-> Please correct me if I'm completely wrong.
 
-As they are GPIO pins on this device, it should be the subsystem that
-controls it.  That way, userspace programs that are used to talk to a
-GPIO device will "just work", and not have to be customized just for
-this specific device and sysfs file.
+--0f/6N2HXQdCYc9N1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So please use the GPIO subsystem instead of creating your own interface.
+On Tue, Apr 29, 2014 at 07:18:31PM +0800, Xia Kaixu wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>=20
+> This codec requires I2C to be enabled, so any other option
+> that selects it should also depend on I2C.
 
-thanks,
+Applied, thanks.  Please try to use meaningful subject lines.
 
-greg k-h
+--0f/6N2HXQdCYc9N1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTYq6jAAoJELSic+t+oim9AP8P/2jO3pzX1SgV/Q5Wd9wINa7H
+rDf3Y2z3LhjoKBre5buUaB2H3h1JMmz43ZQfFoufe0lATkDGd7SK8DJMgj9xoFOS
+j/P9tVZUOJc4s9SZhhy08VBL1uPDJ0rFJZMjCw2e2Z2HBM1j9YzhiWS8hb2cpFaE
+WQ9ooHWBBZzKJ/qdx7/6WRhpooJe7eWu4uG3i1JygCFxbgYeNOxBs1iXgxMSWvlR
+BLy9xw36YHiKbZ4cE1tXo0kbLYmG5UIY5K2vXRgA+g2lB/rYqUFV01GhiEM5EAbB
+QHRd6W0PCjgDllohrqRfdYruSOxc84OdneGUMx4CwRxvmdfHBv5ryFp6u/KQoWPE
+s50+HwqCnOT4S/MUhDiy8Tkd3g4nTPkmBGLj4XbFgvyKvkJbuiTLA/5zWJRcEtyv
+OAP2jRI4JOY9jOQmQ1Vb4zth6eN0DzUxx+0SbrnlEY33VgkePxVaWgiIn00R1NON
+4nJoJ/7dFzG6J7J8TploFMYHBL29UjLuwlrdOcVsK250vDYKHScV+MZs94Yw9Feq
+km0Tdb8ATMgMECxZZarUfV8bgq7OKcT9EdL7LMkJAVEoMxhYcL98vHaPkQ8MdWul
+lXkvqRZ7LaxPHr7tr/9dNTHY9jlxFjAo2xWzVBJmDBYNXnfD7fYvUXWBNnp08vc7
+YyNxBzOZpMwA3VjH+Ubg
+=Xri+
+-----END PGP SIGNATURE-----
+
+--0f/6N2HXQdCYc9N1--
