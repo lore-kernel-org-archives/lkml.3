@@ -1,40 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaEAWlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:41:40 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:39173 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaEAWlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:41:39 -0400
-Date: Fri, 2 May 2014 00:41:38 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Udo <udovdh@xs4all.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: r8169 Rx ERROR.
-Message-ID: <20140501224138.GA21249@electric-eye.fr.zoreil.com>
-References: <201404300650.s3U6oFU8030981@surfplank2.hierzo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201404300650.s3U6oFU8030981@surfplank2.hierzo>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752549AbaEAWpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:45:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12872 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752130AbaEAWpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 18:45:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,967,1389772800"; 
+   d="scan'208";a="532214939"
+From: Andi Kleen <andi@firstfloor.org>
+To: hpa@zytor.com
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Remove __visible from asmlinkage for 3.15
+Date: Fri,  2 May 2014 00:44:35 +0200
+Message-Id: <1398984278-29319-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Udo <udovdh@xs4all.nl> :
-[...]
-> [354436.656703] r8169 0000:01:00.0 eth0: Rx ERROR. status = 342ac40d
-> [354615.387915] r8169 0000:01:00.0 eth0: Rx ERROR. status = 342cc075
-> (and a load more of them)
-> 
-> What is wrong? Hardware?
+This is the earlier patchkit based on Linus original feedback.
+It should be merged for 3.15 to finally quell the asmlinkage warnings
+that are visible in various configurations.
 
-Ethernet CRC is wrong.
+This reverts the asm linkage __visible patch.
+Then adds __visible explicitly everywhere where it is needed.
 
-Which kind of 816x is it (see XID in kernel log) ?
+-Andi
 
--- 
-Ueimor
