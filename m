@@ -1,143 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaEAN5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 09:57:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754810AbaEAN5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 09:57:08 -0400
-From: Maurizio Lombardi <mlombard@redhat.com>
-To: viro@zeniv.linux.org.uk
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        JBottomley@parallels.com, hch@lst.de, linux-scsi@vger.kernel.org,
-        kmo@daterainc.com, linux-kernel@vger.kernel.org,
-        m.lombardi85@gmail.com
-Subject: [PATCH V3] bio: modify __bio_add_page() to accept pages that don't start a new segment
-Date: Thu,  1 May 2014 15:56:55 +0200
-Message-Id: <1398952615-22034-1-git-send-email-mlombard@redhat.com>
+	id S1754100AbaEAODe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 10:03:34 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:59577 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670AbaEAODd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 10:03:33 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 1 May 2014 10:07:08 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu>
+References: <20140418165958.GQ13658@twins.programming.kicks-ass.net> <20140418171516.GR13658@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1404281017590.18996@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1404281447570.18996@vincent-weaver-1.umelst.maine.edu> <20140429094632.GP27561@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291411220.22490@vincent-weaver-1.umelst.maine.edu>
+ <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original behaviour is to refuse to add a new page if the maximum number
-of segments has been reached, regardless of the fact the page we are
-going to add can be merged into the last segment or not.
+On Wed, 30 Apr 2014, Peter Zijlstra wrote:
 
-Unfortunately, when the system runs under heavy memory fragmentation conditions,
-a driver may try to add multiple pages to the last segment.
-The original code won't accept them and EBUSY will be reported to
-userspace.
+> Vince, could you add the below to whatever tracing muck you already
+> have?
 
-This patch modifies the function so it refuses to add a page
-only in case the latter starts a new segment and the maximum number
-of segments has already been reached.
+OK, running with your patch, I get this messages a few times.  No crashing 
+or memory corruption messages, but as I've said before that only happens 
+maybe 10% of the time, let me run a few more times.
 
-The bug can be easily reproduced with the st driver:
+line 1666 is
+	        WARN_ON(event->ctx != ctx);
 
-1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
-2) modprobe st buffer_kbs=1024
-3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
-   dd: error writing ‘/dev/st0’: Device or resource busy
-
-Changes in V3:
-
-In case of error, V2 restored the previous number of segments but left
-the BIO_SEG_FLAG set.
-To avoid problems, after the page is removed from the bio vec,
-V3 performs a recount of the segments in the error code path.
-
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
----
- fs/bio.c | 48 ++++++++++++++++++++++++++----------------------
- 1 file changed, 26 insertions(+), 22 deletions(-)
-
-diff --git a/fs/bio.c b/fs/bio.c
-index 6f0362b..9bf512e 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -750,29 +750,31 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		return 0;
- 
- 	/*
--	 * we might lose a segment or two here, but rather that than
--	 * make this too complex.
-+	 * setup the new entry, we might clear it again later if we
-+	 * cannot add the page
-+	 */
-+	bvec = &bio->bi_io_vec[bio->bi_vcnt];
-+	bvec->bv_page = page;
-+	bvec->bv_len = len;
-+	bvec->bv_offset = offset;
-+	bio->bi_vcnt++;
-+	bio->bi_phys_segments++;
-+
-+	/*
-+	 * Perform a recount if the number of segments is greater
-+	 * than queue_max_segments(q).
- 	 */
- 
--	while (bio->bi_phys_segments >= queue_max_segments(q)) {
-+	while (bio->bi_phys_segments > queue_max_segments(q)) {
- 
- 		if (retried_segments)
--			return 0;
-+			goto failed;
- 
- 		retried_segments = 1;
- 		blk_recount_segments(q, bio);
- 	}
- 
- 	/*
--	 * setup the new entry, we might clear it again later if we
--	 * cannot add the page
--	 */
--	bvec = &bio->bi_io_vec[bio->bi_vcnt];
--	bvec->bv_page = page;
--	bvec->bv_len = len;
--	bvec->bv_offset = offset;
--
--	/*
- 	 * if queue has other restrictions (eg varying max sector size
- 	 * depending on offset), it can specify a merge_bvec_fn in the
- 	 * queue to get further control
-@@ -789,23 +791,25 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		 * merge_bvec_fn() returns number of bytes it can accept
- 		 * at this offset
- 		 */
--		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
--			bvec->bv_page = NULL;
--			bvec->bv_len = 0;
--			bvec->bv_offset = 0;
--			return 0;
--		}
-+		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
-+			goto failed;
- 	}
- 
- 	/* If we may be able to merge these biovecs, force a recount */
--	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
-+	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
- 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
- 
--	bio->bi_vcnt++;
--	bio->bi_phys_segments++;
-  done:
- 	bio->bi_iter.bi_size += len;
- 	return len;
-+
-+ failed:
-+	bvec->bv_page = NULL;
-+	bvec->bv_len = 0;
-+	bvec->bv_offset = 0;
-+	bio->bi_vcnt--;
-+	blk_recount_segments(q, bio);
-+	return 0;
- }
- 
- /**
--- 
-Maurizio Lombardi
+[  583.051054] ------------[ cut here ]------------
+[  583.056011] WARNING: CPU: 1 PID: 2479 at kernel/events/core.c:1666 event_sched_in.isra.77+0x209/0x230()
+[  583.066099] Modules linked in: fuse snd_hda_codec_hdmi x86_pkg_temp_thermal intel_powerclamp coretemp i915 kvm snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller crct10dif_pclmul drm_kms_helper snd_hda_codec crc32_pclmul ghash_clmulni_intel aesni_intel snd_hwdep snd_pcm drm snd_seq aes_x86_64 lrw evdev parport_pc iTCO_wdt gf128mul snd_timer tpm_tis snd_seq_device glue_helper i2c_i801 snd iTCO_vendor_support ablk_helper cryptd parport psmouse pcspkr serio_raw button processor video battery i2c_algo_bit i2c_core tpm wmi lpc_ich mfd_core mei_me mei soundcore sg sd_mod sr_mod crc_t10dif crct10dif_common cdrom ahci libahci ehci_pci xhci_hcd ehci_hcd libata e1000e scsi_mod ptp usbcore crc32c_intel pps_core usb_common fan thermal thermal_sys
+[  583.139793] CPU: 1 PID: 2479 Comm: perf_fuzzer Not tainted 3.15.0-rc1+ #92
+[  583.147150] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[  583.155136]  0000000000000009 ffff8800cdb85bf0 ffffffff81649790 0000000000000000
+[  583.163109]  ffff8800cdb85c28 ffffffff810646ad ffff8800cf085000 ffff8800cd762c00
+[  583.171171]  ffff88011ea58398 ffff88011ea5839c 0000007c37c9d592 ffff8800cdb85c38
+[  583.179182] Call Trace:
+[  583.181834]  [<ffffffff81649790>] dump_stack+0x45/0x56
+[  583.187355]  [<ffffffff810646ad>] warn_slowpath_common+0x7d/0xa0
+[  583.193802]  [<ffffffff8106478a>] warn_slowpath_null+0x1a/0x20
+[  583.200054]  [<ffffffff81135d69>] event_sched_in.isra.77+0x209/0x230
+[  583.206830]  [<ffffffff81135e42>] group_sched_in+0xb2/0x1e0
+[  583.212824]  [<ffffffff81136094>] ctx_sched_in+0x124/0x1f0
+[  583.218711]  [<ffffffff811361c0>] perf_event_sched_in+0x60/0x90
+[  583.225063]  [<ffffffff81136a1f>] __perf_install_in_context+0x11f/0x1a0
+[  583.232181]  [<ffffffff811317a0>] remote_function+0x40/0x50
+[  583.238127]  [<ffffffff810dda26>] generic_exec_single+0x126/0x170
+[  583.244681]  [<ffffffff81131760>] ? task_clock_event_add+0x40/0x40
+[  583.251300]  [<ffffffff810ddad7>] smp_call_function_single+0x67/0xa0
+[  583.258103]  [<ffffffff81130784>] task_function_call+0x44/0x50
+[  583.264366]  [<ffffffff81136900>] ? perf_cpu_hrtimer_handler+0x200/0x200
+[  583.271547]  [<ffffffff81131ba6>] perf_install_in_context+0x86/0x100
+[  583.278342]  [<ffffffff8113a488>] SYSC_perf_event_open+0x968/0xb00
+[  583.284990]  [<ffffffff8113aa09>] SyS_perf_event_open+0x9/0x10
+[  583.291249]  [<ffffffff8165a46d>] system_call_fastpath+0x1a/0x1f
+[  583.297658] ---[ end trace 41ec7a21bb260454 ]---
+[  623.740479] ------------[ cut here ]------------
 
