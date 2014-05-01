@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512AbaEALd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 07:33:57 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:53757 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaEALd4 (ORCPT
+	id S1752102AbaEALup (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 07:50:45 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:57429 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751114AbaEALun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 07:33:56 -0400
+	Thu, 1 May 2014 07:50:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=b2/4Ei
+	SK6OLiQ/N3E8/vcDE08cJZO7C5AdJUp7IwME54PfJT3nVqGaY6tkwXTgGli+/fA0
+	mkV7nyGFpg0Dfkrt/kQmVTfAzOGl2UrBrcBrEDo5enqPJxYsoT8mlGNxKucCfX7a
+	XPqB4ztuMBWrLe+qMIXdNJXtnovv0wAzB/tFE=
+Message-ID: <5362350A.6040402@pobox.com>
+Date: Thu, 01 May 2014 07:50:34 -0400
+From: Mark Lord <mlord@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F703980@AcuExch.aculab.com>
-References: <063D6719AE5E284EB5DD2968C1650D6D0F702D00@AcuExch.aculab.com>
-	<1398859589-22346-1-git-send-email-alchark@gmail.com>
-	<063D6719AE5E284EB5DD2968C1650D6D0F703980@AcuExch.aculab.com>
-Date: Thu, 1 May 2014 15:33:55 +0400
-Message-ID: <CABjd4YxFRhVjJr4kbcwFfYy=G0tmHo-3K2TYsHz2mB7bDr4mpQ@mail.gmail.com>
-Subject: Re: [PATCH] net: via-rhine: Fix compiler warning re: pointer casting
- on 64bit
-From: Alexey Charkov <alchark@gmail.com>
-To: David Laight <David.Laight@aculab.com>
-Cc: Roger Luethi <rl@hellgate.ch>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Moskyto Matejka <mq@suse.cz>
+To: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>
+CC: "J. Bruce Fields" <bfields@redhat.com>, Albert Fluegel <af@muc.de>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-3.14 nfsd regression
+References: <533D8D73.1090603@pobox.com> <20140403171643.GB28790@pad.redhat.com> <533D9F8A.6030001@pobox.com> <20140403145504.3b04170e@tlielax.poochiereds.net> <20140403201627.GC8343@fieldses.org> <20140403192146.79679909@tlielax.poochiereds.net> <20140404135842.GB17594@fieldses.org>
+In-Reply-To: <20140404135842.GB17594@fieldses.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Pobox-Relay-ID: CE9D6308-D126-11E3-9AC4-D2BAB895B7A1-82205200!pb-sasl0.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-05-01 13:30 GMT+04:00 David Laight <David.Laight@aculab.com>:
-> From: Alexey Charkov [mailto:alchark@gmail.com]
-> ...
->> This patch removes the cast altogether, and instead stores an actual
->> pointer to u8 in match->data. All instances of 'revision' are also
->> unified to u8 instead of an assortment of different integer types,
->> in line with the definition of 'revision' in struct pci_dev.
-> ...
->> +static u8 vt8500_revision = 0x84;
->>  static struct of_device_id rhine_of_tbl[] = {
->> -     { .compatible = "via,vt8500-rhine", .data = (void *)0x84 },
->> +     { .compatible = "via,vt8500-rhine", .data = &vt8500_revision },
->>       { }     /* terminate list */
->
-> Actually the above looks strange.
-> Why does the vt8500 have a revision number of 0x84 ?
-> Surely it should be 0x85, or even 0x8500 (or decimal 85000).
+On 14-04-04 09:58 AM, J. Bruce Fields wrote:
+> On Thu, Apr 03, 2014 at 07:21:46PM -0400, Jeff Layton wrote:
+>> So according to the RFC you have to encode both the mode bits and the
+>> ftype for v2. The type bits seem to be removed from the mode in NFSv3
+>> though, so perhaps we should only be doing that masking in versions
+>> above v2?
+> 
+> Right, the problematic patch applied the same mask in both v2 and v3
+> cases, so I'm reverting just the v2 part (see below).
+> 
+>> With a quick check, it looks like the v3 code doesn't rely on those bits
+>> and I imagine v4 doesn't either.
+>>
+>> It might also be nice to have the client v2 decode_fattr function to
+>> throw a warning if the server sends us mismatched type bits and ftype
+>> values. That would have helped us catch this sooner...
+> 
+> Yes, that might be a reasonable thing to do, though I don't know if it's
+> worth it.
+> 
+> --b.
+> 
+> commit 35a8dff14e76c00e5b52140290cfb498dc2454a0
+> Author: J. Bruce Fields <bfields@redhat.com>
+> Date:   Thu Apr 3 15:10:35 2014 -0400
+> 
+>     nfsd: revert v2 half of "nfsd: don't return high mode bits"
+>     
+>     This reverts the part of commit 6e14b46b91fee8a049b0940333ce13a820beaaa5
+>     that changes NFSv2 behavior.
+>     
+>     Mark Lord found that it broke nfs-root for Linux clients, because it
+>     broke NFSv2.
+>     
+>     In fact, from RFC 1094:
+>     
+>     	"Notice that the file type is specified both in the mode bits
+>     	and in the file type.  This is really a bug in the protocol and
+>     	will be fixed in future versions."
+>     
+>     So NFSv2 clients really are expected to depend on the high bits of the
+>     mode.
+>     
+>     Cc: stable@kernel.org
+>     Reported-by: Mark Lord <mlord@pobox.com>
+>     Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> 
+> diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+> index b17d932..9c769a4 100644
+> --- a/fs/nfsd/nfsxdr.c
+> +++ b/fs/nfsd/nfsxdr.c
+> @@ -152,7 +152,7 @@ encode_fattr(struct svc_rqst *rqstp, __be32 *p, struct svc_fh *fhp,
+>  	type = (stat->mode & S_IFMT);
+>  
+>  	*p++ = htonl(nfs_ftypes[type >> 12]);
+> -	*p++ = htonl((u32) (stat->mode & S_IALLUGO));
+> +	*p++ = htonl((u32) stat->mode);
+>  	*p++ = htonl((u32) stat->nlink);
+>  	*p++ = htonl((u32) from_kuid(&init_user_ns, stat->uid));
+>  	*p++ = htonl((u32) from_kgid(&init_user_ns, stat->gid));
+> 
 
-David, vt8500 is the SoC version (the first one I know where it
-appeared, might have been used earlier though), not the version of the
-Rhine core itself (no clue what that is).
 
-Here's the source for 0x84 (see line 1031):
+Still a regression in 3.14.2 now.
+Anyone got plans to push this patch out to mainline, as well as +stable ?
 
-https://github.com/wondermedia/wm8850/blob/master/ANDROID_3.0.8/arch/arm/common/pci_wmt.c
-
-Vendor kernel uses an emulated (shadow-only) PCI bus to bind some
-obscure PCI driver (not upstream) to the integrated Rhine core, and
-that emulated PCI bus has Rhine listed with revision 0x84 on it.
-
-Anyway, I've now submitted a new patch instead of this one where I got
-rid of the 0x84 altogether - see https://lkml.org/lkml/2014/4/30/500
-
-Best,
-Alexey
+-- 
+Mark Lord
+Real-Time Remedies Inc.
+mlord@pobox.com
