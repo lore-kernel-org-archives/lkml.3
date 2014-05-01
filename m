@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaEAJFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 05:05:36 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:55804 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142AbaEAJFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 05:05:35 -0400
-Message-ID: <53620E50.8000406@mev.co.uk>
-Date: Thu, 1 May 2014 10:05:20 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1754183AbaEAJJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 05:09:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38779 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaEAJJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 05:09:50 -0400
+Date: Thu, 1 May 2014 12:09:24 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, mcgrof@do-not-panic.com,
+        gregkh@linuxfoundation.org, oat.elena@gmail.com,
+        linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net
+Subject: Re: [PATCH] staging: rtl8188eu: fix potential leak in rtw_set_key()
+Message-ID: <20140501090924.GK26890@mwanda>
+References: <20140501103811.41992b00@spike>
 MIME-Version: 1.0
-To: Raghavendra Ganiga <ravi23ganiga@gmail.com>,
-        <hsweeten@visionengravers.com>, <gregkh@linuxfoundation.org>
-CC: <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: comedi: fix coding style issues in comedi_fops.c
-References: <1398932592-17768-1-git-send-email-ravi23ganiga@gmail.com>
-In-Reply-To: <1398932592-17768-1-git-send-email-ravi23ganiga@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501103811.41992b00@spike>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/05/01 09:23 AM, Raghavendra Ganiga wrote:
-> This is a patch to fix coding style
-> warnings found by checkpatch.pl tool
+On Thu, May 01, 2014 at 10:38:11AM +0200, Christian Engelmayer wrote:
+> Fix a potential leak in the error path of rtw_set_key(). In case the requested
+> algorithm is not supported by the driver, the function returns without
+> enqueuing or freeing the already allocated command and parameter structs. Use
+> a centralized exit path and make sure that all memory is freed correctly.
+> Detected by Coverity - CID 1077716, 1077717.
 > 
-> Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 > ---
->  drivers/staging/comedi/comedi_fops.c |    2 ++
->  1 file changed, 2 insertions(+)
+> Compile tested and applies against branch staging-next of tree
+> git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+> ---
+>  drivers/staging/rtl8188eu/core/rtw_mlme.c | 15 ++++++++++-----
+>  1 file changed, 10 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-> index 70545e6..b24bf9b 100644
-> --- a/drivers/staging/comedi/comedi_fops.c
-> +++ b/drivers/staging/comedi/comedi_fops.c
-> @@ -668,6 +668,7 @@ static int do_devconfig_ioctl(struct comedi_device *dev,
->  			return -EBUSY;
->  		if (dev->attached) {
->  			struct module *driver_module = dev->driver->module;
-> +
->  			comedi_device_detach(dev);
->  			module_put(driver_module);
->  		}
-> @@ -2653,6 +2654,7 @@ static int __init comedi_init(void)
->  	/* create devices files for legacy/manual use */
->  	for (i = 0; i < comedi_num_legacy_minors; i++) {
->  		struct comedi_device *dev;
-> +
->  		dev = comedi_alloc_board_minor(NULL);
->  		if (IS_ERR(dev)) {
->  			comedi_cleanup_board_minors();
-> 
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> index 769d4dd..275ae7b 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
+> @@ -1729,13 +1729,12 @@ int rtw_set_key(struct adapter *adapter, struct security_priv *psecuritypriv, in
+>  	pcmd = (struct	cmd_obj *)rtw_zmalloc(sizeof(struct	cmd_obj));
+>  	if (pcmd == NULL) {
+>  		res = _FAIL;  /* try again */
+> -		goto exit;
+> +		goto fail_noobj;
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+Just return here.  The do nothing goto is misleading because you assume
+it is a there for a purpose but then when you read all the way to the
+end, it doesn't do anything useful.  It doesn't do anything at all.
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>             )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587              )=-
+The label statements should be based on the thing which is labeled and
+not the goto locations.  In this case it should be something like
+"err_free_cmd" and "err_free_keyparm".  The "fail" label is too generic
+so it's not a good name.
+
+regards,
+dan carpenter
+
