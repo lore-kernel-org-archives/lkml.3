@@ -1,268 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaEAXU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 19:20:29 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:58762 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752921AbaEAXU0 (ORCPT
+	id S1752723AbaEAXS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 19:18:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29827 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaEAXS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 19:20:26 -0400
-X-Greylist: delayed 93207 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 May 2014 19:20:26 EDT
-Message-ID: <1398985916.1789.75.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 5/5] x86: initialize secondary CPU only if master CPU
- will wait for it
-From: Toshi Kani <toshi.kani@hp.com>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
-        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
-        linux-acpi@vger.kernel.org
-Date: Thu, 01 May 2014 17:11:56 -0600
-In-Reply-To: <1397488277-14865-6-git-send-email-imammedo@redhat.com>
-References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
-	 <1397488277-14865-6-git-send-email-imammedo@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 May 2014 19:18:57 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
+Subject: [PATCH 4/8] s390: Mark bits in allocated_irqs in general code
+Date: Thu,  1 May 2014 16:18:18 -0700
+Message-Id: <1398986302-30455-5-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
+References: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
-> Hang is observed on virtual machines during CPU hotplug,
-> especially in big guests with many CPUs. (It reproducible
-> more often if host is over-committed).
-> 
-> It happens because master CPU gives up waiting on
-> secondary CPU and allows it to run wild. As result
-> AP causes locking or crashing system. For example
-> as described here: https://lkml.org/lkml/2014/3/6/257
-> 
-> If master CPU have sent STARTUP IPI successfully,
-> and AP signalled to master CPU that it's ready
-> to start initialization, make master CPU wait
-> indefinitely till AP is onlined.
-> To ensure that AP won't ever run wild, make it
-> wait at early startup till master CPU confirms its
-> intention to wait for AP.
+Second irq_reserve_irqs calling is from arch s390, and
+s390 does not use SPARSE_IRQ yet.
 
-Please also add description that the master CPU times out when an AP
-does not start initialization within 10 seconds.
+We could set bits for legacy bits early in !SPARSE_IRQ version
+early_irq_init() directly instead of calling irq_reserve_irqs later.
 
-> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-> ---
-> v2:
->  - ammend comment in cpu_init()
-> v3:
->  - leave timeouts in do_boot_cpu(), so that master CPU
->    won't hang if AP doesn't respond, use cpu_initialized_mask
->    as a way for AP to signal to master CPU that it's ready
->    to start initialzation.
-> v4:
->  - move common code in cpu_init() for x32/x64 in shared
->    helper function wait_for_master_cpu()
->  - add WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
->    to wait_formaster_cpu()
-> ---
->  arch/x86/kernel/cpu/common.c |   27 +++++++-----
->  arch/x86/kernel/smpboot.c    |   98 +++++++++++++-----------------------------
->  2 files changed, 46 insertions(+), 79 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index a135239..a4bcbac 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1221,6 +1221,17 @@ static void dbg_restore_debug_regs(void)
->  #define dbg_restore_debug_regs()
->  #endif /* ! CONFIG_KGDB */
->  
-> +static void wait_for_master_cpu(int cpu)
-> +{
-> +	/*
-> +	 * wait for ACK from master CPU before continuing
-> +	 * with AP initialization
-> +	 */
-> +	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
-> +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-> +		cpu_relax();
-> +}
-> +
->  /*
->   * cpu_init() initializes state that is per-CPU. Some data is already
->   * initialized (naturally) in the bootstrap process, such as the GDT
-> @@ -1236,16 +1247,17 @@ void cpu_init(void)
->  	struct task_struct *me;
->  	struct tss_struct *t;
->  	unsigned long v;
-> -	int cpu;
-> +	int cpu = stack_smp_processor_id();
->  	int i;
->  
-> +	wait_for_master_cpu(cpu);
-> +
->  	/*
->  	 * Load microcode on this cpu if a valid microcode is available.
->  	 * This is early microcode loading procedure.
->  	 */
->  	load_ucode_ap();
->  
-> -	cpu = stack_smp_processor_id();
->  	t = &per_cpu(init_tss, cpu);
->  	oist = &per_cpu(orig_ist, cpu);
->  
-> @@ -1257,9 +1269,6 @@ void cpu_init(void)
->  
->  	me = current;
->  
-> -	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
-> -		panic("CPU#%d already initialized!\n", cpu);
-> -
->  	pr_debug("Initializing CPU#%d\n", cpu);
->  
->  	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
-> @@ -1336,13 +1345,9 @@ void cpu_init(void)
->  	struct tss_struct *t = &per_cpu(init_tss, cpu);
->  	struct thread_struct *thread = &curr->thread;
->  
-> -	show_ucode_info_early();
-> +	wait_for_master_cpu(cpu);
->  
-> -	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
-> -		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
-> -		for (;;)
-> -			local_irq_enable();
-> -	}
-> +	show_ucode_info_early();
->  
->  	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
->  
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index ae2fd97..44903ad 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -111,7 +111,6 @@ atomic_t init_deasserted;
->  static void smp_callin(void)
->  {
->  	int cpuid, phys_id;
-> -	unsigned long timeout;
->  
->  	/*
->  	 * If waken up by an INIT in an 82489DX configuration
-> @@ -130,37 +129,6 @@ static void smp_callin(void)
->  	 * (This works even if the APIC is not enabled.)
->  	 */
->  	phys_id = read_apic_id();
-> -	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
-> -		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
-> -					phys_id, cpuid);
-> -	}
-> -	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
-> -
-> -	/*
-> -	 * STARTUP IPIs are fragile beasts as they might sometimes
-> -	 * trigger some glue motherboard logic. Complete APIC bus
-> -	 * silence for 1 second, this overestimates the time the
-> -	 * boot CPU is spending to send the up to 2 STARTUP IPIs
-> -	 * by a factor of two. This should be enough.
-> -	 */
-> -
-> -	/*
-> -	 * Waiting 2s total for startup (udelay is not yet working)
-> -	 */
-> -	timeout = jiffies + 2*HZ;
-> -	while (time_before(jiffies, timeout)) {
-> -		/*
-> -		 * Has the boot CPU finished it's STARTUP sequence?
-> -		 */
-> -		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
-> -			break;
-> -		cpu_relax();
-> -	}
-> -
-> -	if (!time_before(jiffies, timeout)) {
-> -		panic("%s: CPU%d started up but did not get a callout!\n",
-> -		      __func__, cpuid);
-> -	}
->  
->  	/*
->  	 * the boot CPU has finished the init stage and is spinning
-> @@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
->  	unsigned long start_ip = real_mode_header->trampoline_start;
->  
->  	unsigned long boot_error = 0;
-> -	int timeout;
->  	int cpu0_nmi_registered = 0;
-> +	unsigned long timeout;
->  
->  	/* Just in case we booted with a single CPU. */
->  	alternatives_enable_smp();
-> @@ -799,6 +767,14 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
->  	}
->  
->  	/*
-> +	 * AP might wait on cpu_callout_mask in cpu_init() with
-> +	 * cpu_initialized_mask set if previous attempt to online
-> +	 * it timed-out. Clear cpu_initialized_mask so that after
-> +	 * INIT/SIPI it could start with a clean state.
-> +	 */
-> +	cpumask_clear_cpu(cpu, cpu_initialized_mask);
+Adding weak version arch_proble_early_allocate_nr_irqs() for
+!SPARESE_IRQ, and let s390 to have specific version to
+pass correct irq number that need to be marked in allocated_irqs.
 
-I think smp_mb() should be added here to ensure that the target AP sees
-this change.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux390@de.ibm.com
+---
+ arch/s390/kernel/irq.c |  6 +++++-
+ include/linux/irq.h    |  1 +
+ kernel/irq/irqdesc.c   | 10 ++++++++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
 
-> +
-> +	/*
->  	 * Wake up a CPU in difference cases:
->  	 * - Use the method in the APIC driver if it's defined
->  	 * Otherwise,
-> @@ -810,55 +786,41 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
->  		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
->  						     &cpu0_nmi_registered);
->  
-> +
->  	if (!boot_error) {
->  		/*
-> -		 * allow APs to start initializing.
-> +		 * Wait 10s total for a response from AP
->  		 */
-> -		pr_debug("Before Callout %d\n", cpu);
-> -		cpumask_set_cpu(cpu, cpu_callout_mask);
-> -		pr_debug("After Callout %d\n", cpu);
-> +		boot_error = -1;
-> +		timeout = jiffies + 10*HZ;
-> +		while (time_before(jiffies, timeout)) {
-> +			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
-> +				/*
-> +				 * Tell AP to proceed with initialization
-> +				 */
-> +				cpumask_set_cpu(cpu, cpu_callout_mask);
-> +				boot_error = 0;
-> +				break;
-> +			}
-> +			udelay(100);
-> +			schedule();
-> +		}
-> +	}
-
-When 10s passed, the master could set a new flag, ex.
-cpu_callout_error_mask, which wait_for_master_cpu() checks and call
-play_dead() when it is set.  This avoids AP to spin forever when 10s
-becomes not long enough.  But it does not have to be part of this
-patchset, though.  
-
-> +	if (!boot_error) {
->  		/*
-> -		 * Wait 5s total for a response
-> +		 * Wait till AP completes initial initialization
-
-We should generally avoid such wait w/o a timeout condition, but since
-native_cpu_up() waits till cpu_online(cpu) anyway after this point, this
-seems OK...  I wonder if we need touch_nmi_watchdog(), though.
-
-Thanks,
--Toshi
-
+diff --git a/arch/s390/kernel/irq.c b/arch/s390/kernel/irq.c
+index c7463aa..47e29be 100644
+--- a/arch/s390/kernel/irq.c
++++ b/arch/s390/kernel/irq.c
+@@ -90,9 +90,13 @@ static const struct irq_class irqclass_sub_desc[NR_ARCH_IRQS] = {
+ 	[CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
+ };
+ 
++int arch_probe_early_allocate_nr_irqs(void)
++{
++	return THIN_INTERRUPT;
++}
++
+ void __init init_IRQ(void)
+ {
+-	irq_reserve_irqs(0, THIN_INTERRUPT);
+ 	init_cio_interrupts();
+ 	init_airq_interrupts();
+ 	init_ext_interrupts();
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 10a0b1a..28cbd3e 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -624,6 +624,7 @@ int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
+ 
+ void irq_free_descs(unsigned int irq, unsigned int cnt);
+ int irq_reserve_irqs(unsigned int from, unsigned int cnt);
++int arch_probe_early_allocate_nr_irqs(void);
+ 
+ static inline void irq_free_desc(unsigned int irq)
+ {
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index a7174617..dfb971c 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -248,10 +248,16 @@ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
+ 	}
+ };
+ 
++int __weak arch_probe_early_allocate_nr_irqs(void)
++{
++	return 0;
++}
++
+ int __init early_irq_init(void)
+ {
+ 	int count, i, node = first_online_node;
+ 	struct irq_desc *desc;
++	int nr = arch_probe_early_allocate_nr_irqs();
+ 
+ 	init_irq_default_affinity();
+ 
+@@ -267,6 +273,10 @@ int __init early_irq_init(void)
+ 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
+ 		desc_set_defaults(i, &desc[i], node, NULL);
+ 	}
++
++	for (i = 0; i < nr; i++)
++		set_bit(i, allocated_irqs);
++
+ 	return arch_early_irq_init();
+ }
+ 
+-- 
+1.8.4.5
 
