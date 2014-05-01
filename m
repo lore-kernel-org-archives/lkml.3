@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaEAVGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 17:06:05 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:58362 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728AbaEAVGE (ORCPT
+	id S1752319AbaEAVGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 17:06:36 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:36957 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038AbaEAVGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 17:06:04 -0400
-Date: Thu, 1 May 2014 23:06:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-Message-ID: <20140501210601.GG2382@two.firstfloor.org>
-References: <cover.1398958771.git.jpoimboe@redhat.com>
- <87ppjxcjo2.fsf@tassilo.jf.intel.com>
- <20140501210154.GC3907@treble.redhat.com>
+	Thu, 1 May 2014 17:06:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140501210154.GC3907@treble.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5362B618.50602@zytor.com>
+References: <CALCETrXMAWSC6B-irn4LeXFzB2tODqagsBboky=xnGv5ZTh-sg@mail.gmail.com>
+ <20140501192618.GA25829@thunk.org> <CALCETrX=0uA6CCg4UeeV8KgGAq6fxUSiGOw5Gzte4OSHrDWMqA@mail.gmail.com>
+ <900441a0-24e8-4976-ad35-3971805b9f34@email.android.com> <CALCETrV1HUA-JRAj9UicD3woqec7mSJLoT9CkQq=dOCpdPg4hw@mail.gmail.com>
+ <20140501203910.GB25829@thunk.org> <CALCETrUr7NXkkN27v2Uf-puEtSXbgp=E+99aC_SdTc6puR8+CA@mail.gmail.com>
+ <5362B618.50602@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 1 May 2014 14:06:13 -0700
+Message-ID: <CALCETrXu_bFjemS3TZNDDes=cBgkUXtDH-6cA84JcNjD0AdZ7A@mail.gmail.com>
+Subject: Re: random: Providing a seed value to VM guests
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm list <kvm@vger.kernel.org>, Florian Weimer <fweimer@redhat.com>,
+        Kees Cook <kees@outflux.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When bar returns, would it skip foo and go straight back to foo's
-> caller?  If so, then it should be safe to patch foo after it jumps to
-> bar.
+On Thu, May 1, 2014 at 2:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/01/2014 01:56 PM, Andy Lutomirski wrote:
+>>
+>> Even if we could emulate RDSEED effectively**, I don't really
+>> understand what the guest is expected to do with it.  And I generally
+>> dislike defining an interface with no known sensible users, because it
+>> means that there's a good chance that the interface won't end up
+>> working.
+>>
+>> ** Doing this sensibly in the host will be awkward.  Is the host
+>> supposed to use non-blocking reads of /dev/random?  Getting anything
+>> remotely fair may be difficult.
+>
+> The host can use nonblocking reads of /dev/random.  Fairness would have
+> to be implemented at the host level, but that is true for anything.
+>
 
-foo is no problem, you see it in the backtrace.
-But you don't see bar.
+I still don't see the point.  What does this do better than virtio-rng?
 
--Andi
+The ASLR code doesn't even try to use RDSEED.  RDSEED is used in
+add_interrupt_randomness, which should drain the host's /dev/random
+even if it could, and it's used in init_std_data.  The logic there is:
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+                if (!arch_get_random_seed_long(&rv) &&
+                    !arch_get_random_long(&rv))
+                        rv = random_get_entropy();
+
+I think this is better achieved by having the host try to supply the
+highest quality data it can.
+
+The third RDSEED use is arch_random_refill.  This purpose would be
+much better served by the khwrng stuff and virtio-rng.
+
+So I still claim that fancy emulated RDSEED support will have no users.
+
+--Andy
