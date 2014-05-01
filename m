@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaEAHct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 03:32:49 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:36115 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaEAHcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 03:32:48 -0400
-Date: Thu, 1 May 2014 09:30:01 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Lunn <andrew@lunn.ch>, Mark Rutland <mark.rutland@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 03/15] ARM: dts: kirkwood: add stdout-path property to
- all boards
-Message-ID: <20140501073001.GI3082@lunn.ch>
-References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <53615342.8010600@gmail.com>
- <20140430202130.GE3082@lunn.ch>
- <142642785.6KSg8q4tJP@wuerfel>
+	id S1752920AbaEAHic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 03:38:32 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:35644 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575AbaEAHib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 03:38:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <142642785.6KSg8q4tJP@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140430141924.8d84f7fdcac3ac3996802aa9@linux-foundation.org>
+References: <20140429025310.GA5913@devel>
+	<20140430141924.8d84f7fdcac3ac3996802aa9@linux-foundation.org>
+Date: Thu, 1 May 2014 16:38:31 +0900
+Message-ID: <CAHb8M2DSRmKDNq4faBg6OUza6auUfXAJLNmUMMqbQxJQG4e6Cw@mail.gmail.com>
+Subject: Re: [PATCH] dmapool: remove redundant NULL check for dev in dma_pool_create()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 10:30:21PM +0200, Arnd Bergmann wrote:
-> On Wednesday 30 April 2014 22:21:30 Andrew Lunn wrote:
-> > > Yes, we *can* move it in kirkwood.dtsi, but IMHO we *should* keep it in
-> > > the board files. I see the "chosen" node and its properties as _the_
-> > > board node.
-> > > 
-> > > One could argue then, that we should count the memory properties too and
-> > > put the most common in the SoC dtsi. But you are right, as UART0 is also
-> > > the UART with boot support, it is likely to be always connected to
-> > > a more-or-less accessible console output.
-> > > 
-> > > I really have no strong opinion about it.
-> > 
-> > Me neithe, but the advantage of putting it in kirkwood.dtsi is that it
-> > then does not get forgotten, and is always there for bearbox to use.
-> 
-> I would prefer having it in the board.dts file out of principle, but I
-> agree it's not very important either way.
-
-OK, then i can add my 
-
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-
-I will try to do some testing over the weekend.
-
-	  Andrew
+2014-05-01 6:19 GMT+09:00, Andrew Morton <akpm@linux-foundation.org>:
+> On Tue, 29 Apr 2014 11:53:10 +0900 Daeseok Youn <daeseok.youn@gmail.com>
+> wrote:
+>
+>> "dev" cannot be NULL because it is already checked before
+>> calling dma_pool_create().
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>> If dev can be NULL, it has NULL deferencing when kmalloc_node()
+>> is called after enabling CONFIG_NUMA.
+>
+> hm, this is unclear.
+>
+> The code which handles the dev==NULL case was obviously put there
+> deliberately, presumably with the intention of permitting drivers to
+> call dma_pool_create() without a device*.  This code is very old.
+>
+> A lot of drivers call dma_pool_create() (I doubt if you audited all of
+> them!) and perhaps there are some which use this feature and have never
+> been run on NUMA hardware.
+Yes.. I didn't check all of callers.. sorry about that. Some drivers
+are checked.
+>
+> I think I'll apply the patch anyway because such drivers (if they
+> exist) probably need some attending to.
+>
+> I rewrote the changelog thusly:
+>
+>
+> : "dev" cannot be NULL because it is already checked before calling
+> : dma_pool_create().
+> :
+> : If dev ever was NULL, the code would oops in dev_to_node() after enabling
+> : CONFIG_NUMA.
+> :
+> : It is possible that some driver is using dev==NULL and has never been run
+> : on a NUMA machine.  Such a driver is probably outdated, possibly buggy
+> and
+> : will need some attention if it starts triggering NULL derefs.
+>
+>
+Ok. Thanks for kind explanation.
+Regards,
+Daeseok Youn
