@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaEAPgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:36:13 -0400
-Received: from mout.gmx.net ([212.227.15.18]:57907 "EHLO mout.gmx.net"
+	id S1752354AbaEAPi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:38:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32031 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209AbaEAPgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:36:09 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] fanotify: check file flags passed in fanotify_init
-Date: Thu,  1 May 2014 17:35:32 +0200
-Message-Id: <1398958532-11221-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 1.9.2
-X-Provags-ID: V03:K0:tK8Jy3I4eN4a850Gis1Z4cz7h3fcTXTRzPbY04IWBn3PKDykXRU
- XKjT0+hDGTDTemzUIXLJjt/sp8vXPGJo9AnZtg1JvrNJcq19t+Edw/jpmG50sHc0Xo13+0/
- Hm/vEJ0xWGREjl8moYzs0RFZ9cVq92LLHS9Gyb57q/AJujcZsDgf+RLd1Us2XQcFk2OGBqs
- EkQyDwOwj1tiYAyj5X9Nw==
+	id S1750839AbaEAPiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 11:38:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,965,1389772800"; 
+   d="scan'208";a="504372157"
+Message-ID: <53626A70.2010709@intel.com>
+Date: Thu, 01 May 2014 08:38:24 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/17] mm: page_alloc: Use unsigned int for order in more
+ places
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-12-git-send-email-mgorman@suse.de> <53625BC3.3000804@intel.com> <20140501151116.GM23991@suse.de>
+In-Reply-To: <20140501151116.GM23991@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch fanotify_init does not validate the value passed in
-event_f_flags.
+On 05/01/2014 08:11 AM, Mel Gorman wrote:
+> On Thu, May 01, 2014 at 07:35:47AM -0700, Dave Hansen wrote:
+>> On 05/01/2014 01:44 AM, Mel Gorman wrote:
+>>> X86 prefers the use of unsigned types for iterators and there is a
+>>> tendency to mix whether a signed or unsigned type if used for page
+>>> order. This converts a number of sites in mm/page_alloc.c to use
+>>> unsigned int for order where possible.
+>>
+>> Does this actually generate any different code?  I'd actually expect
+>> something like 'order' to be one of the easiest things for the compiler
+>> to figure out an absolute range on.
+> 
+> Yeah, it generates different code. Considering that this patch affects an
+> API that can be called external to the code block how would the compiler
+> know what the range of order would be in all cases?
 
-When a fanotify event is read from the fanotify file descriptor a new file
-descriptor is created where file.f_flags = event_f_flags.
+The compiler comprehends that if you do a check against a constant like
+MAX_ORDER early in the function that the the variable now has a limited
+range, like the check we do first-thing in __alloc_pages_slowpath().
 
-Internal and external open flags are stored together in field f_flags of
-struct file. Hence, an application might create file descriptors with
-internal flags like FMODE_EXEC, FMODE_NOCMTIME set.
+The more I think about it, at least in page_alloc.c, I don't see any
+checks for order<0, which means the compiler isn't free to do this
+anyway.  Your move over to an unsigned type gives that check for free
+essentially.
 
-With the patch the value of event_f_flags is checked. Only external open flags
-are allowed. When specifying an invalid value error EINVAL is returned.
-
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- fs/notify/fanotify/fanotify_user.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 4e565c8..3e456d7 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -25,6 +25,21 @@
- #define FANOTIFY_DEFAULT_MAX_MARKS	8192
- #define FANOTIFY_DEFAULT_MAX_LISTENERS	128
- 
-+/*
-+ * All flags that may be specified in parameter event_f_flags of fanotify_init.
-+ * 
-+ * Internal and external open flags are stored together in field f_flags of
-+ * struct file. Only external open flags shall be allowed in event_f_flags.
-+ * Internal flags like FMODE_EXEC shall be excluded.
-+ */
-+#define FANOTIFY_INIT_ALL_EVENT_F_FLAGS				( \
-+		O_RDONLY	| O_WRONLY	| O_RDWR	| \
-+		O_CREAT		| O_EXCL	| O_NOCTTY	| \
-+		O_TRUNC		| O_APPEND	| O_NONBLOCK	| \
-+		__O_SYNC	| O_DSYNC	| FASYNC	| \
-+		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	| \
-+		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	| \
-+		O_PATH		| __O_TMPFILE	| O_NDELAY	)
- extern const struct fsnotify_ops fanotify_fsnotify_ops;
- 
- static struct kmem_cache *fanotify_mark_cache __read_mostly;
-@@ -669,6 +684,9 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
- 	if (flags & ~FAN_ALL_INIT_FLAGS)
- 		return -EINVAL;
- 
-+	if (event_f_flags & ~FANOTIFY_INIT_ALL_EVENT_F_FLAGS)
-+		return -EINVAL;
-+
- 	user = get_current_user();
- 	if (atomic_read(&user->fanotify_listeners) > FANOTIFY_DEFAULT_MAX_LISTENERS) {
- 		free_uid(user);
--- 
-1.9.2
-
+So this makes a lot of sense in any case.  I was just curious if it
+affected the code.
