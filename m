@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751273AbaEACGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Apr 2014 22:06:39 -0400
-Received: from imap.thunk.org ([74.207.234.97]:43026 "EHLO imap.thunk.org"
+	id S1751706AbaEACJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Apr 2014 22:09:41 -0400
+Received: from ozlabs.org ([103.22.144.67]:40978 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816AbaEACGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Apr 2014 22:06:38 -0400
-Date: Wed, 30 Apr 2014 22:06:27 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, Kees Cook <kees@outflux.net>
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-Message-ID: <20140501020627.GA25248@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Lutomirski <luto@amacapital.net>,
-	Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org,
-	hpa@zytor.com, Kees Cook <kees@outflux.net>
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com>
- <20140428214112.GC7857@thunk.org>
- <535FE68C.8060002@redhat.com>
- <20140429182610.GA19325@thunk.org>
- <53616293.3080308@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53616293.3080308@mit.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1751225AbaEACJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Apr 2014 22:09:39 -0400
+Date: Thu, 1 May 2014 12:09:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Subject: linux-next: manual merge of the pm tree with the mips tree
+Message-Id: <20140501120932.ff26772f983a436b4453c915@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 01:52:35PM -0700, Andy Lutomirski wrote:
-> 
-> 1. It simply doesn't work on my system.  In particular, it never returns
-> entropy.  It just blocks forever.
+--Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why?  Is this a bug in qemu?  The host OS?  The guest OS?  It is qemu
-trying to use /dev/random instead of /dev/urandom?  Any thing else?
+Hi Rafael,
 
-> 3. There should be a way to provide some entropy-free cryptographically
-> secure data, too.  Regardless of the speed of the hosts's /dev/random,
-> the guest should start with at least 256 bits of cryptographically
-> secure seed material IMO.
+Today's linux-next merge of the pm tree got a conflict in
+arch/mips/loongson/lemote-2f/clock.c between commit a68ce6507a45
+("MIPS/loongson2_cpufreq: Fix CPU clock rate setting") from the mips tree
+and commit 4966ee4037fe ("mips: lemote 2f: Use cpufreq_for_each_entry
+macro for iteration") from the pm tree.
 
-Well, the simplest way to do this is to pass it in via the command
-line, and then have the the kernel make sure it gets obscured so it's
-not exposed via /proc/cmdline.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Otherwise we would have to define an extension where we pass 32 bytes
-or so after the boot command line.  But the downside of doing that is
-we would have to modify every single architecture to define where
-those 32 bytes could be found.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Aside from passing it on the command line as being a bit grotty, the
-other big problem this is that some architectures only have 256 bytes
-of command line, and if we use a base 64 encoding, 256 bits will take
-43 characters.  Not a problem on x86, and it seems rather unlikely
-that people would want to virtualize a m68k or avr32 CPU.  It just
-feels really unclean.
+diff --cc arch/mips/loongson/lemote-2f/clock.c
+index 67dd94ef28e6,1eed38e28b1e..000000000000
+--- a/arch/mips/loongson/lemote-2f/clock.c
++++ b/arch/mips/loongson/lemote-2f/clock.c
+@@@ -91,10 -91,9 +91,10 @@@ EXPORT_SYMBOL(clk_put)
+ =20
+  int clk_set_rate(struct clk *clk, unsigned long rate)
+  {
+ +	unsigned int rate_khz =3D rate / 1000;
++ 	struct cpufreq_frequency_table *pos;
+  	int ret =3D 0;
+  	int regval;
+- 	int i;
+ =20
+  	if (likely(clk->ops && clk->ops->set_rate)) {
+  		unsigned long flags;
+@@@ -107,15 -106,10 +107,10 @@@
+  	if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
+  		propagate_rate(clk);
+ =20
+- 	for (i =3D 0; loongson2_clockmod_table[i].frequency !=3D CPUFREQ_TABLE_E=
+ND;
+- 	     i++) {
+- 		if (loongson2_clockmod_table[i].frequency =3D=3D
+- 		    CPUFREQ_ENTRY_INVALID)
+- 			continue;
+- 		if (rate_khz =3D=3D loongson2_clockmod_table[i].frequency)
++ 	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
+ -		if (rate =3D=3D pos->frequency)
+++		if (rate_khz =3D=3D pos->frequency)
+  			break;
+- 	}
+- 	if (rate_khz !=3D loongson2_clockmod_table[i].frequency)
+ -	if (rate !=3D pos->frequency)
+++	if (rate_khz !=3D pos->frequency)
+  		return -ENOTSUPP;
+ =20
+  	clk->rate =3D rate;
 
-I've cc'ed Peter Anvin for his opinion about extending Linux boot
-parameter protocol.  I agree it would be a lot simpler and easier to
-enable things like Kernel ASLR with real randomness on guest OS's if
-we didn't have to erect the whole virtio-pci infrastructure during
-early boot.  :-)
+--Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn
+Content-Type: application/pgp-signature
 
-						 -Ted
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTYazgAAoJEMDTa8Ir7ZwVrJwP/RFrn/rh2YO1BSHg3kHzp5Ys
++fEFSQA1lAjkbPsSDBTrTPGSF8Ap02OZa9apU+0uK5ojzkDKbNVygZgjE9xKcSb4
+VHzKuhyGO5DbtqJ9sWjCjAPZR5yIsteunkAy8r6YaITY3HBTKJEFO7LxtalEVrdZ
+koTVQ5JH1oZqi+8L5ZWiitNfbMhrsk3VWgz3j+OqO2rFeTr459ghF/vXBEtb7F+C
+cPd9W9ueqVNJooEgBnwEXHBH40mN2CLk+pbFhAEjthlkXyH2u0S1Q+8aW0xF5kLT
+tE5TnuoLGZk1h4yL4kuOMfwlotHaIcrC/ydTLa4PcmU5q8QQPgczPvXdRtKEwUxE
+0JC1OnB1jgs8KybpdyqLhdBGAHm0shRjU2imn1urHQB+2oqABsng6z8V4jLVy4FX
+X89+ICxnlZy5ts9jbsI4E4NE8OBGOD4DIHoaAxBC49XEw0tBZNgZPgudCEJypGrr
+u4AQ3Z4INhgpEcV0F0sK3UVpW/HigdBAhuFOXTnBrNbUS1riesxCgBKEaQrXbtr0
+F/nsNtwJ6CGuBL2tkB0FM8F/2TP/7k1FBqHhEV96JSI2sS/lX4UGg6UXXq2Gxxkc
+uPTK3Yd+8wncyTeAPC/ZX3PK+6AcKJbcyM8og+XOjuH3w2xaWSrG5GfNgSBdvY1J
+FvZQKI75k7/wDu9j70Nl
+=FHF+
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__1_May_2014_12_09_32_+1000_d7zY1SkU6vg6nEQn--
