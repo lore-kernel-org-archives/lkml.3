@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750859AbaEAEFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 00:05:16 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:54696 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaEAEFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 00:05:14 -0400
-Message-ID: <5361C7F9.5060405@gmail.com>
-Date: Thu, 01 May 2014 12:05:13 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751114AbaEAEFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 00:05:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57127 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaEAEFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 00:05:32 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140501020627.GA25248@thunk.org>
+References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com> <20140428214112.GC7857@thunk.org> <535FE68C.8060002@redhat.com> <20140429182610.GA19325@thunk.org> <53616293.3080308@mit.edu> <20140501020627.GA25248@thunk.org>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Suggestion] unicore32: About toolchain issues and source code.
-References: <53604E82.1040407@gmail.com> <20140430184804.GA5733@roeck-us.net>
-In-Reply-To: <20140430184804.GA5733@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] random: Add "initialized" variable to proc
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 30 Apr 2014 21:05:00 -0700
+To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>
+CC: Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org,
+        Kees Cook <kees@outflux.net>
+Message-ID: <1be5350d-89f9-44b9-8d1b-e3e591741940@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 02:48 AM, Guenter Roeck wrote:
-> On Wed, Apr 30, 2014 at 09:14:42AM +0800, Chen Gang wrote:
->> Hello Maintainers:
->>
->>   - Toolchain information:
->>
->>     root@gchen:/upstream/toolchain/binutils/gas# /upstream/toolchain/unicore32/pi3dian14-beyondmind/prebuilt/linux-x86/toolchain/uc4-1.0-beta-hard-RHELAS4/bin/unicore32-linux-gcc -v
->>     Using built-in specs.
->>     Target: unicore32-linux
->>     Configured with: /home/ghb/trunk/gcc-4.4.2/configure --target=unicore32-linux --prefix=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4 --enable-clocale=gnu --enable-shared --enable-threads=posix --enable-__cxa_atexit --enable-languages=c,c++,fortran --disable-multilib --disable-libstdcxx-pch --with-headers=/usr/unicore/gnu-toolchain-unicore/uc4-1.0-beta-hard-RHELAS4/unicore32-linux/include --with-pkgversion=UC4_1.0-beta_20100415
->>     Thread model: posix
->>     gcc version 4.4.2 (UC4_1.0-beta_20100415) 
-> 
-> That is an old version of the toolchain. Latest version I can find is 1.0.5.
-> Google for "unicore32 toolchain" or pick it up from
-> 	http://mprc.pku.edu.cn/~guanxuetao/linux/uc4-1.0.5-hard.tgz
-> 
-> Having said that, I don't find a single kernel version (3.2 and later)
-> which builds unicore32:defconfig. Wonder if that architecture is still
-> supported (or if there is some secret to get it compiled.
-> 
-> Build results are at http://server.roeck-us.net:8010/builders.
-> 
-> Guenter
-> 
+Qemu is using /dev/random because there is no point in emptily feeding one prng from another.
 
-Thank you very much!
 
-I will try it.
+Giving the guest a seed would be highly useful, though.  There are a number of ways to do that; changing the boot protocol is probably only useful if Qemu itself bouts the kernel as opposed to an in-VM bootloader.
 
-Thanks.
+That leaves several options other than virtio: I/O port, magic number in memory, CPUID, MSR, or even emulating RDRAND/RDSEED in the VMM.
+
+On April 30, 2014 7:06:27 PM PDT, Theodore Ts'o <tytso@mit.edu> wrote:
+>On Wed, Apr 30, 2014 at 01:52:35PM -0700, Andy Lutomirski wrote:
+>> 
+>> 1. It simply doesn't work on my system.  In particular, it never
+>returns
+>> entropy.  It just blocks forever.
+>
+>Why?  Is this a bug in qemu?  The host OS?  The guest OS?  It is qemu
+>trying to use /dev/random instead of /dev/urandom?  Any thing else?
+>
+>> 3. There should be a way to provide some entropy-free
+>cryptographically
+>> secure data, too.  Regardless of the speed of the hosts's
+>/dev/random,
+>> the guest should start with at least 256 bits of cryptographically
+>> secure seed material IMO.
+>
+>Well, the simplest way to do this is to pass it in via the command
+>line, and then have the the kernel make sure it gets obscured so it's
+>not exposed via /proc/cmdline.
+>
+>Otherwise we would have to define an extension where we pass 32 bytes
+>or so after the boot command line.  But the downside of doing that is
+>we would have to modify every single architecture to define where
+>those 32 bytes could be found.
+>
+>Aside from passing it on the command line as being a bit grotty, the
+>other big problem this is that some architectures only have 256 bytes
+>of command line, and if we use a base 64 encoding, 256 bits will take
+>43 characters.  Not a problem on x86, and it seems rather unlikely
+>that people would want to virtualize a m68k or avr32 CPU.  It just
+>feels really unclean.
+>
+>I've cc'ed Peter Anvin for his opinion about extending Linux boot
+>parameter protocol.  I agree it would be a lot simpler and easier to
+>enable things like Kernel ASLR with real randomness on guest OS's if
+>we didn't have to erect the whole virtio-pci infrastructure during
+>early boot.  :-)
+>
+>						 -Ted
+
 -- 
-Chen Gang
-
-Open, share and attitude like air, water and life which God blessed
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
