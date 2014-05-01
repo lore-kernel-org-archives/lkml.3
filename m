@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaEASsG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:48:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54345 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825AbaEASsD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:48:03 -0400
-Date: Thu, 1 May 2014 11:07:38 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Message-ID: <20140501180738.GP3245@sirena.org.uk>
-References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
- <1398789430-23897-3-git-send-email-p.zabel@pengutronix.de>
+	id S1751454AbaEASt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:49:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51446 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806AbaEASty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 14:49:54 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Garrett Ding <g-ding@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH] i2c: davinci: Add block read functionality for IPMI
+Date: Thu, 1 May 2014 14:49:46 -0400
+Message-ID: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U2TwCo+MHNvvM16y"
-Content-Disposition: inline
-In-Reply-To: <1398789430-23897-3-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.133.115.210
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/3] regulator: Add LTC3589 support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Intelligent Plaform Management Interface (IPMI) requires I2C driver
+to support block read, where the first byte received from slave is
+the length of following data:-
+ Added length check if the read type is block read (I2C_M_RECV_LEN)
+ Send NACK/STOP bits before last byte is received
 
---U2TwCo+MHNvvM16y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Garrett Ding <g-ding@ti.com>
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Tested-by: Garrett Ding <g-ding@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>
+CC: Kevin Hilman <khilman@deeprootsystems.com>
+CC: Wolfram Sang <wsa@the-dreams.de>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ Tested on a customer board based on K2HK SoC
+ drivers/i2c/busses/i2c-davinci.c |   42 +++++++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 5 deletions(-)
 
-On Tue, Apr 29, 2014 at 06:37:10PM +0200, Philipp Zabel wrote:
-> This patch adds support for the Linear Technology LTC3589, LTC3589-1,
-> and LTC3589-2 8-output I2C voltage regulator ICs.
+diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+index 389bc68..cd97920 100644
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -97,6 +97,10 @@
+ #define DAVINCI_I2C_IMR_NACK	BIT(1)
+ #define DAVINCI_I2C_IMR_AL	BIT(0)
+ 
++/* capabilities */
++#define I2C_CAPABILITIES	(I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | \
++				 I2C_FUNC_SMBUS_READ_BLOCK_DATA)
++
+ struct davinci_i2c_dev {
+ 	struct device           *dev;
+ 	void __iomem		*base;
+@@ -318,7 +322,13 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg *msg, int stop)
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_SAR_REG, msg->addr);
+ 
+ 	dev->buf = msg->buf;
+-	dev->buf_len = msg->len;
++
++	 /* if first received byte is length, set buf_len = 0xffff as flag */
++	if (msg->flags & I2C_M_RECV_LEN)
++		dev->buf_len = 0xffff;
++	else
++		dev->buf_len = msg->len;
++
+ 	dev->stop = stop;
+ 
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CNT_REG, dev->buf_len);
+@@ -456,7 +466,7 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+ 
+ static u32 i2c_davinci_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++	return I2C_CAPABILITIES;
+ }
+ 
+ static void terminate_read(struct davinci_i2c_dev *dev)
+@@ -528,10 +538,32 @@ static irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
+ 
+ 		case DAVINCI_I2C_IVR_RDR:
+ 			if (dev->buf_len) {
+-				*dev->buf++ =
+-				    davinci_i2c_read_reg(dev,
+-							 DAVINCI_I2C_DRR_REG);
++				*dev->buf++ = davinci_i2c_read_reg(dev,
++							DAVINCI_I2C_DRR_REG);
++				/*
++				 * check if the first received byte is message
++				 * length, i.e, I2C_M_RECV_LEN
++				 */
++				if (dev->buf_len == 0xffff)
++					dev->buf_len = *(dev->buf - 1) + 1;
++
+ 				dev->buf_len--;
++				/*
++				 * send NACK/STOP bits BEFORE last byte is
++				 * received
++				 */
++				if (dev->buf_len == 1) {
++					w = davinci_i2c_read_reg(dev,
++							DAVINCI_I2C_MDR_REG);
++					w |= DAVINCI_I2C_MDR_NACK;
++					davinci_i2c_write_reg(dev,
++							DAVINCI_I2C_MDR_REG, w);
++
++					w |= DAVINCI_I2C_MDR_STP;
++					davinci_i2c_write_reg(dev,
++							DAVINCI_I2C_MDR_REG, w);
++				}
++
+ 				if (dev->buf_len)
+ 					continue;
+ 
+-- 
+1.7.9.5
 
-One small nit in addition to the vendor prefix thing:
-
-> +static const int ltc3589_12_ldo4[] = {
-> +	1200000, 1800000, 2500000, 3200000,
-> +};
-
-This could use regulator_map_voltage_ascend(), though for all practical
-purposes the table is so small it makes no meaningful difference.
-
---U2TwCo+MHNvvM16y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTYo1nAAoJELSic+t+oim9rzwP/2EXtJJbkfZmcc1C/+hnkKL7
-xxVzJk+NJgk2uJq4Q3S/It/TyWHPDO5v+tEr+99u/RkUNEzxpk+lsK8YQJgRFyyK
-gvmoujDy/YIXHBNVgPUVEOIDMLjYMw6Vpk1ox7SVmo6vkTYGFkJB5LLyrB0yxlUt
-fyZNP8XHsNNvUCcHGVClgOyhcQ5kZp9Y7KAANMb0Hohy1ZmD3hr0tonZPTxepYpr
-vOKEeEnZR76mQhW9LUSZDuI4WCkOq/9+OakzfBvqgSidWzbLeA+XvNtOAruD0hAK
-KOZUceZS7IlW3sXvnvj0qONlCyK57TS8OX0OjaxVk28E5oUTXgEfb2PDJS5IrmW4
-Cx1cQnoM5KazmHGUJ+4ylIGJS1uS3TdXNBf1M4gpcwRRqmuAwz+RPTDiLC5iflox
-KKvKedx0fpg5bMYq09pkvovpsXsmYc/PjOyJvO3b9JcC0vEcWpOeHlX5z4kBVXv6
-Sh4xmaZ1joFUM7qVujQ2j37LO/uzvPrN1qj85+lRPuWakvzcWwUI8l9fgxAS/rwi
-1wapgdvpGrDj/fSmQ+yeqzXmaNTM4irhSNT4WKrJ3QFaK7rrZAs9ptpvRnUXsdah
-5kvniOx5XuVRllwNKBPYu6BWm6Qq0esQbXDs6VfGbMntIUBA1vsrdKUXVsJpx4vc
-/YOqWkshwX8MZygfuWKO
-=KmH/
------END PGP SIGNATURE-----
-
---U2TwCo+MHNvvM16y--
