@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaEAQ1z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 12:27:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784AbaEAQ1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 12:27:53 -0400
-Subject: [PATCH 07/13] iommu/amd: Update to use PCI DMA aliases
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>, acooks@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Thu, 01 May 2014 10:27:48 -0600
-Message-ID: <20140501162748.17512.4466.stgit@bling.home>
-In-Reply-To: <20140501160128.17512.23609.stgit@bling.home>
-References: <20140501160128.17512.23609.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1751943AbaEAQ2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 12:28:07 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:30123 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751850AbaEAQ2E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 12:28:04 -0400
+Date: Thu, 1 May 2014 17:27:29 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH v2 15/21] of/fdt: move memreserve and dtb memory
+ reservations into core
+Message-ID: <20140501162729.GA28745@arm.com>
+References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
+ <1398215901-25609-16-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398215901-25609-16-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD-Vi already has a concept of an alias provided via the IVRS table.
-This alias only handles topology based aliases, such as PCIe-to-PCI
-bridges.  When such an alias is present, we continue to use it.  When
-a platform alias is not present, we can now add a check of the device
-dma_func_alias to create our own.  Note that the current code can
-only handle a single alias of a device, and we don't attempt to change
-that here.  It would only become a factor for the requester ID seen by
-the IOMMU if PCI-X were involved anway.
+On Tue, Apr 22, 2014 at 08:18:15PM -0500, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+> 
+> Move the /memreserve/ processing and dtb memory reservations into
+> early_init_fdt_scan_reserved_mem. This converts arm, arm64, and powerpc
+> as they are the only users of early_init_fdt_scan_reserved_mem.
+> 
+> memblock_reserve is safe to call on the same region twice, so the
+> reservation check for the dtb in powerpc 32-bit reservations is safe to
+> remove.
+> 
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> ---
+> v2: No change
+> 
+>  arch/arm/include/asm/prom.h |  2 --
+>  arch/arm/kernel/devtree.c   | 27 ---------------------------
+>  arch/arm/mm/init.c          |  1 -
+>  arch/arm64/mm/init.c        | 21 ---------------------
+>  arch/powerpc/kernel/prom.c  | 22 ----------------------
+>  drivers/of/fdt.c            | 16 ++++++++++++++++
+>  6 files changed, 16 insertions(+), 73 deletions(-)
 
-Since the alias is now potentially device specific rather than the
-topology based alias provided by the platform, we need to clear it
-when the device goes away.
+For arm64:
 
-With the DMA alias and isolation infrastructure now in PCI-core, we
-could opt to ignore IVRS provided aliases.  We now do this for IOMMU
-groups.  However, for this more common use case, the "don't fix what
-isn't broken" mantra seems like the safer route.
-
-This should allow AMD-Vi to work with devices like Marvell and Ricoh
-with DMA function alias quirks.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>
----
- drivers/iommu/amd_iommu.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 3d58de4..4621692 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -294,6 +294,7 @@ static int iommu_init_device(struct device *dev)
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct iommu_dev_data *dev_data;
- 	u16 alias;
-+	u8 func_alias;
- 	int ret;
- 
- 	if (dev->archdata.iommu)
-@@ -304,6 +305,19 @@ static int iommu_init_device(struct device *dev)
- 		return -ENOMEM;
- 
- 	alias = amd_iommu_alias_table[dev_data->devid];
-+
-+	/*
-+	 * If there is no platform provided alias (topology-based) check
-+	 * if we have a device quirk based alias.
-+	 */
-+	func_alias = pdev->dma_func_alias & ~(1 << PCI_SLOT(pdev->devfn));
-+	if (func_alias && alias == dev_data->devid) {
-+		WARN_ON(hweight8(func_alias) > 1);
-+		alias = PCI_DEVID(pdev->bus->number,
-+				  PCI_DEVFN(PCI_SLOT(pdev->devfn),
-+					    ffs(func_alias) - 1));
-+	}
-+
- 	if (alias != dev_data->devid) {
- 		struct iommu_dev_data *alias_data;
- 
-@@ -351,12 +365,19 @@ static void iommu_ignore_device(struct device *dev)
- 
- static void iommu_uninit_device(struct device *dev)
- {
-+	struct iommu_dev_data *dev_data = search_dev_data(get_device_id(dev));
-+
-+	if (!dev_data)
-+		return;
-+
- 	iommu_group_remove_device(dev);
- 
-+	/* Unlink from alias, it may change if another device is re-plugged */
-+	dev_data->alias_data = NULL;
-+
- 	/*
--	 * Nothing to do here - we keep dev_data around for unplugged devices
--	 * and reuse it when the device is re-plugged - not doing so would
--	 * introduce a ton of races.
-+	 * We keep dev_data around for unplugged devices and reuse it when the
-+	 * device is re-plugged - not doing so would introduce a ton of races.
- 	 */
- }
- 
-
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
