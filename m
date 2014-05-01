@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214AbaEAOeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 10:34:00 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:56157 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaEAOd7 (ORCPT
+	id S1754810AbaEAOfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 10:35:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55790 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaEAOfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 10:33:59 -0400
+	Thu, 1 May 2014 10:35:09 -0400
+Date: Thu, 1 May 2014 15:34:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140501143434.GA18016@ZenIV.linux.org.uk>
+References: <20140430211206.GU18016@ZenIV.linux.org.uk>
+ <20140430221238.GV18016@ZenIV.linux.org.uk>
+ <CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
+ <CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
+ <20140430234341.GX18016@ZenIV.linux.org.uk>
+ <CA+55aFyb7TPkOXmOiNQojnW-Fb-uunbqdMgiF13hE-o1t5rmcQ@mail.gmail.com>
+ <20140501025105.GY18016@ZenIV.linux.org.uk>
+ <CA+55aFzN=ERrtWUwAQv0ry-ZzX2k7dz3JZQT6q5zjp_ABwMg6Q@mail.gmail.com>
+ <20140501031251.GZ18016@ZenIV.linux.org.uk>
+ <20140501094252.GE3113@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <20140501141156.GV3245@sirena.org.uk>
-References: <1398854171-5187-1-git-send-email-ricardo.ribalda@gmail.com>
-	<20140501013402.GL3245@sirena.org.uk>
-	<CAPybu_3g=VBW+gGhveBJoc7=tCiPurP_r_+hqOU78bvsg8QJWw@mail.gmail.com>
-	<20140501141156.GV3245@sirena.org.uk>
-Date: Thu, 1 May 2014 16:33:58 +0200
-X-Google-Sender-Auth: 3Pod47x3ChRQ2Tz4TNmnUvEr0e8
-Message-ID: <CAMuHMdUeFJDq8TMQn=D+y_nWVy-puZDYekV3cPhHTnDF+ebKJA@mail.gmail.com>
-Subject: Re: [PATCH] spi: Fix hung task timeout when initialization fails
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501094252.GE3113@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 4:11 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, May 01, 2014 at 07:53:58AM +0200, Ricardo Ribalda Delgado wrote:
->
->> Thanks for your comments. This fix does not avoid the task being
->> killed (which is not an error). What it does is that IF the task is
->> killed or we are out of memory we will exit with all the resources
->> properly released and no locks helds, giving the user a chance to
->> reload/rebind the module instead of getting and unstable system that
->> cannot even reboot without a powercycle.
->
-> How does it ensure that?  What's to stop the task being killed after we
-> check to see if the task was killed.
+On Thu, May 01, 2014 at 11:42:52AM +0200, Miklos Szeredi wrote:
+> Two points about latest version (dentry_kill-2):
+> 
+> - Doing anything with dentry->d_parent in case of DCACHE_DENTRY_KILLED looks
+>   seriously wrong.  Parent has been dealt with, at that point, by the other
+>   caller, no?
 
-master->kworker_task is set like this:
+In both branches, actually - we should bugger off earlier *and* return NULL
+in that case.  Nice catch.
 
-    master->kworker_task = kthread_run(...)
+Hmm... I see why it failed to blow up on that.  It *did* trigger, all right -
+udev is stepping into that right on boot.  The thing is, check should be
+	if ((int)dentry->d_lockref.count > 0)
+since the damn thing is unsigned int.  IOW, they did go through handover
+and shrink_dentry_list() proceeded to lose them.  And with that braino
+fixed, it steps into the extra dput crap just fine.
 
-so it just contains the status of the creation of the kthread, not if it was
-killed, right? Hence we don't check if it was killed.
+OK, fixed and pushed (both branches).
 
-So Ricardo's patch prevents the stopping and destruction of the thread
-if it failed to be _created_.
+> - "bool foo = flag & FLAG" looks suspicious.  Is this guaranteed not to
+>   overflow?
 
-What if it is killed? I suppose the kthread API handles that internally, as it
-could happen to any thread (e.g. OOM)?
+What do you mean, overflow?  It's not a 1-bit unsigned int; conversion to
+_Bool is different (which is the only reason why it's more than mere
+syntax sugar).  See C99 6.3.2.1 ("When any scalar value is converted
+to _Bool, the result is 0 if the value compares equal to 0; otherwise,
+the result is 1").
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+That, BTW, is also the reason why _Bool bitfields exist - try
+struct {
+	_Bool a:1;
+	unsigned b:1;
+} x;
+x.a = 2;
+x.b = 2;
+if (x.a)
+	printf("A");
+if (x.b)
+	printf("B");
+and see what it does.  The first test triggers, same as if (2) would.
+The second does not, since conversion to unsigned integer type other
+than _Bool gives the value in range of that type comparable to original
+modulo (maximal representable + 1).  And 2 modulo 2 is 0...
