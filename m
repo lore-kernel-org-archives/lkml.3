@@ -1,45 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaEAWpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 18:45:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41518 "EHLO mail.zytor.com"
+	id S1752738AbaEAWqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 18:46:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15830 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695AbaEAWpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 18:45:51 -0400
-Message-ID: <5362CE87.7010908@zytor.com>
-Date: Thu, 01 May 2014 15:45:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Andi Kleen <andi@firstfloor.org>, Andy Lutomirski <luto@amacapital.net>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/7] x86: Add support for rd/wr fs/gs base
-References: <1398723161-21968-1-git-send-email-andi@firstfloor.org> <1398723161-21968-5-git-send-email-andi@firstfloor.org> <535FED4D.5000703@amacapital.net> <20140429233950.GE2382@two.firstfloor.org> <53608180.5070800@zytor.com> <CALCETrVQiZPb1M183Fq61dbFAjnJScuB2y+rdH8BQ+yp-MO+Mw@mail.gmail.com> <20140501211554.GH2382@two.firstfloor.org> <5362C37E.2090603@zytor.com> <20140501221836.GI19657@tassilo.jf.intel.com>
-In-Reply-To: <20140501221836.GI19657@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752512AbaEAWp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 18:45:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,967,1389772800"; 
+   d="scan'208";a="533374723"
+From: Andi Kleen <andi@firstfloor.org>
+To: hpa@zytor.com
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/3] asmlinkage: Add explicit __visible to drivers/*, lib/*, kernel/*
+Date: Fri,  2 May 2014 00:44:38 +0200
+Message-Id: <1398984278-29319-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
+In-Reply-To: <1398984278-29319-1-git-send-email-andi@firstfloor.org>
+References: <1398984278-29319-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 03:18 PM, Andi Kleen wrote:
->> I haven't looked through the flows (I'm at LCE so I have limited screen
->> bandwidth) to see how that would be handled in this case, but in the
->> general paranoid case it comes down to the fact that in this particular
->> subcase we don't necessarily know exactly how many SWAPGS are between us
->> and userspace after we IRET.
-> 
-> There is none as far as I know. Certainly wasn't any when the code
-> was originally written.
-> 
+From: Andi Kleen <ak@linux.intel.com>
 
-This applies for an asynchronous entry from kernel space.  Obviously in
-the case where we actually come directly from user space (the stack
-frame CS.RPL == 3) then that doesn't apply.
+As requested by Linus add explicit __visible to the asmlinkage users.
+This marks functions visible to assembler.
 
-	-hpa
+Tree sweep for rest of tree.
 
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ drivers/pnp/pnpbios/bioscalls.c |  2 +-
+ init/main.c                     |  2 +-
+ kernel/context_tracking.c       |  2 +-
+ kernel/locking/lockdep.c        |  2 +-
+ kernel/power/snapshot.c         |  2 +-
+ kernel/printk/printk.c          |  4 ++--
+ kernel/sched/core.c             | 10 +++++-----
+ kernel/softirq.c                |  4 ++--
+ lib/dump_stack.c                |  4 ++--
+ 9 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/pnp/pnpbios/bioscalls.c b/drivers/pnp/pnpbios/bioscalls.c
+index deb7f4b..438d4c7 100644
+--- a/drivers/pnp/pnpbios/bioscalls.c
++++ b/drivers/pnp/pnpbios/bioscalls.c
+@@ -37,7 +37,7 @@ __visible struct {
+  * kernel begins at offset 3GB...
+  */
+ 
+-asmlinkage void pnp_bios_callfunc(void);
++asmlinkage __visible void pnp_bios_callfunc(void);
+ 
+ __asm__(".text			\n"
+ 	__ALIGN_STR "\n"
+diff --git a/init/main.c b/init/main.c
+index 9c7fd4c..48655ce 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -476,7 +476,7 @@ static void __init mm_init(void)
+ 	vmalloc_init();
+ }
+ 
+-asmlinkage void __init start_kernel(void)
++asmlinkage __visible void __init start_kernel(void)
+ {
+ 	char * command_line;
+ 	extern const struct kernel_param __start___param[], __stop___param[];
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index 6cb20d2..019d450 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -120,7 +120,7 @@ void context_tracking_user_enter(void)
+  * instead of preempt_schedule() to exit user context if needed before
+  * calling the scheduler.
+  */
+-asmlinkage void __sched notrace preempt_schedule_context(void)
++asmlinkage __visible void __sched notrace preempt_schedule_context(void)
+ {
+ 	enum ctx_state prev_ctx;
+ 
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index b0e9467..d24e433 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -4188,7 +4188,7 @@ void debug_show_held_locks(struct task_struct *task)
+ }
+ EXPORT_SYMBOL_GPL(debug_show_held_locks);
+ 
+-asmlinkage void lockdep_sys_exit(void)
++asmlinkage __visible void lockdep_sys_exit(void)
+ {
+ 	struct task_struct *curr = current;
+ 
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 18fb7a2..1ea328a 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1586,7 +1586,7 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
+ 	return -ENOMEM;
+ }
+ 
+-asmlinkage int swsusp_save(void)
++asmlinkage __visible int swsusp_save(void)
+ {
+ 	unsigned int nr_pages, nr_highmem;
+ 
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index a45b509..7228258 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1674,7 +1674,7 @@ EXPORT_SYMBOL(printk_emit);
+  *
+  * See the vsnprintf() documentation for format string extensions over C99.
+  */
+-asmlinkage int printk(const char *fmt, ...)
++asmlinkage __visible int printk(const char *fmt, ...)
+ {
+ 	va_list args;
+ 	int r;
+@@ -1737,7 +1737,7 @@ void early_vprintk(const char *fmt, va_list ap)
+ 	}
+ }
+ 
+-asmlinkage void early_printk(const char *fmt, ...)
++asmlinkage __visible void early_printk(const char *fmt, ...)
+ {
+ 	va_list ap;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..d9d8ece 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2192,7 +2192,7 @@ static inline void post_schedule(struct rq *rq)
+  * schedule_tail - first thing a freshly forked thread must call.
+  * @prev: the thread we just switched away from.
+  */
+-asmlinkage void schedule_tail(struct task_struct *prev)
++asmlinkage __visible void schedule_tail(struct task_struct *prev)
+ 	__releases(rq->lock)
+ {
+ 	struct rq *rq = this_rq();
+@@ -2741,7 +2741,7 @@ static inline void sched_submit_work(struct task_struct *tsk)
+ 		blk_schedule_flush_plug(tsk);
+ }
+ 
+-asmlinkage void __sched schedule(void)
++asmlinkage __visible void __sched schedule(void)
+ {
+ 	struct task_struct *tsk = current;
+ 
+@@ -2751,7 +2751,7 @@ asmlinkage void __sched schedule(void)
+ EXPORT_SYMBOL(schedule);
+ 
+ #ifdef CONFIG_CONTEXT_TRACKING
+-asmlinkage void __sched schedule_user(void)
++asmlinkage __visible void __sched schedule_user(void)
+ {
+ 	/*
+ 	 * If we come here after a random call to set_need_resched(),
+@@ -2783,7 +2783,7 @@ void __sched schedule_preempt_disabled(void)
+  * off of preempt_enable. Kernel preemptions off return from interrupt
+  * occur there and call schedule directly.
+  */
+-asmlinkage void __sched notrace preempt_schedule(void)
++asmlinkage __visible void __sched notrace preempt_schedule(void)
+ {
+ 	/*
+ 	 * If there is a non-zero preempt_count or interrupts are disabled,
+@@ -2813,7 +2813,7 @@ EXPORT_SYMBOL(preempt_schedule);
+  * Note, that this is called and return with irqs disabled. This will
+  * protect us against recursive calling from irq.
+  */
+-asmlinkage void __sched preempt_schedule_irq(void)
++asmlinkage __visible void __sched preempt_schedule_irq(void)
+ {
+ 	enum ctx_state prev_state;
+ 
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index b50990a..9b11ce0 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -223,7 +223,7 @@ static inline bool lockdep_softirq_start(void) { return false; }
+ static inline void lockdep_softirq_end(bool in_hardirq) { }
+ #endif
+ 
+-asmlinkage void __do_softirq(void)
++asmlinkage __visible void __do_softirq(void)
+ {
+ 	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
+ 	unsigned long old_flags = current->flags;
+@@ -299,7 +299,7 @@ restart:
+ 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
+ }
+ 
+-asmlinkage void do_softirq(void)
++asmlinkage __visible void do_softirq(void)
+ {
+ 	__u32 pending;
+ 	unsigned long flags;
+diff --git a/lib/dump_stack.c b/lib/dump_stack.c
+index f23b63f..6745c62 100644
+--- a/lib/dump_stack.c
++++ b/lib/dump_stack.c
+@@ -23,7 +23,7 @@ static void __dump_stack(void)
+ #ifdef CONFIG_SMP
+ static atomic_t dump_lock = ATOMIC_INIT(-1);
+ 
+-asmlinkage void dump_stack(void)
++asmlinkage __visible void dump_stack(void)
+ {
+ 	int was_locked;
+ 	int old;
+@@ -55,7 +55,7 @@ retry:
+ 	preempt_enable();
+ }
+ #else
+-asmlinkage void dump_stack(void)
++asmlinkage __visible void dump_stack(void)
+ {
+ 	__dump_stack();
+ }
+-- 
+1.8.5.2
 
