@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaEALUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 07:20:13 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:53453 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874AbaEALUK (ORCPT
+	id S1755609AbaEAL1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 07:27:50 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49584 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752289AbaEAL1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 07:20:10 -0400
-Date: Thu, 1 May 2014 04:20:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.15-rc4
-Message-ID: <20140501112003.GA23970@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 May 2014 07:27:48 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Kay Sievers <kay@vrfy.org>
+Subject: [RESEND PATCH 1/2] printk: print initial logbuf contents before re-enabling interrupts
+Date: Thu,  1 May 2014 12:27:39 +0100
+Message-Id: <1398943660-5706-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When running on a hideously slow system (~10Mhz FPGA) with a bunch of
+debug printk invocations on the timer interrupt path, we end up filling
+the log buffer faster than we can drain it.
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The reason is that console_unlock (which is responsible for moving
+messages out of logbuf to hand over to the console driver) removes one
+message at a time, briefly re-enabling interrupts between each of them.
+If the interrupt path prints more than a single message, then we can
+easily generate more messages than we can print for a regular, recurring
+interrupt (e.g. a 1khz timer). This results in messages getting silently
+dropped, leading to counter-intuitive, incomplete printk traces on the
+console.
 
-Hi Linus,
+Rather than run the console_unlock loop with interrupts disabled (which
+has obvious latency problems), this patch records the sequence number of
+the last message in the log buffer after taking the logbuf_lock. We can
+then print this fixed amount of work before re-enabling interrupts again,
+making sure we keep up with ourself. Other CPUs could still potentially
+flood the buffer, but there's little that we can do to protect against
+that.
 
-Please pull hwmon fixes for Linux 3.15-rc4 from signed tag:
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ kernel/printk/printk.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index a45b50962295..721a7d8fb853 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2033,10 +2033,13 @@ void console_unlock(void)
+ again:
+ 	for (;;) {
+ 		struct printk_log *msg;
++		u64 console_end_seq;
+ 		size_t len;
+ 		int level;
+ 
+ 		raw_spin_lock_irqsave(&logbuf_lock, flags);
++		console_end_seq = log_next_seq;
++again_noirq:
+ 		if (seen_seq != log_next_seq) {
+ 			wake_klogd = true;
+ 			seen_seq = log_next_seq;
+@@ -2081,6 +2084,12 @@ skip:
+ 		stop_critical_timings();	/* don't trace print latency */
+ 		call_console_drivers(level, text, len);
+ 		start_critical_timings();
++
++		if (console_seq < console_end_seq) {
++			raw_spin_lock(&logbuf_lock);
++			goto again_noirq;
++		}
++
+ 		local_irq_restore(flags);
+ 	}
+ 	console_locked = 0;
+-- 
+1.9.2
 
-Thanks,
-Guenter
-------
-
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
-
-  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
-
-for you to fetch changes up to c0940e95f7a78be0525c8d31df0b1f71e149e57e:
-
-  Revert "hwmon: (coretemp) Refine TjMax detection" (2014-05-01 04:07:52 -0700)
-
-----------------------------------------------------------------
-Fix Tjmax detection in coretemp driver
-
-----------------------------------------------------------------
-Guenter Roeck (1):
-      Revert "hwmon: (coretemp) Refine TjMax detection"
-
- drivers/hwmon/coretemp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---dDRMvlgZJXvWKvBx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTYi3jAAoJEMsfJm/On5mBJKUQAJVE3egaF9XFJldX7dDN1XSy
-k++r6EQFxncaTpaVUAx64fl7o7bDzZ0EYSji3QdsvBvG5ypKbcYHjJMsanIs6i4W
-s9H8sYIhICgC/fII5TO+NrDFjFCuEaB6MA5K/7mM+HuH/u3XjXVmyOg3FTRe0j0T
-nt1LpSQahpAgjssR/hmANLA4GbFP9vlCOjDYHWXVHlbayTcYOS2uHZZ5dKGtrDke
-NyahT95ONLqpjDeH/NK5380dHG6gITDQw5zir8oEchIZD7hANiRPLrGW8ZHcsb4x
-2c8mSlidjexoDqHJUwozBxdOzSO75zTiH0azek9hwLAFM3LnHDDeuSQN2Qi5wONs
-2ys8XHyLxfKEQZLic+JrP1I615qk5evBhQswp3HTthLPsrQM20U4ARaKktuFNxs9
-pN1vBPfK3D6Ka/vv4umFygFY+LOmk/eFeO5+eHnf8LR/qdUAEP264FGSf3JnUyPJ
-wfSwXjQubPJQC9s3f8ZWbYVnA2l227U6ykjTvx2ApgagaQEmb/9hNsSXu3Sotrb0
-jpsN2xStQ7ldsthtX48yeijqA768+KbbZAD1fAbwCXYS2Idlg5lQIfpR9XEwjiwB
-JVb/Ki8ko7ib0JeBGAooXQ4jgDg9cMJbg5inI/X0UhMvGlYF5YPbnU5Nq6Sh4E/b
-qjBF9HCBLYowjtu8LQdT
-=ruQG
------END PGP SIGNATURE-----
-
---dDRMvlgZJXvWKvBx--
