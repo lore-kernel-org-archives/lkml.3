@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751114AbaEAEFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 00:05:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57127 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915AbaEAEFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 00:05:32 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140501020627.GA25248@thunk.org>
-References: <20140428195913.E0A0143994596@oldenburg.str.redhat.com> <20140428214112.GC7857@thunk.org> <535FE68C.8060002@redhat.com> <20140429182610.GA19325@thunk.org> <53616293.3080308@mit.edu> <20140501020627.GA25248@thunk.org>
+	id S1751749AbaEAEGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 00:06:00 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:41619 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaEAEF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 00:05:58 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] random: Add "initialized" variable to proc
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 30 Apr 2014 21:05:00 -0700
-To: "Theodore Ts'o" <tytso@mit.edu>, Andy Lutomirski <luto@amacapital.net>
-CC: Florian Weimer <fweimer@redhat.com>, linux-kernel@vger.kernel.org,
-        Kees Cook <kees@outflux.net>
-Message-ID: <1be5350d-89f9-44b9-8d1b-e3e591741940@email.android.com>
+In-Reply-To: <1398846369.19894.21.camel@paszta.hi.pengutronix.de>
+References: <1398789430-23897-1-git-send-email-p.zabel@pengutronix.de>
+	<CAL_JsqJLhino_s+BhiApRYBtbUvyrn4KF0Zax7YKP_HYLye5gw@mail.gmail.com>
+	<1398846369.19894.21.camel@paszta.hi.pengutronix.de>
+Date: Wed, 30 Apr 2014 21:05:57 -0700
+Message-ID: <CAJ+vNU05jv48zuH3C=FGeCjk-e9D5OU1xbdnY=vkbgqFWHX-9A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] of: Add vendor prefix for Linear Technology Corporation
+From: Tim Harvey <tharvey@gateworks.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Rob Herring <robherring2@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Qemu is using /dev/random because there is no point in emptily feeding one prng from another.
+On Wed, Apr 30, 2014 at 1:26 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Am Dienstag, den 29.04.2014, 15:44 -0500 schrieb Rob Herring:
+>> On Tue, Apr 29, 2014 at 11:37 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+>> > Add Linear Technology Corporation to the list of device tree vendor prefixes.
+>> >
+>> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+>> > ---
+>> >  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+>> >  1 file changed, 1 insertion(+)
+>> >
+>> > diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> > index 0f01c9b..3d27991 100644
+>> > --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> > +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> > @@ -65,6 +65,7 @@ lantiq        Lantiq Semiconductor
+>> >  lg     LG Corporation
+>> >  linux  Linux-specific binding
+>> >  lsi    LSI Corp. (LSI Logic)
+>> > +ltc    Linear Technology Corporation
+>>
+>>
+>> Following the use of stock symbols, this should be lltc. Is this already in use?
+>
+> [Added Tim Harvey to Cc]
+>
+> That depends on the definition of 'in use'.
+>
+> grep found arch/arm/boot/dts/imx6qdl-gw5[123]xx.dtsi containing
+> a "ltc,ltc3676" compatible, but I haven't seen the corresponding
+> driver yet. I suspect at this point we still can switch to use lltc
+> instead of ltc as vendor prefix without hurting anybody.
+>
+> regards
+> Philipp
+>
 
+Hi Philipp,
 
-Giving the guest a seed would be highly useful, though.  There are a number of ways to do that; changing the boot protocol is probably only useful if Qemu itself bouts the kernel as opposed to an in-VM bootloader.
+Right, it can be changed. That node is a placeholder to describe the
+hardware until myself or someone else has time to write the driver for
+it.
 
-That leaves several options other than virtio: I/O port, magic number in memory, CPUID, MSR, or even emulating RDRAND/RDSEED in the VMM.
+Regards,
 
-On April 30, 2014 7:06:27 PM PDT, Theodore Ts'o <tytso@mit.edu> wrote:
->On Wed, Apr 30, 2014 at 01:52:35PM -0700, Andy Lutomirski wrote:
->> 
->> 1. It simply doesn't work on my system.  In particular, it never
->returns
->> entropy.  It just blocks forever.
->
->Why?  Is this a bug in qemu?  The host OS?  The guest OS?  It is qemu
->trying to use /dev/random instead of /dev/urandom?  Any thing else?
->
->> 3. There should be a way to provide some entropy-free
->cryptographically
->> secure data, too.  Regardless of the speed of the hosts's
->/dev/random,
->> the guest should start with at least 256 bits of cryptographically
->> secure seed material IMO.
->
->Well, the simplest way to do this is to pass it in via the command
->line, and then have the the kernel make sure it gets obscured so it's
->not exposed via /proc/cmdline.
->
->Otherwise we would have to define an extension where we pass 32 bytes
->or so after the boot command line.  But the downside of doing that is
->we would have to modify every single architecture to define where
->those 32 bytes could be found.
->
->Aside from passing it on the command line as being a bit grotty, the
->other big problem this is that some architectures only have 256 bytes
->of command line, and if we use a base 64 encoding, 256 bits will take
->43 characters.  Not a problem on x86, and it seems rather unlikely
->that people would want to virtualize a m68k or avr32 CPU.  It just
->feels really unclean.
->
->I've cc'ed Peter Anvin for his opinion about extending Linux boot
->parameter protocol.  I agree it would be a lot simpler and easier to
->enable things like Kernel ASLR with real randomness on guest OS's if
->we didn't have to erect the whole virtio-pci infrastructure during
->early boot.  :-)
->
->						 -Ted
-
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Tim
