@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaEAQeO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 12:34:14 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:35665 "EHLO quartz.orcorp.ca"
+	id S1751343AbaEAQjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 12:39:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58793 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337AbaEAQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 12:34:13 -0400
-Date: Thu, 1 May 2014 10:34:07 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 0/3] mtd: nand: add randomizer support
-Message-ID: <20140501163407.GB3296@obsidianresearch.com>
-References: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398906592-24677-1-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1750801AbaEAQjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 12:39:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,966,1389772800"; 
+   d="scan'208";a="504421826"
+Subject: Re: [PATCH v3] rwsem: Support optimistic spinning
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1398914496.22957.11.camel@buesod1.americas.hpqcorp.net>
+References: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+	 <1398914496.22957.11.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 May 2014 09:39:16 -0700
+Message-ID: <1398962356.2970.128.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 03:09:49AM +0200, Boris BREZILLON wrote:
-> Hello,
-> 
-> This series is a proposal to add support for randomizers (either software
-> or hardware) to NAND flash controller drivers.
+On Wed, 2014-04-30 at 20:21 -0700, Davidlohr Bueso wrote:
 
-FWIW, I think the term for reversibly combining a PRBS with data is
-'scrambling', it is often used in communication systems for similar
-reasons - probabilisticly increasing transition density.
+> +
+> +static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
+> +{
+> +	struct task_struct *owner;
+> +	bool on_cpu = true;
+> +
+> +	if (need_resched())
+> +		return 0;
+> +
+> +	rcu_read_lock();
+> +	owner = ACCESS_ONCE(sem->owner);
+> +	if (owner)
+> +		on_cpu = owner->on_cpu;
+> +	rcu_read_unlock();
+> +
+> +	/*
+> +	 * If lock->owner is not set, the mutex owner may have
+> +	 * just acquired it and not set the owner yet or the mutex
 
-randomizing is something else entirely :)
+Nitpick. Change the above 2 mutex in comment to rwsem.
 
-BTW, there are security concerns here. The scrambler PRBS must not be
-predictable by the user, otherwise they can write data that undoes the
-scramble and defeat it, ie deliberately writing the last 2k of a 4k
-write block as all 0's after scrambling could cause the first 2k to be
-lost. That feels like something that could be scary ..
+> +	 * has been released.
+> +	 */
+> +	return on_cpu;
+> +}
+> +
 
-Jason
+Tim
+
+
