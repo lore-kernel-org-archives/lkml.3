@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbaEASz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:55:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362AbaEASzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:55:54 -0400
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Paris <eparis@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Ben Zhang <benzh@chromium.org>
-Subject: [PATCH] watchdog: print all locks on a softlock
-Date: Thu,  1 May 2014 14:55:35 -0400
-Message-Id: <1398970535-6880-1-git-send-email-eparis@redhat.com>
+	id S1751827AbaEAS4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:56:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51821 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaEAS4t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 14:56:49 -0400
+Message-ID: <1398970625.18595.24.camel@localhost.localdomain>
+Subject: Re: [PATCH] PCI/shpchp: fix a bus speed issue on hotplug
+From: Marcel Apfelbaum <marcel.apfelbaum@gmail.com>
+Reply-To: marcel.a@redhat.com
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Wilcox <matthew@wil.cx>, "Michael S. Tsirkin" <mst@redhat.com>
+Date: Thu, 01 May 2014 21:57:05 +0300
+In-Reply-To: <1398968025.18595.22.camel@localhost.localdomain>
+References: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
+	 <CAErSpo4KLq7m8PXzAEhv20e29Wk=sAtageDf3CgziDLno0JUCw@mail.gmail.com>
+	 <1398968025.18595.22.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the CPU hits a softlockup this patch will also have it print the
-information about all locks being held on the system.  This might help
-determine if a lock is being held too long leading to this problem.
+On Thu, 2014-05-01 at 21:13 +0300, Marcel Apfelbaum wrote:
+> On Thu, 2014-05-01 at 12:02 -0600, Bjorn Helgaas wrote:
+> > On Thu, May 1, 2014 at 8:35 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
+> > > When a board is added, the shpchp driver checks if there
+> > > is a mismatch between the bridge's adapter and the bus speed.
+> > > If there is, it sets the subordinate speed (if there is no device on it).
+> > >
+> > > However, it takes the reference of the board speed from the primary bus
+> > > and not from the subordinate. If the primary bus is PCI and not PCIX/PCIe,
+> > > its speed is not updated and remains 0xff. As a result hotplug fails
+> > > with error: "Speed of bus ff and adapter 0 mismatch".
+> > 
+> > It'd be cool to have a bugzilla for this with lspci and dmesg output.
+> > I'll also have to check the other hotplug drivers for similar issues,
+> > unless you've already done that.
+> I'll open a BZ with the details, sure.
+Done: https://bugzilla.kernel.org/show_bug.cgi?id=75251
+If you need further details, please let me know.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Ben Zhang <benzh@chromium.org>
----
- kernel/watchdog.c | 1 +
- 1 file changed, 1 insertion(+)
+Thanks,
+Marcel
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 516203e..a027240 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -322,6 +322,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 			current->comm, task_pid_nr(current));
- 		print_modules();
- 		print_irqtrace_events(current);
-+		debug_show_all_locks();
- 		if (regs)
- 			show_regs(regs);
- 		else
--- 
-1.9.0
+
+> 
+> I didn't check the other hotplug drivers, but I do plan
+> to look into PCIe driver as part of QEMU's PCIe hotplug feature.
+> 
+> Thanks,
+> Marcel
+> 
+> > 
+> > > Fixed that by checking the speed against the subordinate bus.
+> > >
+> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> > > Acked-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
+> > > index 5849927..6efc2ec 100644
+> > > --- a/drivers/pci/hotplug/shpchp_ctrl.c
+> > > +++ b/drivers/pci/hotplug/shpchp_ctrl.c
+> > > @@ -282,8 +282,8 @@ static int board_added(struct slot *p_slot)
+> > >                 return WRONG_BUS_FREQUENCY;
+> > >         }
+> > >
+> > > -       bsp = ctrl->pci_dev->bus->cur_bus_speed;
+> > > -       msp = ctrl->pci_dev->bus->max_bus_speed;
+> > > +       bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
+> > > +       msp = ctrl->pci_dev->subordinate->max_bus_speed;
+> > >
+> > >         /* Check if there are other slots or devices on the same bus */
+> > >         if (!list_empty(&ctrl->pci_dev->subordinate->devices))
+> > > --
+> > > 1.8.3.1
+> > >
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
