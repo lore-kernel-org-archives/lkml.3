@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaEAS4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:56:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51821 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaEAS4t (ORCPT
+	id S1751882AbaEAS5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:57:14 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54374 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaEAS5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:56:49 -0400
-Message-ID: <1398970625.18595.24.camel@localhost.localdomain>
-Subject: Re: [PATCH] PCI/shpchp: fix a bus speed issue on hotplug
-From: Marcel Apfelbaum <marcel.apfelbaum@gmail.com>
-Reply-To: marcel.a@redhat.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Michael S. Tsirkin" <mst@redhat.com>
-Date: Thu, 01 May 2014 21:57:05 +0300
-In-Reply-To: <1398968025.18595.22.camel@localhost.localdomain>
-References: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
-	 <CAErSpo4KLq7m8PXzAEhv20e29Wk=sAtageDf3CgziDLno0JUCw@mail.gmail.com>
-	 <1398968025.18595.22.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 1 May 2014 14:57:12 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Thu,  1 May 2014 11:56:47 -0700
+Message-Id: <1398970607-25623-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.9.2
+X-SA-Exim-Connect-IP: 209.133.115.210
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: tps65090: Check for pdata before dereferencing
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-01 at 21:13 +0300, Marcel Apfelbaum wrote:
-> On Thu, 2014-05-01 at 12:02 -0600, Bjorn Helgaas wrote:
-> > On Thu, May 1, 2014 at 8:35 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
-> > > When a board is added, the shpchp driver checks if there
-> > > is a mismatch between the bridge's adapter and the bus speed.
-> > > If there is, it sets the subordinate speed (if there is no device on it).
-> > >
-> > > However, it takes the reference of the board speed from the primary bus
-> > > and not from the subordinate. If the primary bus is PCI and not PCIX/PCIe,
-> > > its speed is not updated and remains 0xff. As a result hotplug fails
-> > > with error: "Speed of bus ff and adapter 0 mismatch".
-> > 
-> > It'd be cool to have a bugzilla for this with lspci and dmesg output.
-> > I'll also have to check the other hotplug drivers for similar issues,
-> > unless you've already done that.
-> I'll open a BZ with the details, sure.
-Done: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-If you need further details, please let me know.
+From: Mark Brown <broonie@linaro.org>
 
-Thanks,
-Marcel
+The per-regulator pdata is optional so we need to check that it's there
+before dereferencing it. This wasn't done in "regulator: tps65090: Allow
+setting the overcurrent wait time", fix that.
 
+Reported-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/regulator/tps65090-regulator.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-> 
-> I didn't check the other hotplug drivers, but I do plan
-> to look into PCIe driver as part of QEMU's PCIe hotplug feature.
-> 
-> Thanks,
-> Marcel
-> 
-> > 
-> > > Fixed that by checking the speed against the subordinate bus.
-> > >
-> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-> > > Acked-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  drivers/pci/hotplug/shpchp_ctrl.c | 4 ++--
-> > >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > >
-> > > diff --git a/drivers/pci/hotplug/shpchp_ctrl.c b/drivers/pci/hotplug/shpchp_ctrl.c
-> > > index 5849927..6efc2ec 100644
-> > > --- a/drivers/pci/hotplug/shpchp_ctrl.c
-> > > +++ b/drivers/pci/hotplug/shpchp_ctrl.c
-> > > @@ -282,8 +282,8 @@ static int board_added(struct slot *p_slot)
-> > >                 return WRONG_BUS_FREQUENCY;
-> > >         }
-> > >
-> > > -       bsp = ctrl->pci_dev->bus->cur_bus_speed;
-> > > -       msp = ctrl->pci_dev->bus->max_bus_speed;
-> > > +       bsp = ctrl->pci_dev->subordinate->cur_bus_speed;
-> > > +       msp = ctrl->pci_dev->subordinate->max_bus_speed;
-> > >
-> > >         /* Check if there are other slots or devices on the same bus */
-> > >         if (!list_empty(&ctrl->pci_dev->subordinate->devices))
-> > > --
-> > > 1.8.3.1
-> > >
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index ca04e9f..fbe0bf5 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -306,8 +306,11 @@ static int tps65090_regulator_probe(struct platform_device *pdev)
+ 		ri = &pmic[num];
+ 		ri->dev = &pdev->dev;
+ 		ri->desc = &tps65090_regulator_desc[num];
+-		ri->overcurrent_wait_valid = tps_pdata->overcurrent_wait_valid;
+-		ri->overcurrent_wait = tps_pdata->overcurrent_wait;
++		if (tps_pdata) {
++			ri->overcurrent_wait_valid =
++				tps_pdata->overcurrent_wait_valid;
++			ri->overcurrent_wait = tps_pdata->overcurrent_wait;
++		}
+ 
+ 		/*
+ 		 * TPS5090 DCDC support the control from external digital input.
+-- 
+1.9.2
 
