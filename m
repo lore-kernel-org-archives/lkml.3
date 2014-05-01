@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaEASfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 14:35:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792AbaEASfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 14:35:44 -0400
-Date: Thu, 1 May 2014 20:35:05 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [rfc][patch] perf,tools: Remove test_attr_* muck from perf.h
-Message-ID: <20140501183505.GA2317@krava.redhat.com>
-References: <20140501082729.GM11096@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751465AbaEASgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 14:36:19 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.29.24]:33588 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaEASgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 14:36:18 -0400
+References: <1398561815-22033-1-git-send-email-peter@piie.net> <1398763077-5542-1-git-send-email-peter@piie.net>
+Message-ID: <cone.1398969373.839141.7919.1000@galar>
+X-Mailer: http://www.courier-mta.org/cone/
+From: Peter Feuerer <peter@piie.net>
+To: Peter Feuerer <peter@piie.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andreas Mohr <andi@lisas.de>,
+        Borislav Petkov <bp@suse.de>, Zhang Rui <rui.zhang@intel.com>,
+        Javi Merino <javi.merino@arm.com>
+Subject: Re: [PATCH v2 0/4] acerhdf/thermal: adding new models and
+         appropriate governor
+Date: Thu, 01 May 2014 20:36:13 +0200
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
-In-Reply-To: <20140501082729.GM11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: NDA0MDk0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 10:27:30AM +0200, Peter Zijlstra wrote:
-> Hi,
-> 
-> I occasionally build the odd program against raw perf and use perf.h for
-> this.
-> 
-> Now I find that no longer works because of:
-> 
-> 52502bf201a85 ("perf tests: Add framework for automated perf_event_attr tests")
-> 
-> So revert the hunk touching on perf.h.
+Hi all,
 
-But but but, then you'll brake attr tests
-
+Peter Feuerer writes:
+> This patch series is intended to:
 > 
-> Also, it seems to be for snake shit only, and snakes stink, except on a
-> plane :-)
+>   * Introduce "manual mode" support (Patch 1 & 2), which is needed to control
+>     the fan of a few new models.
+> 
+>   * Add an appropriate thermal governor (Patch 3 & 4).  Manipulating and
+>     fiddling around with the step-wise governor has been a very fragile thing
+>     in the past and as it broke again, I used the opportunity to add a two
+>     point thermal governor which implements the actual fan handling required by
+>     acerhdf and puts from my point of view things straight.
+> 
+> Please test/review the patches and send me your comments.
 
-wanna get to lwn quotes page, huh? ;)
+Further comments on the patch series?  Otherwise I'll create another series 
+containing the improvement to Javi's finding and we could get it committed?
 
-any details about the breakage? maybe we could find some
-way to make you happy and keep the snake shit in place
+@Rui: what do you think about the bang bang governor?
 
-jirka
+[...]
+
+
+-- 
+kind regards,
+--peter;
