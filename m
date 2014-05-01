@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720AbaEAPjf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 11:39:35 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43689 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaEAPjd (ORCPT
+	id S1754410AbaEAPlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 11:41:47 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55125 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaEAPlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 11:39:33 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: agruen@kernel.org, bfields@fieldses.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V1 09/22] vfs: Make acl_permission_check() work for richacls
-In-Reply-To: <20140429002013.GR15995@dastard>
-References: <1398615293-22931-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1398615293-22931-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20140429002013.GR15995@dastard>
-User-Agent: Notmuch/0.18~rc0+2~gbc64cdc (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 01 May 2014 21:09:23 +0530
-Message-ID: <87fvktbj9w.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050115-8256-0000-0000-00000CE2E72A
+	Thu, 1 May 2014 11:41:45 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [RFC PATCH 0/5] watchdog: Add reboot API
+Date: Thu,  1 May 2014 08:41:28 -0700
+Message-Id: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+Some hardware implements reboot through its watchdog hardware, for example
+by triggering a watchdog timeout or by writing into its watchdog register
+set. Platform specific code starts to spread into watchdog drivers,
+typically by setting pointers to a callback function which is then called
+from the architecture's reset handler.
 
-> On Sun, Apr 27, 2014 at 09:44:40PM +0530, Aneesh Kumar K.V wrote:
->> From: Andreas Gruenbacher <agruen@kernel.org>
->> 
->> Signed-off-by: Andreas Gruenbacher <agruen@kernel.org>
->> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->> ---
->>  fs/namei.c | 13 +++++++++++++
->>  1 file changed, 13 insertions(+)
->> 
->> diff --git a/fs/namei.c b/fs/namei.c
->> index 26b9a8212837..06474553c08d 100644
->> --- a/fs/namei.c
->> +++ b/fs/namei.c
->> @@ -284,6 +284,19 @@ static int acl_permission_check(struct inode *inode, int mask)
->>  {
->>  	unsigned int mode = inode->i_mode;
->>  
->> +	if (IS_RICHACL(inode)) {
->> +		int error = check_acl(inode, mask);
->> +		if (error != -EAGAIN)
->> +			return error;
->> +		if (mask & (MAY_DELETE_SELF | MAY_TAKE_OWNERSHIP |
->> +			    MAY_CHMOD | MAY_SET_TIMES)) {
->> +			/*
->> +			 * The file permission bit cannot grant these
->> +			 * permissions.
->> +			 */
->> +			return -EACCES;
->> +		}
->> +	}
->>  	if (likely(uid_eq(current_fsuid(), inode->i_uid)))
->>  		mode >>= 6;
->>  	else {
->
-> why does this take priority over a simple uid match? Some comments
-> explaining this for people unfamiliar with richacls would be nice.
-> Not to mention the commit message should also explain the change...
->
+While global and exported callback function pointers (such as arm_pm_restart)
+may be acceptable as long as they are used from platform and/or architecture
+code, using such a mechanism across subsystems and drivers is less than
+desirable. Ultimately, we'll need a better solution.
 
-Richacl can have further limitation on file owner. Will add more
-comments around the function.
+This patch series is an attempt to provide such a solution. It extends
+the watchdog subsystem to support reboot functionality, provides an
+API function call to trigger reboots, adds support for the new API
+to arm and arm64, and converts the drivers providing reboot functionality
+to use the new infrastructure.
 
--aneesh
+The first patch in the series implements the new API. The second and third
+patch modify the arm and arm64 architecture reset handlers to call the
+added API function. The final two patches register the reboot handlers
+in the sunxi and moxart watchdog drivers with the watchdog subsystem.
 
+The sunxi patche depends on the most recent patch series sumitted by
+Maxime Ripard.
+
+Compile tested only.
