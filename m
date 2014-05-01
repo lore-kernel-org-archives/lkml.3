@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810AbaEAOOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 10:14:44 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:33903 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaEAOOn (ORCPT
+	id S932092AbaEAOPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 10:15:52 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53923 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbaEAOPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 10:14:43 -0400
-Message-ID: <536256EC.1060909@windriver.com>
-Date: Thu, 1 May 2014 10:15:08 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 1 May 2014 10:15:49 -0400
+Date: Thu, 1 May 2014 07:15:10 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, lgirdwood@gmail.com, robh+dt@kernel.org,
+        sbkim73@samsung.com, rdunlap@infradead.org, dianders@chromium.org
+Message-ID: <20140501141510.GW3245@sirena.org.uk>
+References: <1398243705-31151-1-git-send-email-tushar.behera@linaro.org>
+ <20140424133920.GA12304@sirena.org.uk>
+ <5359E18B.60600@linaro.org>
+ <20140429222915.GU15125@sirena.org.uk>
+ <5360E5E7.8090807@linaro.org>
+ <20140430180314.GA3245@sirena.org.uk>
+ <53623004.5010805@linaro.org>
 MIME-Version: 1.0
-To: Daniel Bristot de Oliveira <bristot@redhat.com>,
-        <linux-rt-users@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH RT] netconsole: enable netconsole on PREEMPT_RT
-References: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
-In-Reply-To: <31fa5b74f8e6267f9b7f906c791d1ddf7d550771.1398788759.git.bristot@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pEAjBjStGYT6H+Py"
+Content-Disposition: inline
+In-Reply-To: <53623004.5010805@linaro.org>
+X-Cookie: Keep it short for pithy sake.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 31.71.205.29
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-29 01:55 PM, Daniel Bristot de Oliveira wrote:
-> Dear RT Folks,
-> 
-> This patch enables the netconsole on PREEMPT_RT_FULL, netconsole
-> was disabled on commit:
-> cb7cb77 kconfig-disable-a-few-options-rt.patch
-> 
-> I tested the netconsole on three machines:
-> 
-> - Intel Core i5 (4 cpus) - Local network
-> - Intel Xeon (32 cpus)   - Remote network
-> - KVM VM (on a Core i7)  - Virtual network
 
-Chances are the two real targets above were using the
-same igb network driver.  I wonder if it matters what
-underlying nic is used for netconsole?
+--pEAjBjStGYT6H+Py
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It is probably worthwhile to do some data mining into why
-it was disabled in the 1st place.  I can't say I recall, and
-it is possible that the reason has long since become irrelevant,
-even though the patch has been carried forward over time.
+On Thu, May 01, 2014 at 04:59:08PM +0530, Tushar Behera wrote:
 
-Or it may be that your testing simply doesn't cover the use
-case where netconsole will spew sleeping while atomic...
+> Okay, I will extend the existing clock driver to support XCLKOUT.
 
-P.
---
+It may make more sense to add another clock driver for this clock
+depending on how things are done, I don't know.
 
-> 
-> On these machines I build the kernel 3.10.34-rt34 + netconsole
-> built as module. In order to execute some printks, I run a small
-> benchmark that runs as a module. To analyse the output I captured
-> the netconsole messages using Wireshark.
-> 
-> On all cases, the tests passed without any error:
-> 
-> - No error messages from the kernel
-> - No missed messages
-> - No out of order messages
-> 
-> I ran +1 hour tests on each machine. The test using the Xeon machine
-> ran by around 10 hours. On this test I received 317149 netconsole's
-> messages.
-> 
-> I also read the code and ran some traces (using the ftrace's
-> function_graph). In the traces that I read, the netconsole code never
-> broke the rt lock assumptions.
-> 
-> Signed-off-by: Daniel Bristot de Oliveira <bristot@redhat.com>
-> ---
->  drivers/net/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 096de88..3835321 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -164,7 +164,6 @@ config VXLAN
->  
->  config NETCONSOLE
->  	tristate "Network console logging support"
-> -	depends on !PREEMPT_RT_FULL
->  	---help---
->  	If you want to log kernel messages over the network, enable this.
->  	See <file:Documentation/networking/netconsole.txt> for details.
-> 
+> Of the many parents of XCLKOUT, we need to set XXTI clock as the parent.
+> Is it okay if we pass two clocks "mclk" (XCLKOUT) and "mclk_parent"
+> (XXTI) to sound-card driver via DT and do the necessary reparenting
+> during the sound-card driver probe call?
+
+No, that's not OK at all, it won't allow for configuration of the
+system.  This is what I was talking about when I was talking the clock
+framework extensions to allow the clock tree to be configured using DT,
+that would allow the settings to be put in DT.
+
+> Else, we can push that change to bootloader (to set the XCLKOUT mux
+> register) and only enable/disable the clock in sound-card driver.
+
+That's not going to work given that the existing bootloaders don't do
+this.
+
+--pEAjBjStGYT6H+Py
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTYlbrAAoJELSic+t+oim9Y74P/1KfbQJb0J7mDTfxDZSxbsE0
+nA1dchqcgQBYlwQvr1rXWXMzxfbP0hoDbA2YVvFpYo3EQ5miHRYHjLtG4mFhbPBz
+WQyzpPND940136jZQjPSESfELQdhNvDBORsaqKYRFUPAPK6D6E6dZc98njvXxgJZ
+lxf2FBjlnWTdbZTYyqnYXPf6SqwncL53zzQlawgLVR5j9F8wzrXlVuQ1asEQTfdk
+72rbTwJkBugu7dZNZaraPy+5+HzIR+u7vQ/QtAPL92WwPgHyZWCDyFktVIBWxz2A
+F2b1IVCp+owmHErLJq0RSDROCzq16z2SxmchHqu39sIgfyupDXUW+VFW6WamRHxe
+t0NlPpmkr2WW4oiovn5rrImxRfCoPEvYO/lEDgd60JWLLBBV9l1Rymz45ZH4dgLA
+A72WoCqr8fEOU8eHwaO62Z3W4yYzopA3OgzqcCUs7ITaPaDlNZkXoCBNTK8QxA/p
+2MdA1YrsQkrImbsvRuHhmevZPSc9csyWwI8WVnmampVYsoQJTUBzqN7GyXGjAIli
+tb13iBcfAyrMGhUeQd/FP7LGtMyAzvFuCPvjz4I06tt8cc+Epy4jUA8Ecy4QhLOG
+IazvBHSQ6JD99eYshyut2MHycoov8CuSMWC1W19DDjh3fyJo/lQ9mWzqufaFqMUD
+NhxdithZU8Tw0+Ywc2dw
+=YiEJ
+-----END PGP SIGNATURE-----
+
+--pEAjBjStGYT6H+Py--
