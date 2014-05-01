@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaEAQ1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 12:27:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35117 "EHLO mx1.redhat.com"
+	id S1751774AbaEAQ1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 12:27:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56937 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751529AbaEAQ1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 12:27:39 -0400
-Subject: [PATCH 05/13] PCI: Consolidate isolation domain code
+	id S1751704AbaEAQ1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 12:27:49 -0400
+Subject: [PATCH 06/13] iommu/amd: Use pci_find_dma_isolation_root() for
+ IOMMU groups
 From: Alex Williamson <alex.williamson@redhat.com>
 To: linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org
-Cc: bhelgaas@google.com, acooks@gmail.com, linux-kernel@vger.kernel.org
-Date: Thu, 01 May 2014 10:27:35 -0600
-Message-ID: <20140501162735.17512.80501.stgit@bling.home>
+Cc: bhelgaas@google.com, Joerg Roedel <joro@8bytes.org>, acooks@gmail.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 May 2014 10:27:41 -0600
+Message-ID: <20140501162741.17512.82459.stgit@bling.home>
 In-Reply-To: <20140501160128.17512.23609.stgit@bling.home>
 References: <20140501160128.17512.23609.stgit@bling.home>
 User-Agent: StGit/0.17-dirty
@@ -22,171 +24,230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each of the IOMMU drivers supporting IOMMU groups has their own
-implementation of an algorithm to find the base device for an IOMMU
-group.  This N:1 function takes into account visibility of a PCI
-device on the bus using DMA aliases, as well as the isolation of
-devices using ACS.  Since these are all generic PCI properties,
-provide this helper in PCI code to create a single, standard
-implementation.
+The IVRS tables provides aliases, but not to the extent now provided
+by PCI core with DMA alias support and pci_find_dma_isolation_root().
+The expectation is that the kernel and IVRS will produce the same
+result for topology based aliases while the kernel will also include
+device specific DMA quirks.  We therefore drop the AMD-specific IOMMU
+group discovery in favor of the common code.  This also allows us to
+drop tracking of the IOMMU group on the alias dev_data structure.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>
 ---
- drivers/pci/search.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h  |    1 
- 2 files changed, 131 insertions(+)
+ drivers/iommu/amd_iommu.c       |  158 ++-------------------------------------
+ drivers/iommu/amd_iommu_types.h |    1 
+ 2 files changed, 10 insertions(+), 149 deletions(-)
 
-diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-index ad698b2..1eab231 100644
---- a/drivers/pci/search.c
-+++ b/drivers/pci/search.c
-@@ -109,6 +109,136 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index c949520..3d58de4 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -46,7 +46,6 @@
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
+ #include "irq_remapping.h"
+-#include "pci.h"
+ 
+ #define CMD_SET_TYPE(cmd, t) ((cmd)->data[1] |= ((t) << 28))
+ 
+@@ -133,9 +132,6 @@ static void free_dev_data(struct iommu_dev_data *dev_data)
+ 	list_del(&dev_data->dev_data_list);
+ 	spin_unlock_irqrestore(&dev_data_list_lock, flags);
+ 
+-	if (dev_data->group)
+-		iommu_group_put(dev_data->group);
+-
+ 	kfree(dev_data);
  }
  
- /*
-+ * last_dma_alias_dev - Isolation root helper to record the last DMA alias pdev
-+ */
-+static int last_dma_alias_dev(struct pci_dev *pdev, u16 alias, void *data)
-+{
-+	*(struct pci_dev **)data = pdev;
-+	return 0;
-+}
-+
-+/*
-+ * To consider a device isolated, we require ACS to support Source Validation,
-+ * Request Redirection, Completer Redirection, and Upstream Forwarding.  This
-+ * effectively means that devices cannot spoof their requester ID, requests
-+ * and commpletions cannot be redirected, and all transactions are forwarded
-+ * upstream, even as it passes through a bridge where the target device is
-+ * downstream.
-+ */
-+#define REQ_ACS_FLAGS   (PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
-+
-+/*
-+ * pci_find_dma_isolation_root - Given a PCI device, find the root device for
-+ *				 an isolation domain.
-+ * @pdev: target device
-+ *
-+ * This function takes DMA alias quirks, bus topology, and PCI ACS into
-+ * account to find the root device for an isolation domain.  The root device
-+ * is a consistent and representative device within the isolation domain.
-+ * Passing any device within a given isolation domain results in the same
-+ * returned root device, allowing this root device to be used for lookup
-+ * for structures like IOMMU groups.  Note that the root device is not
-+ * necessarily a bridge, in the case of a multifunction device without
-+ * DMA isolation between functions, the root device is the lowest function
-+ * without isolation.
-+ */
-+struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev)
-+{
-+	struct pci_bus *bus;
-+
-+	/*
-+	 * Step 1: Find the upstream DMA alias device
-+	 *
-+	 * A device can be aliased by bridges or DMA alias quirks.  Being able
-+	 * to differentiate devices is a minimum requirement for isolation.
-+	 */
-+	pci_for_each_dma_alias(pdev, &last_dma_alias_dev, &pdev);
-+
-+	/*
-+	 * Step 2: Find the upstream ACS device
-+	 *
-+	 * Beyond differentiation, ACS prevents uncontrolled peer-to-peer
-+	 * transactions.  Therefore the next step is to find the upstream
-+	 * ACS device.
-+	 */
-+	for (bus = pdev->bus; !pci_is_root_bus(bus); bus = bus->parent) {
-+		if (!bus->self)
-+			continue;
-+
-+		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
-+			break;
-+
-+		pdev = bus->self;
-+	}
-+
-+	/*
-+	 * Step 3: Handle DMA function aliases
-+	 *
-+	 * PCI functions are sometimes broken and use the wrong requester
-+	 * ID for DMA transactions.  The requester ID for this device may
-+	 * actually be used by another function in this slot.  If such a
-+	 * function exists, use it.
-+	 */
-+	if (pdev->multifunction) {
-+		u8 func, func_mask = 1 << PCI_FUNC(pdev->devfn);
-+
-+		for (func = 0; func < 8; func++) {
-+			struct pci_dev *tmp;
-+
-+			if (func == PCI_FUNC(pdev->devfn))
-+				continue;
-+
-+			tmp = pci_get_slot(pdev->bus,
-+					   PCI_DEVFN(PCI_SLOT(pdev->devfn),
-+						     func));
-+			if (!tmp)
-+				continue;
-+
-+			pci_dev_put(tmp);
-+			/*
-+			 * If this device has a DMA alias to us, it becomes
-+			 * the base device regardless of ACS.
-+			 */
-+			if (tmp->dma_func_alias & func_mask) {
-+				pdev = tmp;
-+				break;
-+			}
-+		}
-+	}
-+
-+	/*
-+	 * Step 4: Handle multifunction ACS
-+	 *
-+	 * If the resulting device is multifunction and does not itself
-+	 * support ACS then we cannot assume isolation between functions.
-+	 * The root device needs to be consistent, therefore we return the
-+	 * lowest numbered function that also lacks ACS support.
-+	 */
-+	if (pdev->multifunction && !pci_acs_enabled(pdev, REQ_ACS_FLAGS)) {
-+		u8 func;
-+
-+		for (func = 0; func < PCI_FUNC(pdev->devfn); func++) {
-+			struct pci_dev *tmp;
-+
-+			tmp = pci_get_slot(pdev->bus,
-+					   PCI_DEVFN(PCI_SLOT(pdev->devfn),
-+						     func));
-+			if (!tmp)
-+				continue;
-+
-+			pci_dev_put(tmp);
-+
-+			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
-+				pdev = tmp;
-+				break;
-+			}
-+		}
-+	}
-+
-+	return pdev;
-+}
-+
-+/*
-  * find the upstream PCIe-to-PCI bridge of a PCI device
-  * if the device is PCIE, return NULL
-  * if the device isn't connected to a PCIe bridge (that is its parent is a
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index b4c97d2..0d50064 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1800,6 +1800,7 @@ static inline struct eeh_dev *pci_dev_to_eeh_dev(struct pci_dev *pdev)
- int pci_for_each_dma_alias(struct pci_dev *pdev,
- 			   int (*fn)(struct pci_dev *pdev,
- 				     u16 alias, void *data), void *data);
-+struct pci_dev *pci_find_dma_isolation_root(struct pci_dev *pdev);
+@@ -264,107 +260,10 @@ static bool check_device(struct device *dev)
+ 	return true;
+ }
  
- /**
-  * pci_find_upstream_pcie_bridge - find upstream PCIe-to-PCI bridge of a device
+-static struct pci_bus *find_hosted_bus(struct pci_bus *bus)
+-{
+-	while (!bus->self) {
+-		if (!pci_is_root_bus(bus))
+-			bus = bus->parent;
+-		else
+-			return ERR_PTR(-ENODEV);
+-	}
+-
+-	return bus;
+-}
+-
+-#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
+-
+-static struct pci_dev *get_isolation_root(struct pci_dev *pdev)
+-{
+-	struct pci_dev *dma_pdev = pdev;
+-
+-	/* Account for quirked devices */
+-	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
+-
+-	/*
+-	 * If it's a multifunction device that does not support our
+-	 * required ACS flags, add to the same group as lowest numbered
+-	 * function that also does not suport the required ACS flags.
+-	 */
+-	if (dma_pdev->multifunction &&
+-	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)) {
+-		u8 i, slot = PCI_SLOT(dma_pdev->devfn);
+-
+-		for (i = 0; i < 8; i++) {
+-			struct pci_dev *tmp;
+-
+-			tmp = pci_get_slot(dma_pdev->bus, PCI_DEVFN(slot, i));
+-			if (!tmp)
+-				continue;
+-
+-			if (!pci_acs_enabled(tmp, REQ_ACS_FLAGS)) {
+-				swap_pci_ref(&dma_pdev, tmp);
+-				break;
+-			}
+-			pci_dev_put(tmp);
+-		}
+-	}
+-
+-	/*
+-	 * Devices on the root bus go through the iommu.  If that's not us,
+-	 * find the next upstream device and test ACS up to the root bus.
+-	 * Finding the next device may require skipping virtual buses.
+-	 */
+-	while (!pci_is_root_bus(dma_pdev->bus)) {
+-		struct pci_bus *bus = find_hosted_bus(dma_pdev->bus);
+-		if (IS_ERR(bus))
+-			break;
+-
+-		if (pci_acs_path_enabled(bus->self, NULL, REQ_ACS_FLAGS))
+-			break;
+-
+-		swap_pci_ref(&dma_pdev, pci_dev_get(bus->self));
+-	}
+-
+-	return dma_pdev;
+-}
+-
+-static int use_pdev_iommu_group(struct pci_dev *pdev, struct device *dev)
+-{
+-	struct iommu_group *group = iommu_group_get(&pdev->dev);
+-	int ret;
+-
+-	if (!group) {
+-		group = iommu_group_alloc();
+-		if (IS_ERR(group))
+-			return PTR_ERR(group);
+-
+-		WARN_ON(&pdev->dev != dev);
+-	}
+-
+-	ret = iommu_group_add_device(group, dev);
+-	iommu_group_put(group);
+-	return ret;
+-}
+-
+-static int use_dev_data_iommu_group(struct iommu_dev_data *dev_data,
+-				    struct device *dev)
+-{
+-	if (!dev_data->group) {
+-		struct iommu_group *group = iommu_group_alloc();
+-		if (IS_ERR(group))
+-			return PTR_ERR(group);
+-
+-		dev_data->group = group;
+-	}
+-
+-	return iommu_group_add_device(dev_data->group, dev);
+-}
+-
+ static int init_iommu_group(struct device *dev)
+ {
+-	struct iommu_dev_data *dev_data;
+ 	struct iommu_group *group;
+-	struct pci_dev *dma_pdev;
++	struct pci_dev *pdev;
+ 	int ret;
+ 
+ 	group = iommu_group_get(dev);
+@@ -373,58 +272,21 @@ static int init_iommu_group(struct device *dev)
+ 		return 0;
+ 	}
+ 
+-	dev_data = find_dev_data(get_device_id(dev));
+-	if (!dev_data)
+-		return -ENOMEM;
+-
+-	if (dev_data->alias_data) {
+-		u16 alias;
+-		struct pci_bus *bus;
++	pdev = pci_find_dma_isolation_root(to_pci_dev(dev));
+ 
+-		if (dev_data->alias_data->group)
+-			goto use_group;
+-
+-		/*
+-		 * If the alias device exists, it's effectively just a first
+-		 * level quirk for finding the DMA source.
+-		 */
+-		alias = amd_iommu_alias_table[dev_data->devid];
+-		dma_pdev = pci_get_bus_and_slot(alias >> 8, alias & 0xff);
+-		if (dma_pdev) {
+-			dma_pdev = get_isolation_root(dma_pdev);
+-			goto use_pdev;
+-		}
+-
+-		/*
+-		 * If the alias is virtual, try to find a parent device
+-		 * and test whether the IOMMU group is actualy rooted above
+-		 * the alias.  Be careful to also test the parent device if
+-		 * we think the alias is the root of the group.
+-		 */
+-		bus = pci_find_bus(0, alias >> 8);
+-		if (!bus)
+-			goto use_group;
++	group = iommu_group_get(&pdev->dev);
+ 
+-		bus = find_hosted_bus(bus);
+-		if (IS_ERR(bus) || !bus->self)
+-			goto use_group;
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group))
++			return PTR_ERR(group);
++	}
+ 
+-		dma_pdev = get_isolation_root(pci_dev_get(bus->self));
+-		if (dma_pdev != bus->self || (dma_pdev->multifunction &&
+-		    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS)))
+-			goto use_pdev;
++	ret = iommu_group_add_device(group, dev);
+ 
+-		pci_dev_put(dma_pdev);
+-		goto use_group;
+-	}
++	iommu_group_put(group);
+ 
+-	dma_pdev = get_isolation_root(pci_dev_get(to_pci_dev(dev)));
+-use_pdev:
+-	ret = use_pdev_iommu_group(dma_pdev, dev);
+-	pci_dev_put(dma_pdev);
+ 	return ret;
+-use_group:
+-	return use_dev_data_iommu_group(dev_data->alias_data, dev);
+ }
+ 
+ static int iommu_init_device(struct device *dev)
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index f1a5abf..7277a20 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -432,7 +432,6 @@ struct iommu_dev_data {
+ 	struct iommu_dev_data *alias_data;/* The alias dev_data */
+ 	struct protection_domain *domain; /* Domain the device is bound to */
+ 	atomic_t bind;			  /* Domain attach reference count */
+-	struct iommu_group *group;	  /* IOMMU group for virtual aliases */
+ 	u16 devid;			  /* PCI Device ID */
+ 	bool iommu_v2;			  /* Device can make use of IOMMUv2 */
+ 	bool passthrough;		  /* Default for device is pt_domain */
 
