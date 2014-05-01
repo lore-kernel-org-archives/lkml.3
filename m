@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaEAUgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 16:36:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44452 "EHLO mx1.redhat.com"
+	id S1752404AbaEAUhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 16:37:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41469 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670AbaEAUgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 16:36:37 -0400
-Subject: [PATCH] PCI: quirk RTL8110SC INTx masking
-From: Alex Williamson <alex.williamson@redhat.com>
-To: linux-pci@vger.kernel.org
-Cc: nic_swsd@realtek.com, linux-kernel@vger.kernel.org
-Date: Thu, 01 May 2014 14:36:31 -0600
-Message-ID: <20140501203525.27822.98248.stgit@bling.home>
-User-Agent: StGit/0.17-dirty
+	id S1752078AbaEAUhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 16:37:50 -0400
+Date: Thu, 1 May 2014 22:37:47 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Vojtech Pavlik <vojtech@suse.cz>,
+        Michael Matz <matz@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RFC 03/16] kgr: initial code
+In-Reply-To: <87tx99ckuh.fsf@tassilo.jf.intel.com>
+Message-ID: <alpine.LNX.2.00.1405012233510.29834@pobox.suse.cz>
+References: <1398868249-26169-1-git-send-email-jslaby@suse.cz> <1398868249-26169-4-git-send-email-jslaby@suse.cz> <87tx99ckuh.fsf@tassilo.jf.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-INTx masking does not work on this device.  To see this, configure
-the network device UP on an active network, note that the interrupt
-count continues to increment for the device in /proc/interrupts.  Use
-setpci to set the PCI_COMMAND_INTX_DISABLE bit in the PCI_COMMAND
-register.  As expected, the interrupt count ceases to increment.
-However, reading the PCI_STATUS_INTERRUPT bit of the PCI_STATUS
-register does not indicate that interrupts are pending and clearing
-PCI_COMMAND_INTX_DISABLE in the PCI_COMMAND register does not allow
-the device to continue operation.
+On Thu, 1 May 2014, Andi Kleen wrote:
 
-This does not affect operation of the host r8169 driver, but it does
-prevent the device from being functional when assigned to a VM, such
-as with QEMU and VFIO.  The guest driver successfully probes the
-device, but there is no traffic.  Mark INTx masking as broken,
-allowing the more restrictive APIC masking to be used instead.
+> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> > index 1e96c3628bf2..a03b1e9d2de3 100644
+> > --- a/arch/x86/kernel/entry_64.S
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -615,6 +615,7 @@ GLOBAL(system_call_after_swapgs)
+> >  	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
+> >  	movq  %rcx,RIP-ARGOFFSET(%rsp)
+> >  	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+> > +	movw $0, TI_kgr_in_progress+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+> 
+> Better use 4 bytes. This has the potential to cause an expensive
+> Length Changing Prefixes Stall on Intel CPUs.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/pci/quirks.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Patch 16/16 converts this to a single bit within TI_flags.
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ea55b0f..e15a5da 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2991,6 +2991,14 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_CHELSIO, 0x0030,
- 			 quirk_broken_intx_masking);
- DECLARE_PCI_FIXUP_HEADER(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
- 			 quirk_broken_intx_masking);
-+/*
-+ * Realtek RTL8169 PCI Gigabit Ethernet Controller (rev 10)
-+ * Subsystem: Realtek RTL8169/8110 Family PCI Gigabit Ethernet NIC
-+ *
-+ * RTL8110SC - Fails under PCI device assignment using DisINTx masking.
-+ */
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_REALTEK, 0x8169,
-+			 quirk_broken_intx_masking);
- 
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
+> > +static int kgr_init_ftrace_ops(const struct kgr_patch_fun *patch_fun)
+> > +{
+> > +	struct kgr_loc_caches *caches;
+> > +	unsigned long fentry_loc;
+> > +
+> > +	/*
+> > +	 * Initialize the ftrace_ops->private with pointers to the fentry
+> > +	 * sites of both old and new functions. This is used as a
+> > +	 * redirection target in the per-arch stubs.
+> > +	 *
+> > +	 * Beware! -- freeing (once unloading will be implemented)
+> > +	 * will require synchronize_sched() etc.
+> > +	 */
+> > +
+> > +	caches = kmalloc(sizeof(*caches), GFP_KERNEL);
+> > +	if (!caches) {
+> > +		kgr_debug("kgr: unable to allocate fentry caches\n");
+> > +		return -ENOMEM;
+> > +	}
+> 
+> All the error paths in this function leak memory.
 
+Gah, good catch, thanks a lot.
+
+-- 
+Jiri Kosina
+SUSE Labs
