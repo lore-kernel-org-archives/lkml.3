@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbaEBPv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:51:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050AbaEBPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:51:26 -0400
-Message-ID: <1399045859.1604.1.camel@deneb.redhat.com>
-Subject: Re: [PATCH 0/2] arm64: TLB flush issues
-From: Mark Salter <msalter@redhat.com>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 02 May 2014 11:50:59 -0400
-In-Reply-To: <20140502153019.GA9179@linaro.org>
-References: <1399044035-11274-1-git-send-email-msalter@redhat.com>
-	 <20140502153019.GA9179@linaro.org>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754244AbaEBPvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:51:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44318 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754013AbaEBPqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:46:22 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 120/151] ALSA: hda - Fix silent speaker output due to mute LED fixup
+Date: Fri,  2 May 2014 08:38:28 -0700
+Message-Id: <1399045139-4531-121-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 16:30 +0100, Steve Capper wrote:
-> On Fri, May 02, 2014 at 11:20:33AM -0400, Mark Salter wrote:
-> > As explained in more detail in the second patch, I have observed a soft
-> > lockup under some loads. These lockups were in flush_tlb_kernel_range()
-> > which was looping through a very large address range. While looking into
-> > this, I also noticed the flush routines in tlb.S were not properly
-> > handling pages larger than 4k. This is corrected in the first patch.
-> > The second patch limits the loop size for the flush_tlb_[kernel_]range
-> > functions. It uses an arbitrary constant to limit the loop, but it
-> > would be better if it were based on actual tlb size or some other
-> > heuristic.
-> > 
-> > Mark Salter (2):
-> >   arm64: fix unnecessary tlb flushes
-> >   arm64: fix soft lockup due to large tlb flush range
-> > 
-> >  arch/arm64/include/asm/tlbflush.h | 28 +++++++++++++++++++++++++---
-> >  arch/arm64/mm/tlb.S               |  4 ++--
-> >  2 files changed, 27 insertions(+), 5 deletions(-)
-> > 
-> 
-> Hi Mark,
-> As a heads-up, I posted this earlier today:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/252837.html
-> 
-> Cheers,
+3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Thanks. That takes care of the pagesize handling (my patch 1/2).
+------------------
 
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 415d555e6b398b00fc1733f0113065a54df9106a upstream.
+
+The recent fixups for HP laptops to support the mute LED made the
+speaker output silent on some machines.  It turned out that they use
+the NID 0x18 for the speaker while it's also used for controlling the
+LED via VREF bits although the current driver code blindly assumes
+that such a node is a mic pin (where 0x18 is usually so).
+
+This patch fixes the problem by only changing the VREF bits and
+keeping the other pin ctl bits.
+
+Reported-and-tested-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ sound/pci/hda/patch_realtek.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 331ede8..0080bee 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3157,8 +3157,9 @@ static void alc269_fixup_mic_mute_hook(void *private_data, int enabled)
+ 
+ 	if (spec->mute_led_polarity)
+ 		enabled = !enabled;
+-	pinval = AC_PINCTL_IN_EN |
+-		(enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
++	pinval = snd_hda_codec_get_pin_target(codec, spec->mute_led_nid);
++	pinval &= ~AC_PINCTL_VREFEN;
++	pinval |= enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80;
+ 	if (spec->mute_led_nid)
+ 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
+ }
+-- 
+1.9.1
 
