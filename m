@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbaEBPm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:42:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43936 "EHLO
+	id S1753397AbaEBPnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43946 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaEBPm4 (ORCPT
+	with ESMTP id S1752524AbaEBPnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:56 -0400
+	Fri, 2 May 2014 11:43:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
+Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 064/151] ASoC: cs42l73: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Fri,  2 May 2014 08:37:32 -0700
-Message-Id: <1399045139-4531-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 056/151] IB/ipath: Fix potential buffer overrun in sending diag packet routine
+Date: Fri,  2 May 2014 08:37:24 -0700
+Message-Id: <1399045139-4531-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,51 +28,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Dennis Dalessandro <dennis.dalessandro@intel.com>
 
-commit 1555b652970e541fa1cb80c61ffc696bbfb92bb7 upstream.
+commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the mono mix controls.
+Guard against a potential buffer overrun.  The size to read from the
+user is passed in, and due to the padding that needs to be taken into
+account, as well as the place holder for the ICRC it is possible to
+overflow the 32bit value which would cause more data to be copied from
+user space than is allocated in the buffer.
 
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/cs42l73.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
+ 1 file changed, 25 insertions(+), 41 deletions(-)
 
-diff --git a/sound/soc/codecs/cs42l73.c b/sound/soc/codecs/cs42l73.c
-index 549d5d6..7b95f7c 100644
---- a/sound/soc/codecs/cs42l73.c
-+++ b/sound/soc/codecs/cs42l73.c
-@@ -319,7 +319,7 @@ static const char * const cs42l73_mono_mix_texts[] = {
- static const unsigned int cs42l73_mono_mix_values[] = { 0, 1, 2 };
+diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
+index 714293b..e2f9a51 100644
+--- a/drivers/infiniband/hw/ipath/ipath_diag.c
++++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 				   size_t count, loff_t *off)
+ {
+ 	u32 __iomem *piobuf;
+-	u32 plen, clen, pbufn;
++	u32 plen, pbufn, maxlen_reserve;
+ 	struct ipath_diag_pkt odp;
+ 	struct ipath_diag_xpkt dp;
+ 	u32 *tmpbuf = NULL;
+@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	u64 val;
+ 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
  
- static const struct soc_enum spk_asp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
-@@ -337,7 +337,7 @@ static const struct snd_kcontrol_new spk_xsp_mixer =
- 	SOC_DAPM_ENUM("Route", spk_xsp_enum);
+-	if (count < sizeof(odp)) {
+-		ret = -EINVAL;
+-		goto bail;
+-	}
  
- static const struct soc_enum esl_asp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 5,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
-@@ -346,7 +346,7 @@ static const struct snd_kcontrol_new esl_asp_mixer =
- 	SOC_DAPM_ENUM("Route", esl_asp_enum);
+ 	if (count == sizeof(dp)) {
+ 		if (copy_from_user(&dp, data, sizeof(dp))) {
+ 			ret = -EFAULT;
+ 			goto bail;
+ 		}
+-	} else if (copy_from_user(&odp, data, sizeof(odp))) {
+-		ret = -EFAULT;
++	} else if (count == sizeof(odp)) {
++		if (copy_from_user(&odp, data, sizeof(odp))) {
++			ret = -EFAULT;
++			goto bail;
++		}
++	} else {
++		ret = -EINVAL;
+ 		goto bail;
+ 	}
  
- static const struct soc_enum esl_xsp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 7,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
+-	/*
+-	 * Due to padding/alignment issues (lessened with new struct)
+-	 * the old and new structs are the same length. We need to
+-	 * disambiguate them, which we can do because odp.len has never
+-	 * been less than the total of LRH+BTH+DETH so far, while
+-	 * dp.unit (same offset) unit is unlikely to get that high.
+-	 * Similarly, dp.data, the pointer to user at the same offset
+-	 * as odp.unit, is almost certainly at least one (512byte)page
+-	 * "above" NULL. The if-block below can be omitted if compatibility
+-	 * between a new driver and older diagnostic code is unimportant.
+-	 * compatibility the other direction (new diags, old driver) is
+-	 * handled in the diagnostic code, with a warning.
+-	 */
+-	if (dp.unit >= 20 && dp.data < 512) {
+-		/* very probable version mismatch. Fix it up */
+-		memcpy(&odp, &dp, sizeof(odp));
+-		/* We got a legacy dp, copy elements to dp */
+-		dp.unit = odp.unit;
+-		dp.data = odp.data;
+-		dp.len = odp.len;
+-		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
+-	}
+-
+ 	/* send count must be an exact number of dwords */
+ 	if (dp.len & 3) {
+ 		ret = -EINVAL;
+ 		goto bail;
+ 	}
+ 
+-	clen = dp.len >> 2;
++	plen = dp.len >> 2;
+ 
+ 	dd = ipath_lookup(dp.unit);
+ 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
+@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 		goto bail;
+ 	}
+ 
+-	/* need total length before first word written */
+-	/* +1 word is for the qword padding */
+-	plen = sizeof(u32) + dp.len;
+-
+-	if ((plen + 4) > dd->ipath_ibmaxlen) {
++	/*
++	 * need total length before first word written, plus 2 Dwords. One Dword
++	 * is for padding so we get the full user data when not aligned on
++	 * a word boundary. The other Dword is to make sure we have room for the
++	 * ICRC which gets tacked on later.
++	 */
++	maxlen_reserve = 2 * sizeof(u32);
++	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
+ 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
+-			  plen - 4, dd->ipath_ibmaxlen);
++			  dp.len, dd->ipath_ibmaxlen);
+ 		ret = -EINVAL;
+-		goto bail;	/* before writing pbc */
++		goto bail;
+ 	}
++
++	plen = sizeof(u32) + dp.len;
++
+ 	tmpbuf = vmalloc(plen);
+ 	if (!tmpbuf) {
+ 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
+@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	 */
+ 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
+ 		ipath_flush_wc();
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
+ 		ipath_flush_wc();
+-		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
++		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
+ 	} else
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
+ 
+ 	ipath_flush_wc();
+ 
 -- 
 1.9.1
 
