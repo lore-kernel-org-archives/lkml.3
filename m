@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934AbaEBQvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:51:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45955 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751805AbaEBQvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:51:08 -0400
-Date: Fri, 2 May 2014 17:51:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Patch Tracking <patches@linaro.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Steve Capper <steve.capper@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Ahern <dsahern@gmail.com>, Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Message-ID: <20140502165105.GD20642@arm.com>
-References: <CAFrcx1nfkDWTu9vF+a7UGjd1fzHpXS44pzqKLZS9ej7KJwqkOg@mail.gmail.com>
- <1398690730-5454-1-git-send-email-jean.pihet@linaro.org>
- <CAFrcx1kQO5i+kQwDizT1F4asbFNGiDSDWt0ubnpS92fU1PBiHw@mail.gmail.com>
+	id S1752964AbaEBQvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:51:21 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:58565 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752968AbaEBQvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 12:51:18 -0400
+Message-ID: <5363CCAE.9000006@mev.co.uk>
+Date: Fri, 2 May 2014 17:49:50 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1kQO5i+kQwDizT1F4asbFNGiDSDWt0ubnpS92fU1PBiHw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging/comedi: fix sparse warning: shift too big
+References: <1399042624-9441-1-git-send-email-brilliantov@inbox.ru>
+In-Reply-To: <1399042624-9441-1-git-send-email-brilliantov@inbox.ru>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 10:19:38AM +0100, Jean Pihet wrote:
-> Hi WIll, Mark,
-> 
-> Ping on this series. Can you please check? Is the refreshed patch OK?
+On 2014-05-02 15:57, Brilliantov Kirill Vladimirovich wrote:
+> Signed-off-by: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
+> ---
+>   drivers/staging/comedi/drivers/ni_stc.h | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
+> index f0630b78..197b568 100644
+> --- a/drivers/staging/comedi/drivers/ni_stc.h
+> +++ b/drivers/staging/comedi/drivers/ni_stc.h
+> @@ -717,7 +717,7 @@ enum AI_AO_Select_Bits {
+>   static inline unsigned ni_stc_dma_channel_select_bitfield(unsigned channel)
+>   {
+>   	if (channel < 4)
+> -		return 1 << channel;
+> +		return 1 << (channel & 0x3);
+>   	if (channel == 4)
+>   		return 0x3;
+>   	if (channel == 5)
+>
 
-Fine by me, as long as it's not reused outside of this test :)
+The warning seems a bit spurious!
 
-Will
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
