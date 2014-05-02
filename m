@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaEBWbJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:31:09 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:53939 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaEBWbI (ORCPT
+	id S1752926AbaEBWcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:32:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:32795 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751636AbaEBWcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:31:08 -0400
+	Fri, 2 May 2014 18:32:08 -0400
+Date: Fri, 2 May 2014 23:32:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140502223206.GI18016@ZenIV.linux.org.uk>
+References: <20140429211851.GA32204@dastard>
+ <20140429214842.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+ <20140429232013.GM18016@ZenIV.linux.org.uk>
+ <20140430023142.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+ <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
+ <20140502055127.GH18016@ZenIV.linux.org.uk>
+ <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
+ <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-In-Reply-To: <535A8DF5.4090104@codeaurora.org>
-References: <534D0370.50108@linux.intel.com>
-	<535005BA.1040405@codeaurora.org>
-	<5357A80B.8030701@linux.intel.com>
-	<5357ACF1.9070206@codeaurora.org>
-	<20140423135915.GY30677@intel.com>
-	<5357D8CC.3080501@codeaurora.org>
-	<20140424063546.GA30677@intel.com>
-	<5358F30E.9080402@codeaurora.org>
-	<20140424115848.GG30677@intel.com>
-	<53592D04.4040001@codeaurora.org>
-	<20140425074156.GI30677@intel.com>
-	<535A899E.5020801@codeaurora.org>
-	<535A8B91.6030903@intel.com>
-	<535A8DF5.4090104@codeaurora.org>
-Date: Fri, 2 May 2014 15:31:06 -0700
-Message-ID: <CACRpkdYQcqSNcCU3FVe7tPeqmC4=HRk=yXDP7WvOLFBVtND12g@mail.gmail.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 9:31 AM, Timur Tabi <timur@codeaurora.org> wrote:
-> Rafael J. Wysocki wrote:
->>
->> I would be interested in understanding what exactly the flow is in that
->> situation, so care to educate me?  What does the driver do to trigger
->> this and what exactly does happen in response to that?
->
->
-> I only just learned some of this myself, so I'm no expert.  My understanding
-> is that the all of the pinctrl-* properties and nodes are scanned by the
-> pinctrl layer itself.  So you could have a SATA controller node that points
-> to a pin control node (via phandles).  When the SATA driver is probed, the
-> pinctrl layer notices the phandles and automatically calls the pinctrl layer
-> to configure the pins and pin muxes.
+On Fri, May 02, 2014 at 11:08:13PM +0200, Miklos Szeredi wrote:
+> There's more of the "delete from shrink list not owned by us" in select parent.
+> Proposed patch appended.
 
-There is a global pin control map for the system spanning all possible
-pin controller instances.
+While it certainly looks like dentry_lru_del() should die, I really wonder if
+"let's pretend that dentry isn't there if it's on some other shrink list"
+is the right approach.  You've already noticed one problem (check-and-drop
+giving false busy indications), but shrink_dcache_parent() has similar
+issues.  How about incrementing data->found instead?  That'll end up
+rescanning the tree in case if it's not ours; so what?  If it's another
+process doing the same shrinking in a subtree, we want to let it do its
+job anyway.  Sure, somebody doing mount -o remount in a loop might be
+able to stall the living hell out of us, for as long as new non-busy
+dentries are being added in our subtree, but the second part in itself
+is sufficient; we will keep picking those new non-busy dentries as long
+as they keep coming.  And if they do not, eventually they will be all
+taken out by us or by those other shrinkers and we'll be done.
+ 
+> And I'm not sure what umount_collect() is supposed to do.  Can other shrinkers
+> still be active at that point?  That would present other problems, no?
 
-Right before a device probe() function is called, the device core will
-attempt to grab and activate a pin control setting tied to this device
-and named "default". (It can also handle some PM states.)
+No other shrinkers - prune_dcache_sb() and shrink_dcache_sb() are also
+serialized by ->s_umount, shrink_dcache_parent() and check_submounts_and_drop()
+are called only when an active reference is held, which obviously prevents
+fs shutdown.
 
-The table of states can come from:
-(a) Platform data or
-(b) Device tree
+> Also somewhat related is the question: how check_submounts_and_drop() could be
+> guaranteed correctness (timely removal of all unsed dentries) in the presence of
+> other shrinkers?
 
-And if there was an ACPI pin controller it would be case (c) and need
-to have intelligent bindings allowing such a table to be built so that
-the device core can make use of it.
+Another interesting question is what the hell are shrink_dcache_parent()
+callers expecting.  E.g. what's going on in fuse_reverse_inval_entry()?
+And what is nilfs_tree_is_busy() about?
 
-When the different states (such as "default") are enabled, this
-results in calls into the pin control driver. In most cases that ends
-up with simple register writes but I guess an ACPI driver would
-result in calling some esoteric bytecode or whatever or both.
-
-There is no escape from the fact that this needs being
-handled from the pin control subsystem though, it can't
-be sneaked into the ACPI core or something. You may want
-to add new states apart from the ones defined in
-include/linux/pinctrl/pinctrl-state.h, as I know ACPI is
-a bit picky about it's states and what they are named
-(D-states right?)
-
-Yours,
-Linus Walleij (pretending to understand ACPI)
+FWIW, I'm not at all sure that vfs_rmdir() and vfs_rename() have any reason
+to call it these days, and dentry_unhash() one simply ought to die - it's used
+only by hpfs unlink() in case it wants to truncate in order to work around
+-ENOSPC.  And _that_ won't have any subdirectories to deal with anyway, so
+shrink_dcache_parent() there is a no-op, even if we keep the damn helper alive.
+The rest of callers also look dubious...
