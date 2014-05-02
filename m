@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaEBE3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 00:29:44 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:52777 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaEBE3m (ORCPT
+	id S1751002AbaEBE3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 00:29:32 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:42331 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaEBE3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 00:29:42 -0400
+	Fri, 2 May 2014 00:29:30 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Vince Bridgers <vbridgers2013@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, nios2-dev@lists.rocketboards.org,
+        linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] spi: core: Protect DMA code by #ifdef CONFIG_HAS_DMA
-Date: Fri,  2 May 2014 06:29:34 +0200
-Message-Id: <1399004974-19566-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH] Altera TSE: ALTERA_TSE should depend on HAS_DMA
+Date: Fri,  2 May 2014 06:29:21 +0200
+Message-Id: <1399004962-19530-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,161 +23,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 If NO_DMA=y:
 
-drivers/built-in.o: In function `spi_map_buf':
-spi.c:(.text+0x21bc60): undefined reference to `dma_map_sg'
-drivers/built-in.o: In function `spi_unmap_buf.isra.33':
-spi.c:(.text+0x21c32e): undefined reference to `dma_unmap_sg'
+drivers/built-in.o: In function `altera_tse_probe':
+altera_tse_main.c:(.text+0x25ec2e): undefined reference to `dma_set_mask'
+altera_tse_main.c:(.text+0x25ec78): undefined reference to `dma_supported'
+altera_tse_main.c:(.text+0x25ecb6): undefined reference to `dma_supported'
+drivers/built-in.o: In function `sgdma_async_read':
+altera_sgdma.c:(.text+0x25f620): undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `sgdma_uninitialize':
+(.text+0x25f678): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `sgdma_uninitialize':
+(.text+0x25f696): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `sgdma_initialize':
+(.text+0x25f6f0): undefined reference to `dma_map_single'
+drivers/built-in.o: In function `sgdma_initialize':
+(.text+0x25f702): undefined reference to `dma_mapping_error'
+drivers/built-in.o: In function `sgdma_tx_buffer':
+(.text+0x25f92a): undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `sgdma_rx_status':
+(.text+0x25fa24): undefined reference to `dma_sync_single_for_cpu'
 make[3]: *** [vmlinux] Error 1
-
-Protect the DMA code by #ifdef CONFIG_HAS_DMA to fix this:
-  - Extract __spi_map_msg() from spi_map_msg(),
-  - Provide dummy definitions of __spi_map_msg() and spi_unmap_msg() if
-    !CONFIG_HAS_DMA.
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/spi/spi.c |  109 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 65 insertions(+), 44 deletions(-)
+ drivers/net/ethernet/altera/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 4eb9bf02996c..341942b640e1 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -580,6 +580,7 @@ static void spi_set_cs(struct spi_device *spi, bool enable)
- 		spi->master->set_cs(spi, !enable);
- }
- 
-+#ifdef CONFIG_HAS_DMA
- static int spi_map_buf(struct spi_master *master, struct device *dev,
- 		       struct sg_table *sgt, void *buf, size_t len,
- 		       enum dma_data_direction dir)
-@@ -637,55 +638,12 @@ static void spi_unmap_buf(struct spi_master *master, struct device *dev,
- 	}
- }
- 
--static int spi_map_msg(struct spi_master *master, struct spi_message *msg)
-+static int __spi_map_msg(struct spi_master *master, struct spi_message *msg)
- {
- 	struct device *tx_dev, *rx_dev;
- 	struct spi_transfer *xfer;
--	void *tmp;
--	unsigned int max_tx, max_rx;
- 	int ret;
- 
--	if (master->flags & (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX)) {
--		max_tx = 0;
--		max_rx = 0;
--
--		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
--			if ((master->flags & SPI_MASTER_MUST_TX) &&
--			    !xfer->tx_buf)
--				max_tx = max(xfer->len, max_tx);
--			if ((master->flags & SPI_MASTER_MUST_RX) &&
--			    !xfer->rx_buf)
--				max_rx = max(xfer->len, max_rx);
--		}
--
--		if (max_tx) {
--			tmp = krealloc(master->dummy_tx, max_tx,
--				       GFP_KERNEL | GFP_DMA);
--			if (!tmp)
--				return -ENOMEM;
--			master->dummy_tx = tmp;
--			memset(tmp, 0, max_tx);
--		}
--
--		if (max_rx) {
--			tmp = krealloc(master->dummy_rx, max_rx,
--				       GFP_KERNEL | GFP_DMA);
--			if (!tmp)
--				return -ENOMEM;
--			master->dummy_rx = tmp;
--		}
--
--		if (max_tx || max_rx) {
--			list_for_each_entry(xfer, &msg->transfers,
--					    transfer_list) {
--				if (!xfer->tx_buf)
--					xfer->tx_buf = master->dummy_tx;
--				if (!xfer->rx_buf)
--					xfer->rx_buf = master->dummy_rx;
--			}
--		}
--	}
--
- 	if (!master->can_dma)
- 		return 0;
- 
-@@ -742,6 +700,69 @@ static int spi_unmap_msg(struct spi_master *master, struct spi_message *msg)
- 
- 	return 0;
- }
-+#else /* !CONFIG_HAS_DMA */
-+static inline int __spi_map_msg(struct spi_master *master,
-+				struct spi_message *msg)
-+{
-+	return 0;
-+}
-+
-+static inline int spi_unmap_msg(struct spi_master *master,
-+				struct spi_message *msg)
-+{
-+	return 0;
-+}
-+#endif /* !CONFIG_HAS_DMA */
-+
-+static int spi_map_msg(struct spi_master *master, struct spi_message *msg)
-+{
-+	struct spi_transfer *xfer;
-+	void *tmp;
-+	unsigned int max_tx, max_rx;
-+
-+	if (master->flags & (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX)) {
-+		max_tx = 0;
-+		max_rx = 0;
-+
-+		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+			if ((master->flags & SPI_MASTER_MUST_TX) &&
-+			    !xfer->tx_buf)
-+				max_tx = max(xfer->len, max_tx);
-+			if ((master->flags & SPI_MASTER_MUST_RX) &&
-+			    !xfer->rx_buf)
-+				max_rx = max(xfer->len, max_rx);
-+		}
-+
-+		if (max_tx) {
-+			tmp = krealloc(master->dummy_tx, max_tx,
-+				       GFP_KERNEL | GFP_DMA);
-+			if (!tmp)
-+				return -ENOMEM;
-+			master->dummy_tx = tmp;
-+			memset(tmp, 0, max_tx);
-+		}
-+
-+		if (max_rx) {
-+			tmp = krealloc(master->dummy_rx, max_rx,
-+				       GFP_KERNEL | GFP_DMA);
-+			if (!tmp)
-+				return -ENOMEM;
-+			master->dummy_rx = tmp;
-+		}
-+
-+		if (max_tx || max_rx) {
-+			list_for_each_entry(xfer, &msg->transfers,
-+					    transfer_list) {
-+				if (!xfer->tx_buf)
-+					xfer->tx_buf = master->dummy_tx;
-+				if (!xfer->rx_buf)
-+					xfer->rx_buf = master->dummy_rx;
-+			}
-+		}
-+	}
-+
-+	return __spi_map_msg(master, msg);
-+}
- 
- /*
-  * spi_transfer_one_message - Default implementation of transfer_one_message()
+diff --git a/drivers/net/ethernet/altera/Kconfig b/drivers/net/ethernet/altera/Kconfig
+index 80c1ab74a4b8..fdddba51473e 100644
+--- a/drivers/net/ethernet/altera/Kconfig
++++ b/drivers/net/ethernet/altera/Kconfig
+@@ -1,5 +1,6 @@
+ config ALTERA_TSE
+ 	tristate "Altera Triple-Speed Ethernet MAC support"
++	depends on HAS_DMA
+ 	select PHYLIB
+ 	---help---
+ 	  This driver supports the Altera Triple-Speed (TSE) Ethernet MAC.
 -- 
 1.7.9.5
 
