@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaEBOeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:34:20 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:58556 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaEBOeS (ORCPT
+	id S1752441AbaEBOfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:35:48 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:47227 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbaEBOfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:34:18 -0400
+	Fri, 2 May 2014 10:35:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <s5h61loskcf.wl%tiwai@suse.de>
-References: <CAAWf5=s-hQ2xMtLxNFXjXH6UGmQtgkrzS9zWj3z_CTq41XGpdw@mail.gmail.com>
- <s5h4n1ov8h9.wl%tiwai@suse.de> <CAAWf5=usG_Q-11kMd=58mVEELb8b0nyBXanaDqKqCGSFVJP0Rw@mail.gmail.com>
- <s5hbnvk9pxn.wl%tiwai@suse.de> <CAAWf5=tENLeh8VeM2i_FwYiqGYtZEMZ625XQTjx6nutE=A46Mg@mail.gmail.com>
- <s5hioprs4hb.wl%tiwai@suse.de> <CAAWf5=tzBW5pBNBnO1URoo1Z1O-rTnVOpeAyMs73tqYNyjF-_Q@mail.gmail.com>
- <s5h8uqmixkz.wl%tiwai@suse.de> <CAAWf5=s=jrUa2wi6z5djW4rWA-PUS0q5pN3jU+ph0s8vxu65GQ@mail.gmail.com>
- <s5h61loskcf.wl%tiwai@suse.de>
-From: Bryan Quigley <gquigs@gmail.com>
-Date: Fri, 2 May 2014 10:33:57 -0400
-Message-ID: <CAAWf5=vuOKAiboupWVg83MZeESeOPF2L8a5oUQX8QPCG7k7Vqw@mail.gmail.com>
-Subject: Re: PROBLEM: Pulseaudio hung at schedule in 3.15-rc1
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAPDyKFpTwPDu9afhOjhhQ2PKGFB+hWsp=mcaYTq8OvuGF7yT3Q@mail.gmail.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFpTwPDu9afhOjhhQ2PKGFB+hWsp=mcaYTq8OvuGF7yT3Q@mail.gmail.com>
+Date: Fri, 2 May 2014 16:35:44 +0200
+X-Google-Sender-Auth: ljdOSl99Mt9d9EcesaHsuq-rspQ
+Message-ID: <CAMuHMdUGdfF8x58dz46VWNsC4X0cmFng39Z2xSO_pXYqn9u=HA@mail.gmail.com>
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
+ with the PM core
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That looks good!
-Thanks!
-Bryan
+Hi Ulf,
 
-On Fri, May 2, 2014 at 3:36 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 30 Apr 2014 13:40:11 -0400,
-> Bryan Quigley wrote:
->>
->> > Hm, what about the one below instead?
->> >
->> >
->> > Takashi
->>
->> It works now!  Still gives me some errors, but both the webcam and
->> microphone function fine..
->>
->> On pluging it in, all seems normal:
->> Apr 30 13:33:29 dell-laptop kernel: [  467.144143] usb 2-2: new
->> high-speed USB device number 4 using ehci-pci
->> Apr 30 13:33:30 dell-laptop kernel: [  467.492931] usb 2-2: New USB
->> device found, idVendor=046d, idProduct=0825
->> Apr 30 13:33:30 dell-laptop kernel: [  467.492939] usb 2-2: New USB
->> device strings: Mfr=0, Product=0, SerialNumber=2
->> Apr 30 13:33:30 dell-laptop kernel: [  467.492943] usb 2-2:
->> SerialNumber: 0911F220
->> Apr 30 13:33:30 dell-laptop kernel: [  467.493799] uvcvideo: Found UVC
->> 1.00 device <unnamed> (046d:0825)
->> Apr 30 13:33:30 dell-laptop kernel: [  467.590713] input: UVC Camera
->> (046d:0825) as /devices/pci0000:00/0000:00:1d.7/usb2/2-2/2-2:1.0/input/input20
->> Apr 30 13:33:31 dell-laptop kernel: [  468.753801] usb 2-2: set
->> resolution quirk: cval->res = 384
->>
->> But on any access (sudo lsusb -v, open webcam, etc), it will give:
->> Apr 30 13:35:21 dell-laptop kernel: [  578.788135] usb 2-2: reset
->> high-speed USB device number 4 using ehci-pci
->> Apr 30 13:35:21 dell-laptop kernel: [  579.142380] snd-usb-audio
->> 2-2:1.2: reset_resume error -5
->>
->> Doesn't seem to affect performance at all though..
+On Fri, May 2, 2014 at 10:56 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> +static int of_clk_pm_runtime_suspend(struct device *dev)
+>> +{
+>> +       int ret;
+>> +
+>> +       ret = pm_generic_runtime_suspend(dev);
+>> +       if (ret)
+>> +               return ret;
+>> +
+>> +       ret = pm_clk_suspend(dev);
 >
-> OK, the error above comes from my patch returning an error at auto
-> suspend callback.  How about the revised patch below?
->
->
-> thanks,
->
-> Takashi
->
-> ---
-> diff --git a/sound/usb/card.c b/sound/usb/card.c
-> index 893d5a1afc3c..c3b5b7dca1c3 100644
-> --- a/sound/usb/card.c
-> +++ b/sound/usb/card.c
-> @@ -651,7 +651,7 @@ int snd_usb_autoresume(struct snd_usb_audio *chip)
->         int err = -ENODEV;
->
->         down_read(&chip->shutdown_rwsem);
-> -       if (chip->probing)
-> +       if (chip->probing && chip->in_pm)
->                 err = 0;
->         else if (!chip->shutdown)
->                 err = usb_autopm_get_interface(chip->pm_intf);
-> @@ -663,7 +663,7 @@ int snd_usb_autoresume(struct snd_usb_audio *chip)
->  void snd_usb_autosuspend(struct snd_usb_audio *chip)
->  {
->         down_read(&chip->shutdown_rwsem);
-> -       if (!chip->shutdown && !chip->probing)
-> +       if (!chip->shutdown && !chip->probing && !chip->in_pm)
->                 usb_autopm_put_interface(chip->pm_intf);
->         up_read(&chip->shutdown_rwsem);
->  }
-> @@ -695,8 +695,9 @@ static int usb_audio_suspend(struct usb_interface *intf, pm_message_t message)
->                         chip->autosuspended = 1;
->         }
->
-> -       list_for_each_entry(mixer, &chip->mixer_list, list)
-> -               snd_usb_mixer_suspend(mixer);
-> +       if (chip->num_suspended_intf == 1)
-> +               list_for_each_entry(mixer, &chip->mixer_list, list)
-> +                       snd_usb_mixer_suspend(mixer);
->
->         return 0;
->  }
-> @@ -711,6 +712,8 @@ static int __usb_audio_resume(struct usb_interface *intf, bool reset_resume)
->                 return 0;
->         if (--chip->num_suspended_intf)
->                 return 0;
-> +
-> +       chip->in_pm = 1;
->         /*
->          * ALSA leaves material resumption to user space
->          * we just notify and restart the mixers
-> @@ -726,6 +729,7 @@ static int __usb_audio_resume(struct usb_interface *intf, bool reset_resume)
->         chip->autosuspended = 0;
->
->  err_out:
-> +       chip->in_pm = 0;
->         return err;
->  }
->
-> diff --git a/sound/usb/usbaudio.h b/sound/usb/usbaudio.h
-> index 25c4c7e217de..91d0380431b4 100644
-> --- a/sound/usb/usbaudio.h
-> +++ b/sound/usb/usbaudio.h
-> @@ -40,6 +40,7 @@ struct snd_usb_audio {
->         struct rw_semaphore shutdown_rwsem;
->         unsigned int shutdown:1;
->         unsigned int probing:1;
-> +       unsigned int in_pm:1;
->         unsigned int autosuspended:1;
->         unsigned int txfr_quirk:1; /* Subframe boundaries on transfers */
->
+> What about slow clocks? Those aren't handled with pm_clk_suspend().
+
+How are slow clocks handled?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
