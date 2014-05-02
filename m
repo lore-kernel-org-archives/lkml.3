@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbaEBQW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:22:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43743 "EHLO
+	id S1753969AbaEBQXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:23:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43707 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774AbaEBPjX (ORCPT
+	with ESMTP id S1752760AbaEBPjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kent Overstreet <koverstreet@google.com>, NeilBrown <neilb@suse.de>,
+Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 146/151] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
-Date: Fri,  2 May 2014 08:38:54 -0700
-Message-Id: <1399045139-4531-147-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 133/151] dm cache: fix a lock-inversion
+Date: Fri,  2 May 2014 08:38:41 -0700
+Message-Id: <1399045139-4531-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,78 +27,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Joe Thornber <ejt@redhat.com>
 
-commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
+commit 0596661f0a16d9d69bf1033320e70b6ff52b5e81 upstream.
 
-When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
-on a raid1, we allocate multiple bios each with their own set of pages.
+When suspending a cache the policy is walked and the individual policy
+hints written to the metadata via sync_metadata().  This led to this
+lock order:
 
-If the page allocations for one bio fails, we currently do *not* free
-the pages allocated for the previous bios, nor do we free the bio itself.
+      policy->lock
+        cache_metadata->root_lock
 
-This patch frees all the already-allocate pages, and makes sure that
-all the bios are freed as well.
+When loading the cache target the policy is populated while the metadata
+lock is held:
 
-This bug can cause a memory leak which can ultimately OOM a machine.
-It was introduced in 3.10-rc1.
+      cache_metadata->root_lock
+         policy->lock
 
-Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
-Cc: Kent Overstreet <koverstreet@google.com>
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Fix this potential lock-inversion (ABBA) deadlock in sync_metadata() by
+ensuring the cache_metadata root_lock is held whilst all the hints are
+written, rather than being repeatedly locked while policy->lock is held
+(as was the case with each callout that policy_walk_mappings() made to
+the old save_hint() method).
+
+Found by turning on the CONFIG_PROVE_LOCKING ("Lock debugging: prove
+locking correctness") build option.  However, it is not clear how the
+LOCKDEP reported paths can lead to a deadlock since the two paths,
+suspending a target and loading a target, never occur at the same time.
+But that doesn't mean the same lock-inversion couldn't have occurred
+elsewhere.
+
+Reported-by: Marian Csontos <mcsontos@redhat.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ kamal: backport to 3.13: omitted cache_target version string change ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid1.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/md/dm-cache-metadata.c | 35 +++++++++++++++++------------------
+ drivers/md/dm-cache-metadata.h |  9 +--------
+ drivers/md/dm-cache-target.c   | 26 +-------------------------
+ 3 files changed, 19 insertions(+), 51 deletions(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 63b2e8d..5166401 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -97,6 +97,7 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
- 	struct pool_info *pi = data;
- 	struct r1bio *r1_bio;
- 	struct bio *bio;
-+	int need_pages;
- 	int i, j;
+diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
+index 53ab31e..5320332 100644
+--- a/drivers/md/dm-cache-metadata.c
++++ b/drivers/md/dm-cache-metadata.c
+@@ -1245,22 +1245,12 @@ static int begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *po
+ 	return 0;
+ }
  
- 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
-@@ -119,15 +120,15 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
- 	 * RESYNC_PAGES for each bio.
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
--		j = pi->raid_disks;
-+		need_pages = pi->raid_disks;
- 	else
--		j = 1;
--	while(j--) {
-+		need_pages = 1;
-+	for (j = 0; j < need_pages; j++) {
- 		bio = r1_bio->bios[j];
- 		bio->bi_vcnt = RESYNC_PAGES;
+-int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
++static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock, uint32_t hint)
+ {
++	struct dm_cache_metadata *cmd = context;
++	__le32 value = cpu_to_le32(hint);
+ 	int r;
  
- 		if (bio_alloc_pages(bio, gfp_flags))
--			goto out_free_bio;
-+			goto out_free_pages;
- 	}
- 	/* If not user-requests, copy the page pointers to all bios */
- 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
-@@ -141,6 +142,14 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+-	down_write(&cmd->root_lock);
+-	r = begin_hints(cmd, policy);
+-	up_write(&cmd->root_lock);
+-
+-	return r;
+-}
+-
+-static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
+-		     uint32_t hint)
+-{
+-	int r;
+-	__le32 value = cpu_to_le32(hint);
+ 	__dm_bless_for_disk(&value);
  
- 	return r1_bio;
+ 	r = dm_array_set_value(&cmd->hint_info, cmd->hint_root,
+@@ -1270,16 +1260,25 @@ static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
+ 	return r;
+ }
  
-+out_free_pages:
-+	while (--j >= 0) {
-+		struct bio_vec *bv;
-+
-+		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
-+			__free_page(bv->bv_page);
+-int dm_cache_save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
+-		       uint32_t hint)
++static int write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
+ {
+ 	int r;
+ 
+-	if (!hints_array_initialized(cmd))
+-		return 0;
++	r = begin_hints(cmd, policy);
++	if (r) {
++		DMERR("begin_hints failed");
++		return r;
 +	}
 +
- out_free_bio:
- 	while (++j < pi->raid_disks)
- 		bio_put(r1_bio->bios[j]);
++	return policy_walk_mappings(policy, save_hint, cmd);
++}
++
++int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
++{
++	int r;
+ 
+ 	down_write(&cmd->root_lock);
+-	r = save_hint(cmd, cblock, hint);
++	r = write_hints(cmd, policy);
+ 	up_write(&cmd->root_lock);
+ 
+ 	return r;
+diff --git a/drivers/md/dm-cache-metadata.h b/drivers/md/dm-cache-metadata.h
+index cd906f1..f0fb1dd 100644
+--- a/drivers/md/dm-cache-metadata.h
++++ b/drivers/md/dm-cache-metadata.h
+@@ -128,14 +128,7 @@ void dm_cache_dump(struct dm_cache_metadata *cmd);
+  * rather than querying the policy for each cblock, we let it walk its data
+  * structures and fill in the hints in whatever order it wishes.
+  */
+-
+-int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
+-
+-/*
+- * requests hints for every cblock and stores in the metadata device.
+- */
+-int dm_cache_save_hint(struct dm_cache_metadata *cmd,
+-		       dm_cblock_t cblock, uint32_t hint);
++int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
+ 
+ /*
+  * Query method.  Are all the blocks in the cache clean?
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index 0411e9f..0826650 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2589,30 +2589,6 @@ static int write_discard_bitset(struct cache *cache)
+ 	return 0;
+ }
+ 
+-static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock,
+-		     uint32_t hint)
+-{
+-	struct cache *cache = context;
+-	return dm_cache_save_hint(cache->cmd, cblock, hint);
+-}
+-
+-static int write_hints(struct cache *cache)
+-{
+-	int r;
+-
+-	r = dm_cache_begin_hints(cache->cmd, cache->policy);
+-	if (r) {
+-		DMERR("dm_cache_begin_hints failed");
+-		return r;
+-	}
+-
+-	r = policy_walk_mappings(cache->policy, save_hint, cache);
+-	if (r)
+-		DMERR("policy_walk_mappings failed");
+-
+-	return r;
+-}
+-
+ /*
+  * returns true on success
+  */
+@@ -2630,7 +2606,7 @@ static bool sync_metadata(struct cache *cache)
+ 
+ 	save_stats(cache);
+ 
+-	r3 = write_hints(cache);
++	r3 = dm_cache_write_hints(cache->cmd, cache->policy);
+ 	if (r3)
+ 		DMERR("could not write hints");
+ 
 -- 
 1.9.1
 
