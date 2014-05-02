@@ -1,112 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaEBOc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:32:59 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:61892 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbaEBOc5 (ORCPT
+	id S1752312AbaEBOeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:34:20 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:58556 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaEBOeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:32:57 -0400
+	Fri, 2 May 2014 10:34:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <1398353407-2345-6-git-send-email-santosh.shilimkar@ti.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
-	<1398353407-2345-6-git-send-email-santosh.shilimkar@ti.com>
-Date: Fri, 2 May 2014 09:32:56 -0500
-Message-ID: <CAL_JsqKapfHRMQLU+4hmRUh7Swf-_YedW=yU=nrqzftoJ09PYQ@mail.gmail.com>
-Subject: Re: [PATCH v3 5/7] ARM: dma: Use dma_pfn_offset for dma address translation
-From: Rob Herring <robherring2@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <s5h61loskcf.wl%tiwai@suse.de>
+References: <CAAWf5=s-hQ2xMtLxNFXjXH6UGmQtgkrzS9zWj3z_CTq41XGpdw@mail.gmail.com>
+ <s5h4n1ov8h9.wl%tiwai@suse.de> <CAAWf5=usG_Q-11kMd=58mVEELb8b0nyBXanaDqKqCGSFVJP0Rw@mail.gmail.com>
+ <s5hbnvk9pxn.wl%tiwai@suse.de> <CAAWf5=tENLeh8VeM2i_FwYiqGYtZEMZ625XQTjx6nutE=A46Mg@mail.gmail.com>
+ <s5hioprs4hb.wl%tiwai@suse.de> <CAAWf5=tzBW5pBNBnO1URoo1Z1O-rTnVOpeAyMs73tqYNyjF-_Q@mail.gmail.com>
+ <s5h8uqmixkz.wl%tiwai@suse.de> <CAAWf5=s=jrUa2wi6z5djW4rWA-PUS0q5pN3jU+ph0s8vxu65GQ@mail.gmail.com>
+ <s5h61loskcf.wl%tiwai@suse.de>
+From: Bryan Quigley <gquigs@gmail.com>
+Date: Fri, 2 May 2014 10:33:57 -0400
+Message-ID: <CAAWf5=vuOKAiboupWVg83MZeESeOPF2L8a5oUQX8QPCG7k7Vqw@mail.gmail.com>
+Subject: Re: PROBLEM: Pulseaudio hung at schedule in 3.15-rc1
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:30 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> From: Grygorii Strashko <grygorii.strashko@ti.com>
->
-> In most of cases DMA addresses can be performed using offset value of
->  Bus address space relatively to physical address space as following:
->
-> PFN->DMA:
->  __pfn_to_phys(pfn + [-]dma_pfn_offset)
->
-> DMA->PFN:
->  __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
->
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+That looks good!
+Thanks!
+Bryan
 
-Reviewed-by: Rob Herring <robh@kernel.org>
-
+On Fri, May 2, 2014 at 3:36 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 30 Apr 2014 13:40:11 -0400,
+> Bryan Quigley wrote:
+>>
+>> > Hm, what about the one below instead?
+>> >
+>> >
+>> > Takashi
+>>
+>> It works now!  Still gives me some errors, but both the webcam and
+>> microphone function fine..
+>>
+>> On pluging it in, all seems normal:
+>> Apr 30 13:33:29 dell-laptop kernel: [  467.144143] usb 2-2: new
+>> high-speed USB device number 4 using ehci-pci
+>> Apr 30 13:33:30 dell-laptop kernel: [  467.492931] usb 2-2: New USB
+>> device found, idVendor=046d, idProduct=0825
+>> Apr 30 13:33:30 dell-laptop kernel: [  467.492939] usb 2-2: New USB
+>> device strings: Mfr=0, Product=0, SerialNumber=2
+>> Apr 30 13:33:30 dell-laptop kernel: [  467.492943] usb 2-2:
+>> SerialNumber: 0911F220
+>> Apr 30 13:33:30 dell-laptop kernel: [  467.493799] uvcvideo: Found UVC
+>> 1.00 device <unnamed> (046d:0825)
+>> Apr 30 13:33:30 dell-laptop kernel: [  467.590713] input: UVC Camera
+>> (046d:0825) as /devices/pci0000:00/0000:00:1d.7/usb2/2-2/2-2:1.0/input/input20
+>> Apr 30 13:33:31 dell-laptop kernel: [  468.753801] usb 2-2: set
+>> resolution quirk: cval->res = 384
+>>
+>> But on any access (sudo lsusb -v, open webcam, etc), it will give:
+>> Apr 30 13:35:21 dell-laptop kernel: [  578.788135] usb 2-2: reset
+>> high-speed USB device number 4 using ehci-pci
+>> Apr 30 13:35:21 dell-laptop kernel: [  579.142380] snd-usb-audio
+>> 2-2:1.2: reset_resume error -5
+>>
+>> Doesn't seem to affect performance at all though..
+>
+> OK, the error above comes from my patch returning an error at auto
+> suspend callback.  How about the revised patch below?
+>
+>
+> thanks,
+>
+> Takashi
+>
 > ---
->  arch/arm/include/asm/dma-mapping.h |   21 +++++++++++++++++----
->  1 file changed, 17 insertions(+), 4 deletions(-)
+> diff --git a/sound/usb/card.c b/sound/usb/card.c
+> index 893d5a1afc3c..c3b5b7dca1c3 100644
+> --- a/sound/usb/card.c
+> +++ b/sound/usb/card.c
+> @@ -651,7 +651,7 @@ int snd_usb_autoresume(struct snd_usb_audio *chip)
+>         int err = -ENODEV;
 >
-> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> index e701a4d..424fda9 100644
-> --- a/arch/arm/include/asm/dma-mapping.h
-> +++ b/arch/arm/include/asm/dma-mapping.h
-> @@ -58,22 +58,35 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
->  #ifndef __arch_pfn_to_dma
->  static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
+>         down_read(&chip->shutdown_rwsem);
+> -       if (chip->probing)
+> +       if (chip->probing && chip->in_pm)
+>                 err = 0;
+>         else if (!chip->shutdown)
+>                 err = usb_autopm_get_interface(chip->pm_intf);
+> @@ -663,7 +663,7 @@ int snd_usb_autoresume(struct snd_usb_audio *chip)
+>  void snd_usb_autosuspend(struct snd_usb_audio *chip)
 >  {
-> -       return (dma_addr_t)__pfn_to_bus(pfn);
-> +       if (!dev)
-> +               return (dma_addr_t)__pfn_to_bus(pfn);
-> +       else
-> +               return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
+>         down_read(&chip->shutdown_rwsem);
+> -       if (!chip->shutdown && !chip->probing)
+> +       if (!chip->shutdown && !chip->probing && !chip->in_pm)
+>                 usb_autopm_put_interface(chip->pm_intf);
+>         up_read(&chip->shutdown_rwsem);
+>  }
+> @@ -695,8 +695,9 @@ static int usb_audio_suspend(struct usb_interface *intf, pm_message_t message)
+>                         chip->autosuspended = 1;
+>         }
+>
+> -       list_for_each_entry(mixer, &chip->mixer_list, list)
+> -               snd_usb_mixer_suspend(mixer);
+> +       if (chip->num_suspended_intf == 1)
+> +               list_for_each_entry(mixer, &chip->mixer_list, list)
+> +                       snd_usb_mixer_suspend(mixer);
+>
+>         return 0;
+>  }
+> @@ -711,6 +712,8 @@ static int __usb_audio_resume(struct usb_interface *intf, bool reset_resume)
+>                 return 0;
+>         if (--chip->num_suspended_intf)
+>                 return 0;
+> +
+> +       chip->in_pm = 1;
+>         /*
+>          * ALSA leaves material resumption to user space
+>          * we just notify and restart the mixers
+> @@ -726,6 +729,7 @@ static int __usb_audio_resume(struct usb_interface *intf, bool reset_resume)
+>         chip->autosuspended = 0;
+>
+>  err_out:
+> +       chip->in_pm = 0;
+>         return err;
 >  }
 >
->  static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
->  {
-> -       return __bus_to_pfn(addr);
-> +       if (!dev)
-> +               return __bus_to_pfn(addr);
-> +       else
-> +               return __bus_to_pfn(addr) + dev->dma_pfn_offset;
->  }
->
->  static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
->  {
-> -       return (void *)__bus_to_virt((unsigned long)addr);
-> +       if (!dev)
-> +               return (void *)__bus_to_virt((unsigned long)addr);
-> +       else
-> +               return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
->  }
->
->  static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
->  {
-> -       return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-> +       if (!dev)
-> +               return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-> +       else
-> +               return pfn_to_dma(dev,
-> +                               __bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
->  }
->
->  #else
-> --
-> 1.7.9.5
+> diff --git a/sound/usb/usbaudio.h b/sound/usb/usbaudio.h
+> index 25c4c7e217de..91d0380431b4 100644
+> --- a/sound/usb/usbaudio.h
+> +++ b/sound/usb/usbaudio.h
+> @@ -40,6 +40,7 @@ struct snd_usb_audio {
+>         struct rw_semaphore shutdown_rwsem;
+>         unsigned int shutdown:1;
+>         unsigned int probing:1;
+> +       unsigned int in_pm:1;
+>         unsigned int autosuspended:1;
+>         unsigned int txfr_quirk:1; /* Subframe boundaries on transfers */
 >
