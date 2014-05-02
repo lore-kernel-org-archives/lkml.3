@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848AbaEBPpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:45:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44185 "EHLO
+	id S1753913AbaEBPph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:45:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44239 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaEBPpP (ORCPT
+	with ESMTP id S1753898AbaEBPpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:45:15 -0400
+	Fri, 2 May 2014 11:45:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Braun <michael-dev@fami-braun.de>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 081/151] mac80211: fix WPA with VLAN on AP side with ps-sta again
-Date: Fri,  2 May 2014 08:37:49 -0700
-Message-Id: <1399045139-4531-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 088/151] clk: s2mps11: Fix possible NULL pointer dereference
+Date: Fri,  2 May 2014 08:37:56 -0700
+Message-Id: <1399045139-4531-89-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,44 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Braun <michael-dev@fami-braun.de>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
+commit 238e14055da87d0d012257788e39fe0df3a82226 upstream.
 
-commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
-  "mac80211: fix WPA with VLAN on AP side with ps-sta"
-fixed an issue where queued multicast packets would
-be sent out encrypted with the key of an other bss.
+If parent device does not have of_node set the s2mps11_clk_parse_dt()
+returned NULL. This NULL was later passed to of_clk_add_provider() which
+dereferenced it in pr_debug() call.
 
-commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
-  "mac80211: fix oops on mesh PS broadcast forwarding"
-essentially reverted it, because vif.type cannot be AP_VLAN
-due to the check to vif.type in ieee80211_get_buffered_bc before.
-
-As the later commit intended to fix the MESH case, fix it
-by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
-
-Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
-Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/tx.c | 2 +-
+ drivers/clk/clk-s2mps11.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 5b4d030..c45f75f 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -2880,7 +2880,7 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw,
- 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
- 		}
+diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+index 00a3abe..27c83e4 100644
+--- a/drivers/clk/clk-s2mps11.c
++++ b/drivers/clk/clk-s2mps11.c
+@@ -130,7 +130,7 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
+ 	int i;
  
--		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP)
- 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
- 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
- 			break;
+ 	if (!iodev->dev->of_node)
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 
+ 	clk_np = of_find_node_by_name(iodev->dev->of_node, "clocks");
+ 	if (!clk_np) {
 -- 
 1.9.1
 
