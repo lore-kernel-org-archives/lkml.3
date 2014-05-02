@@ -1,107 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaEBQs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:48:28 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30239 "EHLO mga11.intel.com"
+	id S1752839AbaEBQte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:49:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887AbaEBQs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:48:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,973,1389772800"; 
-   d="asc'?scan'208";a="532585543"
-Date: Fri, 2 May 2014 22:04:29 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v7] DMA: sun6i: Add driver for the Allwinner A31 DMA
- controller
-Message-ID: <20140502163429.GA32284@intel.com>
-References: <20140430070408.GR32284@intel.com>
- <20140430215322.GH3000@lukather>
+	id S1751643AbaEBQtd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 12:49:33 -0400
+Date: Fri, 2 May 2014 18:49:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140502164930.GP3446@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502155805.GO23420@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140430215322.GH3000@lukather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140502155805.GO23420@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri 02-05-14 11:58:05, Johannes Weiner wrote:
+> On Fri, May 02, 2014 at 11:36:28AM +0200, Michal Hocko wrote:
+> > On Wed 30-04-14 18:55:50, Johannes Weiner wrote:
+> > > On Mon, Apr 28, 2014 at 02:26:42PM +0200, Michal Hocko wrote:
+> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > > index 19d620b3d69c..40e517630138 100644
+> > > > --- a/mm/memcontrol.c
+> > > > +++ b/mm/memcontrol.c
+> > > > @@ -2808,6 +2808,29 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+> > > >  	return mem_cgroup_from_id(id);
+> > > >  }
+> > > >  
+> > > > +/**
+> > > > + * mem_cgroup_reclaim_eligible - checks whether given memcg is eligible for the
+> > > > + * reclaim
+> > > > + * @memcg: target memcg for the reclaim
+> > > > + * @root: root of the reclaim hierarchy (null for the global reclaim)
+> > > > + *
+> > > > + * The given group is reclaimable if it is above its low limit and the same
+> > > > + * applies for all parents up the hierarchy until root (including).
+> > > > + */
+> > > > +bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
+> > > > +		struct mem_cgroup *root)
+> > > 
+> > > Could you please rename this to something that is more descriptive in
+> > > the reclaim callsite?  How about mem_cgroup_within_low_limit()?
+> > 
+> > I have intentionally used somethig that is not low_limit specific. The
+> > generic reclaim code does't have to care about the reason why a memcg is
+> > not reclaimable. I agree that having follow_low_limit paramter explicit
+> > and mem_cgroup_reclaim_eligible not is messy. So something should be
+> > renamed. I would probably go with s@follow_low_limit@check_reclaim_eligible@
+> > but I do not have a strong preference.
+> > 
+> > > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > > index c1cd99a5074b..0f428158254e 100644
+> > > > --- a/mm/vmscan.c
+> > > > +++ b/mm/vmscan.c
+> > [...]
+> > > > +static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> > > > +{
+> > > > +	if (!__shrink_zone(zone, sc, true)) {
+> > > > +		/*
+> > > > +		 * First round of reclaim didn't find anything to reclaim
+> > > > +		 * because of low limit protection so try again and ignore
+> > > > +		 * the low limit this time.
+> > > > +		 */
+> > > > +		__shrink_zone(zone, sc, false);
+> > > > +	}
+> 
+> So I don't think this can work as it is, because we are not actually
+> changing priority levels yet. 
 
---VywGB/WGlW4DM4P8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+__shrink_zone returns with 0 only if the whole hierarchy is is under low
+limit. This means that they are over-committed and it doesn't make much
+sense to play with priority. Low limit reclaimability is independent on
+the priority.
 
-On Wed, Apr 30, 2014 at 02:53:22PM -0700, Maxime Ripard wrote:
-> Hi Vinod,
->=20
-> On Wed, Apr 30, 2014 at 12:34:08PM +0530, Vinod Koul wrote:
-> > On Thu, Apr 24, 2014 at 04:22:44PM +0200, Maxime Ripard wrote:
-> > > +static inline void sun6i_dma_free(struct sun6i_dma_dev *sdc)
-> > > +{
-> > > +	int i;
-> > > +
-> > > +	for (i =3D 0; i < NR_MAX_VCHANS; i++) {
-> > > +		struct sun6i_vchan *vchan =3D &sdc->vchans[i];
-> > > +
-> > > +		list_del(&vchan->vc.chan.device_node);
-> > > +		tasklet_kill(&vchan->vc.task);
-> > > +	}
-> > > +
-> > > +	tasklet_kill(&sdc->task);
-> > This is again not good. see http://lwn.net/Articles/588457/
-> > At this point HW can still generate interrupts or you can have irq runn=
-ing!
->=20
-> I'm not sure to fully understand the issue here, but what is not good?
-> the first or the second tasklet_kill calls, or both?
->=20
-> From what I understood, the issue is only there whenever you are
-> calling tasklet_disable without making sure that no one will schedule
-> your tasklet before disabling it.
->=20
-> But the point is I don't actually use either _enable/_disable. I might
-> be wrong in not using those functions, but I don't really see how I
-> can be impacted.
+> It will give up on the guarantees of bigger groups way before smaller
+> groups are even seriously looked at.
 
-Well that was one part of it. How do you ensure the tasklet is not scheduled
-while and after you are killing it. You need to ensure irq is disabled and =
-pending irqs
-have finished processing. I dont see that bit.
+How would that happen? Those (smaller) groups would get reclaimed and we
+wouldn't fallback. Or am I missing your point?
 
---=20
-~Vinod
+> > > I would actually prefer not having a second round here, and make the
+> > > low limit behave more like mlock memory.  If there is no reclaimable
+> > > memory, go OOM.
+> > 
+> > This was done in my previous attempt and I prefer OOM myself but it is
+> > also true that starting with a more relaxed limit and adding an
+> > option for hard guarantee later when we have a clear usecase is a better
+> > approach. Although I can see potential in go-oom-rather-than-reclaim
+> > configurations, usecases I am primarily interested in won't overcommit on
+> > low_limit.
+> > 
+> > That being said, I like the idea of having the hard guarantee but I also
+> > think it should be configurable. I can post those patches in this thread
+> > but I feel it is too early as nobody has explicitly asked for this yet.
+> 
+> As per above, this makes the semantics so much more fishy.  When
+> exactly do we stop honoring the guarantees in the process?
 
+When the reclaimed hierarchy is bellow low_limit. In other words when we
+would go and OOM without fallback.
 
---VywGB/WGlW4DM4P8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+> This is not even guarantees anymore, but rather another reclaim
+> prioritization scheme with best-effort semantics.  That went over
+> horribly with soft limits, and I don't want to repeat this.
+> 
+> Overcommitting on guarantees makes no sense, and you even agree you
+> are not interested in it.  We also agree that we can always add a knob
+> later on to change semantics when an actual usecase presents itself,
+> so why not start with the clear and simple semantics, and the simpler
+> implementation?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+So you are really preferring an OOM instead? That was the original
+implementation posted at the end of last year and some people
+had concerns about it. This is the primary reason I came up with a
+weaker version which fallbacks rather than OOM.
 
-iQIcBAEBAgAGBQJTY8kVAAoJEHwUBw8lI4NHMwoP/i4gEC/gYCpkacQiL5wED/DR
-vMKJK48oAo5gejkWrd65m7HyyxiGtBDZLU+XJ/EjlZJovr8fDdcNt+mf180hyXY4
-+uwxu5tFuH9UlQeFmz6RmPAIMhJfPH/H0YYYkCaC38/nUlYUaQDRguHLR5ntepa0
-4gpAx8bZvcLPt/ni0XxeiI7mBxDrjsAtpxe50yo4WwSsI85BiycH5q6+zO2yR9O2
-veCV6HT0RN/5WwOHSTYCBHpSL1ustsm1boFhiJuy8tEP7QJbWwxYFKBcrCCrt3+X
-2n8XASdx29lTeGkOzNSAObqW5eIs8Vtm4k4WdCiGETi3YpjlTqurm9yb58UTp/81
-RR+zA8wTbjHFftzKQsg1b7qDdaNekJyQh+evFwQgZ6n7hMyJ+ZzbXA5hFg7SL/72
-tpuR860W61IGJZLk7Q617XWNs0ShpmS9wEF/oByOyrznaiNB5ZIrYDbS+a0Y6Zdh
-uTK63VDfwIJnpYpotw+xz80NhHy/GlKDpXbKbHrxiY7iANTjg7shz4UOnoSBx36e
-zfsBHq5V16PedzD6PVzS4Q6JS/G8oEC6bJvbSVde+iy/StSSGEdR1yNExzrR3QpP
-jXyHlwwJRJsj8+FmI45sNjB9xzpxRi6RR0NqEiicFFs172JHhN+oPUL5fjZrtABw
-YwqV+SLBJGqv8rfhCFp1
-=X/X1
------END PGP SIGNATURE-----
-
---VywGB/WGlW4DM4P8--
+-- 
+Michal Hocko
+SUSE Labs
