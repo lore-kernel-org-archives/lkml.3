@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaEBUpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:45:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44294 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752336AbaEBUpG (ORCPT
+	id S1752846AbaEBUuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:50:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45811 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaEBUuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:45:06 -0400
-Date: Fri, 2 May 2014 22:45:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu> <20140502154217.GW11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
- <20140502162234.GX11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu> <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 May 2014 16:50:08 -0400
+Date: Fri, 2 May 2014 20:50:00 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 1/2] namespaces: give each namespace a serial number
+Message-ID: <20140502204959.GE2631@ubuntumail>
+References: <cover.1398176489.git.rgb@redhat.com>
+ <be1358c6da51252cd79c51a51bb30bf157624ccd.1398176489.git.rgb@redhat.com>
+ <20140501225116.GB25669@mail.hallyn.com>
+ <20140502141530.GB24111@madcap2.tricolour.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140502141530.GB24111@madcap2.tricolour.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014, Vince Weaver wrote:
-
-> On Fri, 2 May 2014, Thomas Gleixner wrote:
+Quoting Richard Guy Briggs (rgb@redhat.com):
+> On 14/05/02, Serge E. Hallyn wrote:
+> > Quoting Richard Guy Briggs (rgb@redhat.com):
+> > 
+> > Most of this looks reasonable, but I'm curious about something,
+> > 
+> > > +/**
+> > > + * ns_serial - compute a serial number for the namespace
+> > > + *
+> > > + * Compute a serial number for the namespace to uniquely identify it in
+> > > + * audit records.
+> > > + */
+> > > +unsigned int ns_serial(void)
+> > > +{
+> > > +	static DEFINE_SPINLOCK(serial_lock);
+> > > +	static unsigned int serial = 4; /* reserved for IPC, UTS, user, PID */
+> > > +
+> > > +	unsigned long flags;
+> > > +	unsigned int ret;
+> > > +
+> > > +	spin_lock_irqsave(&serial_lock, flags);
+> > > +	do {
+> > > +		ret = ++serial;
+> > > +	} while (unlikely(!ret));
+> > 
+> > Why exactly are you doing this?  Surely if serial is going to
+> > wrap around we've got a bigger problem than just wanting go
+> > bump one more time?
 > 
-> > Hmm, and where comes the WARN_ON in _free_event() from? That's not in
-> > Peters last patch.
-> 
-> ahh, you're right :(  My fault.  I gave the new patch and the previous 
-> patch similar names and applied the wrong one.
-> 
-> OK the proper patch has been running the quick reproducer for a bit 
-> without triggering the issue, I'll let it run a bit more and then upgrade 
-> to full fuzzing.
+> Thanks for catching this.
+> The code was templated off audit_serial() which tries to solve a
+> different problem and rolling it is much more likely.  I hadn't noticed
+> that rollover protection.  However, I *had* thought of making it a long
+> (which would be the same size on 32-bit arches, but larger on 64-bit)
+> since a 64-bit system is more likely to roll it out of sheer speed and
+> resource availability.  But perhaps a long long would be safer.
 
-If you do that, please add the patch below.
-
-Thanks,
-
-	tglx
-
-
-Index: linux-2.6/kernel/events/core.c
-===================================================================
---- linux-2.6.orig/kernel/events/core.c
-+++ linux-2.6/kernel/events/core.c
-@@ -7378,7 +7378,7 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	perf_remove_from_context(child_event, !!child_event->parent);
-+	perf_remove_from_context(child_event, true);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
+Sounds good, and perhaps a BUG_ON(!serial) for good measure.
