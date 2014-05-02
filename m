@@ -1,122 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569AbaEBPNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:13:12 -0400
-Received: from imap.thunk.org ([74.207.234.97]:45879 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752487AbaEBPNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:13:11 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: linux-kernel@vger.kernel.org, ksummit-discuss@lists.linuxfoundation.org
-Subject: Kernel Summit 2014 Call for Topics
-Date: Fri, 02 May 2014 11:13:08 -0400
-Message-ID: <nsxoazg1aez.fsf@closure.thunk.org>
+	id S1752602AbaEBPO3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:14:29 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:61744 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaEBPO2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:14:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+Date: Fri, 02 May 2014 17:13:46 +0200
+Message-ID: <4526988.X68ZFJZdRl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53639A0C.8070306@ti.com>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <5279118.J5305KQNjB@wuerfel> <53639A0C.8070306@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:vi6fGQr3XAETudpQY/Nv/7vXnNByMolA7v33znar3Ow
+ oab/hzcS+uhPWvxbDOKGzNgaIJe740U7V6FSBrH4OGsISWw2R+
+ IXoTzUEADQMZgYqZlBz0K3ANh0qZVVsFTvz1Dv2eksczHbuJHx
+ XxMQ5FUbQDht91UeFhu50K9FBsZNau7bdKMA2g4GsjF+/rgqwL
+ OB1hckk3nClvxEoRLMia4rLfGwCNHY+/XgMTziACo095DmCtBV
+ SNY6c9n6J9dpmIg4iKMY7WXPu3cYnYsunc13po2lNCH0jq9/Jg
+ EyXgVT0gXBC1619wzMyh+IlseVb2Zueku1E8v40+Osly+Iege4
+ F4scw8+xZqEmnttm5KeM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 02 May 2014 09:13:48 Santosh Shilimkar wrote:
+> On Friday 02 May 2014 05:58 AM, Arnd Bergmann wrote:
+> > On Thursday 01 May 2014 14:12:10 Grant Likely wrote:
+> >>>> I've got two concerns here. of_dma_get_range() retrieves only the first
+> >>>> tuple from the dma-ranges property, but it is perfectly valid for
+> >>>> dma-ranges to contain multiple tuples. How should we handle it if a
+> >>>> device has multiple ranges it can DMA from?
+> >>>>
+> >>>
+> >>> We've not found any cases in current Linux where more than one dma-ranges
+> >>> would be used. Moreover, The MM (definitely for ARM) isn't supported such
+> >>> cases at all (if i understand everything right).
+> >>> - there are only one arm_dma_pfn_limit
+> >>> - there is only one MM zone is used for ARM
+> >>> - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
+> >>>   DMA & DMA32, but they configured once and forever per arch.
+> >>
+> >> Okay. If anyone ever does implement multiple ranges then this code will
+> >> need to be revisited.
+> > 
+> > I wonder if it's needed for platforms implementing the standard "ARM memory map" [1].
+> > The document only talks about addresses as seen from the CPU, and I can see
+> > two logical interpretations how the RAM is supposed to be visible from a device:
+> > either all RAM would be visible contiguously at DMA address zero, or everything
+> > would be visible at the same physical address as the CPU sees it.
+> > 
+> > If anyone picks the first interpretation, we will have to implement that
+> > in Linux. We can of course hope that all hardware designs follow the second
+> > interpretation, which would be more convenient for us here.
+> >
+> not sure if I got your point correctly but DMA address 0 isn't used as DRAM start in
+> any of the ARM SOC today, mainly because of the boot architecture where address 0 is
+> typically used by ROM code. RAM start will be at some offset always and hence I
+> believe ARM SOCs will follow second interpretation. This was one of the main reason
+> we ended up fixing the max*pfn stuff. 
+> 26ba47b {ARM: 7805/1: mm: change max*pfn to include the physical offset of memory}
 
-The annual Kernel Summit for 2014 will be held August 18th through the
-20th in Chicago, overlapping with LinuxCon North America (which will
-be held August 20th through the 22nd) at the Sheraton Chicago Hotel
-and Towers.
+Marvell normally has memory starting at physical address zero.
 
-The format of the Kernel Summit will be:
+Even if RAM starts elsewhere, I don't think that is a reason to have
+the DMA address do the same. The memory controller internally obviously
+starts at zero, and it wouldn't be unreasonable to have the DMA space
+match what the memory controller sees rather than have it match what
+the CPU sees.
 
-* Monday: Core attendee's plenary sessions
-* Tuesday: Workshops and break out sessions
-* Wednesday: Dual-track technical sessions  in parallel with LinuxCon
+If you look at the table 3.1.4, you have both addresses listed:
 
-The Core plenary day will be focused on topics which are not
-appropriate for any of the subsystem-specific workshops or
-minisummits, and which cannot be easily resolved using the normal
-e-mail and IRC channels.  These include issues about our overall
-development process, and topics which span multiple subsystems.
+	  Physical Addresses in SoC	Offset	 		Internal DRAM address
 
-The workshops are intended for kernel subsystems or other topics where
-10-30 people need to have some intensive discussions for half or full
-day.  There will also be a room for specialized discussions that are
-come up at the last minute, or which perhaps don't require as much
-time as a workshop.
+2 GBytes	0x00 8000 0000 –	-0x00 8000 0000		0x00 0000 0000 –
+		0x00 FFFF FFFF			 		0x00 7FFF FFFF
 
-The technical sessions will be open to all workshop attendees as well
-as the core attendees; program committee will also consider
-"information sharing" topics if they are clearly of interest to the
-wider development community (i.e., topics that could be considered
-advanced training for subsystem maintainers: memory barriers, RCU, git
-workflows, etc.)
+30 GBytes	0x08 8000 0000 – 	-0x08 0000 0000		0x00 8000 0000 –
+		0x0F FFFF FFFF					0x07 FFFF FFFF
 
+32 GBytes	0x88 0000 0000 -	-0x80 0000 0000	 	0x08 0000 0000 -
+		0x8F FFFF FFFF					0x0F FFFF FFFF
 
-For space reasons, we try to cap the attendence of the core plenary
-day to around 80-100 people.  We have created an initial list of
-nominations for that core plenary day, based on the top 3rd or 4th
-percentile of commit authors or reviewers over the past 16 months.
-You can see that list here:
+The wording "Physical Addresses in SoC" would indeed suggest that the
+same address is used for DMA, but I would trust everybody to do that.
 
-	http://goo.gl/FsVUFX
-
-Since it is a mechnically generated list, it's obviously going to be
-incomplete (even if it has 200 people).  So if you think that there
-are people who should be on the list, you can nominate people (self
-nominations are ok), by sending a note to:
-
-	ksummit-discuss@lists.linuxfoundation.org
-
-As in past years, people who suggest particularly interesting topics
-and who actively and positively in engage in the discussion of those
-topics will get special consideration by the program committee.
-
-If you would like to suggest a topic, please send a separate e-mail
-for each topic, so we can more easily track the discussion, and plase
-tag your e-mail with [CORE TOPIC] or [TECH TOPIC] depending on whether
-the topic would be a better fit for the Monday sessions or the
-Wednesday sessions.  Also include a list of people who you think would
-be valuable in participating in the discussion.
-
-If possible, please send topic requests before May 15th, since that's
-about when we will start evaluating the list of potential attendees.
-Obviously, if new topics come up after that, please still send them to
-us!  For one thing, invites will be going out in stages.  For another,
-we want to make sure the kernel summit will be as useful as possible,
-and that means if you think there's something that would be valuable
-for the kernel community needs to consider, we'd like to know about it!
-
-
-
-You can subscribe to the discuss list using mailman:
-
-   https://lists.linuxfoundation.org/mailman/listinfo/ksummit-discuss
-
-For reference, previous years' kernel summit agendas can be found here:
-
-2013 agenda:  http://goo.gl/L3YOiX
-2012 agenda:  https://sites.google.com/site/kernelsummit2012/agenda
-
-
-If you are interested in leading one of the workshops on Tuesday,
-please contact the kernel summit program committee with your proposal
-at:
-
-	ksummit-pc@lists.linux-foundation.org.
-
-
-The 2014 Kernel Summit Program Committee
-========================================
-
-James Bottomley
-Jonathan Corbet
-Mel Gorman
-Dirk Hohndel
-Grant Likely
-Greg Kroah-Hartman
-Martin K. Petersen
-Paul McKenney
-Andrew Morton
-Steven Rostedt
-Theodore Ts'o
-
+	Arnd
