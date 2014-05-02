@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaEBPoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:44:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44069 "EHLO
+	id S1753593AbaEBPoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:44:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44064 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595AbaEBPoR (ORCPT
+	with ESMTP id S1752905AbaEBPoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:17 -0400
+	Fri, 2 May 2014 11:44:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mugunthan V N <mugunthanvnm@ti.com>, Tony Lindgren <tony@atomide.com>,
+Cc: Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/151] ARM: dts: am33xx: correcting dt node unit address for usb
-Date: Fri,  2 May 2014 08:37:14 -0700
-Message-Id: <1399045139-4531-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 049/151] mtip32xx: mtip_async_complete() bug fixes
+Date: Fri,  2 May 2014 08:37:17 -0700
+Message-Id: <1399045139-4531-50-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,45 +27,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Sam Bradshaw <sbradshaw@micron.com>
 
-commit 8abcdd680d543fb582371e146e62ba9f2af8a816 upstream.
+commit 5eb9291c36c7d71d7c6c832d5a4f551eb8ac015d upstream.
 
-DT node's unit address should be its own register offset address to make it a
-unique across the system. This patch corrects the incorrect USB entries with
-correct register offset for unit address.
+This patch fixes 2 issues in the fast completion path:
+1) Possible double completions / double dma_unmap_sg() calls due to lack
+of atomicity in the check and subsequent dereference of the upper layer
+callback function. Fixed with cmpxchg before unmap and callback.
+2) Regression in unaligned IO constraining workaround for p420m devices.
+Fixed by checking if IO is unaligned and using proper semaphore if so.
 
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
+[ kamal: backport to 3.13 (omitted the change to MTIP_DRV_VERSION string) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/am33xx.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c | 87 ++++++++++++++++++++++-----------------
+ 1 file changed, 49 insertions(+), 38 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index f6d8ffe..bb98f30 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -422,7 +422,7 @@
- 			ti,hwmods = "usb_otg_hs";
- 			status = "disabled";
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index f657911a..b130353 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -231,38 +231,45 @@ static void mtip_async_complete(struct mtip_port *port,
+ 				void *data,
+ 				int status)
+ {
+-	struct mtip_cmd *command;
++	struct mtip_cmd *cmd;
+ 	struct driver_data *dd = data;
+-	int cb_status = status ? -EIO : 0;
++	int unaligned, cb_status = status ? -EIO : 0;
++	void (*func)(void *, int);
  
--			usb_ctrl_mod: control@44e10000 {
-+			usb_ctrl_mod: control@44e10620 {
- 				compatible = "ti,am335x-usb-ctrl-module";
- 				reg = <0x44e10620 0x10
- 					0x44e10648 0x4>;
-@@ -525,7 +525,7 @@
- 					"tx14", "tx15";
- 			};
+ 	if (unlikely(!dd) || unlikely(!port))
+ 		return;
  
--			cppi41dma: dma-controller@07402000 {
-+			cppi41dma: dma-controller@47402000 {
- 				compatible = "ti,am3359-cppi41";
- 				reg =  <0x47400000 0x1000
- 					0x47402000 0x1000
+-	command = &port->commands[tag];
++	cmd = &port->commands[tag];
+ 
+ 	if (unlikely(status == PORT_IRQ_TF_ERR)) {
+ 		dev_warn(&port->dd->pdev->dev,
+ 			"Command tag %d failed due to TFE\n", tag);
+ 	}
+ 
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
++	/* Clear the active flag */
++	atomic_set(&port->commands[tag].active, 0);
+ 
+ 	/* Upper layer callback */
+-	if (likely(command->async_callback))
+-		command->async_callback(command->async_data, cb_status);
++	func = cmd->async_callback;
++	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
+ 
+-	command->async_callback = NULL;
+-	command->comp_func = NULL;
++		/* Unmap the DMA scatter list entries */
++		dma_unmap_sg(&dd->pdev->dev,
++			cmd->sg,
++			cmd->scatter_ents,
++			cmd->direction);
+ 
+-	/* Clear the allocated and active bits for the command */
+-	atomic_set(&port->commands[tag].active, 0);
+-	release_slot(port, tag);
++		func(cmd->async_data, cb_status);
++		unaligned = cmd->unaligned;
+ 
+-	up(&port->cmd_slot);
++		/* Clear the allocated bit for the command */
++		release_slot(port, tag);
++
++		if (unlikely(unaligned))
++			up(&port->cmd_slot_unal);
++		else
++			up(&port->cmd_slot);
++	}
+ }
+ 
+ /*
+@@ -639,11 +646,12 @@ static void mtip_timeout_function(unsigned long int data)
+ {
+ 	struct mtip_port *port = (struct mtip_port *) data;
+ 	struct host_to_dev_fis *fis;
+-	struct mtip_cmd *command;
+-	int tag, cmdto_cnt = 0;
++	struct mtip_cmd *cmd;
++	int unaligned, tag, cmdto_cnt = 0;
+ 	unsigned int bit, group;
+ 	unsigned int num_command_slots;
+ 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
++	void (*func)(void *, int);
+ 
+ 	if (unlikely(!port))
+ 		return;
+@@ -673,8 +681,8 @@ static void mtip_timeout_function(unsigned long int data)
+ 			group = tag >> 5;
+ 			bit = tag & 0x1F;
+ 
+-			command = &port->commands[tag];
+-			fis = (struct host_to_dev_fis *) command->command;
++			cmd = &port->commands[tag];
++			fis = (struct host_to_dev_fis *) cmd->command;
+ 
+ 			set_bit(tag, tagaccum);
+ 			cmdto_cnt++;
+@@ -688,27 +696,30 @@ static void mtip_timeout_function(unsigned long int data)
+ 			 */
+ 			writel(1 << bit, port->completed[group]);
+ 
+-			/* Unmap the DMA scatter list entries */
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-					command->sg,
+-					command->scatter_ents,
+-					command->direction);
++			/* Clear the active flag for the command */
++			atomic_set(&port->commands[tag].active, 0);
+ 
+-			/* Call the async completion callback. */
+-			if (likely(command->async_callback))
+-				command->async_callback(command->async_data,
+-							 -EIO);
+-			command->async_callback = NULL;
+-			command->comp_func = NULL;
++			func = cmd->async_callback;
++			if (func &&
++			    cmpxchg(&cmd->async_callback, func, 0) == func) {
+ 
+-			/*
+-			 * Clear the allocated bit and active tag for the
+-			 * command.
+-			 */
+-			atomic_set(&port->commands[tag].active, 0);
+-			release_slot(port, tag);
++				/* Unmap the DMA scatter list entries */
++				dma_unmap_sg(&port->dd->pdev->dev,
++						cmd->sg,
++						cmd->scatter_ents,
++						cmd->direction);
+ 
+-			up(&port->cmd_slot);
++				func(cmd->async_data, -EIO);
++				unaligned = cmd->unaligned;
++
++				/* Clear the allocated bit for the command. */
++				release_slot(port, tag);
++
++				if (unaligned)
++					up(&port->cmd_slot_unal);
++				else
++					up(&port->cmd_slot);
++			}
+ 		}
+ 	}
+ 
 -- 
 1.9.1
 
