@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaEBLhI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:37:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40146 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353AbaEBLhG (ORCPT
+	id S1752001AbaEBLhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:37:36 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:53034 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942AbaEBLhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:37:06 -0400
-Date: Fri, 2 May 2014 13:37:03 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-Message-ID: <20140502113703.GE9178@linutronix.de>
-References: <20140411185739.GA6644@linutronix.de>
- <535BFAF0.5090306@localhost>
+	Fri, 2 May 2014 07:37:35 -0400
+Date: Fri, 2 May 2014 13:35:51 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: David Airlie <airlied@linux.ie>, gnurou@gmail.com,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm/ttm: remove declaration of ttm_tt_cache_flush
+Message-ID: <20140502113550.GB18693@ulmo>
+References: <1399024162-6528-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6sX45UoQRIJXqkqR"
 Content-Disposition: inline
-In-Reply-To: <535BFAF0.5090306@localhost>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399024162-6528-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Fernando Lopez-Lezcano | 2014-04-26 11:29:04 [-0700]:
 
->Saw this a moment ago (3.14.1 + rt1, Fedora 19 laptop - I think I
->have seen something similar in 3.12.x-r):
+--6sX45UoQRIJXqkqR
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, you did: https://lkml.org/lkml/2014/3/7/163
-You did not test I've sent. Care to do so?
+On Fri, May 02, 2014 at 06:49:22PM +0900, Alexandre Courbot wrote:
+> ttm_tt_cache_flush's implementation was removed in 2009 by commit
+> c9c97b8c, but its declaration has been hiding in ttm_bo_driver.h since
+> then.
+>=20
+> It has been surviving in the dark for too long now ; give it the coup
+> de gr=C3=A2ce.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  include/drm/ttm/ttm_bo_driver.h | 12 ------------
+>  1 file changed, 12 deletions(-)
 
->Apr 26 11:16:11 localhost kernel: [   96.323248] ------------[ cut
->here ]------------
->Apr 26 11:16:11 localhost kernel: [   96.323262] WARNING: CPU: 0 PID:
->2051 at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
->Apr 26 11:16:11 localhost kernel: [   96.323264] list_del corruption.
->prev->next should be ffff8802101196a0, but was 0000000000000001
->Apr 26 11:16:11 localhost kernel: [   96.323266] Modules linked in:
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 
-and please send backtrace information properly formatted. This is
-terrible hard to read.
+--6sX45UoQRIJXqkqR
+Content-Type: application/pgp-signature
 
-Sebastian
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTY4MWAAoJEN0jrNd/PrOh52AQAKEfe57pYldOgkvrnjKmBexG
+41etB1x5bD+tAqW65jf0iQLgvkgHEkrHo29NALcpyyKPL+KQUhu9Grryg8mIwpdA
+PxNbU4RYWdyKt5VX8kVTW3uRCuGwrkUEm9FpXSr9M0WjzWvJgYcMaI1SJHs5OGMw
+YtZCXbipSht6EyvH33Uwe7e0dA1wnkzWs6DhqWCtBqhchdL7EhJOWiYdv2/HjzKB
+wthHW1yVzbz+S3iUJyWBqh855YmW3pYCKr6j7RtNfVxNepZVdlcSbzyclKAPQ4s2
+GhjHF5fXmCiKI4cg7ZvUIW4TCiS+m/4fo7Xomymup88i10kjfZfSjgPmHLWG2lyU
+8AB4guAZ/kJYxvNHyhVDpFsto0r8Izu7Qg0RXqI0va/xod7kLF5zn9DmifUgQgbj
+RrLKOlHSXT8aFruThOhgiyolFZm9Izqph2SV+vz3haZrS4OpDDUKdgTjVGVoszMK
+R/jwYyOkQJ48qgjNL0ab2Wzn+v3iLS053VLZ+guJGyas2gHv/YUeZBA3ZkpogCh1
+KGxjfvJfeRIQwgcR9VjJ0et/g9gm/zut8q1zKVuRlnh217V7Ey1GlESr8+V3Fp+4
+PTqCHBggX6ShL4kAnXzL6FmgVWEhvCfdfeSH8lkv5KEdkbdOz2qs6okHjjCyV64U
+CDtZidLSRnY/BjBMCo1B
+=+DfA
+-----END PGP SIGNATURE-----
+
+--6sX45UoQRIJXqkqR--
