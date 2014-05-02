@@ -1,212 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaEBPZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:25:06 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59953 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750991AbaEBPZB (ORCPT
+	id S1752545AbaEBP0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:26:07 -0400
+Received: from mail-sn2on0225.outbound.o365filtering.com ([157.56.87.225]:40529
+	"EHLO na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751968AbaEBP0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:25:01 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/3] PM / sleep: Flags to speed up suspend-resume of runtime-suspended devices
-Date: Fri, 02 May 2014 17:41:33 +0200
-Message-ID: <6199158.2qqefUVTXs@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5908855.HA1MHrW16u@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1405011613200.881-100000@iolanthe.rowland.org> <1898485.lQeVbtvK4U@vostro.rjw.lan> <5908855.HA1MHrW16u@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Fri, 2 May 2014 11:26:05 -0400
+X-Greylist: delayed 1702 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:26:05 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: KY Srinivasan <kys@microsoft.com>, Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: RE: randconfig build error with next-20140502, in
+ drivers/net/hyperv/netvsc_drv.c
+Thread-Topic: randconfig build error with next-20140502, in
+ drivers/net/hyperv/netvsc_drv.c
+Thread-Index: AQHPZg5VELXjQQ2rFUCGAjzcri4hopstWxlwgAB8gQD//5HAEA==
+Date: Fri, 2 May 2014 15:25:56 +0000
+Message-ID: <9847b18e41ed493daa61a1b5a9c1b7e8@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
+ <91a4eac99889460f91f619385208cbca@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <f49938e3920d4e5e9088ccd1de92f69b@BY2PR03MB299.namprd03.prod.outlook.com>
+In-Reply-To: <f49938e3920d4e5e9088ccd1de92f69b@BY2PR03MB299.namprd03.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(189002)(199002)(164054003)(13464003)(377454003)(51704005)(19580405001)(97336001)(95416001)(31966008)(50466002)(97186001)(74662001)(95666003)(66066001)(19580395003)(86612001)(80022001)(83322001)(85852003)(94946001)(46102001)(6806004)(97736001)(33646001)(69226001)(83072002)(74706001)(20776003)(47776003)(80976001)(79102001)(4396001)(76482001)(74502001)(1511001)(74876001)(74366001)(44976005)(81816001)(77982001)(50986002)(47446003)(54316003)(53806002)(85306002)(94316002)(87266001)(98676001)(23676002)(84676001)(51856002)(49866002)(56816006)(59766002)(47736002)(81686001)(76786001)(81342001)(93516002)(76796001)(90146001)(47976003)(2656002)(54356002)(87936001)(93136001)(99396002)(56776002)(63696004)(65816002)(92566001)(2009001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2SR01MB592;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 019919A9E4
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s42FQIHO020565
 
-On Friday, May 02, 2014 02:04:07 AM Rafael J. Wysocki wrote:
-> On Friday, May 02, 2014 01:36:38 AM Rafael J. Wysocki wrote:
-> > On Friday, May 02, 2014 01:15:14 AM Rafael J. Wysocki wrote:
+
+
+> -----Original Message-----
+> From: KY Srinivasan
+> Sent: Friday, May 2, 2014 11:00 AM
+> To: Haiyang Zhang; Jim Davis; Stephen Rothwell; linux-next; linux-kernel;
+> devel@linuxdriverproject.org; netdev
+> Subject: RE: randconfig build error with next-20140502, in
+> drivers/net/hyperv/netvsc_drv.c
 > 
-> [cut]
 > 
-> > 
-> > OK, I guess you mean that the first flag (resume_not_needed) should be introduced
-> > by one patch and the second one by another, but I'm not sure if that would really
-> > make any difference.  Both of them are needed anyway and resume_not_needed without
-> > the other flag wouldn't have any effect.
-> > 
-> > Well, perhaps I should make __device_suspend() check that use_runtime_resume is
-> > only set when resume_not_needed is set too and return an error if that's not
-> > the case.
 > 
-> Below is an updated patch for further discussion.
+> > -----Original Message-----
+> > From: Haiyang Zhang
+> > Sent: Friday, May 2, 2014 7:42 AM
+> > To: Jim Davis; Stephen Rothwell; linux-next; linux-kernel; KY
+> Srinivasan;
+> > devel@linuxdriverproject.org; netdev
+> > Subject: RE: randconfig build error with next-20140502, in
+> > drivers/net/hyperv/netvsc_drv.c
+> >
+> >
+> >
+> > > -----Original Message-----
+> > > From: Jim Davis [mailto:jim.epost@gmail.com]
+> > > Sent: Friday, May 2, 2014 9:56 AM
+> > > To: Stephen Rothwell; linux-next; linux-kernel; KY Srinivasan;
+> Haiyang
+> > > Zhang; devel@linuxdriverproject.org; netdev
+> > > Subject: randconfig build error with next-20140502, in
+> > > drivers/net/hyperv/netvsc_drv.c
+> > >
+> > > Building with the attached random configuration file,
+> > >
+> > > drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_recv_callbackâ€™:
+> > > drivers/net/hyperv/netvsc_drv.c:648:11: error: â€˜struct net_deviceâ€™
+> has
+> > > no member  named â€˜real_num_rx_queuesâ€™
+> > >         net->real_num_rx_queues);
+> > >            ^
+> > > In file included from drivers/net/hyperv/netvsc_drv.c:26:0:
+> > > drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_probeâ€™:
+> > > drivers/net/hyperv/netvsc_drv.c:832:32: error: â€˜struct net_deviceâ€™
+> has
+> > > no member named â€˜real_num_rx_queuesâ€™
+> > >     net->real_num_tx_queues, net->real_num_rx_queues);
+> > >                                 ^
+> > > include/linux/device.h:1080:58: note: in definition of macro
+> â€˜dev_infoâ€™
+> > >  #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+> > >                                                           ^
+> > > make[3]: *** [drivers/net/hyperv/netvsc_drv.o] Error 1
+> >
+> > real_num_rx_queues is defined in "include/linux/netdevice.h":
+> > It requires CONFIG_SYSFS flag, which is enabled by default, but not
+> set in
+> > your config file.
+> >
+> > Could you use default config and add hyperv drivers, then try again?
 > 
-> I tried to improve the changelog and invent better names for the new flags.
+> Haiyang,
+> 
+> That is the point - the code must compile correctly for all possible
+> configurations.
+> You will want to protect the dependencies appropriately.
+> 
+OK, I'll look into this.
 
-Well, I have a second update.
+Thanks,
+- Haiyang
 
-It has different flag names and changelog (that should explain things better
-hopefully) and the purpose of both flags should be more clear now (patch [3/3]
-would need to be reworked on top of this, but for now let's just discuss the
-core changes).
-
-Rafael
-
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: PM / sleep: Flags to speed up suspend-resume of runtime-suspended devices
-
-Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-resume all runtime-suspended devices during system suspend, mostly
-because those devices may need to be reprogrammed due to different
-wakeup settings for system sleep and for runtime PM.  However, at
-least in some cases, that isn't really necessary, because the wakeup
-settings may not be really different.
-
-The idea here is that subsystems should know whether or not it is
-necessary to resume a given device during system suspend as long as
-they know that the device's children will not need it to be functional
-during the late/early and noirq phases of their suspend and resume.
-To help them with that, introduce two new device PM flags:
-power.parent_needed and power.leave_runtime_suspended supposed to work
-as follows.
-
-The PM core will clear power.leave_runtime_suspended and will set
-power.parent_needed for all devices in dpm_prepare().  Next, the
-subsystem (or driver) of a device that in principle may not need
-to be resumed during system suspend, if runtume-suspended already,
-will set power.leave_runtime_suspended in its ->prepare() callback.
-Also the subsystems (or drivers) of devices whose parents need not
-be resumed during system suspend, if runtime-suspended already,
-are supposed to clear power.parent_needed for them.  The PM core
-will then clear power.leave_runtime_suspended for the parents of
-all devices having power.parent_needed set in __device_suspend().
-
-Now, if the ->suspend() callback is executed for a device whose
-power.leave_runtime_suspended is set, it can simply return 0 after
-checking the device's state if that state is appropriate for
-system suspend.  The PM core will then skip the late/early and
-noirq system suspend/resume callbacks for that device and will
-use pm_runtime_resume() to resume it in device_resume().
-
-If the state of a device with power.leave_runtime_suspended is not
-appropriate for system suspend, the ->suspend() callback should
-resume it using pm_runtime_resume() and clear
-power.leave_runtime_suspended for it.
-
-Note: Drivers (or bus types etc.) can reasonably expect that the
-next PM callback executed after ->runtime_suspend() will be
-->runtime_resume() rather than ->resume_noirq() or ->resume_early().
-This change is designed with that expectation in mind.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/main.c |   33 ++++++++++++++++++++++++++-------
- include/linux/pm.h        |    2 ++
- 2 files changed, 28 insertions(+), 7 deletions(-)
-
-Index: linux-pm/include/linux/pm.h
-===================================================================
---- linux-pm.orig/include/linux/pm.h
-+++ linux-pm/include/linux/pm.h
-@@ -546,6 +546,8 @@ struct dev_pm_info {
- 	bool			is_late_suspended:1;
- 	bool			ignore_children:1;
- 	bool			early_init:1;	/* Owned by the PM core */
-+	bool			parent_needed:1;
-+	bool			leave_runtime_suspended:1;
- 	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
-Index: linux-pm/drivers/base/power/main.c
-===================================================================
---- linux-pm.orig/drivers/base/power/main.c
-+++ linux-pm/drivers/base/power/main.c
-@@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.leave_runtime_suspended)
- 		goto Out;
- 
- 	if (!dev->power.is_noirq_suspended)
-@@ -605,7 +605,7 @@ static int device_resume_early(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.leave_runtime_suspended)
- 		goto Out;
- 
- 	if (!dev->power.is_late_suspended)
-@@ -735,6 +735,11 @@ static int device_resume(struct device *
- 	if (dev->power.syscore)
- 		goto Complete;
- 
-+	if (dev->power.leave_runtime_suspended) {
-+		pm_runtime_resume(dev);
-+		goto Complete;
-+	}
-+
- 	dpm_wait(dev->parent, async);
- 	dpm_watchdog_set(&wd, dev);
- 	device_lock(dev);
-@@ -1007,7 +1012,7 @@ static int __device_suspend_noirq(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.leave_runtime_suspended)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1146,7 +1151,7 @@ static int __device_suspend_late(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.leave_runtime_suspended)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1383,9 +1388,21 @@ static int __device_suspend(struct devic
-  End:
- 	if (!error) {
- 		dev->power.is_suspended = true;
--		if (dev->power.wakeup_path
--		    && dev->parent && !dev->parent->power.ignore_children)
--			dev->parent->power.wakeup_path = true;
-+		if (dev->power.leave_runtime_suspended)
-+			dev->power.parent_needed = false;
-+
-+		if (dev->parent) {
-+			spin_lock_irq(&dev->parent->power.lock);
-+
-+			if (dev->power.wakeup_path
-+			    && !dev->parent->power.ignore_children)
-+				dev->parent->power.wakeup_path = true;
-+
-+			if (dev->power.parent_needed)
-+				dev->parent->power.leave_runtime_suspended = false;
-+
-+			spin_unlock_irq(&dev->parent->power.lock);
-+		}
- 	}
- 
- 	device_unlock(dev);
-@@ -1553,6 +1570,8 @@ int dpm_prepare(pm_message_t state)
- 		struct device *dev = to_device(dpm_list.next);
- 
- 		get_device(dev);
-+		dev->power.leave_runtime_suspended = false;
-+		dev->power.parent_needed = true;
- 		mutex_unlock(&dpm_list_mtx);
- 
- 		error = device_prepare(dev, state);
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
