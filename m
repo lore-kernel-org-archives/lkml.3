@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbaEBQPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:15:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43888 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaEBPmb (ORCPT
+	id S1754663AbaEBQPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:15:40 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:34418 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829AbaEBQPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:31 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 074/151] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Fri,  2 May 2014 08:37:42 -0700
-Message-Id: <1399045139-4531-75-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 2 May 2014 12:15:15 -0400
+Date: Fri, 2 May 2014 11:15:11 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] MM/ZBUD: make size unsigned like unique callsite
+Message-ID: <20140502161511.GA1711@cerebellum.variantweb.net>
+References: <20140430211836.a6ab920079485e8d1cc01121@skynet.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430211836.a6ab920079485e8d1cc01121@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Apr 30, 2014 at 09:18:36PM +0200, Fabian Frederick wrote:
+> zbud_alloc is only called by zswap_frontswap_store with unsigned int len.
+> Change function parameter + update  >= 0 check.
 
-------------------
+Thanks for the cleanup!
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Seth Jennings <sjennings@variantweb.net>
 
-commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
-
-During probe the driver allocates dummy I2C devices for MUIC and haptic
-with i2c_new_dummy() but it does not check the return value of this
-calls.
-
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by devm_regmap_init_i2c() and i2c_unregister_device().
-
-If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
-for main MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/mfd/max77693.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 9f92463..535093a 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -142,9 +142,18 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
- 
- 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-+	if (!max77693->muic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max77693->muic, max77693);
- 
- 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-+	if (!max77693->haptic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
-+		ret = -ENODEV;
-+		goto err_i2c_haptic;
-+	}
- 	i2c_set_clientdata(max77693->haptic, max77693);
- 
- 	/*
-@@ -178,8 +187,9 @@ err_mfd:
- 	max77693_irq_exit(max77693);
- err_irq:
- err_regmap_muic:
--	i2c_unregister_device(max77693->muic);
- 	i2c_unregister_device(max77693->haptic);
-+err_i2c_haptic:
-+	i2c_unregister_device(max77693->muic);
- 	return ret;
- }
- 
--- 
-1.9.1
-
+> 
+> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  include/linux/zbud.h | 2 +-
+>  mm/zbud.c            | 4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/zbud.h b/include/linux/zbud.h
+> index 2571a5c..13af0d4 100644
+> --- a/include/linux/zbud.h
+> +++ b/include/linux/zbud.h
+> @@ -11,7 +11,7 @@ struct zbud_ops {
+>  
+>  struct zbud_pool *zbud_create_pool(gfp_t gfp, struct zbud_ops *ops);
+>  void zbud_destroy_pool(struct zbud_pool *pool);
+> -int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> +int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
+>  	unsigned long *handle);
+>  void zbud_free(struct zbud_pool *pool, unsigned long handle);
+>  int zbud_reclaim_page(struct zbud_pool *pool, unsigned int retries);
+> diff --git a/mm/zbud.c b/mm/zbud.c
+> index 9451361..01df13a 100644
+> --- a/mm/zbud.c
+> +++ b/mm/zbud.c
+> @@ -247,7 +247,7 @@ void zbud_destroy_pool(struct zbud_pool *pool)
+>   * gfp arguments are invalid or -ENOMEM if the pool was unable to allocate
+>   * a new page.
+>   */
+> -int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+> +int zbud_alloc(struct zbud_pool *pool, unsigned int size, gfp_t gfp,
+>  			unsigned long *handle)
+>  {
+>  	int chunks, i, freechunks;
+> @@ -255,7 +255,7 @@ int zbud_alloc(struct zbud_pool *pool, int size, gfp_t gfp,
+>  	enum buddy bud;
+>  	struct page *page;
+>  
+> -	if (size <= 0 || gfp & __GFP_HIGHMEM)
+> +	if (!size || (gfp & __GFP_HIGHMEM))
+>  		return -EINVAL;
+>  	if (size > PAGE_SIZE - ZHDR_SIZE_ALIGNED - CHUNK_SIZE)
+>  		return -ENOSPC;
+> -- 
+> 1.9.1
+> 
