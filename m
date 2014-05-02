@@ -1,132 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaEBOYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:24:42 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:37915 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaEBOYk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:24:40 -0400
+	id S1752121AbaEBO3C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:29:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26109 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751721AbaEBO3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 10:29:00 -0400
+Date: Fri, 2 May 2014 10:28:51 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+Message-ID: <20140502142851.GC24111@madcap2.tricolour.ca>
+References: <cover.1398176489.git.rgb@redhat.com>
+ <20140501223212.GA25669@mail.hallyn.com>
 MIME-Version: 1.0
-In-Reply-To: <1398980957-10385-1-git-send-email-aduggan@synaptics.com>
-References: <1398980957-10385-1-git-send-email-aduggan@synaptics.com>
-Date: Fri, 2 May 2014 10:24:38 -0400
-Message-ID: <CAN+gG=EWW_FgyZU+9+7dP4cNHqbQ_MGmXjGyM2OsNmp0Y_K5BA@mail.gmail.com>
-Subject: Re: [PATCH] HID: rmi: check for the existence of some optional
- queries before reading query 12
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Christopher Heiny <cheiny@synaptics.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501223212.GA25669@mail.hallyn.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On 14/05/02, Serge E. Hallyn wrote:
+> Quoting Richard Guy Briggs (rgb@redhat.com):
+> > I saw no replies to my questions when I replied a year after Aris' posting, so
+> > I don't know if it was ignored or got lost in stale threads:
+> >         https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
+> >         https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
+> > 	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
+> >         https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
+> > 
+> > I've tried to answer a number of questions that were raised in that thread.
+> > 
+> > The goal is not quite identical to Aris' patchset.
+> > 
+> > The purpose is to track namespaces in use by logged processes from the
+> > perspective of init_*_ns.  The first patch defines a function to list them.
+> > The second patch provides an example of usage for audit_log_task_info() which
+> > is used by syscall audits, among others.  audit_log_task() and
+> > audit_common_recv_message() would be other potential use cases.
+> > 
+> > Use a serial number per namespace (unique across one boot of one kernel)
+> > instead of the inode number (which is claimed to have had the right to change
+> > reserved and is not necessarily unique if there is more than one proc fs).  It
+> > could be argued that the inode numbers have now become a defacto interface and
+> > can't change now, but I'm proposing this approach to see if this helps address
+> > some of the objections to the earlier patchset.
+> > 
+> > There could also have messages added to track the creation and the destruction
+> > of namespaces, listing the parent for hierarchical namespaces such as pidns,
+> > userns, and listing other ids for non-hierarchical namespaces, as well as other
+> > information to help identify a namespace.
+> > 
+> > There has been some progress made for audit in net namespaces and pid
+> > namespaces since this previous thread.  net namespaces are now served as peers
+> > by one auditd in the init_net namespace with processes in a non-init_net
+> > namespace being able to write records if they are in the init_user_ns and have
+> > CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
+> > records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
+> > of userspace processes that try to join netlink broadcast groups.
+> > 
+> > 
+> > Questions:
+> > Is there a way to link serial numbers of namespaces involved in migration of a
+> > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> > identifier for each running instance of a kernel?  Or at least some identifier
+> > within the container migration realm?
+> 
+> Eric Biederman has always been adamantly opposed to adding new namespaces
+> of namespaces, so the fact that you're asking this question concerns me.
 
-On Thu, May 1, 2014 at 5:49 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
-> The rmi4 spec defines some optional query registers in F11 which appear before
-> query 12. This patch checks for the existence of some of the lesser used queries to
->  compute the location of query12 and all subsequent query registers.
->
-> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-> ---
+I have seen that position and I don't fully understand the justification
+for it other than added complexity.
 
-This is quite important because the XPS 13 laptop shows currently a
-touchpad of physical size in mm of 5149 x 1972... :)
+One way that occured to me to be able to identify a kernel instance was
+to look at CPU serial numbers or other CPU entity intended to be
+globally unique, but that isn't universally available.
 
-Thanks Andrew for taking care of it.
+Another possibility was RTC reading at time of boot, but that isn't good
+enough either.
 
->  drivers/hid/hid-rmi.c | 33 +++++++++++++++++++++++++++++----
->  1 file changed, 29 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
-> index 90ae5eb..912e008 100644
-> --- a/drivers/hid/hid-rmi.c
-> +++ b/drivers/hid/hid-rmi.c
-> @@ -546,9 +546,12 @@ static int rmi_populate_f11(struct hid_device *hdev)
->         struct rmi_data *data = hid_get_drvdata(hdev);
->         u8 buf[20];
->         int ret;
-> +       bool has_query9;
-> +       bool has_query11;
->         bool has_query12;
->         bool has_physical_props;
->         unsigned x_size, y_size;
-> +       u16 query12_offset;
->
->         if (!data->f11.query_base_addr) {
->                 hid_err(hdev, "No 2D sensor found, giving up.\n");
-> @@ -561,6 +564,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
->                 hid_err(hdev, "can not get query 0: %d.\n", ret);
->                 return ret;
->         }
-> +       has_query9 = !!(buf[0] & BIT(3));
-> +       has_query11 = !!(buf[0] & BIT(4));
->         has_query12 = !!(buf[0] & BIT(5));
->
->         /* query 1 to get the max number of fingers */
-> @@ -582,11 +587,30 @@ static int rmi_populate_f11(struct hid_device *hdev)
->         }
->
->         /*
-> -        * query 12 to know if the physical properties are reported
-> -        * (query 12 is at offset 10 for HID devices)
-> +        * At least 8 queries are guaranteed to be present in F11
-> +        * +1 for query12.
->          */
-> +       query12_offset = 9;
-> +
-> +       if (has_query9)
-> +               ++query12_offset;
-> +
-> +       /* query 8 to find out if query 10 exists */
-> +       ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
-> +       if (ret) {
-> +               hid_err(hdev, "can not read gesture information: %d.\n", ret);
-> +               return ret;
-> +       }
-> +       if (!!(buf[0] & BIT(2)))
+Both are dubious in VMs anyways.
 
-For consistency, I would have prefered to have "if (has_query10)" here.
+> The way things are right now, since audit belongs to the init userns,
+> we can get away with saying if a container 'migrates', the new kernel
+> will see a different set of serials, and noone should care.  However,
+> if we're going to be allowing containers to have their own audit
+> namespace/layer/whatever, then this becomes more of a concern.
 
-Other than that, the patch is reviewed-by: Benjamin Tissoires
-<benjamin.tissoires@redhat.com>
+Having a container have its own audit daemon (partitionned appropriately
+in the kernel) would be a long-term goal.
 
-Cheers,
-Benjamin
+> That said, I'll now look at the patches while pretending that problem
+> does not exist :)  If I ack, it'll be on correctness of the code, but
+> we'll still have to deal with this issue.
 
-> +               ++query12_offset;
-> +
-> +       if (has_query11)
-> +               ++query12_offset;
-> +
-> +       /* query 12 to know if the physical properties are reported */
->         if (has_query12) {
-> -               ret = rmi_read(hdev, data->f11.query_base_addr + 10, buf);
-> +               ret = rmi_read(hdev, data->f11.query_base_addr
-> +                               + query12_offset, buf);
->                 if (ret) {
->                         hid_err(hdev, "can not get query 12: %d.\n", ret);
->                         return ret;
-> @@ -595,7 +619,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
->
->                 if (has_physical_props) {
->                         ret = rmi_read_block(hdev,
-> -                                       data->f11.query_base_addr + 11, buf, 4);
-> +                                       data->f11.query_base_addr
-> +                                               + query12_offset + 1, buf, 4);
->                         if (ret) {
->                                 hid_err(hdev, "can not read query 15-18: %d.\n",
->                                         ret);
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Getting some discussion about this migration challenge was a significant
+motivation for posting this patch, so I'm hoping others will weigh in.
+
+Thanks for your review, Serge.
+
+> > What additional events should list this information?
+> > 
+> > Does this present any kind of information leak?  Only CAP_AUDIT_CONTROL (and
+> > proposed CAP_AUDIT_READ) in init_user_ns can get to this information in the
+> > init namespace at the moment.
+> > 
+> > 
+> > Proposed output format:
+> > This differs slightly from Aristeu's patch because of the label conflict with
+> > "pid=" due to including it in existing records rather than it being a seperate
+> > record:
+> >         type=SYSCALL msg=audit(1398112249.996:65): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=566 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" mntns=5 netns=97 utsns=2 ipcns=1 pidns=4 userns=3 subj=system_u:system_r:init_t:s0 key=(null)
+> > 
+> > 
+> > Note: This set does not try to solve the non-init namespace audit messages and
+> > auditd problem yet.  That will come later, likely with additional auditd
+> > instances running in another namespace with a limited ability to influence the
+> > master auditd.  I echo Eric B's idea that messages destined for different
+> > namespaces would have to be tailored for that namespace with references that
+> > make sense (such as the right pid number reported to that pid namespace, and
+> > not leaking info about parents or peers).
+> > 
+> > 
+> > Richard Guy Briggs (2):
+> >   namespaces: give each namespace a serial number
+> >   audit: log namespace serial numbers
+> > 
+> >  fs/mount.h                     |    1 +
+> >  fs/namespace.c                 |    1 +
+> >  include/linux/audit.h          |    7 +++++++
+> >  include/linux/ipc_namespace.h  |    1 +
+> >  include/linux/nsproxy.h        |    8 ++++++++
+> >  include/linux/pid_namespace.h  |    1 +
+> >  include/linux/user_namespace.h |    1 +
+> >  include/linux/utsname.h        |    1 +
+> >  include/net/net_namespace.h    |    1 +
+> >  init/version.c                 |    1 +
+> >  ipc/msgutil.c                  |    1 +
+> >  ipc/namespace.c                |    2 ++
+> >  kernel/audit.c                 |   38 ++++++++++++++++++++++++++++++++++++++
+> >  kernel/nsproxy.c               |   24 ++++++++++++++++++++++++
+> >  kernel/pid.c                   |    1 +
+> >  kernel/pid_namespace.c         |    2 ++
+> >  kernel/user.c                  |    1 +
+> >  kernel/user_namespace.c        |    2 ++
+> >  kernel/utsname.c               |    2 ++
+> >  net/core/net_namespace.c       |    4 +++-
+> >  20 files changed, 99 insertions(+), 1 deletions(-)
+> > 
+> > _______________________________________________
+> > Containers mailing list
+> > Containers@lists.linux-foundation.org
+> > https://lists.linuxfoundation.org/mailman/listinfo/containers
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
