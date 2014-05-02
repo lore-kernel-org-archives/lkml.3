@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaEBQJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:09:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20981 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786AbaEBQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:09:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,973,1389772800"; 
-   d="scan'208";a="504961466"
-Subject: Re: [PATCH] rwsem: Comments to explain the meaning of the rwsem's
- count field
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <53639958.9030002@infradead.org>
-References: <1398966637.2970.129.camel@schen9-DESK>
-	 <5362AC24.9050508@hurleysoftware.com>
-	 <1398985513.2970.141.camel@schen9-DESK>  <53639958.9030002@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 May 2014 09:09:02 -0700
-Message-ID: <1399046942.2970.144.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1753413AbaEBPnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43959 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524AbaEBPnI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:43:08 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 025/151] [media] m88rs2000: add caps FE_CAN_INVERSION_AUTO
+Date: Fri,  2 May 2014 08:36:53 -0700
+Message-Id: <1399045139-4531-26-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 06:10 -0700, Randy Dunlap wrote:
+3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-> >
-> > It takes me quite a while to understand how rwsem's count field mainifest
-> 
->                                                                 manifests
-> 
-> > itself in different scenarios.  I'm adding comments to provide a quick
-> > reference on the the rwsem's count field for each scenario where readers
-> > and writers are contending for the lock.  Hopefully it will be useful
-> > for future maintenance of the code and for people to get up to speed on
-> > how the logic in the code works.
-> >
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> > ---
-> >   kernel/locking/rwsem-xadd.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
-> >   1 file changed, 48 insertions(+)
-> >
-> > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> > index 1d66e08..b92a403 100644
-> > --- a/kernel/locking/rwsem-xadd.c
-> > +++ b/kernel/locking/rwsem-xadd.c
-> > @@ -12,6 +12,54 @@
-> >   #include <linux/export.h>
-> >
-> >   /*
-> > + * Guide to the rw_semaphore's count field for common values.
-> > + * (32 bit case illustrated, similar for 64 bit)
-> 
->         32-bit                               64-bit
-> 
-> > + *
-> > + * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
-> > + *		    X = #active_readers + #readers attempting to lock
-> > + *		    (X*ACTIVE_BIAS)
-> > + *
-> > + * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
-> > + *		attempting to read lock or write lock.
-> > + *
-> > + * 0xffff000X	(1) X readers active or attempt lock, there are waiters for lock
-> 
-> 			                        attempting
-> 
-> > + *		    X = #active readers + # readers attempting lock
-> > + *		    (X*ACTIVE_BIAS + WAITING_BIAS)
-> > + *		(2) 1 writer attempting lock, no waiters for lock
-> > + *		    X-1 = #active readers + #readers attempting lock
-> > + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-> > + *		(3) 1 writer active, no waiters for lock
-> > + *		    X-1 = #active readers + #readers attempting lock
-> > + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-> > + *
-> > + * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
-> > + *		    (WAITING_BIAS + ACTIVE_BIAS)
-> > + *		(2) 1 writer active or attempt lock, no waiters for lock
-> 
-> 		                       attempting
-> 
-> > + *		    (ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+------------------
 
-Oops, should be       (ACTIVE_WRITE_BIAS)
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-> > + *
-> > + * 0xffff0000	(1) There are writers or readers queued but none active
-> > + *		    or in the process of attempting lock.
-> > + *		    (WAITING_BIAS)
-> > + *		Note: writer can attempt to steal lock for this count by adding
-> > + *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
-> > + *
-> > + * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
-> > + *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
-> > + *
-> > + * Note: Reader attempt to lock by adding ACTIVE_BIAS in down_read and checking
-> > + *	 the count becomes more than 0, i.e. the case where there are only
-> > + *	 readers or no body has lock. (1st and 2nd case above)
-> 
-> 	            nobody
-> 
-> > + *
-> > + *	 Writer attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
-> > + *	 checking the count becomes ACTIVE_WRITE_BIAS for succesful lock
-> 
-> 	                                                  successful
+commit 3c8023a782964c72574ad8268ba0ea4e2d9772fc upstream.
 
-Thanks for correcting my grammar mistakes.  Will update the changes.
+The m88rs2000 frontend is always auto inversion.
 
-Tim
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/media/dvb-frontends/m88rs2000.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
+index 02699c1..5b3b1d3 100644
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -743,7 +743,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
+ 		.symbol_rate_tolerance	= 500,	/* ppm */
+ 		.caps = FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
+ 		      FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 |
+-		      FE_CAN_QPSK |
++		      FE_CAN_QPSK | FE_CAN_INVERSION_AUTO |
+ 		      FE_CAN_FEC_AUTO
+ 	},
+ 
+-- 
+1.9.1
 
