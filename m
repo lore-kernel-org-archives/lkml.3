@@ -1,82 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737AbaEBCiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 22:38:52 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36139 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaEBCiu (ORCPT
+	id S1751540AbaEBCo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 22:44:28 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36325 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798AbaEBCo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 22:38:50 -0400
-Date: Fri, 2 May 2014 11:38:47 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/8] sh, irq: Remove irq_reserve_irq calling
-Message-ID: <20140502023847.GI2265@verge.net.au>
-References: <1398986302-30455-1-git-send-email-yinghai@kernel.org>
- <1398986302-30455-3-git-send-email-yinghai@kernel.org>
+	Thu, 1 May 2014 22:44:27 -0400
+Message-ID: <53630686.2020604@kernel.dk>
+Date: Thu, 01 May 2014 20:44:22 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398986302-30455-3-git-send-email-yinghai@kernel.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kent Overstreet <kmo@daterainc.com>
+CC: Ming Lei <tom.leiming@gmail.com>, Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shaohua Li <shli@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+References: <CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com> <535716A5.6050108@kernel.dk> <CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com> <535AD235.90604@kernel.dk> <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com> <535B13D7.4050202@kernel.dk> <CACVXFVORX_qgJNXcB3OFpscVx0eQAbLPv2Jr1N3_yBKrPsGXFA@mail.gmail.com> <53601602.5060306@kernel.dk> <20140501224744.GA2285@kmo-pixel> <536300BB.5060906@kernel.dk> <20140502023827.GA2276@kmo>
+In-Reply-To: <20140502023827.GA2276@kmo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 04:18:16PM -0700, Yinghai Lu wrote:
-> in sh calling path:
-> 	register_intc_controller
-> 		==> irq_create_identity_mapping/irq_create_strict_mappins
-> 			==>irq_alloc_desc: it will set bits on allocate_irq
-> 		==> intc_register_irq
-> 			==> irq_reserve_irq: set bits again
-> 
-> so we can kill this irq_reserve_irq calling.
+On 2014-05-01 20:38, Kent Overstreet wrote:
+> On Thu, May 01, 2014 at 08:19:39PM -0600, Jens Axboe wrote:
+>> On 2014-05-01 16:47, Kent Overstreet wrote:
+>>> On Tue, Apr 29, 2014 at 03:13:38PM -0600, Jens Axboe wrote:
+>>>> On 04/29/2014 05:35 AM, Ming Lei wrote:
+>>>>> On Sat, Apr 26, 2014 at 10:03 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>> On 2014-04-25 18:01, Ming Lei wrote:
+>>>>>>>
+>>>>>>> Hi Jens,
+>>>>>>>
+>>>>>>> On Sat, Apr 26, 2014 at 5:23 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>>>>
+>>>>>>>> On 04/25/2014 03:10 AM, Ming Lei wrote:
+>>>>>>>>
+>>>>>>>> Sorry, I did run it the other day. It has little to no effect here, but
+>>>>>>>> that's mostly because there's so much other crap going on in there. The
+>>>>>>>> most effective way to currently make it work better, is just to ensure
+>>>>>>>> the caching pool is of a sane size.
+>>>>>>>
+>>>>>>>
+>>>>>>> Yes, that is just what the patch is doing, :-)
+>>>>>>
+>>>>>>
+>>>>>> But it's not enough.
+>>>>>
+>>>>> Yes, the patch is only for cases of mutli hw queue and having
+>>>>> offline CPUs existed.
+>>>>>
+>>>>>> For instance, my test case, it's 255 tags and 64 CPUs.
+>>>>>> We end up in cross-cpu spinlock nightmare mode.
+>>>>>
+>>>>> IMO, the scaling problem for the above case might be
+>>>>> caused by either current percpu ida design or blk-mq's
+>>>>> usage on it.
+>>>>
+>>>> That is pretty much my claim, yes. Basically I don't think per-cpu tag
+>>>> caching is ever going to be the best solution for the combination of
+>>>> modern machines and the hardware that is out there (limited tags).
+>>>
+>>> Sorry for not being more active in the discussion earlier, but anyways - I'm in
+>>> 100% agreement with this.
+>>>
+>>> Percpu freelists are _fundamentally_ only _useful_ when you don't need to be
+>>> using all your available tags, because percpu sharding requires wasting your tag
+>>> space. I could write a mathematical proof of this if I cared enough.
+>>>
+>>> Otherwise what happens is on alloc failure you're touching all the other
+>>> cachelines every single time and now you're bouncing _more_ cachelines than if
+>>> you just had a single global freelist.
+>>>
+>>> So yeah, for small tag spaces just use a single simple bit vector on a single
+>>> cacheline.
+>>
+>> I've taken the consequence of this and implemented another tagging scheme
+>> that blk-mq will use if it deems that percpu_ida isn't going to be effective
+>> for the device being initialized. But I really hate to have both of them in
+>> there. Unfortunately I have no devices available that have a tag space that
+>> will justify using percu_ida, so comparisons are a bit hard at the moment.
+>> NVMe should change that, though, so decision will have to be deferred until
+>> that is tested.
+>
+> Yeah, I agree that is annoying. I've thought about the issue too though and I
+> haven't been able to come up with any better ideas, myself.
 
-Thanks, this looks fine to me.
+I have failed in that area, too, and it's not for lack of thinking about 
+it and experimenting. So hence a new solution was thought up, based on a 
+lot of userland prototyping and testing. Things considered, two 
+solutions is better than no solution.
 
-As the file in question has not been updated in well over a year
-and I'm not aware of any other outstanding updates to it I think
-that the chance of conflicts is low. With that in mind I'm happy
-for whoever takes the reset of this series to take this patch too.
+> A given driver probably should be able to always use one or the other though, so
+> we shouldn't _need_ a runtime conditional because of this, though structuring
+> the code that way might be more trouble than it's worth from my vague
+> recollection of what blk-mq looks likee...
 
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+It's completely runtime conditional at this point, not sure how not to 
+make it so. This is transparent to drivers, they should not care about 
+what kind of tagging scheme to use. If we present that, then we have 
+failed. The runtime conditional is still better than a function pointer, 
+though, so it'll likely stay that way for now.
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: linux-sh@vger.kernel.org
-> ---
->  drivers/sh/intc/core.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/sh/intc/core.c b/drivers/sh/intc/core.c
-> index 8f32a13..05118f92 100644
-> --- a/drivers/sh/intc/core.c
-> +++ b/drivers/sh/intc/core.c
-> @@ -81,11 +81,8 @@ static void __init intc_register_irq(struct intc_desc *desc,
->  	unsigned long flags;
->  
->  	/*
-> -	 * Register the IRQ position with the global IRQ map, then insert
-> -	 * it in to the radix tree.
-> +	 * insert it in to the radix tree.
->  	 */
-> -	irq_reserve_irq(irq);
-> -
->  	raw_spin_lock_irqsave(&intc_big_lock, flags);
->  	radix_tree_insert(&d->tree, enum_id, intc_irq_xlate_get(irq));
->  	raw_spin_unlock_irqrestore(&intc_big_lock, flags);
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+So it the entry points now all look like this:
+
+if (use_new_scheme)
+   ret = new_foo();
+else
+   ret = foo();
+
+At least it should branch predict really well :-)
+
+> (I've actually been fighting with unrelated issues at a very similar layer of
+> abstraction, it's quite annoying.).
+>
+>>> BTW, Shaohua Li's patch d835502f3dacad1638d516ab156d66f0ba377cf5 that changed
+>>> when steal_tags() runs was fundamentally wrong and broken in this respect, and
+>>> should be reverted, whatever usage it was that was expecting to be able to
+>>> allocate the entire tag space was the problem.
+>>
+>> It's hard to blame Shaohua, and I helped push that. It was an attempt in
+>> making percpu_ida actually useful for what blk-mq needs it for, and being
+>> the primary user of it, it was definitely worth doing. A tagging scheme that
+>> requires the tag space to be effectively sparse/huge to be fast is not a
+>> good generic tagging algorithm.
+>
+> Yeah it was definitely not an unreasonable attempt and it's probably my own
+> fault for not speaking up louder at the time (I can't remember how much I
+> commented at the time). Ah well, irritating problem space :)
+
+Not a problem, I think the main failure here is that we have been coming 
+at this with clashing expectations of what the requirements are. And a 
+further issue is wanting to cling to the percpu_ida tags on my end, 
+thinking it could be made to work.
+
+-- 
+Jens Axboe
+
