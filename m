@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaEBJeV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:34:21 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15473 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbaEBJeB (ORCPT
+	id S1752036AbaEBJel (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:34:41 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22902 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902AbaEBJeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:34:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 02 May 2014 02:24:23 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 9/9] drm/nouveau: support for probing GK20A
-Date: Fri, 2 May 2014 18:32:42 +0900
-Message-ID: <1399023162-13159-10-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1399023162-13159-1-git-send-email-acourbot@nvidia.com>
-References: <1399023162-13159-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 2 May 2014 05:34:37 -0400
+Date: Fri, 2 May 2014 12:34:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: ching <ching2048@areca.com.tw>
+Cc: jbottomley@parallels.com, thenzl@redhat.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1.0 16/16] arcmsr: support new adapter ARC12x4
+Message-ID: <20140502093418.GH4963@mwanda>
+References: <1398858378.6930.67.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398858378.6930.67.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the correct subdev/engine classes when GK20A (0xea) is probed.
+On Wed, Apr 30, 2014 at 07:46:18PM +0800, ching wrote:
+> +	acb->pmuD = reg;
+> +	reg->chip_id = (u32 __iomem *)((unsigned long)acb->mem_base0 +
+> +		ARCMSR_ARC1214_CHIP_ID);
+> +	reg->cpu_mem_config = (u32 __iomem *)((unsigned long)
+> +		acb->mem_base0 + ARCMSR_ARC1214_CPU_MEMORY_CONFIGURATION);
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+These casts aren't needed because acb->mem_base0 is a void __iomem *.
+You could just do:
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-index 9784cbf8a9d2..964c183322a2 100644
---- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-@@ -156,6 +156,23 @@ nve0_identify(struct nouveau_device *device)
- 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
- 		device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
- 		break;
-+	case 0xea:
-+		device->cname = "GK20A";
-+		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc3_mc_oclass;
-+		device->oclass[NVDEV_SUBDEV_BUS    ] =  nvc0_bus_oclass;
-+		device->oclass[NVDEV_SUBDEV_TIMER  ] = &gk20a_timer_oclass;
-+		device->oclass[NVDEV_SUBDEV_FB     ] =  gk20a_fb_oclass;
-+		device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
-+		device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
-+		device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
-+		device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
-+		device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
-+		device->oclass[NVDEV_ENGINE_FIFO   ] =  gk20a_fifo_oclass;
-+		device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
-+		device->oclass[NVDEV_ENGINE_GR     ] =  gk20a_graph_oclass;
-+		device->oclass[NVDEV_ENGINE_COPY2  ] = &nve0_copy2_oclass;
-+		device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
-+		break;
- 	case 0xf0:
- 		device->cname = "GK110";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
--- 
-1.9.2
+	reg->cpu_mem_config = acb->mem_base0 + ARCMSR_ARC1214_CPU_MEMORY_CONFIGURATION;
 
+Or you could change ARCMSR_ARC1214_CPU_MEMORY_CONFIGURATION to:
+
+#define ARCMSR_ARC1214_CPU_MEMORY_CONFIGURATION(acb) (acb->mem_base0 + 0x00008)
+
+So it would be:
+
+	reg->cpu_mem_config = ARCMSR_ARC1214_CPU_MEMORY_CONFIGURATION(acb);
+
+
+> +	reg->i2o_host_interrupt_mask = (u32 __iomem *)((unsigned long)
+> +		acb->mem_base0 + ARCMSR_ARC1214_I2_HOST_INTERRUPT_MASK);
+> +	reg->sample_at_reset = (u32 __iomem *)((unsigned long)
+> +		acb->mem_base0 + ARCMSR_ARC1214_SAMPLE_RESET);
+> +	reg->reset_request = (u32 __iomem *)((unsigned long)
+
+regards,
+dan carpenter
