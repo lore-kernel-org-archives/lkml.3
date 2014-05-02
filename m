@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaEBPo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:44:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44084 "EHLO
+	id S1753623AbaEBPoY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:44:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612AbaEBPoZ (ORCPT
+	with ESMTP id S1753612AbaEBPoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:25 -0400
+	Fri, 2 May 2014 11:44:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 036/151] rtlwifi: rtl8188ee: Fix too long disable of IRQs
-Date: Fri,  2 May 2014 08:37:04 -0700
-Message-Id: <1399045139-4531-37-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 047/151] mtip32xx: Set queue bounce limit
+Date: Fri,  2 May 2014 08:37:15 -0700
+Message-Id: <1399045139-4531-48-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,80 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Felipe Franciosi <felipe@paradoxo.org>
 
-commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
+commit 1044b1bb9278f2e656a1a7b63dc24a59506540aa upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8188ee.
+We need to set the queue bounce limit during the device initialization to
+prevent excessive bouncing on 32 bit architectures.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-index e06971b..f923d8c 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	bool rtstatus = true;
- 	int err = 0;
- 	u8 tmp_u1b, u1byte;
-+	unsigned long flags;
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 050c712..2730722 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4145,6 +4145,7 @@ skip_create_disk:
+ 	blk_queue_max_hw_sectors(dd->queue, 0xffff);
+ 	blk_queue_max_segment_size(dd->queue, 0x400000);
+ 	blk_queue_io_min(dd->queue, 4096);
++	blk_queue_bounce_limit(dd->queue, dd->pdev->dma_mask);
  
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
- 	rtlpriv->rtlhal.being_init_adapter = true;
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 
- 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
-@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	err = rtl88e_download_fw(hw, false);
-@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	}
- 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
- 	rtl88e_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
- 		 err);
--	return 0;
-+	return err;
- }
- 
- static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
+ 	/*
+ 	 * write back cache is not supported in the device. FUA depends on
 -- 
 1.9.1
 
