@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781AbaEBPo7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:44:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44143 "EHLO
+	id S1754125AbaEBQAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:00:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44149 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754AbaEBPo4 (ORCPT
+	with ESMTP id S1753770AbaEBPo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:56 -0400
+	Fri, 2 May 2014 11:44:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 082/151] pid: get pid_t ppid of task in init_pid_ns
-Date: Fri,  2 May 2014 08:37:50 -0700
-Message-Id: <1399045139-4531-83-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 089/151] spi: efm32: use $vendor,$device scheme for compatible string
+Date: Fri,  2 May 2014 08:37:57 -0700
+Message-Id: <1399045139-4531-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,62 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
 
-commit ad36d28293936b03d6b7996e9d6aadfd73c0eb08 upstream.
+commit 12f6dd860cf8bf036c0bec38c00a53da71bcd43a upstream.
 
-Added the functions task_ppid_nr_ns() and task_ppid_nr() to abstract the lookup
-of the PPID (real_parent's pid_t) of a process, including rcu locking, in the
-arbitrary and init_pid_ns.
-This provides an alternative to sys_getppid(), which is relative to the child
-process' pid namespace.
+Wolfram Sang pointed out that "efm32,$device" is non-standard. So use the
+common scheme and prefix device with "efm32-". The old compatible string
+is left in place until arch/arm/boot/dts/efm32* is fixed.
 
-(informed by ebiederman's 6c621b7e)
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sched.h | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/spi/efm32-spi.txt | 4 ++--
+ drivers/spi/spi-efm32.c                             | 3 +++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 53f97eb..116e301 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1561,6 +1561,24 @@ static inline pid_t task_tgid_vnr(struct task_struct *tsk)
- }
+diff --git a/Documentation/devicetree/bindings/spi/efm32-spi.txt b/Documentation/devicetree/bindings/spi/efm32-spi.txt
+index a590ca5..f762e11 100644
+--- a/Documentation/devicetree/bindings/spi/efm32-spi.txt
++++ b/Documentation/devicetree/bindings/spi/efm32-spi.txt
+@@ -3,7 +3,7 @@
+ Required properties:
+ - #address-cells: see spi-bus.txt
+ - #size-cells: see spi-bus.txt
+-- compatible: should be "efm32,spi"
++- compatible: should be "energymicro,efm32-spi"
+ - reg: Offset and length of the register set for the controller
+ - interrupts: pair specifying rx and tx irq
+ - clocks: phandle to the spi clock
+@@ -15,7 +15,7 @@ Example:
+ spi1: spi@0x4000c400 { /* USART1 */
+ 	#address-cells = <1>;
+ 	#size-cells = <0>;
+-	compatible = "efm32,spi";
++	compatible = "energymicro,efm32-spi";
+ 	reg = <0x4000c400 0x400>;
+ 	interrupts = <15 16>;
+ 	clocks = <&cmu 20>;
+diff --git a/drivers/spi/spi-efm32.c b/drivers/spi/spi-efm32.c
+index d4d3cc5..8933eb7 100644
+--- a/drivers/spi/spi-efm32.c
++++ b/drivers/spi/spi-efm32.c
+@@ -487,6 +487,9 @@ static int efm32_spi_remove(struct platform_device *pdev)
  
- 
-+static int pid_alive(const struct task_struct *p);
-+static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
-+{
-+	pid_t pid = 0;
-+
-+	rcu_read_lock();
-+	if (pid_alive(tsk))
-+		pid = task_tgid_nr_ns(rcu_dereference(tsk->real_parent), ns);
-+	rcu_read_unlock();
-+
-+	return pid;
-+}
-+
-+static inline pid_t task_ppid_nr(const struct task_struct *tsk)
-+{
-+	return task_ppid_nr_ns(tsk, &init_pid_ns);
-+}
-+
- static inline pid_t task_pgrp_nr_ns(struct task_struct *tsk,
- 					struct pid_namespace *ns)
- {
-@@ -1600,7 +1618,7 @@ static inline pid_t task_pgrp_nr(struct task_struct *tsk)
-  *
-  * Return: 1 if the process is alive. 0 otherwise.
-  */
--static inline int pid_alive(struct task_struct *p)
-+static inline int pid_alive(const struct task_struct *p)
- {
- 	return p->pids[PIDTYPE_PID].pid != NULL;
- }
+ static const struct of_device_id efm32_spi_dt_ids[] = {
+ 	{
++		.compatible = "energymicro,efm32-spi",
++	}, {
++		/* doesn't follow the "vendor,device" scheme, don't use */
+ 		.compatible = "efm32,spi",
+ 	}, {
+ 		/* sentinel */
 -- 
 1.9.1
 
