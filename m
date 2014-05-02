@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaEBR1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 13:27:10 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55400 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639AbaEBR1G (ORCPT
+	id S1753096AbaEBR1k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 13:27:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42567 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842AbaEBR1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 13:27:06 -0400
-Date: Fri, 2 May 2014 10:26:43 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, Xia Kaixu <kaixu.xia@linaro.org>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org
-Message-ID: <20140502172643.GU3245@sirena.org.uk>
-References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org>
- <20140501191125.GB3245@sirena.org.uk>
- <7071653.m3UbztQEJc@wuerfel>
- <11471248.qyIXLf6t3H@diego>
+	Fri, 2 May 2014 13:27:39 -0400
+Date: Fri, 2 May 2014 19:27:31 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140502172731.GK30445@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu>
+ <20140501150948.GR11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
+ <20140502154217.GW11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
+ <20140502162234.GX11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bnn9++8MR180IneI"
+	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
 Content-Disposition: inline
-In-Reply-To: <11471248.qyIXLf6t3H@diego>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 13/15] ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---bnn9++8MR180IneI
-Content-Type: text/plain; charset=iso-8859-1
+--O3RTKUHj+75w1tg5
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 02, 2014 at 12:25:58PM +0200, Heiko St=FCbner wrote:
+On Fri, May 02, 2014 at 12:43:17PM -0400, Vince Weaver wrote:
+> On Fri, 2 May 2014, Peter Zijlstra wrote:
+>=20
+> > In principle the vfs file refcounting should be responsible for that.
+> > But I'll go over it in a bit.
+>=20
+> The poll code is ancient and the C-parser in my head really can't handle=
+=20
+> it very well.
 
-> Mark already removed support for the legacy API from the s3c64xx spi driv=
-er=20
-> (used by s3c2416 and s3c2443), so I guess to way forward would be to "sim=
-ply"=20
-> convert asoc and s3cmci to dmaengine and get rid of it altogether.
+Yeah, that code isn't my favourite part either..
 
-ASoC is already totally capable of using dmaengine on Samsung platforms,
-we're just wating for the architecture to be converted.  I know there's
-a dmaengine driver present but it needs to actually be used on the
-platforms, there should be no blocker on that from the ASoC side.
+> Anyway for completeness this is the kind of thing I'm seeing.
+> The poll() manpage isn't very clear about what is supposed to happen if=
+=20
+> you poll() on a closed file descriptor.
 
---bnn9++8MR180IneI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+              POLLNVAL
+                     Invalid request: fd not open (output only).
+
+Seems applicable..
+
+
+Also, could you send your entire diff this way so we're more or less
+staring at the same code again?
+
+--O3RTKUHj+75w1tg5
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTY9VQAAoJELSic+t+oim9PuIP/RbmzG8yh1yWeQYAGCkxDpJr
-wRx6IlegY+5ZZFDBznQmfpPosypvfI6Gs9E3OBa5ajIHpT8jyKI1L8cYNSLvSBP+
-t3ctBnldg3GBcvzRDHCevmQbzcGVwiG5Uj59BtIlSDg682EpPEA5cnaiv4YBXMi0
-xmyFdMMHPfJq7F9l/AiVqs8HikRnd11hItPVvY1m5amW6kB0h618Cwy6KoODWmaB
-F3nXgz2T9UiPVJ1KI+T7SJ7fAWhD7GiglHgpNcnpNDgXE6BiM6AuinK2oPn4Vjgp
-8r4JLeCO/7SWc9nGeSi16nq2X7LIZXip1r2VXqqOdfBMmHvc651hmTV7ChqIuGv6
-IJLGtpbNGr7mgaq5OWXKPja2AUouQy6E7BI1l0pGcVakFSRajZtSR8vrbXFkwfjp
-QXUopE9hF/A8iyyKUhahIssW8JzLstyNnlH9uepgltxBMO8KOStaGkYZeUVAsKpt
-7gbe/HfFT98aLEXwVw1zZ9UUYOqKICci2teODHbpodZvEkB+G/hHC9LJVYK225ii
-N3E40eg7ers6f9l5xV5BOt0MYX6E5MEinNeW0vypLrPxaK5Mw5Y4v0QpxHFWIQtt
-NrfISrofliHr1MZOdTtYXNYj5hy9npki6VLFl7lnjUpQ8xkeMVdGEc/yEFLUKm9l
-8/sUfXm5Bl/wU3ChA6Y8
-=GVvP
+iQIcBAEBAgAGBQJTY9WDAAoJEHZH4aRLwOS6S/YP/RCm4ORSvaUT+pPnkOHYqNBa
+QbZgUX7CVKxdBxuzW8T4d7obmU9M3H8KfJvy458Af9ZJlNuJQABhlWhQieB2s3a2
+8aHPRF4aMFc7z0LpS9ddLl1cJ+5NyOVoOMGbm7LxmGIY6OLQRh5F+/9TtFOQL7k/
+5GrgqvoQeerjFvCkL7ZrCb+osVNV+5DEApBKll9tr0sZatPYgSWIXlPmIyNcFESh
+eh6lQbX1WEfiLC2D41XncoMaCEi/Tt4S1+GSWyYrmgrww7VxYHiEYgJCA3nyrC6i
+MWEoh2d6FN3f4C9pIld2s/rT61/cnbzu4aKLr1TbJUDOIVrpoCnDnoizTTKyetGD
+yAs8DZGFVbI0JVZNY0asVkvVJqkHd2Iz4BYMphKMSuZdlBBT5H1Q1KAKwRwxYtK+
+SJ5AljFC8e1Vrl8h+y79hPZZQO4DY6XpA3KNuvx5coWyV8/WMyyZum8oEBQYw2Bm
+XwRcqPoHnFiEdXBiitpE7epxNQj3nvKPq9gUgkCmopN05xdIJ7hH1IctM5HQxkUD
+d5cb1gMwpQuATH02n0WKGVR92YM3QsVdmh4rXQ6M5DwMmKAJ7GAWhDgjco3k3Fij
+TZlYG4Q71rF2XptOXEXrLofecamSnkCo3NDkDwQVThl7UurBmQiF3gnbQMC0U46D
+E4QMgXSyDYvFcA8aW03z
+=RVWw
 -----END PGP SIGNATURE-----
 
---bnn9++8MR180IneI--
+--O3RTKUHj+75w1tg5--
