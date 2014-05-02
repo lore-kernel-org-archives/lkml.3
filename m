@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaEBGfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 02:35:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46636 "EHLO bear.ext.ti.com"
+	id S1751975AbaEBGfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 02:35:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:46641 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751629AbaEBGfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 02:35:31 -0400
+	id S1751469AbaEBGfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 02:35:39 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
         <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
         <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: [PATCH v2 3/6] drivers: net: cpsw: Enable CPTS for DRA7xx and AM4372
-Date: Fri, 2 May 2014 12:02:01 +0530
-Message-ID: <1399012324-20737-4-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 5/6] ARM: AM43xx: clk: Change the cpts ref clock source to dpll_core_m5 clk
+Date: Fri, 2 May 2014 12:02:03 +0530
+Message-ID: <1399012324-20737-6-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
 References: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
@@ -31,46 +31,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable cpts hardware time stamping for Dra7xx and AM4372.
-This enables PTPv2 for DRA7xx and AM4372.
+cpsw_cpts_rft_clk has got the choice of 3 clocksources
+ -dpll_core_m4_ck
+ -dpll_core_m5_ck
+ -dpll_disp_m2_ck
+
+By default dpll_core_m4_ck is selected, witn this as clock
+source the CPTS doesnot work properly. It gives clockcheck errors
+while running PTP.
+
+ clockcheck: clock jumped backward or running slower than expected!
+
+By selecting dpll_core_m5_ck as the clocksource fixes this issue.
+In AM335x dpll_core_m5_ck is the default clocksource.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- drivers/net/ethernet/ti/cpsw.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/clk/ti/clk-43xx.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
-index 36aa109..085ffb5 100644
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1398,7 +1398,8 @@ static int cpsw_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
- 	struct hwtstamp_config cfg;
+diff --git a/drivers/clk/ti/clk-43xx.c b/drivers/clk/ti/clk-43xx.c
+index 67c8de5..b4877e0 100644
+--- a/drivers/clk/ti/clk-43xx.c
++++ b/drivers/clk/ti/clk-43xx.c
+@@ -110,9 +110,25 @@ static struct ti_dt_clk am43xx_clks[] = {
  
- 	if (priv->version != CPSW_VERSION_1 &&
--	    priv->version != CPSW_VERSION_2)
-+	    priv->version != CPSW_VERSION_2 &&
-+	    priv->version != CPSW_VERSION_3)
- 		return -EOPNOTSUPP;
+ int __init am43xx_dt_clk_init(void)
+ {
++	struct clk *clk1, *clk2;
++
+ 	ti_dt_clocks_register(am43xx_clks);
  
- 	if (copy_from_user(&cfg, ifr->ifr_data, sizeof(cfg)))
-@@ -1443,6 +1444,7 @@ static int cpsw_hwtstamp_set(struct net_device *dev, struct ifreq *ifr)
- 		cpsw_hwtstamp_v1(priv);
- 		break;
- 	case CPSW_VERSION_2:
-+	case CPSW_VERSION_3:
- 		cpsw_hwtstamp_v2(priv);
- 		break;
- 	default:
-@@ -1459,7 +1461,8 @@ static int cpsw_hwtstamp_get(struct net_device *dev, struct ifreq *ifr)
- 	struct hwtstamp_config cfg;
+ 	omap2_clk_disable_autoidle_all();
  
- 	if (priv->version != CPSW_VERSION_1 &&
--	    priv->version != CPSW_VERSION_2)
-+	    priv->version != CPSW_VERSION_2 &&
-+	    priv->version != CPSW_VERSION_3)
- 		return -EOPNOTSUPP;
- 
- 	cfg.flags = 0;
++	/*
++	 * cpsw_cpts_rft_clk  has got the choice of 3 clocksources
++	 * dpll_core_m4_ck, dpll_core_m5_ck and dpll_disp_m2_ck.
++	 * By default dpll_core_m4_ck is selected, witn this as clock
++	 * source the CPTS doesnot work properly. It gives clockcheck errors
++	 * while running PTP.
++	 * clockcheck: clock jumped backward or running slower than expected!
++	 * By selecting dpll_core_m5_ck as the clocksource fixes this issue.
++	 * In AM335x dpll_core_m5_ck is the default clocksource.
++	 */
++	clk1 = clk_get_sys(NULL, "cpsw_cpts_rft_clk");
++	clk2 = clk_get_sys(NULL, "dpll_core_m5_ck");
++	clk_set_parent(clk1, clk2);
++
+ 	return 0;
+ }
 -- 
 1.8.3.1
 
