@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbaEBQJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:09:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43972 "EHLO
+	id S1753951AbaEBQKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:10:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43952 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914AbaEBPnN (ORCPT
+	with ESMTP id S1752860AbaEBPnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:13 -0400
+	Fri, 2 May 2014 11:43:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
+Cc: Oleksij Rempel <linux@rempel-privat.de>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 022/151] [media] omap3isp: preview: Fix the crop margins
-Date: Fri,  2 May 2014 08:36:50 -0700
-Message-Id: <1399045139-4531-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 029/151] [media] uvcvideo: Do not use usb_set_interface on bulk EP
+Date: Fri,  2 May 2014 08:36:57 -0700
+Message-Id: <1399045139-4531-30-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -29,50 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
+commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
 
-Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
-accidentally changed the previewer's cropping, causing the previewer
-to miss four pixels on each line, thus corrupting the final image.
-Restored the removed setting.
+The UVC specification uses alternate setting selection to notify devices
+of stream start/stop. This breaks when using bulk-based devices, as the
+video streaming interface has a single alternate setting in that case,
+making video stream start and video stream stop events to appear
+identical to the device. Bulk-based devices are thus not well supported
+by UVC.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+The webcam built in the Asus Zenbook UX302LA ignores the set interface
+request and will keep the video stream enabled when the driver tries to
+stop it. If USB autosuspend is enabled the device will then be suspended
+and will crash, requiring a cold reboot.
+
+USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
+request to the bulk endpoint when stopping the stream instead of
+selecting alternate setting 0. The camera then behaves correctly, and
+thus seems to require that behaviour.
+
+Replace selection of alternate setting 0 with clearing of the endpoint
+halt feature at video stream stop for bulk-based devices. Let's refrain
+from blaming Microsoft this time, as it's not clear whether this
+Windows-specific but USB-compliant behaviour was specifically developed
+to handle bulkd-based UVC devices, or if the camera just took advantage
+of it.
+
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
 Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/platform/omap3isp/isppreview.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/media/usb/uvc/uvc_video.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
-index cd8831a..e2e4610 100644
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -1079,6 +1079,7 @@ static void preview_config_input_format(struct isp_prev_device *prev,
-  */
- static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- {
-+	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
- 	struct isp_device *isp = to_isp_device(prev);
- 	unsigned int sph = prev->crop.left;
- 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
-@@ -1086,6 +1087,14 @@ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
- 	u32 features;
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index 898c208..e32d6a5 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1847,7 +1847,25 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
  
-+	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
-+	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
-+		sph -= 2;
-+		eph += 2;
-+		slv -= 2;
-+		elv += 2;
-+	}
+ 	if (!enable) {
+ 		uvc_uninit_video(stream, 1);
+-		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++		if (stream->intf->num_altsetting > 1) {
++			usb_set_interface(stream->dev->udev,
++					  stream->intfnum, 0);
++		} else {
++			/* UVC doesn't specify how to inform a bulk-based device
++			 * when the video stream is stopped. Windows sends a
++			 * CLEAR_FEATURE(HALT) request to the video streaming
++			 * bulk endpoint, mimic the same behaviour.
++			 */
++			unsigned int epnum = stream->header.bEndpointAddress
++					   & USB_ENDPOINT_NUMBER_MASK;
++			unsigned int dir = stream->header.bEndpointAddress
++					 & USB_ENDPOINT_DIR_MASK;
++			unsigned int pipe;
 +
- 	features = (prev->params.params[0].features & active)
- 		 | (prev->params.params[1].features & ~active);
- 
++			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
++			usb_clear_halt(stream->dev->udev, pipe);
++		}
++
+ 		uvc_queue_enable(&stream->queue, 0);
+ 		uvc_video_clock_cleanup(stream);
+ 		return 0;
 -- 
 1.9.1
 
