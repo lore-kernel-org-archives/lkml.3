@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223AbaEBPvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:51:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44322 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752218AbaEBPqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Christopher Friedt <chrisfriedt@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 119/151] drm/vmwgfx: correct fb_fix_screeninfo.line_length
-Date: Fri,  2 May 2014 08:38:27 -0700
-Message-Id: <1399045139-4531-120-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1754232AbaEBPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:51:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754050AbaEBPv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:51:26 -0400
+Message-ID: <1399045859.1604.1.camel@deneb.redhat.com>
+Subject: Re: [PATCH 0/2] arm64: TLB flush issues
+From: Mark Salter <msalter@redhat.com>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 02 May 2014 11:50:59 -0400
+In-Reply-To: <20140502153019.GA9179@linaro.org>
+References: <1399044035-11274-1-git-send-email-msalter@redhat.com>
+	 <20140502153019.GA9179@linaro.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2014-05-02 at 16:30 +0100, Steve Capper wrote:
+> On Fri, May 02, 2014 at 11:20:33AM -0400, Mark Salter wrote:
+> > As explained in more detail in the second patch, I have observed a soft
+> > lockup under some loads. These lockups were in flush_tlb_kernel_range()
+> > which was looping through a very large address range. While looking into
+> > this, I also noticed the flush routines in tlb.S were not properly
+> > handling pages larger than 4k. This is corrected in the first patch.
+> > The second patch limits the loop size for the flush_tlb_[kernel_]range
+> > functions. It uses an arbitrary constant to limit the loop, but it
+> > would be better if it were based on actual tlb size or some other
+> > heuristic.
+> > 
+> > Mark Salter (2):
+> >   arm64: fix unnecessary tlb flushes
+> >   arm64: fix soft lockup due to large tlb flush range
+> > 
+> >  arch/arm64/include/asm/tlbflush.h | 28 +++++++++++++++++++++++++---
+> >  arch/arm64/mm/tlb.S               |  4 ++--
+> >  2 files changed, 27 insertions(+), 5 deletions(-)
+> > 
+> 
+> Hi Mark,
+> As a heads-up, I posted this earlier today:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-May/252837.html
+> 
+> Cheers,
 
-------------------
+Thanks. That takes care of the pagesize handling (my patch 1/2).
 
-From: Christopher Friedt <chrisfriedt@gmail.com>
-
-commit aa6de142c901cd2d90ef08db30ae87da214bedcc upstream.
-
-Previously, the vmwgfx_fb driver would allow users to call FBIOSET_VINFO, but it would not adjust
-the FINFO properly, resulting in distorted screen rendering. The patch corrects that behaviour.
-
-See https://bugs.gentoo.org/show_bug.cgi?id=494794 for examples.
-
-Signed-off-by: Christopher Friedt <chrisfriedt@gmail.com>
-Reviewed-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/vmwgfx/vmwgfx_fb.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-index ed5ce2a..021b522 100644
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
-@@ -147,7 +147,7 @@ static int vmw_fb_check_var(struct fb_var_screeninfo *var,
- 	}
- 
- 	if (!vmw_kms_validate_mode_vram(vmw_priv,
--					info->fix.line_length,
-+					var->xres * var->bits_per_pixel/8,
- 					var->yoffset + var->yres)) {
- 		DRM_ERROR("Requested geom can not fit in framebuffer\n");
- 		return -EINVAL;
-@@ -162,6 +162,8 @@ static int vmw_fb_set_par(struct fb_info *info)
- 	struct vmw_private *vmw_priv = par->vmw_priv;
- 	int ret;
- 
-+	info->fix.line_length = info->var.xres * info->var.bits_per_pixel/8;
-+
- 	ret = vmw_kms_write_svga(vmw_priv, info->var.xres, info->var.yres,
- 				 info->fix.line_length,
- 				 par->bpp, par->depth);
-@@ -177,6 +179,7 @@ static int vmw_fb_set_par(struct fb_info *info)
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
-+		vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
- 		vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
- 	}
- 
--- 
-1.9.1
 
