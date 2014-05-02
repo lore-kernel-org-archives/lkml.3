@@ -1,97 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaEBPEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25046 "EHLO mx1.redhat.com"
+	id S1752655AbaEBPEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:04:50 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60170 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752402AbaEBPEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:04:16 -0400
-Message-ID: <5363B3E8.6020606@redhat.com>
-Date: Fri, 02 May 2014 17:04:08 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751795AbaEBPEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:04:48 -0400
+Date: Fri, 2 May 2014 11:04:34 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140502150434.GM23420@cmpxchg.org>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502120715.GI3446@dhcp22.suse.cz>
+ <20140502130118.GK23420@cmpxchg.org>
+ <20140502141515.GJ3446@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] uprobes: fix scratch register selection for rip-relative
- fixups
-References: <1398964141-25097-1-git-send-email-dvlasenk@redhat.com> <1398991682.4908.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-In-Reply-To: <1398991682.4908.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140502141515.GJ3446@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 02:48 AM, Jim Keniston wrote:
-> On Thu, 2014-05-01 at 19:09 +0200, Denys Vlasenko wrote:
->> +#define VEX2_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[1])
->> +#define VEX3_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[2])
+On Fri, May 02, 2014 at 04:15:15PM +0200, Michal Hocko wrote:
+> On Fri 02-05-14 09:01:18, Johannes Weiner wrote:
+> > On Fri, May 02, 2014 at 02:07:15PM +0200, Michal Hocko wrote:
+> > > On Fri 02-05-14 11:36:28, Michal Hocko wrote:
+> > > > On Wed 30-04-14 18:55:50, Johannes Weiner wrote:
+> > > > > On Mon, Apr 28, 2014 at 02:26:42PM +0200, Michal Hocko wrote:
+> > > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > > > > index 19d620b3d69c..40e517630138 100644
+> > > > > > --- a/mm/memcontrol.c
+> > > > > > +++ b/mm/memcontrol.c
+> > > > > > @@ -2808,6 +2808,29 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
+> > > > > >  	return mem_cgroup_from_id(id);
+> > > > > >  }
+> > > > > >  
+> > > > > > +/**
+> > > > > > + * mem_cgroup_reclaim_eligible - checks whether given memcg is eligible for the
+> > > > > > + * reclaim
+> > > > > > + * @memcg: target memcg for the reclaim
+> > > > > > + * @root: root of the reclaim hierarchy (null for the global reclaim)
+> > > > > > + *
+> > > > > > + * The given group is reclaimable if it is above its low limit and the same
+> > > > > > + * applies for all parents up the hierarchy until root (including).
+> > > > > > + */
+> > > > > > +bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
+> > > > > > +		struct mem_cgroup *root)
+> > > > > 
+> > > > > Could you please rename this to something that is more descriptive in
+> > > > > the reclaim callsite?  How about mem_cgroup_within_low_limit()?
+> > > > 
+> > > > I have intentionally used somethig that is not low_limit specific. The
+> > > > generic reclaim code does't have to care about the reason why a memcg is
+> > > > not reclaimable. I agree that having follow_low_limit paramter explicit
+> > > > and mem_cgroup_reclaim_eligible not is messy. So something should be
+> > > > renamed. I would probably go with s@follow_low_limit@check_reclaim_eligible@
+> > > > but I do not have a strong preference.
+> > > 
+> > > What about this?
+> > 
+> > I really don't like it.
+> > 
+> > Yes, we should be hiding implementation details, but we should stop
+> > treating memcg like an alien in this code.  The VM code obviously
+> > doesn't have to know HOW the guarantees are exactly implemented, but
+> > it's a perfectly fine *concept* that can be known outside of memcg:
+> > 
+> > shrink_zone:
+> > for each memcg in system:
+> >   if mem_cgroup_within_guarantee(memcg):
+> >     continue
+> >   reclaim(memcg-zone)
+> > 
+> > is perfectly understandable and makes it easier to reason about the
+> > behavior of the reclaim code.  If I just see !mem_cgroup_eligible(), I
+> > don't know if this affects the scenario I'm thinking about at all.
+> > 
+> > It's obscuring useful information for absolutely no benefit.  If you
+> > burden the reclaim code with a callback, you better explain what you
+> > are doing.  You owe it to the reader.
 > 
-> I disclaim any knowledge about VEX* stuff.
-...
-> skipped this next part...
-> 
->> +	/* Similar treatment for VEX3 prefix */
->> +	/* TODO: add XOP/EVEX treatment when insn decoder supports them */
->> +	if (insn->vex_prefix.nbytes == 3) {
->> +		/*
->> +		 * vex2:     c5    rvvvvLpp   (has no b bit)
->> +		 * vex3/xop: c4/8f rxbmmmmm wvvvvLpp
->> +		 * evex:     62    rxbR00mm.wvvvv1pp.zllBVaaa
->> +		 *   (evex will need setting of both b and x since
->> +		 *   in non-sib encoding evex.x is 4th bit of MODRM.rm)
->> +		 * Setting VEX3.b (setting because it has inverted meaning):
->> +		 */
->> +		cursor = auprobe->insn + insn_offset_vex_prefix(insn) + 1;
->> +		*cursor |= 0x20;
->>  	}
-> 
-> ... resumed reviewing here.
+> OK fair enough, what about the following?
 
-I do realize that most people reading this code won't be
-aficionados of memorizing x86 insn encoding quirks.
+Thanks, that's much better IMO.
 
-To help them, I added the comment which spells out bit layout
-of vex/evex/xop prefixes (see above). Does it help?
+> @@ -2215,8 +2215,18 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>  	}
+>  }
+>  
+> +/**
+> + * __shrink_zone - shrinks a given zone
+> + *
+> + * @zone: zone to shrink
+> + * @sc: scan control with additional reclaim parameters
+> + * @force_memcg_guarantee: do not reclaim memcgs which are within their memory
+> + * guarantee
+> + *
+> + * Returns the number of reclaimed memcgs.
+> + */
+>  static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+> -		bool follow_low_limit)
+> +		bool force_memcg_guarantee)
+>  {
+>  	unsigned long nr_reclaimed, nr_scanned;
+>  	unsigned nr_scanned_groups = 0;
+> @@ -2236,12 +2246,9 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+>  		do {
+>  			struct lruvec *lruvec;
+>  
+> -			/*
+> -			 * Memcg might be under its low limit so we have to
+> -			 * skip it during the first reclaim round
+> -			 */
+> -			if (follow_low_limit &&
+> -					!mem_cgroup_reclaim_eligible(memcg, root)) {
+> +			/* Memcg might be protected from the reclaim */
+> +			if (force_memcg_guarantee &&
 
-> VEX again.  Covering my ears and humming...
-> 
->> +	if (insn->vex_prefix.nbytes == 2) {
->> +		reg2 = VEX2_VVVV(insn) ^ 0xf;
->> +	}
->> +	if (insn->vex_prefix.nbytes == 3) {
->> +		reg2 = VEX3_VVVV(insn) ^ 0xf;
->> +	}
->> +	/* TODO: add XOP, EXEV vvvv reading */
->> +
+respect_?  consider_?
 
-In fact there is room for improvement in this part:
-it's better to ignore most-significant bit of this field
-(32-bit mode strikes back).
-
->> +	reg2 = 3; /* BX */
->> +	if (can_use_regs & UPROBE_FIX_RIP_DI)
->> +		reg2 = 7;
->> +	if (can_use_regs & UPROBE_FIX_RIP_SI)
->> +		reg2 = 6;
-> 
-> It seems more natural to code this as:
-> 	if (can_use_regs & UPROBE_FIX_RIP_SI)
-> 		reg2 = 6;
-> 	else if (can_use_regs & UPROBE_FIX_RIP_DI)
-> 		reg2 = 7;
-> 	else
-> 		reg2 = 3; /* BX */
-> ... which is pretty much how you do it in scratch_reg().
-
-Okay.
-I can also get rid of "can_use_regs" variable altogether then!
-Sending new version in a jiffy.
--- 
-vda
-
-
+force sounds like something the second round would do -- force reclaim
+despite guarantees...  But then again, I'm still for removing that 2nd
+force cycle, so I don't care too strongly about that name (yet) :-)
