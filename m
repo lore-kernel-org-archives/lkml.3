@@ -1,52 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbaEBViA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 17:38:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47143 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501AbaEBVh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 17:37:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,974,1389772800"; 
-   d="scan'208";a="426962446"
-Message-ID: <53641035.4040202@intel.com>
-Date: Fri, 02 May 2014 14:37:57 -0700
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752933AbaEBViZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 17:38:25 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:51361 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaEBViX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 17:38:23 -0400
+Date: Fri, 2 May 2014 14:38:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH] sched: Sanitize irq accounting madness
+Message-ID: <20140502213819.GU8754@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>	<CA+55aFygkoYnJKdLas3WOq9q9pCEEk6mBOuj-zbLyLumdhStAA@mail.gmail.com>	<alpine.DEB.2.02.1405022222570.6261@ionos.tec.linutronix.de>	<CA+55aFyZr3YrNm1+p4XstNx-NY71LMuP1GyTeqettSdR2CufqQ@mail.gmail.com>	<CALCETrW+vAuUq834kjo7Ot8JYqDqAdOts78oasm0vPP1wURnWg@mail.gmail.com> <CA+55aFzQiryYPsUTK-yS_rt=MGtzJZBBrj3waGq6Ez3GUqfMnw@mail.gmail.com>
-In-Reply-To: <CA+55aFzQiryYPsUTK-yS_rt=MGtzJZBBrj3waGq6Ez3GUqfMnw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1405022307000.6261@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050221-7164-0000-0000-0000017A6E3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 02:07 PM, Linus Torvalds wrote:
-> On Fri, May 2, 2014 at 2:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> Because otherwise I'd have to keep track of whether it's a zeroentry
->> or an errorentry.  I can't stuff the offset in a register without even
->> more stack hackery, since there are no available registers there.  I
->> could split the whole thing into two code paths, I guess.
+On Fri, May 02, 2014 at 11:26:24PM +0200, Thomas Gleixner wrote:
+> Russell reported, that irqtime_account_idle_ticks() takes ages due to:
 > 
-> Ahh. Never mind. I didn't think about the fact that the error entry
-> case had one more field on the stack. Your approach is all fine, it
-> was me not seeing the problem.
+>        for (i = 0; i < ticks; i++)
+>                irqtime_account_process_tick(current, 0, rq);
 > 
+> It's sad, that this code was written way _AFTER_ the NOHZ idle
+> functionality was available. I charge myself guitly for not paying
+> attention when that crap got merged with commit abb74cefa (sched:
+> Export ns irqtimes through /proc/stat)
+> 
+> So instead of looping nr_ticks times just apply the whole thing at
+> once.
+> 
+> As a side note: The whole cputime_t vs. u64 business in that context
+> wants to be cleaned up as well. There is no point in having all these
+> back and forth conversions. Lets standardise on u64 nsec for all
+> kernel internal accounting and be done with it. Everything else does
+> not make sense at all for fine grained accounting. Frederic, can you
+> please take care of that?
+> 
+> Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> Cc: stable@vger.kernel.org
 
-I have to admit to being rather partial to the idea of simply doing
-"push $0" on entry for the vectors that don't push an error code, like
-the early exception handling code does.
+One nit below, other than that:
 
-	-hpa
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
+> ---
+>  kernel/sched/cputime.c |   32 ++++++++++++++++----------------
+>  1 file changed, 16 insertions(+), 16 deletions(-)
+> 
+> Index: linux-2.6/kernel/sched/cputime.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched/cputime.c
+> +++ linux-2.6/kernel/sched/cputime.c
+> @@ -332,50 +332,50 @@ out:
+>   * softirq as those do not count in task exec_runtime any more.
+>   */
+>  static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+> -						struct rq *rq)
+> +					 struct rq *rq, int ticks)
+>  {
+> -	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+> +	cputime_t scaled = cputime_to_scaled(cputime_one_jiffy);
+> +	u64 cputime = (__force u64) cputime_one_jiffy;
+>  	u64 *cpustat = kcpustat_this_cpu->cpustat;
+> 
+>  	if (steal_account_process_tick())
+>  		return;
+> 
+> +	cputime *= ticks;
+> +	scaled *= ticks;
+> +
+>  	if (irqtime_account_hi_update()) {
+> -		cpustat[CPUTIME_IRQ] += (__force u64) cputime_one_jiffy;
+> +		cpustat[CPUTIME_IRQ] += cputime;
+>  	} else if (irqtime_account_si_update()) {
+> -		cpustat[CPUTIME_SOFTIRQ] += (__force u64) cputime_one_jiffy;
+> +		cpustat[CPUTIME_SOFTIRQ] += cputime;
+>  	} else if (this_cpu_ksoftirqd() == p) {
+>  		/*
+>  		 * ksoftirqd time do not get accounted in cpu_softirq_time.
+>  		 * So, we have to handle it separately here.
+>  		 * Also, p->stime needs to be updated for ksoftirqd.
+>  		 */
+> -		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+> -					CPUTIME_SOFTIRQ);
+> +		__account_system_time(p, cputime, scaled, CPUTIME_SOFTIRQ);
+>  	} else if (user_tick) {
+> -		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
+> +		account_user_time(p, cputime, scaled);
+>  	} else if (p == rq->idle) {
+> -		account_idle_time(cputime_one_jiffy);
+> +		account_idle_time(cputime);
+>  	} else if (p->flags & PF_VCPU) { /* System time or guest time */
+> -		account_guest_time(p, cputime_one_jiffy, one_jiffy_scaled);
+> +		account_guest_time(p, cputime, scaled);
+>  	} else {
+> -		__account_system_time(p, cputime_one_jiffy, one_jiffy_scaled,
+> -					CPUTIME_SYSTEM);
+> +		__account_system_time(p, cputime, scaled,	CPUTIME_SYSTEM);
+
+Stray tab character.
+
+>  	}
+>  }
+> 
+>  static void irqtime_account_idle_ticks(int ticks)
+>  {
+> -	int i;
+>  	struct rq *rq = this_rq();
+> 
+> -	for (i = 0; i < ticks; i++)
+> -		irqtime_account_process_tick(current, 0, rq);
+> +	irqtime_account_process_tick(current, 0, rq, ticks);
+>  }
+>  #else /* CONFIG_IRQ_TIME_ACCOUNTING */
+>  static inline void irqtime_account_idle_ticks(int ticks) {}
+>  static inline void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+> -						struct rq *rq) {}
+> +						struct rq *rq, int nr_ticks) {}
+>  #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+> 
+>  /*
+> @@ -464,7 +464,7 @@ void account_process_tick(struct task_st
+>  		return;
+> 
+>  	if (sched_clock_irqtime) {
+> -		irqtime_account_process_tick(p, user_tick, rq);
+> +		irqtime_account_process_tick(p, user_tick, rq, 1);
+>  		return;
+>  	}
+> 
+> 
 
