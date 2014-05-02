@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794AbaECBGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 21:06:41 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:51587 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaECBGk (ORCPT
+	id S1752844AbaECBPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 21:15:43 -0400
+Received: from usindpps03.hds.com ([207.126.252.16]:56779 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901AbaECBPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 21:06:40 -0400
-Message-ID: <53644114.9000201@gmail.com>
-Date: Sat, 03 May 2014 09:06:28 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 2 May 2014 21:15:42 -0400
+X-Greylist: delayed 10603 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 21:15:42 EDT
+Subject: [PATCH] drivers/tty/hvc: don't free hvc_console_setup after init
+From: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+To: linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, mitsuhiro.tanino@hds.com,
+        paul.gortmaker@windriver.com
+Date: Fri, 02 May 2014 18:18:47 -0400
+Message-ID: <20140502221847.24255.17096.stgit@hds.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] arch/unicore32/include/asm/io.h: add readl_relaxed() generic
- definition
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-02_07:2014-05-02,2014-05-02,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405020321
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need generic definition for readl_relaxed(), like other architectures
-have done. Or can not pass compiling with allmodconfig, the related
-error:
+When 'console=hvc0' is specified to the kernel parameter in x86 KVM guest,
+hvc console is setup within a kthread. However, that will cause SEGV
+and the boot will fail when the driver is builtin to the kernel,
+because currently hvc_console_setup() is annotated with '__init'. This
+patch removes '__init' to boot the guest successfully with 'console=hvc0'.
 
-    CC [M]  drivers/message/fusion/mptbase.o
-  drivers/message/fusion/mptbase.c: In function ‘mpt_send_handshake_request’:
-  drivers/message/fusion/mptbase.c:1224: error: implicit declaration of function ‘readl_relaxed’
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
 ---
- arch/unicore32/include/asm/io.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/hvc/hvc_console.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
-index ae327e4..cb1d8fd 100644
---- a/arch/unicore32/include/asm/io.h
-+++ b/arch/unicore32/include/asm/io.h
-@@ -39,6 +39,10 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
- #define ioremap_nocache(cookie, size)	__uc32_ioremap(cookie, size)
- #define iounmap(cookie)			__uc32_iounmap(cookie)
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 94f9e3a..0ff7fda 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -190,7 +190,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
+ 	return hvc_driver;
+ }
  
-+#define readb_relaxed readb
-+#define readw_relaxed readw
-+#define readl_relaxed readl
-+
- #define HAVE_ARCH_PIO_SIZE
- #define PIO_OFFSET		(unsigned int)(PCI_IOBASE)
- #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
--- 
-1.9.2.459.g68773ac
+-static int __init hvc_console_setup(struct console *co, char *options)
++static int hvc_console_setup(struct console *co, char *options)
+ {	
+ 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
+ 		return -ENODEV;
+
