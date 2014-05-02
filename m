@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507AbaEBBTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 21:19:22 -0400
-Received: from ozlabs.org ([103.22.144.67]:45591 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338AbaEBBTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 21:19:21 -0400
-Message-ID: <1398993559.23822.1.camel@concordia>
-Subject: Re: cscope: issue with symlinks in
- tools/testing/selftests/powerpc/copyloops/
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hans-Bernhard =?ISO-8859-1?Q?Br=F6ker?= 
-	<broeker@users.sourceforge.net>,
-        Hans-Bernhard Broeker <broeker@physik.rwth-aachen.de>,
-        Neil Horman <nhorman@users.sourceforge.net>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, cscope-devel@lists.sourceforge.net
-Date: Fri, 02 May 2014 11:19:19 +1000
-In-Reply-To: <1396530975.4361.28.camel@localhost.localdomain>
-References: <1396530975.4361.28.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1751473AbaEBBbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 21:31:06 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:47396 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaEBBbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 21:31:05 -0400
+Message-ID: <5362F551.2030007@hitachi.com>
+Date: Fri, 02 May 2014 10:30:57 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+References: <cover.1398958771.git.jpoimboe@redhat.com> <87ppjxcjo2.fsf@tassilo.jf.intel.com> <20140501210154.GC3907@treble.redhat.com> <20140501210601.GG2382@two.firstfloor.org>
+In-Reply-To: <20140501210601.GG2382@two.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-03 at 15:16 +0200, Yann Droneaud wrote:
-> Hi,
+(2014/05/02 6:06), Andi Kleen wrote:
+>> When bar returns, would it skip foo and go straight back to foo's
+>> caller?  If so, then it should be safe to patch foo after it jumps to
+>> bar.
 > 
-> I'm using cscope to browse kernel sources, but I'm facing warnings from
-> the tool since following commit:
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=22d651dcef536c75f75537290bf3da5038e68b6b
-> 
->     commit 22d651dcef536c75f75537290bf3da5038e68b6b
->     Author: Michael Ellerman <mpe@ellerman.id.au>
->     Date:   Tue Jan 21 15:22:17 2014 +1100
-> 
->     selftests/powerpc: Import Anton's memcpy / copy_tofrom_user tests
+> foo is no problem, you see it in the backtrace.
+> But you don't see bar.
 
-Ooops, sorry.
+No, there is no "foo" in backtrace.
+As Josh said, stop_machine() schedules highest priority tasks on
+each running thread, as below.
 
-> cscope reports error when generating the cross-reference database:
-> 
->     $ make ALLSOURCE_ARCHS=all O=./obj-cscope/ cscope
->       GEN     cscope
->     cscope: cannot find
-> file /home/ydroneaud/src/linux/tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
-> 
-> It's a rather uncommon side effect of having (for the first time ?)
-> sources files as symlinks: looking for symlinks in the kernel sources
-> returns only:
-> 
->     $ find . -type l
->     ./arch/mips/boot/dts/include/dt-bindings
->     ./arch/microblaze/boot/dts/system.dts
->     ./arch/powerpc/boot/dts/include/dt-bindings
->     ./arch/metag/boot/dts/include/dt-bindings
->     ./arch/arm/boot/dts/include/dt-bindings
->     ./tools/testing/selftests/powerpc/copyloops/copyuser_power7.S
->     ./tools/testing/selftests/powerpc/copyloops/memcpy_64.S
->     ./tools/testing/selftests/powerpc/copyloops/memcpy_power7.S
->     ./tools/testing/selftests/powerpc/copyloops/copyuser_64.S
+buz:
+  ...
+  call foo -> push buz on the stack
 
+foo:
+ ...
+ jmp bar
 
-Right.
+bar:
+ ...
+ call schedule -> push bar on the stack
 
-I did check that there were other symlinks already in the tree, but you're
-correct I seem to be the first clever person to add symlinks to source files.
+Thus, we'll not see foo on the stack. However, since the tail call
+doesn't return to foo, we can treat it already finished. So, there
+is no consistency problem on it. :)
 
-> So one can wonder if having symlinked sources files is an expected
-> supported feature for kbuild and all the various kernel
-> tools/infrastructure ?
+Thank you,
 
-Kbuild is not involved really, these files are just built with plain Makefiles,
-at least from the symlink side.
-
-FWIW ctags seems to cope, that's what I use.
-
-But I didn't think of cscope.
-
-
-Given you're the only person who's noticed I suspect most other things haven't
-broken, fingers crossed :)
-
-cheers
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
