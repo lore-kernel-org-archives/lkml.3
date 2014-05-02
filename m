@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaEBNWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:22:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55463 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbaEBNWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:22:41 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53639C1C.8050701@roeck-us.net>
-Date: Fri, 02 May 2014 06:22:36 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/5] watchdog: Add API to trigger reboots
-References: <1398958893-30049-1-git-send-email-linux@roeck-us.net> <1398958893-30049-2-git-send-email-linux@roeck-us.net> <20140502100105.GC17370@arm.com>
-In-Reply-To: <20140502100105.GC17370@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752071AbaEBN2K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:28:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaEBN2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 09:28:07 -0400
+Date: Fri, 2 May 2014 15:19:21 +0200
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: Zhouyi Zhou <zhouzhouyi@gmail.com>
+Cc: brouer@redhat.com, <davem@davemloft.net>, <steffen.klassert@secunet.com>,
+        <fan.du@windriver.com>, <dborkman@redhat.com>,
+        <minipli@googlemail.com>, <tgraf@suug.ch>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
+Message-ID: <20140502151921.014fbeec@redhat.com>
+In-Reply-To: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 03:01 AM, Will Deacon wrote:
-> Hi Guenter,
->
-> This looks pretty sensible to me (and the arm/arm64 bits look fine too), but
-> I have one question below...
->
-> On Thu, May 01, 2014 at 04:41:29PM +0100, Guenter Roeck wrote:
->> Some hardware implements reboot through its watchdog hardware,
->> for example by triggering a watchdog timeout. Platform specific
->> code starts to spread into watchdog drivers, typically by setting
->> pointers to a callback functions which is then called from the
->> platform reset handler.
->>
->> To simplify code and provide a unified API to trigger reboots by
->> watchdog drivers, provide a single API to trigger such reboots
->> through the watchdog subsystem.
->>
->> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->> ---
->>   drivers/watchdog/watchdog_core.c |   17 +++++++++++++++++
->>   include/linux/watchdog.h         |   11 +++++++++++
->>   2 files changed, 28 insertions(+)
->>
->> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
->> index cec9b55..4ec6e2f 100644
->> --- a/drivers/watchdog/watchdog_core.c
->> +++ b/drivers/watchdog/watchdog_core.c
->> @@ -43,6 +43,17 @@
->>   static DEFINE_IDA(watchdog_ida);
->>   static struct class *watchdog_class;
->>
->> +static struct watchdog_device *wdd_reboot_dev;
->> +
->> +void watchdog_do_reboot(enum reboot_mode mode, const char *cmd)
->> +{
->> +	if (wdd_reboot_dev) {
->> +		if (wdd_reboot_dev->ops->reboot)
->> +			wdd_reboot_dev->ops->reboot(wdd_reboot_dev, mode, cmd);
->> +	}
->> +}
->
-> What reboot_mode values would you expect a watchdog to support other than
-> REBOOT_HARD? Also, is the cmd even useful here?
->
+On Fri,  2 May 2014 15:18:12 +0800
+Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
 
-Answer is "I don't know" in both cases. I thought about dropping the parameters,
-but then I thought it does not hurt to have them around either. I am open to
-suggestions and to dropping the parameters if everyone agrees that they are
-useless.
+> As http://www.spinics.net/lists/netdev/msg165015.html
+> pktgen generates shared packet through vlan interface will cause
+> oops because of duplicate entering tc queue.
+>
+> Try to solve this problem by means of packet clone instead of sharing.
 
-Guenter
+I really don't like adding this stuff to the fast path of pktgen.
 
+Why would you use pktgen on a VLAN?
+
+Why don't you use the "vlan_id" feature available in pktgen, and send
+in the lower real device?
+
+
+
+> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+> ---
+>  net/core/pktgen.c |   20 +++++++++++++++++---
+>  1 files changed, 17 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+> index 0304f98..ced07fc 100644
+> --- a/net/core/pktgen.c
+> +++ b/net/core/pktgen.c
+> @@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+>  	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
+>  		= odev->netdev_ops->ndo_start_xmit;
+>  	struct netdev_queue *txq;
+> +	struct sk_buff *nskb = NULL;
+>  	u16 queue_map;
+>  	int ret;
+>  
+> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+>  		pkt_dev->last_ok = 0;
+>  		goto unlock;
+>  	}
+> -	atomic_inc(&(pkt_dev->skb->users));
+> -	ret = (*xmit)(pkt_dev->skb, odev);
+> +
+> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
+> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
+> +		ret = -ENOMEM;
+> +		if (nskb)
+> +			ret = (*xmit)(nskb, odev);
+> +		else
+> +			nskb = ERR_PTR(ret);
+> +	} else {
+> +		atomic_inc(&(pkt_dev->skb->users));
+> +		ret = (*xmit)(pkt_dev->skb, odev);
+> +	}
+>  
+>  	switch (ret) {
+>  	case NETDEV_TX_OK:
+> @@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+>  	case NETDEV_TX_LOCKED:
+>  	case NETDEV_TX_BUSY:
+>  		/* Retry it next time */
+> -		atomic_dec(&(pkt_dev->skb->users));
+> +		if (nskb && !IS_ERR(nskb))
+> +			kfree_skb(nskb);
+> +		else
+> +			atomic_dec(&(pkt_dev->skb->users));
+>  		pkt_dev->last_ok = 0;
+>  	}
+>  unlock:
+
+
+
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
