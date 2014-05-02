@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaEBQW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:22:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43755 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752780AbaEBPjY (ORCPT
+	id S1754593AbaEBQWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:22:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46102 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780AbaEBQWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:24 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Liu Hua <sdu.liu@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 142/151] hung_task: check the value of "sysctl_hung_task_timeout_sec"
-Date: Fri,  2 May 2014 08:38:50 -0700
-Message-Id: <1399045139-4531-143-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 2 May 2014 12:22:38 -0400
+Date: Fri, 2 May 2014 18:22:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140502162234.GX11096@twins.programming.kicks-ass.net>
+References: <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu>
+ <20140501150948.GR11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
+ <20140502154217.GW11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cz6wLo+OExbGG7q/"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--cz6wLo+OExbGG7q/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: Liu Hua <sdu.liu@huawei.com>
+On Fri, May 02, 2014 at 12:22:30PM -0400, Vince Weaver wrote:
+>=20
+> I'll try the patch next.
+>=20
+> Meanwhile, can polling on a closed event cause problems with the referenc=
+e=20
+> count?
+>=20
+> In my various failure traces there's always been a poll() active at the=
+=20
+> time of crash, and I added some trace_printk()s and it looks like poll is=
+=20
+> at least attempting to poll on the closed file descriptor that's causing=
+=20
+> us problems.
 
-commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
+In principle the vfs file refcounting should be responsible for that.
+But I'll go over it in a bit.
 
-As sysctl_hung_task_timeout_sec is unsigned long, when this value is
-larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
-watchdog will return immediately without sleep and with print :
+--cz6wLo+OExbGG7q/
+Content-Type: application/pgp-signature
 
-  schedule_timeout: wrong timeout value ffffffffffffff83
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-and then the funtion watchdog will call schedule_timeout_interruptible
-again and again.  The screen will be filled with
+iQIcBAEBAgAGBQJTY8ZKAAoJEHZH4aRLwOS64UMP/3Jc6soWnPtCH3Pk8OfAtOhF
+Z7RiaKdoQA2YG05znZfKFpTXHkrnK0Kk+0iECdBybcSdik6JD7RScWQfLR6+8N7C
+ENzAextG0j3lUW9izT+F0kDV5Ja4G8k9A1JdIYj7IlZCbEXK8QiVQ6L01+G4UoOM
+RcnUnRducYJo76Qo1zfSd54pDmRJmt0XdvJm3IpcF7vwEM9tB2SEPU3r40Ls1b1X
+pPHwqTxIzOsZnCWT/1RWg5UoIgfBwP2fT3zopNVOLlXSZJ0/K/9rowwFwM5wjaVJ
+YK3r72cJ9FaVkH0F07Lk1O9cTwpzbVqn47WgF2BXhEvI95n7EFoQHgN1IjMkjLgW
+4B0l/P+vEdmnopV0GiVjufYMajd6pcGBI+BwVH3+yRz6zw0S/bIN/l6axF/W7/YL
+sUy77gdb5MuyzIXJqm6tBttXeN6Mx7vGIbVskP89KcqaPFbTg5Xr9gToB5o1lrdi
+oSuDyAuP3QwQW2BnndHMIpe4F8mleoe5yt1HAOTamJSewtlNi/4xrxVLX2yWYo9F
+Jlil9C/Dig+qIrY8lAIiTv/+zzYnhfzZcCEnbBlUVPpNRk9eVnPSqtmhayq6NA2G
+uJPkAdyJekT0qJ2xMBatUkMy0ThJNnO8SHFcLSjztseopl8HwmzSHAESYgc/HWgs
+zROF10Sw2zqN6VPvER9/
+=nzJV
+-----END PGP SIGNATURE-----
 
-	"schedule_timeout: wrong timeout value ffffffffffffff83"
-
-This patch does some check and correction in sysctl, to let the function
-schedule_timeout_interruptible allways get the valid parameter.
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- kernel/sysctl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 06962ba..fcdced1 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -143,6 +143,11 @@ static int min_percpu_pagelist_fract = 8;
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
- 
-+/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
-+#endif
-+
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
- #endif
-@@ -989,6 +994,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dohung_task_timeout_secs,
-+		.extra2		= &hung_task_timeout_max,
- 	},
- 	{
- 		.procname	= "hung_task_warnings",
--- 
-1.9.1
-
+--cz6wLo+OExbGG7q/--
