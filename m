@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbaEBPb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:31:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42328 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaEBPb5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:31:57 -0400
-Date: Fri, 2 May 2014 17:31:53 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Nicholas Mc Guire <der.herr@hofr.at>,
-        Clark Williams <williams@redhat.com>
-Subject: Re: [PATCH RT 1/3] rt: Move migrate_disable up in trylocks
-Message-ID: <20140502153153.GG9178@linutronix.de>
-References: <20140501004757.583708392@goodmis.org>
- <20140501005004.241785945@goodmis.org>
+	id S1752489AbaEBPfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:35:08 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60179 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750991AbaEBPfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:35:06 -0400
+Date: Fri, 2 May 2014 11:34:51 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
+Message-ID: <20140502153451.GN23420@cmpxchg.org>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <1398688005-26207-2-git-send-email-mhocko@suse.cz>
+ <20140430225550.GD26041@cmpxchg.org>
+ <20140502093628.GC3446@dhcp22.suse.cz>
+ <20140502120715.GI3446@dhcp22.suse.cz>
+ <20140502130118.GK23420@cmpxchg.org>
+ <20140502141515.GJ3446@dhcp22.suse.cz>
+ <20140502150434.GM23420@cmpxchg.org>
+ <20140502151120.GN3446@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140501005004.241785945@goodmis.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140502151120.GN3446@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2014-04-30 20:47:58 [-0400]:
+On Fri, May 02, 2014 at 05:11:20PM +0200, Michal Hocko wrote:
+> On Fri 02-05-14 11:04:34, Johannes Weiner wrote:
+> [...]
+> > > @@ -2236,12 +2246,9 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
+> > >  		do {
+> > >  			struct lruvec *lruvec;
+> > >  
+> > > -			/*
+> > > -			 * Memcg might be under its low limit so we have to
+> > > -			 * skip it during the first reclaim round
+> > > -			 */
+> > > -			if (follow_low_limit &&
+> > > -					!mem_cgroup_reclaim_eligible(memcg, root)) {
+> > > +			/* Memcg might be protected from the reclaim */
+> > > +			if (force_memcg_guarantee &&
+> > 
+> > respect_?  consider_?
+> 
+> enforce_ ?
 
->From: Steven Rostedt <rostedt@goodmis.org>
->
->The changes to move the migrate_disable() down in the trylocks()
->caused race conditions to appear in the cpu hotplug code. The
->migrate disables must be done before any of the rtmutexes are
->taken, otherwise a lock may be held that prevents hotplug from
->moving forward.
->
->Link: http://lkml.kernel.org/r/20140429201308.63292691@gandalf.local.home
-
-Okay. I am taking a modified version (so it applies) of this into v3.14
-tree. Mike also suggested to drop
-migrate_disable-pushd-down-in-atomic_dec_and_spin_lo.patch because we
-which is basicaly the some thing. And then we have
-migrate_disable-pushd-down-in-rt_spin_trylock_irqsav.patch which we
-could drop as well for the same reason.
-
-Sebastian
+A native speaker might be better at this, but to me it seems weird to
+enforce a promise.  honor_memcg_guarantee?
