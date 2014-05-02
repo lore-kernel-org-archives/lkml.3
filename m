@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692AbaEBEaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 00:30:22 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:52201 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638AbaEBEaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 00:30:19 -0400
+	id S1750963AbaEBEnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 00:43:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732AbaEBEnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 00:43:14 -0400
+Date: Fri, 2 May 2014 00:42:37 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: morten.rasmussen@arm.com, mingo@kernel.org, peterz@infradead.org,
+        george.mccollister@gmail.com, ktkhai@parallels.com,
+        umgwanakikbuti@gmail.com
+Subject: [PATCH RFC/TEST] sched: make sync affine wakeups work
+Message-ID: <20140502004237.79dd3de6@annuminas.surriel.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-In-Reply-To: <1398992810-14957-1-git-send-email-nm@ti.com>
-References: <1398992810-14957-1-git-send-email-nm@ti.com>
-Date: Fri, 2 May 2014 10:00:17 +0530
-Message-ID: <CAKohpokEuZ69HnnKE89maXk=21cgAMjEYjEvEcaoBpg4bLRsGg@mail.gmail.com>
-Subject: Re: [RFC PATCH] PM / OPP: move cpufreq specific OPP functions out of
- generic OPP library
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 May 2014 06:36, Nishanth Menon <nm@ti.com> wrote:
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index 1fbe11f..281ccfb 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -17,6 +17,11 @@ config CPU_FREQ
->
->  if CPU_FREQ
->
-> +config CPU_FREQ_PM_OPP
-> +       bool
-> +       depends on PM_OPP
-> +       default y
-> +
+Currently sync wakeups from the wake_affine code cannot work as
+designed, because the task doing the sync wakeup from the target
+cpu will block its wakee from selecting that cpu.
 
-Don't need this
+This is despite the fact that whether or not the wakeup is sync
+determines whether or not we want to do an affine wakeup...
 
->  config CPU_FREQ_GOV_COMMON
->         bool
->
-> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-> index 0dbb963..16eea68 100644
-> --- a/drivers/cpufreq/Makefile
-> +++ b/drivers/cpufreq/Makefile
-> @@ -1,5 +1,7 @@
->  # CPUfreq core
->  obj-$(CONFIG_CPU_FREQ)                 += cpufreq.o freq_table.o
-> +obj-$(CONFIG_CPU_FREQ_PM_OPP)          += cpufreq_opp.o
+This patch allows sync wakeups to pick the waker's cpu.
 
-Just use: obj-$(CONFIG_PM_OPP)
+Whether or not this is the right thing to do remains to be seen,
+but it does allow us to verify whether or not the wake_affine
+strategy of always doing affine wakeups and only disabling them
+in a specific circumstance is sound, or needs rethinking...
 
-> +
->  # CPUfreq stats
->  obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
->
+Not-yet-signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ kernel/sched/fair.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> diff --git a/drivers/cpufreq/cpufreq_opp.c b/drivers/cpufreq/cpufreq_opp.c
-> new file mode 100644
-> index 0000000..2602ff8
-> --- /dev/null
-> +++ b/drivers/cpufreq/cpufreq_opp.c
-> @@ -0,0 +1,102 @@
-> +/*
-> + * Generic OPP Interface for CPUFREQ drivers
-> + *
-> + * Copyright (C) 2009-2014 Texas Instruments Incorporated.
-> + *     Nishanth Menon
-> + *     Romit Dasgupta
-> + *     Kevin Hilman
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-
-I hope you have just copy pasted routines to this file, and haven't done
-even the most minor modification in those, as its hard to review it.
-
-> +#include <linux/slab.h>
-
-Sure? That's it, nothing else required to compile this file independently?
-As a rule include all the files directly which might be required for compilation
-of this file and don't expect them to be included by some other header
-files indirectly.
-
-> diff --git a/drivers/cpufreq/cpufreq_opp.h b/drivers/cpufreq/cpufreq_opp.h
-
-Two problems, driver may lie in arch/ as well, though we don't recommend
-them, secondly move these in cpufreq.h, don't need a header here for sure.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7570dd9..7f8fe16 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4358,13 +4358,13 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ /*
+  * Try and locate an idle CPU in the sched_domain.
+  */
+-static int select_idle_sibling(struct task_struct *p, int target)
++static int select_idle_sibling(struct task_struct *p, int target, int sync)
+ {
+ 	struct sched_domain *sd;
+ 	struct sched_group *sg;
+ 	int i = task_cpu(p);
+ 
+-	if (idle_cpu(target))
++	if (idle_cpu(target) || (sync && cpu_rq(target)->nr_running == 1))
+ 		return target;
+ 
+ 	/*
+@@ -4453,7 +4453,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
+ 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+ 			prev_cpu = cpu;
+ 
+-		new_cpu = select_idle_sibling(p, prev_cpu);
++		new_cpu = select_idle_sibling(p, prev_cpu, sync);
+ 		goto unlock;
+ 	}
+ 
+.
