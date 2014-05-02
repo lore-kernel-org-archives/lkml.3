@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaEBJIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:08:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38215 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326AbaEBJId (ORCPT
+	id S1751685AbaEBJNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:13:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21780 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaEBJNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:08:33 -0400
-Date: Fri, 2 May 2014 11:08:31 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH RT 2/2] rtmutex: Remove duplicate rt_mutex_init()
-Message-ID: <20140502090831.GB9178@linutronix.de>
-References: <20140409024700.702797305@goodmis.org>
- <20140409025232.161960044@goodmis.org>
+	Fri, 2 May 2014 05:13:32 -0400
+Date: Fri, 2 May 2014 12:13:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: ching <ching2048@areca.com.tw>
+Cc: jbottomley@parallels.com, thenzl@redhat.com, linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1.0 14/16] arcmsr: fix sparse checking error
+Message-ID: <20140502091315.GG4963@mwanda>
+References: <1398857906.6930.59.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140409025232.161960044@goodmis.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+In-Reply-To: <1398857906.6930.59.camel@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2014-04-08 22:47:02 [-0400]:
-
->From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
->
->The rt_mutex_init() macro is the same whether or not
->CONFIG_DEBUG_RT_MUTEX is set. Remove the duplicate.
->
->Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-This does not apply cleanly on v3.14-rt
-
->--- a/include/linux/rtmutex.h
->+++ b/include/linux/rtmutex.h
->@@ -62,25 +62,19 @@ struct hrtimer_sleeper;
-> # define __DEBUG_RT_MUTEX_INITIALIZER(mutexname) \
-> 	, .name = #mutexname, .file = __FILE__, .line = __LINE__
+On Wed, Apr 30, 2014 at 07:38:26PM +0800, ching wrote:
+> From: Ching<ching2048@areca.com.tw>
 > 
->-# define rt_mutex_init(mutex)					\
->-	do {							\
->-		raw_spin_lock_init(&(mutex)->wait_lock);	\
->-		__rt_mutex_init(mutex, #mutex);			\
->-	} while (0)
->-
+> Fix sparse utility checking errors.
+> 
 
-The macro is the same in CONFIG_DEBUG_RT_MUTEXES and the else path.
-Shouldn't you remove both and define it before the ifdef? There are some
-users of this:
-|drivers/i2c/i2c-core.c: rt_mutex_init(&adap->bus_lock);
-|drivers/media/usb/em28xx/em28xx-cards.c: rt_mutex_init(&dev->i2c_bus_lock);
+I was expecting that this patch would add __iomem annotations throughout
+but in several places it actually removes calls to readl() and writel()
+as well.
 
-Sebastian
+>  	case ACB_ADAPTER_TYPE_C:{
+> -		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
+> +		struct MessageUnit_C __iomem *reg = acb->pmuC;
+>  		/* disable all outbound interrupt */
+>  		orig_mask = readl(&reg->host_int_mask); /* disable outbound message0 int */
+>  		writel(orig_mask|ARCMSR_HBCMU_ALL_INTMASKENABLE, &reg->host_int_mask);v
+> @@ -1085,8 +1085,9 @@ static void arcmsr_done4abort_postqueue(
+>  		/*clear all outbound posted Q*/
+>  		writel(ARCMSR_DOORBELL_INT_CLEAR_PATTERN, reg->iop2drv_doorbell); /* clear doorbell interrupt */
+>  		for (i = 0; i < ARCMSR_MAX_HBB_POSTQUEUE; i++) {
+> -			if ((flag_ccb = readl(&reg->done_qbuffer[i])) != 0) {
+> -				writel(0, &reg->done_qbuffer[i]);
+> +			flag_ccb = reg->done_qbuffer[i];
+> +			if (flag_ccb != 0) {
+> +				reg->done_qbuffer[i] = 0;
+>  				pARCMSR_CDB = (struct ARCMSR_CDB *)(acb->vir2phy_offset+(flag_ccb << 5));/*frame must be 32 bytes aligned*/
+>  				pCCB = container_of(pARCMSR_CDB, struct CommandControlBlock, arcmsr_cdb);
+>  				error = (flag_ccb & ARCMSR_CCBREPLY_FLAG_ERROR_MODE0) ? true : false;
+
+I don't know the hardware, but it doesn't even seem to make sense to me.
+if "reg" is an __iomem pointer surely an offset into reg is an iomem
+pointer as well.
+
+I am worried that this introduces a bug.
+
+regards,
+dan carpenter
