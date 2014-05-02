@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaEBPpG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:45:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44154 "EHLO
+	id S1753848AbaEBPpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:45:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44185 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758AbaEBPpB (ORCPT
+	with ESMTP id S1752676AbaEBPpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:45:01 -0400
+	Fri, 2 May 2014 11:45:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
+Cc: Michael Braun <michael-dev@fami-braun.de>,
+        Johannes Berg <johannes.berg@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 084/151] audit: convert PPIDs to the inital PID namespace.
-Date: Fri,  2 May 2014 08:37:52 -0700
-Message-Id: <1399045139-4531-85-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 081/151] mac80211: fix WPA with VLAN on AP side with ps-sta again
+Date: Fri,  2 May 2014 08:37:49 -0700
+Message-Id: <1399045139-4531-82-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,56 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Michael Braun <michael-dev@fami-braun.de>
 
-commit c92cdeb45eea38515e82187f48c2e4f435fb4e25 upstream.
+commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
 
-sys_getppid() returns the parent pid of the current process in its own pid
-namespace.  Since audit filters are based in the init pid namespace, a process
-could avoid a filter or trigger an unintended one by being in an alternate pid
-namespace or log meaningless information.
+commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
+  "mac80211: fix WPA with VLAN on AP side with ps-sta"
+fixed an issue where queued multicast packets would
+be sent out encrypted with the key of an other bss.
 
-Switch to task_ppid_nr() for PPIDs to anchor all audit filters in the
-init_pid_ns.
+commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
+  "mac80211: fix oops on mesh PS broadcast forwarding"
+essentially reverted it, because vif.type cannot be AP_VLAN
+due to the check to vif.type in ieee80211_get_buffered_bc before.
 
-(informed by ebiederman's 6c621b7e)
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+As the later commit intended to fix the MESH case, fix it
+by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
+
+Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
+Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/audit.c   | 4 ++--
- kernel/auditsc.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ net/mac80211/tx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index a1e584f..7c195fe 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1717,10 +1717,10 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
- 	spin_unlock_irq(&tsk->sighand->siglock);
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 5b4d030..c45f75f 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -2880,7 +2880,7 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw,
+ 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+ 		}
  
- 	audit_log_format(ab,
--			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
-+			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
- 			 " euid=%u suid=%u fsuid=%u"
- 			 " egid=%u sgid=%u fsgid=%u tty=%s ses=%u",
--			 sys_getppid(),
-+			 task_ppid_nr(tsk),
- 			 tsk->pid,
- 			 from_kuid(&init_user_ns, audit_get_loginuid(tsk)),
- 			 from_kuid(&init_user_ns, cred->uid),
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index ff32843..b590eae 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -459,7 +459,7 @@ static int audit_filter_rules(struct task_struct *tsk,
- 		case AUDIT_PPID:
- 			if (ctx) {
- 				if (!ctx->ppid)
--					ctx->ppid = sys_getppid();
-+					ctx->ppid = task_ppid_nr(tsk);
- 				result = audit_comparator(ctx->ppid, f->op, f->val);
- 			}
+-		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++		if (sdata->vif.type == NL80211_IFTYPE_AP)
+ 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
+ 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
  			break;
 -- 
 1.9.1
