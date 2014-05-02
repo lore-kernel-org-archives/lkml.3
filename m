@@ -1,65 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751560AbaEBDOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 23:14:21 -0400
-Received: from mout.web.de ([212.227.17.12]:62405 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798AbaEBDOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 23:14:20 -0400
-Date: Fri, 2 May 2014 05:14:05 +0200
-From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        stephen@networkplumber.org, linux-kernel@vger.kernel.org,
-        hannes@stressinduktion.org
-Subject: Re: [PATCH] bridge: simplify a br_multicast_query_received()
- function call
-Message-ID: <20140502031404.GR4593@Linus-Debian>
-References: <1398106775-14857-1-git-send-email-linus.luessing@web.de>
- <20140423.144748.1259564888396787227.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140423.144748.1259564888396787227.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:51mHUCpS9xPv8nLgAquUNFRVC/9AKJMticpC/65YhxRf71PIA6r
- EudAIW/rIg1LrA5RTKAx6o4Qtq3pFr0GIpEcg5fY1/LCtGhTUmWDifZY23lMi7/ds0cvX7o
- sJCq1nghmtbLkO4W9wa3p7dnyuEH8dkoTd23hZjnduHISwy19OA6OgeK9MeaiILtxDQ39uT
- T1Jp1CNGWBLr+QW/dkG2g==
+	id S1751502AbaEBE3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 00:29:44 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:52777 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaEBE3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 00:29:42 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] spi: core: Protect DMA code by #ifdef CONFIG_HAS_DMA
+Date: Fri,  2 May 2014 06:29:34 +0200
+Message-Id: <1399004974-19566-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 02:47:48PM -0400, David Miller wrote:
-> > --- a/net/bridge/br_multicast.c
-> > +++ b/net/bridge/br_multicast.c
-> > @@ -1282,8 +1282,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
-> >  		goto out;
-> >  	}
-> >  
-> > -	br_multicast_query_received(br, port, &br->ip6_querier,
-> > -				    !ipv6_addr_any(&ip6h->saddr),
-> > +	br_multicast_query_received(br, port, &br->ip6_querier, 1,
-> >  				    is_general_query, max_delay);
-> >  
-> >  	if (!group)
-> 
-> This doesn't make any sense to me, is_general_query can be false at this
-> point.
+If NO_DMA=y:
 
-This change has nothing to do with is_general_query, the fifth
-argument. I'm modifying the fourth, the is_saddr flag. As Hannes
-has pointed out here [0], now that we make sure that we have a
-link-local IPv6 address at the beginning of
-br_ip6_multicast_query() this implies that the source address is
-not '::'.
+drivers/built-in.o: In function `spi_map_buf':
+spi.c:(.text+0x21bc60): undefined reference to `dma_map_sg'
+drivers/built-in.o: In function `spi_unmap_buf.isra.33':
+spi.c:(.text+0x21c32e): undefined reference to `dma_unmap_sg'
+make[3]: *** [vmlinux] Error 1
 
-> 
-> Furthermore, even if your change would be correct, the argument is a
-> boolean not an integer.
+Protect the DMA code by #ifdef CONFIG_HAS_DMA to fix this:
+  - Extract __spi_map_msg() from spi_map_msg(),
+  - Provide dummy definitions of __spi_map_msg() and spi_unmap_msg() if
+    !CONFIG_HAS_DMA.
 
-Semantically yes. Syntactically the fourth argument is an integer
-at the moment (unnecessarily). Should I change 'int saddr' to
-'bool saddr' while at it, within the same patch?
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/spi/spi.c |  109 ++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 65 insertions(+), 44 deletions(-)
 
-Cheers
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 4eb9bf02996c..341942b640e1 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -580,6 +580,7 @@ static void spi_set_cs(struct spi_device *spi, bool enable)
+ 		spi->master->set_cs(spi, !enable);
+ }
+ 
++#ifdef CONFIG_HAS_DMA
+ static int spi_map_buf(struct spi_master *master, struct device *dev,
+ 		       struct sg_table *sgt, void *buf, size_t len,
+ 		       enum dma_data_direction dir)
+@@ -637,55 +638,12 @@ static void spi_unmap_buf(struct spi_master *master, struct device *dev,
+ 	}
+ }
+ 
+-static int spi_map_msg(struct spi_master *master, struct spi_message *msg)
++static int __spi_map_msg(struct spi_master *master, struct spi_message *msg)
+ {
+ 	struct device *tx_dev, *rx_dev;
+ 	struct spi_transfer *xfer;
+-	void *tmp;
+-	unsigned int max_tx, max_rx;
+ 	int ret;
+ 
+-	if (master->flags & (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX)) {
+-		max_tx = 0;
+-		max_rx = 0;
+-
+-		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+-			if ((master->flags & SPI_MASTER_MUST_TX) &&
+-			    !xfer->tx_buf)
+-				max_tx = max(xfer->len, max_tx);
+-			if ((master->flags & SPI_MASTER_MUST_RX) &&
+-			    !xfer->rx_buf)
+-				max_rx = max(xfer->len, max_rx);
+-		}
+-
+-		if (max_tx) {
+-			tmp = krealloc(master->dummy_tx, max_tx,
+-				       GFP_KERNEL | GFP_DMA);
+-			if (!tmp)
+-				return -ENOMEM;
+-			master->dummy_tx = tmp;
+-			memset(tmp, 0, max_tx);
+-		}
+-
+-		if (max_rx) {
+-			tmp = krealloc(master->dummy_rx, max_rx,
+-				       GFP_KERNEL | GFP_DMA);
+-			if (!tmp)
+-				return -ENOMEM;
+-			master->dummy_rx = tmp;
+-		}
+-
+-		if (max_tx || max_rx) {
+-			list_for_each_entry(xfer, &msg->transfers,
+-					    transfer_list) {
+-				if (!xfer->tx_buf)
+-					xfer->tx_buf = master->dummy_tx;
+-				if (!xfer->rx_buf)
+-					xfer->rx_buf = master->dummy_rx;
+-			}
+-		}
+-	}
+-
+ 	if (!master->can_dma)
+ 		return 0;
+ 
+@@ -742,6 +700,69 @@ static int spi_unmap_msg(struct spi_master *master, struct spi_message *msg)
+ 
+ 	return 0;
+ }
++#else /* !CONFIG_HAS_DMA */
++static inline int __spi_map_msg(struct spi_master *master,
++				struct spi_message *msg)
++{
++	return 0;
++}
++
++static inline int spi_unmap_msg(struct spi_master *master,
++				struct spi_message *msg)
++{
++	return 0;
++}
++#endif /* !CONFIG_HAS_DMA */
++
++static int spi_map_msg(struct spi_master *master, struct spi_message *msg)
++{
++	struct spi_transfer *xfer;
++	void *tmp;
++	unsigned int max_tx, max_rx;
++
++	if (master->flags & (SPI_MASTER_MUST_RX | SPI_MASTER_MUST_TX)) {
++		max_tx = 0;
++		max_rx = 0;
++
++		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
++			if ((master->flags & SPI_MASTER_MUST_TX) &&
++			    !xfer->tx_buf)
++				max_tx = max(xfer->len, max_tx);
++			if ((master->flags & SPI_MASTER_MUST_RX) &&
++			    !xfer->rx_buf)
++				max_rx = max(xfer->len, max_rx);
++		}
++
++		if (max_tx) {
++			tmp = krealloc(master->dummy_tx, max_tx,
++				       GFP_KERNEL | GFP_DMA);
++			if (!tmp)
++				return -ENOMEM;
++			master->dummy_tx = tmp;
++			memset(tmp, 0, max_tx);
++		}
++
++		if (max_rx) {
++			tmp = krealloc(master->dummy_rx, max_rx,
++				       GFP_KERNEL | GFP_DMA);
++			if (!tmp)
++				return -ENOMEM;
++			master->dummy_rx = tmp;
++		}
++
++		if (max_tx || max_rx) {
++			list_for_each_entry(xfer, &msg->transfers,
++					    transfer_list) {
++				if (!xfer->tx_buf)
++					xfer->tx_buf = master->dummy_tx;
++				if (!xfer->rx_buf)
++					xfer->rx_buf = master->dummy_rx;
++			}
++		}
++	}
++
++	return __spi_map_msg(master, msg);
++}
+ 
+ /*
+  * spi_transfer_one_message - Default implementation of transfer_one_message()
+-- 
+1.7.9.5
+
