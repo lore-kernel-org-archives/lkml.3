@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052AbaEBPqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:46:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44332 "EHLO
+	id S1754128AbaEBPqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:46:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44365 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811AbaEBPq3 (ORCPT
+	with ESMTP id S1754074AbaEBPqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:29 -0400
+	Fri, 2 May 2014 11:46:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Jeff Layton <jlayton@redhat.com>, "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 111/151] nfsd: check passed socket's net matches NFSd superblock's one
-Date: Fri,  2 May 2014 08:38:19 -0700
-Message-Id: <1399045139-4531-112-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 103/151] lockd: ensure we tear down any live sockets when socket creation fails during lockd_up
+Date: Fri,  2 May 2014 08:38:11 -0700
+Message-Id: <1399045139-4531-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,93 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
+commit 679b033df48422191c4cac52b610d9980e019f9b upstream.
 
-There could be a case, when NFSd file system is mounted in network, different
-to socket's one, like below:
+We had a Fedora ABRT report with a stack trace like this:
 
-"ip netns exec" creates new network and mount namespace, which duplicates NFSd
-mount point, created in init_net context. And thus NFS server stop in nested
-network context leads to RPCBIND client destruction in init_net.
-Then, on NFSd start in nested network context, rpc.nfsd process creates socket
-in nested net and passes it into "write_ports", which leads to RPCBIND sockets
-creation in init_net context because of the same reason (NFSd monut point was
-created in init_net context). An attempt to register passed socket in nested
-net leads to panic, because no RPCBIND client present in nexted network
-namespace.
+kernel BUG at net/sunrpc/svc.c:550!
+invalid opcode: 0000 [#1] SMP
+[...]
+CPU: 2 PID: 913 Comm: rpc.nfsd Not tainted 3.13.6-200.fc20.x86_64 #1
+Hardware name: Hewlett-Packard HP ProBook 4740s/1846, BIOS 68IRR Ver. F.40 01/29/2013
+task: ffff880146b00000 ti: ffff88003f9b8000 task.ti: ffff88003f9b8000
+RIP: 0010:[<ffffffffa0305fa8>]  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+RSP: 0018:ffff88003f9b9de0  EFLAGS: 00010206
+RAX: ffff88003f829628 RBX: ffff88003f829600 RCX: 00000000000041ee
+RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000286
+RBP: ffff88003f9b9de8 R08: 0000000000017360 R09: ffff88014fa97360
+R10: ffffffff8114ce57 R11: ffffea00051c9c00 R12: ffff88003f829600
+R13: 00000000ffffff9e R14: ffffffff81cc7cc0 R15: 0000000000000000
+FS:  00007f4fde284840(0000) GS:ffff88014fa80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f4fdf5192f8 CR3: 00000000a569a000 CR4: 00000000001407e0
+Stack:
+ ffff88003f792300 ffff88003f9b9e18 ffffffffa02de02a 0000000000000000
+ ffffffff81cc7cc0 ffff88003f9cb000 0000000000000008 ffff88003f9b9e60
+ ffffffffa033bb35 ffffffff8131c86c ffff88003f9cb000 ffff8800a5715008
+Call Trace:
+ [<ffffffffa02de02a>] lockd_up+0xaa/0x330 [lockd]
+ [<ffffffffa033bb35>] nfsd_svc+0x1b5/0x2f0 [nfsd]
+ [<ffffffff8131c86c>] ? simple_strtoull+0x2c/0x50
+ [<ffffffffa033c630>] ? write_pool_threads+0x280/0x280 [nfsd]
+ [<ffffffffa033c6bb>] write_threads+0x8b/0xf0 [nfsd]
+ [<ffffffff8114efa4>] ? __get_free_pages+0x14/0x50
+ [<ffffffff8114eff6>] ? get_zeroed_page+0x16/0x20
+ [<ffffffff811dec51>] ? simple_transaction_get+0xb1/0xd0
+ [<ffffffffa033c098>] nfsctl_transaction_write+0x48/0x80 [nfsd]
+ [<ffffffff811b8b34>] vfs_write+0xb4/0x1f0
+ [<ffffffff811c3f99>] ? putname+0x29/0x40
+ [<ffffffff811b9569>] SyS_write+0x49/0xa0
+ [<ffffffff810fc2a6>] ? __audit_syscall_exit+0x1f6/0x2a0
+ [<ffffffff816962e9>] system_call_fastpath+0x16/0x1b
+Code: 31 c0 e8 82 db 37 e1 e9 2a ff ff ff 48 8b 07 8b 57 14 48 c7 c7 d5 c6 31 a0 48 8b 70 20 31 c0 e8 65 db 37 e1 e9 f4 fe ff ff 0f 0b <0f> 0b 66 0f 1f 44 00 00 0f 1f 44 00 00 55 48 89 e5 41 56 41 55
+RIP  [<ffffffffa0305fa8>] svc_destroy+0x128/0x130 [sunrpc]
+ RSP <ffff88003f9b9de0>
 
-This patch add check that passed socket's net matches NFSd superblock's one.
-And returns -EINVAL error to user psace otherwise.
+Evidently, we created some lockd sockets and then failed to create
+others. make_socks then returned an error and we tried to tear down the
+svc, but svc->sv_permsocks was not empty so we ended up tripping over
+the BUG() in svc_destroy().
 
-v2: Put socket on exit.
+Fix this by ensuring that we tear down any live sockets we created when
+socket creation is going to return an error.
 
-Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Fixes: 786185b5f8abefa (SUNRPC: move per-net operations from...)
+Reported-by: Raphos <raphoszap@laposte.net>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfsctl.c               |  5 +++++
- include/linux/sunrpc/svcsock.h |  1 +
- net/sunrpc/svcsock.c           | 16 ++++++++++++++++
- 3 files changed, 22 insertions(+)
+ fs/lockd/svc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 7f55517..f34d9de 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
- 
-+	if (svc_alien_sock(net, fd)) {
-+		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
-+		return -EINVAL;
-+	}
-+
- 	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
-diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-index 62fd1b7..947009e 100644
---- a/include/linux/sunrpc/svcsock.h
-+++ b/include/linux/sunrpc/svcsock.h
-@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
- int		svc_send(struct svc_rqst *);
- void		svc_drop(struct svc_rqst *);
- void		svc_sock_update_bufs(struct svc_serv *serv);
-+bool		svc_alien_sock(struct net *net, int fd);
- int		svc_addsock(struct svc_serv *serv, const int fd,
- 					char *name_return, const size_t len);
- void		svc_init_xprt_sock(void);
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index b6e59f0..d06cb87 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1397,6 +1397,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
- 	return svsk;
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 10d6c41..6bf06a0 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -235,6 +235,7 @@ out_err:
+ 	if (warned++ == 0)
+ 		printk(KERN_WARNING
+ 			"lockd_up: makesock failed, error=%d\n", err);
++	svc_shutdown_net(serv, net);
+ 	return err;
  }
  
-+bool svc_alien_sock(struct net *net, int fd)
-+{
-+	int err;
-+	struct socket *sock = sockfd_lookup(fd, &err);
-+	bool ret = false;
-+
-+	if (!sock)
-+		goto out;
-+	if (sock_net(sock->sk) != net)
-+		ret = true;
-+	sockfd_put(sock);
-+out:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(svc_alien_sock);
-+
- /**
-  * svc_addsock - add a listener socket to an RPC service
-  * @serv: pointer to RPC service to which to add a new listener
 -- 
 1.9.1
 
