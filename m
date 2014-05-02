@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaEBGfn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 02:35:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40861 "EHLO arroyo.ext.ti.com"
+	id S1751828AbaEBGfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 02:35:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48797 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479AbaEBGfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 02:35:40 -0400
+	id S1751629AbaEBGfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 02:35:19 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
@@ -19,9 +19,9 @@ CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
         <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
         <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
         <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: [PATCH v2 6/6] ARM: dts: am4372: Add clock names for cpsw and cpts
-Date: Fri, 2 May 2014 12:02:04 +0530
-Message-ID: <1399012324-20737-7-git-send-email-george.cherian@ti.com>
+Subject: [PATCH v2 2/6] drivers: net: cpts: Remove hardcoded clock name for CPTS
+Date: Fri, 2 May 2014 12:02:00 +0530
+Message-ID: <1399012324-20737-3-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
 References: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
@@ -31,26 +31,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CPSW fck and CPTS clock and clock names for AM4372
+CPTS refclk name is hardcoded, which makes it fail in case of DRA7x
+Remove the hardcoded clock name for CPTS refclk and get the same from DT.
 
 Signed-off-by: George Cherian <george.cherian@ti.com>
 ---
- arch/arm/boot/dts/am4372.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/ti/cpts.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
-index 36d523a..c2779f6 100644
---- a/arch/arm/boot/dts/am4372.dtsi
-+++ b/arch/arm/boot/dts/am4372.dtsi
-@@ -489,6 +489,8 @@
- 			#address-cells = <1>;
- 			#size-cells = <1>;
- 			ti,hwmods = "cpgmac0";
-+			clocks = <&cpsw_125mhz_gclk>, <&cpsw_cpts_rft_clk>;
-+			clock-names = "fck", "cpts";
- 			status = "disabled";
- 			cpdma_channels = <8>;
- 			ale_entries = <1024>;
+diff --git a/drivers/net/ethernet/ti/cpts.c b/drivers/net/ethernet/ti/cpts.c
+index 2435139..6b56f85 100644
+--- a/drivers/net/ethernet/ti/cpts.c
++++ b/drivers/net/ethernet/ti/cpts.c
+@@ -236,13 +236,11 @@ static void cpts_overflow_check(struct work_struct *work)
+ 	schedule_delayed_work(&cpts->overflow_work, CPTS_OVERFLOW_PERIOD);
+ }
+ 
+-#define CPTS_REF_CLOCK_NAME "cpsw_cpts_rft_clk"
+-
+-static void cpts_clk_init(struct cpts *cpts)
++static void cpts_clk_init(struct device *dev, struct cpts *cpts)
+ {
+-	cpts->refclk = clk_get(NULL, CPTS_REF_CLOCK_NAME);
++	cpts->refclk = devm_clk_get(dev, "cpts");
+ 	if (IS_ERR(cpts->refclk)) {
+-		pr_err("Failed to clk_get %s\n", CPTS_REF_CLOCK_NAME);
++		dev_err(dev, "Failed to get cpts refclk\n");
+ 		cpts->refclk = NULL;
+ 		return;
+ 	}
+@@ -252,7 +250,6 @@ static void cpts_clk_init(struct cpts *cpts)
+ static void cpts_clk_release(struct cpts *cpts)
+ {
+ 	clk_disable(cpts->refclk);
+-	clk_put(cpts->refclk);
+ }
+ 
+ static int cpts_match(struct sk_buff *skb, unsigned int ptp_class,
+@@ -390,7 +387,7 @@ int cpts_register(struct device *dev, struct cpts *cpts,
+ 	for (i = 0; i < CPTS_MAX_EVENTS; i++)
+ 		list_add(&cpts->pool_data[i].list, &cpts->pool);
+ 
+-	cpts_clk_init(cpts);
++	cpts_clk_init(dev, cpts);
+ 	cpts_write32(cpts, CPTS_EN, control);
+ 	cpts_write32(cpts, TS_PEND_EN, int_enable);
+ 
 -- 
 1.8.3.1
 
