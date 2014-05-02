@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891AbaEBKLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 06:11:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48989 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764AbaEBKLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 06:11:13 -0400
-Date: Fri, 2 May 2014 11:11:09 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch v2 2/4] mm, compaction: return failed migration target
- pages back to freelist
-Message-ID: <20140502101109.GP23991@suse.de>
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com>
- <alpine.DEB.2.02.1405011434420.23898@chino.kir.corp.google.com>
+	id S1751936AbaEBKNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 06:13:23 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:63236 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaEBKNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 06:13:22 -0400
+Message-ID: <53636FB6.9060407@gmail.com>
+Date: Fri, 02 May 2014 12:13:10 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1405011434420.23898@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: mtk.manpages@gmail.com, Randy Dunlap <rdunlap@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [patch] timer_stats, doc: Readout of /proc/timer_stats doesn't disable
+ sampling
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 02:35:42PM -0700, David Rientjes wrote:
-> Memory compaction works by having a "freeing scanner" scan from one end of a 
-> zone which isolates pages as migration targets while another "migrating scanner" 
-> scans from the other end of the same zone which isolates pages for migration.
-> 
-> When page migration fails for an isolated page, the target page is returned to 
-> the system rather than the freelist built by the freeing scanner.  This may 
-> require the freeing scanner to continue scanning memory after suitable migration 
-> targets have already been returned to the system needlessly.
-> 
-> This patch returns destination pages to the freeing scanner freelist when page 
-> migration fails.  This prevents unnecessary work done by the freeing scanner but 
-> also encourages memory to be as compacted as possible at the end of the zone.
-> 
-> Reported-by: Greg Thelen <gthelen@google.com>
-> Signed-off-by: David Rientjes <rientjes@google.com>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Some simple testing shows that reading from /proc/timer_stats
+does not disable sampling. Looking back over past source code,
+it appears that it never did.
 
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+---
+ Documentation/timers/timer_stats.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/timers/timer_stats.txt b/Documentation/timers/timer_stats.txt
+index 8abd40b..de835ee 100644
+--- a/Documentation/timers/timer_stats.txt
++++ b/Documentation/timers/timer_stats.txt
+@@ -39,9 +39,9 @@ To stop a sample period issue:
+ The statistics can be retrieved by:
+ # cat /proc/timer_stats
+ 
+-The readout of /proc/timer_stats automatically disables sampling. The sampled
+-information is kept until a new sample period is started. This allows multiple
+-readouts.
++While sampling is enabled, each readout from /proc/timer_stats will see
++newly updated statistics. Once sampling is disabled, the sampled information
++is kept until a new sample period is started. This allows multiple readouts.
+ 
+ Sample output of /proc/timer_stats:
+ 
 -- 
-Mel Gorman
-SUSE Labs
+1.9.0
