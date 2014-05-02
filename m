@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395AbaEBQ2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:28:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43675 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711AbaEBPjS (ORCPT
+	id S1755043AbaEBQ2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:28:52 -0400
+Received: from baptiste.telenet-ops.be ([195.130.132.51]:52433 "EHLO
+	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754413AbaEBQ2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:18 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 004/151] [3.13-stable] Revert "PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled"
-Date: Fri,  2 May 2014 08:36:32 -0700
-Message-Id: <1399045139-4531-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 2 May 2014 12:28:45 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oleg Drokin <oleg.drokin@intel.com>
+Cc: devel@driverdev.osuosl.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/3] staging/lustre/libcfs: Fix build errors for !CONFIG_SMP
+Date: Fri,  2 May 2014 18:28:33 +0200
+Message-Id: <1399048115-19506-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+When CONFIG_SMP=n:
 
-------------------
+drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h:58:31: fatal error: libcfs/libcfs_cpu.h: No such file or directory
 
-From: Kamal Mostafa <kamal@canonical.com>
+drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c:78:1: error: redefinition of 'cfs_cpt_table_print'
+drivers/staging/lustre/include/linux/libcfs/libcfs_cpu.h:109:1: note: previous definition of 'cfs_cpt_table_print' was here
 
-This reverts commit 16d36cdf2bd2b8e821ea1286dd3e8b2d657e6b3c.
-
-... which was applied to 3.13-stable twice, first as:
-        bb7048ea362773c2b53ee410a69ff60a029c71ef
-and then again as:
-        16d36cdf2bd2b8e821ea1286dd3e8b2d657e6b3c
-
-This revert relates only to 3.13-stable, and the fix itself remains in 3.13.
-
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/pci/pci.c | 3 ---
- 1 file changed, 3 deletions(-)
+http://kisskb.ellerman.id.au/kisskb/buildresult/11054360/
+---
+ .../lustre/include/linux/libcfs/linux/linux-mem.h  |    2 +-
+ drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c  |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 6f01c74..1a8a4fd 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1134,9 +1134,6 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
- 	if (dev->msi_enabled || dev->msix_enabled)
- 		return 0;
+diff --git a/drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h b/drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h
+index 72c76ad96ce9..ccee5c3e4142 100644
+--- a/drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h
++++ b/drivers/staging/lustre/include/linux/libcfs/linux/linux-mem.h
+@@ -55,7 +55,7 @@
  
--	if (dev->msi_enabled || dev->msix_enabled)
--		return 0;
--
- 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
- 	if (pin) {
- 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
+ #ifndef HAVE_LIBCFS_CPT
+ /* Need this for cfs_cpt_table */
+-#include <libcfs/libcfs_cpu.h>
++#include <linux/libcfs/libcfs_cpu.h>
+ #endif
+ 
+ #define CFS_PAGE_MASK		   (~((__u64)PAGE_CACHE_SIZE-1))
+diff --git a/drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c b/drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c
+index d985e83ba2c3..a1a7bf44cccf 100644
+--- a/drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c
++++ b/drivers/staging/lustre/lustre/libcfs/libcfs_cpu.c
+@@ -74,6 +74,7 @@ cfs_cpt_table_free(struct cfs_cpt_table *cptab)
+ }
+ EXPORT_SYMBOL(cfs_cpt_table_free);
+ 
++#ifdef CONFIG_SMP
+ int
+ cfs_cpt_table_print(struct cfs_cpt_table *cptab, char *buf, int len)
+ {
+@@ -87,6 +88,7 @@ cfs_cpt_table_print(struct cfs_cpt_table *cptab, char *buf, int len)
+ 	return rc;
+ }
+ EXPORT_SYMBOL(cfs_cpt_table_print);
++#endif /* CONFIG_SMP */
+ 
+ int
+ cfs_cpt_number(struct cfs_cpt_table *cptab)
 -- 
-1.9.1
+1.7.9.5
 
