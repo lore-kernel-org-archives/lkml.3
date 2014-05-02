@@ -1,104 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbaEBOX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:23:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:37865 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752233AbaEBOX6 (ORCPT
+	id S1752465AbaEBOYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:24:42 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:37915 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEBOYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:23:58 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Mj Embd <mj.embd@gmail.com>
-Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Interrupt Context maps to ARM CPSR.mode = IRQ
-In-Reply-To: <CAPUj1OMks1tY9KyFsBQizVnq1H+nyjgB6OUHagtKyoknYaMiow@mail.gmail.com>
-	(Mj Embd's message of "Fri, 2 May 2014 15:07:55 +0100")
-Organization: ARM Ltd
-References: <CAPUj1OMJ8cE1cNTe8CjgBP2GTCXzi__Yg0+OoomME6=TShgqJg@mail.gmail.com>
-	<CAPUj1OML_Rag3gxxBzswS6yaqFciuq2hKrV9BthL2OwU+wNj3A@mail.gmail.com>
-	<14abe1165b144fe3d1139ad3b631eddd@www.loen.fr>
-	<CAPUj1OMks1tY9KyFsBQizVnq1H+nyjgB6OUHagtKyoknYaMiow@mail.gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Fri, 02 May 2014 15:23:53 +0100
-Message-ID: <87d2fw6yyu.fsf@sofa.wild-wind.fr.eu.org>
+	Fri, 2 May 2014 10:24:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1398980957-10385-1-git-send-email-aduggan@synaptics.com>
+References: <1398980957-10385-1-git-send-email-aduggan@synaptics.com>
+Date: Fri, 2 May 2014 10:24:38 -0400
+Message-ID: <CAN+gG=EWW_FgyZU+9+7dP4cNHqbQ_MGmXjGyM2OsNmp0Y_K5BA@mail.gmail.com>
+Subject: Re: [PATCH] HID: rmi: check for the existence of some optional
+ queries before reading query 12
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Christopher Heiny <cheiny@synaptics.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02 2014 at  3:07:55 pm BST, Mj Embd <mj.embd@gmail.com> wrote:
-> On Fri, May 2, 2014 at 7:17 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> On 2014-05-02 13:34, Mj Embd wrote:
->>>
->>> Adding Marc to comment
->>> Marc Please clarify the doubt
->>>
->>>
->>>
->>> On Fri, May 2, 2014 at 5:15 PM, Mj Embd <mj.embd@gmail.com> wrote:
->>>>
->>>> Hi,
->>>>
->>>> As per a lot of linux documentation some components work in process
->>>> context and some work in interrupt context.
->>>>
->>>> If we try to map these contexts to ARM processor modes then is it
->>>> safely to assume that
->>>> Process Context : CPSR.mode = SVC
->>>> Interrupt Context : CPSR.mode = IRQ
->>>>
->>>> If not how to define interrupt context properly. Confusing at times.
->>
->>
->> Well, none of this is completely true.
->>
->> Process context exists both in USR (process in user mode) and SVC (process
->> in kernel mode, executing a syscall for example).
->>
->> As for interrupts, the processor indeed starts executing the interrupt in
->> IRQ mode, but this is a useless complication as far as Linux is concerned,
+Hi Andrew,
+
+On Thu, May 1, 2014 at 5:49 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
+> The rmi4 spec defines some optional query registers in F11 which appear before
+> query 12. This patch checks for the existence of some of the lesser used queries to
+>  compute the location of query12 and all subsequent query registers.
 >
-> I didn't understood the term useless here, I hope it is not about the
-> question itself.
+> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+> ---
 
-Not about the question at all. The IRQ mode itself is a useless
-complication for Linux.
+This is quite important because the XPS 13 laptop shows currently a
+touchpad of physical size in mm of 5149 x 1972... :)
 
->> and we quickly switch to SVC (see the definition of the vector_stub
->> macro in arch/arm/kernel/entry-armv.S).
->>
-> So what is the mode of the processor when Linux is executing in the
-> Academic / Bookish Term "Interrupt Context"
+Thanks Andrew for taking care of it.
 
-As I said above, Linux runs mostly in SVC when the interrupt code is
-executed.
-
-> There is a function called in_interrupt which tells if linux is in
-> interrupt context.
-> But How to define/quantify Interrupt Context as a whole
-
-You're in "Interrupt Context" when executing an interrupt. That's the
-very definition. Interrupts are disabled, you cannot sleep, you cannot
-be preempted. The mode the processor is in at that time is an orthogonal
-issue, and different architectures implement this requirement
-differently.
-
-> Also, Some texts say there are two contexts Hard IRQ Context , Soft IRQ Context.
-> HardIRQ = interrupts Disabled , (possibly CPSR.I=1, mode=IRQ)
-> SoftIRQ = interrupts Enabled , (possibly CPSR.I=0, mode=IRQ)
-
-Again, it you care to *read* the code, you'll notice that we're in IRQ
-mode for about 12 instructions per interrupt. The actual interrupt
-handling code runs in SVC.
-
-> SoftIRQs when executed from Ksoftirqd daemon  (possibly CPSR.I=0, mode=SVC)
+>  drivers/hid/hid-rmi.c | 33 +++++++++++++++++++++++++++++----
+>  1 file changed, 29 insertions(+), 4 deletions(-)
 >
-> We have a client query on this.
+> diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+> index 90ae5eb..912e008 100644
+> --- a/drivers/hid/hid-rmi.c
+> +++ b/drivers/hid/hid-rmi.c
+> @@ -546,9 +546,12 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>         struct rmi_data *data = hid_get_drvdata(hdev);
+>         u8 buf[20];
+>         int ret;
+> +       bool has_query9;
+> +       bool has_query11;
+>         bool has_query12;
+>         bool has_physical_props;
+>         unsigned x_size, y_size;
+> +       u16 query12_offset;
+>
+>         if (!data->f11.query_base_addr) {
+>                 hid_err(hdev, "No 2D sensor found, giving up.\n");
+> @@ -561,6 +564,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>                 hid_err(hdev, "can not get query 0: %d.\n", ret);
+>                 return ret;
+>         }
+> +       has_query9 = !!(buf[0] & BIT(3));
+> +       has_query11 = !!(buf[0] & BIT(4));
+>         has_query12 = !!(buf[0] & BIT(5));
+>
+>         /* query 1 to get the max number of fingers */
+> @@ -582,11 +587,30 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>         }
+>
+>         /*
+> -        * query 12 to know if the physical properties are reported
+> -        * (query 12 is at offset 10 for HID devices)
+> +        * At least 8 queries are guaranteed to be present in F11
+> +        * +1 for query12.
+>          */
+> +       query12_offset = 9;
+> +
+> +       if (has_query9)
+> +               ++query12_offset;
+> +
+> +       /* query 8 to find out if query 10 exists */
+> +       ret = rmi_read(hdev, data->f11.query_base_addr + 8, buf);
+> +       if (ret) {
+> +               hid_err(hdev, "can not read gesture information: %d.\n", ret);
+> +               return ret;
+> +       }
+> +       if (!!(buf[0] & BIT(2)))
 
-Awesome!
+For consistency, I would have prefered to have "if (has_query10)" here.
 
-	M.
--- 
-AAAFNRAA
+Other than that, the patch is reviewed-by: Benjamin Tissoires
+<benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
+> +               ++query12_offset;
+> +
+> +       if (has_query11)
+> +               ++query12_offset;
+> +
+> +       /* query 12 to know if the physical properties are reported */
+>         if (has_query12) {
+> -               ret = rmi_read(hdev, data->f11.query_base_addr + 10, buf);
+> +               ret = rmi_read(hdev, data->f11.query_base_addr
+> +                               + query12_offset, buf);
+>                 if (ret) {
+>                         hid_err(hdev, "can not get query 12: %d.\n", ret);
+>                         return ret;
+> @@ -595,7 +619,8 @@ static int rmi_populate_f11(struct hid_device *hdev)
+>
+>                 if (has_physical_props) {
+>                         ret = rmi_read_block(hdev,
+> -                                       data->f11.query_base_addr + 11, buf, 4);
+> +                                       data->f11.query_base_addr
+> +                                               + query12_offset + 1, buf, 4);
+>                         if (ret) {
+>                                 hid_err(hdev, "can not read query 15-18: %d.\n",
+>                                         ret);
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
