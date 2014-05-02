@@ -1,106 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaEBUAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:00:31 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:45926 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaEBUAa (ORCPT
+	id S1752942AbaEBUAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:00:54 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52638 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750813AbaEBUAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:00:30 -0400
+	Fri, 2 May 2014 16:00:52 -0400
+Message-ID: <5363F969.5060601@hurleysoftware.com>
+Date: Fri, 02 May 2014 16:00:41 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <CAL1ERfP16T68OzHwhuN9S=QiqzuuVAyq5Wu=-pDEkiHrNNiH1g@mail.gmail.com>
-References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
- <1397336454-13855-1-git-send-email-ddstreet@ieee.org> <1397336454-13855-2-git-send-email-ddstreet@ieee.org>
- <20140423103400.GH23991@suse.de> <CALZtONCa3jLrYkPSFPNnV84zePxFtdkWJBu092ScgUe2AugMxQ@mail.gmail.com>
- <CAL1ERfP16T68OzHwhuN9S=QiqzuuVAyq5Wu=-pDEkiHrNNiH1g@mail.gmail.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 2 May 2014 16:00:09 -0400
-X-Google-Sender-Auth: e_vUO0UmTIZfpgz7kRxJaBLUQoM
-Message-ID: <CALZtONBDdo7KGKPZHuH-gHUS8ntBW+mYGPKKnh5GcQAsL5Zrfw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to list_head
-To: Weijie Yang <weijie.yang.kh@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        xen-devel@lists.xenproject.org
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+To: Tim Chen <tim.c.chen@linux.intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>
-Content-Type: text/plain; charset=UTF-8
+        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rwsem: Comments to explain the meaning of the rwsem's
+ count field
+References: <1398966637.2970.129.camel@schen9-DESK>	 <5362AC24.9050508@hurleysoftware.com> <1398985513.2970.141.camel@schen9-DESK>
+In-Reply-To: <1398985513.2970.141.camel@schen9-DESK>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 12:15 AM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
-> On Fri, Apr 25, 2014 at 2:48 AM, Dan Streetman <ddstreet@ieee.org> wrote:
->> On Wed, Apr 23, 2014 at 6:34 AM, Mel Gorman <mgorman@suse.de> wrote:
->>> On Sat, Apr 12, 2014 at 05:00:53PM -0400, Dan Streetman wrote:
-<SNIP>
->>>> diff --git a/mm/frontswap.c b/mm/frontswap.c
->>>> index 1b24bdc..fae1160 100644
->>>> --- a/mm/frontswap.c
->>>> +++ b/mm/frontswap.c
->>>> @@ -327,15 +327,12 @@ EXPORT_SYMBOL(__frontswap_invalidate_area);
->>>>
->>>>  static unsigned long __frontswap_curr_pages(void)
->>>>  {
->>>> -     int type;
->>>>       unsigned long totalpages = 0;
->>>>       struct swap_info_struct *si = NULL;
->>>>
->>>>       assert_spin_locked(&swap_lock);
->>>> -     for (type = swap_list.head; type >= 0; type = si->next) {
->>>> -             si = swap_info[type];
->>>> +     list_for_each_entry(si, &swap_list_head, list)
->>>>               totalpages += atomic_read(&si->frontswap_pages);
->>>> -     }
->>>>       return totalpages;
->>>>  }
->>>>
->>>> @@ -347,11 +344,9 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
->>>>       int si_frontswap_pages;
->>>>       unsigned long total_pages_to_unuse = total;
->>>>       unsigned long pages = 0, pages_to_unuse = 0;
->>>> -     int type;
->>>>
->>>>       assert_spin_locked(&swap_lock);
->>>> -     for (type = swap_list.head; type >= 0; type = si->next) {
->>>> -             si = swap_info[type];
->>>> +     list_for_each_entry(si, &swap_list_head, list) {
->>>>               si_frontswap_pages = atomic_read(&si->frontswap_pages);
->>>>               if (total_pages_to_unuse < si_frontswap_pages) {
->>>>                       pages = pages_to_unuse = total_pages_to_unuse;
->>>
->>> The frontswap shrink code looks suspicious. If the target is smaller than
->>> the total number of frontswap pages then it does nothing. The callers
->>> appear to get this right at least. Similarly, if the first swapfile has
->>> fewer frontswap pages than the target then it does not unuse the target
->>> number of pages because it only handles one swap file. It's outside the
->>> scope of your patch to address this or wonder if xen balloon driver is
->>> really using it the way it's expected.
+On 05/01/2014 07:05 PM, Tim Chen wrote:
+> On Thu, 2014-05-01 at 16:18 -0400, Peter Hurley wrote:
+>> On 05/01/2014 01:50 PM, Tim Chen wrote:
+>>> It takes me a while to understand how rwsem's count field mainifest
+>>> itself in different scenarios.  I'm adding comments to provide a quick
+>>> reference on the the rwsem's count field for each scenario where readers
+>>> and writers are contending/holding the lock.  Hopefully it will be useful
+>>> for future maintenance of the code and for people to get up to speed on
+>>> how the logic in the code works.
 >>
->> I didn't look into the frontswap shrinking code, but I agree the
->> existing logic there doesn't look right.  I'll review frontswap in
->> more detail to see if it needs changing here, unless anyone else gets
->> it to first :-)
+>> Except there are a lot of transition states for the count that look like
+>> stable states for some other condition, and vice versa.
 >>
+>> For example, 0xffff000X could be:
+>> 1. stable state as described below.
+>> 2. 1 or more (but not X) readers active,
+>>      1 writer which failed to acquire and has not yet backed out the adjustment
+>>      0 or more readers which failed to acquire because of the waiting writer
+>>          and have not yet backed out
+>> 3. 1 writer active,
+>>      1 or more readers which failed to acquire because of the active writer and
+>>          have not yet backed out
+>> 4. maybe more states where a owning writer has just dropped the lock
 >
-> FYI, I drop the frontswap_shrink code in a patch
-> see: https://lkml.org/lkml/2014/1/27/98
+> Thanks for the feedback.  Yes, one thing I missed was to account for the
+> readers and writers who are actively attempting to lock by adding
+> ACTIVE_BIAS or ACTIVE_WRITE_BIAS to the count.  Once we account for
+> those we should take care of the transition states.
+> The revised comments also look at the readers and writers actively
+> attempting the lock.
+>
+>>
+>> Because of this, it's hazardous to infer lock state except for the specific
+>> existing tests (eg., the count observed by a failed reader after it has
+>> acquired the wait_lock).
+>
+> Thanks.
+>
+> Tim
+>
+> ---
+>
+> It takes me quite a while to understand how rwsem's count field mainifest
+> itself in different scenarios.  I'm adding comments to provide a quick
+> reference on the the rwsem's count field for each scenario where readers
+> and writers are contending for the lock.  Hopefully it will be useful
+> for future maintenance of the code and for people to get up to speed on
+> how the logic in the code works.
+>
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+>   kernel/locking/rwsem-xadd.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 48 insertions(+)
+>
+> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> index 1d66e08..b92a403 100644
+> --- a/kernel/locking/rwsem-xadd.c
+> +++ b/kernel/locking/rwsem-xadd.c
+> @@ -12,6 +12,54 @@
+>   #include <linux/export.h>
+>
+>   /*
+> + * Guide to the rw_semaphore's count field for common values.
+> + * (32 bit case illustrated, similar for 64 bit)
 
-frontswap_shrink() is actually used (only) by drivers/xen/xen-selfballoon.c.
+The values below are x86-specific; the actual defines are arch-dependent.
+Do other archs use different values?
 
-However, I completely agree with you that the backend should be doing
-the shrinking, not from a frontswap api.  Forcing frontswap to shrink
-is backwards - xen-selfballoon appears to be assuming that xem/tmem is
-the only possible frontswap backend.  It certainly doensn't make any
-sense for xen-selfballoon to force zswap to shrink itself, does it?
+> + *
+> + * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
+> + *		    X = #active_readers + #readers attempting to lock
+> + *		    (X*ACTIVE_BIAS)
 
-If xen-selfballoon wants to shrink its frontswap backend tmem, it
-should do that by telling tmem directly to shrink itself (which it
-looks like tmem would have to implement, just like zswap sends its LRU
-pages back to swapcache when it becomes full).
+Not sure it matters, but maybe you want to note that it's possible for 0 readers
+to be active with this value, and all of the other readers may have initially
+failed to claim the lock but may be successful if one can claim the wait_lock while
+the count is still > 0.
+
+> + *
+> + * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
+> + *		attempting to read lock or write lock.
+> + *
+> + * 0xffff000X	(1) X readers active or attempt lock, there are waiters for lock
+> + *		    X = #active readers + # readers attempting lock
+> + *		    (X*ACTIVE_BIAS + WAITING_BIAS)
+> + *		(2) 1 writer attempting lock, no waiters for lock
+> + *		    X-1 = #active readers + #readers attempting lock
+> + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+> + *		(3) 1 writer active, no waiters for lock
+> + *		    X-1 = #active readers + #readers attempting lock
+> + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+> + *
+> + * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
+> + *		    (WAITING_BIAS + ACTIVE_BIAS)
+> + *		(2) 1 writer active or attempt lock, no waiters for lock
+> + *		    (ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+> + *
+> + * 0xffff0000	(1) There are writers or readers queued but none active
+> + *		    or in the process of attempting lock.
+> + *		    (WAITING_BIAS)
+> + *		Note: writer can attempt to steal lock for this count by adding
+> + *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
+> + *
+> + * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
+> + *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
+
+The count can have more values than just 0xfffe0001 because multiple
+failed write lock attempts plus failed read lock attempts can produce other
+values than those listed.
+
+Regards,
+Peter Hurley
+
+> + *
+> + * Note: Reader attempt to lock by adding ACTIVE_BIAS in down_read and checking
+> + *	 the count becomes more than 0, i.e. the case where there are only
+> + *	 readers or no body has lock. (1st and 2nd case above)
+> + *
+> + *	 Writer attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
+> + *	 checking the count becomes ACTIVE_WRITE_BIAS for succesful lock
+> + *	 acquisition (i.e. nobody else has lock or attempts lock).  If
+> + *	 unsuccessful, in rwsem_down_write_failed, we'll check to see if there
+> + *	 are only waiters but none active (5th case above), and attempt to
+> + *	 steal the lock.
+> + *
+> + */
+> +
+> +/*
+>    * Initialize an rwsem:
+>    */
+>   void __init_rwsem(struct rw_semaphore *sem, const char *name,
+>
+
