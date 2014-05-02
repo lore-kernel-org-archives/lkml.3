@@ -1,317 +1,444 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaEBKZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 06:25:43 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:45338 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbaEBKZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 06:25:41 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Brown <broonie@kernel.org>, Xia Kaixu <kaixu.xia@linaro.org>,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 13/15] ASoC: SND_S3C_DMA_LEGACY needs S3C24XX_DMA
-Date: Fri, 02 May 2014 12:25:58 +0200
-Message-ID: <11471248.qyIXLf6t3H@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <7071653.m3UbztQEJc@wuerfel>
-References: <1398770316-19715-1-git-send-email-kaixu.xia@linaro.org> <20140501191125.GB3245@sirena.org.uk> <7071653.m3UbztQEJc@wuerfel>
+	id S1751887AbaEBKgT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 06:36:19 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:59777 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaEBKgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 06:36:17 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAFp+6iHgdgUNcbWky9TH6=3aSWZ4fcjTVgRs2NohYY6-VsQPiQ@mail.gmail.com>
+References: <1398835192-21634-1-git-send-email-gautam.vivek@samsung.com>
+	<1398835192-21634-3-git-send-email-gautam.vivek@samsung.com>
+	<53628154.4080101@gmail.com>
+	<CAFp+6iHgdgUNcbWky9TH6=3aSWZ4fcjTVgRs2NohYY6-VsQPiQ@mail.gmail.com>
+Date: Fri, 2 May 2014 16:06:15 +0530
+X-Google-Sender-Auth: 9Sot6oG4MKM6vgT5dB5GlcLHVhg
+Message-ID: <CAFp+6iH8NE7axKnwkLFnxXqcVuZ8Y7PBebmg36z2KKdj+pQjhA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/4] usb: ohci-exynos: Add facility to use phy provided
+ by the generic phy framework
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Fri, May 2, 2014 at 2:55 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Hi Tomasz,
+>
+>
+> On Thu, May 1, 2014 at 10:46 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Vivek,
+>>
+>> Please see my comments inline.
+>
+> Thanks for the review, please find my answers inline.
+>
+>>
+>>
+>> On 30.04.2014 07:19, Vivek Gautam wrote:
+>>>
+>>> Add support to consume phy provided by Generic phy framework.
+>>> Keeping the support for older usb-phy intact right now, in order
+>>> to prevent any functionality break in absence of relevant
+>>> device tree side change for ohci-exynos.
+>>> Once we move to new phy in the device nodes for ohci, we can
+>>> remove the support for older phys.
+>>>
+>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>> Cc: Jingoo Han <jg1.han@samsung.com>
+>>> Cc: Alan Stern <stern@rowland.harvard.edu>
+>>> ---
+>>>
+>>> Changes from v3:
+>>>   - Calling usb_phy_shutdown() when exynos_ohci_phy_enable() is failing.
+>>>   - Made exynos_ohci_phy_disable() return void, since its return value
+>>>     did not serve any purpose.
+>>>   - Calling clk_disable_unprepare() in exynos_ohci_resume() when
+>>>     exynos_ohci_phy_enable() is failed.
+>>>
+>>>   .../devicetree/bindings/usb/exynos-usb.txt         |   19 +++
+>>>   drivers/usb/host/ohci-exynos.c                     |  128
+>>> +++++++++++++++++---
+>>>   2 files changed, 132 insertions(+), 15 deletions(-)
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>>> b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>>> index d967ba1..a90c973 100644
+>>> --- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>>> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
+>>> @@ -38,6 +38,15 @@ Required properties:
+>>>    - interrupts: interrupt number to the cpu.
+>>>    - clocks: from common clock binding: handle to usb clock.
+>>>    - clock-names: from common clock binding: Shall be "usbhost".
+>>> + - port: if in the SoC there are OHCI phys, they should be listed here.
+>>> +   One phy per port. Each port should have following entries:
+>>> +       - reg: port number on OHCI controller, e.g
+>>> +              On Exynos5250, port 0 is USB2.0 otg phy
+>>> +                             port 1 is HSIC phy0
+>>> +                             port 2 is HSIC phy1
+>>> +       - phys: from the *Generic PHY* bindings, specifying phy used by
+>>> port.
+>>> +       - phy-names: from the *Generic PHY* bindings, specifying name of
+>>> phy
+>>> +                    used by the port.
+>>
+>>
+>> I think you don't need this property for this binding, as the PHYs are being
+>> requested by indices (in fact only index 0 is used).
+>
+> True, that phy-names property is not used, since PHYs are being
+> requested using indices.
+> We can remove this.
+>
+>>
+>>
+>>>
+>>>   Example:
+>>>         usb@12120000 {
+>>> @@ -47,6 +56,16 @@ Example:
+>>>
+>>>                 clocks = <&clock 285>;
+>>>                 clock-names = "usbhost";
+>>> +
+>>> +               #address-cells = <1>;
+>>> +               #size-cells = <0>;
+>>> +               port@0 {
+>>> +                   reg = <0>;
+>>> +                   phys = <&usb2phy 1>;
+>>> +                   phy-names = "host";
+>>
+>>
+>> Ditto.
+> will remove this.
+>
+>>
+>>
+>>> +                   status = "disabled";
+>>> +               };
+>>> +
+>>>         };
+>>>
+>>>   DWC3
+>>> diff --git a/drivers/usb/host/ohci-exynos.c
+>>> b/drivers/usb/host/ohci-exynos.c
+>>> index 05f00e3..f90bf9a 100644
+>>> --- a/drivers/usb/host/ohci-exynos.c
+>>> +++ b/drivers/usb/host/ohci-exynos.c
+>>> @@ -18,6 +18,7 @@
+>>>   #include <linux/module.h>
+>>>   #include <linux/of.h>
+>>>   #include <linux/platform_device.h>
+>>> +#include <linux/phy/phy.h>
+>>>   #include <linux/usb/phy.h>
+>>>   #include <linux/usb/samsung_usb_phy.h>
+>>>   #include <linux/usb.h>
+>>> @@ -33,28 +34,122 @@ static struct hc_driver __read_mostly
+>>> exynos_ohci_hc_driver;
+>>>
+>>>   #define to_exynos_ohci(hcd) (struct exynos_ohci_hcd
+>>> *)(hcd_to_ohci(hcd)->priv)
+>>>
+>>> +#define PHY_NUMBER 3
+>>
+>>
+>> nit: A blank line would be nice here to separate from the struct below.
+>
+> Ok, will add one.
+>
+>>
+>> By the way, doesn't the number of PHY ports depend on platform? Of course
+>> right now the driver supports only Exynos >= 4210 SoCs with the generic PHY
+>> interface, so it might be changed in further patches.
+>
+> Yes, the number of PHY ports will be platform dependent feature.
+> In subsequent patches we can add support to count the number of PHYs,
+> or rather in this patch
+> itself, when we do -
+>          for_each_available_child_of_node(dev->of_node, child) {
+> we can keep a count of how many child nodes we found, and then
+> configure those many.
+> As such the host controller drivers will have 'host' and 'hsic' PHYs.
+>
+>>
+>>
+>>>   struct exynos_ohci_hcd {
+>>>         struct clk *clk;
+>>>         struct usb_phy *phy;
+>>>         struct usb_otg *otg;
+>>> +       struct phy *phy_g[PHY_NUMBER];
+>>>   };
+>>>
+>>> -static void exynos_ohci_phy_enable(struct device *dev)
+>>> +static int exynos_ohci_get_phy(struct device *dev,
+>>> +                               struct exynos_ohci_hcd *exynos_ohci)
+>>> +{
+>>> +       struct device_node *child;
+>>> +       struct phy *phy;
+>>> +       int phy_number;
+>>> +       int ret = 0;
+>>> +
+>>> +       exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+>>> +       if (IS_ERR(exynos_ohci->phy)) {
+>>> +               ret = PTR_ERR(exynos_ohci->phy);
+>>> +               /* This is the case when PHY config is disabled */
+>>> +               if (ret == -ENXIO || ret == -ENODEV) {
+>>> +                       dev_dbg(dev, "Failed to get usb2 phy\n");
+>>> +                       exynos_ohci->phy = NULL;
+>>
+>>
+>> I think you should keep this an ERR_PTR() and just use IS_ERR() check
+>> further in the driver instead of checking for NULL.
+>
+> Yea, that's also one way to check for phy, i can modify this.
+>
+>>
+>>> +                       ret = 0;
+>>
+>>
+>> Do you need to set ret to 0 here? The code for getting generic PHYs will
+>> either leave it unchanged when there are no port nodes defined or overwrite
+>> it with value returned by of_property_read_u32(). In the first case, an
+>> error code should be returned, not zero, as the driver was unable to get any
+>> PHY.
+>
+> The idea was to not fail exynos_ohci_get_phy() call when the PHY
+> configs are not even enabled.
+> Since this would mean, that the driver will never be able to get a PHY
+> in future, and there will be no point in
+> failing the driver probe.
+>
+> In a case when the host controller dts is still on older PHY bindings,
+> this 'ret' will *not* be over-wriiten, since the
+> generic phy nodes will not be there.
+> And in case the host dts is moved to the new generic PHY based
+> bindings. then the part of this function exynos_ohci_get_phy()
+> related to older usb-phy, shall not execute.
+>
+> This is reason why i did not really add a fall-back mechanism for getting PHY.
+> Since from DT either of the two bindings be supplied, and then things
+> here will be handles almost independently.
+>
+>>
+>>
+>>> +               } else if (ret == -EPROBE_DEFER) {
+>>
+>>
+>> I think you could merge this case with the else clause below, as most driver
+>> do. Moreover, since the only thing done after the fail_phy label is
+>> returning the error code, you could just immediately return from here. So
+>> the whole block of code would end up like this:
+>>
+>>         if (IS_ERR(exynos_ohci->phy)) {
+>>                 ret = PTR_ERR(exynos_ohci->phy);
+>>                 if (ret != -ENXIO && ret != -ENODEV) {
+>>
+>>                         dev_err(dev, "no usb2 phy configured\n");
+>>                         return ret;
+>>
+>>                 }
+>>                 dev_dbg(dev, "Failed to get usb2 phy\n");
+>>                 exynos_ohci->phy = NULL;
+>>         } else {
+>>
+>>                 exynos_ohci->otg = exynos_ohci->phy->otg;
+>>         }
+>
+> Ok, this seems a good restructuring. I shall change this.
+>
+>>
+>>> +                       goto fail_phy;
+>>>
+>>> +               } else {
+>>> +                       dev_err(dev, "no usb2 phy configured\n");
+>>> +                       goto fail_phy;
+>>> +               }
+>>> +       } else {
+>>> +               exynos_ohci->otg = exynos_ohci->phy->otg;
+>>> +       }
+>>> +
+>>> +       /* Getting generic phy:
+>>
+>>
+>> CodingStyle: Multi-line comments should begin and end with a single empty
+>> line:
+>>
+>>         /*
+>>          * Getting generic phy:
+>>          * ...
+>>          */
+>>
+>> also nit: s/phy/PHY/
+>>
+>
+> Ok, will correct this.
+>
+>>
+>>> +        * We are keeping both types of phys as a part of transiting OHCI
+>>> +        * to generic phy framework, so that in absence of supporting dts
+>>> +        * changes the functionality doesn't break.
+>>> +        * Once we move the ohci dt nodes to use new generic phys,
+>>> +        * we can remove support for older PHY in this driver.
+>>
+>>
+>> Well, this is not entirely true. The problem here is not caused by existing
+>> DTS files, but rather a chance that there are existing devices using DTB
+>> files built from them. So to remove the support for old bindings, we need to
+>> make sure that such devices have their DTBs updated to ones built from new
+>> DTS.
+>
+> Fair enough, thanks for explaining. :-)
+> I shall modify this comment.
+>
+>>
+>>
+>>> +        */
+>>> +       for_each_available_child_of_node(dev->of_node, child) {
+>>> +               ret = of_property_read_u32(child, "reg", &phy_number);
+>>> +               if (ret) {
+>>> +                       dev_err(dev, "Failed to parse device tree\n");
+>>> +                       of_node_put(child);
+>>> +                       goto fail_phy;
+>>
+>>
+>> Why not just return ret here?
+>>
+>>> +               }
+>>
+>>
+>> nit: Blank line here would be nice.
+>
+> ok
+>
+>>
+>>
+>>> +               if (phy_number >= PHY_NUMBER) {
+>>> +                       dev_err(dev, "Invalid number of PHYs\n");
+>>> +                       of_node_put(child);
+>>> +                       ret = -EINVAL;
+>>> +                       goto fail_phy;
+>>
+>>
+>> What about just return -EINVAL;
+>
+> Yea, just another way of doing things. ;-)
+> I felt 'goto' to be a bit clean than adding number of returns in
+> between statements.
+>
+>>
+>>> +               }
+>>
+>>
+>> nit: Here too.
+> yea, will add a blank line.
+>
+>>
+>>> +               phy = devm_of_phy_get(dev, child, 0);
+>>> +               of_node_put(child);
+>>> +               if (IS_ERR(phy)) {
+>>> +                       ret = PTR_ERR(phy);
+>>> +                       /* This is the case when PHY config is disabled */
+>>> +                       if (ret == -ENOSYS || ret == -ENODEV) {
+>>> +                               dev_dbg(dev, "Failed to get usb2 phy\n");
+>>> +                               phy = NULL;
+>>>
+>>> +                               ret = 0;
+>>> +                       } else if (ret == -EPROBE_DEFER) {
+>>> +                               goto fail_phy;
+>>> +                       } else {
+>>> +                               dev_err(dev, "no usb2 phy configured\n");
+>>> +                               goto fail_phy;
+>>> +                       }
+>>> +               }
+>>
+>>
+>> Similar comments to this block apply as for the block getting legacy USB
+>> PHY.
+>
+> Ok, i will restructure this same as 'legacy PHY  block'
+>
+>>
+>>
+>>> +               exynos_ohci->phy_g[phy_number] = phy;
+>>> +       }
+>>> +
+>>> +fail_phy:
+>>> +       return ret;
+>>> +}
+>>> +
+>>> +static int exynos_ohci_phy_enable(struct device *dev)
+>>>   {
+>>>         struct usb_hcd *hcd = dev_get_drvdata(dev);
+>>>         struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+>>> +       int i;
+>>> +       int ret = 0;
+>>>
+>>> -       if (exynos_ohci->phy)
+>>> -               usb_phy_init(exynos_ohci->phy);
+>>> +       if (exynos_ohci->phy) {
+>>
+>>
+>> !IS_ERR() should be used to check for validity.
+>
+> Ok, this with the earlier change of setting exynos_ohci->phy as
+> ERR_PTR(), should be good then.
+>
+>>
+>>
+>>> +               ret = usb_phy_init(exynos_ohci->phy);
+>>> +               if (ret)
+>>> +                       return ret;
+>>
+>>
+>> IMHO a simple return usb_phy_init(...) could be used here, if we are using
+>> the legacy PHY interface.
+>
+> Right, with legacy PHY, just a 'return usb_phy_init(...)' should do;
+> since those devices will not have the generic
+> PHYs.
+>
+>>
+>>
+>>> +       }
+>>> +
+>>> +       for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
+>>> +               if (exynos_ohci->phy_g[i])
+>>
+>>
+>> !IS_ERR(). Just make sure that the array is initialized with an ERR_PTR()
+>> with some error code, (-ENODEV) probably
+>
+> Ok.
 
-Am Freitag, 2. Mai 2014, 00:35:21 schrieb Arnd Bergmann:
-> On Thursday 01 May 2014 12:11:25 Mark Brown wrote:
-> > On Tue, Apr 29, 2014 at 07:18:34PM +0800, Xia Kaixu wrote:
-> > > From: Arnd Bergmann <arnd@arndb.de>
-> > > 
-> > > SND_S3C_DMA_LEGACY can only be set on S3C24xx, which does not
-> > > (yet) support the dmaengine framework, so samsung_dma_get_ops()
-> > 
-> > > fails to link if S3C24XX_DMA is disabled:
-> > Why is the fix for this not to ensure that s3c24xx always enables the
-> > DMA controller - how likely is it that it would be sane to build a
-> > kernel without DMA after all?
-> 
-> S3C24XX_DMA is only needed for ASoC and for s3cmci. The latter
-> uses 'depends on S3C24XX_DMA'. arch/arm/configs/tct_hammer_defconfig
-> is an example of a configuration that does not include DMA because
-> it uses neither of the two drivers.
-> 
-> On a related topic, I looked at the overall DMA situation for
-> plat-samsung again now, and it looks much nicer now than it used to,
-> with mach-s3c64xx fully migrated to dmaengine, so there might be an
-> even better way to deal with this.
-> 
-> From all I can tell, sound/soc/samsung is the only remaining user
-> of the plat/dma.h interfaces, and there is only one other  driver
-> using the s3c24xx_dma interface directly, drivers/mmc/host/s3cmci.c.
-> 
-> How about the patch below?
-> 8<-------
-> ASoC: s3c24xx: use legacy DMA interface directly
-> 
-> The samsung platform code has a wrapper around the legacy s3c24xx
-> DMA API as an alternative to the dmaengine API. This is only used
-> by the legacy s3c24xx sound support, which is never used in combination
-> with the dmaengine API.
+I think we don't need to initialize this array to any ERR_PTR(), since
+devm_of_phy_get()
+will anyways assign an ERR_PTR() to phy in unsuccessful case, and a
+valid phy pointer
+when it successfully gets one.
+Isn't it ?
 
-Just to mention, we have a dmaengine driver for s3c24xx :-) . Correct 
-platform-data is present for all s3c24xx socs (in mach-s3c24xx/common.c) .
-
-Mark already removed support for the legacy API from the s3c64xx spi driver 
-(used by s3c2416 and s3c2443), so I guess to way forward would be to "simply" 
-convert asoc and s3cmci to dmaengine and get rid of it altogether.
-
-I just never had hardware using the old mci driver or with any previously 
-working sound and didn't trust my experience to be enough to be able to do 
-such a conversion "on the fly" like you below in the opposite direction ;-)
+I think the same goes with legacy usb-phy function devm_usb_get_phy().
 
 
-Heiko
+[snip]
 
-> 
-> We can simplify the ASoC code significantly, and thereby completely
-> obsoleting arch/arm/plat-samsung/dma-ops.c,
-> arch/arm/plat-samsung/s3c-dma-ops.c and
-> arch/arm/plat-samsung/include/plat/dma-ops.h.
-> 
-> This patch achieves this by open-coding the implementation of this
-> wrapper, which ends up saving us more code than we have to add.
-> s3c24xx does not support cyclic DMA, so anything referring to that
-> gets deleted in the process.
-> 
-> The plat-samsung dma wrapper code is now dead code and can be removed
-> subsequently.
-> 
-> Signed-off--by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> 
->  sound/soc/samsung/ac97.c | 10 ++----
->  sound/soc/samsung/dma.c  | 79
-> +++++++++++++++--------------------------------- sound/soc/samsung/dma.h  |
->  2 --
->  3 files changed, 27 insertions(+), 64 deletions(-)
-> 
-> diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
-> index 76b072b..28fe097 100644
-> --- a/sound/soc/samsung/ac97.c
-> +++ b/sound/soc/samsung/ac97.c
-> @@ -253,10 +253,7 @@ static int s3c_ac97_trigger(struct snd_pcm_substream
-> *substream, int cmd,
-> 
->  	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
-> 
-> -	if (!dma_data->ops)
-> -		dma_data->ops = samsung_dma_get_ops();
-> -
-> -	dma_data->ops->started(dma_data->channel);
-> +	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
-> 
->  	return 0;
->  }
-> @@ -287,10 +284,7 @@ static int s3c_ac97_mic_trigger(struct
-> snd_pcm_substream *substream,
-> 
->  	writel(ac_glbctrl, s3c_ac97.regs + S3C_AC97_GLBCTRL);
-> 
-> -	if (!dma_data->ops)
-> -		dma_data->ops = samsung_dma_get_ops();
-> -
-> -	dma_data->ops->started(dma_data->channel);
-> +	s3c2410_dma_ctrl(dma_data->channel, S3C2410_DMAOP_STARTED);
-> 
->  	return 0;
->  }
-> diff --git a/sound/soc/samsung/dma.c b/sound/soc/samsung/dma.c
-> index dc09b71..3c6e2f2 100644
-> --- a/sound/soc/samsung/dma.c
-> +++ b/sound/soc/samsung/dma.c
-> @@ -54,8 +54,6 @@ struct runtime_data {
->  	struct s3c_dma_params *params;
->  };
-> 
-> -static void audio_buffdone(void *data);
-> -
->  /* dma_enqueue
->   *
->   * place a dma buffer onto the queue for the dma system
-> @@ -66,7 +64,6 @@ static void dma_enqueue(struct snd_pcm_substream
-> *substream) struct runtime_data *prtd = substream->runtime->private_data;
->  	dma_addr_t pos = prtd->dma_pos;
->  	unsigned int limit;
-> -	struct samsung_dma_prep dma_info;
-> 
->  	pr_debug("Entered %s\n", __func__);
-> 
-> @@ -75,33 +72,11 @@ static void dma_enqueue(struct snd_pcm_substream
-> *substream) pr_debug("%s: loaded %d, limit %d\n",
->  				__func__, prtd->dma_loaded, limit);
-> 
-> -	dma_info.cap = (samsung_dma_has_circular() ? DMA_CYCLIC : DMA_SLAVE);
-> -	dma_info.direction =
-> -		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
-> -		? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
-> -	dma_info.fp = audio_buffdone;
-> -	dma_info.fp_param = substream;
-> -	dma_info.period = prtd->dma_period;
-> -	dma_info.len = prtd->dma_period*limit;
-> -
-> -	if (dma_info.cap == DMA_CYCLIC) {
-> -		dma_info.buf = pos;
-> -		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
-> -		prtd->dma_loaded += limit;
-> -		return;
-> -	}
-> -
->  	while (prtd->dma_loaded < limit) {
->  		pr_debug("dma_loaded: %d\n", prtd->dma_loaded);
-> 
-> -		if ((pos + dma_info.period) > prtd->dma_end) {
-> -			dma_info.period  = prtd->dma_end - pos;
-> -			pr_debug("%s: corrected dma len %ld\n",
-> -					__func__, dma_info.period);
-> -		}
-> -
-> -		dma_info.buf = pos;
-> -		prtd->params->ops->prepare(prtd->params->ch, &dma_info);
-> +		s3c2410_dma_enqueue(prtd->params->channel, substream, pos,
-> +				    prtd->dma_period * limit);
-> 
->  		prtd->dma_loaded++;
->  		pos += prtd->dma_period;
-> @@ -112,7 +87,8 @@ static void dma_enqueue(struct snd_pcm_substream
-> *substream) prtd->dma_pos = pos;
->  }
-> 
-> -static void audio_buffdone(void *data)
-> +static void audio_buffdone(struct s3c2410_dma_chan *channel, void *data,
-> +		       int size, enum s3c2410_dma_buffresult res)
->  {
->  	struct snd_pcm_substream *substream = data;
->  	struct runtime_data *prtd = substream->runtime->private_data;
-> @@ -128,10 +104,8 @@ static void audio_buffdone(void *data)
->  			snd_pcm_period_elapsed(substream);
-> 
->  		spin_lock(&prtd->lock);
-> -		if (!samsung_dma_has_circular()) {
-> -			prtd->dma_loaded--;
-> -			dma_enqueue(substream);
-> -		}
-> +		prtd->dma_loaded--;
-> +		dma_enqueue(substream);
->  		spin_unlock(&prtd->lock);
->  	}
->  }
-> @@ -145,8 +119,7 @@ static int dma_hw_params(struct snd_pcm_substream
-> *substream, unsigned long totbytes = params_buffer_bytes(params);
->  	struct s3c_dma_params *dma =
->  		snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
-> -	struct samsung_dma_req req;
-> -	struct samsung_dma_config config;
-> +	enum dma_transfer_direction direction;
-> 
->  	pr_debug("Entered %s\n", __func__);
-> 
-> @@ -164,24 +137,22 @@ static int dma_hw_params(struct snd_pcm_substream
-> *substream, pr_debug("params %p, client %p, channel %d\n", prtd->params,
->  			prtd->params->client, prtd->params->channel);
-> 
-> -		prtd->params->ops = samsung_dma_get_ops();
-> -
-> -		req.cap = (samsung_dma_has_circular() ?
-> -			DMA_CYCLIC : DMA_SLAVE);
-> -		req.client = prtd->params->client;
-> -		config.direction =
-> -			(substream->stream == SNDRV_PCM_STREAM_PLAYBACK
-> +		direction = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK
->  			? DMA_MEM_TO_DEV : DMA_DEV_TO_MEM);
-> -		config.width = prtd->params->dma_size;
-> -		config.fifo = prtd->params->dma_addr;
-> -		prtd->params->ch = prtd->params->ops->request(
-> -				prtd->params->channel, &req, rtd->cpu_dai->dev,
-> -				prtd->params->ch_name);
-> -		if (!prtd->params->ch) {
-> +
-> +		if (s3c2410_dma_request(prtd->params->channel,
-> +					(void*)prtd->params->client, NULL) < 0) {
->  			pr_err("Failed to allocate DMA channel\n");
-> +			s3c2410_dma_free(prtd->params->channel,
-> +					 (void*)prtd->params->client);
->  			return -ENXIO;
->  		}
-> -		prtd->params->ops->config(prtd->params->ch, &config);
-> +		s3c2410_dma_devconfig(prtd->params->channel, direction,
-> +				      prtd->params->dma_addr);
-> +		s3c2410_dma_config(prtd->params->channel,
-> +				   prtd->params->dma_size);
-> +		s3c2410_dma_set_buffdone_fn(prtd->params->channel,
-> +					    audio_buffdone);
->  	}
-> 
->  	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
-> @@ -208,9 +179,9 @@ static int dma_hw_free(struct snd_pcm_substream
-> *substream) snd_pcm_set_runtime_buffer(substream, NULL);
-> 
->  	if (prtd->params) {
-> -		prtd->params->ops->flush(prtd->params->ch);
-> -		prtd->params->ops->release(prtd->params->ch,
-> -					prtd->params->client);
-> +		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
-> +		s3c2410_dma_free(prtd->params->channel,
-> +				 (void*)prtd->params->client);
->  		prtd->params = NULL;
->  	}
-> 
-> @@ -230,7 +201,7 @@ static int dma_prepare(struct snd_pcm_substream
-> *substream) return 0;
-> 
->  	/* flush the DMA channel */
-> -	prtd->params->ops->flush(prtd->params->ch);
-> +	s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_FLUSH);
-> 
->  	prtd->dma_loaded = 0;
->  	prtd->dma_pos = prtd->dma_start;
-> @@ -253,12 +224,12 @@ static int dma_trigger(struct snd_pcm_substream
-> *substream, int cmd) switch (cmd) {
->  	case SNDRV_PCM_TRIGGER_START:
->  		prtd->state |= ST_RUNNING;
-> -		prtd->params->ops->trigger(prtd->params->ch);
-> +		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_START);
->  		break;
-> 
->  	case SNDRV_PCM_TRIGGER_STOP:
->  		prtd->state &= ~ST_RUNNING;
-> -		prtd->params->ops->stop(prtd->params->ch);
-> +		s3c2410_dma_ctrl(prtd->params->channel, S3C2410_DMAOP_STOP);
->  		break;
-> 
->  	default:
-> diff --git a/sound/soc/samsung/dma.h b/sound/soc/samsung/dma.h
-> index ad7c0f0..c52fa86 100644
-> --- a/sound/soc/samsung/dma.h
-> +++ b/sound/soc/samsung/dma.h
-> @@ -23,8 +23,6 @@ struct s3c_dma_params {
->  	int channel;				/* Channel ID */
->  	dma_addr_t dma_addr;
->  	int dma_size;			/* Size of the DMA transfer */
-> -	unsigned ch;
-> -	struct samsung_dma_ops *ops;
->  	char *ch_name;
->  	struct snd_dmaengine_dai_dma_data dma_data;
->  };
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
