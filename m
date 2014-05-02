@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895AbaEBQZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:25:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43684 "EHLO
+	id S1754878AbaEBQZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:25:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43687 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713AbaEBPjS (ORCPT
+	with ESMTP id S1752718AbaEBPjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 007/151] ARM: 7954/1: mm: remove remaining domain support from ARMv6
-Date: Fri,  2 May 2014 08:36:35 -0700
-Message-Id: <1399045139-4531-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 019/151] x86, AVX-512: Enable AVX-512 States Context Switch
+Date: Fri,  2 May 2014 08:36:47 -0700
+Message-Id: <1399045139-4531-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,205 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit b6ccb9803e90c16b212cf4ed62913a7591e79a39 upstream.
+commit c2bc11f10a39527cd1bb252097b5525664560956 upstream.
 
-CPU_32v6 currently selects CPU_USE_DOMAINS if CPU_V6 and MMU. This is
-because ARM 1136 r0pX CPUs lack the v6k extensions, and therefore do
-not have hardware thread registers. The lack of these registers requires
-the kernel to update the vectors page at each context switch in order to
-write a new TLS pointer. This write must be done via the userspace
-mapping, since aliasing caches can lead to expensive flushing when using
-kmap. Finally, this requires the vectors page to be mapped r/w for
-kernel and r/o for user, which has implications for things like put_user
-which must trigger CoW appropriately when targetting user pages.
+This patch enables Opmask, ZMM_Hi256, and Hi16_ZMM AVX-512 states for
+xstate context switch.
 
-The upshot of all this is that a v6/v7 kernel makes use of domains to
-segregate kernel and user memory accesses. This has the nasty
-side-effect of making device mappings executable, which has been
-observed to cause subtle bugs on recent cores (e.g. Cortex-A15
-performing a speculative instruction fetch from the GIC and acking an
-interrupt in the process).
-
-This patch solves this problem by removing the remaining domain support
-from ARMv6. A new memory type is added specifically for the vectors page
-which allows that page (and only that page) to be mapped as user r/o,
-kernel r/w. All other user r/o pages are mapped also as kernel r/o.
-Patch co-developed with Russell King.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1392931491-33237-2-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[ Fenghua Yu: backport to 3.13-stable (apply new bits directly to XCNTXT_MASK) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/include/asm/futex.h          |  6 ------
- arch/arm/include/asm/pgtable-2level.h |  1 +
- arch/arm/mm/Kconfig                   |  3 +--
- arch/arm/mm/mmu.c                     | 10 ++++++++++
- arch/arm/mm/proc-macros.S             | 19 ++++++-------------
- arch/arm/mm/proc-v7-2level.S          |  7 -------
- 6 files changed, 18 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/xsave.h | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/include/asm/futex.h b/arch/arm/include/asm/futex.h
-index e42cf59..2aff798 100644
---- a/arch/arm/include/asm/futex.h
-+++ b/arch/arm/include/asm/futex.h
-@@ -3,11 +3,6 @@
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 0415cda..0b651f9 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -6,9 +6,14 @@
  
- #ifdef __KERNEL__
+ #define XSTATE_CPUID		0x0000000d
  
--#if defined(CONFIG_CPU_USE_DOMAINS) && defined(CONFIG_SMP)
--/* ARM doesn't provide unprivileged exclusive memory accessors */
--#include <asm-generic/futex.h>
--#else
--
- #include <linux/futex.h>
- #include <linux/uaccess.h>
- #include <asm/errno.h>
-@@ -164,6 +159,5 @@ futex_atomic_op_inuser (int encoded_op, u32 __user *uaddr)
- 	return ret;
- }
+-#define XSTATE_FP	0x1
+-#define XSTATE_SSE	0x2
+-#define XSTATE_YMM	0x4
++#define XSTATE_FP		0x1
++#define XSTATE_SSE		0x2
++#define XSTATE_YMM		0x4
++#define XSTATE_BNDREGS		0x8
++#define XSTATE_BNDCSR		0x10
++#define XSTATE_OPMASK		0x20
++#define XSTATE_ZMM_Hi256	0x40
++#define XSTATE_Hi16_ZMM		0x80
  
--#endif /* !(CPU_USE_DOMAINS && SMP) */
- #endif /* __KERNEL__ */
- #endif /* _ASM_ARM_FUTEX_H */
-diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
-index 86a659a..daba57e 100644
---- a/arch/arm/include/asm/pgtable-2level.h
-+++ b/arch/arm/include/asm/pgtable-2level.h
-@@ -140,6 +140,7 @@
- #define L_PTE_MT_DEV_NONSHARED	(_AT(pteval_t, 0x0c) << 2)	/* 1100 */
- #define L_PTE_MT_DEV_WC		(_AT(pteval_t, 0x09) << 2)	/* 1001 */
- #define L_PTE_MT_DEV_CACHED	(_AT(pteval_t, 0x0b) << 2)	/* 1011 */
-+#define L_PTE_MT_VECTORS	(_AT(pteval_t, 0x0f) << 2)	/* 1111 */
- #define L_PTE_MT_MASK		(_AT(pteval_t, 0x0f) << 2)
+ #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
  
- #ifndef __ASSEMBLY__
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 1f8fed9..ca8ecde 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -446,7 +446,6 @@ config CPU_32v5
- 
- config CPU_32v6
- 	bool
--	select CPU_USE_DOMAINS if CPU_V6 && MMU
- 	select TLS_REG_EMUL if !CPU_32v6K && !MMU
- 
- config CPU_32v6K
-@@ -671,7 +670,7 @@ config ARM_VIRT_EXT
- 
- config SWP_EMULATE
- 	bool "Emulate SWP/SWPB instructions"
--	depends on !CPU_USE_DOMAINS && CPU_V7
-+	depends on CPU_V7
- 	default y if SMP
- 	select HAVE_PROC_CPU if PROC_FS
- 	help
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index 911d433..dd0949f 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -466,6 +466,16 @@ static void __init build_mem_type_table(void)
- 	s2_device_pgprot = mem_types[MT_DEVICE].prot_pte_s2;
- 
- 	/*
-+	 * We don't use domains on ARMv6 (since this causes problems with
-+	 * v6/v7 kernels), so we must use a separate memory type for user
-+	 * r/o, kernel r/w to map the vectors page.
-+	 */
-+#ifndef CONFIG_ARM_LPAE
-+	if (cpu_arch == CPU_ARCH_ARMv6)
-+		vecs_pgprot |= L_PTE_MT_VECTORS;
-+#endif
-+
-+	/*
- 	 * ARMv6 and above have extended page tables.
- 	 */
- 	if (cpu_arch >= CPU_ARCH_ARMv6 && (cr & CR_XP)) {
-diff --git a/arch/arm/mm/proc-macros.S b/arch/arm/mm/proc-macros.S
-index e3c48a3..ee1d805 100644
---- a/arch/arm/mm/proc-macros.S
-+++ b/arch/arm/mm/proc-macros.S
-@@ -112,13 +112,9 @@
-  *  100x   1   0   1	r/o	no acc
-  *  10x0   1   0   1	r/o	no acc
-  *  1011   0   0   1	r/w	no acc
-- *  110x   0   1   0	r/w	r/o
-- *  11x0   0   1   0	r/w	r/o
-- *  1111   0   1   1	r/w	r/w
-- *
-- * If !CONFIG_CPU_USE_DOMAINS, the following permissions are changed:
-  *  110x   1   1   1	r/o	r/o
-  *  11x0   1   1   1	r/o	r/o
-+ *  1111   0   1   1	r/w	r/w
+@@ -23,7 +28,7 @@
+ /*
+  * These are the features that the OS can handle currently.
   */
- 	.macro	armv6_mt_table pfx
- \pfx\()_mt_table:
-@@ -137,7 +133,7 @@
- 	.long	PTE_EXT_TEX(2)					@ L_PTE_MT_DEV_NONSHARED
- 	.long	0x00						@ unused
- 	.long	0x00						@ unused
--	.long	0x00						@ unused
-+	.long	PTE_CACHEABLE | PTE_BUFFERABLE | PTE_EXT_APX	@ L_PTE_MT_VECTORS
- 	.endm
+-#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM)
++#define XCNTXT_MASK	(XSTATE_FP | XSTATE_SSE | XSTATE_YMM | XSTATE_OPMASK | XSTATE_ZMM_Hi256 | XSTATE_Hi16_ZMM)
  
- 	.macro	armv6_set_pte_ext pfx
-@@ -158,24 +154,21 @@
- 
- 	tst	r1, #L_PTE_USER
- 	orrne	r3, r3, #PTE_EXT_AP1
--#ifdef CONFIG_CPU_USE_DOMAINS
--	@ allow kernel read/write access to read-only user pages
- 	tstne	r3, #PTE_EXT_APX
--	bicne	r3, r3, #PTE_EXT_APX | PTE_EXT_AP0
--#endif
-+
-+	@ user read-only -> kernel read-only
-+	bicne	r3, r3, #PTE_EXT_AP0
- 
- 	tst	r1, #L_PTE_XN
- 	orrne	r3, r3, #PTE_EXT_XN
- 
--	orr	r3, r3, r2
-+	eor	r3, r3, r2
- 
- 	tst	r1, #L_PTE_YOUNG
- 	tstne	r1, #L_PTE_PRESENT
- 	moveq	r3, #0
--#ifndef CONFIG_CPU_USE_DOMAINS
- 	tstne	r1, #L_PTE_NONE
- 	movne	r3, #0
--#endif
- 
- 	str	r3, [r0]
- 	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
-diff --git a/arch/arm/mm/proc-v7-2level.S b/arch/arm/mm/proc-v7-2level.S
-index bdd3be4..1f52915 100644
---- a/arch/arm/mm/proc-v7-2level.S
-+++ b/arch/arm/mm/proc-v7-2level.S
-@@ -90,21 +90,14 @@ ENTRY(cpu_v7_set_pte_ext)
- 
- 	tst	r1, #L_PTE_USER
- 	orrne	r3, r3, #PTE_EXT_AP1
--#ifdef CONFIG_CPU_USE_DOMAINS
--	@ allow kernel read/write access to read-only user pages
--	tstne	r3, #PTE_EXT_APX
--	bicne	r3, r3, #PTE_EXT_APX | PTE_EXT_AP0
--#endif
- 
- 	tst	r1, #L_PTE_XN
- 	orrne	r3, r3, #PTE_EXT_XN
- 
- 	tst	r1, #L_PTE_YOUNG
- 	tstne	r1, #L_PTE_VALID
--#ifndef CONFIG_CPU_USE_DOMAINS
- 	eorne	r1, r1, #L_PTE_NONE
- 	tstne	r1, #L_PTE_NONE
--#endif
- 	moveq	r3, #0
- 
-  ARM(	str	r3, [r0, #2048]! )
+ #ifdef CONFIG_X86_64
+ #define REX_PREFIX	"0x48, "
 -- 
 1.9.1
 
