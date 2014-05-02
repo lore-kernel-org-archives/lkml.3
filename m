@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbaEBNfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:35:23 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48941 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaEBNfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:35:22 -0400
-Message-ID: <53639F1B.5080000@linaro.org>
-Date: Fri, 02 May 2014 15:35:23 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: peterz@infradead.org, mingo@elte.hu, amit.kucheria@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+	id S1752146AbaEBNiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:38:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764AbaEBNiC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 09:38:02 -0400
+Date: Fri, 2 May 2014 08:37:51 -0500
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it
- out
-References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org> <2783362.8r7SvVhudq@vostro.rjw.lan> <53635CCB.9090301@linaro.org> <2782801.UzoMhgfu56@vostro.rjw.lan>
-In-Reply-To: <2782801.UzoMhgfu56@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
+Message-ID: <20140502133751.GB4556@treble.redhat.com>
+References: <cover.1398958771.git.jpoimboe@redhat.com>
+ <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 02:09 PM, Rafael J. Wysocki wrote:
-> On Friday, May 02, 2014 10:52:27 AM Daniel Lezcano wrote:
->> On 05/01/2014 12:47 AM, Rafael J. Wysocki wrote:
->>> On Wednesday, April 30, 2014 02:01:02 PM Daniel Lezcano wrote:
->>>> Encapsulate the large portion of cpuidle_idle_call inside another
->>>> function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
->>>> Also that is benefitial for the clarity of the code as it removes
->>>> a nested indentation level.
->>>>
->>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>>
->>> Well, this conflicts with
->>>
->>> https://patchwork.kernel.org/patch/4071541/
->>>
->>> which you haven't commented on and I still want cpuidle_select() to be able to
->>> return negative values because of
->>>
->>> https://patchwork.kernel.org/patch/4089631/
->>>
->>> (and I have one more patch on top of these two that requires this).
->>>
->>> Any ideas how to resolve that?
->>
->> I don't think we have a big conflict. If Peter takes your patches before
->> than mines then I will refresh and resend them.
->
-> Actually, I was planning the merge them myself, because they are more cpuidle
-> than the scheduler, but either way would be fine.
+On Fri, May 02, 2014 at 03:10:58PM +0200, Jiri Kosina wrote:
+> On Thu, 1 May 2014, Josh Poimboeuf wrote:
+> 
+> > kpatch vs kGraft
+> > ----------------
+> > 
+> > I think the biggest difference between kpatch and kGraft is how they
+> > ensure that the patch is applied atomically and safely.
+> > 
+> > kpatch checks the backtraces of all tasks in stop_machine() to ensure
+> > that no instances of the old function are running when the new function
+> > is applied.  I think the biggest downside of this approach is that
+> > stop_machine() has to idle all other CPUs during the patching process,
+> > so it inserts a small amount of latency (a few ms on an idle system).
+> > 
+> > Instead, kGraft uses per-task consistency: each task either sees the old
+> > version or the new version of the function.  This gives a consistent
+> > view with respect to functions, but _not_ data, because the old and new
+> > functions are allowed to run simultaneously and share data.  This could
+> > be dangerous if a patch changes how a function uses a data structure.
+> > The new function could make a data change that the old function wasn't
+> > expecting.
+> 
+> Please correct me if I am wrong, but with kPatch, you are also unable to 
+> do a "flip and forget" switch between functions that expect different 
+> format of in-memory data without performing a non-trivial all-memory 
+> lookup to find structures in question and perfoming corresponding 
+> transformations.
+> 
+> What we can do with kGraft si to perform the patching in two steps
+> 
+> (1) redirect to a temporary band-aid function that can handle both 
+>     semantics of the data (persumably in highly sub-optimal way)
+> (2) patching in (1) succeeds completely (kGraft claims victory), start a 
+>     new round of patching with redirect to the final function which 
+>     expects only the new semantics
+> 
+> This basically implies that both aproaches need "human inspection" in this 
+> respect anyway.
 
-Well I have some patches for the scheduler which will need these 
-modifications. Is it possible to merge them throw a common branch to be 
-shared between sched and pm ?
+Ah, interesting.  The intermediate function which knows how to handle
+both versions of the data could get pretty tricky though.
 
->> I am open to any other suggestion.
->
-> Please see the other message I've just sent. :-)
->
-
+With kpatch we'd just need to allow the user to install a callback
+function which runs in stop_machine() and manually updates all the data
+structures.  I think we'll be implementing something like this soon.
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Josh
