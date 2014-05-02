@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaEBPmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:42:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43883 "EHLO
+	id S1753300AbaEBPmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:42:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43893 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaEBPm3 (ORCPT
+	with ESMTP id S1753267AbaEBPmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:29 -0400
+	Fri, 2 May 2014 11:42:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/151] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Fri,  2 May 2014 08:37:33 -0700
-Message-Id: <1399045139-4531-66-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 076/151] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
+Date: Fri,  2 May 2014 08:37:44 -0700
+Message-Id: <1399045139-4531-77-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,60 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
+commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
+Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
 
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+tps65910_irq_init() sets 'tps65910->chip_irq' before calling
+regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
+memory allocation of regmap_irq_chip_data members then:
+
+1. The 'tps65910->chip_irq' will still hold some value
+2. 'tps65910->irq_data' will be pointing to already freed memory
+   (because regmap_add_irq_chip() will free it on error)
+
+This results in invalid memory access during driver remove because the
+tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/cs42l52.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mfd/tps65910.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
-index 8b427c9..2de73f8 100644
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -353,7 +353,7 @@ static const char * const right_swap_text[] = {
- static const unsigned int swap_values[] = { 0, 1, 3 };
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index c0f608e..2ab9166 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -255,8 +255,10 @@ static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
+ 		IRQF_ONESHOT, pdata->irq_base,
+ 		tps6591x_irqs_chip, &tps65910->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
++		tps65910->chip_irq = 0;
++	}
+ 	return ret;
+ }
  
- static const struct soc_enum adca_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -362,7 +362,7 @@ static const struct snd_kcontrol_new adca_mixer =
- 	SOC_DAPM_ENUM("Route", adca_swap_enum);
- 
- static const struct soc_enum pcma_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -371,7 +371,7 @@ static const struct snd_kcontrol_new pcma_mixer =
- 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
- 
- static const struct soc_enum adcb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
-@@ -380,7 +380,7 @@ static const struct snd_kcontrol_new adcb_mixer =
- 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
- 
- static const struct soc_enum pcmb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
 -- 
 1.9.1
 
