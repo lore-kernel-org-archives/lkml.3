@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaEBQIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:08:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43986 "EHLO
+	id S1754263AbaEBQJE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:09:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43976 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431AbaEBPnS (ORCPT
+	with ESMTP id S1753414AbaEBPnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:18 -0400
+	Fri, 2 May 2014 11:43:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 031/151] usb: dwc3: fix randconfig build errors
-Date: Fri,  2 May 2014 08:36:59 -0700
-Message-Id: <1399045139-4531-32-git-send-email-kamal@canonical.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 023/151] ACPICA: Restore code that repairs NULL package elements in return values.
+Date: Fri,  2 May 2014 08:36:51 -0700
+Message-Id: <1399045139-4531-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -26,115 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 610183051d8f9421f138c4203ca894387f9f8839 upstream.
+commit 61db45ca21630f5ab7f678d54c5d969c21647854 upstream.
 
-commit 388e5c5 (usb: dwc3: remove dwc3 dependency
-on host AND gadget.) created the possibility for
-host-only and peripheral-only dwc3 builds but
-left a possible randconfig build error when host-only
-builds are selected.
+The original code was lost accidently, it was not generated along with the
+following commit of mechanism improvements and thus not get merged:
 
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-[ kamal: backport to 3.13 (no dwc3_gadget_get_link_state) ]
+  Commit: d5a36100f62fa6db5541344e08b361b34e9114c5
+  Subject: ACPICA: Add mechanism for early object repairs on a per-name basis
+
+  Adds the framework to allow object repairs very early in the
+  return object analysis. Enables repairs like string->unicode,
+  etc.
+
+This patch restores the implementation of the NULL element repair code for
+ACPI_RTYPE_NONE.  In the original design, ACPI_RTYPE_NONE is defined to
+collect simple NULL object repairs.
+Lv Zheng.
+
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=67901
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/dwc3/core.h   | 30 ++++++++++++++++++++++++++++++
- drivers/usb/dwc3/gadget.h | 12 ------------
- 2 files changed, 30 insertions(+), 12 deletions(-)
+ drivers/acpi/acpica/nsrepair.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index 69c4583..9e8b28d 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -856,6 +856,19 @@ union dwc3_event {
- 	struct dwc3_event_gevt		gevt;
- };
- 
-+/**
-+ * struct dwc3_gadget_ep_cmd_params - representation of endpoint command
-+ * parameters
-+ * @param2: third parameter
-+ * @param1: second parameter
-+ * @param0: first parameter
-+ */
-+struct dwc3_gadget_ep_cmd_params {
-+	u32	param2;
-+	u32	param1;
-+	u32	param0;
-+};
+diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
+index a05afff..b6f6863 100644
+--- a/drivers/acpi/acpica/nsrepair.c
++++ b/drivers/acpi/acpica/nsrepair.c
+@@ -207,13 +207,30 @@ acpi_ns_simple_repair(struct acpi_evaluate_info *info,
+ 	 * this predefined name. Either one return value is expected, or none,
+ 	 * for both methods and other objects.
+ 	 *
+-	 * Exit now if there is no return object. Warning if one was expected.
++	 * Try to fix if there was no return object. Warning if failed to fix.
+ 	 */
+ 	if (!return_object) {
+ 		if (expected_btypes && (!(expected_btypes & ACPI_RTYPE_NONE))) {
+-			ACPI_WARN_PREDEFINED((AE_INFO, info->full_pathname,
+-					      ACPI_WARN_ALWAYS,
+-					      "Missing expected return value"));
++			if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
++				ACPI_WARN_PREDEFINED((AE_INFO,
++						      info->full_pathname,
++						      ACPI_WARN_ALWAYS,
++						      "Found unexpected NULL package element"));
 +
- /*
-  * DWC3 Features to be used as Driver Data
-  */
-@@ -881,11 +894,28 @@ static inline void dwc3_host_exit(struct dwc3 *dwc)
- #if IS_ENABLED(CONFIG_USB_DWC3_GADGET) || IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
- int dwc3_gadget_init(struct dwc3 *dwc);
- void dwc3_gadget_exit(struct dwc3 *dwc);
-+int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
-+int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
-+int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
-+		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
-+int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
- #else
- static inline int dwc3_gadget_init(struct dwc3 *dwc)
- { return 0; }
- static inline void dwc3_gadget_exit(struct dwc3 *dwc)
- { }
-+static inline int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode)
-+{ return 0; }
-+static inline int dwc3_gadget_set_link_state(struct dwc3 *dwc,
-+		enum dwc3_link_state state)
-+{ return 0; }
-+
-+static inline int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
-+		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params)
-+{ return 0; }
-+static inline int dwc3_send_gadget_generic_command(struct dwc3 *dwc,
-+		int cmd, u32 param)
-+{ return 0; }
- #endif
++				status =
++				    acpi_ns_repair_null_element(info,
++								expected_btypes,
++								package_index,
++								return_object_ptr);
++				if (ACPI_SUCCESS(status)) {
++					return (AE_OK);	/* Repair was successful */
++				}
++			} else {
++				ACPI_WARN_PREDEFINED((AE_INFO,
++						      info->full_pathname,
++						      ACPI_WARN_ALWAYS,
++						      "Missing expected return value"));
++			}
  
- /* power management interface */
-diff --git a/drivers/usb/dwc3/gadget.h b/drivers/usb/dwc3/gadget.h
-index febe1aa..a0ee75b 100644
---- a/drivers/usb/dwc3/gadget.h
-+++ b/drivers/usb/dwc3/gadget.h
-@@ -56,12 +56,6 @@ struct dwc3;
- /* DEPXFERCFG parameter 0 */
- #define DWC3_DEPXFERCFG_NUM_XFER_RES(n)	((n) & 0xffff)
- 
--struct dwc3_gadget_ep_cmd_params {
--	u32	param2;
--	u32	param1;
--	u32	param0;
--};
--
- /* -------------------------------------------------------------------------- */
- 
- #define to_dwc3_request(r)	(container_of(r, struct dwc3_request, request))
-@@ -85,9 +79,6 @@ static inline void dwc3_gadget_move_request_queued(struct dwc3_request *req)
- void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
- 		int status);
- 
--int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
--int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
--
- void dwc3_ep0_interrupt(struct dwc3 *dwc,
- 		const struct dwc3_event_depevt *event);
- void dwc3_ep0_out_start(struct dwc3 *dwc);
-@@ -95,9 +86,6 @@ int dwc3_gadget_ep0_set_halt(struct usb_ep *ep, int value);
- int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
- 		gfp_t gfp_flags);
- int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
--int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
--		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
--int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
- 
- /**
-  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
+ 			return (AE_AML_NO_RETURN_VALUE);
+ 		}
 -- 
 1.9.1
 
