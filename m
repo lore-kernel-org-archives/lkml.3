@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231AbaEBPmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:42:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43869 "EHLO
+	id S1753264AbaEBPmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:42:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43883 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaEBPmP (ORCPT
+	with ESMTP id S1752608AbaEBPm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:15 -0400
+	Fri, 2 May 2014 11:42:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 066/151] drm/i915: Do not dereference pointers from ring buffer in evict event
-Date: Fri,  2 May 2014 08:37:34 -0700
-Message-Id: <1399045139-4531-67-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 065/151] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
+Date: Fri,  2 May 2014 08:37:33 -0700
+Message-Id: <1399045139-4531-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,52 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit 9297ebf29ad9118edd6c0fedc84f03e35028827d upstream.
+commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
 
-The TP_printk() should never dereference any pointers, because the ring
-buffer can be read at some unknown time in the future. If a device no
-longer exists, it can cause a kernel oops. This also makes this
-event useless when saving the ring buffer in userspaces tools such as
-perf and trace-cmd.
+The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
 
-The i915_gem_evict_vm dereferences the vm pointer which may also not
-exist when the ring buffer is read sometime in the future.
-
-Link: http://lkml.kernel.org/r/1395095198-20034-3-git-send-email-artagnon@gmail.com
-Reported-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Fixes: bcccff847d1f "drm/i915: trace vm eviction instead of everything"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[danvet: Try to make it actually compile]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_trace.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/soc/codecs/cs42l52.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
-index 6e580c9..783ae08 100644
---- a/drivers/gpu/drm/i915/i915_trace.h
-+++ b/drivers/gpu/drm/i915/i915_trace.h
-@@ -238,14 +238,16 @@ TRACE_EVENT(i915_gem_evict_vm,
- 	    TP_ARGS(vm),
+diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
+index 8b427c9..2de73f8 100644
+--- a/sound/soc/codecs/cs42l52.c
++++ b/sound/soc/codecs/cs42l52.c
+@@ -353,7 +353,7 @@ static const char * const right_swap_text[] = {
+ static const unsigned int swap_values[] = { 0, 1, 3 };
  
- 	    TP_STRUCT__entry(
-+			     __field(u32, dev)
- 			     __field(struct i915_address_space *, vm)
- 			    ),
+ static const struct soc_enum adca_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
+ 			      ARRAY_SIZE(left_swap_text),
+ 			      left_swap_text,
+ 			      swap_values);
+@@ -362,7 +362,7 @@ static const struct snd_kcontrol_new adca_mixer =
+ 	SOC_DAPM_ENUM("Route", adca_swap_enum);
  
- 	    TP_fast_assign(
-+			   __entry->dev = vm->dev->primary->index;
- 			   __entry->vm = vm;
- 			  ),
+ static const struct soc_enum pcma_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
+ 			      ARRAY_SIZE(left_swap_text),
+ 			      left_swap_text,
+ 			      swap_values);
+@@ -371,7 +371,7 @@ static const struct snd_kcontrol_new pcma_mixer =
+ 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
  
--	    TP_printk("dev=%d, vm=%p", __entry->vm->dev->primary->index, __entry->vm)
-+	    TP_printk("dev=%d, vm=%p", __entry->dev, __entry->vm)
- );
+ static const struct soc_enum adcb_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
+ 			      ARRAY_SIZE(right_swap_text),
+ 			      right_swap_text,
+ 			      swap_values);
+@@ -380,7 +380,7 @@ static const struct snd_kcontrol_new adcb_mixer =
+ 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
  
- TRACE_EVENT(i915_gem_ring_sync_to,
+ static const struct soc_enum pcmb_swap_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
+ 			      ARRAY_SIZE(right_swap_text),
+ 			      right_swap_text,
+ 			      swap_values);
 -- 
 1.9.1
 
