@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaEBQBx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:01:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44119 "EHLO
+	id S1754445AbaEBQCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:02:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753698AbaEBPon (ORCPT
+	with ESMTP id S1753692AbaEBPol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:43 -0400
+	Fri, 2 May 2014 11:44:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 032/151] usb: gadget: atmel_usba: fix crashed during stopping when DEBUG is enabled
-Date: Fri,  2 May 2014 08:37:00 -0700
-Message-Id: <1399045139-4531-33-git-send-email-kamal@canonical.com>
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 041/151] iwlwifi: dvm: take mutex when sending SYNC BT config command
+Date: Fri,  2 May 2014 08:37:09 -0700
+Message-Id: <1399045139-4531-42-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,50 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
+commit 82e5a649453a3cf23516277abb84273768a1592b upstream.
 
-commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
-unbinding) introduced a crash when DEBUG is enabled.
+There is a flow in which we send the host command in SYNC
+mode, but we don't take priv->mutex.
 
-The debug trace in the atmel_usba_stop function made the assumption that the
-driver pointer passed in parameter was not NULL, but since the commit above,
-such assumption was no longer always true.
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1046495
 
-This commit now uses the driver pointer stored in udc which fixes this
-issue.
-
-[ balbi@ti.com : improved commit log a bit ]
-
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/gadget/atmel_usba_udc.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/main.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
-index 2cb52e0..1e53092 100644
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
- 	toggle_bias(0);
- 	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
+diff --git a/drivers/net/wireless/iwlwifi/dvm/main.c b/drivers/net/wireless/iwlwifi/dvm/main.c
+index 7aad766..ca9c4f1 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/main.c
++++ b/drivers/net/wireless/iwlwifi/dvm/main.c
+@@ -252,13 +252,17 @@ static void iwl_bg_bt_runtime_config(struct work_struct *work)
+ 	struct iwl_priv *priv =
+ 		container_of(work, struct iwl_priv, bt_runtime_config);
  
--	udc->driver = NULL;
--
- 	clk_disable_unprepare(udc->hclk);
- 	clk_disable_unprepare(udc->pclk);
++	mutex_lock(&priv->mutex);
+ 	if (test_bit(STATUS_EXIT_PENDING, &priv->status))
+-		return;
++		goto out;
  
--	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
-+	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
+ 	/* dont send host command if rf-kill is on */
+ 	if (!iwl_is_ready_rf(priv))
+-		return;
++		goto out;
 +
-+	udc->driver = NULL;
- 
- 	return 0;
+ 	iwlagn_send_advance_bt_config(priv);
++out:
++	mutex_unlock(&priv->mutex);
  }
+ 
+ static void iwl_bg_bt_full_concurrency(struct work_struct *work)
 -- 
 1.9.1
 
