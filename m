@@ -1,168 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaEBUAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:00:54 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52638 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750813AbaEBUAw (ORCPT
+	id S1753085AbaEBUB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:01:56 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:56287 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaEBUBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:00:52 -0400
-Message-ID: <5363F969.5060601@hurleysoftware.com>
-Date: Fri, 02 May 2014 16:00:41 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+	Fri, 2 May 2014 16:01:55 -0400
+Date: Fri, 2 May 2014 15:01:52 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rwsem: Comments to explain the meaning of the rwsem's
- count field
-References: <1398966637.2970.129.camel@schen9-DESK>	 <5362AC24.9050508@hurleysoftware.com> <1398985513.2970.141.camel@schen9-DESK>
-In-Reply-To: <1398985513.2970.141.camel@schen9-DESK>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] mm: zpool: implement zsmalloc shrinking
+Message-ID: <20140502200152.GA18670@cerebellum.variantweb.net>
+References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
+ <1397922764-1512-3-git-send-email-ddstreet@ieee.org>
+ <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 07:05 PM, Tim Chen wrote:
-> On Thu, 2014-05-01 at 16:18 -0400, Peter Hurley wrote:
->> On 05/01/2014 01:50 PM, Tim Chen wrote:
->>> It takes me a while to understand how rwsem's count field mainifest
->>> itself in different scenarios.  I'm adding comments to provide a quick
->>> reference on the the rwsem's count field for each scenario where readers
->>> and writers are contending/holding the lock.  Hopefully it will be useful
->>> for future maintenance of the code and for people to get up to speed on
->>> how the logic in the code works.
->>
->> Except there are a lot of transition states for the count that look like
->> stable states for some other condition, and vice versa.
->>
->> For example, 0xffff000X could be:
->> 1. stable state as described below.
->> 2. 1 or more (but not X) readers active,
->>      1 writer which failed to acquire and has not yet backed out the adjustment
->>      0 or more readers which failed to acquire because of the waiting writer
->>          and have not yet backed out
->> 3. 1 writer active,
->>      1 or more readers which failed to acquire because of the active writer and
->>          have not yet backed out
->> 4. maybe more states where a owning writer has just dropped the lock
->
-> Thanks for the feedback.  Yes, one thing I missed was to account for the
-> readers and writers who are actively attempting to lock by adding
-> ACTIVE_BIAS or ACTIVE_WRITE_BIAS to the count.  Once we account for
-> those we should take care of the transition states.
-> The revised comments also look at the readers and writers actively
-> attempting the lock.
->
->>
->> Because of this, it's hazardous to infer lock state except for the specific
->> existing tests (eg., the count observed by a failed reader after it has
->> acquired the wait_lock).
->
-> Thanks.
->
-> Tim
->
-> ---
->
-> It takes me quite a while to understand how rwsem's count field mainifest
-> itself in different scenarios.  I'm adding comments to provide a quick
-> reference on the the rwsem's count field for each scenario where readers
-> and writers are contending for the lock.  Hopefully it will be useful
-> for future maintenance of the code and for people to get up to speed on
-> how the logic in the code works.
->
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> ---
->   kernel/locking/rwsem-xadd.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
->   1 file changed, 48 insertions(+)
->
-> diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-> index 1d66e08..b92a403 100644
-> --- a/kernel/locking/rwsem-xadd.c
-> +++ b/kernel/locking/rwsem-xadd.c
-> @@ -12,6 +12,54 @@
->   #include <linux/export.h>
->
->   /*
-> + * Guide to the rw_semaphore's count field for common values.
-> + * (32 bit case illustrated, similar for 64 bit)
+On Sat, Apr 26, 2014 at 04:37:31PM +0800, Weijie Yang wrote:
+> On Sat, Apr 19, 2014 at 11:52 PM, Dan Streetman <ddstreet@ieee.org> wrote:
+> > Add zs_shrink() and helper functions to zsmalloc.  Update zsmalloc
+> > zs_create_pool() creation function to include ops param that provides
+> > an evict() function for use during shrinking.  Update helper function
+> > fix_fullness_group() to always reinsert changed zspages even if the
+> > fullness group did not change, so they are updated in the fullness
+> > group lru.  Also update zram to use the new zsmalloc pool creation
+> > function but pass NULL as the ops param, since zram does not use
+> > pool shrinking.
+> >
+> 
+> I only review the code without test, however, I think this patch is
+> not acceptable.
+> 
+> The biggest problem is it will call zswap_writeback_entry() under lock,
+> zswap_writeback_entry() may sleep, so it is a bug. see below
+> 
+> The 3/4 patch has a lot of #ifdef, I don't think it's a good kind of
+> abstract way.
+> 
+> What about just disable zswap reclaim when using zsmalloc?
 
-The values below are x86-specific; the actual defines are arch-dependent.
-Do other archs use different values?
+I agree here.  Making a generic allocator layer and zsmalloc reclaim
+support should be two different efforts, since zsmalloc reclaim is
+fraught with peril.
 
-> + *
-> + * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
-> + *		    X = #active_readers + #readers attempting to lock
-> + *		    (X*ACTIVE_BIAS)
+The generic layer can be done though, as long as you provide a way for
+the backend to indicate that it doesn't support reclaim, which just
+results in lru-inverse overflow to the swap device at the zswap layer.
+Hopefully, if the user overrides the default to use zsmalloc, they
+understand the implications and have sized their workload properly.
 
-Not sure it matters, but maybe you want to note that it's possible for 0 readers
-to be active with this value, and all of the other readers may have initially
-failed to claim the lock but may be successful if one can claim the wait_lock while
-the count is still > 0.
+Also, the fallback logic shouldn't be in this generic layer.  It should
+not be transparent to the user.  The user (in this case zswap) should
+implement the fallback if they care to have it.  The generic allocator
+layer makes it trivial for the user to implement.
 
-> + *
-> + * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
-> + *		attempting to read lock or write lock.
-> + *
-> + * 0xffff000X	(1) X readers active or attempt lock, there are waiters for lock
-> + *		    X = #active readers + # readers attempting lock
-> + *		    (X*ACTIVE_BIAS + WAITING_BIAS)
-> + *		(2) 1 writer attempting lock, no waiters for lock
-> + *		    X-1 = #active readers + #readers attempting lock
-> + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-> + *		(3) 1 writer active, no waiters for lock
-> + *		    X-1 = #active readers + #readers attempting lock
-> + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-> + *
-> + * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
-> + *		    (WAITING_BIAS + ACTIVE_BIAS)
-> + *		(2) 1 writer active or attempt lock, no waiters for lock
-> + *		    (ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-> + *
-> + * 0xffff0000	(1) There are writers or readers queued but none active
-> + *		    or in the process of attempting lock.
-> + *		    (WAITING_BIAS)
-> + *		Note: writer can attempt to steal lock for this count by adding
-> + *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
-> + *
-> + * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
-> + *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
-
-The count can have more values than just 0xfffe0001 because multiple
-failed write lock attempts plus failed read lock attempts can produce other
-values than those listed.
-
-Regards,
-Peter Hurley
-
-> + *
-> + * Note: Reader attempt to lock by adding ACTIVE_BIAS in down_read and checking
-> + *	 the count becomes more than 0, i.e. the case where there are only
-> + *	 readers or no body has lock. (1st and 2nd case above)
-> + *
-> + *	 Writer attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
-> + *	 checking the count becomes ACTIVE_WRITE_BIAS for succesful lock
-> + *	 acquisition (i.e. nobody else has lock or attempts lock).  If
-> + *	 unsuccessful, in rwsem_down_write_failed, we'll check to see if there
-> + *	 are only waiters but none active (5th case above), and attempt to
-> + *	 steal the lock.
-> + *
-> + */
-> +
-> +/*
->    * Initialize an rwsem:
->    */
->   void __init_rwsem(struct rw_semaphore *sem, const char *name,
->
-
+Thanks,
+Seth
