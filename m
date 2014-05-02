@@ -1,136 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaEBPEu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:04:50 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60170 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795AbaEBPEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:04:48 -0400
-Date: Fri, 2 May 2014 11:04:34 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
-Message-ID: <20140502150434.GM23420@cmpxchg.org>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <1398688005-26207-2-git-send-email-mhocko@suse.cz>
- <20140430225550.GD26041@cmpxchg.org>
- <20140502093628.GC3446@dhcp22.suse.cz>
- <20140502120715.GI3446@dhcp22.suse.cz>
- <20140502130118.GK23420@cmpxchg.org>
- <20140502141515.GJ3446@dhcp22.suse.cz>
+	id S1752668AbaEBPFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:05:46 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59515 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751636AbaEBPFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:05:45 -0400
+Message-ID: <5363B446.7010101@hurleysoftware.com>
+Date: Fri, 02 May 2014 11:05:42 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502141515.GJ3446@dhcp22.suse.cz>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 2/2] tty: Fix lockless tty buffer race
+References: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com> <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 04:15:15PM +0200, Michal Hocko wrote:
-> On Fri 02-05-14 09:01:18, Johannes Weiner wrote:
-> > On Fri, May 02, 2014 at 02:07:15PM +0200, Michal Hocko wrote:
-> > > On Fri 02-05-14 11:36:28, Michal Hocko wrote:
-> > > > On Wed 30-04-14 18:55:50, Johannes Weiner wrote:
-> > > > > On Mon, Apr 28, 2014 at 02:26:42PM +0200, Michal Hocko wrote:
-> > > > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > > > index 19d620b3d69c..40e517630138 100644
-> > > > > > --- a/mm/memcontrol.c
-> > > > > > +++ b/mm/memcontrol.c
-> > > > > > @@ -2808,6 +2808,29 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-> > > > > >  	return mem_cgroup_from_id(id);
-> > > > > >  }
-> > > > > >  
-> > > > > > +/**
-> > > > > > + * mem_cgroup_reclaim_eligible - checks whether given memcg is eligible for the
-> > > > > > + * reclaim
-> > > > > > + * @memcg: target memcg for the reclaim
-> > > > > > + * @root: root of the reclaim hierarchy (null for the global reclaim)
-> > > > > > + *
-> > > > > > + * The given group is reclaimable if it is above its low limit and the same
-> > > > > > + * applies for all parents up the hierarchy until root (including).
-> > > > > > + */
-> > > > > > +bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
-> > > > > > +		struct mem_cgroup *root)
-> > > > > 
-> > > > > Could you please rename this to something that is more descriptive in
-> > > > > the reclaim callsite?  How about mem_cgroup_within_low_limit()?
-> > > > 
-> > > > I have intentionally used somethig that is not low_limit specific. The
-> > > > generic reclaim code does't have to care about the reason why a memcg is
-> > > > not reclaimable. I agree that having follow_low_limit paramter explicit
-> > > > and mem_cgroup_reclaim_eligible not is messy. So something should be
-> > > > renamed. I would probably go with s@follow_low_limit@check_reclaim_eligible@
-> > > > but I do not have a strong preference.
-> > > 
-> > > What about this?
-> > 
-> > I really don't like it.
-> > 
-> > Yes, we should be hiding implementation details, but we should stop
-> > treating memcg like an alien in this code.  The VM code obviously
-> > doesn't have to know HOW the guarantees are exactly implemented, but
-> > it's a perfectly fine *concept* that can be known outside of memcg:
-> > 
-> > shrink_zone:
-> > for each memcg in system:
-> >   if mem_cgroup_within_guarantee(memcg):
-> >     continue
-> >   reclaim(memcg-zone)
-> > 
-> > is perfectly understandable and makes it easier to reason about the
-> > behavior of the reclaim code.  If I just see !mem_cgroup_eligible(), I
-> > don't know if this affects the scenario I'm thinking about at all.
-> > 
-> > It's obscuring useful information for absolutely no benefit.  If you
-> > burden the reclaim code with a callback, you better explain what you
-> > are doing.  You owe it to the reader.
-> 
-> OK fair enough, what about the following?
+On 05/02/2014 10:56 AM, Peter Hurley wrote:
+> Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
+> "tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
+> correctly identifies an unsafe race condition between
+> __tty_buffer_request_room() and flush_to_ldisc(), where the consumer
+> flush_to_ldisc() prematurely advances the head before consuming the
+> last of the data committed. For example:
+>
+>             CPU 0                     |            CPU 1
+> __tty_buffer_request_room            | flush_to_ldisc
+>    ...                                |   ...
+>                                       |   count = head->commit - head->read
+>    n = tty_buffer_alloc()             |
+>    b->commit = b->used                |
+>    b->next = n                        |
+>                                       |   if (!count)                /* T */
+>                                       |     if (head->next == NULL)  /* F */
+>                                       |     buf->head = head->next
+>
+> In this case, buf->head has been advanced but head->commit may have
+> been updated with a new value.
+>
+> Instead of reintroducing an unnecessary lock, fix the race locklessly.
+> Read the commit-next pair in the reverse order of writing, which guarantees
+> the commit value read is the latest value written if the head is
+> advancing.
+>
+> Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+> Cc: <stable@vger.kernel.org> # 3.12.x+
 
-Thanks, that's much better IMO.
+The patch submitted by Manfred notes the commits which introduced the
+race [1], but attributes those commits to the 3.11 cycle. Those commits
+were merged in the 3.12 cycle.
 
-> @@ -2215,8 +2215,18 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  	}
->  }
->  
-> +/**
-> + * __shrink_zone - shrinks a given zone
-> + *
-> + * @zone: zone to shrink
-> + * @sc: scan control with additional reclaim parameters
-> + * @force_memcg_guarantee: do not reclaim memcgs which are within their memory
-> + * guarantee
-> + *
-> + * Returns the number of reclaimed memcgs.
-> + */
->  static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
-> -		bool follow_low_limit)
-> +		bool force_memcg_guarantee)
->  {
->  	unsigned long nr_reclaimed, nr_scanned;
->  	unsigned nr_scanned_groups = 0;
-> @@ -2236,12 +2246,9 @@ static unsigned __shrink_zone(struct zone *zone, struct scan_control *sc,
->  		do {
->  			struct lruvec *lruvec;
->  
-> -			/*
-> -			 * Memcg might be under its low limit so we have to
-> -			 * skip it during the first reclaim round
-> -			 */
-> -			if (follow_low_limit &&
-> -					!mem_cgroup_reclaim_eligible(memcg, root)) {
-> +			/* Memcg might be protected from the reclaim */
-> +			if (force_memcg_guarantee &&
+Regards,
+Peter Hurley
 
-respect_?  consider_?
-
-force sounds like something the second round would do -- force reclaim
-despite guarantees...  But then again, I'm still for removing that 2nd
-force cycle, so I don't care too strongly about that name (yet) :-)
+[1] commits e8437d7ecbc50198705331449367d401ebb3181f,
+"tty: Make driver-side flip buffers lockless", and
+e9975fdec0138f1b2a85b9624e41660abd9865d4,
+"tty: Ensure single-threaded flip buffer consumer with mutex"
