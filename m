@@ -1,90 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaEBR1k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 13:27:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42567 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842AbaEBR1j (ORCPT
+	id S1752875AbaEBRcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 13:32:16 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:6371 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbaEBRcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 13:27:39 -0400
-Date: Fri, 2 May 2014 19:27:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-Message-ID: <20140502172731.GK30445@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu>
- <20140501150948.GR11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
- <20140502154217.GW11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
- <20140502162234.GX11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O3RTKUHj+75w1tg5"
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 2 May 2014 13:32:14 -0400
+Message-ID: <1399051423.1789.93.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 3/5] acpi_processor: do not mark present at boot but
+ not onlined CPU as onlined
+From: Toshi Kani <toshi.kani@hp.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Date: Fri, 02 May 2014 11:23:43 -0600
+In-Reply-To: <20140502133219.5de5c683@nial.usersys.redhat.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	 <1397488277-14865-4-git-send-email-imammedo@redhat.com>
+	 <1398893151.1789.46.camel@misato.fc.hp.com>
+	 <20140502133219.5de5c683@nial.usersys.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-05-02 at 13:32 +0200, Igor Mammedov wrote:
+> On Wed, 30 Apr 2014 15:25:51 -0600
+> Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
+> > > acpi_processor_add() assumes that present at boot CPUs
+> > > are always onlined, it is not so if a CPU failed to become
+> > > onlined. As result acpi_processor_add() will mark such CPU
+> > > device as onlined in sysfs and following attempts to
+> > > online/offline it using /sys/device/system/cpu/cpuX/online
+> > > attribute will fail.
+> > > 
+> > > Do not poke into device internals in acpi_processor_add()
+> > > and touch "struct device { .offline }" attribute, since
+> > > for CPUs onlined at boot it's set by:
+> > >   topology_init() -> arch_register_cpu() -> register_cpu()
+> > > before ACPI device tree is parsed, and for hotplugged
+> > > CPUs it's set when userspace onlines CPU via sysfs.
+> > > 
+> > > Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> > > ---
+> > > v2:
+> > >  - fix regression in v1 leading to NULL pointer dereference
+> > >    on CPU unplug, do not remove "pr->dev = dev;"
+> > > ---
+> > >  drivers/acpi/acpi_processor.c |    1 -
+> > >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> > > index c29c2c3..42d66f8 100644
+> > > --- a/drivers/acpi/acpi_processor.c
+> > > +++ b/drivers/acpi/acpi_processor.c:q
+> > > @@ -404,7 +404,6 @@ static int acpi_processor_add(struct acpi_device *device,
+> > >  		goto err;
+> > >  
+> > >  	pr->dev = dev;
+> > > -	dev->offline = pr->flags.need_hotplug_init;
+> > 
+> > IIRC, this change was necessary to handle the case when maxcpus=X is
+> > specified at boot.  In this case, excessive CPU's dev->offline needs to
+> > be set to 1.  Can you verify this?
+> Option 'maxcpus' works just fine without and with this patch since a bit
+> earlier in acpi_processor_add() it exits in case of extra present CPUs:
+> 
+> #ifdef CONFIG_SMP
+>         if (pr->id >= setup_max_cpus && pr->id != 0)
+>                 return 0;
+> #endif
+> 
+> and execution doesn't get to the point the patch touches.
 
---O3RTKUHj+75w1tg5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a separate topic, but I feel that the above code should not be
+necessary...
 
-On Fri, May 02, 2014 at 12:43:17PM -0400, Vince Weaver wrote:
-> On Fri, 2 May 2014, Peter Zijlstra wrote:
->=20
-> > In principle the vfs file refcounting should be responsible for that.
-> > But I'll go over it in a bit.
->=20
-> The poll code is ancient and the C-parser in my head really can't handle=
-=20
-> it very well.
+> The point is that acpi_processor_add() shouldn't touch
+> dev->offline at all and allow register_cpu() handle it.
 
-Yeah, that code isn't my favourite part either..
+Sorry, I had confused with cpu->dev.offline in register_cpu() in my
+recollection.  Yes, I agree that we should let register_cpu() to handle
+it.
 
-> Anyway for completeness this is the kind of thing I'm seeing.
-> The poll() manpage isn't very clear about what is supposed to happen if=
-=20
-> you poll() on a closed file descriptor.
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-              POLLNVAL
-                     Invalid request: fd not open (output only).
-
-Seems applicable..
+Thanks,
+-Toshi
 
 
-Also, could you send your entire diff this way so we're more or less
-staring at the same code again?
 
---O3RTKUHj+75w1tg5
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTY9WDAAoJEHZH4aRLwOS6S/YP/RCm4ORSvaUT+pPnkOHYqNBa
-QbZgUX7CVKxdBxuzW8T4d7obmU9M3H8KfJvy458Af9ZJlNuJQABhlWhQieB2s3a2
-8aHPRF4aMFc7z0LpS9ddLl1cJ+5NyOVoOMGbm7LxmGIY6OLQRh5F+/9TtFOQL7k/
-5GrgqvoQeerjFvCkL7ZrCb+osVNV+5DEApBKll9tr0sZatPYgSWIXlPmIyNcFESh
-eh6lQbX1WEfiLC2D41XncoMaCEi/Tt4S1+GSWyYrmgrww7VxYHiEYgJCA3nyrC6i
-MWEoh2d6FN3f4C9pIld2s/rT61/cnbzu4aKLr1TbJUDOIVrpoCnDnoizTTKyetGD
-yAs8DZGFVbI0JVZNY0asVkvVJqkHd2Iz4BYMphKMSuZdlBBT5H1Q1KAKwRwxYtK+
-SJ5AljFC8e1Vrl8h+y79hPZZQO4DY6XpA3KNuvx5coWyV8/WMyyZum8oEBQYw2Bm
-XwRcqPoHnFiEdXBiitpE7epxNQj3nvKPq9gUgkCmopN05xdIJ7hH1IctM5HQxkUD
-d5cb1gMwpQuATH02n0WKGVR92YM3QsVdmh4rXQ6M5DwMmKAJ7GAWhDgjco3k3Fij
-TZlYG4Q71rF2XptOXEXrLofecamSnkCo3NDkDwQVThl7UurBmQiF3gnbQMC0U46D
-E4QMgXSyDYvFcA8aW03z
-=RVWw
------END PGP SIGNATURE-----
-
---O3RTKUHj+75w1tg5--
