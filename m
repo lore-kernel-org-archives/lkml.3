@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaEBPyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:54:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44266 "EHLO
+	id S1753928AbaEBPpn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:45:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44250 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaEBPpq (ORCPT
+	with ESMTP id S1753898AbaEBPpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:45:46 -0400
+	Fri, 2 May 2014 11:45:39 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Allan McRae <allan@archlinux.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 131/151] drm/i915: move power domain init earlier during system resume
-Date: Fri,  2 May 2014 08:38:39 -0700
-Message-Id: <1399045139-4531-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 130/151] xattr: guard against simultaneous glibc header inclusion
+Date: Fri,  2 May 2014 08:38:38 -0700
+Message-Id: <1399045139-4531-131-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,223 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Imre Deak <imre.deak@intel.com>
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
 
-commit 76c4b250080fff6e4befaa3619942422fd0ea380 upstream.
+commit ea1a8217b06b41b31a2b60b0b83f75c77ef9c873 upstream.
 
-During resume the intel hda audio driver depends on the i915 driver
-reinitializing the audio power domain. Since the order of calling the
-i915 resume handler wrt. that of the audio driver is not guaranteed,
-move the power domain reinitialization step to the resume_early
-handler. This is guaranteed to run before the resume handler of any
-other driver.
+If the glibc xattr.h header is included after the uapi header,
+compilation fails due to an enum re-using a #define from the uapi
+header.
 
-The power domain initialization in turn requires us to enable the i915
-pci device first, so move that part earlier too.
+Protect against this by guarding the define and enum inclusions against
+each other.
 
-Accordingly disabling of the i915 pci device should happen after the
-audio suspend handler ran. So move the disabling later from the i915
-resume handler to the resume_late handler.
+(See https://lists.debian.org/debian-glibc/2014/03/msg00029.html
+and https://sourceware.org/glibc/wiki/Synchronizing_Headers
+for more information.)
 
-v2:
-- move intel_uncore_sanitize/early_sanitize earlier too, so they don't
-  get reordered wrt. intel_power_domains_init_hw()
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76152
-Signed-off-by: Imre Deak <imre.deak@intel.com>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-[danvet: Add cc: stable and loud comments that this is just a hack.]
-[danvet: Fix "Should it be static?" sparse warning reported by Wu
-Fengguang's kbuilder.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.13: intel_power_domains_init_hw(dev) not (dev_priv) ]
+Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Allan McRae <allan@archlinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_drv.c | 90 ++++++++++++++++++++++++++++++++++-------
- 1 file changed, 75 insertions(+), 15 deletions(-)
+ include/uapi/linux/libc-compat.h | 9 +++++++++
+ include/uapi/linux/xattr.h       | 7 +++++++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 197bb83..e09a314 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -610,15 +610,20 @@ static void intel_resume_hotplug(struct drm_device *dev)
- 	drm_helper_hpd_irq_event(dev);
- }
+diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
+index 335e8a7..c140620 100644
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -85,6 +85,12 @@
  
-+static int i915_drm_thaw_early(struct drm_device *dev)
-+{
-+	intel_uncore_early_sanitize(dev);
-+	intel_uncore_sanitize(dev);
-+	intel_power_domains_init_hw(dev);
+ #endif /* _NETINET_IN_H */
+ 
++/* Definitions for xattr.h */
++#if defined(_SYS_XATTR_H)
++#define __UAPI_DEF_XATTR		0
++#else
++#define __UAPI_DEF_XATTR		1
++#endif
+ 
+ /* If we did not see any headers from any supported C libraries,
+  * or we are being included in the kernel, then define everything
+@@ -98,6 +104,9 @@
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
+ 
++/* Definitions for xattr.h */
++#define __UAPI_DEF_XATTR		1
 +
-+	return 0;
-+}
+ #endif /* __GLIBC__ */
+ 
+ #endif /* _UAPI_LIBC_COMPAT_H */
+diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
+index e4629b9..a63c146 100644
+--- a/include/uapi/linux/xattr.h
++++ b/include/uapi/linux/xattr.h
+@@ -7,11 +7,18 @@
+   Copyright (c) 2001-2002 Silicon Graphics, Inc.  All Rights Reserved.
+   Copyright (c) 2004 Red Hat, Inc., James Morris <jmorris@redhat.com>
+ */
 +
- static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int error = 0;
- 
--	intel_uncore_early_sanitize(dev);
--
--	intel_uncore_sanitize(dev);
--
- 	if (drm_core_check_feature(dev, DRIVER_MODESET) &&
- 	    restore_gtt_mappings) {
- 		mutex_lock(&dev->struct_mutex);
-@@ -626,8 +631,6 @@ static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
- 		mutex_unlock(&dev->struct_mutex);
- 	}
- 
--	intel_power_domains_init_hw(dev);
--
- 	i915_restore_state(dev);
- 	intel_opregion_setup(dev);
- 
-@@ -694,19 +697,33 @@ static int i915_drm_thaw(struct drm_device *dev)
- 	return __i915_drm_thaw(dev, true);
- }
- 
--int i915_resume(struct drm_device *dev)
-+static int i915_resume_early(struct drm_device *dev)
- {
--	struct drm_i915_private *dev_priv = dev->dev_private;
--	int ret;
--
- 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
-+	/*
-+	 * We have a resume ordering issue with the snd-hda driver also
-+	 * requiring our device to be power up. Due to the lack of a
-+	 * parent/child relationship we currently solve this with an early
-+	 * resume hook.
-+	 *
-+	 * FIXME: This should be solved with a special hdmi sink device or
-+	 * similar so that power domains can be employed.
-+	 */
- 	if (pci_enable_device(dev->pdev))
- 		return -EIO;
- 
- 	pci_set_master(dev->pdev);
- 
-+	return i915_drm_thaw_early(dev);
-+}
++#include <linux/libc-compat.h>
 +
-+int i915_resume(struct drm_device *dev)
-+{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int ret;
+ #ifndef _UAPI_LINUX_XATTR_H
+ #define _UAPI_LINUX_XATTR_H
+ 
++#ifdef __UAPI_DEF_XATTR
++#define __USE_KERNEL_XATTR_DEFS
 +
- 	/*
- 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
- 	 * earlier) need to restore the GTT mappings since the BIOS might clear
-@@ -720,6 +737,14 @@ int i915_resume(struct drm_device *dev)
- 	return 0;
- }
+ #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
+ #define XATTR_REPLACE	0x2	/* set value, fail if attr does not exist */
++#endif
  
-+static int i915_resume_legacy(struct drm_device *dev)
-+{
-+	i915_resume_early(dev);
-+	i915_resume(dev);
-+
-+	return 0;
-+}
-+
- /**
-  * i915_reset - reset chip after a hang
-  * @dev: drm device to reset
-@@ -853,7 +878,6 @@ static int i915_pm_suspend(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
- 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
--	int error;
- 
- 	if (!drm_dev || !drm_dev->dev_private) {
- 		dev_err(dev, "DRM not initialized, aborting suspend.\n");
-@@ -863,9 +887,25 @@ static int i915_pm_suspend(struct device *dev)
- 	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
- 		return 0;
- 
--	error = i915_drm_freeze(drm_dev);
--	if (error)
--		return error;
-+	return i915_drm_freeze(drm_dev);
-+}
-+
-+static int i915_pm_suspend_late(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	/*
-+	 * We have a suspedn ordering issue with the snd-hda driver also
-+	 * requiring our device to be power up. Due to the lack of a
-+	 * parent/child relationship we currently solve this with an late
-+	 * suspend hook.
-+	 *
-+	 * FIXME: This should be solved with a special hdmi sink device or
-+	 * similar so that power domains can be employed.
-+	 */
-+	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
-+		return 0;
- 
- 	pci_disable_device(pdev);
- 	pci_set_power_state(pdev, PCI_D3hot);
-@@ -873,6 +913,14 @@ static int i915_pm_suspend(struct device *dev)
- 	return 0;
- }
- 
-+static int i915_pm_resume_early(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	return i915_resume_early(drm_dev);
-+}
-+
- static int i915_pm_resume(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -894,6 +942,14 @@ static int i915_pm_freeze(struct device *dev)
- 	return i915_drm_freeze(drm_dev);
- }
- 
-+static int i915_pm_thaw_early(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+
-+	return i915_drm_thaw_early(drm_dev);
-+}
-+
- static int i915_pm_thaw(struct device *dev)
- {
- 	struct pci_dev *pdev = to_pci_dev(dev);
-@@ -912,10 +968,14 @@ static int i915_pm_poweroff(struct device *dev)
- 
- static const struct dev_pm_ops i915_pm_ops = {
- 	.suspend = i915_pm_suspend,
-+	.suspend_late = i915_pm_suspend_late,
-+	.resume_early = i915_pm_resume_early,
- 	.resume = i915_pm_resume,
- 	.freeze = i915_pm_freeze,
-+	.thaw_early = i915_pm_thaw_early,
- 	.thaw = i915_pm_thaw,
- 	.poweroff = i915_pm_poweroff,
-+	.restore_early = i915_pm_resume_early,
- 	.restore = i915_pm_resume,
- };
- 
-@@ -956,7 +1016,7 @@ static struct drm_driver driver = {
- 
- 	/* Used in place of i915_pm_ops for non-DRIVER_MODESET */
- 	.suspend = i915_suspend,
--	.resume = i915_resume,
-+	.resume = i915_resume_legacy,
- 
- 	.device_is_agp = i915_driver_device_is_agp,
- 	.master_create = i915_master_create,
+ /* Namespaces */
+ #define XATTR_OS2_PREFIX "os2."
 -- 
 1.9.1
 
