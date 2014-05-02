@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaEBQZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:25:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43683 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaEBPjS (ORCPT
+	id S1754945AbaEBQ0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:26:15 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:10309 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753373AbaEBQ0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:18 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Mikulas Patocka <mpatocka@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/151] __dentry_path() fixes
-Date: Fri,  2 May 2014 08:36:31 -0700
-Message-Id: <1399045139-4531-4-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 2 May 2014 12:26:13 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqgaAIXBY1NbsmU4/2dsb2JhbABagwarXwMBAQEBAQEEAZoBAgKBEBd0glMTHCMYgQIkE4hFAcpEhVaIfIRAAQOPFooZAZJvgzY7
+Date: Fri, 2 May 2014 18:28:17 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 1/1] block/blk-throttle.c: fix return of 0/1 with return
+ type bool
+Message-Id: <20140502182817.acc69a0ac05575c25311d2c6@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+Fix 4 coccinelle warnings.
 
-------------------
-
-From: Al Viro <viro@zeniv.linux.org.uk>
-
-commit f6500801522c61782d4990fa1ad96154cb397cd4 upstream.
-
-* we need to save the starting point for restarts
-* reject pathologically short buffers outright
-
-Spotted-by: Denys Vlasenko <dvlasenk@redhat.com>
-Spotted-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- fs/dcache.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ block/blk-throttle.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index f7ad6d7..ca02c13 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -3116,19 +3116,22 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
- /*
-  * Write full pathname from the root of the filesystem into the buffer.
-  */
--static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
-+static char *__dentry_path(struct dentry *d, char *buf, int buflen)
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 033745c..366b1d8 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -744,7 +744,7 @@ static inline void throtl_extend_slice(struct throtl_grp *tg, bool rw,
+ static bool throtl_slice_used(struct throtl_grp *tg, bool rw)
  {
-+	struct dentry *dentry;
- 	char *end, *retval;
- 	int len, seq = 0;
- 	int error = 0;
+ 	if (time_in_range(jiffies, tg->slice_start[rw], tg->slice_end[rw]))
+-		return 0;
++		return false;
  
-+	if (buflen < 2)
-+		goto Elong;
-+
- 	rcu_read_lock();
- restart:
-+	dentry = d;
- 	end = buf + buflen;
- 	len = buflen;
- 	prepend(&end, &len, "\0", 1);
--	if (buflen < 1)
--		goto Elong;
- 	/* Get '/' right */
- 	retval = end-1;
- 	*retval = '/';
+ 	return 1;
+ }
+@@ -842,7 +842,7 @@ static bool tg_with_in_iops_limit(struct throtl_grp *tg, struct bio *bio,
+ 	if (tg->io_disp[rw] + 1 <= io_allowed) {
+ 		if (wait)
+ 			*wait = 0;
+-		return 1;
++		return true;
+ 	}
+ 
+ 	/* Calc approx time to dispatch */
+@@ -880,7 +880,7 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
+ 	if (tg->bytes_disp[rw] + bio->bi_iter.bi_size <= bytes_allowed) {
+ 		if (wait)
+ 			*wait = 0;
+-		return 1;
++		return true;
+ 	}
+ 
+ 	/* Calc approx time to dispatch */
+@@ -923,7 +923,7 @@ static bool tg_may_dispatch(struct throtl_grp *tg, struct bio *bio,
+ 	if (tg->bps[rw] == -1 && tg->iops[rw] == -1) {
+ 		if (wait)
+ 			*wait = 0;
+-		return 1;
++		return true;
+ 	}
+ 
+ 	/*
 -- 
-1.9.1
+1.8.4.5
 
