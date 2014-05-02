@@ -1,112 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaEBJPj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:15:39 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:45400 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaEBJPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:15:37 -0400
-From: Sheetal Tigadoli <sheetal.tigadoli@gmail.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, Sheetal T <sheetal.tigadoli@gmail.com>
-Subject: [PATCH] Fixes Coding Style Warnings
-Date: Fri,  2 May 2014 14:44:52 +0530
-Message-Id: <1399022092-9311-2-git-send-email-sheetal.tigadoli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1399022092-9311-1-git-send-email-sheetal.tigadoli@gmail.com>
-References: <1399022092-9311-1-git-send-email-sheetal.tigadoli@gmail.com>
+	id S1751874AbaEBJQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:16:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47875 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaEBJQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 05:16:44 -0400
+Date: Fri, 2 May 2014 11:16:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, sandeen@redhat.com,
+        jweiner@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        fengguang.wu@intel.com, mpatlasov@parallels.com,
+        Motohiro.Kosaki@us.fujitsu.com
+Subject: Re: [PATCH v5] mm,writeback: fix divide by zero in pos_ratio_polynom
+Message-ID: <20140502091641.GB3446@dhcp22.suse.cz>
+References: <5360C9E7.6010701@jp.fujitsu.com>
+ <20140430093035.7e7226f2@annuminas.surriel.com>
+ <20140430134826.GH4357@dhcp22.suse.cz>
+ <20140430104114.4bdc588e@cuia.bos.redhat.com>
+ <20140430120001.b4b95061ac7252a976b8a179@linux-foundation.org>
+ <53614F3C.8020009@redhat.com>
+ <20140430123526.bc6a229c1ea4addad1fb483d@linux-foundation.org>
+ <20140430160218.442863e0@cuia.bos.redhat.com>
+ <20140430131353.fa9f49604ea39425bc93c24a@linux-foundation.org>
+ <20140430164255.7a753a8e@cuia.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430164255.7a753a8e@cuia.bos.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sheetal T <sheetal.tigadoli@gmail.com>
+On Wed 30-04-14 16:42:55, Rik van Riel wrote:
+> On Wed, 30 Apr 2014 13:13:53 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > This was a consequence of 64->32 truncation and it can't happen any
+> > more, can it?
+> 
+> Andrew, this is cleaner indeed :)
+> 
+> Masayoshi-san, does the bug still happen with this version, or does
+> this fix the problem?
+> 
+> ---8<---
+> 
+> Subject: mm,writeback: fix divide by zero in pos_ratio_polynom
+> 
+> It is possible for "limit - setpoint + 1" to equal zero, after
+> getting truncated to a 32 bit variable, and resulting in a divide
+> by zero error.
+> 
+> Using the fully 64 bit divide functions avoids this problem.
+> 
+> Also uninline pos_ratio_polynom, at Andrew's request.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Sheetal T <sheetal.tigadoli@gmail.com>
----
- drivers/staging/comedi/drivers/das08.h |   56 +++++++++++++++++---------------
- 1 file changed, 30 insertions(+), 26 deletions(-)
+This looks much better.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/staging/comedi/drivers/das08.h b/drivers/staging/comedi/drivers/das08.h
-index 2a30d76..cc730ff 100644
---- a/drivers/staging/comedi/drivers/das08.h
-+++ b/drivers/staging/comedi/drivers/das08.h
-@@ -1,25 +1,24 @@
- /*
--    das08.h
--
--    Header for das08.c and das08_cs.c
--
--    Copyright (C) 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
--
--    This program is free software; you can redistribute it and/or modify
--    it under the terms of the GNU General Public License as published by
--    the Free Software Foundation; either version 2 of the License, or
--    (at your option) any later version.
--
--    This program is distributed in the hope that it will be useful,
--    but WITHOUT ANY WARRANTY; without even the implied warranty of
--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--    GNU General Public License for more details.
--
--    You should have received a copy of the GNU General Public License
--    along with this program; if not, write to the Free Software
--    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
--
--*/
-+ *  das08.h
-+ *
-+ *  Header for das08.c and das08_cs.c
-+ *
-+ *  Copyright (C) 2003 Frank Mori Hess <fmhess@users.sourceforge.net>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
- 
- #ifndef _DAS08_H
- #define _DAS08_H
-@@ -50,7 +49,8 @@ struct das08_board_struct {
- };
- 
- struct i8254_struct {
--	int channels;		/*  available channels. Some could be used internally. */
-+	int channels;		/*  available channels.
-+				    Some could be used internally. */
- 	int logic2phys[3];	/*  to know which physical channel is. */
- 	int mode[3];		/*  the index is the real counter. */
- 	unsigned int iobase;
-@@ -62,11 +62,15 @@ struct i8254_struct {
- #define I8254_CTRL 3
- 
- struct das08_private_struct {
--	unsigned int do_mux_bits;	/*  bits for do/mux register on boards without separate do register */
--	unsigned int do_bits;	/*  bits for do register on boards with register dedicated to digital out only */
-+	unsigned int do_mux_bits;	/*  bits for do/mux register on boards
-+					    without separate do register */
-+	unsigned int do_bits;		/*  bits for do register on boards with
-+					    register dedicated to digital out
-+					    only */
- 	const unsigned int *pg_gainlist;
--	struct pci_dev *pdev;	/*  struct for pci-das08 */
--	unsigned int pci_iobase;	/*  additional base address for pci-das08 */
-+	struct pci_dev *pdev;		/*  struct for pci-das08 */
-+	unsigned int pci_iobase;	/*  additional base address for
-+					    pci-das08 */
- 	struct i8254_struct i8254;
- };
- 
+> ---
+>  mm/page-writeback.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index ef41349..a4317da 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -593,14 +593,14 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+>   * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
+>   *     => fast response on large errors; small oscillation near setpoint
+>   */
+> -static inline long long pos_ratio_polynom(unsigned long setpoint,
+> +static long long pos_ratio_polynom(unsigned long setpoint,
+>  					  unsigned long dirty,
+>  					  unsigned long limit)
+>  {
+>  	long long pos_ratio;
+>  	long x;
+>  
+> -	x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+> +	x = div64_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
+>  		    limit - setpoint + 1);
+>  	pos_ratio = x;
+>  	pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
+> @@ -842,7 +842,7 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+>  	x_intercept = bdi_setpoint + span;
+>  
+>  	if (bdi_dirty < x_intercept - span / 4) {
+> -		pos_ratio = div_u64(pos_ratio * (x_intercept - bdi_dirty),
+> +		pos_ratio = div64_u64(pos_ratio * (x_intercept - bdi_dirty),
+>  				    x_intercept - bdi_setpoint + 1);
+>  	} else
+>  		pos_ratio /= 4;
+> 
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
