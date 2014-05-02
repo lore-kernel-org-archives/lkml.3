@@ -1,46 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaEBVHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 17:07:16 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:38136 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaEBVHO (ORCPT
+	id S1753201AbaEBVIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 17:08:20 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:46599 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaEBVIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 17:07:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrW+vAuUq834kjo7Ot8JYqDqAdOts78oasm0vPP1wURnWg@mail.gmail.com>
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
-	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
-	<CA+55aFygkoYnJKdLas3WOq9q9pCEEk6mBOuj-zbLyLumdhStAA@mail.gmail.com>
-	<alpine.DEB.2.02.1405022222570.6261@ionos.tec.linutronix.de>
-	<CA+55aFyZr3YrNm1+p4XstNx-NY71LMuP1GyTeqettSdR2CufqQ@mail.gmail.com>
-	<CALCETrW+vAuUq834kjo7Ot8JYqDqAdOts78oasm0vPP1wURnWg@mail.gmail.com>
-Date: Fri, 2 May 2014 14:07:13 -0700
-X-Google-Sender-Auth: PE61NX_y97q066CJ5c5uLpWZWIk
-Message-ID: <CA+55aFzQiryYPsUTK-yS_rt=MGtzJZBBrj3waGq6Ez3GUqfMnw@mail.gmail.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 2 May 2014 17:08:18 -0400
+Date: Fri, 2 May 2014 23:08:13 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
+References: <20140429191015.GK18016@ZenIV.linux.org.uk>
+ <20140429211851.GA32204@dastard>
+ <20140429214842.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+ <20140429232013.GM18016@ZenIV.linux.org.uk>
+ <20140430023142.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+ <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
+ <20140502055127.GH18016@ZenIV.linux.org.uk>
+ <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 2:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> Because otherwise I'd have to keep track of whether it's a zeroentry
-> or an errorentry.  I can't stuff the offset in a register without even
-> more stack hackery, since there are no available registers there.  I
-> could split the whole thing into two code paths, I guess.
+There's more of the "delete from shrink list not owned by us" in select parent.
+Proposed patch appended.
 
-Ahh. Never mind. I didn't think about the fact that the error entry
-case had one more field on the stack. Your approach is all fine, it
-was me not seeing the problem.
+And I'm not sure what umount_collect() is supposed to do.  Can other shrinkers
+still be active at that point?  That would present other problems, no?
 
-          Linus
+Also somewhat related is the question: how check_submounts_and_drop() could be
+guaranteed correctness (timely removal of all unsed dentries) in the presence of
+other shrinkers?
+
+Thanks,
+Miklos
+----
+
+
+From: Miklos Szeredi <mszeredi@suse.cz>
+Subject: dcache: select_collect(): don't remove from shrink list
+
+Shrink lists are not protected by any lock, so don't remove from an unknown
+one.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/dcache.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1241,18 +1241,19 @@ static enum d_walk_ret select_collect(vo
+ 	 * loop in shrink_dcache_parent() might not make any progress
+ 	 * and loop forever.
+ 	 */
+-	if (dentry->d_lockref.count) {
+-		dentry_lru_del(dentry);
+-	} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
+-		/*
+-		 * We can't use d_lru_shrink_move() because we
+-		 * need to get the global LRU lock and do the
+-		 * LRU accounting.
+-		 */
++	if (dentry->d_flags & (DCACHE_SHRINK_LIST | DCACHE_LRU_LIST) ==
++							DCACHE_LRU_LIST) {
+ 		d_lru_del(dentry);
+-		d_shrink_add(dentry, &data->dispose);
+-		data->found++;
+-		ret = D_WALK_NORETRY;
++		if (!dentry->d_lockref.count) {
++			/*
++			 * We can't use d_lru_shrink_move() because we
++			 * need to get the global LRU lock and do the
++			 * LRU accounting.
++			 */
++			d_shrink_add(dentry, &data->dispose);
++			data->found++;
++			ret = D_WALK_NORETRY;
++		}
+ 	}
+ 	/*
+ 	 * We can return to the caller if we have found some (this
