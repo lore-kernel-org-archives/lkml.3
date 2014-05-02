@@ -1,213 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990AbaEBLoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:44:19 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:62318 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaEBLoR (ORCPT
+	id S1752018AbaEBLpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:45:51 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39328 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669AbaEBLpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:44:17 -0400
-Subject: Re: [PATCH v1.0 2/16] arcmsr: Support MSI-X interrupt
-From: ching <ching2048@areca.com.tw>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, thenzl@redhat.com
-In-Reply-To: <20140502083101.GB4963@mwanda>
-References: <1398851412.1769.16.camel@localhost>
-	 <20140502083101.GB4963@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 May 2014 19:44:08 +0800
-Message-ID: <1399031048.5711.3.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Fri, 2 May 2014 07:45:50 -0400
+MIME-Version: 1.0
+Date: Fri, 2 May 2014 17:15:49 +0530
+Message-ID: <CAPUj1OMJ8cE1cNTe8CjgBP2GTCXzi__Yg0+OoomME6=TShgqJg@mail.gmail.com>
+Subject: Linux Interrupt Context maps to ARM CPSR.mode = IRQ
+From: Mj Embd <mj.embd@gmail.com>
+To: kernelnewbies <kernelnewbies@kernelnewbies.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for Dan's advice.
-I will revise the patch code.
-Next upload will be PATCH v1.1 16 patches.
+Hi,
 
-On Fri, 2014-05-02 at 11:31 +0300, Dan Carpenter wrote:
-> On Wed, Apr 30, 2014 at 05:50:12PM +0800, ching wrote:
-> > From: Ching<ching2048@areca.com.tw>
-> > 
-> > Adding code for supporting MSI-X interrupt
-> > 
-> > Signed-off-by: Ching<ching2048@areca.com.tw>
-> > ---
-> 
-> These patches seem to be broken up nicely into patches which do one
-> thing per patch and they are much easier to review now.  Thanks!
-> 
-> > +static int arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
-> > +{
-> > +	int	i, j, r;
-> > +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
-> > +
-> 
-> This function is more confusing than necessary and it goes over the 80
-> character limit.  One hint for improving it is that you should always
-> test for failure and handle the failure condition first before moving
-> on.  In other words reverse these tests.
-> 
-> Also let's rename LEG_INT to legacy_int: and MSI_INT to msi_int:.
-> 
-> > +	if (pci_find_capability(pdev, PCI_CAP_ID_MSIX)) {
-> 
-> 	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
-> 		goto msi_int;
-> 
-> We can pull the following code in one indent level.
-> 
-> > +		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
-> > +			entries[i].entry = i;
-> > +		}
-> 
-> Remove unneeded curly braces.
-> 
-> > +		r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
-> 
-> 		if (r < 0)
-> 			goto msi_int;
-> 
-> > +		if (r == 0) {
-> > +			for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
-> > +				if (request_irq(entries[i].vector,
-> > +					arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-> > +					pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +						acb->host->host_no, pdev->irq);
-> > +					for (j = 0 ; j < i ; j++)
-> > +						free_irq(entries[i].vector, acb);
-> > +					pci_disable_msix(pdev);
-> > +					goto MSI_INT;
-> > +				}
-> > +				acb->entries[i] = entries[i];
-> > +			}
-> > +			acb->acb_flags |= ACB_F_MSIX_ENABLED;
-> > +			pr_warn("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-> 
-> This should be pr_info().  pr_warn() will probably trigger a popup in
-> gnome.
-> 			return ARC_SUCCESS;
-> 
-> Returning right away is easier to understand than a return at the end
-> of the function.
-> 
-> > +		} else if (r > 0) {
-> 
-> This else statement is not needed because we already handled the other
-> cases.  Pull the code in one additional indent level.
-> 
-> > +			if (!pci_enable_msix(pdev, entries, r)) {
-> 
-> 			if (pci_enable_msix(pdev, entries, r))
-> 				goto msi_int;
-> 
-> Pull the code in a third indent level.
-> 
-> > +				for (i = 0; i < r; i++) {
-> > +					if (request_irq(entries[i].vector,
-> > +						arcmsr_do_interrupt, 0, "arcmsr", acb)) {
-> > +						pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +							acb->host->host_no, pdev->irq);
-> > +						for (j = 0 ; j < i ; j++)
-> > +							free_irq(entries[i].vector, acb);
-> > +						pci_disable_msix(pdev);
-> > +						goto MSI_INT;
-> > +					}
-> > +					acb->entries[i] = entries[i];
-> > +				}
-> > +				acb->acb_flags |= ACB_F_MSIX_ENABLED;
-> > +				pr_warn("arcmsr%d: msi-x enabled\n", acb->host->host_no);
-> 
-> 
-> Same thing.  Change this to pr_info() and add a return ARC_SUCCESS;
-> 
-> > +			} else {
-> > +				goto MSI_INT;
-> > +			}
-> > +		} else {
-> 
-> 
-> Ok.  At this point we have removed a lot of indenting so we are back to
-> level 1 indenting.
-> 
-> msi_int:
-> 	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
-> 		goto legacy_int;
-> 	if (pci_enable_msi(pdev))
-> 		goto legacy_int;
-> 	if (request_irq(...)) {
-> 		....
-> 		goto legacy_int;
-> 	}
-> 
-> > +MSI_INT:
-> > +			if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {
-> > +				if (pci_enable_msi(pdev))
-> > +					goto LEG_INT;
-> > +				if (request_irq(pdev->irq, arcmsr_do_interrupt,
-> > +					IRQF_SHARED, "arcmsr", acb)) {
-> > +					pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +						acb->host->host_no, pdev->irq);
-> > +					pci_disable_msi(pdev);
-> > +					goto LEG_INT;
-> > +				}
-> > +				acb->acb_flags |= ACB_F_MSI_ENABLED;
-> > +				pr_warn("arcmsr%d: msi enabled\n", acb->host->host_no);
-> 
-> return sucess.
-> 
-> > +			} else {
-> > +				goto LEG_INT;
-> > +			}
-> > +		}
-> 
-> 
-> The following block is all duplicative code and we have already handled
-> msi_int.  Just delete it.
-> 
-> > +	} else if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {
-> > +		if (pci_enable_msi(pdev))
-> > +			goto LEG_INT;
-> > +		if (request_irq(pdev->irq, arcmsr_do_interrupt,
-> > +			IRQF_SHARED, "arcmsr", acb)) {
-> > +			pr_warn("arcmsr%d: request_irq =%d failed!\n",
-> > +				acb->host->host_no, pdev->irq);
-> > +			pci_disable_msi(pdev);
-> > +			goto LEG_INT;
-> > +		}
-> > +		acb->acb_flags |= ACB_F_MSI_ENABLED;
-> > +		pr_warn("arcmsr%d: msi enabled\n", acb->host->host_no);
-> > +	} else {
-> 
-> Ok.  We're back to level one indenting now.
-> 
-> legacy_int:
-> 	if (request_irq(...) {
-> 		...
-> 		return ARC_FAILURE;
-> 	}
-> 	return ARC_SUCCESS;
-> 
-> Flipping the conditions around and adding immediate returns makes the
-> code a lot easier to read.
-> 
-> > +LEG_INT:
-> > +		if (request_irq(pdev->irq, arcmsr_do_interrupt,
-> > +			IRQF_SHARED, "arcmsr", acb)) {
-> > +			pr_warn("arcmsr%d: request_irq = %d failed!\n",
-> > +				acb->host->host_no, pdev->irq);
-> > +			return ARC_FAILURE;
-> > +		}
-> > +	}
-> > +	return ARC_SUCCESS;
-> > +}
-> > +
-> 
-> regards,
-> dan carpenter
+As per a lot of linux documentation some components work in process
+context and some work in interrupt context.
 
+If we try to map these contexts to ARM processor modes then is it
+safely to assume that
+Process Context : CPSR.mode = SVC
+Interrupt Context : CPSR.mode = IRQ
 
+If not how to define interrupt context properly. Confusing at times.
+
+-- 
+-mj
