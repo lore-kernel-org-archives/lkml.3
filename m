@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaEBPqW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:46:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44302 "EHLO
+	id S1753040AbaEBPq0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:46:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44306 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752881AbaEBPqR (ORCPT
+	with ESMTP id S1751764AbaEBPqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:17 -0400
+	Fri, 2 May 2014 11:46:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 104/151] drm/i915/tv: fix gen4 composite s-video tv-out
-Date: Fri,  2 May 2014 08:38:12 -0700
-Message-Id: <1399045139-4531-105-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 107/151] NFSv4: Fix a use-after-free problem in open()
+Date: Fri,  2 May 2014 08:38:15 -0700
+Message-Id: <1399045139-4531-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,52 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e1f23f3dd817f53f622e486913ac662add46eeed upstream.
+commit e911b8158ee1def8153849b1641b736026b036e0 upstream.
 
-This is *not* bisected, but the likely regression is
+If we interrupt the nfs4_wait_for_completion_rpc_task() call in
+nfs4_run_open_task(), then we don't prevent the RPC call from
+completing. So freeing up the opendata->f_attr.mdsthreshold
+in the error path in _nfs4_do_open() leads to a use-after-free
+when the XDR decoder tries to decode the mdsthreshold information
+from the server.
 
-commit c35614380d5c956bfda20eab2755b2f5a7d6f1e7
-Author: Zhao Yakui <yakui.zhao@intel.com>
-Date:   Tue Nov 24 09:48:48 2009 +0800
-
-    drm/i915: Don't set up the TV port if it isn't in the BIOS table.
-
-The commit does not check for all TV device types that might be present
-in the VBT, disabling TV out for the missing ones. Add composite
-S-video.
-
-Reported-and-tested-by: Matthew Khouzam <matthew.khouzam@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73362
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fixes: 82be417aa37c0 (NFSv4.1 cache mdsthreshold values on OPEN)
+Tested-by: Steve Dickson <SteveD@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_tv.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4proc.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index 22cf0f4..99faac5 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1536,9 +1536,14 @@ static int tv_is_present_in_vbt(struct drm_device *dev)
- 		/*
- 		 * If the device type is not TV, continue.
- 		 */
--		if (p_child->old.device_type != DEVICE_TYPE_INT_TV &&
--			p_child->old.device_type != DEVICE_TYPE_TV)
-+		switch (p_child->old.device_type) {
-+		case DEVICE_TYPE_INT_TV:
-+		case DEVICE_TYPE_TV:
-+		case DEVICE_TYPE_TV_SVIDEO_COMPOSITE:
-+			break;
-+		default:
- 			continue;
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 0e90bf0..134691e 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1070,6 +1070,7 @@ static void nfs4_opendata_free(struct kref *kref)
+ 	dput(p->dentry);
+ 	nfs_sb_deactive(sb);
+ 	nfs_fattr_free_names(&p->f_attr);
++	kfree(p->f_attr.mdsthreshold);
+ 	kfree(p);
+ }
+ 
+@@ -2246,10 +2247,12 @@ static int _nfs4_do_open(struct inode *dir,
+ 		}
+ 	}
+ 
+-	if (ctx_th && server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
+-		opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
+-		if (!opendata->f_attr.mdsthreshold)
+-			goto err_free_label;
++	if (server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
++		if (!opendata->f_attr.mdsthreshold) {
++			opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
++			if (!opendata->f_attr.mdsthreshold)
++				goto err_free_label;
 +		}
- 		/* Only when the addin_offset is non-zero, it is regarded
- 		 * as present.
- 		 */
+ 		opendata->o_arg.open_bitmap = &nfs4_pnfs_open_bitmap[0];
+ 	}
+ 	if (dentry->d_inode != NULL)
+@@ -2277,11 +2280,10 @@ static int _nfs4_do_open(struct inode *dir,
+ 	if (opendata->file_created)
+ 		*opened |= FILE_CREATED;
+ 
+-	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server))
++	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server)) {
+ 		*ctx_th = opendata->f_attr.mdsthreshold;
+-	else
+-		kfree(opendata->f_attr.mdsthreshold);
+-	opendata->f_attr.mdsthreshold = NULL;
++		opendata->f_attr.mdsthreshold = NULL;
++	}
+ 
+ 	nfs4_label_free(olabel);
+ 
+@@ -2291,7 +2293,6 @@ static int _nfs4_do_open(struct inode *dir,
+ err_free_label:
+ 	nfs4_label_free(olabel);
+ err_opendata_put:
+-	kfree(opendata->f_attr.mdsthreshold);
+ 	nfs4_opendata_put(opendata);
+ err_put_state_owner:
+ 	nfs4_put_state_owner(sp);
 -- 
 1.9.1
 
