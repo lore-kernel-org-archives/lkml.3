@@ -1,90 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742AbaEBQ1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:27:34 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:51828 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746AbaEBQZg (ORCPT
+	id S1753984AbaEBQ2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:28:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43673 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705AbaEBPjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:25:36 -0400
-Date: Fri, 2 May 2014 18:25:30 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <80394451.20140502182530@eikelenboom.it>
-To: Takashi Iwai <tiwai@suse.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julia Lawall <julia.lawall@lip6.fr>, <linux-sound@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Sound USB: Prevent printk ratelimiting from spamming kernel log while DEBUG not defined
-In-Reply-To: <s5hppjwqhuy.wl%tiwai@suse.de>
-References: <1399036167-6203-1-git-send-email-linux@eikelenboom.it> <1399036167-6203-2-git-send-email-linux@eikelenboom.it> <s5hppjwqhuy.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 2 May 2014 11:39:18 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 009/151] framebuffer: fix cfb_copyarea
+Date: Fri,  2 May 2014 08:36:37 -0700
+Message-Id: <1399045139-4531-10-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-Friday, May 2, 2014, 6:13:09 PM, you wrote:
+------------------
 
-> At Fri,  2 May 2014 15:09:27 +0200,
-> Sander Eikelenboom wrote:
->> 
->> This (widely used) construction:
->> 
->> if(printk_ratelimit())
->>       dev_dbg()
->> 
->> Causes the ratelimiting to spam the kernel log with the "callbacks suppressed"
->> message below, even while the dev_dbg it is supposed to rate limit wouldn't
->> print anything because DEBUG is not defined for this device.
->> 
->> [  533.803964] retire_playback_urb: 852 callbacks suppressed
->> [  538.807930] retire_playback_urb: 852 callbacks suppressed
->> [  543.811897] retire_playback_urb: 852 callbacks suppressed
->> [  548.815745] retire_playback_urb: 852 callbacks suppressed
->> [  553.819826] retire_playback_urb: 852 callbacks suppressed
->> 
->> So use dev_dbg_ratelimited() instead of this construction.
->> 
->> Signed-off-by: Sander Eikelenboom <linux@eikelenboom.it>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-> Thanks, applied.  This is a result of the recent rewrite to dev_dbg()
-> from plain printk(), I suppose.
+commit 00a9d699bc85052d2d3ed56251cd928024ce06a3 upstream.
 
-Yes that patch (https://lkml.org/lkml/2014/4/9/457) prevented spamming the kernel log when debugging was enabled ..
-but  now the rate limiting code starts spamming the kernel log instead :-)
+The function cfb_copyarea is buggy when the copy operation is not aligned on
+long boundary (4 bytes on 32-bit machines, 8 bytes on 64-bit machines).
 
-I must say i wasn't very aware of that effect either and also used this construction on 
-debug patches.
+How to reproduce:
+- use x86-64 machine
+- use a framebuffer driver without acceleration (for example uvesafb)
+- set the framebuffer to 8-bit depth
+	(for example fbset -a 1024x768-60 -depth 8)
+- load a font with character width that is not a multiple of 8 pixels
+	note: the console-tools package cannot load a font that has
+	width different from 8 pixels. You need to install the packages
+	"kbd" and "console-terminus" and use the program "setfont" to
+	set font width (for example: setfont Uni2-Terminus20x10)
+- move some text left and right on the bash command line and you get a
+	screen corruption
 
+To expose more bugs, put this line to the end of uvesafb_init_info:
+info->flags |= FBINFO_HWACCEL_COPYAREA | FBINFO_READS_FAST;
+- Now framebuffer console will use cfb_copyarea for console scrolling.
+You get a screen corruption when console is scrolled.
 
-> Takashi
+This patch is a rewrite of cfb_copyarea. It fixes the bugs, with this
+patch, console scrolling in 8-bit depth with a font width that is not a
+multiple of 8 pixels works fine.
 
->> ---
->>  sound/usb/pcm.c |    5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
->> 
->> diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
->> index 131336d..c62a165 100644
->> --- a/sound/usb/pcm.c
->> +++ b/sound/usb/pcm.c
->> @@ -1501,9 +1501,8 @@ static void retire_playback_urb(struct snd_usb_substream *subs,
->>        * The error should be lower than 2ms since the estimate relies
->>        * on two reads of a counter updated every ms.
->>        */
->> -     if (printk_ratelimit() &&
->> -         abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
->> -             dev_dbg(&subs->dev->dev,
->> +     if (abs(est_delay - subs->last_delay) * 1000 > runtime->rate * 2)
->> +             dev_dbg_ratelimited(&subs->dev->dev,
->>                       "delay: estimated %d, actual %d\n",
->>                       est_delay, subs->last_delay);
->>  
->> -- 
->> 1.7.10.4
->> 
+The cfb_copyarea code was very buggy and it looks like it was written
+and never tried with non-8-pixel font.
 
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/video/cfbcopyarea.c | 153 ++++++++++++++++++++++----------------------
+ 1 file changed, 78 insertions(+), 75 deletions(-)
+
+diff --git a/drivers/video/cfbcopyarea.c b/drivers/video/cfbcopyarea.c
+index bb5a96b..bcb5723 100644
+--- a/drivers/video/cfbcopyarea.c
++++ b/drivers/video/cfbcopyarea.c
+@@ -43,13 +43,22 @@
+      */
+ 
+ static void
+-bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+-		const unsigned long __iomem *src, int src_idx, int bits,
++bitcpy(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
++		const unsigned long __iomem *src, unsigned src_idx, int bits,
+ 		unsigned n, u32 bswapmask)
+ {
+ 	unsigned long first, last;
+ 	int const shift = dst_idx-src_idx;
+-	int left, right;
++
++#if 0
++	/*
++	 * If you suspect bug in this function, compare it with this simple
++	 * memmove implementation.
++	 */
++	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	return;
++#endif
+ 
+ 	first = fb_shifted_pixels_mask_long(p, dst_idx, bswapmask);
+ 	last = ~fb_shifted_pixels_mask_long(p, (dst_idx+n) % bits, bswapmask);
+@@ -98,9 +107,8 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 		unsigned long d0, d1;
+ 		int m;
+ 
+-		right = shift & (bits - 1);
+-		left = -shift & (bits - 1);
+-		bswapmask &= shift;
++		int const left = shift & (bits - 1);
++		int const right = -shift & (bits - 1);
+ 
+ 		if (dst_idx+n <= bits) {
+ 			// Single destination word
+@@ -110,15 +118,15 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			if (shift > 0) {
+ 				// Single source word
+-				d0 >>= right;
++				d0 <<= left;
+ 			} else if (src_idx+n <= bits) {
+ 				// Single source word
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src + 1);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0<<left | d1>>right;
++				d0 = d0 >> right | d1 << left;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+@@ -135,60 +143,59 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 			if (shift > 0) {
+ 				// Single source word
+ 				d1 = d0;
+-				d0 >>= right;
+-				dst++;
++				d0 <<= left;
+ 				n -= bits - dst_idx;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src++);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+ 
+-				d0 = d0<<left | d1>>right;
+-				dst++;
++				d0 = d0 >> right | d1 << left;
+ 				n -= bits - dst_idx;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+ 			d0 = d1;
++			dst++;
+ 
+ 			// Main chunk
+ 			m = n % bits;
+ 			n /= bits;
+ 			while ((n >= 4) && !bswapmask) {
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				d1 = FB_READL(src++);
+-				FB_WRITEL(d0 << left | d1 >> right, dst++);
++				FB_WRITEL(d0 >> right | d1 << left, dst++);
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = FB_READL(src++);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0 << left | d1 >> right;
++				d0 = d0 >> right | d1 << left;
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(d0, dst++);
+ 				d0 = d1;
+ 			}
+ 
+ 			// Trailing bits
+-			if (last) {
+-				if (m <= right) {
++			if (m) {
++				if (m <= bits - right) {
+ 					// Single source word
+-					d0 <<= left;
++					d0 >>= right;
+ 				} else {
+ 					// 2 source words
+ 					d1 = FB_READL(src);
+ 					d1 = fb_rev_pixels_in_long(d1,
+ 								bswapmask);
+-					d0 = d0<<left | d1>>right;
++					d0 = d0 >> right | d1 << left;
+ 				}
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+@@ -202,43 +209,46 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+      */
+ 
+ static void
+-bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+-		const unsigned long __iomem *src, int src_idx, int bits,
++bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
++		const unsigned long __iomem *src, unsigned src_idx, int bits,
+ 		unsigned n, u32 bswapmask)
+ {
+ 	unsigned long first, last;
+ 	int shift;
+ 
+-	dst += (n-1)/bits;
+-	src += (n-1)/bits;
+-	if ((n-1) % bits) {
+-		dst_idx += (n-1) % bits;
+-		dst += dst_idx >> (ffs(bits) - 1);
+-		dst_idx &= bits - 1;
+-		src_idx += (n-1) % bits;
+-		src += src_idx >> (ffs(bits) - 1);
+-		src_idx &= bits - 1;
+-	}
++#if 0
++	/*
++	 * If you suspect bug in this function, compare it with this simple
++	 * memmove implementation.
++	 */
++	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
++		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
++	return;
++#endif
++
++	dst += (dst_idx + n - 1) / bits;
++	src += (src_idx + n - 1) / bits;
++	dst_idx = (dst_idx + n - 1) % bits;
++	src_idx = (src_idx + n - 1) % bits;
+ 
+ 	shift = dst_idx-src_idx;
+ 
+-	first = fb_shifted_pixels_mask_long(p, bits - 1 - dst_idx, bswapmask);
+-	last = ~fb_shifted_pixels_mask_long(p, bits - 1 - ((dst_idx-n) % bits),
+-					    bswapmask);
++	first = ~fb_shifted_pixels_mask_long(p, (dst_idx + 1) % bits, bswapmask);
++	last = fb_shifted_pixels_mask_long(p, (bits + dst_idx + 1 - n) % bits, bswapmask);
+ 
+ 	if (!shift) {
+ 		// Same alignment for source and dest
+ 
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			// Single word
+-			if (last)
+-				first &= last;
+-			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
++			if (first)
++				last &= first;
++			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
+ 		} else {
+ 			// Multiple destination words
+ 
+ 			// Leading bits
+-			if (first != ~0UL) {
++			if (first) {
+ 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
+ 				dst--;
+ 				src--;
+@@ -262,7 +272,7 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 				FB_WRITEL(FB_READL(src--), dst--);
+ 
+ 			// Trailing bits
+-			if (last)
++			if (last != -1UL)
+ 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
+ 		}
+ 	} else {
+@@ -270,29 +280,28 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 		unsigned long d0, d1;
+ 		int m;
+ 
+-		int const left = -shift & (bits-1);
+-		int const right = shift & (bits-1);
+-		bswapmask &= shift;
++		int const left = shift & (bits-1);
++		int const right = -shift & (bits-1);
+ 
+ 		if ((unsigned long)dst_idx+1 >= n) {
+ 			// Single destination word
+-			if (last)
+-				first &= last;
++			if (first)
++				last &= first;
+ 			d0 = FB_READL(src);
+ 			if (shift < 0) {
+ 				// Single source word
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else if (1+(unsigned long)src_idx >= n) {
+ 				// Single source word
+-				d0 >>= right;
++				d0 <<= left;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src - 1);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0>>right | d1<<left;
++				d0 = d0 << left | d1 >> right;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+-			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
++			FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+ 		} else {
+ 			// Multiple destination words
+ 			/** We must always remember the last value read, because in case
+@@ -307,12 +316,12 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 			if (shift < 0) {
+ 				// Single source word
+ 				d1 = d0;
+-				d0 <<= left;
++				d0 >>= right;
+ 			} else {
+ 				// 2 source words
+ 				d1 = FB_READL(src--);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0>>right | d1<<left;
++				d0 = d0 << left | d1 >> right;
+ 			}
+ 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
+@@ -325,39 +334,39 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
+ 			n /= bits;
+ 			while ((n >= 4) && !bswapmask) {
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				d1 = FB_READL(src--);
+-				FB_WRITEL(d0 >> right | d1 << left, dst--);
++				FB_WRITEL(d0 << left | d1 >> right, dst--);
+ 				d0 = d1;
+ 				n -= 4;
+ 			}
+ 			while (n--) {
+ 				d1 = FB_READL(src--);
+ 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
+-				d0 = d0 >> right | d1 << left;
++				d0 = d0 << left | d1 >> right;
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(d0, dst--);
+ 				d0 = d1;
+ 			}
+ 
+ 			// Trailing bits
+-			if (last) {
+-				if (m <= left) {
++			if (m) {
++				if (m <= bits - left) {
+ 					// Single source word
+-					d0 >>= right;
++					d0 <<= left;
+ 				} else {
+ 					// 2 source words
+ 					d1 = FB_READL(src);
+ 					d1 = fb_rev_pixels_in_long(d1,
+ 								bswapmask);
+-					d0 = d0>>right | d1<<left;
++					d0 = d0 << left | d1 >> right;
+ 				}
+ 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
+ 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
+@@ -371,9 +380,9 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 	u32 dx = area->dx, dy = area->dy, sx = area->sx, sy = area->sy;
+ 	u32 height = area->height, width = area->width;
+ 	unsigned long const bits_per_line = p->fix.line_length*8u;
+-	unsigned long __iomem *dst = NULL, *src = NULL;
++	unsigned long __iomem *base = NULL;
+ 	int bits = BITS_PER_LONG, bytes = bits >> 3;
+-	int dst_idx = 0, src_idx = 0, rev_copy = 0;
++	unsigned dst_idx = 0, src_idx = 0, rev_copy = 0;
+ 	u32 bswapmask = fb_compute_bswapmask(p);
+ 
+ 	if (p->state != FBINFO_STATE_RUNNING)
+@@ -389,7 +398,7 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 
+ 	// split the base of the framebuffer into a long-aligned address and the
+ 	// index of the first bit
+-	dst = src = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
++	base = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
+ 	dst_idx = src_idx = 8*((unsigned long)p->screen_base & (bytes-1));
+ 	// add offset of source and target area
+ 	dst_idx += dy*bits_per_line + dx*p->var.bits_per_pixel;
+@@ -402,20 +411,14 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
+ 		while (height--) {
+ 			dst_idx -= bits_per_line;
+ 			src_idx -= bits_per_line;
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy_rev(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy_rev(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel, bswapmask);
+ 		}
+ 	} else {
+ 		while (height--) {
+-			dst += dst_idx >> (ffs(bits) - 1);
+-			dst_idx &= (bytes - 1);
+-			src += src_idx >> (ffs(bits) - 1);
+-			src_idx &= (bytes - 1);
+-			bitcpy(p, dst, dst_idx, src, src_idx, bits,
++			bitcpy(p, base + (dst_idx / bits), dst_idx % bits,
++				base + (src_idx / bits), src_idx % bits, bits,
+ 				width*p->var.bits_per_pixel, bswapmask);
+ 			dst_idx += bits_per_line;
+ 			src_idx += bits_per_line;
+-- 
+1.9.1
 
