@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaEBL1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:27:17 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:62170 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaEBL1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:27:16 -0400
-Message-ID: <1399030032.5233.142.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
-        peterz@infradead.org, george.mccollister@gmail.com,
-        ktkhai@parallels.com
-Date: Fri, 02 May 2014 13:27:12 +0200
-In-Reply-To: <536379D0.8070306@redhat.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
-	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1751926AbaEBLc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:32:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834AbaEBLcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 07:32:55 -0400
+Date: Fri, 2 May 2014 13:32:19 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v4 3/5] acpi_processor: do not mark present at boot but
+ not onlined CPU as onlined
+Message-ID: <20140502133219.5de5c683@nial.usersys.redhat.com>
+In-Reply-To: <1398893151.1789.46.camel@misato.fc.hp.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	<1397488277-14865-4-git-send-email-imammedo@redhat.com>
+	<1398893151.1789.46.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 06:56 -0400, Rik van Riel wrote: 
-> On 05/02/2014 03:37 AM, Mike Galbraith wrote:
-> > On Fri, 2014-05-02 at 02:30 -0400, Rik van Riel wrote: 
-> >> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
-> >>> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
-> >>>
-> >>>> Whether or not this is the right thing to do remains to be seen,
-> >>>> but it does allow us to verify whether or not the wake_affine
-> >>>> strategy of always doing affine wakeups and only disabling them
-> >>>> in a specific circumstance is sound, or needs rethinking...
-> >>>
-> >>> Yes, it needs rethinking.
-> >>>
-> >>> I know why you want to try this, yes, select_idle_sibling() is very much
-> >>> a two faced little bitch.
-> >>
-> >> My biggest problem with select_idle_sibling and wake_affine in
-> >> general is that it will override NUMA placement, even when
-> >> processes only wake each other up infrequently...
+On Wed, 30 Apr 2014 15:25:51 -0600
+Toshi Kani <toshi.kani@hp.com> wrote:
+
+> On Mon, 2014-04-14 at 17:11 +0200, Igor Mammedov wrote:
+> > acpi_processor_add() assumes that present at boot CPUs
+> > are always onlined, it is not so if a CPU failed to become
+> > onlined. As result acpi_processor_add() will mark such CPU
+> > device as onlined in sysfs and following attempts to
+> > online/offline it using /sys/device/system/cpu/cpuX/online
+> > attribute will fail.
 > > 
-> > Hm, seems the thing to do would be to tell select_task_rq_fair() to keep
-> > it's mitts off of tasks that the numasched stuff has placed rather than
-> > decapitating select_idle_sibling() or some other drastic measure.
+> > Do not poke into device internals in acpi_processor_add()
+> > and touch "struct device { .offline }" attribute, since
+> > for CPUs onlined at boot it's set by:
+> >   topology_init() -> arch_register_cpu() -> register_cpu()
+> > before ACPI device tree is parsed, and for hotplugged
+> > CPUs it's set when userspace onlines CPU via sysfs.
+> > 
+> > Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> > ---
+> > v2:
+> >  - fix regression in v1 leading to NULL pointer dereference
+> >    on CPU unplug, do not remove "pr->dev = dev;"
+> > ---
+> >  drivers/acpi/acpi_processor.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> > index c29c2c3..42d66f8 100644
+> > --- a/drivers/acpi/acpi_processor.c
+> > +++ b/drivers/acpi/acpi_processor.c:q
+> > @@ -404,7 +404,6 @@ static int acpi_processor_add(struct acpi_device *device,
+> >  		goto err;
+> >  
+> >  	pr->dev = dev;
+> > -	dev->offline = pr->flags.need_hotplug_init;
 > 
-> Thing is, if tasks are waking each other up frequently enough, we
-> probably DO want to place them near each other with select_idle_sibling.
+> IIRC, this change was necessary to handle the case when maxcpus=X is
+> specified at boot.  In this case, excessive CPU's dev->offline needs to
+> be set to 1.  Can you verify this?
+Option 'maxcpus' works just fine without and with this patch since a bit
+earlier in acpi_processor_add() it exits in case of extra present CPUs:
 
-Right.  I'm thinking you could perhaps create a sched feature like
-NUMA_ME_HARDER or such so you can tell it to go away if you find that
-your load performs best when movement is left entirely up to the NUMA
-placement code.
+#ifdef CONFIG_SMP
+        if (pr->id >= setup_max_cpus && pr->id != 0)
+                return 0;
+#endif
 
-> We just cannot afford to have it as the default behaviour for casual
-> wakeup activity, because it will mess up other things.
+and execution doesn't get to the point the patch touches.
 
-I think it is generally good, but yes, it has its bad it's bad side, why
-we have tweakables.
+The point is that acpi_processor_add() shouldn't touch
+dev->offline at all and allow register_cpu() handle it.
 
--Mike
+> 
+> Thanks,
+> -Toshi
+> 
 
