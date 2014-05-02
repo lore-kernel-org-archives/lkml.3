@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263AbaEBQJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:09:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43976 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414AbaEBPnP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:15 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 023/151] ACPICA: Restore code that repairs NULL package elements in return values.
-Date: Fri,  2 May 2014 08:36:51 -0700
-Message-Id: <1399045139-4531-24-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1753943AbaEBQJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:09:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20981 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786AbaEBQJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 12:09:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,973,1389772800"; 
+   d="scan'208";a="504961466"
+Subject: Re: [PATCH] rwsem: Comments to explain the meaning of the rwsem's
+ count field
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jason Low <jason.low2@hp.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <53639958.9030002@infradead.org>
+References: <1398966637.2970.129.camel@schen9-DESK>
+	 <5362AC24.9050508@hurleysoftware.com>
+	 <1398985513.2970.141.camel@schen9-DESK>  <53639958.9030002@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 May 2014 09:09:02 -0700
+Message-ID: <1399046942.2970.144.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2014-05-02 at 06:10 -0700, Randy Dunlap wrote:
 
-------------------
+> >
+> > It takes me quite a while to understand how rwsem's count field mainifest
+> 
+>                                                                 manifests
+> 
+> > itself in different scenarios.  I'm adding comments to provide a quick
+> > reference on the the rwsem's count field for each scenario where readers
+> > and writers are contending for the lock.  Hopefully it will be useful
+> > for future maintenance of the code and for people to get up to speed on
+> > how the logic in the code works.
+> >
+> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> > ---
+> >   kernel/locking/rwsem-xadd.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
+> >   1 file changed, 48 insertions(+)
+> >
+> > diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+> > index 1d66e08..b92a403 100644
+> > --- a/kernel/locking/rwsem-xadd.c
+> > +++ b/kernel/locking/rwsem-xadd.c
+> > @@ -12,6 +12,54 @@
+> >   #include <linux/export.h>
+> >
+> >   /*
+> > + * Guide to the rw_semaphore's count field for common values.
+> > + * (32 bit case illustrated, similar for 64 bit)
+> 
+>         32-bit                               64-bit
+> 
+> > + *
+> > + * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
+> > + *		    X = #active_readers + #readers attempting to lock
+> > + *		    (X*ACTIVE_BIAS)
+> > + *
+> > + * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
+> > + *		attempting to read lock or write lock.
+> > + *
+> > + * 0xffff000X	(1) X readers active or attempt lock, there are waiters for lock
+> 
+> 			                        attempting
+> 
+> > + *		    X = #active readers + # readers attempting lock
+> > + *		    (X*ACTIVE_BIAS + WAITING_BIAS)
+> > + *		(2) 1 writer attempting lock, no waiters for lock
+> > + *		    X-1 = #active readers + #readers attempting lock
+> > + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+> > + *		(3) 1 writer active, no waiters for lock
+> > + *		    X-1 = #active readers + #readers attempting lock
+> > + *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
+> > + *
+> > + * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
+> > + *		    (WAITING_BIAS + ACTIVE_BIAS)
+> > + *		(2) 1 writer active or attempt lock, no waiters for lock
+> 
+> 		                       attempting
+> 
+> > + *		    (ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
 
-From: Lv Zheng <lv.zheng@intel.com>
+Oops, should be       (ACTIVE_WRITE_BIAS)
 
-commit 61db45ca21630f5ab7f678d54c5d969c21647854 upstream.
+> > + *
+> > + * 0xffff0000	(1) There are writers or readers queued but none active
+> > + *		    or in the process of attempting lock.
+> > + *		    (WAITING_BIAS)
+> > + *		Note: writer can attempt to steal lock for this count by adding
+> > + *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
+> > + *
+> > + * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
+> > + *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
+> > + *
+> > + * Note: Reader attempt to lock by adding ACTIVE_BIAS in down_read and checking
+> > + *	 the count becomes more than 0, i.e. the case where there are only
+> > + *	 readers or no body has lock. (1st and 2nd case above)
+> 
+> 	            nobody
+> 
+> > + *
+> > + *	 Writer attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
+> > + *	 checking the count becomes ACTIVE_WRITE_BIAS for succesful lock
+> 
+> 	                                                  successful
 
-The original code was lost accidently, it was not generated along with the
-following commit of mechanism improvements and thus not get merged:
+Thanks for correcting my grammar mistakes.  Will update the changes.
 
-  Commit: d5a36100f62fa6db5541344e08b361b34e9114c5
-  Subject: ACPICA: Add mechanism for early object repairs on a per-name basis
+Tim
 
-  Adds the framework to allow object repairs very early in the
-  return object analysis. Enables repairs like string->unicode,
-  etc.
 
-This patch restores the implementation of the NULL element repair code for
-ACPI_RTYPE_NONE.  In the original design, ACPI_RTYPE_NONE is defined to
-collect simple NULL object repairs.
-Lv Zheng.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=67901
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/acpi/acpica/nsrepair.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
-index a05afff..b6f6863 100644
---- a/drivers/acpi/acpica/nsrepair.c
-+++ b/drivers/acpi/acpica/nsrepair.c
-@@ -207,13 +207,30 @@ acpi_ns_simple_repair(struct acpi_evaluate_info *info,
- 	 * this predefined name. Either one return value is expected, or none,
- 	 * for both methods and other objects.
- 	 *
--	 * Exit now if there is no return object. Warning if one was expected.
-+	 * Try to fix if there was no return object. Warning if failed to fix.
- 	 */
- 	if (!return_object) {
- 		if (expected_btypes && (!(expected_btypes & ACPI_RTYPE_NONE))) {
--			ACPI_WARN_PREDEFINED((AE_INFO, info->full_pathname,
--					      ACPI_WARN_ALWAYS,
--					      "Missing expected return value"));
-+			if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Found unexpected NULL package element"));
-+
-+				status =
-+				    acpi_ns_repair_null_element(info,
-+								expected_btypes,
-+								package_index,
-+								return_object_ptr);
-+				if (ACPI_SUCCESS(status)) {
-+					return (AE_OK);	/* Repair was successful */
-+				}
-+			} else {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Missing expected return value"));
-+			}
- 
- 			return (AE_AML_NO_RETURN_VALUE);
- 		}
--- 
-1.9.1
 
