@@ -1,211 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaEBQdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:33:10 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:46083 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752047AbaEBQdG (ORCPT
+	id S1752524AbaEBQjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:39:39 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51493 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaEBQji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:33:06 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqgaAA3IY1NbsmU4/2dsb2JhbABagwarXwMBAQEBAQEEAZoBAgKBEBd0glMTHCMYgQIkE4hFAcpJhVaIfIRAAQOPFooZAZJvgzY7MA
-Date: Fri, 2 May 2014 18:35:10 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] mm/zswap.c: add lock helper
-Message-Id: <20140502183510.21ee4a06d787b3882e77faba@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 2 May 2014 12:39:38 -0400
+Message-ID: <5363CA40.2000808@oracle.com>
+Date: Fri, 02 May 2014 12:39:28 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: mm: invalid memory access in zap_pte_range
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-&tree->lock is used all over the place
+Hi all,
 
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- mm/zswap.c | 44 +++++++++++++++++++++++++-------------------
- 1 file changed, 25 insertions(+), 19 deletions(-)
+While fuzzing with trinity inside a KVM tools guest running latest -next
+kernel I've stumbled on the following:
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index aeaef0f..581f36f 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -532,6 +532,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	struct zswap_tree *tree;
- 	pgoff_t offset;
- 	struct zswap_entry *entry;
-+	spinlock_t *lock;
- 	struct page *page;
- 	u8 *src, *dst;
- 	unsigned int dlen;
-@@ -545,17 +546,18 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	swpentry = zhdr->swpentry; /* here */
- 	zbud_unmap(pool, handle);
- 	tree = zswap_trees[swp_type(swpentry)];
-+	lock = &tree->lock;
- 	offset = swp_offset(swpentry);
- 
- 	/* find and ref zswap entry */
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	entry = zswap_entry_find_get(&tree->rbroot, offset);
- 	if (!entry) {
- 		/* entry was invalidated */
--		spin_unlock(&tree->lock);
-+		spin_unlock(lock);
- 		return 0;
- 	}
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 	BUG_ON(offset != entry->offset);
- 
- 	/* try to allocate swap cache page */
-@@ -595,7 +597,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	page_cache_release(page);
- 	zswap_written_back_pages++;
- 
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	/* drop local reference */
- 	zswap_entry_put(tree, entry);
- 
-@@ -608,7 +610,7 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	*/
- 	if (entry == zswap_rb_search(&tree->rbroot, offset))
- 		zswap_entry_put(tree, entry);
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 
- 	goto end;
- 
-@@ -620,9 +622,9 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	* it it either okay to return !0
- 	*/
- fail:
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	zswap_entry_put(tree, entry);
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 
- end:
- 	return ret;
-@@ -637,6 +639,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- {
- 	struct zswap_tree *tree = zswap_trees[type];
- 	struct zswap_entry *entry, *dupentry;
-+	spinlock_t *lock = &tree->lock;
- 	int ret;
- 	unsigned int dlen = PAGE_SIZE, len;
- 	unsigned long handle;
-@@ -702,7 +705,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 	entry->length = dlen;
- 
- 	/* map */
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	do {
- 		ret = zswap_rb_insert(&tree->rbroot, entry, &dupentry);
- 		if (ret == -EEXIST) {
-@@ -712,7 +715,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 			zswap_entry_put(tree, dupentry);
- 		}
- 	} while (ret == -EEXIST);
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 
- 	/* update stats */
- 	atomic_inc(&zswap_stored_pages);
-@@ -736,19 +739,20 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
- {
- 	struct zswap_tree *tree = zswap_trees[type];
- 	struct zswap_entry *entry;
-+	spinlock_t *lock = &tree->lock;
- 	u8 *src, *dst;
- 	unsigned int dlen;
- 	int ret;
- 
- 	/* find */
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	entry = zswap_entry_find_get(&tree->rbroot, offset);
- 	if (!entry) {
- 		/* entry was written back */
--		spin_unlock(&tree->lock);
-+		spin_unlock(lock);
- 		return -1;
- 	}
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 
- 	/* decompress */
- 	dlen = PAGE_SIZE;
-@@ -761,9 +765,9 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
- 	zbud_unmap(zswap_pool, entry->handle);
- 	BUG_ON(ret);
- 
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	zswap_entry_put(tree, entry);
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 
- 	return 0;
- }
-@@ -773,13 +777,14 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
- {
- 	struct zswap_tree *tree = zswap_trees[type];
- 	struct zswap_entry *entry;
-+	spinlock_t *lock = &tree->lock;
- 
- 	/* find */
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	entry = zswap_rb_search(&tree->rbroot, offset);
- 	if (!entry) {
- 		/* entry was written back */
--		spin_unlock(&tree->lock);
-+		spin_unlock(lock);
- 		return;
- 	}
- 
-@@ -789,7 +794,7 @@ static void zswap_frontswap_invalidate_page(unsigned type, pgoff_t offset)
- 	/* drop the initial reference from entry creation */
- 	zswap_entry_put(tree, entry);
- 
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- }
- 
- /* frees all zswap entries for the given swap type */
-@@ -797,16 +802,17 @@ static void zswap_frontswap_invalidate_area(unsigned type)
- {
- 	struct zswap_tree *tree = zswap_trees[type];
- 	struct zswap_entry *entry, *n;
-+	spinlock_t *lock = &tree->lock;
- 
- 	if (!tree)
- 		return;
- 
- 	/* walk the tree and free everything */
--	spin_lock(&tree->lock);
-+	spin_lock(lock);
- 	rbtree_postorder_for_each_entry_safe(entry, n, &tree->rbroot, rbnode)
- 		zswap_free_entry(entry);
- 	tree->rbroot = RB_ROOT;
--	spin_unlock(&tree->lock);
-+	spin_unlock(lock);
- 	kfree(tree);
- 	zswap_trees[type] = NULL;
- }
--- 
-1.8.4.5
+[ 5470.347501] BUG: unable to handle kernel paging request at ffffea0003480088
+[ 5470.349619] IP: zap_pte_range (mm/memory.c:1137)
+[ 5470.350338] PGD 37fcc067 PUD 37fcb067 PMD 0
+[ 5470.350338] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 5470.350338] Dumping ftrace buffer:
+[ 5470.350338]    (ftrace buffer empty)
+[ 5470.350338] Modules linked in:
+[ 5470.350338] CPU: 3 PID: 38591 Comm: trinity-c207 Tainted: G        W     3.15.0-rc3-next-20140430-sasha-00016-g4e281fa-dirty #429
+[ 5470.361024] task: ffff88017136b000 ti: ffff88016f068000 task.ti: ffff88016f068000
+[ 5470.361024] RIP: zap_pte_range (mm/memory.c:1137)
+[ 5470.361024] RSP: 0018:ffff88016f069c88  EFLAGS: 00010246
+[ 5470.361024] RAX: ffffea0003480080 RBX: ffff880341a2fd88 RCX: 0000000003480080
+[ 5470.361024] RDX: ffff880341a2fd88 RSI: 00000000403b1000 RDI: ffff880159b05000
+[ 5470.361024] RBP: ffff88016f069d28 R08: ffff88034beb6400 R09: ffff88017136bcf0
+[ 5470.361024] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0003480080
+[ 5470.361024] R13: ffff88016f069e18 R14: 00000000403b2000 R15: 00000000403b1000
+[ 5470.361024] FS:  00007f59dec96700(0000) GS:ffff88010cc00000(0000) knlGS:0000000000000000
+[ 5470.361024] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 5470.361024] CR2: ffffea0003480088 CR3: 00000001748b7000 CR4: 00000000000006a0
+[ 5470.361024] DR0: 00000000006de000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 5470.361024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 5470.361024] Stack:
+[ 5470.361024]  ffff88016f069e18 00000000d2002000 00000000d2002fff ffff88017136b000
+[ 5470.361024]  0000000000000000 0000000000000001 ffff880354664008 ffff88033fcfc640
+[ 5470.361024]  00000000d2002730 ffff88034beb6400 0000000000000000 ffff880159b05000
+[ 5470.361024] Call Trace:
+[ 5470.361024] unmap_single_vma (mm/memory.c:1261 mm/memory.c:1282 mm/memory.c:1307 mm/memory.c:1353)
+[ 5470.361024] unmap_vmas (mm/memory.c:1382 (discriminator 1))
+[ 5470.361024] unmap_region (mm/mmap.c:2368 (discriminator 3))
+[ 5470.361024] ? put_lock_stats.isra.12 (kernel/locking/lockdep.c:254)
+[ 5470.361024] ? validate_mm_rb (mm/mmap.c:409)
+[ 5470.361024] ? vma_rb_erase (mm/mmap.c:454 include/linux/rbtree_augmented.h:219 include/linux/rbtree_augmented.h:227 mm/mmap.c:493)
+[ 5470.361024] do_munmap (mm/mmap.c:3264 mm/mmap.c:2566)
+[ 5470.361024] ? vm_munmap (mm/mmap.c:2577)
+[ 5470.361024] vm_munmap (mm/mmap.c:2578)
+[ 5470.361024] SyS_munmap (mm/mmap.c:2583)
+[ 5470.361024] tracesys (arch/x86/kernel/entry_64.S:746)
+[ 5470.361024] Code: e8 de a6 26 03 49 8b 4c 24 10 48 39 c8 74 1c 48 8b 7d b8 48 c1 e1 0c 48 89 da 48 83 c9 40 4c 89 fe e8 95 db ff ff 0f 1f 44 00 00 <41> f6 44 24 08 01 74 08 83 6d c8 01 eb 33 66 90 f6 45 a0 40 74
+[ 5470.361024] RIP zap_pte_range (mm/memory.c:1137)
+[ 5470.361024]  RSP <ffff88016f069c88>
+[ 5470.361024] CR2: ffffea0003480088
 
+
+Thanks,
+Sasha
