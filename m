@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201AbaEBVIU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 17:08:20 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:46599 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaEBVIS (ORCPT
+	id S1753251AbaEBVIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 17:08:46 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:38288 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752632AbaEBVIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 17:08:18 -0400
-Date: Fri, 2 May 2014 23:08:13 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
-References: <20140429191015.GK18016@ZenIV.linux.org.uk>
- <20140429211851.GA32204@dastard>
- <20140429214842.GL18016@ZenIV.linux.org.uk>
- <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
- <20140502055127.GH18016@ZenIV.linux.org.uk>
- <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 May 2014 17:08:44 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, git@xilinx.com,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] ARM: zynq: dt: Add a fixed regulator for CPU voltage
+Date: Fri,  2 May 2014 14:07:32 -0700
+Message-Id: <1399064852-19569-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 1.9.2.1.g06c4abd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's more of the "delete from shrink list not owned by us" in select parent.
-Proposed patch appended.
+To silence the warning
+	cpufreq_cpu0: failed to get cpu0 regulator: -19
+from the cpufreq driver regarding a missing regulator,
+add a fixed regulator to the DT.
+Zynq does not support voltage scaling and the CPU rail should always be
+supplied with 1 V, hence it is added in the SOC-level dtsi.
 
-And I'm not sure what umount_collect() is supposed to do.  Can other shrinkers
-still be active at that point?  That would present other problems, no?
-
-Also somewhat related is the question: how check_submounts_and_drop() could be
-guaranteed correctness (timely removal of all unsed dentries) in the presence of
-other shrinkers?
-
-Thanks,
-Miklos
-----
-
-
-From: Miklos Szeredi <mszeredi@suse.cz>
-Subject: dcache: select_collect(): don't remove from shrink list
-
-Shrink lists are not protected by any lock, so don't remove from an unknown
-one.
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 ---
- fs/dcache.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1241,18 +1241,19 @@ static enum d_walk_ret select_collect(vo
- 	 * loop in shrink_dcache_parent() might not make any progress
- 	 * and loop forever.
- 	 */
--	if (dentry->d_lockref.count) {
--		dentry_lru_del(dentry);
--	} else if (!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
--		/*
--		 * We can't use d_lru_shrink_move() because we
--		 * need to get the global LRU lock and do the
--		 * LRU accounting.
--		 */
-+	if (dentry->d_flags & (DCACHE_SHRINK_LIST | DCACHE_LRU_LIST) ==
-+							DCACHE_LRU_LIST) {
- 		d_lru_del(dentry);
--		d_shrink_add(dentry, &data->dispose);
--		data->found++;
--		ret = D_WALK_NORETRY;
-+		if (!dentry->d_lockref.count) {
-+			/*
-+			 * We can't use d_lru_shrink_move() because we
-+			 * need to get the global LRU lock and do the
-+			 * LRU accounting.
-+			 */
-+			d_shrink_add(dentry, &data->dispose);
-+			data->found++;
-+			ret = D_WALK_NORETRY;
-+		}
- 	}
- 	/*
- 	 * We can return to the caller if we have found some (this
+ arch/arm/boot/dts/zynq-7000.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
+index c1176abc34d9..64779f9d5c38 100644
+--- a/arch/arm/boot/dts/zynq-7000.dtsi
++++ b/arch/arm/boot/dts/zynq-7000.dtsi
+@@ -25,6 +25,7 @@
+ 			reg = <0>;
+ 			clocks = <&clkc 3>;
+ 			clock-latency = <1000>;
++			cpu0-supply = <&regulator_vccpint>;
+ 			operating-points = <
+ 				/* kHz    uV */
+ 				666667  1000000
+@@ -48,6 +49,15 @@
+ 		reg = < 0xf8891000 0x1000 0xf8893000 0x1000 >;
+ 	};
+ 
++	regulator_vccpint: fixedregulator@0 {
++		compatible = "regulator-fixed";
++		regulator-name = "VCCPINT";
++		regulator-min-microvolt = <1000000>;
++		regulator-max-microvolt = <1000000>;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
+ 	amba {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+-- 
+1.9.2.1.g06c4abd
+
