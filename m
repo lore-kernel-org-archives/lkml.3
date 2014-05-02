@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaEBQVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:21:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43756 "EHLO
+	id S1754138AbaEBQVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:21:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43760 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635AbaEBPjY (ORCPT
+	with ESMTP id S1752781AbaEBPjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 136/151] iser-target: Add missing se_cmd put for WRITE_PENDING in tx_comp_err
-Date: Fri,  2 May 2014 08:38:44 -0700
-Message-Id: <1399045139-4531-137-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 139/151] mm: page_alloc: spill to remote nodes before waking kswapd
+Date: Fri,  2 May 2014 08:38:47 -0700
+Message-Id: <1399045139-4531-140-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,151 +29,232 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 03e7848a64ed535a30f5d7fc6dede2d5a6a2534b upstream.
+commit 3a025760fc158b3726eac89ee95d7f29599e9dfa upstream.
 
-This patch fixes a bug where outstanding RDMA_READs with WRITE_PENDING
-status require an extra target_put_sess_cmd() in isert_put_cmd() code
-when called from isert_cq_tx_comp_err() + isert_cq_drain_comp_llist()
-context during session shutdown.
+On NUMA systems, a node may start thrashing cache or even swap anonymous
+pages while there are still free pages on remote nodes.
 
-The extra kref PUT is required so that transport_generic_free_cmd()
-invokes the last target_put_sess_cmd() -> target_release_cmd_kref(),
-which will complete(&se_cmd->cmd_wait_comp) the outstanding se_cmd
-descriptor with WRITE_PENDING status, and awake the completion in
-target_wait_for_sess_cmds() to invoke TFO->release_cmd().
+This is a result of commits 81c0a2bb515f ("mm: page_alloc: fair zone
+allocator policy") and fff4068cba48 ("mm: page_alloc: revert NUMA aspect
+of fair allocation policy").
 
-The bug was manifesting itself in target_wait_for_sess_cmds() where
-a se_cmd descriptor with WRITE_PENDING status would end up sleeping
-indefinately.
+Before those changes, the allocator would first try all allowed zones,
+including those on remote nodes, before waking any kswapds.  But now,
+the allocator fastpath doubles as the fairness pass, which in turn can
+only consider the local node to prevent remote spilling based on
+exhausted fairness batches alone.  Remote nodes are only considered in
+the slowpath, after the kswapds are woken up.  But if remote nodes still
+have free memory, kswapd should not be woken to rebalance the local node
+or it may thrash cash or swap prematurely.
 
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-[ kamal: backport to 3.13 (context) ]
+Fix this by adding one more unfair pass over the zonelist that is
+allowed to spill to remote nodes after the local fairness pass fails but
+before entering the slowpath and waking the kswapds.
+
+This also gets rid of the GFP_THISNODE exemption from the fairness
+protocol because the unfair pass is no longer tied to kswapd, which
+GFP_THISNODE is not allowed to wake up.
+
+However, because remote spills can be more frequent now - we prefer them
+over local kswapd reclaim - the allocation batches on remote nodes could
+underflow more heavily.  When resetting the batches, use
+atomic_long_read() directly instead of zone_page_state() to calculate the
+delta as the latter filters negative counter values.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/ulp/isert/ib_isert.c | 37 +++++++++++++++++++++++----------
- 1 file changed, 26 insertions(+), 11 deletions(-)
+ mm/internal.h   |  1 +
+ mm/page_alloc.c | 89 +++++++++++++++++++++++++++++----------------------------
+ 2 files changed, 46 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/infiniband/ulp/isert/ib_isert.c b/drivers/infiniband/ulp/isert/ib_isert.c
-index 3b7bfc7..3e3b2a1 100644
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1434,7 +1434,7 @@ isert_unreg_rdma_frwr(struct isert_cmd *isert_cmd, struct isert_conn *isert_conn
+diff --git a/mm/internal.h b/mm/internal.h
+index 8b6cfd6..fdddbc83 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -369,5 +369,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+ #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+ #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
++#define ALLOC_FAIR		0x100 /* fair zone allocation */
+ 
+ #endif	/* __MM_INTERNAL_H */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 589521d..7376863 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1213,15 +1213,6 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
+ 	}
+ 	local_irq_restore(flags);
+ }
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
+-}
+-#else
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return false;
+-}
+ #endif
+ 
+ /*
+@@ -1558,12 +1549,7 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
+ 
+-	/*
+-	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
+-	 * aging protocol, so they can't be fair.
+-	 */
+-	if (!gfp_thisnode_allocation(gfp_flags))
+-		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1929,23 +1915,12 @@ zonelist_scan:
+ 		 * zone size to ensure fair page aging.  The zone a
+ 		 * page was allocated in should have no effect on the
+ 		 * time the page has in memory before being reclaimed.
+-		 *
+-		 * Try to stay in local zones in the fastpath.  If
+-		 * that fails, the slowpath is entered, which will do
+-		 * another pass starting with the local zones, but
+-		 * ultimately fall back to remote zones that do not
+-		 * partake in the fairness round-robin cycle of this
+-		 * zonelist.
+-		 *
+-		 * NOTE: GFP_THISNODE allocations do not partake in
+-		 * the kswapd aging protocol, so they can't be fair.
+ 		 */
+-		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+-		    !gfp_thisnode_allocation(gfp_mask)) {
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
++		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				continue;
++			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++				continue;
+ 		}
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+@@ -2393,32 +2368,40 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
+ 	return page;
  }
  
- static void
--isert_put_cmd(struct isert_cmd *isert_cmd)
-+isert_put_cmd(struct isert_cmd *isert_cmd, bool comp_err)
+-static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+-			     struct zonelist *zonelist,
+-			     enum zone_type high_zoneidx,
+-			     struct zone *preferred_zone)
++static void reset_alloc_batches(struct zonelist *zonelist,
++				enum zone_type high_zoneidx,
++				struct zone *preferred_zone)
  {
- 	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
- 	struct isert_conn *isert_conn = isert_cmd->conn;
-@@ -1450,8 +1450,21 @@ isert_put_cmd(struct isert_cmd *isert_cmd)
- 			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
+ 	struct zoneref *z;
+ 	struct zone *zone;
  
--		if (cmd->data_direction == DMA_TO_DEVICE)
-+		if (cmd->data_direction == DMA_TO_DEVICE) {
- 			iscsit_stop_dataout_timer(cmd);
-+			/*
-+			 * Check for special case during comp_err where
-+			 * WRITE_PENDING has been handed off from core,
-+			 * but requires an extra target_put_sess_cmd()
-+			 * before transport_generic_free_cmd() below.
-+			 */
-+			if (comp_err &&
-+			    cmd->se_cmd.t_state == TRANSPORT_WRITE_PENDING) {
-+				struct se_cmd *se_cmd = &cmd->se_cmd;
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		if (!(gfp_mask & __GFP_NO_KSWAPD))
+-			wakeup_kswapd(zone, order, zone_idx(preferred_zone));
+ 		/*
+ 		 * Only reset the batches of zones that were actually
+-		 * considered in the fast path, we don't want to
+-		 * thrash fairness information for zones that are not
++		 * considered in the fairness pass, we don't want to
++		 * trash fairness information for zones that are not
+ 		 * actually part of this zonelist's round-robin cycle.
+ 		 */
+ 		if (!zone_local(preferred_zone, zone))
+ 			continue;
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-				    high_wmark_pages(zone) -
+-				    low_wmark_pages(zone) -
+-				    zone_page_state(zone, NR_ALLOC_BATCH));
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+ 	}
+ }
+ 
++static void wake_all_kswapds(unsigned int order,
++			     struct zonelist *zonelist,
++			     enum zone_type high_zoneidx,
++			     struct zone *preferred_zone)
++{
++	struct zoneref *z;
++	struct zone *zone;
 +
-+				target_put_sess_cmd(se_cmd->se_sess, se_cmd);
-+			}
++	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
++		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
++}
++
+ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+@@ -2507,12 +2490,13 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	 * allowed per node queues are empty and that nodes are
+ 	 * over allocated.
+ 	 */
+-	if (gfp_thisnode_allocation(gfp_mask))
++	if (IS_ENABLED(CONFIG_NUMA) &&
++	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
+ 
+ restart:
+-	prepare_slowpath(gfp_mask, order, zonelist,
+-			 high_zoneidx, preferred_zone);
++	if (!(gfp_mask & __GFP_NO_KSWAPD))
++		wake_all_kswapds(order, zonelist, high_zoneidx, preferred_zone);
+ 
+ 	/*
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2689,7 +2673,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+ 	struct page *page = NULL;
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+-	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
++	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
+ 
+ 	gfp_mask &= gfp_allowed_mask;
+@@ -2730,12 +2714,29 @@ retry_cpuset:
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
++retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
++		 * The first pass makes sure allocations are spread
++		 * fairly within the local node.  However, the local
++		 * node might have free pages left after the fairness
++		 * batches are exhausted, and remote zones haven't
++		 * even been considered yet.  Try once more without
++		 * fairness, and include remote zones now, before
++		 * entering the slowpath and waking kswapd: prefer
++		 * spilling to a remote zone over swapping locally.
++		 */
++		if (alloc_flags & ALLOC_FAIR) {
++			reset_alloc_batches(zonelist, high_zoneidx,
++					    preferred_zone);
++			alloc_flags &= ~ALLOC_FAIR;
++			goto retry;
 +		}
- 
- 		device->unreg_rdma_mem(isert_cmd, isert_conn);
- 		transport_generic_free_cmd(&cmd->se_cmd, 0);
-@@ -1506,7 +1519,7 @@ isert_unmap_tx_desc(struct iser_tx_desc *tx_desc, struct ib_device *ib_dev)
- 
- static void
- isert_completion_put(struct iser_tx_desc *tx_desc, struct isert_cmd *isert_cmd,
--		     struct ib_device *ib_dev)
-+		     struct ib_device *ib_dev, bool comp_err)
- {
- 	if (isert_cmd->pdu_buf_dma != 0) {
- 		pr_debug("Calling ib_dma_unmap_single for isert_cmd->pdu_buf_dma\n");
-@@ -1516,7 +1529,7 @@ isert_completion_put(struct iser_tx_desc *tx_desc, struct isert_cmd *isert_cmd,
- 	}
- 
- 	isert_unmap_tx_desc(tx_desc, ib_dev);
--	isert_put_cmd(isert_cmd);
-+	isert_put_cmd(isert_cmd, comp_err);
- }
- 
- static void
-@@ -1560,14 +1573,14 @@ isert_do_control_comp(struct work_struct *work)
- 		iscsit_tmr_post_handler(cmd, cmd->conn);
- 
- 		cmd->i_state = ISTATE_SENT_STATUS;
--		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
-+		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
- 		break;
- 	case ISTATE_SEND_REJECT:
- 		pr_debug("Got isert_do_control_comp ISTATE_SEND_REJECT: >>>\n");
- 		atomic_dec(&isert_conn->post_send_buf_count);
- 
- 		cmd->i_state = ISTATE_SENT_STATUS;
--		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
-+		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
- 		break;
- 	case ISTATE_SEND_LOGOUTRSP:
- 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
-@@ -1581,7 +1594,7 @@ isert_do_control_comp(struct work_struct *work)
- 	case ISTATE_SEND_TEXTRSP:
- 		atomic_dec(&isert_conn->post_send_buf_count);
- 		cmd->i_state = ISTATE_SENT_STATUS;
--		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
-+		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
- 		break;
- 	default:
- 		pr_err("Unknown do_control_comp i_state %d\n", cmd->i_state);
-@@ -1612,7 +1625,7 @@ isert_response_completion(struct iser_tx_desc *tx_desc,
- 	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 
- 	cmd->i_state = ISTATE_SENT_STATUS;
--	isert_completion_put(tx_desc, isert_cmd, ib_dev);
-+	isert_completion_put(tx_desc, isert_cmd, ib_dev, false);
- }
- 
- static void
-@@ -1693,7 +1706,8 @@ isert_cq_drain_comp_llist(struct isert_conn *isert_conn, struct ib_device *ib_de
- 		wr = &t->isert_cmd->rdma_wr;
- 
- 		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
--		isert_completion_put(t, t->isert_cmd, ib_dev);
-+
-+		isert_completion_put(t, t->isert_cmd, ib_dev, true);
- 	}
- }
- 
-@@ -1712,14 +1726,15 @@ isert_cq_tx_comp_err(struct iser_tx_desc *tx_desc, struct isert_conn *isert_conn
- 		wr = &t->isert_cmd->rdma_wr;
- 
- 		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
--		isert_completion_put(t, t->isert_cmd, ib_dev);
-+
-+		isert_completion_put(t, t->isert_cmd, ib_dev, true);
- 	}
- 	tx_desc->comp_llnode_batch = NULL;
- 
- 	if (!isert_cmd)
- 		isert_unmap_tx_desc(tx_desc, ib_dev);
- 	else
--		isert_completion_put(tx_desc, isert_cmd, ib_dev);
-+		isert_completion_put(tx_desc, isert_cmd, ib_dev, true);
- }
- 
- static void
++		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
 -- 
 1.9.1
 
