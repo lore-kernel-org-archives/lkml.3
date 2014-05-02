@@ -1,83 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaEBJQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:16:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54171 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaEBJQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:16:48 -0400
-Date: Fri, 2 May 2014 11:16:38 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH/RFC 00/11] perf/s390/kvm: trace events, perf kvm stat
-Message-ID: <20140502091638.GA6327@krava.redhat.com>
-References: <1398417153-57347-1-git-send-email-borntraeger@de.ibm.com>
+	id S1751909AbaEBJTl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:19:41 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:53428 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318AbaEBJTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 05:19:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398417153-57347-1-git-send-email-borntraeger@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398690730-5454-1-git-send-email-jean.pihet@linaro.org>
+References: <CAFrcx1nfkDWTu9vF+a7UGjd1fzHpXS44pzqKLZS9ej7KJwqkOg@mail.gmail.com>
+	<1398690730-5454-1-git-send-email-jean.pihet@linaro.org>
+Date: Fri, 2 May 2014 11:19:38 +0200
+Message-ID: <CAFrcx1kQO5i+kQwDizT1F4asbFNGiDSDWt0ubnpS92fU1PBiHw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on ARM64
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Patch Tracking <patches@linaro.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Ahern <dsahern@gmail.com>, Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 11:12:22AM +0200, Christian Borntraeger wrote:
-> The goal of this series is to
-> - enable perf kvm stat on s390
-> - get rid of a perf warning "insn_to_mnemonic not found" when it tries to
->   decode s390 perf trace events
+Hi WIll, Mark,
 
-perf tools changes look good to me
+Ping on this series. Can you please check? Is the refreshed patch OK?
 
-> 
-> Review feedback is welcome.
+Cheers,
+Jean
 
-CC-ing David Ahern
 
-jirka
-
-> In addition, The patch set touches s390/kvm code and perf code.
-> So any feedback on which tree to use for this series is also 
-> welcome.
-> 
-> Christian
-> 
-> 
-> Alexander Yarygin (11):
->   s390: add sie exit reasons tables
->   KVM: s390: Use trace tables from sie.h.
->   KVM: s390: decoder of SIE intercepted instructions
->   KVM: s390: Use intercept_insn decoder in trace event
->   perf kvm: Intoduce HAVE_KVM_STAT_SUPPORT flag
->   perf kvm: simplify of exit reasons tables definitions
->   perf kvm: Refactoring of cpu_isa_config()
->   perf kvm: allow for variable string sizes
->   perf kvm: use defines of kvm events
->   perf: allow to use cpuinfo on s390
->   perf kvm: add stat support on s390
-> 
->  arch/s390/include/uapi/asm/kvm.h   |   7 +
->  arch/s390/include/uapi/asm/sie.h   | 245 ++++++++++++++++++++++++++++++++++
->  arch/s390/kvm/trace.h              |  39 +-----
->  arch/x86/include/uapi/asm/kvm.h    |   8 ++
->  tools/perf/MANIFEST                |   3 +
->  tools/perf/arch/s390/Makefile      |   2 +
->  tools/perf/arch/s390/util/header.c |  17 +++
->  tools/perf/arch/x86/Makefile       |   1 +
->  tools/perf/builtin-kvm.c           | 263 +++++++++++++++++++++++++++++--------
->  tools/perf/config/Makefile         |   4 +
->  tools/perf/perf.h                  |   1 +
->  11 files changed, 499 insertions(+), 91 deletions(-)
->  create mode 100644 arch/s390/include/uapi/asm/sie.h
->  create mode 100644 tools/perf/arch/s390/util/header.c
-> 
-> -- 
-> 1.8.4.2
-> 
+On 28 April 2014 15:12, Jean Pihet <jean.pihet@linaro.org> wrote:
+> Introducing perf_regs_load function, which is going
+> to be used for dwarf unwind test in following patches.
+>
+> It takes single argument as a pointer to the regs dump
+> buffer and populates it with current registers values, as
+> expected by the perf built-in unwinding test.
+>
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Steve Capper <steve.capper@linaro.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/arch/arm64/Makefile            |  1 +
+>  tools/perf/arch/arm64/include/perf_regs.h |  2 ++
+>  tools/perf/arch/arm64/tests/regs_load.S   | 40 +++++++++++++++++++++++++++++++
+>  3 files changed, 43 insertions(+)
+>  create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
+>
+> diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
+> index 67e9b3d..9b8f87e 100644
+> --- a/tools/perf/arch/arm64/Makefile
+> +++ b/tools/perf/arch/arm64/Makefile
+> @@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+>  endif
+>  ifndef NO_LIBUNWIND
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
+> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
+>  endif
+> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
+> index 2359546..1e052f1 100644
+> --- a/tools/perf/arch/arm64/include/perf_regs.h
+> +++ b/tools/perf/arch/arm64/include/perf_regs.h
+> @@ -9,6 +9,8 @@
+>  #define PERF_REG_IP    PERF_REG_ARM64_PC
+>  #define PERF_REG_SP    PERF_REG_ARM64_SP
+>
+> +void perf_regs_load(u64 *regs);
+> +
+>  static inline const char *perf_reg_name(int id)
+>  {
+>         switch (id) {
+> diff --git a/tools/perf/arch/arm64/tests/regs_load.S b/tools/perf/arch/arm64/tests/regs_load.S
+> new file mode 100644
+> index 0000000..40b8b99
+> --- /dev/null
+> +++ b/tools/perf/arch/arm64/tests/regs_load.S
+> @@ -0,0 +1,40 @@
+> +#include <linux/linkage.h>
+> +
+> +/*
+> + * Implementation of void perf_regs_load(u64 *regs);
+> + *
+> + * This functions fills in the 'regs' buffer from the actual registers values,
+> + * in the way the perf built-in unwinding test expects them, e.g. an address
+> + * within the caller:
+> + * - the PC at the time at the call to this function. Since this function
+> + *   is called using a bl instruction, the PC value is taken from LR,
+> + * - the current SP (not touched by this function),
+> + * - the current value of LR is merely retrieved and stored because the
+> + *   value before the call to this function is unknown at this time; it will
+> + *   be unwound from the dwarf information in unwind__get_entries.
+> + */
+> +
+> +.text
+> +.type perf_regs_load,%function
+> +ENTRY(perf_regs_load)
+> +       stp x0,  x1,  [x0], #16 // store x0..x29
+> +       stp x2,  x3,  [x0], #16
+> +       stp x4,  x5,  [x0], #16
+> +       stp x6,  x7,  [x0], #16
+> +       stp x8,  x9,  [x0], #16
+> +       stp x10, x11, [x0], #16
+> +       stp x12, x13, [x0], #16
+> +       stp x14, x15, [x0], #16
+> +       stp x16, x17, [x0], #16
+> +       stp x18, x19, [x0], #16
+> +       stp x20, x21, [x0], #16
+> +       stp x22, x23, [x0], #16
+> +       stp x24, x25, [x0], #16
+> +       stp x26, x27, [x0], #16
+> +       stp x28, x29, [x0], #16
+> +       mov x1,  sp
+> +       stp x30, x1,  [x0], #16 // store lr and sp
+> +       str x30, [x0]           // store lr as the PC in order to skip the call
+> +                               //  to this function
+> +       ret
+> +ENDPROC(perf_regs_load)
+> --
+> 1.7.11.7
+>
