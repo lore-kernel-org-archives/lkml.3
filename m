@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaEBNBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:01:33 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60154 "EHLO zene.cmpxchg.org"
+	id S1752165AbaEBNDl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:03:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52891 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaEBNBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:01:32 -0400
-Date: Fri, 2 May 2014 09:01:18 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
-        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH 1/4] memcg, mm: introduce lowlimit reclaim
-Message-ID: <20140502130118.GK23420@cmpxchg.org>
-References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
- <1398688005-26207-2-git-send-email-mhocko@suse.cz>
- <20140430225550.GD26041@cmpxchg.org>
- <20140502093628.GC3446@dhcp22.suse.cz>
- <20140502120715.GI3446@dhcp22.suse.cz>
+	id S1751827AbaEBNDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 09:03:40 -0400
+Date: Fri, 2 May 2014 15:03:37 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Or Gerlitz <or.gerlitz@gmail.com>
+cc: Or Gerlitz <ogerlitz@mellanox.com>, Roland Dreier <roland@kernel.org>,
+        Sagi Grimberg <sagig@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Shlomo Pongratz <shlomop@mellanox.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+In-Reply-To: <CAJZOPZKUWsgcNRNhVDM3EGpvVT834pfqkEZ_Z3NmCQJXkNuApg@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1405021500380.29834@pobox.suse.cz>
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
+ <531F1550.3080401@mellanox.com> <alpine.LNX.2.00.1404241900020.3265@pobox.suse.cz> <CAJZOPZKUWsgcNRNhVDM3EGpvVT834pfqkEZ_Z3NmCQJXkNuApg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502120715.GI3446@dhcp22.suse.cz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 02:07:15PM +0200, Michal Hocko wrote:
-> On Fri 02-05-14 11:36:28, Michal Hocko wrote:
-> > On Wed 30-04-14 18:55:50, Johannes Weiner wrote:
-> > > On Mon, Apr 28, 2014 at 02:26:42PM +0200, Michal Hocko wrote:
-> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > index 19d620b3d69c..40e517630138 100644
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -2808,6 +2808,29 @@ static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
-> > > >  	return mem_cgroup_from_id(id);
-> > > >  }
-> > > >  
-> > > > +/**
-> > > > + * mem_cgroup_reclaim_eligible - checks whether given memcg is eligible for the
-> > > > + * reclaim
-> > > > + * @memcg: target memcg for the reclaim
-> > > > + * @root: root of the reclaim hierarchy (null for the global reclaim)
-> > > > + *
-> > > > + * The given group is reclaimable if it is above its low limit and the same
-> > > > + * applies for all parents up the hierarchy until root (including).
-> > > > + */
-> > > > +bool mem_cgroup_reclaim_eligible(struct mem_cgroup *memcg,
-> > > > +		struct mem_cgroup *root)
-> > > 
-> > > Could you please rename this to something that is more descriptive in
-> > > the reclaim callsite?  How about mem_cgroup_within_low_limit()?
-> > 
-> > I have intentionally used somethig that is not low_limit specific. The
-> > generic reclaim code does't have to care about the reason why a memcg is
-> > not reclaimable. I agree that having follow_low_limit paramter explicit
-> > and mem_cgroup_reclaim_eligible not is messy. So something should be
-> > renamed. I would probably go with s@follow_low_limit@check_reclaim_eligible@
-> > but I do not have a strong preference.
+On Thu, 24 Apr 2014, Or Gerlitz wrote:
+
+> I sent you private note on Mar 19th saying "are you on track with this
+> for 3.15? the merge window is coming soon and you have 99% of what you
+> need -- lets get there" which seems to be the piece that fell between
+> the cracks.
+
+I probably failed to see the implication that you/Mellanox is expecting me 
+to deliver the final patch, sorry for that.
+
+> > probably because it wasn't clearly stated *who* will be preparing 
+> > patch(es) that'd be implementing the ideas above. My understanding was 
+> > that it'd be Mellanox, given that they basically own the driver,
 > 
-> What about this?
+> to be precise partially own the mlx4 HW driver (Roland is the
+> mlx4_core/ib author and maintainer, we are asking for few years to get
+> co-maintainer hat there, no success so far)
 
-I really don't like it.
+I am of course completely unfamiliar with internal affairs as this, so 
+it's not really appropriate for me to comment, but if hardware vendor is 
+not able to obtain maintainership of the driver for its own HW, that seems 
+to signal some serious issues.
 
-Yes, we should be hiding implementation details, but we should stop
-treating memcg like an alien in this code.  The VM code obviously
-doesn't have to know HOW the guarantees are exactly implemented, but
-it's a perfectly fine *concept* that can be known outside of memcg:
+> , the problem you have described can happen with any HW driver, but as 
+> stated earlier, the suggested plan will fix ipoib and mlx4 and following 
+> that more hw drivers can be enhanced to support that too.
+> 
+> >
+> > have the best testing coverage compared to very very limited
+> > testing coverage I can do, and will be pushing it upstream anyway.
+> >
+> > I believe all the above can be easily created on top of the original patch I sent.
+> 
+> Indeed, so will take a look next week and let you know if it works for me
 
-shrink_zone:
-for each memcg in system:
-  if mem_cgroup_within_guarantee(memcg):
-    continue
-  reclaim(memcg-zone)
+Excellent, thanks a lot, looking forward to any updates on this.
 
-is perfectly understandable and makes it easier to reason about the
-behavior of the reclaim code.  If I just see !mem_cgroup_eligible(), I
-don't know if this affects the scenario I'm thinking about at all.
+Thanks again,
 
-It's obscuring useful information for absolutely no benefit.  If you
-burden the reclaim code with a callback, you better explain what you
-are doing.  You owe it to the reader.
+-- 
+Jiri Kosina
+SUSE Labs
