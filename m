@@ -1,46 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541AbaEBO5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:57:30 -0400
-Received: from fallback1.mail.ru ([94.100.176.18]:59272 "EHLO
-	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaEBO53 (ORCPT
+	id S1752641AbaEBO6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:58:11 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:37443 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586AbaEBO6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:57:29 -0400
-From: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        linux-kernel@vger.kernel.org,
-        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-Subject: [PATCH] staging/comedi: fix sparse warning: shift too big
-Date: Fri,  2 May 2014 18:57:04 +0400
-Message-Id: <1399042624-9441-1-git-send-email-brilliantov@inbox.ru>
-X-Mailer: git-send-email 1.9.1
-X-Spam: Not detected
-X-Mras: Ok
+	Fri, 2 May 2014 10:58:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398904476-26200-2-git-send-email-s-anna@ti.com>
+References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
+	<1398904476-26200-2-git-send-email-s-anna@ti.com>
+Date: Fri, 2 May 2014 09:58:07 -0500
+Message-ID: <CAL_JsqJEVU7j0+biWuW2FiV-avu1_SO4w+OCdirAc6mw2OxrOA@mail.gmail.com>
+Subject: Re: [PATCHv5 01/15] Documentation: dt: add common bindings for hwspinlock
+From: Rob Herring <robherring2@gmail.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
----
- drivers/staging/comedi/drivers/ni_stc.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Apr 30, 2014 at 7:34 PM, Suman Anna <s-anna@ti.com> wrote:
+> This patch adds the generic common bindings used to represent
+> a hwlock device and use/request locks in a device-tree build.
+>
+> All the platform-specific hwlock driver implementations need the
+> number of locks and associated base id for registering the locks
+> present within the device with the driver core. The number of locks
+> is represented by 'hwlock-num-locks' property in DT bindings. A
+> property for base id is not needed in DT binding, as it can be
+> satisfied using a phandle + args specifier. The args specifier
+> length is dependent on each vendor-specific implementation and
+> is represented through the '#hwlock-cells' property.
+>
+> Note that the document is named hwlock.txt deliberately to keep it
+> a bit more generic.
+>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Signed-off-by: Suman Anna <s-anna@ti.com>
+> ---
+>  .../devicetree/bindings/hwlock/hwlock.txt          | 52 ++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>
+> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> new file mode 100644
+> index 0000000..32381cc
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> @@ -0,0 +1,52 @@
+> +Generic hwlock bindings
+> +=======================
+> +
+> +Generic bindings that are common to all the hwlock platform specific driver
+> +implementations, the retrieved values are used for registering the device
+> +specific parameters with the hwspinlock core.
+> +
+> +The validity and need of these common properties may vary from one platform
+> +implementation to another. The platform specific bindings should explicitly
+> +state if a property is mandatory or optional. Please look through the
+> +individual platform specific hwlock binding documentations for identifying
+> +the applicable properties.
+> +
+> +Common properties:
+> +- #hwlock-cells:       Specifies the number of cells needed to represent a
+> +                       specific lock.
 
-diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
-index f0630b78..197b568 100644
---- a/drivers/staging/comedi/drivers/ni_stc.h
-+++ b/drivers/staging/comedi/drivers/ni_stc.h
-@@ -717,7 +717,7 @@ enum AI_AO_Select_Bits {
- static inline unsigned ni_stc_dma_channel_select_bitfield(unsigned channel)
- {
- 	if (channel < 4)
--		return 1 << channel;
-+		return 1 << (channel & 0x3);
- 	if (channel == 4)
- 		return 0x3;
- 	if (channel == 5)
--- 
-1.9.1
+This should never be optional.
 
+> +- hwlock-num-locks:    Number of locks present in a hwlock device. This
+> +                       property is needed on hwlock devices, where the number
+> +                       of supported locks within a hwlock device cannot be
+> +                       read from a register.
+
+Do you have any users of this? The omap binding doesn't use it.
+Wouldn't you typically know this based on the IP block? Similarly you
+typically don't have to list how many irqs an interrupt controller
+has.
+
+
+> +
+> +Hwlock Users:
+> +=============
+> +
+> +Nodes that require specific hwlock(s) should specify them using one or more
+> +properties, each containing a phandle to the hwlock node and an args specifier
+> +value as indicated by #hwlock-cells. Multiple hwlocks can be requested using
+> +an array of the phandle and hwlock number specifier tuple.
+> +
+> +1. Example of a node using a single specific hwlock:
+> +
+> +The following example has a node requesting a hwlock in the bank defined by
+> +the node hwlock1. hwlock1 is a hwlock provider with an argument specifier
+> +of length 1.
+> +
+> +       node {
+> +               ...
+> +               hwlocks = <&hwlock1 2>;
+> +               ...
+> +       };
+> +
+> +2. Example of a node using multiple specific hwlocks:
+> +
+> +The following example has a node requesting two hwlocks, a hwlock within
+> +the hwlock device node 'hwlock1' with #hwlock-cells value of 1, and another
+> +hwlock within the hwlock device node 'hwlock2' with #hwlock-cells value of 2.
+> +
+> +       node {
+> +               ...
+> +               hwlocks = <&hwlock1 2>, <&hwlock2 0 3>;
+> +               ...
+> +       };
+> --
+> 1.9.2
+>
