@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaEBJvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:51:51 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:42473 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaEBJvu (ORCPT
+	id S1751869AbaEBJxl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:53:41 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:35413 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187AbaEBJxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:51:50 -0400
+	Fri, 2 May 2014 05:53:40 -0400
+Message-ID: <53636B1D.8030405@redhat.com>
+Date: Fri, 02 May 2014 11:53:33 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-Originating-IP: [60.248.88.209]
-In-Reply-To: <1398876964.2182.13.camel@dabdike.int.hansenpartnership.com>
-References: <1398850855.1769.11.camel@localhost>
-	<1398876964.2182.13.camel@dabdike.int.hansenpartnership.com>
-Date: Fri, 2 May 2014 17:51:48 +0800
-Message-ID: <CAKiknE8ZapUdnygsAVB8rwv_HwnT-+diXVVKaNby8YCiHzYK4g@mail.gmail.com>
-Subject: Re: [PATCH v1.0 1/11] arcmsr: Revise interrupt service routine relate function
-From: =?UTF-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
-        "thenzl@redhat.com" <thenzl@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Hu Yaohui <loki2441@gmail.com>, kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: KVM Nested L2 guest startup problems
+References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
+In-Reply-To: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+Il 02/05/2014 03:43, Hu Yaohui ha scritto:
+> Hi all,
+> I have a problem running the latest version of kvm with nested configuration.
+> I used to run it with kernel 3.2.2 both for L0 and L1, which works perfectly.
+> When I change my L0 to kernel 3.10.36, L1 to kernel 3.12.10.
+> When I start L2 guest in L1 with qemu-kvm. I get the following error
+> from the qemu-kvm.
 
-Indeed, it makes you confusion that I mistake typing the subject.
-It should be [PATCH v1.0 1/16] , but not [PATCH v1.0 1/11].
-Why I use v1.0 other than v1.4? Changing from 11 patches to 16 patches.
-Because I spend a long time to simplify each patch, so patch number is increase.
-It is easier to review.
+Try upgrading L0 to a more recent kernel, 3.13 should be enough.
 
-I am so sorry for late to response that make you are inconvenient.
->From now on, I will response quickly.
+Paolo
 
-Thanks for your advice.
+> <log>
+> KVM: entry failed, hardware error 0x0
+> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000623
+> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
+> EIP=0000e05b EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
+> ES =0000 00000000 0000ffff 00009300
+> CS =f000 000f0000 0000ffff 00009b00
+> SS =0000 00000000 0000ffff 00009300
+> DS =0000 00000000 0000ffff 00009300
+> FS =0000 00000000 0000ffff 00009300
+> GS =0000 00000000 0000ffff 00009300
+> LDT=0000 00000000 0000ffff 00008200
+> TR =0000 00000000 0000ffff 00008b00
+> GDT=     00000000 0000ffff
+> IDT=     00000000 0000ffff
+> CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
+> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
+> DR3=0000000000000000
+> DR6=00000000ffff0ff0 DR7=0000000000000400
+> EFER=0000000000000000
+> Code=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <2e>
+> 66 83 3e 24 d3 00 0f 85 e2 e5 31 c0 8e d0 66 bc 00 70 00 00 66 ba 4c
+> 28 0f 00 e9 07 e5
+> </log>
+>
+> In L0, the kernel gives me error like:
+> <log>
+> [310681.735709] nested_vmx_exit_handled failed vm entry 7
+> </log>
+>
+> I am wondering anyone has met the similar problem.
 
-2014-05-01 0:56 GMT+08:00 James Bottomley <jbottomley@parallels.com>:
-> On Wed, 2014-04-30 at 17:40 +0800, ching wrote:
->> From: Ching<ching2048@areca.com.tw>
->>
->> Rewrite interrupt service routine relate function to fix command
->> timeout on controller very heavy loading.
->
-> OK, so I think you've confused us a bit.  This looks to be an update of
-> your previous v1.4 patch set, yet it's now called v1.0?
->
-> Could you please include a cover letter as patch 0/x like you see
-> everyone else doing on the list?  In this cover letter can you tell us
-> what the disposition of the previous feedback is and what other changes
-> have you done? You didn't reply to any of the comments, have have you
-> fixed them?  It's very dispiriting to review 11 patches, give feedback
-> and not hear anything ... and then have to review an even longer set of
-> patches just to see if anything was done about your previous comments.
->
-> The less interactive you are with reviews, the less chance there is that
-> people will review updates ... without external reviewers, you go on a
-> very long backlog of things I have to review before the patches get in.
->
-> James
->
