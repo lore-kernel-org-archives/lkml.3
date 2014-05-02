@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbaEBOBF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:01:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37377 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbaEBOBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:01:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,972,1389772800"; 
-   d="scan'208";a="524963777"
-Message-ID: <5363A4E0.2000403@intel.com>
-Date: Fri, 02 May 2014 07:00:00 -0700
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751824AbaEBOH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:07:57 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:55596 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaEBOH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 10:07:56 -0400
 MIME-Version: 1.0
-To: Jesper Dangaard Brouer <brouer@redhat.com>
-CC: Zhouyi Zhou <zhouzhouyi@gmail.com>, davem@davemloft.net,
-        steffen.klassert@secunet.com, fan.du@windriver.com,
-        dborkman@redhat.com, minipli@googlemail.com, tgraf@suug.ch,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com> <20140502151921.014fbeec@redhat.com>
-In-Reply-To: <20140502151921.014fbeec@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <14abe1165b144fe3d1139ad3b631eddd@www.loen.fr>
+References: <CAPUj1OMJ8cE1cNTe8CjgBP2GTCXzi__Yg0+OoomME6=TShgqJg@mail.gmail.com>
+	<CAPUj1OML_Rag3gxxBzswS6yaqFciuq2hKrV9BthL2OwU+wNj3A@mail.gmail.com>
+	<14abe1165b144fe3d1139ad3b631eddd@www.loen.fr>
+Date: Fri, 2 May 2014 19:37:55 +0530
+Message-ID: <CAPUj1OMks1tY9KyFsBQizVnq1H+nyjgB6OUHagtKyoknYaMiow@mail.gmail.com>
+Subject: Re: Linux Interrupt Context maps to ARM CPSR.mode = IRQ
+From: Mj Embd <mj.embd@gmail.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/2/2014 6:19 AM, Jesper Dangaard Brouer wrote:
-> On Fri,  2 May 2014 15:18:12 +0800
-> Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
->
->> As http://www.spinics.net/lists/netdev/msg165015.html
->> pktgen generates shared packet through vlan interface will cause
->> oops because of duplicate entering tc queue.
+On Fri, May 2, 2014 at 7:17 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> On 2014-05-02 13:34, Mj Embd wrote:
 >>
->> Try to solve this problem by means of packet clone instead of sharing.
->
-> I really don't like adding this stuff to the fast path of pktgen.
->
-> Why would you use pktgen on a VLAN?
-
-Its a good way to test qdiscs. When you run pktgen over the VLAN
-you exercise the lower devices qdisc.
-
-Although I never submitted a patch like this because I figured it
-was a corner case and we would want to keep the hotpath clean.
-
->
-> Why don't you use the "vlan_id" feature available in pktgen, and send
-> in the lower real device?
->
->
->
->> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
->> ---
->>   net/core/pktgen.c |   20 +++++++++++++++++---
->>   1 files changed, 17 insertions(+), 3 deletions(-)
+>> Adding Marc to comment
+>> Marc Please clarify the doubt
 >>
->> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
->> index 0304f98..ced07fc 100644
->> --- a/net/core/pktgen.c
->> +++ b/net/core/pktgen.c
->> @@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->>   	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
->>   		= odev->netdev_ops->ndo_start_xmit;
->>   	struct netdev_queue *txq;
->> +	struct sk_buff *nskb = NULL;
->>   	u16 queue_map;
->>   	int ret;
 >>
->> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->>   		pkt_dev->last_ok = 0;
->>   		goto unlock;
->>   	}
->> -	atomic_inc(&(pkt_dev->skb->users));
->> -	ret = (*xmit)(pkt_dev->skb, odev);
->> +
->> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
->> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
->> +		ret = -ENOMEM;
->> +		if (nskb)
->> +			ret = (*xmit)(nskb, odev);
->> +		else
->> +			nskb = ERR_PTR(ret);
->> +	} else {
->> +		atomic_inc(&(pkt_dev->skb->users));
->> +		ret = (*xmit)(pkt_dev->skb, odev);
->> +	}
 >>
->>   	switch (ret) {
->>   	case NETDEV_TX_OK:
->> @@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->>   	case NETDEV_TX_LOCKED:
->>   	case NETDEV_TX_BUSY:
->>   		/* Retry it next time */
->> -		atomic_dec(&(pkt_dev->skb->users));
->> +		if (nskb && !IS_ERR(nskb))
->> +			kfree_skb(nskb);
->> +		else
->> +			atomic_dec(&(pkt_dev->skb->users));
->>   		pkt_dev->last_ok = 0;
->>   	}
->>   unlock:
+>> On Fri, May 2, 2014 at 5:15 PM, Mj Embd <mj.embd@gmail.com> wrote:
+>>>
+>>> Hi,
+>>>
+>>> As per a lot of linux documentation some components work in process
+>>> context and some work in interrupt context.
+>>>
+>>> If we try to map these contexts to ARM processor modes then is it
+>>> safely to assume that
+>>> Process Context : CPSR.mode = SVC
+>>> Interrupt Context : CPSR.mode = IRQ
+>>>
+>>> If not how to define interrupt context properly. Confusing at times.
 >
 >
+> Well, none of this is completely true.
 >
+> Process context exists both in USR (process in user mode) and SVC (process
+> in kernel mode, executing a syscall for example).
+>
+> As for interrupts, the processor indeed starts executing the interrupt in
+> IRQ mode, but this is a useless complication as far as Linux is concerned,
 
+I didn't understood the term useless here, I hope it is not about the
+question itself.
+
+> and we quickly switch to SVC (see the definition of the vector_stub macro in
+> arch/arm/kernel/entry-armv.S).
+>
+So what is the mode of the processor when Linux is executing in the
+Academic / Bookish Term "Interrupt Context"
+There is a function called in_interrupt which tells if linux is in
+interrupt context.
+But How to define/quantify Interrupt Context as a whole
+
+Also, Some texts say there are two contexts Hard IRQ Context , Soft IRQ Context.
+HardIRQ = interrupts Disabled , (possibly CPSR.I=1, mode=IRQ)
+SoftIRQ = interrupts Enabled , (possibly CPSR.I=0, mode=IRQ)
+
+SoftIRQs when executed from Ksoftirqd daemon  (possibly CPSR.I=0, mode=SVC)
+
+We have a client query on this.
+
+> Hope this helps.
+>
+>         M.
+> --
+> Fast, cheap, reliable. Pick two.
+
+
+
+-- 
+-mj
