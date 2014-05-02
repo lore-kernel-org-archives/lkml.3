@@ -1,43 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaEBULn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:11:43 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:39336 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129AbaEBULl (ORCPT
+	id S1753030AbaEBUNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:13:23 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:59508 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841AbaEBUNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:11:41 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Fri, 2 May 2014 16:15:11 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu> <20140502154217.GW11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
- <20140502162234.GX11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu> <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 2 May 2014 16:13:21 -0400
+Date: Fri, 2 May 2014 14:13:07 -0600
+From: Jerry Hoemann <jerry.hoemann@hp.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Bill Sumner <bill.sumner@hp.com>, indou.takao@jp.fujitsu.com,
+        bhe@redhat.com, joro@8bytes.org, linux-pci@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, doug.hatch@hp.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, zhenhua@hp.com
+Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy
+ DMA/IO
+Message-ID: <20140502201307.GA23419@anatevka.fc.hp.com>
+Reply-To: Jerry.Hoemann@hp.com
+References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
+ <1398854973.12733.23.camel@i7.infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398854973.12733.23.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014, Thomas Gleixner wrote:
+On Wed, Apr 30, 2014 at 11:49:33AM +0100, David Woodhouse wrote:
 
-> Hmm, and where comes the WARN_ON in _free_event() from? That's not in
-> Peters last patch.
+Hi David,
 
-ahh, you're right :(  My fault.  I gave the new patch and the previous 
-patch similar names and applied the wrong one.
+As you may know,  Bill has retired and I am picking up this work.
+I am still coming up to speed in this area so my goal is to understand
+your concerns and research them as I dig through code and specs.
 
-OK the proper patch has been running the quick reproducer for a bit 
-without triggering the issue, I'll let it run a bit more and then upgrade 
-to full fuzzing.
+My apologizes for the delay in replying and for our missing your
+earlier questions.
 
-Vince
+
+> On Thu, 2014-04-24 at 18:36 -0600, Bill Sumner wrote:
+> > 
+> > This patch set modifies the behavior of the Intel iommu in the crashdump kernel: 
+> > 1. to accept the iommu hardware in an active state,
+> > 2. to leave the current translations in-place so that legacy DMA will continue
+> >    using its current buffers until the device drivers in the crashdump kernel
+> >    initialize and initialize their devices,
+> > 3. to use different portions of the iova address ranges for the device drivers
+> >    in the crashdump kernel than the iova ranges that were in-use at the time
+> >    of the panic.  
+> 
+> There could be all kinds of existing mappings in the DMA page tables,
+> and I'm not sure it's safe to preserve them. What prevents the crashdump
+> kernel from trying to use any of the physical pages which are
+> accessible, and which could thus be corrupted by stray DMA?
+
+In kdump, we switch to, and execute from the capture kernel.  (AKA 2nd kernel,
+crash kernel.)  This is a separate distinct instance of linux.  One of
+the intents of this switch is to (kdump.txt):
+
+    "This ensures that ongoing Direct Memory Access
+(DMA) from the system kernel does not corrupt the dump-capture kernel.
+The kexec -p command loads the dump-capture kernel into this reserved
+memory."
+
+As capture kernel is allocated early in boot, we shouldn't have DMA
+targeted to it once the capture kernel is loaded.
+
+Now,  the capture kernel will try to access 1st kernel memory via /proc/vmcore
+after it boots and runs makedumpfile.   Is it this access that you
+are concerned with?
+
+
+
+> 
+> In fact, the old kernel could even have set up 1:1 passthrough mappings
+> for some devices, which would then be able to DMA *anywhere*. Surely we
+> need to prevent that?
+
+>From prior patch version comments,  I know Bill was aware of the
+issue of pass-through, but don't know to what extent he tested with
+the feature enabled.  E.g. in Jan and prior versions he stated he
+had not tested w/ pass through.  He subsequently dropped this statement.
+
+The approach of the patch is to just allow the outstanding DMA
+to complete.  Assuming the targeted address of the pass through
+was sane,  does this differ greatly from the non pass through case?
+Now, if the DMA was truly going to random places (like the capture
+kernel itself)  I'm not sure what we would do.  Suggestions?
+
+
+> 
+> After the last round of this patchset, we discussed a potential
+> improvement where you point every virtual bus address at the *same*
+> physical scratch page.
+> 
+> That way, we allow the "rogue" DMA to continue to the same virtual bus
+> addresses, but it can only ever affect one piece of physical memory and
+> can't have detrimental effects elsewhere.
+> 
+> Was that option considered and discounted for some reason? It seems like
+> it would make sense...
+
+I don't know if this was considered.
+
+I will need time to go through code and the spec to understand
+implications better.
+
+Thanks
+
+Jerry
+
+
+-- 
+
+----------------------------------------------------------------------------
+Jerry Hoemann            Software Engineer              Hewlett-Packard
+
+3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
+Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
+                                                email:  jerry.hoemann@hp.com
+----------------------------------------------------------------------------
+
