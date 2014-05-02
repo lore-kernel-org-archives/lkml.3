@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaEBQXr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:23:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43707 "EHLO
+	id S1754804AbaEBQXp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:23:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43719 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760AbaEBPjX (ORCPT
+	with ESMTP id S1752770AbaEBPjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 133/151] dm cache: fix a lock-inversion
-Date: Fri,  2 May 2014 08:38:41 -0700
-Message-Id: <1399045139-4531-134-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 137/151] iscsi-target: Fix ERL=2 ASYNC_EVENT connection pointer bug
+Date: Fri,  2 May 2014 08:38:45 -0700
+Message-Id: <1399045139-4531-138-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,172 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 0596661f0a16d9d69bf1033320e70b6ff52b5e81 upstream.
+commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
 
-When suspending a cache the policy is walked and the individual policy
-hints written to the metadata via sync_metadata().  This led to this
-lock order:
+This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
+where during ERL=2 connection recovery, a bogus conn_p pointer could
+end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
+notifying the initiator that cmd->logout_cid has failed.
 
-      policy->lock
-        cache_metadata->root_lock
+The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
+a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
 
-When loading the cache target the policy is populated while the metadata
-lock is held:
-
-      cache_metadata->root_lock
-         policy->lock
-
-Fix this potential lock-inversion (ABBA) deadlock in sync_metadata() by
-ensuring the cache_metadata root_lock is held whilst all the hints are
-written, rather than being repeatedly locked while policy->lock is held
-(as was the case with each callout that policy_walk_mappings() made to
-the old save_hint() method).
-
-Found by turning on the CONFIG_PROVE_LOCKING ("Lock debugging: prove
-locking correctness") build option.  However, it is not clear how the
-LOCKDEP reported paths can lead to a deadlock since the two paths,
-suspending a target and loading a target, never occur at the same time.
-But that doesn't mean the same lock-inversion couldn't have occurred
-elsewhere.
-
-Reported-by: Marian Csontos <mcsontos@redhat.com>
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ kamal: backport to 3.13: omitted cache_target version string change ]
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-cache-metadata.c | 35 +++++++++++++++++------------------
- drivers/md/dm-cache-metadata.h |  9 +--------
- drivers/md/dm-cache-target.c   | 26 +-------------------------
- 3 files changed, 19 insertions(+), 51 deletions(-)
+ drivers/target/iscsi/iscsi_target.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
-index 53ab31e..5320332 100644
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -1245,22 +1245,12 @@ static int begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *po
- 	return 0;
- }
- 
--int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
-+static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock, uint32_t hint)
+diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
+index b8b7c94..55e5a03 100644
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -2468,6 +2468,7 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
  {
-+	struct dm_cache_metadata *cmd = context;
-+	__le32 value = cpu_to_le32(hint);
- 	int r;
+ 	struct iscsi_cmd *cmd;
+ 	struct iscsi_conn *conn_p;
++	bool found = false;
  
--	down_write(&cmd->root_lock);
--	r = begin_hints(cmd, policy);
--	up_write(&cmd->root_lock);
--
--	return r;
--}
--
--static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
--		     uint32_t hint)
--{
--	int r;
--	__le32 value = cpu_to_le32(hint);
- 	__dm_bless_for_disk(&value);
+ 	/*
+ 	 * Only send a Asynchronous Message on connections whos network
+@@ -2476,11 +2477,12 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
+ 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
+ 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
+ 			iscsit_inc_conn_usage_count(conn_p);
++			found = true;
+ 			break;
+ 		}
+ 	}
  
- 	r = dm_array_set_value(&cmd->hint_info, cmd->hint_root,
-@@ -1270,16 +1260,25 @@ static int save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
- 	return r;
- }
+-	if (!conn_p)
++	if (!found)
+ 		return;
  
--int dm_cache_save_hint(struct dm_cache_metadata *cmd, dm_cblock_t cblock,
--		       uint32_t hint)
-+static int write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
- {
- 	int r;
- 
--	if (!hints_array_initialized(cmd))
--		return 0;
-+	r = begin_hints(cmd, policy);
-+	if (r) {
-+		DMERR("begin_hints failed");
-+		return r;
-+	}
-+
-+	return policy_walk_mappings(policy, save_hint, cmd);
-+}
-+
-+int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *policy)
-+{
-+	int r;
- 
- 	down_write(&cmd->root_lock);
--	r = save_hint(cmd, cblock, hint);
-+	r = write_hints(cmd, policy);
- 	up_write(&cmd->root_lock);
- 
- 	return r;
-diff --git a/drivers/md/dm-cache-metadata.h b/drivers/md/dm-cache-metadata.h
-index cd906f1..f0fb1dd 100644
---- a/drivers/md/dm-cache-metadata.h
-+++ b/drivers/md/dm-cache-metadata.h
-@@ -128,14 +128,7 @@ void dm_cache_dump(struct dm_cache_metadata *cmd);
-  * rather than querying the policy for each cblock, we let it walk its data
-  * structures and fill in the hints in whatever order it wishes.
-  */
--
--int dm_cache_begin_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
--
--/*
-- * requests hints for every cblock and stores in the metadata device.
-- */
--int dm_cache_save_hint(struct dm_cache_metadata *cmd,
--		       dm_cblock_t cblock, uint32_t hint);
-+int dm_cache_write_hints(struct dm_cache_metadata *cmd, struct dm_cache_policy *p);
- 
- /*
-  * Query method.  Are all the blocks in the cache clean?
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 0411e9f..0826650 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -2589,30 +2589,6 @@ static int write_discard_bitset(struct cache *cache)
- 	return 0;
- }
- 
--static int save_hint(void *context, dm_cblock_t cblock, dm_oblock_t oblock,
--		     uint32_t hint)
--{
--	struct cache *cache = context;
--	return dm_cache_save_hint(cache->cmd, cblock, hint);
--}
--
--static int write_hints(struct cache *cache)
--{
--	int r;
--
--	r = dm_cache_begin_hints(cache->cmd, cache->policy);
--	if (r) {
--		DMERR("dm_cache_begin_hints failed");
--		return r;
--	}
--
--	r = policy_walk_mappings(cache->policy, save_hint, cache);
--	if (r)
--		DMERR("policy_walk_mappings failed");
--
--	return r;
--}
--
- /*
-  * returns true on success
-  */
-@@ -2630,7 +2606,7 @@ static bool sync_metadata(struct cache *cache)
- 
- 	save_stats(cache);
- 
--	r3 = write_hints(cache);
-+	r3 = dm_cache_write_hints(cache->cmd, cache->policy);
- 	if (r3)
- 		DMERR("could not write hints");
- 
+ 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
 -- 
 1.9.1
 
