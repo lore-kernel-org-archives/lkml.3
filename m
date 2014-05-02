@@ -1,148 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160AbaEBXbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 19:31:45 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60224 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752787AbaEBXbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 19:31:44 -0400
-Date: Fri, 2 May 2014 19:31:38 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Jianyu Zhan <nasa4836@gmail.com>,
-        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.com
-Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
- mem_cgroup_zoneinfo_zone()
-Message-ID: <20140502233138.GR23420@cmpxchg.org>
-References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
- <20140422095923.GD29311@dhcp22.suse.cz>
- <20140428150426.GB24807@dhcp22.suse.cz>
- <20140501125450.GA23420@cmpxchg.org>
- <20140502150516.d42792bad53d86fb727816bd@linux-foundation.org>
- <20140502232908.GQ23420@cmpxchg.org>
+	id S1753178AbaEBXeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 19:34:06 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:37209 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127AbaEBXeE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 19:34:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140502232908.GQ23420@cmpxchg.org>
+Date: Sat, 3 May 2014 01:34:01 +0200
+X-Google-Sender-Auth: aESOFVT_7gEXhklTwNTFvRqQSZA
+Message-ID: <CAJZ5v0gVEfcv6NeYwiNL8=0jtJXd3po_TK3+fP4q_3Rz0hBy_g@mail.gmail.com>
+Subject: [GIT PULL] ACPI and power management fixes for v3.15-rc4
+From: "Rafael J. Wysocki" <rafael@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While in that area, I noticed that the soft limit tree updaters don't
-actually use the memcg argument anymore...
+Hi Linus,
 
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: memcontrol: remove unnecessary memcg argument from soft
- limit functions
+Please pull from
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 34 ++++++++++++++--------------------
- 1 file changed, 14 insertions(+), 20 deletions(-)
+ git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
+ pm+acpi-3.15-rc4
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 83cbd5a0e62f..3381f76df084 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -714,11 +714,9 @@ soft_limit_tree_from_page(struct page *page)
- 	return &soft_limit_tree.rb_tree_per_node[nid]->rb_tree_per_zone[zid];
- }
- 
--static void
--__mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
--				struct mem_cgroup_per_zone *mz,
--				struct mem_cgroup_tree_per_zone *mctz,
--				unsigned long long new_usage_in_excess)
-+static void __mem_cgroup_insert_exceeded(struct mem_cgroup_per_zone *mz,
-+					 struct mem_cgroup_tree_per_zone *mctz,
-+					 unsigned long long new_usage_in_excess)
- {
- 	struct rb_node **p = &mctz->rb_root.rb_node;
- 	struct rb_node *parent = NULL;
-@@ -748,10 +746,8 @@ __mem_cgroup_insert_exceeded(struct mem_cgroup *memcg,
- 	mz->on_tree = true;
- }
- 
--static void
--__mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
--				struct mem_cgroup_per_zone *mz,
--				struct mem_cgroup_tree_per_zone *mctz)
-+static void __mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
-+					 struct mem_cgroup_tree_per_zone *mctz)
- {
- 	if (!mz->on_tree)
- 		return;
-@@ -759,13 +755,11 @@ __mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
- 	mz->on_tree = false;
- }
- 
--static void
--mem_cgroup_remove_exceeded(struct mem_cgroup *memcg,
--				struct mem_cgroup_per_zone *mz,
--				struct mem_cgroup_tree_per_zone *mctz)
-+static void mem_cgroup_remove_exceeded(struct mem_cgroup_per_zone *mz,
-+				       struct mem_cgroup_tree_per_zone *mctz)
- {
- 	spin_lock(&mctz->lock);
--	__mem_cgroup_remove_exceeded(memcg, mz, mctz);
-+	__mem_cgroup_remove_exceeded(mz, mctz);
- 	spin_unlock(&mctz->lock);
- }
- 
-@@ -792,12 +786,12 @@ static void mem_cgroup_update_tree(struct mem_cgroup *memcg, struct page *page)
- 			spin_lock(&mctz->lock);
- 			/* if on-tree, remove it */
- 			if (mz->on_tree)
--				__mem_cgroup_remove_exceeded(memcg, mz, mctz);
-+				__mem_cgroup_remove_exceeded(mz, mctz);
- 			/*
- 			 * Insert again. mz->usage_in_excess will be updated.
- 			 * If excess is 0, no tree ops.
- 			 */
--			__mem_cgroup_insert_exceeded(memcg, mz, mctz, excess);
-+			__mem_cgroup_insert_exceeded(mz, mctz, excess);
- 			spin_unlock(&mctz->lock);
- 		}
- 	}
-@@ -813,7 +807,7 @@ static void mem_cgroup_remove_from_trees(struct mem_cgroup *memcg)
- 		for (zid = 0; zid < MAX_NR_ZONES; zid++) {
- 			mz = &memcg->nodeinfo[nid]->zoneinfo[zid];
- 			mctz = soft_limit_tree_node_zone(nid, zid);
--			mem_cgroup_remove_exceeded(memcg, mz, mctz);
-+			mem_cgroup_remove_exceeded(mz, mctz);
- 		}
- 	}
- }
-@@ -836,7 +830,7 @@ retry:
- 	 * we will to add it back at the end of reclaim to its correct
- 	 * position in the tree.
- 	 */
--	__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
-+	__mem_cgroup_remove_exceeded(mz, mctz);
- 	if (!res_counter_soft_limit_excess(&mz->memcg->res) ||
- 		!css_tryget(&mz->memcg->css))
- 		goto retry;
-@@ -4694,7 +4688,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 					break;
- 			} while (1);
- 		}
--		__mem_cgroup_remove_exceeded(mz->memcg, mz, mctz);
-+		__mem_cgroup_remove_exceeded(mz, mctz);
- 		excess = res_counter_soft_limit_excess(&mz->memcg->res);
- 		/*
- 		 * One school of thought says that we should not add
-@@ -4705,7 +4699,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
- 		 * term TODO.
- 		 */
- 		/* If excess == 0, no tree ops */
--		__mem_cgroup_insert_exceeded(mz->memcg, mz, mctz, excess);
-+		__mem_cgroup_insert_exceeded(mz, mctz, excess);
- 		spin_unlock(&mctz->lock);
- 		css_put(&mz->memcg->css);
- 		loop++;
--- 
-1.9.2
+to receive ACPI, power management and PNP fixes for v3.15-rc4
+with top-most commit de3afce5336af3214374de6df360f9eb010a9a36
 
+  Merge branches 'acpi-ec' and 'acpi-processor'
+
+on top of commit d1db0eea852497762cab43b905b879dfcd3b8987
+
+  Linux 3.15-rc3
+
+A bunch of regression fixes this time.  They fix two regressions
+in the PNP subsystem, one in the ACPI processor driver and one in
+the ACPI EC driver, four cpufreq driver regressions and an unrelated
+bug in one of the drivers.  The regressions are recent or introduced
+in 3.14.
+
+Specifics:
+
+ - There are two bugs in the ACPI PNP core that cause errors to
+   be returned if optional ACPI methods are not present.  After
+   an ACPI core change made in 3.14 one of those errors leads
+   to serial port suspend failures on some systems.  Fix from
+   yours truly.
+
+ - A recently added PNP quirk related to Intel chipsets intorduced
+   a build error in unusual configurations (PNP without PCI).  Fix
+   from Bjorn Helgaas.
+
+ - An ACPI EC workaround related to system suspend on Samsung machines
+   added in 3.14 introduced a race causing some valid EC events to be
+   discarded.  Fix from Kieran Clancy.
+
+ - The acpi-cpufreq driver fails to load on some systems after a 3.14
+   commit related to APIC ID parsing that overlooked one corner case.
+   Fix from Lan Tianyu.
+
+ - Fix for a recently introduced build problem in the ppc-corenet
+   cpufreq driver from Tim Gardner.
+
+ - A recent cpufreq core change to ensure serialization of frequency
+   transitions for drivers with a ->target_index() callback overlooked
+   the fact that some of those drivers had been doing operations
+   introduced by it into the core already by themselves.  That resulted
+   in a mess in which the core and the drivers try to do the same thing
+   and block each other which leads to deadlocks.  Fixes for the
+   powernow-k7, powernow-k6, and longhaul cpufreq drivers from
+   Srivatsa S Bhat.
+
+ - Fix for a computational error in the powernow-k6 cpufreq driver
+   from Srivatsa S Bhat.
+
+Thanks!
+
+
+---------------
+
+Bjorn Helgaas (1):
+      PNP: Fix compile error in quirks.c
+
+Kieran Clancy (1):
+      ACPI / EC: Process rather than discard events in acpi_ec_clear
+
+Lan Tianyu (1):
+      ACPI / processor: Fix failure of loading acpi-cpufreq driver
+
+Rafael J. Wysocki (1):
+      PNP / ACPI: Do not return errors if _DIS or _SRS are not present
+
+Srivatsa S. Bhat (4):
+      cpufreq: longhaul: Fix double invocation of
+cpufreq_freq_transition_begin/end
+      cpufreq: powernow-k6: Fix incorrect comparison with max_multipler
+      cpufreq: powernow-k6: Fix double invocation of
+cpufreq_freq_transition_begin/end
+      cpufreq: powernow-k7: Fix double invocation of
+cpufreq_freq_transition_begin/end
+
+Tim Gardner (1):
+      cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost error
+
+---------------
+
+ drivers/acpi/acpi_processor.c         |  7 +++---
+ drivers/acpi/ec.c                     | 21 ++++++++++-------
+ drivers/cpufreq/longhaul.c            | 36 ++++++++++++++++++----------
+ drivers/cpufreq/powernow-k6.c         | 23 ++++++++++--------
+ drivers/cpufreq/powernow-k7.c         |  4 ----
+ drivers/cpufreq/ppc-corenet-cpufreq.c |  5 +++-
+ drivers/pnp/pnpacpi/core.c            | 44 +++++++++++++++++++++--------------
+ drivers/pnp/quirks.c                  |  4 ++--
+ 8 files changed, 85 insertions(+), 59 deletions(-)
