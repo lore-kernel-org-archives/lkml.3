@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaEBN2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:28:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505AbaEBN2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:28:07 -0400
-Date: Fri, 2 May 2014 15:19:21 +0200
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>
-Cc: brouer@redhat.com, <davem@davemloft.net>, <steffen.klassert@secunet.com>,
-        <fan.du@windriver.com>, <dborkman@redhat.com>,
-        <minipli@googlemail.com>, <tgraf@suug.ch>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-Message-ID: <20140502151921.014fbeec@redhat.com>
-In-Reply-To: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752157AbaEBN3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:29:45 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:43939 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048AbaEBN3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 09:29:44 -0400
+Message-ID: <53639DC9.2000701@linaro.org>
+Date: Fri, 02 May 2014 15:29:45 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: peterz@infradead.org, mingo@elte.hu, amit.kucheria@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it
+ out
+References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org> <2735426.75qSjG3M6Y@vostro.rjw.lan> <53635E5F.8070100@linaro.org> <5985714.f7hh9Ej59L@vostro.rjw.lan>
+In-Reply-To: <5985714.f7hh9Ej59L@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 May 2014 15:18:12 +0800
-Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
-
-> As http://www.spinics.net/lists/netdev/msg165015.html
-> pktgen generates shared packet through vlan interface will cause
-> oops because of duplicate entering tc queue.
+On 05/02/2014 02:09 PM, Rafael J. Wysocki wrote:
+> On Friday, May 02, 2014 10:59:11 AM Daniel Lezcano wrote:
+>> On 05/01/2014 12:56 AM, Rafael J. Wysocki wrote:
+>>> On Thursday, May 01, 2014 12:47:25 AM Rafael J. Wysocki wrote:
+>>>> On Wednesday, April 30, 2014 02:01:02 PM Daniel Lezcano wrote:
+>>>>> Encapsulate the large portion of cpuidle_idle_call inside another
+>>>>> function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
+>>>>> Also that is benefitial for the clarity of the code as it removes
+>>>>> a nested indentation level.
+>>>>>
+>>>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>>
+>>>> Well, this conflicts with
+>>>>
+>>>> https://patchwork.kernel.org/patch/4071541/
+>>>>
+>>>> which you haven't commented on and I still want cpuidle_select() to be able to
+>>>> return negative values because of
+>>>>
+>>>> https://patchwork.kernel.org/patch/4089631/
+>>>>
+>>>> (and I have one more patch on top of these two that requires this).
+>>>
+>>> Moreover (along the lines of Nico said) after https://patchwork.kernel.org/patch/4071541/
+>>> we actually don't need the #ifdef CONFIG_CPU_IDLE in your patch, because cpuidle_select()
+>>> for CONFIG_CPU_IDLE unset is a static inline returning a negative number and the compiler
+>>> should optimize out the blocks that depend on it being non-negative.
+>>
+>> Thanks for the head up.
+>>
+>> Actually that was to solve a compilation issue with the next patch when
+>> adding the cpuidle state in the struct rq.
+>>
+>> When the option CPU_IDLE is not set, the code assinging the cpu idle
+>> state in the rq is still there while in the struct rq the field is
+>> compiled out with the ifdef macro. If I rely on the compiler
+>> optimization, the compilation error will happen.
 >
-> Try to solve this problem by means of packet clone instead of sharing.
+> I see.
+>
+> If you don't put the new idle_state field in struct_rq under the #ifdef,
+> you won't need to worry about the build problem.
+>
+> Alternatively, you can define
+>
+> #ifdef CONFIG_CPU_IDLE
+> static inline void rq_set_idle_state(struct rq *rq, struct cpuidle_state *state)
+> {
+> 	rq->idle_state = state;
+> }
+> #else
+> static inline void rq_set_idle_state(struct rq *rq, struct cpuidle_state *state) {}
+> #endif
+>
+> and use rq_set_idle_state() to set that field.
 
-I really don't like adding this stuff to the fast path of pktgen.
+Thanks, I will look at one or another solution.
 
-Why would you use pktgen on a VLAN?
-
-Why don't you use the "vlan_id" feature available in pktgen, and send
-in the lower real device?
-
-
-
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> ---
->  net/core/pktgen.c |   20 +++++++++++++++++---
->  1 files changed, 17 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-> index 0304f98..ced07fc 100644
-> --- a/net/core/pktgen.c
-> +++ b/net/core/pktgen.c
-> @@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->  	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
->  		= odev->netdev_ops->ndo_start_xmit;
->  	struct netdev_queue *txq;
-> +	struct sk_buff *nskb = NULL;
->  	u16 queue_map;
->  	int ret;
->  
-> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->  		pkt_dev->last_ok = 0;
->  		goto unlock;
->  	}
-> -	atomic_inc(&(pkt_dev->skb->users));
-> -	ret = (*xmit)(pkt_dev->skb, odev);
-> +
-> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
-> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
-> +		ret = -ENOMEM;
-> +		if (nskb)
-> +			ret = (*xmit)(nskb, odev);
-> +		else
-> +			nskb = ERR_PTR(ret);
-> +	} else {
-> +		atomic_inc(&(pkt_dev->skb->users));
-> +		ret = (*xmit)(pkt_dev->skb, odev);
-> +	}
->  
->  	switch (ret) {
->  	case NETDEV_TX_OK:
-> @@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->  	case NETDEV_TX_LOCKED:
->  	case NETDEV_TX_BUSY:
->  		/* Retry it next time */
-> -		atomic_dec(&(pkt_dev->skb->users));
-> +		if (nskb && !IS_ERR(nskb))
-> +			kfree_skb(nskb);
-> +		else
-> +			atomic_dec(&(pkt_dev->skb->users));
->  		pkt_dev->last_ok = 0;
->  	}
->  unlock:
 
 
 
 -- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
