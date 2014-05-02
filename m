@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbaEBPqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:46:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44285 "EHLO
+	id S1754016AbaEBPqW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:46:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44302 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaEBPqF (ORCPT
+	with ESMTP id S1752881AbaEBPqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:05 -0400
+	Fri, 2 May 2014 11:46:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junxiao Bi <junxiao.bi@oracle.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 126/151] ocfs2: dlm: fix lock migration crash
-Date: Fri,  2 May 2014 08:38:34 -0700
-Message-Id: <1399045139-4531-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 104/151] drm/i915/tv: fix gen4 composite s-video tv-out
+Date: Fri,  2 May 2014 08:38:12 -0700
+Message-Id: <1399045139-4531-105-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -31,121 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
+commit e1f23f3dd817f53f622e486913ac662add46eeed upstream.
 
-This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
-list_for_each_entry where benefical") in 2007 where it replaced
-list_for_each with list_for_each_entry.  The variable "lock" will point
-to invalid data if "tmpq" list is empty and a panic will be triggered
-due to this.  Sunil advised reverting it back, but the old version was
-also not right.  At the end of the outer for loop, that
-list_for_each_entry will also set "lock" to an invalid data, then in the
-next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
-data and cause the panic.  So reverting the list_for_each back and reset
-"lock" to NULL to fix this issue.
+This is *not* bisected, but the likely regression is
 
-Another concern is that this seemes can not happen because the "tmpq"
-list should not be empty.  Let me describe how.
+commit c35614380d5c956bfda20eab2755b2f5a7d6f1e7
+Author: Zhao Yakui <yakui.zhao@intel.com>
+Date:   Tue Nov 24 09:48:48 2009 +0800
 
-old lock resource owner(node 1):                                  migratation target(node 2):
-image there's lockres with a EX lock from node 2 in
-granted list, a NR lock from node x with convert_type
-EX in converting list.
-dlm_empty_lockres() {
- dlm_pick_migration_target() {
-   pick node 2 as target as its lock is the first one
-   in granted list.
- }
- dlm_migrate_lockres() {
-   dlm_mark_lockres_migrating() {
-     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
-     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
-	 //after the above code, we can not dirty lockres any more,
-     // so dlm_thread shuffle list will not run
-                                                                   downconvert lock from EX to NR
-                                                                   upconvert lock from NR to EX
-<<< migration may schedule out here, then
-<<< node 2 send down convert request to convert type from EX to
-<<< NR, then send up convert request to convert type from NR to
-<<< EX, at this time, lockres granted list is empty, and two locks
-<<< in the converting list, node x up convert lock followed by
-<<< node 2 up convert lock.
+    drm/i915: Don't set up the TV port if it isn't in the BIOS table.
 
-	 // will set lockres RES_MIGRATING flag, the following
-	 // lock/unlock can not run
-     dlm_lockres_release_ast(dlm, res);
-   }
+The commit does not check for all TV device types that might be present
+in the VBT, disabling TV out for the missing ones. Add composite
+S-video.
 
-   dlm_send_one_lockres()
-                                                                 dlm_process_recovery_data()
-                                                                   for (i=0; i<mres->num_locks; i++)
-                                                                     if (ml->node == dlm->node_num)
-                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
-                                                                        list_for_each_entry(lock, tmpq, list)
-                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
-                                                                       }
-                                                                       if (lock->ml.node != ml->node)
-                                                                         BUG() >>> crash here
- }
-
-I see the above locks status from a vmcore of our internal bug.
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-and-tested-by: Matthew Khouzam <matthew.khouzam@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73362
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ocfs2/dlm/dlmrecovery.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_tv.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-index 7035af0..c2dd258 100644
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1750,13 +1750,13 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 				     struct dlm_migratable_lockres *mres)
- {
- 	struct dlm_migratable_lock *ml;
--	struct list_head *queue;
-+	struct list_head *queue, *iter;
- 	struct list_head *tmpq = NULL;
- 	struct dlm_lock *newlock = NULL;
- 	struct dlm_lockstatus *lksb = NULL;
- 	int ret = 0;
- 	int i, j, bad;
--	struct dlm_lock *lock = NULL;
-+	struct dlm_lock *lock;
- 	u8 from = O2NM_MAX_NODES;
- 	unsigned int added = 0;
- 	__be64 c;
-@@ -1791,14 +1791,16 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 			/* MIGRATION ONLY! */
- 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
- 
-+			lock = NULL;
- 			spin_lock(&res->spinlock);
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
--				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+				list_for_each(iter, tmpq) {
-+					lock = list_entry(iter,
-+						  struct dlm_lock, list);
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
-+					lock = NULL;
- 				}
- 				if (lock)
- 					break;
+diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
+index 22cf0f4..99faac5 100644
+--- a/drivers/gpu/drm/i915/intel_tv.c
++++ b/drivers/gpu/drm/i915/intel_tv.c
+@@ -1536,9 +1536,14 @@ static int tv_is_present_in_vbt(struct drm_device *dev)
+ 		/*
+ 		 * If the device type is not TV, continue.
+ 		 */
+-		if (p_child->old.device_type != DEVICE_TYPE_INT_TV &&
+-			p_child->old.device_type != DEVICE_TYPE_TV)
++		switch (p_child->old.device_type) {
++		case DEVICE_TYPE_INT_TV:
++		case DEVICE_TYPE_TV:
++		case DEVICE_TYPE_TV_SVIDEO_COMPOSITE:
++			break;
++		default:
+ 			continue;
++		}
+ 		/* Only when the addin_offset is non-zero, it is regarded
+ 		 * as present.
+ 		 */
 -- 
 1.9.1
 
