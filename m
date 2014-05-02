@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517AbaEBPnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:43:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44028 "EHLO
+	id S1753505AbaEBPng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44008 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaEBPnl (ORCPT
+	with ESMTP id S1752924AbaEBPna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:41 -0400
+	Fri, 2 May 2014 11:43:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 050/151] ath9k: fix ready time of the multicast buffer queue
-Date: Fri,  2 May 2014 08:37:18 -0700
-Message-Id: <1399045139-4531-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 021/151] ARM: Fix default CPU selection for ARCH_MULTI_V5
+Date: Fri,  2 May 2014 08:36:49 -0700
+Message-Id: <1399045139-4531-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit 3b3e0efb5c72c4fc940af50b33626b8a78a907dc upstream.
+commit 12567bbdee7ea553237085a2bbc0ffa5240f5248 upstream.
 
-qi->tqi_readyTime is written directly to registers that expect
-microseconds as unit instead of TU.
-When setting the CABQ ready time, cur_conf->beacon_interval is in TU, so
-convert it to microseconds before passing it to ath9k_hw.
+CPU_ARM926T should be selected if no other CPU is. Put the ! in the
+right place so this works.
 
-This should hopefully fix some Tx DMA issues with buffered multicast
-frames in AP mode.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Fixes: 24e860fbfdb1c ("ARM: multiplatform: always pick one CPU type")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c | 2 +-
+ arch/arm/Kconfig | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index a2a53fe..0471c6a 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1712,7 +1712,7 @@ int ath_cabq_update(struct ath_softc *sc)
- 
- 	ath9k_hw_get_txq_props(sc->sc_ah, qnum, &qi);
- 
--	qi.tqi_readyTime = (cur_conf->beacon_interval *
-+	qi.tqi_readyTime = (TU_TO_USEC(cur_conf->beacon_interval) *
- 			    ATH_CABQ_READY_TIME) / 100;
- 	ath_txq_update(sc, qnum, &qi);
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 47085a0..31e1f44 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -871,7 +871,7 @@ config ARCH_MULTI_V5
+ 	bool "ARMv5 based platforms (ARM926T, XSCALE, PJ1, ...)"
+ 	depends on !ARCH_MULTI_V6_V7
+ 	select ARCH_MULTI_V4_V5
+-	select CPU_ARM926T if (!CPU_ARM946E || CPU_ARM1020 || \
++	select CPU_ARM926T if !(CPU_ARM946E || CPU_ARM1020 || \
+ 		CPU_ARM1020E || CPU_ARM1022 || CPU_ARM1026 || \
+ 		CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_FEROCEON)
  
 -- 
 1.9.1
