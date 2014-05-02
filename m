@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaEBQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:56:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55335 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbaEBQ4E (ORCPT
+	id S1752808AbaEBQ4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:56:19 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42149 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbaEBQ4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:56:04 -0400
-Date: Fri, 2 May 2014 09:55:46 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Message-ID: <20140502165546.GP3245@sirena.org.uk>
-References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
- <20140429183758.GH15125@sirena.org.uk>
- <20140430180609.GC3000@lukather>
- <20140501011811.GF3245@sirena.org.uk>
- <20140501223629.GJ3000@lukather>
- <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+	Fri, 2 May 2014 12:56:15 -0400
+Message-ID: <5363CE30.9060102@kernel.dk>
+Date: Fri, 02 May 2014 10:56:16 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QzTImLEHWgBoPYMi"
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: Force the registration of the spidev devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Kent Overstreet <kmo@daterainc.com>, Ming Lei <tom.leiming@gmail.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shaohua Li <shli@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+References: <CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com> <535AD235.90604@kernel.dk> <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com> <535B13D7.4050202@kernel.dk> <CACVXFVORX_qgJNXcB3OFpscVx0eQAbLPv2Jr1N3_yBKrPsGXFA@mail.gmail.com> <53601602.5060306@kernel.dk> <20140501224744.GA2285@kmo-pixel> <536300BB.5060906@kernel.dk> <20140502050523.GA21708@infradead.org> <5363CAC4.4040306@kernel.dk> <20140502164305.GA18747@infradead.org>
+In-Reply-To: <20140502164305.GA18747@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/02/2014 10:43 AM, Christoph Hellwig wrote:
+> On Fri, May 02, 2014 at 10:41:40AM -0600, Jens Axboe wrote:
+>>> At least for SCSI devices _tag space_ is plenty, it's just the we
+>>> artifically limit our tag space to the queue depth to avoid having to
+>>> track that one separately.  In addition we also preallocaste a request
+>>> for each tag, so even if we would track the queue depth separately
+>>> we would waste a lot of memory.
+>>
+>> In practice it comes out to the same, it's not feasible to run a much
+>> larger space and track on queue depth. So I don't think that changes the
+>> conclusion for SCSI.
+> 
+> Agreed.  Just had to check if my smart ass hat still fits this morning..
 
---QzTImLEHWgBoPYMi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+If not, these are on sale
 
-On Fri, May 02, 2014 at 01:28:26AM +0200, Geert Uytterhoeven wrote:
+http://www.cafepress.com/+smartass_trucker_hat,18823771
 
-> And then you want spidev to bind to it. Would it help if DT offered a feature
-> to add a compatible entry to a driver at runtime, cfr.
-> /sys/bus/pci/drivers/.../new_id on PCI?
+:-)
 
-Yes, that's what I'd been under the impression that the bind file did -
-allowed modification of the list of devices to bind.
+-- 
+Jens Axboe
 
---QzTImLEHWgBoPYMi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTY84PAAoJELSic+t+oim99qAP/1G1pCv1j12jRAdOuTxiwDKz
-UPlaDgRSOyKe/FcrGPVVp5LzXp/Ix7diTeTay3/iMcOIloD33UR272cUC9UipliH
-0N1ATpF4TQ6ird6UZPhKwFkrcWrsQwyZ1aw0LJUtCNhp9M6pZIf09FhVwwe1XQ3a
-Vrsyu5OeS0EB5U+jfMKcNiEZLGmK3E+xhZTeXQ/OYbv2Y5UP3QdxMzpAWyb+ZBMk
-sd8v4x71keqXrquP9FaD7gsFA346qtjMPuVKIcIflhhzaSt3FJBHty6abKTTSVzb
-rlsu4jgY5dRDsVTTYOBxw0PhbxVmi7zwNMwrE33c3t5rH2E9tbvrmIfHZhCOihCe
-P81geH9Z+HsHFoFlqyq1vgM2aDSOt6VlXxlEAIBj7pS7MIusoV7fbNm1ydGoUoTj
-bw//FCpvvr5XXjoV3TYRY3OalG1IyYo29Nvy1fFOeYl1x+7J6GwXHuaEDdLJKPsN
-uV1FzcGUQNLFfcGUbPOGU060JTWknsIdnzc0Pf0GfoP5hi1j0XFFdymxpyuUQkZM
-2yvW2NsRnZpN5vE5ud36vmvJ02FRZ9mFhhY6WA1WMT3/NyRR1UnKStZB3F0S7bgy
-LhjEr0WYMhhgp4mwBhOrfAc1dR2eLj5RcRLTJSK51eCzGla1++1gCQumSBDpwlnf
-WJAS0tx+YoUejbMMDSut
-=2Spb
------END PGP SIGNATURE-----
-
---QzTImLEHWgBoPYMi--
