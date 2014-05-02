@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaEBNmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:42:08 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52225 "EHLO
+	id S1752276AbaEBNlv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:41:51 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52186 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752270AbaEBNlw (ORCPT
+	by vger.kernel.org with ESMTP id S1751983AbaEBNlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:41:52 -0400
+	Fri, 2 May 2014 09:41:49 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH 3/6] lib: Update the kmemleak stack trace for radix tree allocations
-Date: Fri,  2 May 2014 14:41:07 +0100
-Message-Id: <1399038070-1540-4-git-send-email-catalin.marinas@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 6/6] mm: Postpone the disabling of kmemleak early logging
+Date: Fri,  2 May 2014 14:41:10 +0100
+Message-Id: <1399038070-1540-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com>
 References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com>
@@ -21,38 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since radix_tree_preload() stack trace is not always useful for
-debugging an actual radix tree memory leak, this patch updates the
-kmemleak allocation stack trace in the radix_tree_node_alloc() function.
+Currently, kmemleak_early_log is disabled at the beginning of the
+kmemleak_init() function, before the full kmemleak tracing is actually
+enabled. In this small window, kmem_cache_create() is called by kmemleak
+which triggers additional memory allocation that are not traced. This
+patch moves the kmemleak_early_log disabling further down and at the
+same time with full kmemleak enabling.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- lib/radix-tree.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/kmemleak.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index 9599aa72d7a0..5297f8e09096 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -27,6 +27,7 @@
- #include <linux/radix-tree.h>
- #include <linux/percpu.h>
- #include <linux/slab.h>
-+#include <linux/kmemleak.h>
- #include <linux/notifier.h>
- #include <linux/cpu.h>
- #include <linux/string.h>
-@@ -200,6 +201,11 @@ radix_tree_node_alloc(struct radix_tree_root *root)
- 			rtp->nodes[rtp->nr - 1] = NULL;
- 			rtp->nr--;
- 		}
-+		/*
-+		 * Update the allocation stack trace as this is more useful
-+		 * for debugging.
-+		 */
-+		kmemleak_update_trace(ret);
- 	}
- 	if (ret == NULL)
- 		ret = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 61a64ed2fbef..0cd6aabd45a0 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -1809,8 +1809,6 @@ void __init kmemleak_init(void)
+ 	int i;
+ 	unsigned long flags;
+ 
+-	kmemleak_early_log = 0;
+-
+ #ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
+ 	if (!kmemleak_skip_disable) {
+ 		kmemleak_disable();
+@@ -1833,8 +1831,9 @@ void __init kmemleak_init(void)
+ 	if (kmemleak_error) {
+ 		local_irq_restore(flags);
+ 		return;
+-	} else
+-		kmemleak_enabled = 1;
++	}
++	kmemleak_early_log = 0;
++	kmemleak_enabled = 1;
+ 	local_irq_restore(flags);
+ 
+ 	/*
