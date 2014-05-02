@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaEBQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:16:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43864 "EHLO
+	id S1754502AbaEBQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:17:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43855 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204AbaEBPmN (ORCPT
+	with ESMTP id S1753177AbaEBPmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:13 -0400
+	Fri, 2 May 2014 11:42:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 062/151] regulator: arizona-ldo1: Correct default regulator init_data
-Date: Fri,  2 May 2014 08:37:30 -0700
-Message-Id: <1399045139-4531-63-git-send-email-kamal@canonical.com>
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 080/151] mac80211: fix suspend vs. authentication race
+Date: Fri,  2 May 2014 08:37:48 -0700
+Message-Id: <1399045139-4531-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,49 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit a35ff2861690eaf9dbb38fa744a8a9e6f4ebfd61 upstream.
+commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
 
-Both 5102 and 8997 have the regulator capable of supplying 1.8V, and the
-voltage step from the 5110 regulator is different from what is specified
-in the default description. This patch updates the default regulator
-description to match 5110 and selects the 1.8V capable description for
-8997.
+Since Stanislaw's patch removing the quiescing code, mac80211 had
+a race regarding suspend vs. authentication: as cfg80211 doesn't
+track authentication attempts, it can't abort them. Therefore the
+attempts may be kept running while suspending, which can lead to
+all kinds of issues, in at least some cases causing an error in
+iwlmvm firmware.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fix this by aborting the authentication attempt when suspending.
+
+Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/regulator/arizona-ldo1.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/mac80211/ieee80211_i.h |  1 +
+ net/mac80211/mlme.c        | 26 ++++++++++++++++++++++++++
+ net/mac80211/pm.c          | 14 +++++++++++---
+ 3 files changed, 38 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
-index 4f6c205..f0ea4fd 100644
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -153,11 +153,9 @@ static const struct regulator_desc arizona_ldo1 = {
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 4aea4e7..1fc9190 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1346,6 +1346,7 @@ void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
+ 				  __le16 fc, bool acked);
++void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
+ void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
  
- 	.vsel_reg = ARIZONA_LDO1_CONTROL_1,
- 	.vsel_mask = ARIZONA_LDO1_VSEL_MASK,
--	.bypass_reg = ARIZONA_LDO1_CONTROL_1,
--	.bypass_mask = ARIZONA_LDO1_BYPASS,
- 	.min_uV = 900000,
--	.uV_step = 50000,
--	.n_voltages = 7,
-+	.uV_step = 25000,
-+	.n_voltages = 13,
- 	.enable_time = 500,
+ /* IBSS code */
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index 90ee798..4eef5fd 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3487,6 +3487,32 @@ static void ieee80211_restart_sta_timer(struct ieee80211_sub_if_data *sdata)
+ }
  
- 	.owner = THIS_MODULE,
-@@ -203,6 +201,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
- 	 */
- 	switch (arizona->type) {
- 	case WM5102:
-+	case WM8997:
- 		desc = &arizona_ldo1_hc;
- 		ldo1->init_data = arizona_ldo1_dvfs;
- 		break;
+ #ifdef CONFIG_PM
++void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
++{
++	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
++	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
++
++	sdata_lock(sdata);
++
++	if (ifmgd->auth_data) {
++		/*
++		 * If we are trying to authenticate while suspending, cfg80211
++		 * won't know and won't actually abort those attempts, thus we
++		 * need to do that ourselves.
++		 */
++		ieee80211_send_deauth_disassoc(sdata,
++					       ifmgd->auth_data->bss->bssid,
++					       IEEE80211_STYPE_DEAUTH,
++					       WLAN_REASON_DEAUTH_LEAVING,
++					       false, frame_buf);
++		ieee80211_destroy_auth_data(sdata, false);
++		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
++				      IEEE80211_DEAUTH_FRAME_LEN);
++	}
++
++	sdata_unlock(sdata);
++}
++
+ void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
+ {
+ 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
+diff --git a/net/mac80211/pm.c b/net/mac80211/pm.c
+index 3401262..efb510e 100644
+--- a/net/mac80211/pm.c
++++ b/net/mac80211/pm.c
+@@ -101,10 +101,18 @@ int __ieee80211_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
+ 
+ 	/* remove all interfaces that were created in the driver */
+ 	list_for_each_entry(sdata, &local->interfaces, list) {
+-		if (!ieee80211_sdata_running(sdata) ||
+-		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
+-		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
++		if (!ieee80211_sdata_running(sdata))
+ 			continue;
++		switch (sdata->vif.type) {
++		case NL80211_IFTYPE_AP_VLAN:
++		case NL80211_IFTYPE_MONITOR:
++			continue;
++		case NL80211_IFTYPE_STATION:
++			ieee80211_mgd_quiesce(sdata);
++			break;
++		default:
++			break;
++		}
+ 
+ 		drv_remove_interface(local, sdata);
+ 	}
 -- 
 1.9.1
 
