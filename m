@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaEBKBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 06:01:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:62499 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678AbaEBKBq (ORCPT
+	id S1751678AbaEBKJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 06:09:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39546 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaEBKJx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 06:01:46 -0400
-Date: Fri, 2 May 2014 11:01:05 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 1/5] watchdog: Add API to trigger reboots
-Message-ID: <20140502100105.GC17370@arm.com>
-References: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
- <1398958893-30049-2-git-send-email-linux@roeck-us.net>
+	Fri, 2 May 2014 06:09:53 -0400
+Date: Fri, 2 May 2014 12:09:51 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.14-rt1
+Message-ID: <20140502100951.GC9178@linutronix.de>
+References: <20140411185739.GA6644@linutronix.de>
+ <1397918766.5436.16.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1398958893-30049-2-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1397918766.5436.16.camel@marge.simpson.net>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+* Mike Galbraith | 2014-04-19 16:46:06 [+0200]:
 
-This looks pretty sensible to me (and the arm/arm64 bits look fine too), but
-I have one question below...
+>Hi Sebastian,
+Hi Mike,
 
-On Thu, May 01, 2014 at 04:41:29PM +0100, Guenter Roeck wrote:
-> Some hardware implements reboot through its watchdog hardware,
-> for example by triggering a watchdog timeout. Platform specific
-> code starts to spread into watchdog drivers, typically by setting
-> pointers to a callback functions which is then called from the
-> platform reset handler.
-> 
-> To simplify code and provide a unified API to trigger reboots by
-> watchdog drivers, provide a single API to trigger such reboots
-> through the watchdog subsystem.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/watchdog/watchdog_core.c |   17 +++++++++++++++++
->  include/linux/watchdog.h         |   11 +++++++++++
->  2 files changed, 28 insertions(+)
-> 
-> diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-> index cec9b55..4ec6e2f 100644
-> --- a/drivers/watchdog/watchdog_core.c
-> +++ b/drivers/watchdog/watchdog_core.c
-> @@ -43,6 +43,17 @@
->  static DEFINE_IDA(watchdog_ida);
->  static struct class *watchdog_class;
->  
-> +static struct watchdog_device *wdd_reboot_dev;
-> +
-> +void watchdog_do_reboot(enum reboot_mode mode, const char *cmd)
-> +{
-> +	if (wdd_reboot_dev) {
-> +		if (wdd_reboot_dev->ops->reboot)
-> +			wdd_reboot_dev->ops->reboot(wdd_reboot_dev, mode, cmd);
-> +	}
-> +}
+>This hunk in hotplug-light-get-online-cpus.patch looks like a bug.
+>
+>@@ -333,7 +449,7 @@ static int __ref _cpu_down(unsigned int
+>                /* CPU didn't die: tell everyone.  Can't complain. */
+>                smpboot_unpark_threads(cpu);
+>                cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
+>-               goto out_release;
+>+               goto out_cancel;
+>        }
+>        BUG_ON(cpu_online(cpu));
 
-What reboot_mode values would you expect a watchdog to support other than
-REBOOT_HARD? Also, is the cmd even useful here?
+Yes, it looks like it. v3.12-rt did not have this…
 
-Will
+Sebastian
