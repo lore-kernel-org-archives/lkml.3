@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaEBPlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:41:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43794 "EHLO
+	id S1753001AbaEBPlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:41:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805AbaEBPjZ (ORCPT
+	with ESMTP id S1752807AbaEBPjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 145/151] lib/percpu_counter.c: fix bad percpu counter state during suspend
-Date: Fri,  2 May 2014 08:38:53 -0700
-Message-Id: <1399045139-4531-146-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 151/151] ib_srpt: Use correct ib_sg_dma primitives
+Date: Fri,  2 May 2014 08:38:59 -0700
+Message-Id: <1399045139-4531-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,61 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit e39435ce68bb4685288f78b1a7e24311f7ef939f upstream.
+commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
 
-I got a bug report yesterday from Laszlo Ersek in which he states that
-his kvm instance fails to suspend.  Laszlo bisected it down to this
-commit 1cf7e9c68fe8 ("virtio_blk: blk-mq support") where virtio-blk is
-converted to use the blk-mq infrastructure.
+The code was incorrectly using sg_dma_address() and
+sg_dma_len() instead of ib_sg_dma_address() and
+ib_sg_dma_len().
 
-After digging a bit, it became clear that the issue was with the queue
-drain.  blk-mq tracks queue usage in a percpu counter, which is
-incremented on request alloc and decremented when the request is freed.
-The initial hunt was for an inconsistency in blk-mq, but everything
-seemed fine.  In fact, the counter only returned crazy values when
-suspend was in progress.
+This prevents srpt from functioning with the
+Intel HCA and indeed will corrupt memory
+badly.
 
-When a CPU is unplugged, the percpu counters merges that CPU state with
-the general state.  blk-mq takes care to register a hotcpu notifier with
-the appropriate priority, so we know it runs after the percpu counter
-notifier.  However, the percpu counter notifier only merges the state
-when the CPU is fully gone.  This leaves a state transition where the
-CPU going away is no longer in the online mask, yet it still holds
-private values.  This means that in this state, percpu_counter_sum()
-returns invalid results, and the suspend then hangs waiting for
-abs(dead-cpu-value) requests to complete which of course will never
-happen.
-
-Fix this by clearing the state earlier, so we never have a case where
-the CPU isn't in online mask but still holds private state.  This bug
-has been there since forever, I guess we don't have a lot of users where
-percpu counters needs to be reliable during the suspend cycle.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Reported-by: Laszlo Ersek <lersek@redhat.com>
-Tested-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Tested-by: Vinod Kumar <vinod.kumar@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- lib/percpu_counter.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index 8280a5d..7dd33577 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -169,7 +169,7 @@ static int percpu_counter_hotcpu_callback(struct notifier_block *nb,
- 	struct percpu_counter *fbc;
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index 520a7e5..b4884ae 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 				 struct srpt_send_ioctx *ioctx)
+ {
++	struct ib_device *dev = ch->sport->sdev->device;
+ 	struct se_cmd *cmd;
+ 	struct scatterlist *sg, *sg_orig;
+ 	int sg_cnt;
+@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
  
- 	compute_batch_value();
--	if (action != CPU_DEAD)
-+	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
- 		return NOTIFY_OK;
+ 	db = ioctx->rbufs;
+ 	tsize = cmd->data_length;
+-	dma_len = sg_dma_len(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
+ 	riu = ioctx->rdma_ius;
  
- 	cpu = (unsigned long)hcpu;
+ 	/*
+@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
+@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 	tsize = cmd->data_length;
+ 	riu = ioctx->rdma_ius;
+ 	sg = sg_orig;
+-	dma_len = sg_dma_len(&sg[0]);
+-	dma_addr = sg_dma_address(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
++	dma_addr = ib_sg_dma_address(dev, &sg[0]);
+ 
+ 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
+ 	for (i = 0, j = 0;
+@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
+-						dma_addr = sg_dma_address(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
++						dma_addr = ib_sg_dma_address(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
 -- 
 1.9.1
 
