@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946AbaEBPzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:55:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44241 "EHLO
+	id S1753883AbaEBPp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:45:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44214 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899AbaEBPpf (ORCPT
+	with ESMTP id S1753865AbaEBPpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:45:35 -0400
+	Fri, 2 May 2014 11:45:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 087/151] powerpc/compat: 32-bit little endian machine name is ppcle, not ppc
-Date: Fri,  2 May 2014 08:37:55 -0700
-Message-Id: <1399045139-4531-88-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 096/151] nfsd4: fix test_stateid error reply encoding
+Date: Fri,  2 May 2014 08:38:04 -0700
+Message-Id: <1399045139-4531-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,36 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 422b9b9684db3c511e65c91842275c43f5910ae9 upstream.
+commit a11fcce1544df08c723d950ff0edef3adac40405 upstream.
 
-I noticed this when testing setarch. No, we don't magically
-support a big endian userspace on a little endian kernel.
+If the entire operation fails then there's nothing to encode.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/include/asm/compat.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfsd/nfs4xdr.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/powerpc/include/asm/compat.h b/arch/powerpc/include/asm/compat.h
-index a613d2c..b142b8e 100644
---- a/arch/powerpc/include/asm/compat.h
-+++ b/arch/powerpc/include/asm/compat.h
-@@ -8,7 +8,11 @@
- #include <linux/sched.h>
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 86d8011..8d679dc 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -3527,6 +3527,9 @@ nfsd4_encode_test_stateid(struct nfsd4_compoundres *resp, __be32 nfserr,
+ 	struct nfsd4_test_stateid_id *stateid, *next;
+ 	__be32 *p;
  
- #define COMPAT_USER_HZ		100
-+#ifdef __BIG_ENDIAN__
- #define COMPAT_UTS_MACHINE	"ppc\0\0"
-+#else
-+#define COMPAT_UTS_MACHINE	"ppcle\0\0"
-+#endif
++	if (nfserr)
++		return nfserr;
++
+ 	RESERVE_SPACE(4 + (4 * test_stateid->ts_num_ids));
+ 	*p++ = htonl(test_stateid->ts_num_ids);
  
- typedef u32		compat_size_t;
- typedef s32		compat_ssize_t;
 -- 
 1.9.1
 
