@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaEBInZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 04:43:25 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:49263 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495AbaEBInV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 04:43:21 -0400
+	id S1751815AbaEBIql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 04:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaEBIqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 04:46:38 -0400
+Date: Fri, 2 May 2014 10:46:32 +0200 (CEST)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lczerner@localhost.localdomain
+To: Leon Yu <chianglungyu@gmail.com>
+cc: Benjamin LaHaise <bcrl@kvack.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aio: fix potential leak in aio_run_iocb().
+In-Reply-To: <1398915088-8472-1-git-send-email-chianglungyu@gmail.com>
+Message-ID: <alpine.LFD.2.00.1405021041250.2154@localhost.localdomain>
+References: <1398915088-8472-1-git-send-email-chianglungyu@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20140501143434.GA18016@ZenIV.linux.org.uk>
-References: <20140430211206.GU18016@ZenIV.linux.org.uk>
-	<20140430221238.GV18016@ZenIV.linux.org.uk>
-	<CA+55aFzekh6peA627B1e3NwcL06DqErWX6whJGm4w0WDRTn1gA@mail.gmail.com>
-	<CA+55aFwafZjeCEjaiAxCxQ1L9f6wBYXFsJQoSgr3681Y7=ER5w@mail.gmail.com>
-	<20140430234341.GX18016@ZenIV.linux.org.uk>
-	<CA+55aFyb7TPkOXmOiNQojnW-Fb-uunbqdMgiF13hE-o1t5rmcQ@mail.gmail.com>
-	<20140501025105.GY18016@ZenIV.linux.org.uk>
-	<CA+55aFzN=ERrtWUwAQv0ry-ZzX2k7dz3JZQT6q5zjp_ABwMg6Q@mail.gmail.com>
-	<20140501031251.GZ18016@ZenIV.linux.org.uk>
-	<20140501094252.GE3113@tucsk.piliscsaba.szeredi.hu>
-	<20140501143434.GA18016@ZenIV.linux.org.uk>
-Date: Fri, 2 May 2014 10:43:20 +0200
-X-Google-Sender-Auth: CS3mR1GKgX29ER2_M-kjFA1A_yY
-Message-ID: <CAELBmZBhXDdtjAiK16qJex7deY1SB-2uED3DfjRGhGN4RrYFaw@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Szeredi Miklos <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 1, 2014 at 4:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, May 01, 2014 at 11:42:52AM +0200, Miklos Szeredi wrote:
+On Thu, 1 May 2014, Leon Yu wrote:
 
->> - "bool foo = flag & FLAG" looks suspicious.  Is this guaranteed not to
->>   overflow?
->
-> What do you mean, overflow?  It's not a 1-bit unsigned int; conversion to
-> _Bool is different (which is the only reason why it's more than mere
-> syntax sugar).  See C99 6.3.2.1 ("When any scalar value is converted
-> to _Bool, the result is 0 if the value compares equal to 0; otherwise,
-> the result is 1").
+> Date: Thu,  1 May 2014 03:31:28 +0000
+> From: Leon Yu <chianglungyu@gmail.com>
+> To: Benjamin LaHaise <bcrl@kvack.org>,
+>     Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
+>     linux-kernel@vger.kernel.org, Leon Yu <chianglungyu@gmail.com>
+> Subject: [PATCH] aio: fix potential leak in aio_run_iocb().
+> 
+> iovec should be reclaimed whenever caller of rw_copy_check_uvector() returns,
+> but it doesn't hold when failure happens right after aio_setup_vectored_rw().
+> 
+> Fix that in a such way to avoid hairy goto.
 
-Ah, didn't know that.
 
-Thanks,
-Miklos
+Hi,
+
+this does not seem right, see bellow
+
+> 
+> Signed-off-by: Leon Yu <chianglungyu@gmail.com>
+> ---
+>  fs/aio.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 12a3de0e..04cd768 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -1299,10 +1299,8 @@ rw_common:
+>  						&iovec, compat)
+>  			: aio_setup_single_vector(req, rw, buf, &nr_segs,
+>  						  iovec);
+> -		if (ret)
+> -			return ret;
+> -
+> -		ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+
+here ret could be possibly set to a positive number.
+
+> +		if (!ret)
+> +			ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+>  		if (ret < 0) {
+
+but here we're checking for negative and bail out. However this
+changes the way it worked before this patch and the iovec would not
+be reclaimed anyway as you mentioned in the commit description.
+
+Thanks!
+-Lukas
+
+>  			if (iovec != &inline_vec)
+>  				kfree(iovec);
+
