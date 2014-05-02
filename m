@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaEBJff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:35:35 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19280 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaEBJdr (ORCPT
+	id S1752172AbaEBJgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:36:08 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:4214 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaEBJdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:33:47 -0400
+	Fri, 2 May 2014 05:33:45 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 02 May 2014 02:24:08 -0700
+	by hqnvupgp07.nvidia.com on Fri, 02 May 2014 02:24:06 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>
 CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
         <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v4 3/9] drm/nouveau/ibus: add GK20A support
-Date: Fri, 2 May 2014 18:32:36 +0900
-Message-ID: <1399023162-13159-4-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v4 2/9] drm/nouveau/bar/nvc0: support chips without BAR3
+Date: Fri, 2 May 2014 18:32:35 +0900
+Message-ID: <1399023162-13159-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1399023162-13159-1-git-send-email-acourbot@nvidia.com>
 References: <1399023162-13159-1-git-send-email-acourbot@nvidia.com>
@@ -28,149 +28,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for initializing the priv ring of GK20A. This is done by the
-BIOS on desktop GPUs, but needs to be done by hand on Tegra.
+Adapt the NVC0 BAR driver to make it able to support chips that do not
+expose a BAR3. When this happens, BAR1 is then used for USERD mapping
+and the BAR alloc() functions is disabled, making GPU objects unable
+to rely on BAR for data access and falling back to PRAMIN.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/Makefile                   |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
- drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c   | 103 +++++++++++++++++++++
- 3 files changed, 105 insertions(+)
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c
+ drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c | 114 +++++++++++++------------
+ 1 file changed, 59 insertions(+), 55 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-index b7d216264775..bc5fb24630e6 100644
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -136,6 +136,7 @@ nouveau-y += core/subdev/i2c/nv94.o
- nouveau-y += core/subdev/i2c/nvd0.o
- nouveau-y += core/subdev/ibus/nvc0.o
- nouveau-y += core/subdev/ibus/nve0.o
-+nouveau-y += core/subdev/ibus/gk20a.o
- nouveau-y += core/subdev/instmem/base.o
- nouveau-y += core/subdev/instmem/nv04.o
- nouveau-y += core/subdev/instmem/nv40.o
-diff --git a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-index 88814f159d89..31df634c0fdc 100644
---- a/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-+++ b/drivers/gpu/drm/nouveau/core/include/subdev/ibus.h
-@@ -30,5 +30,6 @@ nouveau_ibus(void *obj)
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+index 3f30db62e656..ca8139b9ab27 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c
+@@ -30,14 +30,16 @@
  
- extern struct nouveau_oclass nvc0_ibus_oclass;
- extern struct nouveau_oclass nve0_ibus_oclass;
-+extern struct nouveau_oclass gk20a_ibus_oclass;
+ #include "priv.h"
  
- #endif
-diff --git a/drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c b/drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c
-new file mode 100644
-index 000000000000..245f0ebaa6af
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c
-@@ -0,0 +1,103 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include <subdev/ibus.h>
-+#include <subdev/timer.h>
-+
-+struct gk20a_ibus_priv {
-+	struct nouveau_ibus base;
++struct nvc0_bar_priv_vm {
++	struct nouveau_gpuobj *mem;
++	struct nouveau_gpuobj *pgd;
++	struct nouveau_vm *vm;
 +};
 +
-+static void
-+gk20a_ibus_init_priv_ring(struct gk20a_ibus_priv *priv)
-+{
-+	nv_mask(priv, 0x137250, 0x3f, 0);
+ struct nvc0_bar_priv {
+ 	struct nouveau_bar base;
+ 	spinlock_t lock;
+-	struct {
+-		struct nouveau_gpuobj *mem;
+-		struct nouveau_gpuobj *pgd;
+-		struct nouveau_vm *vm;
+-	} bar[2];
++	struct nvc0_bar_priv_vm bar[2];
+ };
+ 
+ static int
+@@ -79,87 +81,87 @@ nvc0_bar_unmap(struct nouveau_bar *bar, struct nouveau_vma *vma)
+ }
+ 
+ static int
+-nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+-	      struct nouveau_oclass *oclass, void *data, u32 size,
+-	      struct nouveau_object **pobject)
++nvc0_bar_init_vm(struct nvc0_bar_priv *priv, struct nvc0_bar_priv_vm *bar_vm,
++		 int bar_nr)
+ {
+-	struct nouveau_device *device = nv_device(parent);
+-	struct nvc0_bar_priv *priv;
+-	struct nouveau_gpuobj *mem;
++	struct nouveau_device *device = nv_device(&priv->base);
+ 	struct nouveau_vm *vm;
++	resource_size_t bar_len;
+ 	int ret;
+ 
+-	ret = nouveau_bar_create(parent, engine, oclass, &priv);
+-	*pobject = nv_object(priv);
+-	if (ret)
+-		return ret;
+-
+-	/* BAR3 */
+ 	ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x1000, 0, 0,
+-				&priv->bar[0].mem);
+-	mem = priv->bar[0].mem;
++				&bar_vm->mem);
+ 	if (ret)
+ 		return ret;
+ 
+ 	ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x8000, 0, 0,
+-				&priv->bar[0].pgd);
++				&bar_vm->pgd);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = nouveau_vm_new(device, 0, nv_device_resource_len(device, 3), 0, &vm);
++	bar_len = nv_device_resource_len(device, bar_nr);
 +
-+	nv_mask(priv, 0x000200, 0x20, 0);
-+	usleep_range(20, 30);
-+	nv_mask(priv, 0x000200, 0x20, 0x20);
-+
-+	nv_wr32(priv, 0x12004c, 0x4);
-+	nv_wr32(priv, 0x122204, 0x2);
-+	nv_rd32(priv, 0x122204);
-+}
-+
-+static void
-+gk20a_ibus_intr(struct nouveau_subdev *subdev)
-+{
-+	struct gk20a_ibus_priv *priv = (void *)subdev;
-+	u32 status0 = nv_rd32(priv, 0x120058);
-+
-+	if (status0 & 0x7) {
-+		nv_debug(priv, "resetting priv ring\n");
-+		gk20a_ibus_init_priv_ring(priv);
++	ret = nouveau_vm_new(device, 0, bar_len, 0, &vm);
+ 	if (ret)
+ 		return ret;
+ 
+ 	atomic_inc(&vm->engref[NVDEV_SUBDEV_BAR]);
+ 
+-	ret = nouveau_gpuobj_new(nv_object(priv), NULL,
+-				 (nv_device_resource_len(device, 3) >> 12) * 8,
+-				 0x1000, NVOBJ_FLAG_ZERO_ALLOC,
+-				 &vm->pgt[0].obj[0]);
+-	vm->pgt[0].refcount[0] = 1;
+-	if (ret)
+-		return ret;
++	/*
++	 * Bootstrap page table lookup.
++	 */
++	if (bar_nr == 3) {
++		ret = nouveau_gpuobj_new(nv_object(priv), NULL,
++					 (bar_len >> 12) * 8, 0x1000,
++					 NVOBJ_FLAG_ZERO_ALLOC,
++					&vm->pgt[0].obj[0]);
++		vm->pgt[0].refcount[0] = 1;
++		if (ret)
++			return ret;
 +	}
-+
-+	/* Acknowledge interrupt */
-+	nv_mask(priv, 0x12004c, 0x2, 0x2);
-+
-+	if (!nv_wait(subdev, 0x12004c, 0x3f, 0x00))
-+		nv_warn(priv, "timeout waiting for ringmaster ack\n");
-+}
-+
-+static int
-+gk20a_ibus_init(struct nouveau_object *object)
-+{
-+	struct gk20a_ibus_priv *priv = (void *)object;
-+	int ret;
-+
-+	ret = _nouveau_ibus_init(object);
-+	if (ret)
-+		return ret;
-+
-+	gk20a_ibus_init_priv_ring(priv);
-+
+ 
+-	ret = nouveau_vm_ref(vm, &priv->bar[0].vm, priv->bar[0].pgd);
++	ret = nouveau_vm_ref(vm, &bar_vm->vm, bar_vm->pgd);
+ 	nouveau_vm_ref(NULL, &vm, NULL);
+ 	if (ret)
+ 		return ret;
+ 
+-	nv_wo32(mem, 0x0200, lower_32_bits(priv->bar[0].pgd->addr));
+-	nv_wo32(mem, 0x0204, upper_32_bits(priv->bar[0].pgd->addr));
+-	nv_wo32(mem, 0x0208, lower_32_bits(nv_device_resource_len(device, 3) - 1));
+-	nv_wo32(mem, 0x020c, upper_32_bits(nv_device_resource_len(device, 3) - 1));
++	nv_wo32(bar_vm->mem, 0x0200, lower_32_bits(bar_vm->pgd->addr));
++	nv_wo32(bar_vm->mem, 0x0204, upper_32_bits(bar_vm->pgd->addr));
++	nv_wo32(bar_vm->mem, 0x0208, lower_32_bits(bar_len - 1));
++	nv_wo32(bar_vm->mem, 0x020c, upper_32_bits(bar_len - 1));
+ 
+-	/* BAR1 */
+-	ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x1000, 0, 0,
+-				&priv->bar[1].mem);
+-	mem = priv->bar[1].mem;
+-	if (ret)
+-		return ret;
 +	return 0;
 +}
-+
+ 
+-	ret = nouveau_gpuobj_new(nv_object(priv), NULL, 0x8000, 0, 0,
+-				&priv->bar[1].pgd);
+-	if (ret)
+-		return ret;
 +static int
-+gk20a_ibus_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
-+	       struct nouveau_oclass *oclass, void *data, u32 size,
-+	       struct nouveau_object **pobject)
++nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
++	      struct nouveau_oclass *oclass, void *data, u32 size,
++	      struct nouveau_object **pobject)
 +{
-+	struct gk20a_ibus_priv *priv;
++	struct nouveau_device *device = nv_device(parent);
++	struct nvc0_bar_priv *priv;
++	bool has_bar3 = nv_device_resource_len(device, 3) != 0;
 +	int ret;
-+
-+	ret = nouveau_ibus_create(parent, engine, oclass, &priv);
+ 
+-	ret = nouveau_vm_new(device, 0, nv_device_resource_len(device, 1), 0, &vm);
++	ret = nouveau_bar_create(parent, engine, oclass, &priv);
 +	*pobject = nv_object(priv);
-+	if (ret)
-+		return ret;
-+
-+	nv_subdev(priv)->intr = gk20a_ibus_intr;
-+	return 0;
-+}
-+
-+struct nouveau_oclass
-+gk20a_ibus_oclass = {
-+	.handle = NV_SUBDEV(IBUS, 0xea),
-+	.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = gk20a_ibus_ctor,
-+		.dtor = _nouveau_ibus_dtor,
-+		.init = gk20a_ibus_init,
-+		.fini = _nouveau_ibus_fini,
-+	},
-+};
+ 	if (ret)
+ 		return ret;
+ 
+-	atomic_inc(&vm->engref[NVDEV_SUBDEV_BAR]);
++	/* BAR3 */
++	if (has_bar3) {
++		ret = nvc0_bar_init_vm(priv, &priv->bar[0], 3);
++		if (ret)
++			return ret;
++		priv->base.alloc = nouveau_bar_alloc;
++		priv->base.kmap = nvc0_bar_kmap;
++	}
+ 
+-	ret = nouveau_vm_ref(vm, &priv->bar[1].vm, priv->bar[1].pgd);
+-	nouveau_vm_ref(NULL, &vm, NULL);
++	/* BAR1 */
++	ret = nvc0_bar_init_vm(priv, &priv->bar[1], 1);
+ 	if (ret)
+ 		return ret;
+ 
+-	nv_wo32(mem, 0x0200, lower_32_bits(priv->bar[1].pgd->addr));
+-	nv_wo32(mem, 0x0204, upper_32_bits(priv->bar[1].pgd->addr));
+-	nv_wo32(mem, 0x0208, lower_32_bits(nv_device_resource_len(device, 1) - 1));
+-	nv_wo32(mem, 0x020c, upper_32_bits(nv_device_resource_len(device, 1) - 1));
+-
+-	priv->base.alloc = nouveau_bar_alloc;
+-	priv->base.kmap = nvc0_bar_kmap;
+ 	priv->base.umap = nvc0_bar_umap;
+ 	priv->base.unmap = nvc0_bar_unmap;
+ 	priv->base.flush = nv84_bar_flush;
+@@ -201,7 +203,9 @@ nvc0_bar_init(struct nouveau_object *object)
+ 	nv_mask(priv, 0x100c80, 0x00000001, 0x00000000);
+ 
+ 	nv_wr32(priv, 0x001704, 0x80000000 | priv->bar[1].mem->addr >> 12);
+-	nv_wr32(priv, 0x001714, 0xc0000000 | priv->bar[0].mem->addr >> 12);
++	if (priv->bar[0].mem)
++		nv_wr32(priv, 0x001714,
++			0xc0000000 | priv->bar[0].mem->addr >> 12);
+ 	return 0;
+ }
+ 
 -- 
 1.9.2
 
