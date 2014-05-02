@@ -1,116 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaEBXnP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 19:43:15 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:32957 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaEBXnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 19:43:14 -0400
-Subject: Re: [PATCH v2] uprobes: fix scratch register selection for
- rip-relative fixups
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
-References: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 May 2014 16:43:09 -0700
-Message-ID: <1399074189.4821.10.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050223-7182-0000-0000-00000A7E196B
+	id S1752696AbaEBXvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 19:51:32 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61535 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaEBXvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 19:51:31 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86: Return to kernel without IRET
+Date: Fri,  2 May 2014 16:51:26 -0700
+Message-Id: <7982b18cef5056c6f2a46ff7cc40893d1dddd3c0.1399074537.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 17:04 +0200, Denys Vlasenko wrote:
-> Before this patch, instructions such as div, mul,
-> shifts with count in CL, cmpxchg are mishandled.
+On my box, this saves about 100ns on each interrupt and trap that
+happens while running in kernel space.  This speeds up my kernel_pf
+microbenchmark by about 17%.
 
-I just noticed that this sounds rather worse than it is.  It would be
-more precise to say, "Before this patch, the rip-relative addressing
-mode in instructions such as ... is mishandled."
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-...
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Jim Keniston <jkenisto@us.ibm.com>
-> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> CC: Ingo Molnar <mingo@kernel.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/uprobes.c | 179 +++++++++++++++++++++++++++++++++-------------
->  1 file changed, 128 insertions(+), 51 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index dbbf6cd..5b387b7 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -41,8 +41,12 @@
->  /* Instruction will modify TF, don't change it */
->  #define UPROBE_FIX_SETF		0x04
-> 
-> -#define UPROBE_FIX_RIP_AX	0x08
-> -#define UPROBE_FIX_RIP_CX	0x10
-> +#define UPROBE_FIX_RIP_SI	0x08
-> +#define UPROBE_FIX_RIP_DI	0x10
-> +#define UPROBE_FIX_RIP_BX	0x20
-> +#define UPROBE_FIX_RIP_MASK	(UPROBE_FIX_RIP_SI \
-> +				| UPROBE_FIX_RIP_DI \
-> +				| UPROBE_FIX_RIP_BX)
+Changes from the RFC:
+ - Much better comments
+ - Rewritten to use popq_cfi directly instead of RESTORE_ARGS
+ - Uses sti to restore IF so we get the interrupt shadow
 
-Yes.
+ arch/x86/kernel/entry_64.S | 51 ++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 49 insertions(+), 2 deletions(-)
 
-...
-> +	/* Fetch vex.vvvv */
-> +	reg2 = 0xff;
-> +	if (insn->vex_prefix.nbytes == 2) {
-> +		reg2 = insn->vex_prefix.bytes[1];
-> +	}
-> +	if (insn->vex_prefix.nbytes == 3) {
-> +		reg2 = insn->vex_prefix.bytes[2];
-> +	}
-> +	/* TODO: add XOP, EXEV vvvv reading */
-> +	/*
-> +	 * vex.vvvv field is in bits 6-3, bits are inverted.
-> +	 * But in 32-bit mode, high-order bit may be ignored.
-> +	 * Therefore, let's consider only 3 low-order bits.
-> +	 */
-> +	reg2 = ((reg2 >> 3) & 0x7) ^ 0x7;
-> 
-> +	/* Register numbering is ax,cx,dx,bx, sp,bp,si,di, r8..r15 */
-> +	/*
-> +	 * Choose scratch reg. Order is important:
-> +	 * must not select bx if we can use si (cmpxchg8b case!)
-
-It'd be good to add here:
-	 * For instructions without a VEX prefix, reg2 is 0 here.
-
-Otherwise it kind of looks like you forgot to address that case, and the
-reader shouldn't have to do the bit fiddling to figure it out.
-
-> +	 */
-> +	if (reg != 6 && reg2 != 6) {
-> +		reg2 = 6;
-> +		auprobe->def.fixups |= UPROBE_FIX_RIP_SI;
-> +	} else if (reg != 7 && reg2 != 7) {
-> +		reg2 = 7;
-> +		auprobe->def.fixups |= UPROBE_FIX_RIP_DI;
-> +		/* TODO (paranoia): force maskmovq to not use di */
-> +	} else {
-> +		reg2 = 3; /* BX */
-> +		auprobe->def.fixups |= UPROBE_FIX_RIP_BX;
-> +	}
-
-Yes.  Looks good from here down.
-
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
-
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..0f6fe36 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1023,7 +1023,7 @@ retint_check:
+ 
+ retint_swapgs:		/* return to user-space */
+ 	/*
+-	 * The iretq could re-enable interrupts:
++	 * The sti could re-enable interrupts:
+ 	 */
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	TRACE_IRQS_IRETQ
+@@ -1033,9 +1033,56 @@ retint_swapgs:		/* return to user-space */
+ retint_restore_args:	/* return to kernel space */
+ 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	/*
+-	 * The iretq could re-enable interrupts:
++	 * The popfq could re-enable interrupts:
+ 	 */
+ 	TRACE_IRQS_IRETQ
++
++	/*
++	 * Fast return to kernel.  The stack looks like:
++	 *
++	 * previous frame
++	 * possible 8 byte gap for alignment
++	 * SS RSP EFLAGS CS RIP
++	 * ORIG_RAX RDI ... R11
++	 *
++	 * We rewrite it to:
++	 *
++	 * previous frame
++	 * RIP (EFLAGS & ~IF) ...
++	 * pointer to the EFLAGS slot
++	 * RDI ... R11
++	 */
++	movq RSP-ARGOFFSET(%rsp), %rsi
++	subq $16, %rsi
++	movq EFLAGS-ARGOFFSET(%rsp), %rdi
++	movq RIP-ARGOFFSET(%rsp), %rcx
++	btr $9, %rdi
++	movq %rdi, (%rsi)
++	movq %rcx, 8(%rsi)
++	movq %rsi, ORIG_RAX-ARGOFFSET(%rsp)
++	popq_cfi %r11
++	popq_cfi %r10
++	popq_cfi %r9
++	popq_cfi %r8
++	popq_cfi %rax
++	popq_cfi %rcx
++	popq_cfi %rdx
++	popq_cfi %rsi
++	popq_cfi %rdi
++
++	popq %rsp
++	jc 1f
++	/* Interrupts were not enabled */
++	popfq_cfi
++	retq
++1:
++	CFI_ADJUST_CFA_OFFSET 8
++	/* Interrupts were enabled */
++	popfq_cfi
++	sti
++	/* Interrupts are still off because of the one-insn grace period. */
++	retq
++
+ restore_args:
+ 	RESTORE_ARGS 1,8,1
+ 
+-- 
+1.9.0
 
