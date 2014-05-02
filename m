@@ -1,91 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977AbaEBLHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:07:36 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:49844 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751784AbaEBLH0 (ORCPT
+	id S1751890AbaEBLQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:16:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44592 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414AbaEBLQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:07:26 -0400
-Date: Fri, 2 May 2014 14:06:51 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH/RFC v3 5/5] media: Add registration helpers for V4L2
- flash sub-devices
-Message-ID: <20140502110651.GX8753@valkosipuli.retiisi.org.uk>
-References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
- <1397228216-6657-6-git-send-email-j.anaszewski@samsung.com>
- <20140416182141.GG8753@valkosipuli.retiisi.org.uk>
- <534F9044.6080508@samsung.com>
- <20140423152435.GJ8753@valkosipuli.retiisi.org.uk>
- <535E3A95.6010206@samsung.com>
+	Fri, 2 May 2014 07:16:12 -0400
+Date: Fri, 2 May 2014 13:15:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140502111552.GV11096@twins.programming.kicks-ass.net>
+References: <20140429190108.GB30445@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu>
+ <20140430184437.GH17778@laptop.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu>
+ <20140501150948.GR11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pQhZXvAqiZgbeUkD"
 Content-Disposition: inline
-In-Reply-To: <535E3A95.6010206@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
 
-On Mon, Apr 28, 2014 at 01:25:09PM +0200, Jacek Anaszewski wrote:
-> Hi Sakari,
-> 
-> On 04/23/2014 05:24 PM, Sakari Ailus wrote:
-> >Hi Jacek,
-> >
-> >On Thu, Apr 17, 2014 at 10:26:44AM +0200, Jacek Anaszewski wrote:
-> >>Hi Sakari,
-> >>
-> >>Thanks for the review.
-> >>
-> >>On 04/16/2014 08:21 PM, Sakari Ailus wrote:
-> >>>Hi Jacek,
-> >>>
-> >>>Thanks for the update!
-> >>>
-> >>[...]
-> >>>>+static inline enum led_brightness v4l2_flash_intensity_to_led_brightness(
-> >>>>+					struct led_ctrl *config,
-> >>>>+					u32 intensity)
-> >>>
-> >>>Fits on a single line.
-> >>>
-> >>>>+{
-> >>>>+	return intensity / config->step;
-> >>>
-> >>>Shouldn't you first decrement the minimum before the division?
-> >>
-> >>Brightness level 0 means that led is off. Let's consider following case:
-> >>
-> >>intensity - 15625
-> >>config->step - 15625
-> >>intensity / config->step = 1 (the lowest possible current level)
-> >
-> >In V4L2 controls the minimum is not off, and zero might not be a possible
-> >value since minimum isn't divisible by step.
-> >
-> >I wonder how to best take that into account.
-> 
-> I've assumed that in MODE_TORCH a led is always on. Switching
-> the mode to MODE_FLASH or MODE_OFF turns the led off.
-> This way we avoid the problem with converting 0 uA value to
-> led_brightness, as available torch brightness levels start from
-> the minimum current level value and turning the led off is
-> accomplished on transition to MODE_OFF or MODE_FLASH, by
-> calling brightness_set op with led_brightness = 0.
+--pQhZXvAqiZgbeUkD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not sure if we understood the issue the same way. My concern was that if
-the intensity isn't a multiple of step (but intensity - min is), the above
-formula won't return a valid result (unless I miss something).
+On Thu, May 01, 2014 at 02:49:01PM -0400, Vince Weaver wrote:
+>=20
+> OK, humor me a bit here.
+>=20
+> I'm looking at the buggy trace and comparing against a "good" trace where=
+=20
+> the bug doesn't happen.
+>=20
+> It is a rance condition of sorts, because it's just a 10us or so=20
+> interleaving of calls that causes the bug to happen or not.
+>=20
+> In the good trace:
+>=20
+> 	[parent] __perf_event_task_sched_out (and hence perf_swevent_del)
+> 	[child]  perf_release
+>=20
+> In the buggy trace:
+>=20
+> 	[child] perf_release
+> 	[parent] __perf_event_task_sched_out (perf_swevent_del never happens)
+>=20
+>=20
+> perf_swevent_del calls
+> 	hlist_del_rcu(event->hlist_entry)
+> to remove the event from the swevent hlist.
+>=20
+> Now in theory perf_release() calls sw_perf_event_destroy() which you
+> would think would also call the above.  Instead it does
+> 	 swevent_hlist_put_cpu(event, cpu);
+> which does all kinds of weird hash stuff that I don't follow.
+>=20
+> Should the above two be equivelent?  Is it reference counting in there=20
+> with if (!--swhash->hlist_refcount) causing the issue?
 
--- 
-Regards,
+perf_release()
+  put_event()
+    perf_remove_from_context()
+      __perf_remove_from_context()
+        event_sched_out()
+	  ->del()
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+is the path that would call ->del() and hlist_del_rcu().
+
+Now perf_remove_from_context() only calls __perf_remove_from_context()
+when the task is active somewhere, otherwise it simply calls
+list_del_event().
+
+Both perf_remove_from_context() and perf_event_context_sched_out() (as
+called from __perf_event_task_sched_out) hold ctx->lock, so they should
+be serialized against each other.
+
+Clearly I'm missing something though, will go stare at the trace now.
+
+--pQhZXvAqiZgbeUkD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTY35oAAoJEHZH4aRLwOS6Ya4P/1mdw678TR1ZaX94JLn/ZnCh
+BCtvdB1JPQ6ixctFCOF0X//7gftviaczDHQ89VsQPH/F0qmFk54jqgcap02TnZzv
+sahvUGPVoBGpybqfQ0Bd57GXbGOXZ/sN3BQxP75dDSHg4xQESHHY17aluEUyQQd2
+zjDB8/wKPgwob//J0ncUY+rpbkqUJGm9M9Kwiy6kIonPxak+qY95S0CVPNNvP/a3
+rGmAezituraQ3iqjiNDOG1V3srZ14rVHCVh5mRZYhNB8dEKdh+INS8yuQ5cQIooH
+vKZNcCvdPwRgono6oTp3xRGpd3tGdks8Nb9VqHw0f4gwLWEFQZePNLJT7A/BSD6Q
+0GGRgM/ZAJ8w3mMNnacnFO4FzE8++nZjRc/14QG5+04Ks42cNCj48Q874e9qMll3
+NDAgEbBtZ7jZLUc5W/xOyf2JSZhgTecUdyy8LRd7WwOAguthmN6jDfV60n8Ef52I
+oLhA9CfsLLWPOJH2yR000VwnlANBEnZZgWANwK+ZdNP+Nbk/RzyO6RAtFauskjY8
+WaytEgbzNShRji3PIb5FjzfMhPQJC6Kmcvz35fuoqUtuDU/croBioRpzTpRwKB8C
+BS+zPsLtFaENuW4S/fx/T8pB+M+ehlo9IU9QRRkWEZX2FpyeL4dfBFG6Ekift2/4
+BPjAxCb0Kp6eKhJ/r4p9
+=5QKK
+-----END PGP SIGNATURE-----
+
+--pQhZXvAqiZgbeUkD--
