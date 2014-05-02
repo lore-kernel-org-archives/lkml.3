@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaEBSih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 14:38:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43693 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824AbaEBSif (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 14:38:35 -0400
-Date: Fri, 2 May 2014 20:38:24 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140502183824.GH9178@linutronix.de>
-References: <534C3606.7010206@meduna.org>
- <534C731F.1050406@meduna.org>
- <534DADF1.6060608@meduna.org>
- <20140422115439.GA20669@linutronix.de>
- <20140422094657.5b6ca1e2@gandalf.local.home>
- <53569E05.8010600@linutronix.de>
- <20140422134802.73fc1fa4@gandalf.local.home>
- <20140422141650.7f43d5ba@gandalf.local.home>
+	id S1752836AbaEBSjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 14:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752701AbaEBSjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 14:39:21 -0400
+From: Bandan Das <bsd@redhat.com>
+To: Hu Yaohui <loki2441@gmail.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, kvm <kvm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: KVM Nested L2 guest startup problems
+References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
+	<53636B1D.8030405@redhat.com>
+	<CAHqbYQsTnJifwQMnhzaBEBYNpN9aHaZ4Vr0GhNkQZuN+o2vNtA@mail.gmail.com>
+	<5363BF42.9020505@redhat.com>
+	<CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>
+Date: Fri, 02 May 2014 14:39:18 -0400
+In-Reply-To: <CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>
+	(Hu Yaohui's message of "Fri, 2 May 2014 13:07:16 -0400")
+Message-ID: <jpgzjj0xbxl.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140422141650.7f43d5ba@gandalf.local.home>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt | 2014-04-22 14:16:50 [-0400]:
+Hu Yaohui <loki2441@gmail.com> writes:
 
->On Tue, 22 Apr 2014 13:48:02 -0400
->Steven Rostedt <rostedt@goodmis.org> wrote:
->
->> I need to take a deeper look into the actual code. But as trylocks on
->> UP are nops (always succeed), and if it expects to be able to do
->> something in a critical section that is protected by spinlocks (again
->> nops on UP), this would be broken for UP.
->
->Reading the code, I see it's broken. We should add something like this:
->
->Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
->---
->diff --git a/kernel/timer.c b/kernel/timer.c
->index cc34e42..a03164a 100644
->--- a/kernel/timer.c
->+++ b/kernel/timer.c
->@@ -1447,6 +1447,12 @@ static void run_timer_softirq(struct softirq_action *h)
-> 		__run_timers(base);
-> }
-> 
->+#ifdef CONFIG_SMP
->+#define timer_should_raise_softirq(lock)	!spin_do_trylock(lock)
->+#else
->+#define timer_should_raise_softirq(lock)	1
->+#endif
->+
-> /*
->  * Called by the local, per-CPU timer interrupt on SMP.
->  */
->@@ -1467,7 +1473,7 @@ void run_local_timers(void)
-> 		return;
-> 	}
-> 
->-	if (!spin_do_trylock(&base->lock)) {
->+	if (timer_should_raise_softirq(&base->lock)) {
-> 		raise_softirq(TIMER_SOFTIRQ);
-> 		return;
-> 	}
+> On Fri, May 2, 2014 at 11:52 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>> Il 02/05/2014 17:17, Hu Yaohui ha scritto:
+>>
+>>> Hi Paolo,
+>>> I have tried L0 with linux kernel 3.14.2 and L1 with linux kernel 3.14.2
+>>> L1 QEMU qemu-1.7.0
+>>> L2 QEMU qemu-1.7.0.
+>>
+>>
+>> Do you mean L0 and L1?
+> Yes.
+>>
+>> What is your QEMU command line, and what is the processor?  Also, what guest
+>> you are running?
+>>
+> L0 host
+> - Debian 7 with linux kernel 3.14.2
+> - 24 pCPU, 120G pMEM
+> - cpu mode: Intel(R) Xeon(R) CPU E5-2620 v2 @ 2.10GHz
 
-Okay. So Peter said that it is okay to apply this since FULL_NO_HZ users
-wouldn't complain on UP. I still wouldn't say it is broken but that is a
-different story.
-We have two users of this trylock. run_local_timers() which pops up
-quite often (and you patched here) and the other is
-get_next_timer_interrupt(). What do you suggest we do here? It is
-basically the same thing.
+Ivy Bridge-EP ? Looks similar to 
+https://bugzilla.kernel.org/show_bug.cgi?id=73331
 
-Sebastian
+Just out of curiosity, any difference if you run with ept=0 ?
+
+> - QEMU command line of L1
+> $ sudo qemu-system-x86_64 -machine accel=kvm -drive
+> file=vdisk.img,if=virtio -m 4096 -smp 10 -net
+> nic,model=virtio,macaddr=52:54:00:12:34:80 -cpu kvm64,+vmx -net
+> tap,ifname=qtap0,script=no,downscript=no -vnc :2
+>
+> L1 guest
+> - Ubuntu 10.04 with linux kernel 3.14.2
+> - QEMU command line of L2
+> $qemu-system-x86_64  -machine accel=kvm -smp 2 -boot c -drive
+> file=/home/nested/vmdisks/vdisk1-virtnet.img,if=virtio -m 2048 -vnc :4
+> -net nic,model=virtio,macaddr=52:54:00:12:34:90 -net
+> tap,ifname=qtap0,script=no,downscript=no
+>
+> L2 guest
+> - Ubuntu 10.04 with linux kernel 2.6.32
+>> Paolo
+>>
+>>
+>>> I still get the same error when running qemu in L1 guest.
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
