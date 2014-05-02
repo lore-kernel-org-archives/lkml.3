@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaEBQBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:01:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44134 "EHLO
+	id S1754424AbaEBQBx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:01:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44119 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaEBPoy (ORCPT
+	with ESMTP id S1753698AbaEBPon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:54 -0400
+	Fri, 2 May 2014 11:44:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 038/151] xhci: Prevent runtime pm from autosuspending during initialization
-Date: Fri,  2 May 2014 08:37:06 -0700
-Message-Id: <1399045139-4531-39-git-send-email-kamal@canonical.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 032/151] usb: gadget: atmel_usba: fix crashed during stopping when DEBUG is enabled
+Date: Fri,  2 May 2014 08:37:00 -0700
+Message-Id: <1399045139-4531-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,73 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit bcffae7708eb8352f44dc510b326541fe43a02a4 upstream.
+commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
 
-xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-to register its usb-2 bus, and then continue to manually register the
-usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-might thus trigger a runtime suspend before the usb-3 bus is ready.
+commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
+unbinding) introduced a crash when DEBUG is enabled.
 
-Prevent the runtime suspend by increasing the usage count in the
-beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
-ready.
+The debug trace in the atmel_usba_stop function made the assumption that the
+driver pointer passed in parameter was not NULL, but since the commit above,
+such assumption was no longer always true.
 
-xhci-platform driver is not using usb_hcd_pci_probe to set up
-busses and should not need to have it's usage count increased during probe.
+This commit now uses the driver pointer stored in udc which fixes this
+issue.
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[ balbi@ti.com : improved commit log a bit ]
+
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-pci.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/atmel_usba_udc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 1af67a2..d069224 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	struct usb_hcd *hcd;
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index 2cb52e0..1e53092 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
+ 	toggle_bias(0);
+ 	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
  
- 	driver = (struct hc_driver *)id->driver_data;
+-	udc->driver = NULL;
+-
+ 	clk_disable_unprepare(udc->hclk);
+ 	clk_disable_unprepare(udc->pclk);
+ 
+-	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
++	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
 +
-+	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
-+	pm_runtime_get_noresume(&dev->dev);
-+
- 	/* Register the USB 2.0 roothub.
- 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
- 	 * This is sort of silly, because we could just set the HCD driver flags
-@@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	retval = usb_hcd_pci_probe(dev, id);
++	udc->driver = NULL;
  
- 	if (retval)
--		return retval;
-+		goto put_runtime_pm;
- 
- 	/* USB 2.0 roothub is stored in the PCI device now. */
- 	hcd = dev_get_drvdata(&dev->dev);
-@@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (xhci->quirks & XHCI_LPM_SUPPORT)
- 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
- 
-+	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-+	pm_runtime_put_noidle(&dev->dev);
-+
  	return 0;
- 
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
- dealloc_usb2_hcd:
- 	usb_hcd_pci_remove(dev);
-+put_runtime_pm:
-+	pm_runtime_put_noidle(&dev->dev);
- 	return retval;
  }
- 
 -- 
 1.9.1
 
