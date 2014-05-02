@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbaEBWOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:14:35 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:34923 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaEBWOe (ORCPT
+	id S1752793AbaEBWSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:18:39 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:55681 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaEBWSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:14:34 -0400
+	Fri, 2 May 2014 18:18:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1392138636-29240-5-git-send-email-pawel.moll@arm.com>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	<1392138636-29240-5-git-send-email-pawel.moll@arm.com>
-Date: Fri, 2 May 2014 15:14:34 -0700
-Message-ID: <CACRpkdZ2Chwm0xu+bf8UAEi_5DR8WhMTv0gDJ6NC+6bQwHeB6Q@mail.gmail.com>
-Subject: Re: [PATCH 04/12] clocksource: Sched clock source for Versatile Express
+In-Reply-To: <1398437662-19936-1-git-send-email-thierry.reding@gmail.com>
+References: <1398437662-19936-1-git-send-email-thierry.reding@gmail.com>
+Date: Fri, 2 May 2014 15:18:36 -0700
+Message-ID: <CACRpkdZ1m2AuuJt_AK1JimND0suisjYaPyiQJtqra3a3LkUKmA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: Fix gpio_get -> gpiod_get typo in kernel-doc
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 11, 2014 at 9:10 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+On Fri, Apr 25, 2014 at 7:54 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
 
-> This patch adds a trival sched clock source using free
-> running, 24MHz clocked counter present in the ARM Ltd.
-> Versatile Express platform's System Registers block.
+> From: Thierry Reding <treding@nvidia.com>
 >
-> This code replaces the call in the VE machine code.
+> The function is called gpiod_get(), not gpio_get(). Fix the kernel-doc
+> comment to match the name.
 >
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
 
-Even the Integrator is very similar, albeit using register 0x28 instead
-of register 0x5c. cd commit
-a79528e9d849803457b6235ddb1a1cfd4e11c6cd
-
-It's one of these things where writing a device driver results in
-more code than just registering this counter with the sched_clock
-guts :-/
-
-Getting the clock from the DT gives this nice feeling of having it all
-complete, and sched_clock cannot really change frequency anyway
-so I'm happy with this thing.
-
-I'll augment it for Integrator when/if I find time.
+Patch applied.
 
 Yours,
 Linus Walleij
