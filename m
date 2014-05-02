@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaEBMvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 08:51:55 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54994 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaEBMvx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 08:51:53 -0400
-Message-ID: <1399035110.5233.168.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
-        peterz@infradead.org, george.mccollister@gmail.com,
-        ktkhai@parallels.com
-Date: Fri, 02 May 2014 14:51:50 +0200
-In-Reply-To: <1399030032.5233.142.camel@marge.simpson.net>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
-	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
-	 <1399030032.5233.142.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752076AbaEBM4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 08:56:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52785 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaEBM4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 08:56:23 -0400
+From: Jan Moskyto Matejka <mq@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Tomlin <atomlin@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Jan Moskyto Matejka <mq@suse.cz>
+Subject: [PATCH] [linux-next] watchdog: convert deprecated call to current interface
+Date: Fri,  2 May 2014 14:56:14 +0200
+Message-Id: <1399035374-13548-1-git-send-email-mq@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 13:27 +0200, Mike Galbraith wrote: 
-> On Fri, 2014-05-02 at 06:56 -0400, Rik van Riel wrote: 
-> > On 05/02/2014 03:37 AM, Mike Galbraith wrote:
-> > > On Fri, 2014-05-02 at 02:30 -0400, Rik van Riel wrote: 
-> > >> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
-> > >>> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
-> > >>>
-> > >>>> Whether or not this is the right thing to do remains to be seen,
-> > >>>> but it does allow us to verify whether or not the wake_affine
-> > >>>> strategy of always doing affine wakeups and only disabling them
-> > >>>> in a specific circumstance is sound, or needs rethinking...
-> > >>>
-> > >>> Yes, it needs rethinking.
-> > >>>
-> > >>> I know why you want to try this, yes, select_idle_sibling() is very much
-> > >>> a two faced little bitch.
-> > >>
-> > >> My biggest problem with select_idle_sibling and wake_affine in
-> > >> general is that it will override NUMA placement, even when
-> > >> processes only wake each other up infrequently...
-> > > 
-> > > Hm, seems the thing to do would be to tell select_task_rq_fair() to keep
-> > > it's mitts off of tasks that the numasched stuff has placed rather than
-> > > decapitating select_idle_sibling() or some other drastic measure.
-> > 
-> > Thing is, if tasks are waking each other up frequently enough, we
-> > probably DO want to place them near each other with select_idle_sibling.
-> 
-> Right.  I'm thinking you could perhaps create a sched feature like
-> NUMA_ME_HARDER or such so you can tell it to go away if you find that
-> your load performs best when movement is left entirely up to the NUMA
-> placement code.
-> 
-> > We just cannot afford to have it as the default behaviour for casual
-> > wakeup activity, because it will mess up other things.
-> 
-> I think it is generally good, but yes, it has its bad it's bad side, why
-> we have tweakables.
+This commit fixes this warning:
 
-Slightly garbled (multitasking).
+kernel/watchdog.c: In function ‘watchdog_timer_fn’:
+kernel/watchdog.c:368:4: warning: ‘smp_mb__after_clear_bit’ is deprecated (declared at include/linux/bitops.h:48) [-Wdeprecated-declarations]
+    smp_mb__after_clear_bit();
 
-To make that a little clearer, generally, trying to bring waker and
-wakee together is a good thing.  I think changing the default to avoid
-doing the generally good thing is wrong.  Box drivers should be given
-whatever knobs they need to adjust as required, and use them, because
-there is no one correct answer.
+That code was introduced in commit 90e6b763ca8a5eb739e59489f42d45e13431d157
+("kernel/watchdog.c: print traces for all cpus on lockup detection") and then
+merged with another branch containing commit
+febdbfe8a91ce0d11939d4940b592eb0dba8d663 ("arch: Prepare for
+smp_mb__{before,after}_atomic()") which deprecates the
+smp_mb__after_clear_bit() call in favour of smp_mb__after_atomic().
 
--Mike
+Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
+---
+ kernel/watchdog.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 4dbc7f8..d977f51 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -365,7 +365,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 
+ 			clear_bit(0, &soft_lockup_nmi_warn);
+ 			/* Barrier to sync with other cpus */
+-			smp_mb__after_clear_bit();
++			smp_mb__after_atomic();
+ 		}
+ 
+ 		if (softlockup_panic) {
+-- 
+1.8.4.5
 
