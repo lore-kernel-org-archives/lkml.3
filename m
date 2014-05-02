@@ -1,127 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaEBUNX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:13:23 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:59508 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841AbaEBUNV (ORCPT
+	id S1752929AbaEBUPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:15:54 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:35616 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401AbaEBUPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:13:21 -0400
-Date: Fri, 2 May 2014 14:13:07 -0600
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Bill Sumner <bill.sumner@hp.com>, indou.takao@jp.fujitsu.com,
-        bhe@redhat.com, joro@8bytes.org, linux-pci@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, doug.hatch@hp.com,
-        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, zhenhua@hp.com
-Subject: Re: [PATCH 0/8] iommu/vt-d: Fix crash dump failure caused by legacy
- DMA/IO
-Message-ID: <20140502201307.GA23419@anatevka.fc.hp.com>
-Reply-To: Jerry.Hoemann@hp.com
-References: <1398386198-19304-1-git-send-email-bill.sumner@hp.com>
- <1398854973.12733.23.camel@i7.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398854973.12733.23.camel@i7.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 May 2014 16:15:53 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v3 0/6] Clean up and unify the vDSO
+Date: Fri,  2 May 2014 13:15:42 -0700
+Message-Id: <cover.1399061075.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 11:49:33AM +0100, David Woodhouse wrote:
+This rewrites a bunch of the vdso code.  After these patches, the vvar
+and hpet pages are mapped directly after the vdso text on all five vdso
+variants.  The fixmaps are gone on 64-bit systems.
 
-Hi David,
+It would be possible to build the x32 vdso the normal way on top of
+these patches.
 
-As you may know,  Bill has retired and I am picking up this work.
-I am still coming up to speed in this area so my goal is to understand
-your concerns and research them as I dig through code and specs.
+I haven't touched the pvclock code.  I'd want to understand why it
+exists, why it isn't using rdtsc, and why it has two rdtsc_barrier calls
+before rearranging it.  In a discussion with Marcello Tosatti, I think
+we concluded that the kvmclock code could be significantly simplified
+and sped up without breaking anything, but I want to save that for
+later.
 
-My apologizes for the delay in replying and for our missing your
-earlier questions.
+This should apply to -linus or to tip/x86/vdso.  It's also here:
 
+https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/log/?h=vdso/cleanups
 
-> On Thu, 2014-04-24 at 18:36 -0600, Bill Sumner wrote:
-> > 
-> > This patch set modifies the behavior of the Intel iommu in the crashdump kernel: 
-> > 1. to accept the iommu hardware in an active state,
-> > 2. to leave the current translations in-place so that legacy DMA will continue
-> >    using its current buffers until the device drivers in the crashdump kernel
-> >    initialize and initialize their devices,
-> > 3. to use different portions of the iova address ranges for the device drivers
-> >    in the crashdump kernel than the iova ranges that were in-use at the time
-> >    of the panic.  
-> 
-> There could be all kinds of existing mappings in the DMA page tables,
-> and I'm not sure it's safe to preserve them. What prevents the crashdump
-> kernel from trying to use any of the physical pages which are
-> accessible, and which could thus be corrupted by stray DMA?
+Changes from v2:
+ - Fixed the 32-bit build.  Hopefully I didn't screw up bisection.
 
-In kdump, we switch to, and execute from the capture kernel.  (AKA 2nd kernel,
-crash kernel.)  This is a separate distinct instance of linux.  One of
-the intents of this switch is to (kdump.txt):
+Changes from v1:
+ - Rebased
+ - I think Gold is working (this is a side effect of the rebase)
 
-    "This ensures that ongoing Direct Memory Access
-(DMA) from the system kernel does not corrupt the dump-capture kernel.
-The kexec -p command loads the dump-capture kernel into this reserved
-memory."
+Andy Lutomirski (6):
+  x86: Clean up 32-bit vs 64-bit vdso params
+  x86: Move syscall and sysenter setup into kernel/cpu/common.c
+  x86: Reimplement vdso.so preparation in build-time C
+  x86: Move the 32-bit vdso special pages after the text
+  x86: Move the vvar and hpet mappings next to the 64-bit vDSO
+  x86: Remove vestiges of VDSO_PRELINK and some outdated comments
 
-As capture kernel is allocated early in boot, we shouldn't have DMA
-targeted to it once the capture kernel is loaded.
-
-Now,  the capture kernel will try to access 1st kernel memory via /proc/vmcore
-after it boots and runs makedumpfile.   Is it this access that you
-are concerned with?
-
-
-
-> 
-> In fact, the old kernel could even have set up 1:1 passthrough mappings
-> for some devices, which would then be able to DMA *anywhere*. Surely we
-> need to prevent that?
-
->From prior patch version comments,  I know Bill was aware of the
-issue of pass-through, but don't know to what extent he tested with
-the feature enabled.  E.g. in Jan and prior versions he stated he
-had not tested w/ pass through.  He subsequently dropped this statement.
-
-The approach of the patch is to just allow the outstanding DMA
-to complete.  Assuming the targeted address of the pass through
-was sane,  does this differ greatly from the non pass through case?
-Now, if the DMA was truly going to random places (like the capture
-kernel itself)  I'm not sure what we would do.  Suggestions?
-
-
-> 
-> After the last round of this patchset, we discussed a potential
-> improvement where you point every virtual bus address at the *same*
-> physical scratch page.
-> 
-> That way, we allow the "rogue" DMA to continue to the same virtual bus
-> addresses, but it can only ever affect one piece of physical memory and
-> can't have detrimental effects elsewhere.
-> 
-> Was that option considered and discounted for some reason? It seems like
-> it would make sense...
-
-I don't know if this was considered.
-
-I will need time to go through code and the spec to understand
-implications better.
-
-Thanks
-
-Jerry
-
+ arch/x86/ia32/ia32_signal.c          |   8 +-
+ arch/x86/include/asm/elf.h           |  35 +++---
+ arch/x86/include/asm/fixmap.h        |  10 +-
+ arch/x86/include/asm/mmu.h           |   2 +-
+ arch/x86/include/asm/proto.h         |   2 -
+ arch/x86/include/asm/vdso.h          |  74 +++++-------
+ arch/x86/include/asm/vdso32.h        |  11 --
+ arch/x86/include/asm/vvar.h          |  20 +---
+ arch/x86/include/uapi/asm/vsyscall.h |   7 +-
+ arch/x86/kernel/cpu/common.c         |  33 ++++++
+ arch/x86/kernel/hpet.c               |   3 -
+ arch/x86/kernel/signal.c             |   6 +-
+ arch/x86/kernel/vsyscall_64.c        |  15 +--
+ arch/x86/mm/fault.c                  |   5 +-
+ arch/x86/mm/init_64.c                |  13 +-
+ arch/x86/um/vdso/vma.c               |   2 +-
+ arch/x86/vdso/.gitignore             |   5 +-
+ arch/x86/vdso/Makefile               |  90 +++++---------
+ arch/x86/vdso/vclock_gettime.c       |  26 ++--
+ arch/x86/vdso/vdso-layout.lds.S      |  40 ++++---
+ arch/x86/vdso/vdso.S                 |   3 -
+ arch/x86/vdso/vdso.lds.S             |   7 +-
+ arch/x86/vdso/vdso2c.c               | 156 ++++++++++++++++++++++++
+ arch/x86/vdso/vdso2c.h               | 154 ++++++++++++++++++++++++
+ arch/x86/vdso/vdso32-setup.c         | 196 ++++---------------------------
+ arch/x86/vdso/vdso32.S               |   9 --
+ arch/x86/vdso/vdso32/vdso32.lds.S    |  15 +--
+ arch/x86/vdso/vdsox32.S              |   3 -
+ arch/x86/vdso/vdsox32.lds.S          |   7 +-
+ arch/x86/vdso/vma.c                  | 222 +++++++++++++++++++----------------
+ arch/x86/xen/mmu.c                   |   8 +-
+ arch/x86/xen/setup.c                 |  11 +-
+ kernel/sysctl.c                      |   5 +
+ 33 files changed, 647 insertions(+), 556 deletions(-)
+ delete mode 100644 arch/x86/include/asm/vdso32.h
+ delete mode 100644 arch/x86/vdso/vdso.S
+ create mode 100644 arch/x86/vdso/vdso2c.c
+ create mode 100644 arch/x86/vdso/vdso2c.h
+ delete mode 100644 arch/x86/vdso/vdso32.S
+ delete mode 100644 arch/x86/vdso/vdsox32.S
 
 -- 
-
-----------------------------------------------------------------------------
-Jerry Hoemann            Software Engineer              Hewlett-Packard
-
-3404 E Harmony Rd. MS 57                        phone:  (970) 898-1022
-Ft. Collins, CO 80528                           FAX:    (970) 898-XXXX
-                                                email:  jerry.hoemann@hp.com
-----------------------------------------------------------------------------
+1.9.0
 
