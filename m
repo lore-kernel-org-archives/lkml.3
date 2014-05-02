@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbaEBQTB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:19:01 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:61521 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466AbaEBQS7 (ORCPT
+	id S1753043AbaEBPlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:41:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43793 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801AbaEBPjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:18:59 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Fri, 2 May 2014 12:22:30 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140502154217.GW11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
-References: <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu> <20140502154217.GW11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 2 May 2014 11:39:25 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 150/151] target/tcm_fc: Fix use-after-free of ft_tpg
+Date: Fri,  2 May 2014 08:38:58 -0700
+Message-Id: <1399045139-4531-151-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-I'll try the patch next.
+------------------
 
-Meanwhile, can polling on a closed event cause problems with the reference 
-count?
+From: Andy Grover <agrover@redhat.com>
 
-In my various failure traces there's always been a poll() active at the 
-time of crash, and I added some trace_printk()s and it looks like poll is 
-at least attempting to poll on the closed file descriptor that's causing 
-us problems.
+commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
 
-Vince
+ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
+tport when the tpg is being removed. Set this pointer in ft_tport_create,
+or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
+a deleted object.
+
+This patch sets tpg->tport in ft_tport_create, because that's what
+ft_del_tpg checks, and is the only way to get back to the tport to
+clear tport->tpg.
+
+The bug was occuring when:
+
+- lport created, tport (our per-lport, per-provider context) is
+  allocated.
+  tport->tpg = NULL
+- tpg created
+- a PRLI is received. ft_tport_create is called, tpg is found and
+  tport->tpg is set
+- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
+  set, tport->tpg is not cleared and points at freed memory
+- Future calls to ft_tport_create return tport via first conditional,
+  instead of searching for new tpg by calling ft_lport_find_tpg.
+  tport->tpg is still invalid, and will access freed memory.
+
+see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/target/tcm_fc/tfc_sess.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
+index ae52c08..e9fe60f 100644
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(struct fc_lport *lport)
+ 
+ 	if (tport) {
+ 		tport->tpg = tpg;
++		tpg->tport = tport;
+ 		return tport;
+ 	}
+ 
+-- 
+1.9.1
+
