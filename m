@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbaEBQSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:18:22 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:60652 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929AbaEBQSR (ORCPT
+	id S1753946AbaEBQSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:18:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43830 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596AbaEBPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:18:17 -0400
-Message-ID: <5363C545.90600@cogentembedded.com>
-Date: Fri, 02 May 2014 20:18:13 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: Zhouyi Zhou <zhouzhouyi@gmail.com>, davem@davemloft.net,
-        steffen.klassert@secunet.com, fan.du@windriver.com,
-        dborkman@redhat.com, minipli@googlemail.com, tgraf@suug.ch,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-In-Reply-To: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 2 May 2014 11:41:58 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 072/151] mfd: 88pm860x: Fix I2C device resource leak on regmap init fail
+Date: Fri,  2 May 2014 08:37:40 -0700
+Message-Id: <1399045139-4531-73-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-On 05/02/2014 11:18 AM, Zhouyi Zhou wrote:
+------------------
 
-> As http://www.spinics.net/lists/netdev/msg165015.html
-> pktgen generates shared packet through vlan interface will cause
-> oops because of duplicate entering tc queue.
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-> Try to solve this problem by means of packet clone instead of sharing.
+commit a7ab1c8b261305af583ce26bb4a14f555fdaa73e upstream.
 
-> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> ---
->   net/core/pktgen.c |   20 +++++++++++++++++---
->   1 files changed, 17 insertions(+), 3 deletions(-)
+During probe the driver allocates dummy I2C device for companion chip
+and then allocates a regmap for it. If regmap_init_i2c() fails then the
+I2C driver (allocated with i2c_new_dummy()) is not freed and this
+resource leaks.
 
-> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-> index 0304f98..ced07fc 100644
-> --- a/net/core/pktgen.c
-> +++ b/net/core/pktgen.c
-[...]
-> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->   		pkt_dev->last_ok = 0;
->   		goto unlock;
->   	}
-> -	atomic_inc(&(pkt_dev->skb->users));
-> -	ret = (*xmit)(pkt_dev->skb, odev);
-> +
-> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
-> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
-> +		ret = -ENOMEM;
-> +		if (nskb)
-> +			ret = (*xmit)(nskb, odev);
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/mfd/88pm860x-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-    You can just do:
-
-			ret = xmit(nskb, odev);
-
-> +		else
-> +			nskb = ERR_PTR(ret);
-> +	} else {
-> +		atomic_inc(&(pkt_dev->skb->users));
-> +		ret = (*xmit)(pkt_dev->skb, odev);
-
-    Same here.
-
-WBR, Sergei
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index c9b1f64..2461014 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1185,6 +1185,7 @@ static int pm860x_probe(struct i2c_client *client,
+ 			ret = PTR_ERR(chip->regmap_companion);
+ 			dev_err(&chip->companion->dev,
+ 				"Failed to allocate register map: %d\n", ret);
++			i2c_unregister_device(chip->companion);
+ 			return ret;
+ 		}
+ 		i2c_set_clientdata(chip->companion, chip);
+-- 
+1.9.1
 
