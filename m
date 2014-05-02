@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbaEBWJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:09:31 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34791 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaEBWJ3 (ORCPT
+	id S1752860AbaEBWJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:09:30 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:59620 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaEBWJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 18:09:29 -0400
 From: John Stultz <john.stultz@linaro.org>
@@ -14,21 +14,46 @@ Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/4] printk: Re-add irqsave/restore in printk_sched
-Date: Fri,  2 May 2014 15:09:15 -0700
-Message-Id: <1399068558-2373-2-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 0/4] Convert timekeeping core to use printk_deferred (v2)
+Date: Fri,  2 May 2014 15:09:14 -0700
+Message-Id: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
-References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A commit in akpm's tree (printk: remove separate printk_sched
-buffers...), removed the printk_sched irqsave/restore lines
-since it was safe for current users. Since we may be expanding
-usage of printk_sched(), re-add the irqsave/restore logic
-to make the functionality more generally safe.
+Recently, Jiri pointed out a potential deadlock when calling printk
+while holding the timekeeping seqlock.
+
+Annoyingly, the seqlock lockdep enablement doesn't catch this, as
+printk disables lockdep.
+
+When looking for possible solutions, one idea was to use a local buffer
+and defer the printk to later. Ends up there is already similar
+functionality in printk_sched() to avoid similar style deadlocks w/
+the scheduler.
+
+Thus this patchset (based on next/akpm) renames printk_sched to
+printk_deferred and then moves the affected timekeeping printks to make
+use of it.
+
+There were some points in the discussion between Jan and Peter that
+made it seem that there may still be problems lurking in the console
+layer, and I'm not sure I fully understand their point, so this solution
+may be incomplete.
+
+Additionally, the same issue likely affects any WARN_ONs as well, but
+I wanted to get some thoughts on this approach before trying to remove
+or convert affected WARN_ONS.
+
+Your thoughts and feedback are greatly appreciated!
+
+thanks
+-john
+
+Changes since v1:
+* Rebased on next/akpm, since there are queued prink patches there
+* Re-added irqsave/restore per irc discussion w/ PeterZ 
 
 Cc: Jan Kara <jack@suse.cz>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -37,34 +62,22 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/printk/printk.c | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 82d19e6..bf62f2b 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2586,15 +2586,18 @@ void wake_up_klogd(void)
- 
- int printk_sched(const char *fmt, ...)
- {
-+	unsigned long flags;
- 	va_list args;
- 	int r;
- 
-+	local_irq_save(flags);
- 	va_start(args, fmt);
- 	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
- 	va_end(args);
- 
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
- 	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
-+	local_irq_restore(flags);
- 
- 	return r;
- }
+John Stultz (4):
+  printk: Re-add irqsave/restore in printk_sched
+  printk: Rename printk_sched to printk_deferred
+  printk: Add printk_once_deferred
+  timekeeping: Use printk_deferred when holding timekeeping seqlock
+
+ include/linux/printk.h    | 17 ++++++++++++++---
+ kernel/printk/printk.c    |  5 ++++-
+ kernel/sched/core.c       |  2 +-
+ kernel/sched/deadline.c   |  7 +------
+ kernel/sched/rt.c         |  8 +-------
+ kernel/time/ntp.c         | 15 +++++++++------
+ kernel/time/timekeeping.c |  7 ++++---
+ 7 files changed, 34 insertions(+), 27 deletions(-)
+
 -- 
 1.9.1
 
