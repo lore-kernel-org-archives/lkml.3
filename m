@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869AbaEBJxl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 05:53:41 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:35413 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187AbaEBJxk (ORCPT
+	id S1751695AbaEBJ6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 05:58:50 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:59809 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751015AbaEBJ6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 05:53:40 -0400
-Message-ID: <53636B1D.8030405@redhat.com>
-Date: Fri, 02 May 2014 11:53:33 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 2 May 2014 05:58:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+Date: Fri, 02 May 2014 11:58:30 +0200
+Message-ID: <5279118.J5305KQNjB@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140501131210.CCC13C409DA@trevor.secretlab.ca>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <53610663.7070305@ti.com> <20140501131210.CCC13C409DA@trevor.secretlab.ca>
 MIME-Version: 1.0
-To: Hu Yaohui <loki2441@gmail.com>, kvm <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: KVM Nested L2 guest startup problems
-References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
-In-Reply-To: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:YJ/e5+YLrqLdjvJyHuFfOLUCc4ahRrH96/Nv00WQ5rp
+ FyqTYYTlttVXDohm/BmtPu/GLzUHvJd+Z2Bvw6HXMwsXYojYdn
+ 4KY9xx7D8DiKSNsONY2745jHhQ12MCXve9KXy0Ij1cszb5FjPQ
+ cRPwod6cUrxQfORkdEMPDhPYsEJRWFuMayFdffRnByLMw673YT
+ yPdb25VwbLjoRxawX/Ym6yXeNChWekxUZJGRSborInptdnmbgb
+ 3NzdNP7vw0soObSzCBZgE+ueeKpEVdlof3B4H56hk/pRyVhkSZ
+ t7l4yB1jajxKhLKjG4slRlQ+gS0QPDIVuY6CWToiLdCZpA5keF
+ uOqOJ3Un535J06Foqmc4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 02/05/2014 03:43, Hu Yaohui ha scritto:
-> Hi all,
-> I have a problem running the latest version of kvm with nested configuration.
-> I used to run it with kernel 3.2.2 both for L0 and L1, which works perfectly.
-> When I change my L0 to kernel 3.10.36, L1 to kernel 3.12.10.
-> When I start L2 guest in L1 with qemu-kvm. I get the following error
-> from the qemu-kvm.
+On Thursday 01 May 2014 14:12:10 Grant Likely wrote:
+> > > I've got two concerns here. of_dma_get_range() retrieves only the first
+> > > tuple from the dma-ranges property, but it is perfectly valid for
+> > > dma-ranges to contain multiple tuples. How should we handle it if a
+> > > device has multiple ranges it can DMA from?
+> > > 
+> > 
+> > We've not found any cases in current Linux where more than one dma-ranges
+> > would be used. Moreover, The MM (definitely for ARM) isn't supported such
+> > cases at all (if i understand everything right).
+> > - there are only one arm_dma_pfn_limit
+> > - there is only one MM zone is used for ARM
+> > - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
+> >   DMA & DMA32, but they configured once and forever per arch.
+> 
+> Okay. If anyone ever does implement multiple ranges then this code will
+> need to be revisited.
 
-Try upgrading L0 to a more recent kernel, 3.13 should be enough.
+I wonder if it's needed for platforms implementing the standard "ARM memory map" [1].
+The document only talks about addresses as seen from the CPU, and I can see
+two logical interpretations how the RAM is supposed to be visible from a device:
+either all RAM would be visible contiguously at DMA address zero, or everything
+would be visible at the same physical address as the CPU sees it.
 
-Paolo
+If anyone picks the first interpretation, we will have to implement that
+in Linux. We can of course hope that all hardware designs follow the second
+interpretation, which would be more convenient for us here.
 
-> <log>
-> KVM: entry failed, hardware error 0x0
-> EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000623
-> ESI=00000000 EDI=00000000 EBP=00000000 ESP=00000000
-> EIP=0000e05b EFL=00000002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> ES =0000 00000000 0000ffff 00009300
-> CS =f000 000f0000 0000ffff 00009b00
-> SS =0000 00000000 0000ffff 00009300
-> DS =0000 00000000 0000ffff 00009300
-> FS =0000 00000000 0000ffff 00009300
-> GS =0000 00000000 0000ffff 00009300
-> LDT=0000 00000000 0000ffff 00008200
-> TR =0000 00000000 0000ffff 00008b00
-> GDT=     00000000 0000ffff
-> IDT=     00000000 0000ffff
-> CR0=60000010 CR2=00000000 CR3=00000000 CR4=00000000
-> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> DR3=0000000000000000
-> DR6=00000000ffff0ff0 DR7=0000000000000400
-> EFER=0000000000000000
-> Code=00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 <2e>
-> 66 83 3e 24 d3 00 0f 85 e2 e5 31 c0 8e d0 66 bc 00 70 00 00 66 ba 4c
-> 28 0f 00 e9 07 e5
-> </log>
->
-> In L0, the kernel gives me error like:
-> <log>
-> [310681.735709] nested_vmx_exit_handled failed vm entry 7
-> </log>
->
-> I am wondering anyone has met the similar problem.
+	Arnd
 
+[1] http://infocenter.arm.com/help/topic/com.arm.doc.den0001c/DEN0001C_principles_of_arm_memory_maps.pdf
