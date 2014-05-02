@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaEBTza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 15:55:30 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:34707 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaEBTz2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 15:55:28 -0400
-Date: Fri, 2 May 2014 15:55:25 -0400
-From: Jeff Layton <jlayton@poochiereds.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] cifs: Use min_t() when comparing "size_t" and
- "unsigned long"
-Message-ID: <20140502155525.02dde4de@tlielax.poochiereds.net>
-In-Reply-To: <1397414783-28098-1-git-send-email-geert@linux-m68k.org>
-References: <1397414783-28098-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1752949AbaEBTzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 15:55:47 -0400
+Received: from mail.tpi.com ([74.45.170.26]:49299 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752875AbaEBTzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 15:55:46 -0400
+Message-ID: <5363F840.60304@canonical.com>
+Date: Fri, 02 May 2014 13:55:44 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: Lenovo x120e resume regression in 3.15-rc1 bisected to 'drm/crtc-helpers:
+ fix dpms on logic'
+References: <5363CA91.7070203@canonical.com> <CADnq5_OeiqpDZoPcAccKJn9Tvzz-euNJou4LhZqNKOH64F+7dw@mail.gmail.com> <5363E455.2020500@canonical.com>
+In-Reply-To: <5363E455.2020500@canonical.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Apr 2014 20:46:21 +0200
-Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On 05/02/2014 12:30 PM, Tim Gardner wrote:
+> On 05/02/2014 11:21 AM, Alex Deucher wrote:
+>> On Fri, May 2, 2014 at 12:40 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+>>> I've bisected a resume regression on a Lenovo x120e to
+>>> 177cf92de4aa97ec1435987e91696ed8b5023130 (drm/crtc-helpers: fix dpms on
+>>> logic). Everything works fine with this patch reverted on top of
+>>> 3.15-rc3. I realize it is correcting a coding error that has been in
+>>> place since 3.11, but it is also causing this laptop to resume to a
+>>> black screen wherein the platform appears to be locked up (no console,
+>>> no network). See attached bisect log and lspci. The BIOS version is 1.15.
+>>>
+>>
+>> Does the attached patch help?  I haven't had a chance to unwind all
+>> the logic in the crtc helper code.
+>>
+>> Alex
+>>
+> 
+> Nope, same symptom. Black screen on resume, no network, etc.
+> 
+> rtg
+> 
 
-> On 32 bit, size_t is "unsigned int", not "unsigned long", causing the
-> following warning when comparing with PAGE_SIZE, which is always "unsigned
-> long":
-> 
-> fs/cifs/file.c: In function ‘cifs_readdata_to_iov’:
-> fs/cifs/file.c:2757: warning: comparison of distinct pointer types lacks a cast
-> 
-> Introduced by commit 7f25bba819a38ab7310024a9350655f374707e20
-> ("cifs_iovec_read: keep iov_iter between the calls of
-> cifs_readdata_to_iov()"), which changed the signedness of "remaining"
-> and the code from min_t() to min().
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> PAGE_SIZE should really be size_t, but that would require lots of changes
-> all over the place.
-> 
->  fs/cifs/file.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 8807442c94dd..8add25538a3b 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -2754,7 +2754,7 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, struct iov_iter *iter)
->  
->  	for (i = 0; i < rdata->nr_pages; i++) {
->  		struct page *page = rdata->pages[i];
-> -		size_t copy = min(remaining, PAGE_SIZE);
-> +		size_t copy = min_t(size_t, remaining, PAGE_SIZE);
->  		size_t written = copy_page_to_iter(page, 0, copy, iter);
->  		remaining -= written;
->  		if (written < copy && iov_iter_count(iter) > 0)
+linux-next tip (20140502) appears to have the same bug.
 
-Reviewed-by: Jeff Layton <jlayton@poochiereds.net>
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
