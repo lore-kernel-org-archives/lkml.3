@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948AbaEBL0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:26:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50043 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745AbaEBL03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:26:29 -0400
-Date: Fri, 2 May 2014 13:26:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/9] mm: memcontrol: naturalize charge lifetime
-Message-ID: <20140502112627.GG3446@dhcp22.suse.cz>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752008AbaEBL1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:27:17 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:62170 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745AbaEBL1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 07:27:16 -0400
+Message-ID: <1399030032.5233.142.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
+        peterz@infradead.org, george.mccollister@gmail.com,
+        ktkhai@parallels.com
+Date: Fri, 02 May 2014 13:27:12 +0200
+In-Reply-To: <536379D0.8070306@redhat.com>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
+	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-04-14 16:25:34, Johannes Weiner wrote:
-[...]
->  Documentation/cgroups/memcg_test.txt |  160 +--
->  include/linux/memcontrol.h           |   94 +-
->  include/linux/page_cgroup.h          |   43 +-
->  include/linux/swap.h                 |   15 +-
->  kernel/events/uprobes.c              |    1 +
->  mm/filemap.c                         |   13 +-
->  mm/huge_memory.c                     |   51 +-
->  mm/memcontrol.c                      | 1724 ++++++++++++--------------------
->  mm/memory.c                          |   41 +-
->  mm/migrate.c                         |   46 +-
->  mm/rmap.c                            |    6 -
->  mm/shmem.c                           |   28 +-
->  mm/swap.c                            |   22 +
->  mm/swap_state.c                      |    8 +-
->  mm/swapfile.c                        |   21 +-
->  mm/truncate.c                        |    1 -
->  mm/vmscan.c                          |    9 +-
->  mm/zswap.c                           |    2 +-
->  18 files changed, 833 insertions(+), 1452 deletions(-)
+On Fri, 2014-05-02 at 06:56 -0400, Rik van Riel wrote: 
+> On 05/02/2014 03:37 AM, Mike Galbraith wrote:
+> > On Fri, 2014-05-02 at 02:30 -0400, Rik van Riel wrote: 
+> >> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
+> >>> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
+> >>>
+> >>>> Whether or not this is the right thing to do remains to be seen,
+> >>>> but it does allow us to verify whether or not the wake_affine
+> >>>> strategy of always doing affine wakeups and only disabling them
+> >>>> in a specific circumstance is sound, or needs rethinking...
+> >>>
+> >>> Yes, it needs rethinking.
+> >>>
+> >>> I know why you want to try this, yes, select_idle_sibling() is very much
+> >>> a two faced little bitch.
+> >>
+> >> My biggest problem with select_idle_sibling and wake_affine in
+> >> general is that it will override NUMA placement, even when
+> >> processes only wake each other up infrequently...
+> > 
+> > Hm, seems the thing to do would be to tell select_task_rq_fair() to keep
+> > it's mitts off of tasks that the numasched stuff has placed rather than
+> > decapitating select_idle_sibling() or some other drastic measure.
+> 
+> Thing is, if tasks are waking each other up frequently enough, we
+> probably DO want to place them near each other with select_idle_sibling.
 
-Impressive! I will get through the series but it will take some time.
+Right.  I'm thinking you could perhaps create a sched feature like
+NUMA_ME_HARDER or such so you can tell it to go away if you find that
+your load performs best when movement is left entirely up to the NUMA
+placement code.
 
--- 
-Michal Hocko
-SUSE Labs
+> We just cannot afford to have it as the default behaviour for casual
+> wakeup activity, because it will mess up other things.
+
+I think it is generally good, but yes, it has its bad it's bad side, why
+we have tweakables.
+
+-Mike
+
