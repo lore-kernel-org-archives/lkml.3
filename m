@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625AbaEBNxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:53:25 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:65427 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaEBNxN (ORCPT
+	id S1752593AbaEBNxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:53:23 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:54626 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752487AbaEBNxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:53:13 -0400
+	Fri, 2 May 2014 09:53:16 -0400
 From: j.glisse@gmail.com
 To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org
 Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>
-Subject: [PATCH 09/11] fs/ext4: add support for hmm migration to remote memory of pagecache.
-Date: Fri,  2 May 2014 09:52:08 -0400
-Message-Id: <1399038730-25641-10-git-send-email-j.glisse@gmail.com>
+Subject: [PATCH 11/11] hmm/dummy_driver: add support for fake remote memory using pages.
+Date: Fri,  2 May 2014 09:52:10 -0400
+Message-Id: <1399038730-25641-12-git-send-email-j.glisse@gmail.com>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399038730-25641-1-git-send-email-j.glisse@gmail.com>
 References: <1399038730-25641-1-git-send-email-j.glisse@gmail.com>
@@ -26,337 +26,583 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jérôme Glisse <jglisse@redhat.com>
 
-This add support for migrating page of ext4 filesystem to remote device
-memory using the hmm infrastructure. Writeback need special handling as
-we want to keep content inside remote memory.
+Fake the existent of remote memory using preallocated pages and
+demonstrate how to use the hmm api related to remote memory.
 
 Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
 ---
- fs/ext4/file.c  |  20 +++++++
- fs/ext4/inode.c | 175 +++++++++++++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 174 insertions(+), 21 deletions(-)
+ drivers/char/hmm_dummy.c       | 450 ++++++++++++++++++++++++++++++++++++++++-
+ include/uapi/linux/hmm_dummy.h |   8 +-
+ 2 files changed, 453 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 708aad7..7c787d5 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -26,6 +26,7 @@
- #include <linux/aio.h>
- #include <linux/quotaops.h>
- #include <linux/pagevec.h>
-+#include <linux/hmm.h>
- #include "ext4.h"
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -304,6 +305,7 @@ static int ext4_find_unwritten_pgoff(struct inode *inode,
- 		unsigned long nr_pages;
+diff --git a/drivers/char/hmm_dummy.c b/drivers/char/hmm_dummy.c
+index e87dc7c..2443374 100644
+--- a/drivers/char/hmm_dummy.c
++++ b/drivers/char/hmm_dummy.c
+@@ -48,6 +48,8 @@
  
- 		num = min_t(pgoff_t, end - index, PAGEVEC_SIZE);
-+retry:
- 		nr_pages = pagevec_lookup(&pvec, inode->i_mapping, index,
- 					  (pgoff_t)num);
- 		if (nr_pages == 0) {
-@@ -321,6 +323,24 @@ static int ext4_find_unwritten_pgoff(struct inode *inode,
- 			break;
- 		}
+ #define HMM_DUMMY_DEVICE_NAME		"hmm_dummy_device"
+ #define HMM_DUMMY_DEVICE_MAX_MIRRORS	4
++#define HMM_DUMMY_DEVICE_RMEM_SIZE	(32UL << 20UL)
++#define HMM_DUMMY_DEVICE_RMEM_NBITS	(HMM_DUMMY_DEVICE_RMEM_SIZE >> PAGE_SHIFT)
  
-+		for (i = 0; i < nr_pages; i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (radix_tree_exception(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				/* FIXME How to handle hmm migration failure ? */
-+				hmm_pagecache_migrate(inode->i_mapping, swap);
-+				for (; i < nr_pages; i++) {
-+					if (radix_tree_exception(pvec.pages[i])) {
-+						pvec.pages[i] = NULL;
-+					}
-+				}
-+				pagevec_release(&pvec);
-+				goto retry;
-+			}
-+		}
-+
- 		/*
- 		 * If this is the first time to go into the loop and
- 		 * offset is smaller than the first page offset, it will be a
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index b1dc334..f2558e2 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -39,6 +39,7 @@
- #include <linux/ratelimit.h>
- #include <linux/aio.h>
- #include <linux/bitops.h>
-+#include <linux/hmm.h>
+ struct hmm_dummy_device;
  
- #include "ext4_jbd2.h"
- #include "xattr.h"
-@@ -1462,16 +1463,37 @@ static void mpage_release_unused_pages(struct mpage_da_data *mpd,
- 			break;
- 		for (i = 0; i < nr_pages; i++) {
- 			struct page *page = pvec.pages[i];
--			if (page->index > end)
--				break;
--			BUG_ON(!PageLocked(page));
--			BUG_ON(PageWriteback(page));
--			if (invalidate) {
--				block_invalidatepage(page, 0, PAGE_CACHE_SIZE);
--				ClearPageUptodate(page);
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				page = hmm_pagecache_page(mapping, swap);
-+				pvec.pages[i] = page;
-+				if (page->index > end)
-+					break;
-+			} else {
-+				if (page->index > end)
-+					break;
-+				BUG_ON(!PageLocked(page));
-+				BUG_ON(PageWriteback(page));
-+				if (invalidate) {
-+					block_invalidatepage(page, 0, PAGE_CACHE_SIZE);
-+					ClearPageUptodate(page);
-+				}
- 			}
- 			unlock_page(page);
- 		}
-+		for (; i < nr_pages; i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				page = hmm_pagecache_page(mapping, swap);
-+				unlock_page(page);
-+				pvec.pages[i] = page;
-+			}
-+		}
- 		index = pvec.pages[nr_pages - 1]->index + 1;
- 		pagevec_release(&pvec);
- 	}
-@@ -2060,6 +2082,20 @@ static int mpage_map_and_submit_buffers(struct mpage_da_data *mpd)
- 					  PAGEVEC_SIZE);
- 		if (nr_pages == 0)
- 			break;
-+
-+		/* Replace hmm entry with the page backing it. At this point
-+		 * they are uptodate and locked.
-+		 */
-+		for (i = 0; i < nr_pages; i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				 pvec.pages[i] = hmm_pagecache_page(inode->i_mapping, swap);
-+			}
-+		}
-+
- 		for (i = 0; i < nr_pages; i++) {
- 			struct page *page = pvec.pages[i];
+@@ -73,8 +75,16 @@ struct hmm_dummy_device {
+ 	/* device file mapping tracking (keep track of all vma) */
+ 	struct hmm_dummy_mirror	*dmirrors[HMM_DUMMY_DEVICE_MAX_MIRRORS];
+ 	struct address_space	*fmapping[HMM_DUMMY_DEVICE_MAX_MIRRORS];
++	struct page		**rmem_pages;
++	unsigned long		*rmem_bitmap;
+ };
  
-@@ -2331,13 +2367,61 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
- 	mpd->map.m_len = 0;
- 	mpd->next_page = index;
- 	while (index <= end) {
-+		pgoff_t save_index = index;
-+		bool migrated;
-+
- 		nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
- 			      min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1);
- 		if (nr_pages == 0)
- 			goto out;
++struct hmm_dummy_rmem {
++	struct hmm_rmem		rmem;
++	unsigned long		fuid;
++	unsigned long		luid;
++	uint16_t		*rmem_idx;
++};
  
-+		for (i = 0, migrated = false; i < nr_pages; i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				/* This can not happen ! */
-+				VM_BUG_ON(!is_hmm_entry(swap));
-+				page = hmm_pagecache_writeback(mapping, swap);
-+				if (page == NULL) {
-+					migrated = true;
-+					pvec.pages[i] = NULL;
-+				}
-+			}
-+		}
-+
-+		/* Some rmem was migrated we need to redo the page cache lookup. */
-+		if (migrated) {
-+			for (i = 0; i < nr_pages; i++) {
-+				struct page *page = pvec.pages[i];
-+
-+				if (page && radix_tree_exceptional_entry(page)) {
-+					swp_entry_t swap = radix_to_swp_entry(page);
-+
-+					page = hmm_pagecache_page(mapping, swap);
-+					unlock_page(page);
-+					page_cache_release(page);
-+					pvec.pages[i] = page;
-+				}
-+			}
-+			pagevec_release(&pvec);
-+			cond_resched();
-+			index = save_index;
-+			continue;
-+		}
-+
- 		for (i = 0; i < nr_pages; i++) {
- 			struct page *page = pvec.pages[i];
-+			struct page *hmm_page = NULL;
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				pvec.pages[i] = hmm_pagecache_page(mapping, swap);
-+				hmm_page = page = pvec.pages[i];
-+				page_cache_release(hmm_page);
-+			}
- 
- 			/*
- 			 * At this point, the page may be truncated or
-@@ -2364,20 +2448,24 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
- 			if (mpd->map.m_len > 0 && mpd->next_page != page->index)
- 				goto out;
- 
--			lock_page(page);
--			/*
--			 * If the page is no longer dirty, or its mapping no
--			 * longer corresponds to inode we are writing (which
--			 * means it has been truncated or invalidated), or the
--			 * page is already under writeback and we are not doing
--			 * a data integrity writeback, skip the page
--			 */
--			if (!PageDirty(page) ||
--			    (PageWriteback(page) &&
--			     (mpd->wbc->sync_mode == WB_SYNC_NONE)) ||
--			    unlikely(page->mapping != mapping)) {
--				unlock_page(page);
--				continue;
-+			if (!hmm_page) {
-+				lock_page(page);
-+
-+				/* If the page is no longer dirty, or its
-+				 * mapping no longer corresponds to inode
-+				 * we are writing (which means it has been
-+				 * truncated or invalidated), or the page
-+				 * is already under writeback and we are
-+				 * not doing a data integrity writeback,
-+				 * skip the page
-+				 */
-+				if (!PageDirty(page) ||
-+				    (PageWriteback(page) &&
-+				     (mpd->wbc->sync_mode == WB_SYNC_NONE)) ||
-+				    unlikely(page->mapping != mapping)) {
-+					unlock_page(page);
-+					continue;
-+				}
- 			}
- 
- 			wait_on_page_writeback(page);
-@@ -2396,11 +2484,37 @@ static int mpage_prepare_extent_to_map(struct mpage_da_data *mpd)
- 			err = 0;
- 			left--;
- 		}
-+		/* Some entry of pvec might still be exceptional ! */
-+		for (i = 0; i < nr_pages; i++) {
-+			struct page *page = pvec.pages[i];
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				swp_entry_t swap = radix_to_swp_entry(page);
-+
-+				page = hmm_pagecache_page(mapping, swap);
-+				unlock_page(page);
-+				page_cache_release(page);
-+				pvec.pages[i] = page;
-+			}
-+		}
- 		pagevec_release(&pvec);
- 		cond_resched();
- 	}
- 	return 0;
- out:
-+	/* Some entry of pvec might still be exceptional ! */
-+	for (i = 0; i < nr_pages; i++) {
-+		struct page *page = pvec.pages[i];
-+
-+		if (radix_tree_exceptional_entry(page)) {
-+			swp_entry_t swap = radix_to_swp_entry(page);
-+
-+			page = hmm_pagecache_page(mapping, swap);
-+			unlock_page(page);
-+			page_cache_release(page);
-+			pvec.pages[i] = page;
-+		}
-+	}
- 	pagevec_release(&pvec);
- 	return err;
+ /* We only create 2 device to show the inter device rmem sharing/migration
+  * capabilities.
+@@ -482,6 +492,51 @@ static void hmm_dummy_pt_free(struct hmm_dummy_mirror *dmirror,
  }
-@@ -3281,6 +3395,7 @@ static const struct address_space_operations ext4_aops = {
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-+	.features		= AOPS_FEATURE_HMM,
- };
  
- static const struct address_space_operations ext4_journalled_aops = {
-@@ -3297,6 +3412,7 @@ static const struct address_space_operations ext4_journalled_aops = {
- 	.direct_IO		= ext4_direct_IO,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-+	.features		= AOPS_FEATURE_HMM,
- };
  
- static const struct address_space_operations ext4_da_aops = {
-@@ -3313,6 +3429,7 @@ static const struct address_space_operations ext4_da_aops = {
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- 	.error_remove_page	= generic_error_remove_page,
-+	.features		= AOPS_FEATURE_HMM,
- };
- 
- void ext4_set_aops(struct inode *inode)
-@@ -3355,11 +3472,20 @@ static int ext4_block_zero_page_range(handle_t *handle,
- 	struct page *page;
- 	int err = 0;
- 
-+retry:
- 	page = find_or_create_page(mapping, from >> PAGE_CACHE_SHIFT,
- 				   mapping_gfp_mask(mapping) & ~__GFP_FS);
- 	if (!page)
- 		return -ENOMEM;
- 
-+	if (radix_tree_exception(page)) {
-+		swp_entry_t swap = radix_to_swp_entry(page);
++/* hmm_dummy_rmem - dummy remote memory using system memory pages
++ *
++ * Helper function to allocate fake remote memory out of the device rmem_pages.
++ */
++static void hmm_dummy_rmem_free(struct hmm_dummy_rmem *drmem)
++{
++	struct hmm_dummy_device *ddevice;
++	struct hmm_rmem *rmem = &drmem->rmem;
++	unsigned long i, npages;
 +
-+		/* FIXME How to handle hmm migration failure ? */
-+		hmm_pagecache_migrate(mapping, swap);
-+		goto retry;
++	npages = (rmem->luid - rmem->fuid);
++	ddevice = container_of(rmem->device, struct hmm_dummy_device, device);
++	mutex_lock(&ddevice->mutex);
++	for (i = 0; i < npages; ++i) {
++		clear_bit(drmem->rmem_idx[i], ddevice->rmem_bitmap);
++	}
++	mutex_unlock(&ddevice->mutex);
++
++	kfree(drmem->rmem_idx);
++	drmem->rmem_idx = NULL;
++}
++
++static struct hmm_dummy_rmem *hmm_dummy_rmem_new(void)
++{
++	struct hmm_dummy_rmem *drmem;
++
++	drmem = kzalloc(sizeof(*drmem), GFP_KERNEL);
++	return drmem;
++}
++
++static int hmm_dummy_mirror_lmem_to_rmem(struct hmm_dummy_mirror *dmirror,
++					 unsigned long faddr,
++					 unsigned long laddr)
++{
++	struct hmm_mirror *mirror = &dmirror->mirror;
++	struct hmm_fault fault;
++	int ret;
++
++	fault.faddr = faddr & PAGE_MASK;
++	fault.laddr = PAGE_ALIGN(laddr);
++	ret = hmm_migrate_lmem_to_rmem(&fault, mirror);
++	return ret;
++}
++
++
+ /* hmm_ops - hmm callback for the hmm dummy driver.
+  *
+  * Below are the various callback that the hmm api require for a device. The
+@@ -574,7 +629,7 @@ static struct hmm_fence *hmm_dummy_lmem_update(struct hmm_mirror *mirror,
+ 
+ 			page = hmm_dummy_pte_to_page(*pldp);
+ 			if (page) {
+-				set_page_dirty(page);
++				set_page_dirty_lock(page);
+ 			}
+ 		}
+ 		*pldp &= ~HMM_DUMMY_PTE_DIRTY;
+@@ -631,6 +686,318 @@ static int hmm_dummy_lmem_fault(struct hmm_mirror *mirror,
+ 	return 0;
+ }
+ 
++static struct hmm_rmem *hmm_dummy_rmem_alloc(struct hmm_device *device,
++					     struct hmm_fault *fault)
++{
++	struct hmm_dummy_device *ddevice;
++	struct hmm_dummy_rmem *drmem;
++	struct hmm_rmem *rmem;
++	unsigned long i, npages;
++
++	ddevice = container_of(device, struct hmm_dummy_device, device);
++
++	drmem = hmm_dummy_rmem_new();
++	if (drmem == NULL) {
++		return ERR_PTR(-ENOMEM);
++	}
++	rmem = &drmem->rmem;
++
++	npages = (fault->laddr - fault->faddr) >> PAGE_SHIFT;
++	drmem->rmem_idx = kmalloc(npages * sizeof(uint16_t), GFP_KERNEL);
++	if (drmem->rmem_idx == NULL) {
++		kfree(drmem);
++		return ERR_PTR(-ENOMEM);
 +	}
 +
- 	blocksize = inode->i_sb->s_blocksize;
- 	max = blocksize - (offset & (blocksize - 1));
- 
-@@ -4529,6 +4655,13 @@ static void ext4_wait_for_tail_page_commit(struct inode *inode)
- 				      inode->i_size >> PAGE_CACHE_SHIFT);
- 		if (!page)
- 			return;
-+		if (radix_tree_exception(page)) {
-+			swp_entry_t swap = radix_to_swp_entry(page);
++	mutex_lock(&ddevice->mutex);
++	for (i = 0; i < npages; ++i) {
++		int r;
 +
-+			/* FIXME How to handle hmm migration failure ? */
-+			hmm_pagecache_migrate(inode->i_mapping, swap);
++		r = find_first_zero_bit(ddevice->rmem_bitmap,
++					HMM_DUMMY_DEVICE_RMEM_NBITS);
++		if (r < 0) {
++			while ((--i)) {
++				clear_bit(drmem->rmem_idx[i],
++					  ddevice->rmem_bitmap);
++			}
++			kfree(drmem->rmem_idx);
++			kfree(drmem);
++			mutex_unlock(&ddevice->mutex);
++			return ERR_PTR(-ENOMEM);
++		}
++		drmem->rmem_idx[i] = r;
++	}
++	mutex_unlock(&ddevice->mutex);
++
++	return rmem;
++}
++
++static struct hmm_fence *hmm_dummy_rmem_update(struct hmm_mirror *mirror,
++					       struct hmm_rmem *rmem,
++					       unsigned long faddr,
++					       unsigned long laddr,
++					       unsigned long fuid,
++					       enum hmm_etype etype,
++					       bool dirty)
++{
++	struct hmm_dummy_mirror *dmirror;
++	struct hmm_dummy_pt_map pt_map = {0};
++	unsigned long addr, i, mask, or, idx;
++
++	dmirror = container_of(mirror, struct hmm_dummy_mirror, mirror);
++	pt_map.dmirror = dmirror;
++	idx = fuid - rmem->fuid;
++
++	/* Sanity check for debugging hmm real device driver do not have to do that. */
++	switch (etype) {
++	case HMM_UNREGISTER:
++	case HMM_UNMAP:
++	case HMM_MUNMAP:
++	case HMM_MPROT_WONLY:
++	case HMM_MIGRATE_TO_RMEM:
++	case HMM_MIGRATE_TO_LMEM:
++		mask = 0;
++		or = 0;
++		break;
++	case HMM_MPROT_RONLY:
++	case HMM_WRITEBACK:
++		mask = ~HMM_DUMMY_PTE_WRITE;
++		or = 0;
++		break;
++	case HMM_MPROT_RANDW:
++		mask = -1L;
++		or = HMM_DUMMY_PTE_WRITE;
++		break;
++	default:
++		printk(KERN_ERR "%4d:%s invalid event type %d\n",
++		       __LINE__, __func__, etype);
++		return ERR_PTR(-EIO);
++	}
++
++	mutex_lock(&dmirror->mutex);
++	for (i = 0, addr = faddr; addr < laddr; ++i, addr += PAGE_SIZE, ++idx) {
++		unsigned long *pldp;
++
++		pldp = hmm_dummy_pt_pld_map(&pt_map, addr);
++		if (!pldp) {
 +			continue;
 +		}
- 		ret = __ext4_journalled_invalidatepage(page, offset,
- 						PAGE_CACHE_SIZE - offset);
- 		unlock_page(page);
++		if (dirty && ((*pldp) & HMM_DUMMY_PTE_DIRTY)) {
++			hmm_pfn_set_dirty(&rmem->pfns[idx]);
++		}
++		*pldp &= ~HMM_DUMMY_PTE_DIRTY;
++		*pldp &= mask;
++		*pldp |= or;
++	}
++	hmm_dummy_pt_unmap(&pt_map);
++
++	switch (etype) {
++	case HMM_UNREGISTER:
++	case HMM_MUNMAP:
++		hmm_dummy_pt_free(dmirror, faddr, laddr);
++		break;
++	default:
++		break;
++	}
++	mutex_unlock(&dmirror->mutex);
++	return NULL;
++}
++
++static int hmm_dummy_rmem_fault(struct hmm_mirror *mirror,
++				struct hmm_rmem *rmem,
++				unsigned long faddr,
++				unsigned long laddr,
++				unsigned long fuid,
++				struct hmm_fault *fault)
++{
++	struct hmm_dummy_mirror *dmirror;
++	struct hmm_dummy_device *ddevice;
++	struct hmm_dummy_pt_map pt_map = {0};
++	struct hmm_dummy_rmem *drmem;
++	unsigned long i;
++	bool write = fault ? !!(fault->flags & HMM_FAULT_WRITE) : false;
++
++	dmirror = container_of(mirror, struct hmm_dummy_mirror, mirror);
++	drmem = container_of(rmem, struct hmm_dummy_rmem, rmem);
++	ddevice = dmirror->ddevice;
++	pt_map.dmirror = dmirror;
++
++	mutex_lock(&dmirror->mutex);
++	for (i = fuid; faddr < laddr; ++i, faddr += PAGE_SIZE) {
++		unsigned long *pldp, pld_idx, pfn, idx = i - rmem->fuid;
++
++		pldp = hmm_dummy_pt_pld_map(&pt_map, faddr);
++		if (!pldp) {
++			continue;
++		}
++		pfn = page_to_pfn(ddevice->rmem_pages[drmem->rmem_idx[idx]]);
++		pld_idx = hmm_dummy_pld_index(faddr);
++		pldp[pld_idx]  = (pfn << HMM_DUMMY_PFN_SHIFT);
++		if (test_bit(HMM_PFN_WRITE, &rmem->pfns[idx])) {
++			pldp[pld_idx] |=  HMM_DUMMY_PTE_WRITE;
++			hmm_pfn_clear_lmem_uptodate(&rmem->pfns[idx]);
++		}
++		pldp[pld_idx] |= HMM_DUMMY_PTE_VALID_PAGE;
++		if (write && !test_bit(HMM_PFN_WRITE, &rmem->pfns[idx])) {
++			/* Fallback to use system memory. Other solution would be
++			 * to migrate back to system memory.
++			 */
++			hmm_pfn_clear_rmem_uptodate(&rmem->pfns[idx]);
++			if (!test_bit(HMM_PFN_LMEM_UPTODATE, &rmem->pfns[idx])) {
++				struct page *spage, *dpage;
++
++				dpage = hmm_pfn_to_page(rmem->pfns[idx]);
++				spage = ddevice->rmem_pages[drmem->rmem_idx[idx]];
++				copy_highpage(dpage, spage);
++				hmm_pfn_set_lmem_uptodate(&rmem->pfns[idx]);
++			}
++			pfn = rmem->pfns[idx] >> HMM_PFN_SHIFT;
++			pldp[pld_idx]  = (pfn << HMM_DUMMY_PFN_SHIFT);
++			pldp[pld_idx] |= HMM_DUMMY_PTE_WRITE;
++			pldp[pld_idx] |= HMM_DUMMY_PTE_VALID_PAGE;
++		}
++	}
++	hmm_dummy_pt_unmap(&pt_map);
++	mutex_unlock(&dmirror->mutex);
++	return 0;
++}
++
++struct hmm_fence *hmm_dummy_rmem_to_lmem(struct hmm_rmem *rmem,
++					 unsigned long fuid,
++					 unsigned long luid)
++{
++	struct hmm_dummy_device *ddevice;
++	struct hmm_dummy_rmem *drmem;
++	unsigned long i;
++
++	ddevice = container_of(rmem->device, struct hmm_dummy_device, device);
++	drmem = container_of(rmem, struct hmm_dummy_rmem, rmem);
++
++	for (i = fuid; i < luid; ++i) {
++		unsigned long idx = i - rmem->fuid;
++		struct page *spage, *dpage;
++
++		if (test_bit(HMM_PFN_LMEM_UPTODATE, &rmem->pfns[idx])) {
++			/* This lmem page is already uptodate. */
++			continue;
++		}
++		spage = ddevice->rmem_pages[drmem->rmem_idx[idx]];
++		dpage = hmm_pfn_to_page(rmem->pfns[idx]);
++		if (!dpage) {
++			return ERR_PTR(-EINVAL);
++		}
++		copy_highpage(dpage, spage);
++		hmm_pfn_set_lmem_uptodate(&rmem->pfns[idx]);
++	}
++
++	return NULL;
++}
++
++struct hmm_fence *hmm_dummy_lmem_to_rmem(struct hmm_rmem *rmem,
++					 unsigned long fuid,
++					 unsigned long luid)
++{
++	struct hmm_dummy_device *ddevice;
++	struct hmm_dummy_rmem *drmem;
++	unsigned long i;
++
++	ddevice = container_of(rmem->device, struct hmm_dummy_device, device);
++	drmem = container_of(rmem, struct hmm_dummy_rmem, rmem);
++
++	for (i = fuid; i < luid; ++i) {
++		unsigned long idx = i - rmem->fuid;
++		struct page *spage, *dpage;
++
++		if (test_bit(HMM_PFN_RMEM_UPTODATE, &rmem->pfns[idx])) {
++			/* This rmem page is already uptodate. */
++			continue;
++		}
++		dpage = ddevice->rmem_pages[drmem->rmem_idx[idx]];
++		spage = hmm_pfn_to_page(rmem->pfns[idx]);
++		if (!spage) {
++			return ERR_PTR(-EINVAL);
++		}
++		copy_highpage(dpage, spage);
++		hmm_pfn_set_rmem_uptodate(&rmem->pfns[idx]);
++	}
++
++	return NULL;
++}
++
++static int hmm_dummy_rmem_do_split(struct hmm_rmem *rmem,
++				   unsigned long fuid,
++				   unsigned long luid)
++{
++	struct hmm_dummy_rmem *drmem, *dnew;
++	struct hmm_fault fault;
++	struct hmm_rmem *new;
++	unsigned long i, pgoff, npages;
++	int ret;
++
++	drmem = container_of(rmem, struct hmm_dummy_rmem, rmem);
++	npages = (luid - fuid);
++	pgoff = (fuid == rmem->fuid) ? 0 : fuid - rmem->fuid;
++	fault.faddr = 0;
++	fault.laddr = npages << PAGE_SHIFT;
++	new = hmm_dummy_rmem_alloc(rmem->device, &fault);
++	if (IS_ERR(new)) {
++		return PTR_ERR(new);
++	}
++	dnew = container_of(new, struct hmm_dummy_rmem, rmem);
++
++	new->fuid = fuid;
++	new->luid = luid;
++	ret = hmm_rmem_split_new(rmem, new);
++	if (ret) {
++		return ret;
++	}
++
++	/* Update the rmem it is fine to hold no lock as no one else can access
++	 * both of this rmem object as long as the range are reserved.
++	 */
++	for (i = 0; i < npages; ++i) {
++		dnew->rmem_idx[i] = drmem->rmem_idx[i + pgoff];
++	}
++	if (!pgoff) {
++		for (i = 0; i < (rmem->luid - rmem->fuid); ++i) {
++			drmem->rmem_idx[i] = drmem->rmem_idx[i + npages];
++		}
++	}
++
++	return 0;
++}
++
++static int hmm_dummy_rmem_split(struct hmm_rmem *rmem,
++				unsigned long fuid,
++				unsigned long luid)
++{
++	int ret;
++
++	if (fuid > rmem->fuid) {
++		ret = hmm_dummy_rmem_do_split(rmem, rmem->fuid, fuid);
++		if (ret) {
++			return ret;
++		}
++	}
++	if (luid < rmem->luid) {
++		ret = hmm_dummy_rmem_do_split(rmem, luid, rmem->luid);
++		if (ret) {
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static void hmm_dummy_rmem_destroy(struct hmm_rmem *rmem)
++{
++	struct hmm_dummy_rmem *drmem;
++
++	drmem = container_of(rmem, struct hmm_dummy_rmem, rmem);
++	hmm_dummy_rmem_free(drmem);
++	kfree(drmem);
++}
++
+ static const struct hmm_device_ops hmm_dummy_ops = {
+ 	.device_destroy		= &hmm_dummy_device_destroy,
+ 	.mirror_release		= &hmm_dummy_mirror_release,
+@@ -638,6 +1005,14 @@ static const struct hmm_device_ops hmm_dummy_ops = {
+ 	.fence_wait		= &hmm_dummy_fence_wait,
+ 	.lmem_update		= &hmm_dummy_lmem_update,
+ 	.lmem_fault		= &hmm_dummy_lmem_fault,
++	.rmem_alloc		= &hmm_dummy_rmem_alloc,
++	.rmem_update		= &hmm_dummy_rmem_update,
++	.rmem_fault		= &hmm_dummy_rmem_fault,
++	.rmem_to_lmem		= &hmm_dummy_rmem_to_lmem,
++	.lmem_to_rmem		= &hmm_dummy_lmem_to_rmem,
++	.rmem_split		= &hmm_dummy_rmem_split,
++	.rmem_split_adjust	= &hmm_dummy_rmem_split,
++	.rmem_destroy		= &hmm_dummy_rmem_destroy,
+ };
+ 
+ 
+@@ -880,7 +1255,7 @@ static ssize_t hmm_dummy_fops_write(struct file *filp,
+ 		if (!(pldp[pld_idx] & HMM_DUMMY_PTE_WRITE)) {
+ 			hmm_dummy_pt_unmap(&pt_map);
+ 			mutex_unlock(&dmirror->mutex);
+-				goto fault;
++			goto fault;
+ 		}
+ 		pldp[pld_idx] |= HMM_DUMMY_PTE_DIRTY;
+ 		page = hmm_dummy_pte_to_page(pldp[pld_idx]);
+@@ -964,8 +1339,11 @@ static long hmm_dummy_fops_unlocked_ioctl(struct file *filp,
+ 					  unsigned int command,
+ 					  unsigned long arg)
+ {
++	struct hmm_dummy_migrate dmigrate;
+ 	struct hmm_dummy_device *ddevice;
+ 	struct hmm_dummy_mirror *dmirror;
++	struct hmm_mirror *mirror;
++	void __user *uarg = (void __user *)arg;
+ 	unsigned minor;
+ 	int ret;
+ 
+@@ -1011,6 +1389,31 @@ static long hmm_dummy_fops_unlocked_ioctl(struct file *filp,
+ 				       "mirroring address space of %d\n",
+ 				       dmirror->pid);
+ 		return 0;
++	case HMM_DUMMY_MIGRATE_TO_RMEM:
++		mutex_lock(&ddevice->mutex);
++		dmirror = ddevice->dmirrors[minor];
++		if (!dmirror) {
++			mutex_unlock(&ddevice->mutex);
++			return -EINVAL;
++		}
++		mirror = &dmirror->mirror;
++		mutex_unlock(&ddevice->mutex);
++
++		if (copy_from_user(&dmigrate, uarg, sizeof(dmigrate))) {
++			return -EFAULT;
++		}
++
++		ret = hmm_dummy_pt_alloc(dmirror,
++					 dmigrate.faddr,
++					 dmigrate.laddr);
++		if (ret) {
++			return ret;
++		}
++
++		ret = hmm_dummy_mirror_lmem_to_rmem(dmirror,
++						    dmigrate.faddr,
++						    dmigrate.laddr);
++		return ret;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -1034,7 +1437,31 @@ static const struct file_operations hmm_dummy_fops = {
+  */
+ static int hmm_dummy_device_init(struct hmm_dummy_device *ddevice)
+ {
+-	int ret, i;
++	struct page **pages;
++	unsigned long *bitmap;
++	int ret, i, npages;
++
++	npages = HMM_DUMMY_DEVICE_RMEM_SIZE >> PAGE_SHIFT;
++	bitmap = kzalloc(BITS_TO_LONGS(npages) * sizeof(long), GFP_KERNEL);
++	if (!bitmap) {
++		return -ENOMEM;
++	}
++	pages = kzalloc(npages * sizeof(void*), GFP_KERNEL);
++	if (!pages) {
++		kfree(bitmap);
++		return -ENOMEM;
++	}
++	for (i = 0; i < npages; ++i) {
++		pages[i] = alloc_page(GFP_KERNEL);
++		if (!pages[i]) {
++			while ((--i)) {
++				__free_page(pages[i]);
++			}
++			kfree(bitmap);
++			kfree(pages);
++			return -ENOMEM;
++		}
++	}
+ 
+ 	ret = alloc_chrdev_region(&ddevice->dev, 0,
+ 				  HMM_DUMMY_DEVICE_MAX_MIRRORS,
+@@ -1066,15 +1493,23 @@ static int hmm_dummy_device_init(struct hmm_dummy_device *ddevice)
+ 		goto error;
+ 	}
+ 
++	ddevice->rmem_bitmap = bitmap;
++	ddevice->rmem_pages = pages;
++
+ 	return 0;
+ 
+ error:
++	for (i = 0; i < npages; ++i) {
++		__free_page(pages[i]);
++	}
++	kfree(bitmap);
++	kfree(pages);
+ 	return ret;
+ }
+ 
+ static void hmm_dummy_device_fini(struct hmm_dummy_device *ddevice)
+ {
+-	unsigned i;
++	unsigned i, npages;
+ 
+ 	/* First finish hmm. */
+ 	for (i = 0; i < HMM_DUMMY_DEVICE_MAX_MIRRORS; i++) {
+@@ -1092,6 +1527,13 @@ static void hmm_dummy_device_fini(struct hmm_dummy_device *ddevice)
+ 	cdev_del(&ddevice->cdev);
+ 	unregister_chrdev_region(ddevice->dev,
+ 				 HMM_DUMMY_DEVICE_MAX_MIRRORS);
++
++	npages = HMM_DUMMY_DEVICE_RMEM_SIZE >> PAGE_SHIFT;
++	for (i = 0; i < npages; ++i) {
++		__free_page(ddevice->rmem_pages[i]);
++	}
++	kfree(ddevice->rmem_bitmap);
++	kfree(ddevice->rmem_pages);
+ }
+ 
+ static int __init hmm_dummy_init(void)
+diff --git a/include/uapi/linux/hmm_dummy.h b/include/uapi/linux/hmm_dummy.h
+index 16ae0d3..027c453 100644
+--- a/include/uapi/linux/hmm_dummy.h
++++ b/include/uapi/linux/hmm_dummy.h
+@@ -29,6 +29,12 @@
+ #include <linux/irqnr.h>
+ 
+ /* Expose the address space of the calling process through hmm dummy dev file */
+-#define HMM_DUMMY_EXPOSE_MM	_IO( 'R', 0x00 )
++#define HMM_DUMMY_EXPOSE_MM		_IO( 'R', 0x00 )
++#define HMM_DUMMY_MIGRATE_TO_RMEM	_IO( 'R', 0x01 )
++
++struct hmm_dummy_migrate {
++	uint64_t		faddr;
++	uint64_t		laddr;
++};
+ 
+ #endif /* _UAPI_LINUX_RANDOM_H */
 -- 
 1.9.0
 
