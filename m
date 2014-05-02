@@ -1,142 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbaEBOz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:55:58 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:41513 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaEBOz4 (ORCPT
+	id S1752541AbaEBO5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:57:30 -0400
+Received: from fallback1.mail.ru ([94.100.176.18]:59272 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784AbaEBO53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:55:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <5363A4E0.2000403@intel.com>
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-	<20140502151921.014fbeec@redhat.com>
-	<5363A4E0.2000403@intel.com>
-Date: Fri, 2 May 2014 22:55:55 +0800
-Message-ID: <CAABZP2wG-DnmvAzSapaC1nEyg0ArET93tbz-x3-a71-pLd4ELA@mail.gmail.com>
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: John Fastabend <john.r.fastabend@intel.com>
-Cc: Jesper Dangaard Brouer <brouer@redhat.com>,
-        David Miller <davem@davemloft.net>, steffen.klassert@secunet.com,
-        fan.du@windriver.com, dborkman@redhat.com,
-        Mathias Krause <minipli@googlemail.com>, tgraf@suug.ch,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 2 May 2014 10:57:29 -0400
+From: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        linux-kernel@vger.kernel.org,
+        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
+Subject: [PATCH] staging/comedi: fix sparse warning: shift too big
+Date: Fri,  2 May 2014 18:57:04 +0400
+Message-Id: <1399042624-9441-1-git-send-email-brilliantov@inbox.ru>
+X-Mailer: git-send-email 1.9.1
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for reviewing
+Signed-off-by: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
+---
+ drivers/staging/comedi/drivers/ni_stc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Fri, May 2, 2014 at 10:00 PM, John Fastabend
-<john.r.fastabend@intel.com> wrote:
-> On 5/2/2014 6:19 AM, Jesper Dangaard Brouer wrote:
->>
->> On Fri,  2 May 2014 15:18:12 +0800
->> Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
->>
->>> As http://www.spinics.net/lists/netdev/msg165015.html
->>> pktgen generates shared packet through vlan interface will cause
->>> oops because of duplicate entering tc queue.
->>>
->>> Try to solve this problem by means of packet clone instead of sharing.
->>
->>
->> I really don't like adding this stuff to the fast path of pktgen.
+diff --git a/drivers/staging/comedi/drivers/ni_stc.h b/drivers/staging/comedi/drivers/ni_stc.h
+index f0630b78..197b568 100644
+--- a/drivers/staging/comedi/drivers/ni_stc.h
++++ b/drivers/staging/comedi/drivers/ni_stc.h
+@@ -717,7 +717,7 @@ enum AI_AO_Select_Bits {
+ static inline unsigned ni_stc_dma_channel_select_bitfield(unsigned channel)
+ {
+ 	if (channel < 4)
+-		return 1 << channel;
++		return 1 << (channel & 0x3);
+ 	if (channel == 4)
+ 		return 0x3;
+ 	if (channel == 5)
+-- 
+1.9.1
 
-
->>
->> Why would you use pktgen on a VLAN?
-
-I use pktgen on a VLAN under a special circumstance.
-
->
->
-> Its a good way to test qdiscs. When you run pktgen over the VLAN
-> you exercise the lower devices qdisc.
->
-> Although I never submitted a patch like this because I figured it
-> was a corner case and we would want to keep the hotpath clean.
->
-
-I think is_vlan_dev(odev) have great chances to be in a cache line
-that seldom got reset. Could we only judge is_vlan_dev(odev) in my
-first if statement?
-
-
-Also I guess if (nskb && !IS_ERR(nskb)) happens in rarely reached
-cases when the interface is not overload.
-
->
->>
->> Why don't you use the "vlan_id" feature available in pktgen, and send
->> in the lower real device?
-
-Could we automatically convert the VLAN device's joining effort to
-real device + vlan_id settings in pkt_dev.
-or could we issue a warning or a suggestion
-when user try to add a VLAN device to the pktgen thread?
-
->>
->>
->>
->>> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
->>> ---
->>>   net/core/pktgen.c |   20 +++++++++++++++++---
->>>   1 files changed, 17 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
->>> index 0304f98..ced07fc 100644
->>> --- a/net/core/pktgen.c
->>> +++ b/net/core/pktgen.c
->>> @@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
->>>         netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
->>>                 = odev->netdev_ops->ndo_start_xmit;
->>>         struct netdev_queue *txq;
->>> +       struct sk_buff *nskb = NULL;
->>>         u16 queue_map;
->>>         int ret;
->>>
->>> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev
->>> *pkt_dev)
->>>                 pkt_dev->last_ok = 0;
->>>                 goto unlock;
->>>         }
->>> -       atomic_inc(&(pkt_dev->skb->users));
->>> -       ret = (*xmit)(pkt_dev->skb, odev);
->>> +
->>> +       if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
->>> +               nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
->>> +               ret = -ENOMEM;
->>> +               if (nskb)
->>> +                       ret = (*xmit)(nskb, odev);
->>> +               else
->>> +                       nskb = ERR_PTR(ret);
->>> +       } else {
->>> +               atomic_inc(&(pkt_dev->skb->users));
->>> +               ret = (*xmit)(pkt_dev->skb, odev);
->>> +       }
->>>
->>>         switch (ret) {
->>>         case NETDEV_TX_OK:
->>> @@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev
->>> *pkt_dev)
->>>         case NETDEV_TX_LOCKED:
->>>         case NETDEV_TX_BUSY:
->>>                 /* Retry it next time */
->>> -               atomic_dec(&(pkt_dev->skb->users));
->>> +               if (nskb && !IS_ERR(nskb))
->>> +                       kfree_skb(nskb);
->>> +               else
->>> +                       atomic_dec(&(pkt_dev->skb->users));
->>>                 pkt_dev->last_ok = 0;
->>>         }
->>>   unlock:
->>
->>
->>
->>
->
