@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846AbaEBWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:40:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:32830 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846AbaEBWkY (ORCPT
+	id S1752990AbaEBWlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:41:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59171 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752109AbaEBWk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:40:24 -0400
-Date: Fri, 2 May 2014 23:40:22 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140502224022.GJ18016@ZenIV.linux.org.uk>
-References: <20140429214842.GL18016@ZenIV.linux.org.uk>
- <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
- <20140502055127.GH18016@ZenIV.linux.org.uk>
- <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
- <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 May 2014 18:40:59 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 1/2] iio: fix possible buffer overflow
+Date: Sat,  3 May 2014 00:40:49 +0200
+Message-Id: <1399070450-23391-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 02:18:43PM -0700, Linus Torvalds wrote:
-> On Fri, May 2, 2014 at 2:08 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > There's more of the "delete from shrink list not owned by us" in select parent.
-> > Proposed patch appended.
-> 
-> Ahh. Clearly this needs more work before I pull.
+Found using smatch:
+drivers/iio/industrialio-core.c:719 iio_device_add_info_mask_type() error:
+buffer overflow 'iio_chan_info_postfix' 17 <= 63
 
-*nod*
+It was probably never hit because the info_mask_* members are filled by using
+the BIT() macro with values from the iio_chan_info_enum enum that also serve as
+the index of the iio_chan_info_postfix array.
 
-Besides, I want to put Miklos' "don't bother with RCU in shrink_dentry_list()"
-in there as soon as select_collect() has been dealt with.  I don't think
-that the currently posted patch for select_collect() is right, though -
-see my reply to parent posting.  Basically, I think we should treat "it's
-on the shrink list already" as "increment data->found and keep going".  IOW,
-	if (on shrink list) {
-		data->found++;
-	} else {
-		if (on lru list)
-			d_lru_del
-		if (refcount is zero) {
-			d_shrink_add
-			data->found++;
-		}
-	}
-	if (data->found)
-		ret = need_resched() ? D_WALK_QUIT : D_WALK_NORETRY;
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ drivers/iio/industrialio-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index ede16aec20fb..5e7a67e53879 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -715,7 +715,8 @@ static int iio_device_add_info_mask_type(struct iio_dev *indio_dev,
+ {
+ 	int i, ret, attrcount = 0;
+ 
+-	for_each_set_bit(i, infomask, sizeof(infomask)*8) {
++	for_each_set_bit(i, infomask, min(sizeof(infomask)*8,
++					  ARRAY_SIZE(iio_chan_info_postfix))) {
+ 		ret = __iio_add_chan_devattr(iio_chan_info_postfix[i],
+ 					     chan,
+ 					     &iio_read_channel_info,
+-- 
+1.9.1
+
