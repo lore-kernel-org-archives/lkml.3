@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaEBPnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:43:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43982 "EHLO
+	id S1753468AbaEBPnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753400AbaEBPnR (ORCPT
+	with ESMTP id S1752900AbaEBPnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:17 -0400
+	Fri, 2 May 2014 11:43:22 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/151] drm/i915: Don't clobber CHICKEN_PIPESL_1 on BDW
-Date: Fri,  2 May 2014 08:36:58 -0700
-Message-Id: <1399045139-4531-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 027/151] mmc: sdhci-bcm-kona: fix build errors when built-in
+Date: Fri,  2 May 2014 08:36:55 -0700
+Message-Id: <1399045139-4531-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,42 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit c7c656226842679bcd9f39dc24441b4ff398a850 upstream.
+commit 4025ce24f326830135341814307c072f6c2a7738 upstream.
 
-Misplaced parens cause us to totally clobber the CHICKEN_PIPESL_1
-registers with 0xffffffff. Move the parens to the correct place
-to avoid this.
+`sdhci_bcm_kona_remove' referenced in section `.data' of drivers/built-in.o: defined in discarded section `.exit.text' of drivers/built-in.o
 
-In particular this caused bit 30 of said registers to be set, which
-caused the sprite CSC to produce incorrect results.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=72220
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ kamal: backport to 3.13 (context) ]
+Fixes: 058feb53666f ("mmc: sdhci-bcm-kona: make linker-section warning go away")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Tested-by: Markus Mayer <markus.mayer@linaro.org>
+Acked-by: Matt Porter <mporter@linaro.org>
+Signed-off-by: Chris Ball <chris@printf.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_pm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci-bcm-kona.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index 26c29c1..e2d10ce 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5314,8 +5314,8 @@ static void gen8_init_clock_gating(struct drm_device *dev)
- 	/* WaPsrDPRSUnmaskVBlankInSRD */
- 	for_each_pipe(i) {
- 		I915_WRITE(CHICKEN_PIPESL_1(i),
--			   I915_READ(CHICKEN_PIPESL_1(i) |
--				     DPRS_MASK_VBLANK_SRD));
-+			   I915_READ(CHICKEN_PIPESL_1(i)) |
-+			   DPRS_MASK_VBLANK_SRD);
- 	}
+diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+index 7a190fe..e5565aa 100644
+--- a/drivers/mmc/host/sdhci-bcm-kona.c
++++ b/drivers/mmc/host/sdhci-bcm-kona.c
+@@ -314,7 +314,7 @@ err_pltfm_free:
+ 	return ret;
  }
  
+-static int __exit sdhci_bcm_kona_remove(struct platform_device *pdev)
++static int sdhci_bcm_kona_remove(struct platform_device *pdev)
+ {
+ 	return sdhci_pltfm_unregister(pdev);
+ }
 -- 
 1.9.1
 
