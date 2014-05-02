@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaEBIt6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 04:49:58 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33874 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327AbaEBItz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 04:49:55 -0400
-Date: Fri, 2 May 2014 11:49:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: ching <ching2048@areca.com.tw>
-Cc: jbottomley@parallels.com, thenzl@redhat.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1.0 7/16] arcmsr: revise message_isr_bh_fn to delete
- duplicate code
-Message-ID: <20140502084939.GD4963@mwanda>
-References: <1398855757.6930.25.camel@localhost>
+	id S1751797AbaEBIv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 04:51:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57926 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751386AbaEBIvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 04:51:54 -0400
+Date: Fri, 2 May 2014 16:51:46 +0800
+From: Baoquan He <bhe@redhat.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: Re: [Patch v2] lapic need be checked if available when initialize
+ acpi processor id
+Message-ID: <20140502084707.GA1572@dhcp-17-102.nay.redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com>
+ <20140430055503.GD4774@dhcp-16-105.nay.redhat.com>
+ <20140430060303.GE4774@dhcp-16-105.nay.redhat.com>
+ <20009828.4TTRJo9T7a@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398855757.6930.25.camel@localhost>
+In-Reply-To: <20009828.4TTRJo9T7a@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 07:02:37PM +0800, ching wrote:
-> +	}
-> +	atomic_inc(&acb->rq_map_token);
+On 04/30/14 at 10:13pm, Rafael J. Wysocki wrote:
+> On Wednesday, April 30, 2014 02:03:03 PM Baoquan He wrote:
+> > Hi Rafael,
+> 
+> Hi,
+> 
+> > Thanks for previous review for v1. Later on I thought acpi_lapic is
+> > more suitable for checking whether LAPIC in MADT is available, and it can
+> > hanlde both the UP system running SMP kernel with no LAPIC in MADT and kdump
+> > kernel after multiple CPUs system crashed on non-1st CPU.
+> > 
+> > I tested the 1st case by addding "disableapic nr_cpus=1" into cmdline
+> > of SMP kenrel, and it works. For 2nd case, it works too, below warning
+> > message is not printed any more. 
+> > 
+> > acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor
+> > 
+> > Do you like this idea?
+> 
+> Well, I don't hate it, but you need to make the code build in all
+> configurations (including ia64).
+> 
+Hi Rafael,
 
-This patch is a nice cleanup but it would be even better if you flipped
-this condition around.
+Sorry about this, I didn't realize acpi_lapic is for x86 only. And ia64
+uses it too. About this bug, it should exist in ia64 too. After checking
+code, introducing acpi_lapic into ia64 is a solution, I will try to find
+a ia64 machine to test this though it's a little difficult, since people
+around didn't test ia64 recently.
 
-> +	if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+Any suggestion  or comment?
 
-	if (readl(signature) != ARCMSR_SIGNATURE_GET_CONFIG)
-		return;
-
-> +		for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
-> +			target++) {
-> +			temp = readb(devicemap);
-> +			diff = (*acb_dev_map) ^ temp;
-> +			if (diff != 0) {
-> +				*acb_dev_map = temp;
-> +				for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
-> +					lun++) {
-> +					if ((diff & 0x01) == 1 &&
-> +						(temp & 0x01) == 1) {
-> +						scsi_add_device(acb->host,
-> +							0, target, lun);
-> +					} else if ((diff & 0x01) == 1
-> +						&& (temp & 0x01) == 0) {
-> +						psdev =
-> +							scsi_device_lookup(acb->host,
-> +							0, target, lun);
-
-The whitespace is weird here.  Do:
-
-					psdev = scsi_device_lookup(acb->host,
-							0, target, lun);
-
-> +						if (psdev != NULL) {
-> +							scsi_remove_device(psdev);
-> +							scsi_device_put(psdev);
->  						}
->  					}
-> -					devicemap++;
-> -					acb_dev_map++;
-> +					temp >>= 1;
-> +					diff >>= 1;
->  				}
->  			}
-> +			devicemap++;
-> +			acb_dev_map++;
->  		}
-
-regards,
-dan carpenter
+Thanks
+Baoquan
 
