@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaEBPnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:43:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44003 "EHLO
+	id S1754252AbaEBQHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:07:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44013 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900AbaEBPn1 (ORCPT
+	with ESMTP id S1753476AbaEBPnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:27 -0400
+	Fri, 2 May 2014 11:43:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Herve Codina <Herve.CODINA@celad.com>,
+        Brian Norris <computersforpeace@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 026/151] [media] m88rs2000: prevent frontend crash on continuous transponder scans
-Date: Fri,  2 May 2014 08:36:54 -0700
-Message-Id: <1399045139-4531-27-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 040/151] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
+Date: Fri,  2 May 2014 08:37:08 -0700
+Message-Id: <1399045139-4531-41-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -29,62 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Herve Codina <Herve.CODINA@celad.com>
 
-commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
+commit 90445ff6241e2a13445310803e2efa606c61f276 upstream.
 
-Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
-rate more than 3000000 and delay of 3000ms less than this.
+Crash detected on sam5d35 and its pmecc nand ecc controller.
 
-Adding min delay prevents crashing the frontend on continuous
-transponder scans. Other dvb_frontend_tune_settings remain as default.
+The problem was a call to chip->ecc.hwctl from nand_write_subpage_hwecc
+(nand_base.c) when we write a sub page.
+chip->ecc.hwctl function is not set when we are using PMECC controller.
+As a workaround, set NAND_NO_SUBPAGE_WRITE for PMECC controller in
+order to disable sub page access in nand_write_page.
 
-This makes very little time difference to good channel scans, but slows down
-the set frontend where lock can never be achieved i.e. DVB-S2.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Herve Codina <Herve.CODINA@celad.com>
+Acked-by: Josh Wu <josh.wu@atmel.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-frontends/m88rs2000.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/mtd/nand/atmel_nand.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
-index 5b3b1d3..c7a1c8e 100644
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -712,6 +712,22 @@ static int m88rs2000_get_frontend(struct dvb_frontend *fe)
- 	return 0;
- }
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 59f08c4..1974009 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -1220,6 +1220,7 @@ static int atmel_pmecc_nand_init_params(struct platform_device *pdev,
+ 		goto err;
+ 	}
  
-+static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
-+	struct dvb_frontend_tune_settings *tune)
-+{
-+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-+
-+	if (c->symbol_rate > 3000000)
-+		tune->min_delay_ms = 2000;
-+	else
-+		tune->min_delay_ms = 3000;
-+
-+	tune->step_size = c->symbol_rate / 16000;
-+	tune->max_drift = c->symbol_rate / 2000;
-+
-+	return 0;
-+}
-+
- static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
- {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -763,6 +779,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
++	nand_chip->options |= NAND_NO_SUBPAGE_WRITE;
+ 	nand_chip->ecc.read_page = atmel_nand_pmecc_read_page;
+ 	nand_chip->ecc.write_page = atmel_nand_pmecc_write_page;
  
- 	.set_frontend = m88rs2000_set_frontend,
- 	.get_frontend = m88rs2000_get_frontend,
-+	.get_tune_settings = m88rs2000_get_tune_settings,
- };
- 
- struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 -- 
 1.9.1
 
