@@ -1,282 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaEBMsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 08:48:14 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:38144 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaEBMsJ (ORCPT
+	id S1752288AbaEBMvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 08:51:55 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54994 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925AbaEBMvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 08:48:09 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v5 3/4] usb: ohci-exynos: Add facility to use phy provided by the generic phy framework
-Date: Fri,  2 May 2014 18:17:34 +0530
-Message-Id: <1399034855-9686-4-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399034855-9686-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399034855-9686-1-git-send-email-gautam.vivek@samsung.com>
+	Fri, 2 May 2014 08:51:53 -0400
+Message-ID: <1399035110.5233.168.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
+        peterz@infradead.org, george.mccollister@gmail.com,
+        ktkhai@parallels.com
+Date: Fri, 02 May 2014 14:51:50 +0200
+In-Reply-To: <1399030032.5233.142.camel@marge.simpson.net>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
+	 <1399016273.5233.94.camel@marge.simpson.net> <536379D0.8070306@redhat.com>
+	 <1399030032.5233.142.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support to consume phy provided by Generic phy framework.
-Keeping the support for older usb-phy intact right now, in order
-to prevent any functionality break in absence of relevant
-device tree side change for ohci-exynos.
-Once we move to new phy in the device nodes for ohci, we can
-remove the support for older phys.
+On Fri, 2014-05-02 at 13:27 +0200, Mike Galbraith wrote: 
+> On Fri, 2014-05-02 at 06:56 -0400, Rik van Riel wrote: 
+> > On 05/02/2014 03:37 AM, Mike Galbraith wrote:
+> > > On Fri, 2014-05-02 at 02:30 -0400, Rik van Riel wrote: 
+> > >> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
+> > >>> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
+> > >>>
+> > >>>> Whether or not this is the right thing to do remains to be seen,
+> > >>>> but it does allow us to verify whether or not the wake_affine
+> > >>>> strategy of always doing affine wakeups and only disabling them
+> > >>>> in a specific circumstance is sound, or needs rethinking...
+> > >>>
+> > >>> Yes, it needs rethinking.
+> > >>>
+> > >>> I know why you want to try this, yes, select_idle_sibling() is very much
+> > >>> a two faced little bitch.
+> > >>
+> > >> My biggest problem with select_idle_sibling and wake_affine in
+> > >> general is that it will override NUMA placement, even when
+> > >> processes only wake each other up infrequently...
+> > > 
+> > > Hm, seems the thing to do would be to tell select_task_rq_fair() to keep
+> > > it's mitts off of tasks that the numasched stuff has placed rather than
+> > > decapitating select_idle_sibling() or some other drastic measure.
+> > 
+> > Thing is, if tasks are waking each other up frequently enough, we
+> > probably DO want to place them near each other with select_idle_sibling.
+> 
+> Right.  I'm thinking you could perhaps create a sched feature like
+> NUMA_ME_HARDER or such so you can tell it to go away if you find that
+> your load performs best when movement is left entirely up to the NUMA
+> placement code.
+> 
+> > We just cannot afford to have it as the default behaviour for casual
+> > wakeup activity, because it will mess up other things.
+> 
+> I think it is generally good, but yes, it has its bad it's bad side, why
+> we have tweakables.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
+Slightly garbled (multitasking).
 
-Changes from v4:
- - Removed 'phy-names' property from the bindings since we don't need it.
- - Restructured exynos_ohci_get_phy() function to handle error codes as
-   well as return relevant error codes effectively.
- - Added IS_ERR() check for PHYs in exynos_ohci_phy_enable()/disable().
+To make that a little clearer, generally, trying to bring waker and
+wakee together is a good thing.  I think changing the default to avoid
+doing the generally good thing is wrong.  Box drivers should be given
+whatever knobs they need to adjust as required, and use them, because
+there is no one correct answer.
 
-Changes from v3:
- - Calling usb_phy_shutdown() when exynos_ohci_phy_enable() is failing.
- - Made exynos_ohci_phy_disable() return void, since its return value
-   did not serve any purpose.
- - Calling clk_disable_unprepare() in exynos_ohci_resume() when
-   exynos_ohci_phy_enable() is failed.
-
- .../devicetree/bindings/usb/exynos-usb.txt         |   16 +++
- drivers/usb/host/ohci-exynos.c                     |  120 +++++++++++++++++---
- 2 files changed, 120 insertions(+), 16 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-index d967ba1..49a9c6f 100644
---- a/Documentation/devicetree/bindings/usb/exynos-usb.txt
-+++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
-@@ -38,6 +38,13 @@ Required properties:
-  - interrupts: interrupt number to the cpu.
-  - clocks: from common clock binding: handle to usb clock.
-  - clock-names: from common clock binding: Shall be "usbhost".
-+ - port: if in the SoC there are OHCI phys, they should be listed here.
-+   One phy per port. Each port should have following entries:
-+	- reg: port number on OHCI controller, e.g
-+	       On Exynos5250, port 0 is USB2.0 otg phy
-+			      port 1 is HSIC phy0
-+			      port 2 is HSIC phy1
-+	- phys: from the *Generic PHY* bindings, specifying phy used by port.
- 
- Example:
- 	usb@12120000 {
-@@ -47,6 +54,15 @@ Example:
- 
- 		clocks = <&clock 285>;
- 		clock-names = "usbhost";
-+
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		port@0 {
-+		    reg = <0>;
-+		    phys = <&usb2phy 1>;
-+		    status = "disabled";
-+		};
-+
- 	};
- 
- DWC3
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index 05f00e3..e66d391 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -18,6 +18,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/platform_device.h>
-+#include <linux/phy/phy.h>
- #include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
- #include <linux/usb.h>
-@@ -33,28 +34,112 @@ static struct hc_driver __read_mostly exynos_ohci_hc_driver;
- 
- #define to_exynos_ohci(hcd) (struct exynos_ohci_hcd *)(hcd_to_ohci(hcd)->priv)
- 
-+#define PHY_NUMBER 3
-+
- struct exynos_ohci_hcd {
- 	struct clk *clk;
- 	struct usb_phy *phy;
- 	struct usb_otg *otg;
-+	struct phy *phy_g[PHY_NUMBER];
- };
- 
--static void exynos_ohci_phy_enable(struct device *dev)
-+static int exynos_ohci_get_phy(struct device *dev,
-+				struct exynos_ohci_hcd *exynos_ohci)
-+{
-+	struct device_node *child;
-+	struct phy *phy;
-+	int phy_number;
-+	int ret = 0;
-+
-+	exynos_ohci->phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
-+	if (IS_ERR(exynos_ohci->phy)) {
-+		ret = PTR_ERR(exynos_ohci->phy);
-+		if (ret != -ENXIO && ret != -ENODEV) {
-+			dev_err(dev, "no usb2 phy configured\n");
-+			return ret;
-+		}
-+		dev_dbg(dev, "Failed to get usb2 phy\n");
-+		exynos_ohci->phy = ERR_PTR(-ENODEV);
-+	} else {
-+		exynos_ohci->otg = exynos_ohci->phy->otg;
-+	}
-+
-+	/*
-+	 * Getting generic phy:
-+	 * We are keeping both types of phys as a part of transiting OHCI
-+	 * to generic phy framework, so as to maintain backward compatibilty
-+	 * with old DTB.
-+	 * If there are existing devices using DTB files built from them,
-+	 * to remove the support for old bindings in this driver,
-+	 * we need to make sure that such devices have their DTBs
-+	 * updated to ones built from new DTS.
-+	 */
-+	for_each_available_child_of_node(dev->of_node, child) {
-+		ret = of_property_read_u32(child, "reg", &phy_number);
-+		if (ret) {
-+			dev_err(dev, "Failed to parse device tree\n");
-+			of_node_put(child);
-+			return ret;
-+		}
-+
-+		if (phy_number >= PHY_NUMBER) {
-+			dev_err(dev, "Invalid number of PHYs\n");
-+			of_node_put(child);
-+			return -EINVAL;
-+		}
-+
-+		phy = devm_of_phy_get(dev, child, 0);
-+		of_node_put(child);
-+		if (IS_ERR(phy)) {
-+			ret = PTR_ERR(phy);
-+			if (ret != -ENXIO && ret != -ENODEV) {
-+				dev_err(dev, "no usb2 phy configured\n");
-+				return ret;
-+			}
-+			dev_dbg(dev, "Failed to get usb2 phy\n");
-+			phy = ERR_PTR(-ENODEV);
-+		}
-+		exynos_ohci->phy_g[phy_number] = phy;
-+	}
-+
-+	return ret;
-+}
-+
-+static int exynos_ohci_phy_enable(struct device *dev)
- {
- 	struct usb_hcd *hcd = dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
-+	int i;
-+	int ret = 0;
-+
-+	if (!IS_ERR(exynos_ohci->phy))
-+		return usb_phy_init(exynos_ohci->phy);
- 
--	if (exynos_ohci->phy)
--		usb_phy_init(exynos_ohci->phy);
-+	for (i = 0; ret == 0 && i < PHY_NUMBER; i++)
-+		if (!IS_ERR(exynos_ohci->phy_g[i]))
-+			ret = phy_power_on(exynos_ohci->phy_g[i]);
-+	if (ret)
-+		for (i--; i >= 0; i--)
-+			if (!IS_ERR(exynos_ohci->phy_g[i]))
-+				phy_power_off(exynos_ohci->phy_g[i]);
-+
-+	return ret;
- }
- 
- static void exynos_ohci_phy_disable(struct device *dev)
- {
- 	struct usb_hcd *hcd = dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
-+	int i;
- 
--	if (exynos_ohci->phy)
-+	if (!IS_ERR(exynos_ohci->phy)) {
- 		usb_phy_shutdown(exynos_ohci->phy);
-+		return;
-+	}
-+
-+	for (i = 0; i < PHY_NUMBER; i++)
-+		if (!IS_ERR(exynos_ohci->phy_g[i]))
-+			phy_power_off(exynos_ohci->phy_g[i]);
- }
- 
- static int exynos_ohci_probe(struct platform_device *pdev)
-@@ -62,7 +147,6 @@ static int exynos_ohci_probe(struct platform_device *pdev)
- 	struct exynos_ohci_hcd *exynos_ohci;
- 	struct usb_hcd *hcd;
- 	struct resource *res;
--	struct usb_phy *phy;
- 	int irq;
- 	int err;
- 
-@@ -88,15 +172,9 @@ static int exynos_ohci_probe(struct platform_device *pdev)
- 					"samsung,exynos5440-ohci"))
- 		goto skip_phy;
- 
--	phy = devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
--	if (IS_ERR(phy)) {
--		usb_put_hcd(hcd);
--		dev_warn(&pdev->dev, "no platform data or transceiver defined\n");
--		return -EPROBE_DEFER;
--	} else {
--		exynos_ohci->phy = phy;
--		exynos_ohci->otg = phy->otg;
--	}
-+	err = exynos_ohci_get_phy(&pdev->dev, exynos_ohci);
-+	if (err)
-+		goto fail_clk;
- 
- skip_phy:
- 	exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
-@@ -139,7 +217,11 @@ skip_phy:
- 
- 	platform_set_drvdata(pdev, hcd);
- 
--	exynos_ohci_phy_enable(&pdev->dev);
-+	err = exynos_ohci_phy_enable(&pdev->dev);
-+	if (err) {
-+		dev_err(&pdev->dev, "Failed to enable USB phy\n");
-+		goto fail_io;
-+	}
- 
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (err) {
-@@ -210,13 +292,19 @@ static int exynos_ohci_resume(struct device *dev)
- {
- 	struct usb_hcd *hcd			= dev_get_drvdata(dev);
- 	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
-+	int ret;
- 
- 	clk_prepare_enable(exynos_ohci->clk);
- 
- 	if (exynos_ohci->otg)
- 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
- 
--	exynos_ohci_phy_enable(dev);
-+	ret = exynos_ohci_phy_enable(dev);
-+	if (ret) {
-+		dev_err(dev, "Failed to enable USB phy\n");
-+		clk_disable_unprepare(exynos_ohci->clk);
-+		return ret;
-+	}
- 
- 	ohci_resume(hcd, false);
- 
--- 
-1.7.10.4
+-Mike
 
