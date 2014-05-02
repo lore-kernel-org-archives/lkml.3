@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946AbaEBQSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:18:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43830 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596AbaEBPl6 (ORCPT
+	id S1754698AbaEBQTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:19:01 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:61521 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466AbaEBQS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:41:58 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 072/151] mfd: 88pm860x: Fix I2C device resource leak on regmap init fail
-Date: Fri,  2 May 2014 08:37:40 -0700
-Message-Id: <1399045139-4531-73-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Fri, 2 May 2014 12:18:59 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 2 May 2014 12:22:30 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140502154217.GW11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
+References: <20140429190108.GB30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404291534520.22490@vincent-weaver-1.umelst.maine.edu> <20140430184437.GH17778@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu> <20140502154217.GW11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+I'll try the patch next.
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Meanwhile, can polling on a closed event cause problems with the reference 
+count?
 
-commit a7ab1c8b261305af583ce26bb4a14f555fdaa73e upstream.
+In my various failure traces there's always been a poll() active at the 
+time of crash, and I added some trace_printk()s and it looks like poll is 
+at least attempting to poll on the closed file descriptor that's causing 
+us problems.
 
-During probe the driver allocates dummy I2C device for companion chip
-and then allocates a regmap for it. If regmap_init_i2c() fails then the
-I2C driver (allocated with i2c_new_dummy()) is not freed and this
-resource leaks.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/mfd/88pm860x-core.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index c9b1f64..2461014 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -1185,6 +1185,7 @@ static int pm860x_probe(struct i2c_client *client,
- 			ret = PTR_ERR(chip->regmap_companion);
- 			dev_err(&chip->companion->dev,
- 				"Failed to allocate register map: %d\n", ret);
-+			i2c_unregister_device(chip->companion);
- 			return ret;
- 		}
- 		i2c_set_clientdata(chip->companion, chip);
--- 
-1.9.1
-
+Vince
