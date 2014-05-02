@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaEBPmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:42:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43918 "EHLO
+	id S1753381AbaEBPm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:42:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43936 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569AbaEBPmo (ORCPT
+	with ESMTP id S1752524AbaEBPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:44 -0400
+	Fri, 2 May 2014 11:42:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 059/151] IB/nes: Return an error on ib_copy_from_udata() failure instead of NULL
-Date: Fri,  2 May 2014 08:37:27 -0700
-Message-Id: <1399045139-4531-60-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 064/151] ASoC: cs42l73: Fix mask bits for SOC_VALUE_ENUM_SINGLE
+Date: Fri,  2 May 2014 08:37:32 -0700
+Message-Id: <1399045139-4531-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,49 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
+commit 1555b652970e541fa1cb80c61ffc696bbfb92bb7 upstream.
 
-In case of error while accessing to userspace memory, function
-nes_create_qp() returns NULL instead of an error code wrapped through
-ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
-check for error with IS_ERR().
+The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the mono mix controls.
 
-As page 0 is likely not mapped, it is going to trigger an Oops when
-the kernel will try to dereference NULL pointer to access to struct
-ib_qp's fields.
-
-In some rare cases, page 0 could be mapped by userspace, which could
-turn this bug to a vulnerability that could be exploited: the function
-pointers in struct ib_device will be under userspace total control.
-
-This was caught when using spatch (aka. coccinelle)
-to rewrite calls to ib_copy_{from,to}_udata().
-
-Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/hw/nes/nes_verbs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/cs42l73.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
-index 8308e36..eb62461 100644
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1186,7 +1186,7 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
- 					kfree(nesqp->allocated_buffer);
- 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
--					return NULL;
-+					return ERR_PTR(-EFAULT);
- 				}
- 				if (req.user_wqe_buffers) {
- 					virt_wqs = 1;
+diff --git a/sound/soc/codecs/cs42l73.c b/sound/soc/codecs/cs42l73.c
+index 549d5d6..7b95f7c 100644
+--- a/sound/soc/codecs/cs42l73.c
++++ b/sound/soc/codecs/cs42l73.c
+@@ -319,7 +319,7 @@ static const char * const cs42l73_mono_mix_texts[] = {
+ static const unsigned int cs42l73_mono_mix_values[] = { 0, 1, 2 };
+ 
+ static const struct soc_enum spk_asp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
+@@ -337,7 +337,7 @@ static const struct snd_kcontrol_new spk_xsp_mixer =
+ 	SOC_DAPM_ENUM("Route", spk_xsp_enum);
+ 
+ static const struct soc_enum esl_asp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 5,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
+@@ -346,7 +346,7 @@ static const struct snd_kcontrol_new esl_asp_mixer =
+ 	SOC_DAPM_ENUM("Route", esl_asp_enum);
+ 
+ static const struct soc_enum esl_xsp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 7,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
 -- 
 1.9.1
 
