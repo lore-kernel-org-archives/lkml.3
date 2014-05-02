@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaEBUTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:19:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:6416 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752218AbaEBUTm (ORCPT
+	id S1752711AbaEBUYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:24:08 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:45389 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136AbaEBUYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:19:42 -0400
-Date: Fri, 2 May 2014 16:19:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-Message-ID: <20140502161939.26b61b7c@gandalf.local.home>
-In-Reply-To: <CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
-	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Fri, 2 May 2014 16:24:07 -0400
+From: Dan Streetman <ddstreet@ieee.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Streetman <ddstreet@ieee.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] plist: include -DDEBUG if CONFIG_DEBUG_PI_LIST
+Date: Fri,  2 May 2014 16:23:43 -0400
+Message-Id: <1399062223-18928-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014 12:31:42 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> And NMI not being re-enabled might just be a real advantage. Adding
-> Steven to the cc to make him aware of this patch.
-> 
+lib/plist.c uses pr_debug() in its test function, which is compiled
+and run only when CONFIG_DEBUG_PI_LIST in set; however pr_debug()
+is compiled out unless -DDEBUG is set for the file.
 
-There's not much of an advantage for NMIs, as they seldom page fault.
-We may get some due to vmalloc'd areas, but the whole nested NMI code
-that I wrote was to deal with breakpoints in NMIs.
+Update lib/Makefile to add -DDEBUG to CFLAGS_plist.o if
+CONFIG_DEBUG_PI_LIST is set, so that the pr_debug() output from
+plist_test() is shown.
 
-Although, this patch would have helped before my code, when doing
-things like dumping stacks from NMI context, as some stack dumps can
-trigger a page fault. In the past, I used dump all task's states from
-NMI context to find why the system locked up hard. But due to the
-re-enabling of NMIs with page faults, that usually caused the system to
-triple fault, and made that debugging method rather useless.
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+---
+ lib/Makefile | 4 ++++
+ 1 file changed, 4 insertions(+)
 
--- Steve
+diff --git a/lib/Makefile b/lib/Makefile
+index 0cd7b68..fd1f4c8 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -39,6 +39,10 @@ CFLAGS_kobject.o += -DDEBUG
+ CFLAGS_kobject_uevent.o += -DDEBUG
+ endif
+ 
++ifeq ($(CONFIG_DEBUG_PI_LIST),y)
++CFLAGS_plist.o += -DDEBUG
++endif
++
+ obj-$(CONFIG_GENERIC_IOMAP) += iomap.o
+ obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_iomap.o
+ obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
+-- 
+1.8.3.1
+
