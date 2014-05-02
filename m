@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaEBIrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 04:47:48 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51045 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaEBIrq (ORCPT
+	id S1751826AbaEBIt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 04:49:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33874 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327AbaEBItz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 04:47:46 -0400
-Message-ID: <53635BB4.30900@linaro.org>
-Date: Fri, 02 May 2014 10:47:48 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 2 May 2014 04:49:55 -0400
+Date: Fri, 2 May 2014 11:49:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: ching <ching2048@areca.com.tw>
+Cc: jbottomley@parallels.com, thenzl@redhat.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1.0 7/16] arcmsr: revise message_isr_bh_fn to delete
+ duplicate code
+Message-ID: <20140502084939.GD4963@mwanda>
+References: <1398855757.6930.25.camel@localhost>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] cpuidle / menu: Return error code if there are no
- suitable states
-References: <2471963.urOyfY8mOG@vostro.rjw.lan> <535E3818.2040905@linaro.org> <2000825.kO1es8ShkW@vostro.rjw.lan> <1516317.nEvPfS8aZ7@vostro.rjw.lan>
-In-Reply-To: <1516317.nEvPfS8aZ7@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398855757.6930.25.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/30/2014 01:16 AM, Rafael J. Wysocki wrote:
-> On Tuesday, April 29, 2014 01:28:03 AM Rafael J. Wysocki wrote:
->> On Monday, April 28, 2014 01:14:32 PM Daniel Lezcano wrote:
->>> On 04/27/2014 02:55 PM, Rafael J. Wysocki wrote:
+On Wed, Apr 30, 2014 at 07:02:37PM +0800, ching wrote:
+> +	}
+> +	atomic_inc(&acb->rq_map_token);
 
-[ ... ]
+This patch is a nice cleanup but it would be even better if you flipped
+this condition around.
 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: cpuidle / menu: Return (-1) if there are no suitable states
->
-> If there is a PM QoS latency limit and all of the sufficiently shallow
-> C-states are disabled, the cpuidle menu governor returns 0 which on
-> some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
-> if that C-state has been disabled.
->
-> Fix the issue by modifying the menu governor to return (-1) in such
-> situations.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->   drivers/cpuidle/governors/menu.c |    2 +-
->   include/linux/cpuidle.h          |    2 ++
->   2 files changed, 3 insertions(+), 1 deletion(-)
->
-> Index: linux-pm/drivers/cpuidle/governors/menu.c
-> ===================================================================
-> --- linux-pm.orig/drivers/cpuidle/governors/menu.c
-> +++ linux-pm/drivers/cpuidle/governors/menu.c
-> @@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
->   		data->needs_update = 0;
->   	}
->
-> -	data->last_state_idx = 0;
-> +	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
+> +	if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
 
-In case of x86, CPUIDLE_DRIVER_STATE_START will be 1, so the select 
-function could return 0 even this one is disabled and this is not what 
-you want to happen, no ?
+	if (readl(signature) != ARCMSR_SIGNATURE_GET_CONFIG)
+		return;
 
+> +		for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
+> +			target++) {
+> +			temp = readb(devicemap);
+> +			diff = (*acb_dev_map) ^ temp;
+> +			if (diff != 0) {
+> +				*acb_dev_map = temp;
+> +				for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
+> +					lun++) {
+> +					if ((diff & 0x01) == 1 &&
+> +						(temp & 0x01) == 1) {
+> +						scsi_add_device(acb->host,
+> +							0, target, lun);
+> +					} else if ((diff & 0x01) == 1
+> +						&& (temp & 0x01) == 0) {
+> +						psdev =
+> +							scsi_device_lookup(acb->host,
+> +							0, target, lun);
 
->   	/* Special case when user has set very strict latency requirement */
->   	if (unlikely(latency_req == 0))
->
+The whitespace is weird here.  Do:
 
+					psdev = scsi_device_lookup(acb->host,
+							0, target, lun);
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> +						if (psdev != NULL) {
+> +							scsi_remove_device(psdev);
+> +							scsi_device_put(psdev);
+>  						}
+>  					}
+> -					devicemap++;
+> -					acb_dev_map++;
+> +					temp >>= 1;
+> +					diff >>= 1;
+>  				}
+>  			}
+> +			devicemap++;
+> +			acb_dev_map++;
+>  		}
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+regards,
+dan carpenter
 
