@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138AbaEBQVe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:21:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43760 "EHLO
+	id S1753484AbaEBQVc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:21:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43764 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaEBPjY (ORCPT
+	with ESMTP id S1752785AbaEBPjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 139/151] mm: page_alloc: spill to remote nodes before waking kswapd
-Date: Fri,  2 May 2014 08:38:47 -0700
-Message-Id: <1399045139-4531-140-git-send-email-kamal@canonical.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dave Airlie <airlied@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 143/151] DRM: armada: fix corruption while loading cursors
+Date: Fri,  2 May 2014 08:38:51 -0700
+Message-Id: <1399045139-4531-144-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -29,232 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 3a025760fc158b3726eac89ee95d7f29599e9dfa upstream.
+commit c39b06951f1dc2e384650288676c5b7dcc0ec92c upstream.
 
-On NUMA systems, a node may start thrashing cache or even swap anonymous
-pages while there are still free pages on remote nodes.
+Loading cursors to the LCD controller's SRAM can be corrupted when the
+configured pixel clock is relatively slow.  This seems to be caused
+when we write back-to-back to the SRAM registers.
 
-This is a result of commits 81c0a2bb515f ("mm: page_alloc: fair zone
-allocator policy") and fff4068cba48 ("mm: page_alloc: revert NUMA aspect
-of fair allocation policy").
+There doesn't appear to be any status register we can read to check
+when an access has completed.
 
-Before those changes, the allocator would first try all allowed zones,
-including those on remote nodes, before waking any kswapds.  But now,
-the allocator fastpath doubles as the fairness pass, which in turn can
-only consider the local node to prevent remote spilling based on
-exhausted fairness batches alone.  Remote nodes are only considered in
-the slowpath, after the kswapds are woken up.  But if remote nodes still
-have free memory, kswapd should not be woken to rebalance the local node
-or it may thrash cash or swap prematurely.
+Inserting a dummy read between the writes appears to fix the problem.
 
-Fix this by adding one more unfair pass over the zonelist that is
-allowed to spill to remote nodes after the local fairness pass fails but
-before entering the slowpath and waking the kswapds.
-
-This also gets rid of the GFP_THISNODE exemption from the fairness
-protocol because the unfair pass is no longer tied to kswapd, which
-GFP_THISNODE is not allowed to wake up.
-
-However, because remote spills can be more frequent now - we prefer them
-over local kswapd reclaim - the allocation batches on remote nodes could
-underflow more heavily.  When resetting the batches, use
-atomic_long_read() directly instead of zone_page_state() to calculate the
-delta as the latter filters negative counter values.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/internal.h   |  1 +
- mm/page_alloc.c | 89 +++++++++++++++++++++++++++++----------------------------
- 2 files changed, 46 insertions(+), 44 deletions(-)
+ drivers/gpu/drm/armada/armada_crtc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/internal.h b/mm/internal.h
-index 8b6cfd6..fdddbc83 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -369,5 +369,6 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
- #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
- #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
- #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
-+#define ALLOC_FAIR		0x100 /* fair zone allocation */
- 
- #endif	/* __MM_INTERNAL_H */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 589521d..7376863 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1213,15 +1213,6 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
- 	}
- 	local_irq_restore(flags);
- }
--static bool gfp_thisnode_allocation(gfp_t gfp_mask)
--{
--	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
--}
--#else
--static bool gfp_thisnode_allocation(gfp_t gfp_mask)
--{
--	return false;
--}
- #endif
- 
- /*
-@@ -1558,12 +1549,7 @@ again:
- 					  get_pageblock_migratetype(page));
- 	}
- 
--	/*
--	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
--	 * aging protocol, so they can't be fair.
--	 */
--	if (!gfp_thisnode_allocation(gfp_flags))
--		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
- 
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
-@@ -1929,23 +1915,12 @@ zonelist_scan:
- 		 * zone size to ensure fair page aging.  The zone a
- 		 * page was allocated in should have no effect on the
- 		 * time the page has in memory before being reclaimed.
--		 *
--		 * Try to stay in local zones in the fastpath.  If
--		 * that fails, the slowpath is entered, which will do
--		 * another pass starting with the local zones, but
--		 * ultimately fall back to remote zones that do not
--		 * partake in the fairness round-robin cycle of this
--		 * zonelist.
--		 *
--		 * NOTE: GFP_THISNODE allocations do not partake in
--		 * the kswapd aging protocol, so they can't be fair.
- 		 */
--		if ((alloc_flags & ALLOC_WMARK_LOW) &&
--		    !gfp_thisnode_allocation(gfp_mask)) {
--			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
--				continue;
-+		if (alloc_flags & ALLOC_FAIR) {
- 			if (!zone_local(preferred_zone, zone))
- 				continue;
-+			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
-+				continue;
- 		}
- 		/*
- 		 * When allocating a page cache page for writing, we
-@@ -2393,32 +2368,40 @@ __alloc_pages_high_priority(gfp_t gfp_mask, unsigned int order,
- 	return page;
- }
- 
--static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
--			     struct zonelist *zonelist,
--			     enum zone_type high_zoneidx,
--			     struct zone *preferred_zone)
-+static void reset_alloc_batches(struct zonelist *zonelist,
-+				enum zone_type high_zoneidx,
-+				struct zone *preferred_zone)
- {
- 	struct zoneref *z;
- 	struct zone *zone;
- 
- 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
--		if (!(gfp_mask & __GFP_NO_KSWAPD))
--			wakeup_kswapd(zone, order, zone_idx(preferred_zone));
- 		/*
- 		 * Only reset the batches of zones that were actually
--		 * considered in the fast path, we don't want to
--		 * thrash fairness information for zones that are not
-+		 * considered in the fairness pass, we don't want to
-+		 * trash fairness information for zones that are not
- 		 * actually part of this zonelist's round-robin cycle.
- 		 */
- 		if (!zone_local(preferred_zone, zone))
- 			continue;
- 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
--				    high_wmark_pages(zone) -
--				    low_wmark_pages(zone) -
--				    zone_page_state(zone, NR_ALLOC_BATCH));
-+			high_wmark_pages(zone) - low_wmark_pages(zone) -
-+			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
- 	}
- }
- 
-+static void wake_all_kswapds(unsigned int order,
-+			     struct zonelist *zonelist,
-+			     enum zone_type high_zoneidx,
-+			     struct zone *preferred_zone)
-+{
-+	struct zoneref *z;
-+	struct zone *zone;
-+
-+	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
-+		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
-+}
-+
- static inline int
- gfp_to_alloc_flags(gfp_t gfp_mask)
- {
-@@ -2507,12 +2490,13 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- 	 * allowed per node queues are empty and that nodes are
- 	 * over allocated.
- 	 */
--	if (gfp_thisnode_allocation(gfp_mask))
-+	if (IS_ENABLED(CONFIG_NUMA) &&
-+	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
- 		goto nopage;
- 
- restart:
--	prepare_slowpath(gfp_mask, order, zonelist,
--			 high_zoneidx, preferred_zone);
-+	if (!(gfp_mask & __GFP_NO_KSWAPD))
-+		wake_all_kswapds(order, zonelist, high_zoneidx, preferred_zone);
- 
- 	/*
- 	 * OK, we're below the kswapd watermark and have kicked background
-@@ -2689,7 +2673,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	struct page *page = NULL;
- 	int migratetype = allocflags_to_migratetype(gfp_mask);
- 	unsigned int cpuset_mems_cookie;
--	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
-+	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
- 	struct mem_cgroup *memcg = NULL;
- 
- 	gfp_mask &= gfp_allowed_mask;
-@@ -2730,12 +2714,29 @@ retry_cpuset:
- 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
- 		alloc_flags |= ALLOC_CMA;
- #endif
-+retry:
- 	/* First allocation attempt */
- 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
- 			zonelist, high_zoneidx, alloc_flags,
- 			preferred_zone, migratetype);
- 	if (unlikely(!page)) {
- 		/*
-+		 * The first pass makes sure allocations are spread
-+		 * fairly within the local node.  However, the local
-+		 * node might have free pages left after the fairness
-+		 * batches are exhausted, and remote zones haven't
-+		 * even been considered yet.  Try once more without
-+		 * fairness, and include remote zones now, before
-+		 * entering the slowpath and waking kswapd: prefer
-+		 * spilling to a remote zone over swapping locally.
-+		 */
-+		if (alloc_flags & ALLOC_FAIR) {
-+			reset_alloc_batches(zonelist, high_zoneidx,
-+					    preferred_zone);
-+			alloc_flags &= ~ALLOC_FAIR;
-+			goto retry;
-+		}
-+		/*
- 		 * Runtime PM, block IO and its error handling path
- 		 * can deadlock because I/O on the device might not
- 		 * complete.
+diff --git a/drivers/gpu/drm/armada/armada_crtc.c b/drivers/gpu/drm/armada/armada_crtc.c
+index d8e3982..66a492a 100644
+--- a/drivers/gpu/drm/armada/armada_crtc.c
++++ b/drivers/gpu/drm/armada/armada_crtc.c
+@@ -678,6 +678,7 @@ static void armada_load_cursor_argb(void __iomem *base, uint32_t *pix,
+ 				       base + LCD_SPU_SRAM_WRDAT);
+ 			writel_relaxed(addr | SRAM_WRITE,
+ 				       base + LCD_SPU_SRAM_CTRL);
++			readl_relaxed(base + LCD_SPU_HWC_OVSA_HPXL_VLN);
+ 			addr += 1;
+ 			if ((addr & 0x00ff) == 0)
+ 				addr += 0xf00;
 -- 
 1.9.1
 
