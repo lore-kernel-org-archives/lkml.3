@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbaEBWJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:09:39 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:50053 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaEBWJf (ORCPT
+	id S1752943AbaEBWJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:09:31 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34791 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaEBWJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:09:35 -0400
+	Fri, 2 May 2014 18:09:29 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
@@ -14,9 +14,9 @@ Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 4/4] timekeeping: Use printk_deferred when holding timekeeping seqlock
-Date: Fri,  2 May 2014 15:09:18 -0700
-Message-Id: <1399068558-2373-5-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/4] printk: Re-add irqsave/restore in printk_sched
+Date: Fri,  2 May 2014 15:09:15 -0700
+Message-Id: <1399068558-2373-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
 References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
@@ -24,37 +24,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Bohac pointed out that there are rare but potential deadlock
-possibilities when calling printk while holding the timekeeping
-seqlock.
-
-This is due to printk() triggering console sem wakeup, which can
-cause scheduling code to trigger hrtimers which may try to read
-the time.
-
-Specifically, as Jiri pointed out, that path is:
-  printk
-    vprintk_emit
-      console_unlock
-        up(&console_sem)
-          __up
-	    wake_up_process
-	      try_to_wake_up
-	        ttwu_do_activate
-		  ttwu_activate
-		    activate_task
-		      enqueue_task
-		        enqueue_task_fair
-			  hrtick_update
-			    hrtick_start_fair
-			      hrtick_start_fair
-			        get_time
-				  ktime_get
-				    --> endless loop on
-				    read_seqcount_retry(&timekeeper_seq, ...)
-
-This patch tries to avoid this issue by using printk_deferred (previously
-named printk_sched) which should defer printing via a irq_work_queue.
+A commit in akpm's tree (printk: remove separate printk_sched
+buffers...), removed the printk_sched irqsave/restore lines
+since it was safe for current users. Since we may be expanding
+usage of printk_sched(), re-add the irqsave/restore logic
+to make the functionality more generally safe.
 
 Cc: Jan Kara <jack@suse.cz>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -63,85 +37,34 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Reported-by: Jiri Bohac <jbohac@suse.cz>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/ntp.c         | 15 +++++++++------
- kernel/time/timekeeping.c |  7 ++++---
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ kernel/printk/printk.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 419a52c..5b0ac4d 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -786,8 +786,9 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
- 		time_status |= STA_PPSERROR;
- 		pps_errcnt++;
- 		pps_dec_freq_interval();
--		pr_err("hardpps: PPSERROR: interval too long - %ld s\n",
--				freq_norm.sec);
-+		printk_deferred(KERN_ERR
-+			"hardpps: PPSERROR: interval too long - %ld s\n",
-+			freq_norm.sec);
- 		return 0;
- 	}
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 82d19e6..bf62f2b 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2586,15 +2586,18 @@ void wake_up_klogd(void)
  
-@@ -800,7 +801,8 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
- 	delta = shift_right(ftemp - pps_freq, NTP_SCALE_SHIFT);
- 	pps_freq = ftemp;
- 	if (delta > PPS_MAXWANDER || delta < -PPS_MAXWANDER) {
--		pr_warning("hardpps: PPSWANDER: change=%ld\n", delta);
-+		printk_deferred(KERN_WARNING
-+				"hardpps: PPSWANDER: change=%ld\n", delta);
- 		time_status |= STA_PPSWANDER;
- 		pps_stbcnt++;
- 		pps_dec_freq_interval();
-@@ -844,8 +846,9 @@ static void hardpps_update_phase(long error)
- 	 * the time offset is updated.
- 	 */
- 	if (jitter > (pps_jitter << PPS_POPCORN)) {
--		pr_warning("hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
--		       jitter, (pps_jitter << PPS_POPCORN));
-+		printk_deferred(KERN_WARNING
-+				"hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
-+				jitter, (pps_jitter << PPS_POPCORN));
- 		time_status |= STA_PPSJITTER;
- 		pps_jitcnt++;
- 	} else if (time_status & STA_PPSTIME) {
-@@ -902,7 +905,7 @@ void __hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 		time_status |= STA_PPSJITTER;
- 		/* restart the frequency calibration interval */
- 		pps_fbase = *raw_ts;
--		pr_err("hardpps: PPSJITTER: bad pulse\n");
-+		printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
- 		return;
- 	}
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index f7df8ea..ffd3113 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -852,8 +852,9 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
- 							struct timespec *delta)
+ int printk_sched(const char *fmt, ...)
  {
- 	if (!timespec_valid_strict(delta)) {
--		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
--					"sleep delta value!\n");
-+		printk_deferred(KERN_WARNING
-+				"__timekeeping_inject_sleeptime: Invalid "
-+				"sleep delta value!\n");
- 		return;
- 	}
- 	tk_xtime_add(tk, delta);
-@@ -1157,7 +1158,7 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
++	unsigned long flags;
+ 	va_list args;
+ 	int r;
  
- 	if (unlikely(tk->clock->maxadj &&
- 		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
--		printk_once(KERN_WARNING
-+		printk_once_deferred(KERN_WARNING
- 			"Adjusting %s more than 11%% (%ld vs %ld)\n",
- 			tk->clock->name, (long)tk->mult + adj,
- 			(long)tk->clock->mult + tk->clock->maxadj);
++	local_irq_save(flags);
+ 	va_start(args, fmt);
+ 	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
+ 	va_end(args);
+ 
+ 	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
+ 	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
++	local_irq_restore(flags);
+ 
+ 	return r;
+ }
 -- 
 1.9.1
 
