@@ -1,76 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaEBGIk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 02:08:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33044 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963AbaEBGIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 02:08:39 -0400
-Message-ID: <53633645.9090308@redhat.com>
-Date: Fri, 02 May 2014 02:08:05 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751691AbaEBGLw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 02:11:52 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51938 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaEBGLv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 02:11:51 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: "bhelgaas@google.com" <bhelgaas@google.com>
+CC: "rdunlap@infradead.org" <rdunlap@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] DMA-API: Change dma_declare_coherent_memory() CPU
+ address to phys_addr_t
+Thread-Topic: [PATCH] DMA-API: Change dma_declare_coherent_memory() CPU
+ address to phys_addr_t
+Thread-Index: AQHPZLNvK1nxQSaf0ES3zCf+oGYc5JssOYIAgABS9ACAALo/AA==
+Date: Fri, 2 May 2014 06:11:42 +0000
+Message-ID: <1399011100.2174.45.camel@dabdike>
+References: <20140430203321.30056.14833.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	 <1398953290.2313.15.camel@dabdike.int.hansenpartnership.com>
+	 <CAErSpo7zjXg8xrV7=q36rNp_g573P93HiXTB72Z1cZfjGeeBmg@mail.gmail.com>
+In-Reply-To: <CAErSpo7zjXg8xrV7=q36rNp_g573P93HiXTB72Z1cZfjGeeBmg@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.46.152.79]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <BAE91C01E93DC84A8214D32D18B18F59@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
-        peterz@infradead.org, george.mccollister@gmail.com,
-        ktkhai@parallels.com
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-References: <20140502004237.79dd3de6@annuminas.surriel.com>	 <1399008721.5233.35.camel@marge.simpson.net> <1399010337.5233.50.camel@marge.simpson.net>
-In-Reply-To: <1399010337.5233.50.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 01:58 AM, Mike Galbraith wrote:
-> On Fri, 2014-05-02 at 07:32 +0200, Mike Galbraith wrote: 
->> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote: 
->>> Currently sync wakeups from the wake_affine code cannot work as
->>> designed, because the task doing the sync wakeup from the target
->>> cpu will block its wakee from selecting that cpu.
->>>
->>> This is despite the fact that whether or not the wakeup is sync
->>> determines whether or not we want to do an affine wakeup...
->>
->> If the sync hint really did mean we ARE going to schedule RSN, waking
->> local would be a good thing.  It is all too often a big fat lie.
+On Thu, 2014-05-01 at 13:05 -0600, Bjorn Helgaas wrote:
+> [+cc Arnd]
 > 
-> One example of that is say pgbench.  The mother of all work (server
-> thread) for that load wakes with sync hint.  Let the server wake the
-> first of a small herd CPU affine, and that first wakee then preempt the
-> server (mother of all work) that drives the entire load.
+> On Thu, May 1, 2014 at 8:08 AM, James Bottomley
+> <jbottomley@parallels.com> wrote:
+> > On Wed, 2014-04-30 at 14:33 -0600, Bjorn Helgaas wrote:
+> >> dma_declare_coherent_memory() takes two addresses for a region of memory: a
+> >> "bus_addr" and a "device_addr".  I think the intent is that "bus_addr" is
+> >> the physical address a *CPU* would use to access the region, and
+> >> "device_addr" is the bus address the *device* would use to address the
+> >> region.
+> >>
+> >> Rename "bus_addr" to "phys_addr" and change its type to phys_addr_t.
+> >
+> > Remind me what the difference between phys_addr_t and dma_addr_t are.
+> >
+> > I thought phys_addr_t was the maximum address the CPU could reach after
+> > address translation and dma_addr_t was the maximum physical address any
+> > bus attached memory mapped devices could appear at. (of course, mostly
+> > they're the same).
 > 
-> Byebye throughput.
+> I assumed phys_addr_t was for physical addresses generated by a CPU
+> and dma_addr_t was for addresses generated by a device, e.g.,
+> addresses you would see with a PCI bus analyzer or in a PCI BAR.  But
+> ARCH_DMA_ADDR_T_64BIT does seem more connected to processor-specific
+> things, e.g., ARM_LPAE, than to device bus properties like "support
+> 64-bit PCI, not just 32-bit PCI."
+
+OK, but even in your definition dma_declare_coherent_memory() should
+operate on dma_addr_t because the input is a region of memory you got
+from the device.  Somehow you generate and idea from the device
+configuration of where this piece of memory sits on the device and
+that's what you feed into dma_declare_coherent_memory().  It maps that
+region and makes it available to the CPU allocators.
+
 > 
-> When there's only one wakee, and there's really not enough overlap to at
-> least break even, waking CPU affine is a great idea.  Even when your
-> wakees only run for a short time, if you wake/get_preempted repeat, the
-> load will serialize.
+> DMA-API-HOWTO.txt contains this:
+> 
+>   ... the definition of the dma_addr_t (which can hold any valid DMA
+>   address for the platform) type which should be used everywhere you
+>   hold a DMA (bus) address returned from the DMA mapping functions.
+> 
+> and clearly you use a dma_addr_t from dma_alloc_coherent(), etc., to
+> program the device.  It seems silly to have phys_addr_t and dma_addr_t
+> for two (possibly slightly different) flavors of CPU physical
+> addresses, and then sort of overload dma_addr_t by also using it to
+> hold the addresses devices use for DMA.
+> 
+> I think the "CPU generates phys_addr_t" and "device generates
+> dma_addr_t" distinction seems like a useful idea.  I'm not a CPU
+> person, so I don't understand the usefulness of dma_addr_t as a
+> separate type to hold CPU addresses at which memory-mapped devices can
+> appear.  If that's all it is, why not just use phys_addr_t everywhere
+> and get rid of dma_addr_t altogether?
 
-I see a similar issue with specjbb2013, with 4 backend and
-4 frontend JVMs on a 4 node NUMA system.
+Actually, on this one, I think I agree ... we really just need the idea
+of physical and virtual.  The original idea of dma_addr_t is that the
+type would yell if you tried to use it where you could use a virtual
+address and the users were supposed to treat it as an opaque cookie for
+a region on the device, but I suppose it's generating more confusion
+than solving problems.
 
-The NUMA balancing code nicely places the memory of each JVM
-on one NUMA node, but then the wake_affine code will happily
-run all of the threads anywhere on the system, totally ruining
-memory locality.
+> > The intent of dma_declare_coherent_memory() is to take a range of memory
+> > provided by some device on the bus and allow the CPU to allocate regions
+> > from it for use as things like descriptors.  The CPU treats it as real
+> > memory, but, in fact, it is a mapped region of an attached device.
+> >
+> > If my definition is correct, then bus_addr should be dma_addr_t because
+> > it has to be mapped from a device and dma_addr_t is the correct type for
+> > device addresses.  If I've got the definition wrong, then we should
+> > document it somewhere, because it's probably confusing other people as
+> > well.
+> 
+> dma_declare_coherent_memory() calls ioremap() on bus_addr, which seems
+> a clear indication that bus_addr is really a physical address usable
+> by the CPU.  But I do see your point that bus_addr is a CPU address
+> for a memory-mapped device, and would thus fit into your idea of a
+> dma_addr_t.
 
-The front end and back end only exchange a few hundred messages
-a second, over loopback tcp, so the switching rate between
-threads is quite low...
+Well, yes, but it's declaring that the device has a region at bus_addr
+(on the device) we want to make available to the CPU to use.  On the
+Q720 it's about a megabyte of sram behind a bridge.  The CPU puts script
+fragments into it and the 720 scripts engines execute them.  The reason
+for it being on the device behind a bridge is that fetching from CPU
+main memory causes too much bus traffic.  I think all the other uses are
+something similar.  The point, though, is that the address for the
+memory comes from the device.  It has to be ioremapped because the
+system doesn't know about it and we're going to allocate from it for
+buffers mapped into the CPU virtual space.
 
-I wonder if it would make sense for wake_affine to be off by
-default, and only switch on when the right conditions are
-detected, instead of having it on by default like we have now?
+> I think this is the only part of the DMA API that deals with CPU
+> physical addresses.  I suppose we could side-step this question by
+> having the caller do the ioremap; then dma_declare_coherent_memory()
+> could just take a CPU virtual address (a void *) and a device address
+> (a dma_addr_t).
 
-I have some ideas on that, but I should probably catch some
-sleep before trying to code them up :)
+But we have to do the ioremap.  Without that there's no mapping for the
+memory region we've just declared, so I think it does make sense to do
+it within the dma_declare_coherent_memory() API.
 
-Meanwhile, the test patch that I posted may help us figure out
-whether the "sync" option in the current wake_affine code does
-anything useful.
+> But I'd still have the question of whether we're using dma_addr_t
+> correctly in the PCI core.  We use it to hold BAR values and the like,
+> and I've been making assumptions like "if dma_addr_t is only 32 bits,
+> we can't handle BARs above 4GB."
 
--- 
-All rights reversed
+Well, first we need to answer whether we need separate phys_addr_t and
+dma_addr_t ... we know the former represents physical memory addressed
+by the CPU and the latter bus physical addresses from devices ... but
+they're essentially the same.
+
+James
+
