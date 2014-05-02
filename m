@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165AbaEBNDl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:03:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52891 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751827AbaEBNDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:03:40 -0400
-Date: Fri, 2 May 2014 15:03:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <or.gerlitz@gmail.com>
-cc: Or Gerlitz <ogerlitz@mellanox.com>, Roland Dreier <roland@kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <CAJZOPZKUWsgcNRNhVDM3EGpvVT834pfqkEZ_Z3NmCQJXkNuApg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1405021500380.29834@pobox.suse.cz>
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
- <531F1550.3080401@mellanox.com> <alpine.LNX.2.00.1404241900020.3265@pobox.suse.cz> <CAJZOPZKUWsgcNRNhVDM3EGpvVT834pfqkEZ_Z3NmCQJXkNuApg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752136AbaEBNGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:06:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:14313 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751650AbaEBNGm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 09:06:42 -0400
+Date: Fri, 2 May 2014 09:06:26 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Nicholas Mc Guire <der.herr@hofr.at>,
+        Clark Williams <williams@redhat.com>
+Subject: Re: [PATCH RT 1/3] rt: Move migrate_disable up in trylocks
+Message-ID: <20140502090626.1467f8f2@gandalf.local.home>
+In-Reply-To: <5363451B.8080300@linutronix.de>
+References: <20140501004757.583708392@goodmis.org>
+	<20140501005004.241785945@goodmis.org>
+	<5363451B.8080300@linutronix.de>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, Or Gerlitz wrote:
+On Fri, 02 May 2014 09:11:23 +0200
+Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
 
-> I sent you private note on Mar 19th saying "are you on track with this
-> for 3.15? the merge window is coming soon and you have 99% of what you
-> need -- lets get there" which seems to be the piece that fell between
-> the cracks.
-
-I probably failed to see the implication that you/Mellanox is expecting me 
-to deliver the final patch, sorry for that.
-
-> > probably because it wasn't clearly stated *who* will be preparing 
-> > patch(es) that'd be implementing the ideas above. My understanding was 
-> > that it'd be Mellanox, given that they basically own the driver,
+> On 05/01/2014 02:47 AM, Steven Rostedt wrote:
 > 
-> to be precise partially own the mlx4 HW driver (Roland is the
-> mlx4_core/ib author and maintainer, we are asking for few years to get
-> co-maintainer hat there, no success so far)
+> Could this wait until it appears in the development release?
 
-I am of course completely unfamiliar with internal affairs as this, so 
-it's not really appropriate for me to comment, but if hardware vendor is 
-not able to obtain maintainership of the driver for its own HW, that seems 
-to signal some serious issues.
+I would need to delay the release then as I wont release a kernel that
+fails the cpu stress test.
 
-> , the problem you have described can happen with any HW driver, but as 
-> stated earlier, the suggested plan will fix ipoib and mlx4 and following 
-> that more hw drivers can be enhanced to support that too.
-> 
-> >
-> > have the best testing coverage compared to very very limited
-> > testing coverage I can do, and will be pushing it upstream anyway.
-> >
-> > I believe all the above can be easily created on top of the original patch I sent.
-> 
-> Indeed, so will take a look next week and let you know if it works for me
+I don't have a problem with delaying this though.
 
-Excellent, thanks a lot, looking forward to any updates on this.
-
-Thanks again,
-
--- 
-Jiri Kosina
-SUSE Labs
+-- Steve
