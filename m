@@ -1,87 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaEBOXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:23:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35926 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004AbaEBOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:23:40 -0400
-Date: Fri, 2 May 2014 09:23:32 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH v7 16/20] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-Message-ID: <20140502142332.GE4631@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
- <1398354495-20782-17-git-send-email-iivanov@mm-sol.com>
- <20140430162705.GL23679@saruman.home>
- <1399009745.5109.0.camel@violet>
+	id S1752369AbaEBOX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:23:59 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:37865 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752233AbaEBOX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 10:23:58 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Mj Embd <mj.embd@gmail.com>
+Cc: kernelnewbies <kernelnewbies@kernelnewbies.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Interrupt Context maps to ARM CPSR.mode = IRQ
+In-Reply-To: <CAPUj1OMks1tY9KyFsBQizVnq1H+nyjgB6OUHagtKyoknYaMiow@mail.gmail.com>
+	(Mj Embd's message of "Fri, 2 May 2014 15:07:55 +0100")
+Organization: ARM Ltd
+References: <CAPUj1OMJ8cE1cNTe8CjgBP2GTCXzi__Yg0+OoomME6=TShgqJg@mail.gmail.com>
+	<CAPUj1OML_Rag3gxxBzswS6yaqFciuq2hKrV9BthL2OwU+wNj3A@mail.gmail.com>
+	<14abe1165b144fe3d1139ad3b631eddd@www.loen.fr>
+	<CAPUj1OMks1tY9KyFsBQizVnq1H+nyjgB6OUHagtKyoknYaMiow@mail.gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Fri, 02 May 2014 15:23:53 +0100
+Message-ID: <87d2fw6yyu.fsf@sofa.wild-wind.fr.eu.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VuQYccsttdhdIfIP"
-Content-Disposition: inline
-In-Reply-To: <1399009745.5109.0.camel@violet>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---VuQYccsttdhdIfIP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 02 2014 at  3:07:55 pm BST, Mj Embd <mj.embd@gmail.com> wrote:
+> On Fri, May 2, 2014 at 7:17 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>> On 2014-05-02 13:34, Mj Embd wrote:
+>>>
+>>> Adding Marc to comment
+>>> Marc Please clarify the doubt
+>>>
+>>>
+>>>
+>>> On Fri, May 2, 2014 at 5:15 PM, Mj Embd <mj.embd@gmail.com> wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> As per a lot of linux documentation some components work in process
+>>>> context and some work in interrupt context.
+>>>>
+>>>> If we try to map these contexts to ARM processor modes then is it
+>>>> safely to assume that
+>>>> Process Context : CPSR.mode = SVC
+>>>> Interrupt Context : CPSR.mode = IRQ
+>>>>
+>>>> If not how to define interrupt context properly. Confusing at times.
+>>
+>>
+>> Well, none of this is completely true.
+>>
+>> Process context exists both in USR (process in user mode) and SVC (process
+>> in kernel mode, executing a syscall for example).
+>>
+>> As for interrupts, the processor indeed starts executing the interrupt in
+>> IRQ mode, but this is a useless complication as far as Linux is concerned,
+>
+> I didn't understood the term useless here, I hope it is not about the
+> question itself.
 
-On Fri, May 02, 2014 at 08:49:05AM +0300, Ivan T. Ivanov wrote:
-> On Wed, 2014-04-30 at 11:27 -0500, Felipe Balbi wrote:
-> > On Thu, Apr 24, 2014 at 06:48:11PM +0300, Ivan T. Ivanov wrote:
-> > > From: Tim Bird <tbird20d@gmail.com>
-> > >=20
-> > > Fix the value used for Parallel Transceiver Select (PTS) for the MSM =
-USB
-> > > controller.  This is a standard chipidea PORTSC definition, where
-> > > a PHY_TYPE of 10b (<<30) is ULPI and 11b (<<30) is SERIAL.
-> > > Fix the definitions and use them correctly in the driver code.
-> > >=20
-> > > Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
-> >=20
-> > since you're the one sending the patch, you must add your signed-off-by
-> > too. If you reply with your SoB I'll add to proper patches.
-> >=20
->=20
-> Sure.=20
->=20
-> Signed-of-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Not about the question at all. The IRQ mode itself is a useless
+complication for Linux.
 
-Thanks, I also need you to SoB the other patch from Tim.
+>> and we quickly switch to SVC (see the definition of the vector_stub
+>> macro in arch/arm/kernel/entry-armv.S).
+>>
+> So what is the mode of the processor when Linux is executing in the
+> Academic / Bookish Term "Interrupt Context"
 
---=20
-balbi
+As I said above, Linux runs mostly in SVC when the interrupt code is
+executed.
 
---VuQYccsttdhdIfIP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> There is a function called in_interrupt which tells if linux is in
+> interrupt context.
+> But How to define/quantify Interrupt Context as a whole
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+You're in "Interrupt Context" when executing an interrupt. That's the
+very definition. Interrupts are disabled, you cannot sleep, you cannot
+be preempted. The mode the processor is in at that time is an orthogonal
+issue, and different architectures implement this requirement
+differently.
 
-iQIcBAEBAgAGBQJTY6pkAAoJEIaOsuA1yqRE08oQAIaIKO1KWpK+p6DeVWLSAaR+
-Qq7Q3shxRvxvY+TqcMd2LaN3acrv4M+GJiR/BPX7yOSVN3GMF3jwi11mdBDqfoBb
-ZM4Q4ke0wQSJSep8aRwdeTFYOuKbfG7gElr8P2rJmwSIOcb31lsIhEDIJ8Y5vktM
-Nxwr7IZQY/W5TzPuTTE9Ob7nHyW5YW1Svu8iIoUZBhyCIV7mBA35JWmYOVg+slWF
-f5++ke2ucguNupDWLO5mhKt9mGCqkEsnJRz78h5HCTsK8F9E/dKwTYl1TKyKYTvq
-8UUN17sK/pxH+jfcrJzpiRqgk1+dsXck3PS1YZTrG4S9I1kqpN5duoWqBCvI2oXO
-o95uksfhhQK7TCnWUteRyC2WRm1Iuddnj12qxurNooTY81IfAdQXx6Xh/ErbHQ+9
-XRtH13uSiRp3hSZe9E2oBcRY73JOWqOfqUF6BTIKMRu/lijyZSLE5jPrLD2LIxuC
-iSOss6noYGlwUNQ6mpyeB95dcJNCd+0TQH0gHzDzGQOEkdKcfntd2JRHi6hE2M3r
-uAIlM7kYDu/YLgqwxFir0sYCXY4St6jn4cx3m4WaPvUUqNZU+IZgmw48V5G//Pfh
-3pgPn2j9WIfffIi9ELQzrwgtp65sYq1Pi6WDzPxoRInDM4UVWfmnnHmjej/Bm3Hk
-bbh54mim9zi//QIVyxr6
-=HfcQ
------END PGP SIGNATURE-----
+> Also, Some texts say there are two contexts Hard IRQ Context , Soft IRQ Context.
+> HardIRQ = interrupts Disabled , (possibly CPSR.I=1, mode=IRQ)
+> SoftIRQ = interrupts Enabled , (possibly CPSR.I=0, mode=IRQ)
 
---VuQYccsttdhdIfIP--
+Again, it you care to *read* the code, you'll notice that we're in IRQ
+mode for about 12 instructions per interrupt. The actual interrupt
+handling code runs in SVC.
+
+> SoftIRQs when executed from Ksoftirqd daemon  (possibly CPSR.I=0, mode=SVC)
+>
+> We have a client query on this.
+
+Awesome!
+
+	M.
+-- 
+AAAFNRAA
