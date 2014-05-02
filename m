@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaEBTbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 15:31:45 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:47379 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788AbaEBTbn (ORCPT
+	id S1752870AbaEBTdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 15:33:03 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:57265 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751902AbaEBTdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 15:31:43 -0400
+	Fri, 2 May 2014 15:33:00 -0400
+Date: Fri, 2 May 2014 15:32:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel (linux-kernel@vger.kernel.org)" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] ftrace function-graph: print the function name on
+ all } lines
+Message-ID: <20140502153249.1ee6aadd@gandalf.local.home>
+In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402956EE7D16@G9W0745.americas.hpqcorp.net>
+References: <94D0CD8314A33A4D9D801C0FE68B402956EE7D16@G9W0745.americas.hpqcorp.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
-Date: Fri, 2 May 2014 12:31:42 -0700
-X-Google-Sender-Auth: h_qm-4GBJM6cHSubgE1v0CQ5L1E
-Message-ID: <CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 12:04 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> This speeds up my kernel_pf microbenchmark by about 17%.  The cfi
-> annotations need some work.
+On Fri, 2 May 2014 19:11:11 +0000
+"Elliott, Robert (Server Storage)" <Elliott@hp.com> wrote:
 
-Sadly, performance of page faults in kernel mode is pretty much
-completely uninteresting. It simply doesn't happen on any real load.
+> Using ftrace function-graph to examine the times consumed by
+> functions, the time shows up on the line where the call is made
+> if no other traceable functions were called by that function:
+>  11)   0.672 us    |    cmd_alloc [hpsa]();
+> 
+> but the time shows up down by the } if the were other traceable
+> functions called by that function:
+>  11)               |              cmd_alloc [hpsa]() {
+>  11)   0.129 us    |                cmd_free [hpsa]();
+>  11)   0.106 us    |                cmd_free [hpsa]();
+>  11)   2.014 us    |              }
+> 
+> On its own, the } line doesn't indicate which function it is
+> closing, so grep cannot be used to search for all the times
+> for this function. You have to write a parser.
+> 
+> The function name does get printed on those lines when the
+> start of the function is off the trace, so I modified 
+> trace_functions_graph.c to do that in all cases.
+> 
+>  11)               |    hpsa_scsi_ioaccel_raid_map [hpsa]() {
+>  11)               |      hpsa_scsi_ioaccel_queue_command [hpsa]() {
+>  11)               |        hpsa_scsi_ioaccel2_queue_command [hpsa]() {
+>  11)   0.067 us    |          fixup_ioaccel_cdb [hpsa]();
+>  11)   0.053 us    |          set_encrypt_ioaccel2 [hpsa]();
+>  11)   0.199 us    |          enqueue_cmd_and_start_io [hpsa]();
+>  11)   1.952 us    |        } /* hpsa_scsi_ioaccel2_queue_command [hpsa] */
+>  11)   2.501 us    |      } /* hpsa_scsi_ioaccel_queue_command [hpsa] */
+>  11)   3.093 us    |    } /* hpsa_scsi_ioaccel_raid_map [hpsa] */
+>  11)   4.667 us    |  } /* hpsa_scsi_queue_command [hpsa] */
+> 
+> rather than:
+>  11)               |    hpsa_scsi_ioaccel_raid_map [hpsa]() {
+>  11)               |      hpsa_scsi_ioaccel_queue_command [hpsa]() {
+>  11)               |        hpsa_scsi_ioaccel2_queue_command [hpsa]() {
+>  11)   0.067 us    |          fixup_ioaccel_cdb [hpsa]();
+>  11)   0.053 us    |          set_encrypt_ioaccel2 [hpsa]();
+>  11)   0.199 us    |          enqueue_cmd_and_start_io [hpsa]();
+>  11)   1.952 us    |        }
+>  11)   2.501 us    |      }
+>  11)   3.093 us    |    }
+>  11)   4.667 us    |  }
+> 
+> Is this a change you would be interested in taking, or
+> do you think that makes the output too cluttered?
 
-That said, regular *device* interrupts do often return to kernel mode
-(the idle loop in particular), so if you have any way to measure that,
-that might be interesting, and might show some of the same advantages.
+Yes it is too cluttered. Please make this a tracing option that is
+default off.
 
-And NMI not being re-enabled might just be a real advantage. Adding
-Steven to the cc to make him aware of this patch.
+Thanks,
 
-So I like the patch, I just think that selling it on a "page fault
-cost" basis is not very interesting. The real advantages would be
-elsewhere. The page fault case is mainly a good way to test that it
-restores the registers correctly.
+-- Steve
 
-Also, are you *really* sure that "popf" has the same one-instruction
-interrupt shadow that "sti" has? Because I'm not at all sure that is
-true, and it's not documented as far as I can tell. In contrast, the
-one-instruction shadow after "sti" very much _is_ documented.
-
-You may need to have a separate paths for do/don't enable interrupts,
-with the interrupt-enabling one clearing the IF bit on stack, and then
-finishing with "popf ; sti ; retq" instead.
-
-Side note related to the whole IF shadow: that thing is also really
-easy to get wrong in emulation etc, so we should check with the
-virtualization people..
-
-              Linus
+> 
+> A potential patch (based on kernel-3.14) is:
+> 
