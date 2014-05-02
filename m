@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaEBPxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:53:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44297 "EHLO
+	id S1754178AbaEBPyM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:54:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44266 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160AbaEBPqN (ORCPT
+	with ESMTP id S1753933AbaEBPpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:13 -0400
+	Fri, 2 May 2014 11:45:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kinglong Mee <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 102/151] NFSD: Traverse unconfirmed client through hash-table
-Date: Fri,  2 May 2014 08:38:10 -0700
-Message-Id: <1399045139-4531-103-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 131/151] drm/i915: move power domain init earlier during system resume
+Date: Fri,  2 May 2014 08:38:39 -0700
+Message-Id: <1399045139-4531-132-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,187 +27,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kinglong Mee <kinglongmee@gmail.com>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 2b9056359889c78ea5decb5b654a512c2e8a945c upstream.
+commit 76c4b250080fff6e4befaa3619942422fd0ea380 upstream.
 
-When stopping nfsd, I got BUG messages, and soft lockup messages,
-The problem is cuased by double rb_erase() in nfs4_state_destroy_net()
-and destroy_client().
+During resume the intel hda audio driver depends on the i915 driver
+reinitializing the audio power domain. Since the order of calling the
+i915 resume handler wrt. that of the audio driver is not guaranteed,
+move the power domain reinitialization step to the resume_early
+handler. This is guaranteed to run before the resume handler of any
+other driver.
 
-This patch just let nfsd traversing unconfirmed client through
-hash-table instead of rbtree.
+The power domain initialization in turn requires us to enable the i915
+pci device first, so move that part earlier too.
 
-[ 2325.021995] BUG: unable to handle kernel NULL pointer dereference at
-          (null)
-[ 2325.022809] IP: [<ffffffff8133c18c>] rb_erase+0x14c/0x390
-[ 2325.022982] PGD 7a91b067 PUD 7a33d067 PMD 0
-[ 2325.022982] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[ 2325.022982] Modules linked in: nfsd(OF) cfg80211 rfkill bridge stp
-llc snd_intel8x0 snd_ac97_codec ac97_bus auth_rpcgss nfs_acl serio_raw
-e1000 i2c_piix4 ppdev snd_pcm snd_timer lockd pcspkr joydev parport_pc
-snd parport i2c_core soundcore microcode sunrpc ata_generic pata_acpi
-[last unloaded: nfsd]
-[ 2325.022982] CPU: 1 PID: 2123 Comm: nfsd Tainted: GF          O
-3.14.0-rc8+ #2
-[ 2325.022982] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
-VirtualBox 12/01/2006
-[ 2325.022982] task: ffff88007b384800 ti: ffff8800797f6000 task.ti:
-ffff8800797f6000
-[ 2325.022982] RIP: 0010:[<ffffffff8133c18c>]  [<ffffffff8133c18c>]
-rb_erase+0x14c/0x390
-[ 2325.022982] RSP: 0018:ffff8800797f7d98  EFLAGS: 00010246
-[ 2325.022982] RAX: ffff880079c1f010 RBX: ffff880079f4c828 RCX:
-0000000000000000
-[ 2325.022982] RDX: 0000000000000000 RSI: ffff880079bcb070 RDI:
-ffff880079f4c810
-[ 2325.022982] RBP: ffff8800797f7d98 R08: 0000000000000000 R09:
-ffff88007964fc70
-[ 2325.022982] R10: 0000000000000000 R11: 0000000000000400 R12:
-ffff880079f4c800
-[ 2325.022982] R13: ffff880079bcb000 R14: ffff8800797f7da8 R15:
-ffff880079f4c860
-[ 2325.022982] FS:  0000000000000000(0000) GS:ffff88007f900000(0000)
-knlGS:0000000000000000
-[ 2325.022982] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2325.022982] CR2: 0000000000000000 CR3: 000000007a3ef000 CR4:
-00000000000006e0
-[ 2325.022982] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[ 2325.022982] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
-0000000000000400
-[ 2325.022982] Stack:
-[ 2325.022982]  ffff8800797f7de0 ffffffffa0191c6e ffff8800797f7da8
-ffff8800797f7da8
-[ 2325.022982]  ffff880079f4c810 ffff880079bcb000 ffffffff81cc26c0
-ffff880079c1f010
-[ 2325.022982]  ffff880079bcb070 ffff8800797f7e28 ffffffffa01977f2
-ffff8800797f7df0
-[ 2325.022982] Call Trace:
-[ 2325.022982]  [<ffffffffa0191c6e>] destroy_client+0x32e/0x3b0 [nfsd]
-[ 2325.022982]  [<ffffffffa01977f2>] nfs4_state_shutdown_net+0x1a2/0x220
-[nfsd]
-[ 2325.022982]  [<ffffffffa01700b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
-[ 2325.022982]  [<ffffffffa017013e>] nfsd_last_thread+0x4e/0x80 [nfsd]
-[ 2325.022982]  [<ffffffffa001f1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
-[ 2325.022982]  [<ffffffffa017064b>] nfsd_destroy+0x5b/0x80 [nfsd]
-[ 2325.022982]  [<ffffffffa0170773>] nfsd+0x103/0x130 [nfsd]
-[ 2325.022982]  [<ffffffffa0170670>] ? nfsd_destroy+0x80/0x80 [nfsd]
-[ 2325.022982]  [<ffffffff810a8232>] kthread+0xd2/0xf0
-[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[ 2325.022982]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
-[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[ 2325.022982] Code: 48 83 e1 fc 48 89 10 0f 84 02 01 00 00 48 3b 41 10
-0f 84 08 01 00 00 48 89 51 08 48 89 fa e9 74 ff ff ff 0f 1f 40 00 48 8b
-50 10 <f6> 02 01 0f 84 93 00 00 00 48 8b 7a 10 48 85 ff 74 05 f6 07 01
-[ 2325.022982] RIP  [<ffffffff8133c18c>] rb_erase+0x14c/0x390
-[ 2325.022982]  RSP <ffff8800797f7d98>
-[ 2325.022982] CR2: 0000000000000000
-[ 2325.022982] ---[ end trace 28c27ed011655e57 ]---
+Accordingly disabling of the i915 pci device should happen after the
+audio suspend handler ran. So move the disabling later from the i915
+resume handler to the resume_late handler.
 
-[  228.064071] BUG: soft lockup - CPU#0 stuck for 22s! [nfsd:558]
-[  228.064428] Modules linked in: ip6t_rpfilter ip6t_REJECT cfg80211
-xt_conntrack rfkill ebtable_nat ebtable_broute bridge stp llc
-ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6
-nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw
-ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
-nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security
-iptable_raw nfsd(OF) auth_rpcgss nfs_acl lockd snd_intel8x0
-snd_ac97_codec ac97_bus joydev snd_pcm snd_timer e1000 sunrpc snd ppdev
-parport_pc serio_raw pcspkr i2c_piix4 microcode parport soundcore
-i2c_core ata_generic pata_acpi
-[  228.064539] CPU: 0 PID: 558 Comm: nfsd Tainted: GF          O
-3.14.0-rc8+ #2
-[  228.064539] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
-VirtualBox 12/01/2006
-[  228.064539] task: ffff880076adec00 ti: ffff880074616000 task.ti:
-ffff880074616000
-[  228.064539] RIP: 0010:[<ffffffff8133ba17>]  [<ffffffff8133ba17>]
-rb_next+0x27/0x50
-[  228.064539] RSP: 0018:ffff880074617de0  EFLAGS: 00000282
-[  228.064539] RAX: ffff880074478010 RBX: ffff88007446f860 RCX:
-0000000000000014
-[  228.064539] RDX: ffff880074478010 RSI: 0000000000000000 RDI:
-ffff880074478010
-[  228.064539] RBP: ffff880074617de0 R08: 0000000000000000 R09:
-0000000000000012
-[  228.064539] R10: 0000000000000001 R11: ffffffffffffffec R12:
-ffffea0001d11a00
-[  228.064539] R13: ffff88007f401400 R14: ffff88007446f800 R15:
-ffff880074617d50
-[  228.064539] FS:  0000000000000000(0000) GS:ffff88007f800000(0000)
-knlGS:0000000000000000
-[  228.064539] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  228.064539] CR2: 00007fe9ac6ec000 CR3: 000000007a5d6000 CR4:
-00000000000006f0
-[  228.064539] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[  228.064539] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
-0000000000000400
-[  228.064539] Stack:
-[  228.064539]  ffff880074617e28 ffffffffa01ab7db ffff880074617df0
-ffff880074617df0
-[  228.064539]  ffff880079273000 ffffffff81cc26c0 ffffffff81cc26c0
-0000000000000000
-[  228.064539]  0000000000000000 ffff880074617e48 ffffffffa01840b8
-ffffffff81cc26c0
-[  228.064539] Call Trace:
-[  228.064539]  [<ffffffffa01ab7db>] nfs4_state_shutdown_net+0x18b/0x220
-[nfsd]
-[  228.064539]  [<ffffffffa01840b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
-[  228.064539]  [<ffffffffa018413e>] nfsd_last_thread+0x4e/0x80 [nfsd]
-[  228.064539]  [<ffffffffa00aa1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
-[  228.064539]  [<ffffffffa018464b>] nfsd_destroy+0x5b/0x80 [nfsd]
-[  228.064539]  [<ffffffffa0184773>] nfsd+0x103/0x130 [nfsd]
-[  228.064539]  [<ffffffffa0184670>] ? nfsd_destroy+0x80/0x80 [nfsd]
-[  228.064539]  [<ffffffff810a8232>] kthread+0xd2/0xf0
-[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[  228.064539]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
-[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[  228.064539] Code: 1f 44 00 00 55 48 8b 17 48 89 e5 48 39 d7 74 3b 48
-8b 47 08 48 85 c0 75 0e eb 25 66 0f 1f 84 00 00 00 00 00 48 89 d0 48 8b
-50 10 <48> 85 d2 75 f4 5d c3 66 90 48 3b 78 08 75 f6 48 8b 10 48 89 c7
+v2:
+- move intel_uncore_sanitize/early_sanitize earlier too, so they don't
+  get reordered wrt. intel_power_domains_init_hw()
 
-Fixes: ac55fdc408039 (nfsd: move the confirmed and unconfirmed hlists...)
-Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=76152
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Reviewed-by: Takashi Iwai <tiwai@suse.de>
+[danvet: Add cc: stable and loud comments that this is just a hack.]
+[danvet: Fix "Should it be static?" sparse warning reported by Wu
+Fengguang's kbuilder.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[ kamal: backport to 3.13: intel_power_domains_init_hw(dev) not (dev_priv) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c | 90 ++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 75 insertions(+), 15 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 105d6fa..e0d91d7 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -5052,7 +5052,6 @@ nfs4_state_destroy_net(struct net *net)
- 	int i;
- 	struct nfs4_client *clp = NULL;
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
--	struct rb_node *node, *tmp;
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 197bb83..e09a314 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -610,15 +610,20 @@ static void intel_resume_hotplug(struct drm_device *dev)
+ 	drm_helper_hpd_irq_event(dev);
+ }
  
- 	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
- 		while (!list_empty(&nn->conf_id_hashtbl[i])) {
-@@ -5061,13 +5060,11 @@ nfs4_state_destroy_net(struct net *net)
- 		}
++static int i915_drm_thaw_early(struct drm_device *dev)
++{
++	intel_uncore_early_sanitize(dev);
++	intel_uncore_sanitize(dev);
++	intel_power_domains_init_hw(dev);
++
++	return 0;
++}
++
+ static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int error = 0;
+ 
+-	intel_uncore_early_sanitize(dev);
+-
+-	intel_uncore_sanitize(dev);
+-
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET) &&
+ 	    restore_gtt_mappings) {
+ 		mutex_lock(&dev->struct_mutex);
+@@ -626,8 +631,6 @@ static int __i915_drm_thaw(struct drm_device *dev, bool restore_gtt_mappings)
+ 		mutex_unlock(&dev->struct_mutex);
  	}
  
--	node = rb_first(&nn->unconf_name_tree);
--	while (node != NULL) {
--		tmp = node;
--		node = rb_next(tmp);
--		clp = rb_entry(tmp, struct nfs4_client, cl_namenode);
--		rb_erase(tmp, &nn->unconf_name_tree);
--		destroy_client(clp);
-+	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
-+		while (!list_empty(&nn->unconf_id_hashtbl[i])) {
-+			clp = list_entry(nn->unconf_id_hashtbl[i].next, struct nfs4_client, cl_idhash);
-+			destroy_client(clp);
-+		}
- 	}
+-	intel_power_domains_init_hw(dev);
+-
+ 	i915_restore_state(dev);
+ 	intel_opregion_setup(dev);
  
- 	kfree(nn->sessionid_hashtbl);
+@@ -694,19 +697,33 @@ static int i915_drm_thaw(struct drm_device *dev)
+ 	return __i915_drm_thaw(dev, true);
+ }
+ 
+-int i915_resume(struct drm_device *dev)
++static int i915_resume_early(struct drm_device *dev)
+ {
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+-	int ret;
+-
+ 	if (dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
++	/*
++	 * We have a resume ordering issue with the snd-hda driver also
++	 * requiring our device to be power up. Due to the lack of a
++	 * parent/child relationship we currently solve this with an early
++	 * resume hook.
++	 *
++	 * FIXME: This should be solved with a special hdmi sink device or
++	 * similar so that power domains can be employed.
++	 */
+ 	if (pci_enable_device(dev->pdev))
+ 		return -EIO;
+ 
+ 	pci_set_master(dev->pdev);
+ 
++	return i915_drm_thaw_early(dev);
++}
++
++int i915_resume(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	int ret;
++
+ 	/*
+ 	 * Platforms with opregion should have sane BIOS, older ones (gen3 and
+ 	 * earlier) need to restore the GTT mappings since the BIOS might clear
+@@ -720,6 +737,14 @@ int i915_resume(struct drm_device *dev)
+ 	return 0;
+ }
+ 
++static int i915_resume_legacy(struct drm_device *dev)
++{
++	i915_resume_early(dev);
++	i915_resume(dev);
++
++	return 0;
++}
++
+ /**
+  * i915_reset - reset chip after a hang
+  * @dev: drm device to reset
+@@ -853,7 +878,6 @@ static int i915_pm_suspend(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 	struct drm_device *drm_dev = pci_get_drvdata(pdev);
+-	int error;
+ 
+ 	if (!drm_dev || !drm_dev->dev_private) {
+ 		dev_err(dev, "DRM not initialized, aborting suspend.\n");
+@@ -863,9 +887,25 @@ static int i915_pm_suspend(struct device *dev)
+ 	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
+ 		return 0;
+ 
+-	error = i915_drm_freeze(drm_dev);
+-	if (error)
+-		return error;
++	return i915_drm_freeze(drm_dev);
++}
++
++static int i915_pm_suspend_late(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	/*
++	 * We have a suspedn ordering issue with the snd-hda driver also
++	 * requiring our device to be power up. Due to the lack of a
++	 * parent/child relationship we currently solve this with an late
++	 * suspend hook.
++	 *
++	 * FIXME: This should be solved with a special hdmi sink device or
++	 * similar so that power domains can be employed.
++	 */
++	if (drm_dev->switch_power_state == DRM_SWITCH_POWER_OFF)
++		return 0;
+ 
+ 	pci_disable_device(pdev);
+ 	pci_set_power_state(pdev, PCI_D3hot);
+@@ -873,6 +913,14 @@ static int i915_pm_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
++static int i915_pm_resume_early(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	return i915_resume_early(drm_dev);
++}
++
+ static int i915_pm_resume(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -894,6 +942,14 @@ static int i915_pm_freeze(struct device *dev)
+ 	return i915_drm_freeze(drm_dev);
+ }
+ 
++static int i915_pm_thaw_early(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct drm_device *drm_dev = pci_get_drvdata(pdev);
++
++	return i915_drm_thaw_early(drm_dev);
++}
++
+ static int i915_pm_thaw(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+@@ -912,10 +968,14 @@ static int i915_pm_poweroff(struct device *dev)
+ 
+ static const struct dev_pm_ops i915_pm_ops = {
+ 	.suspend = i915_pm_suspend,
++	.suspend_late = i915_pm_suspend_late,
++	.resume_early = i915_pm_resume_early,
+ 	.resume = i915_pm_resume,
+ 	.freeze = i915_pm_freeze,
++	.thaw_early = i915_pm_thaw_early,
+ 	.thaw = i915_pm_thaw,
+ 	.poweroff = i915_pm_poweroff,
++	.restore_early = i915_pm_resume_early,
+ 	.restore = i915_pm_resume,
+ };
+ 
+@@ -956,7 +1016,7 @@ static struct drm_driver driver = {
+ 
+ 	/* Used in place of i915_pm_ops for non-DRIVER_MODESET */
+ 	.suspend = i915_suspend,
+-	.resume = i915_resume,
++	.resume = i915_resume_legacy,
+ 
+ 	.device_is_agp = i915_driver_device_is_agp,
+ 	.master_create = i915_master_create,
 -- 
 1.9.1
 
