@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073AbaEBQ3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:29:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43671 "EHLO
+	id S1755141AbaEBQap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:30:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43626 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703AbaEBPjS (ORCPT
+	with ESMTP id S1752136AbaEBPjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:18 -0400
+	Fri, 2 May 2014 11:39:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+Cc: Dave Airlie <airlied@redhat.com>, Tim Gardner <tim.gardner@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 008/151] matroxfb: restore the registers M_ACCESS and M_PITCH
-Date: Fri,  2 May 2014 08:36:36 -0700
-Message-Id: <1399045139-4531-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 002/151] drm/nouveau: don't suspend/resume display on runtime s/r
+Date: Fri,  2 May 2014 08:36:30 -0700
+Message-Id: <1399045139-4531-3-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -28,161 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Dave Airlie <airlied@redhat.com>
 
-commit a772d4736641ec1b421ad965e13457c17379fc86 upstream.
+commit 05c63c2ff23a80b654d6c088ac3ba21628db0173 upstream.
 
-When X11 is running and the user switches back to console, the card
-modifies the content of registers M_MACCESS and M_PITCH in periodic
-intervals.
+This should ensure we don't hit a locking problem when someone
+wakes us up via a connector, we should never go into suspend
+while the display is on anyways.
 
-This patch fixes it by restoring the content of these registers before
-issuing any accelerator command.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1313986
+Cc: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/video/matrox/matroxfb_accel.c | 38 ++++++++++++++++++++++++++---------
- drivers/video/matrox/matroxfb_base.h  |  2 ++
- 2 files changed, 30 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_drm.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/matrox/matroxfb_accel.c b/drivers/video/matrox/matroxfb_accel.c
-index 8335a6f..0d5cb85 100644
---- a/drivers/video/matrox/matroxfb_accel.c
-+++ b/drivers/video/matrox/matroxfb_accel.c
-@@ -192,10 +192,18 @@ void matrox_cfbX_init(struct matrox_fb_info *minfo)
- 	minfo->accel.m_dwg_rect = M_DWG_TRAP | M_DWG_SOLID | M_DWG_ARZERO | M_DWG_SGNZERO | M_DWG_SHIFTZERO;
- 	if (isMilleniumII(minfo)) minfo->accel.m_dwg_rect |= M_DWG_TRANSC;
- 	minfo->accel.m_opmode = mopmode;
-+	minfo->accel.m_access = maccess;
-+	minfo->accel.m_pitch = mpitch;
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+index 7431033..a5a2e72 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+@@ -486,13 +486,13 @@ nouveau_drm_remove(struct pci_dev *pdev)
  }
  
- EXPORT_SYMBOL(matrox_cfbX_init);
- 
-+static void matrox_accel_restore_maccess(struct matrox_fb_info *minfo)
-+{
-+	mga_outl(M_MACCESS, minfo->accel.m_access);
-+	mga_outl(M_PITCH, minfo->accel.m_pitch);
-+}
-+
- static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
- 			       int sx, int dy, int dx, int height, int width)
+ static int
+-nouveau_do_suspend(struct drm_device *dev)
++nouveau_do_suspend(struct drm_device *dev, bool runtime)
  {
-@@ -207,7 +215,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
- 	CRITBEGIN
+ 	struct nouveau_drm *drm = nouveau_drm(dev);
+ 	struct nouveau_cli *cli;
+ 	int ret;
  
- 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
--		mga_fifo(2);
-+		mga_fifo(4);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
- 			 M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_AR5, vxres);
-@@ -215,7 +224,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
- 		start = sy*vxres+sx+curr_ydstorg(minfo);
- 		end = start+width;
- 	} else {
--		mga_fifo(3);
-+		mga_fifo(5);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_SGN, 5);
- 		mga_outl(M_AR5, -vxres);
-@@ -224,7 +234,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
- 		start = end+width;
- 		dy += height-1;
- 	}
--	mga_fifo(4);
-+	mga_fifo(6);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_AR0, end);
- 	mga_outl(M_AR3, start);
- 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
-@@ -246,7 +257,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
- 	CRITBEGIN
+-	if (dev->mode_config.num_crtc) {
++	if (dev->mode_config.num_crtc && !runtime) {
+ 		NV_INFO(drm, "suspending display...\n");
+ 		ret = nouveau_display_suspend(dev);
+ 		if (ret)
+@@ -560,7 +560,7 @@ int nouveau_pmops_suspend(struct device *dev)
+ 	if (drm_dev->mode_config.num_crtc)
+ 		nouveau_fbcon_set_suspend(drm_dev, 1);
  
- 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
--		mga_fifo(2);
-+		mga_fifo(4);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
- 			M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_AR5, vxres);
-@@ -254,7 +266,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
- 		start = sy*vxres+sx+curr_ydstorg(minfo);
- 		end = start+width;
- 	} else {
--		mga_fifo(3);
-+		mga_fifo(5);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
- 		mga_outl(M_SGN, 5);
- 		mga_outl(M_AR5, -vxres);
-@@ -263,7 +276,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
- 		start = end+width;
- 		dy += height-1;
- 	}
--	mga_fifo(5);
-+	mga_fifo(7);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_AR0, end);
- 	mga_outl(M_AR3, start);
- 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
-@@ -298,7 +312,8 @@ static void matroxfb_accel_clear(struct matrox_fb_info *minfo, u_int32_t color,
+-	ret = nouveau_do_suspend(drm_dev);
++	ret = nouveau_do_suspend(drm_dev, false);
+ 	if (ret)
+ 		return ret;
  
- 	CRITBEGIN
+@@ -640,7 +640,7 @@ static int nouveau_pmops_freeze(struct device *dev)
+ 	if (drm_dev->mode_config.num_crtc)
+ 		nouveau_fbcon_set_suspend(drm_dev, 1);
  
--	mga_fifo(5);
-+	mga_fifo(7);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE);
- 	mga_outl(M_FCOL, color);
- 	mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
-@@ -341,7 +356,8 @@ static void matroxfb_cfb4_clear(struct matrox_fb_info *minfo, u_int32_t bgx,
- 	width >>= 1;
- 	sx >>= 1;
- 	if (width) {
--		mga_fifo(5);
-+		mga_fifo(7);
-+		matrox_accel_restore_maccess(minfo);
- 		mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE2);
- 		mga_outl(M_FCOL, bgx);
- 		mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
-@@ -415,7 +431,8 @@ static void matroxfb_1bpp_imageblit(struct matrox_fb_info *minfo, u_int32_t fgx,
+-	ret = nouveau_do_suspend(drm_dev);
++	ret = nouveau_do_suspend(drm_dev, false);
+ 	return ret;
+ }
  
- 	CRITBEGIN
+@@ -871,7 +871,7 @@ static int nouveau_pmops_runtime_suspend(struct device *dev)
+ 	drm_kms_helper_poll_disable(drm_dev);
+ 	vga_switcheroo_set_dynamic_switch(pdev, VGA_SWITCHEROO_OFF);
+ 	nouveau_switcheroo_optimus_dsm();
+-	ret = nouveau_do_suspend(drm_dev);
++	ret = nouveau_do_suspend(drm_dev, true);
+ 	pci_save_state(pdev);
+ 	pci_disable_device(pdev);
+ 	pci_set_power_state(pdev, PCI_D3cold);
+@@ -897,8 +897,6 @@ static int nouveau_pmops_runtime_resume(struct device *dev)
+ 	pci_set_master(pdev);
  
--	mga_fifo(3);
-+	mga_fifo(5);
-+	matrox_accel_restore_maccess(minfo);
- 	if (easy)
- 		mga_outl(M_DWGCTL, M_DWG_ILOAD | M_DWG_SGNZERO | M_DWG_SHIFTZERO | M_DWG_BMONOWF | M_DWG_LINEAR | M_DWG_REPLACE);
- 	else
-@@ -425,7 +442,8 @@ static void matroxfb_1bpp_imageblit(struct matrox_fb_info *minfo, u_int32_t fgx,
- 	fxbndry = ((xx + width - 1) << 16) | xx;
- 	mmio = minfo->mmio.vbase;
- 
--	mga_fifo(6);
-+	mga_fifo(8);
-+	matrox_accel_restore_maccess(minfo);
- 	mga_writel(mmio, M_FXBNDRY, fxbndry);
- 	mga_writel(mmio, M_AR0, ar0);
- 	mga_writel(mmio, M_AR3, 0);
-diff --git a/drivers/video/matrox/matroxfb_base.h b/drivers/video/matrox/matroxfb_base.h
-index 11ed57b..556d96c 100644
---- a/drivers/video/matrox/matroxfb_base.h
-+++ b/drivers/video/matrox/matroxfb_base.h
-@@ -307,6 +307,8 @@ struct matrox_accel_data {
- #endif
- 	u_int32_t	m_dwg_rect;
- 	u_int32_t	m_opmode;
-+	u_int32_t	m_access;
-+	u_int32_t	m_pitch;
- };
- 
- struct v4l2_queryctrl;
+ 	ret = nouveau_do_resume(drm_dev);
+-	if (drm_dev->mode_config.num_crtc)
+-		nouveau_display_resume(drm_dev);
+ 	drm_kms_helper_poll_enable(drm_dev);
+ 	/* do magic */
+ 	nv_mask(device, 0x88488, (1 << 25), (1 << 25));
 -- 
 1.9.1
 
