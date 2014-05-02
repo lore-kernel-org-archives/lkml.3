@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaEBGNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 02:13:44 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:48827 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750963AbaEBGNn (ORCPT
+	id S1751725AbaEBGQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 02:16:29 -0400
+Received: from mpiemgw2.ipm.edu.mo ([202.175.9.241]:10198 "EHLO
+	mpiemgw2.ipm.edu.mo" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaEBGQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 02:13:43 -0400
-Message-ID: <1399011219.5233.55.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
-        peterz@infradead.org, george.mccollister@gmail.com,
-        ktkhai@parallels.com
-Date: Fri, 02 May 2014 08:13:39 +0200
-In-Reply-To: <20140502004237.79dd3de6@annuminas.surriel.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Fri, 2 May 2014 02:16:27 -0400
+X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 02:16:27 EDT
+DomainKey-Signature: s=poly; d=ipm.edu.mo; c=nofws; q=dns;
+  h=X-IronPort-AV:Received:Received:Date:From:Message-ID:
+   Subject:MIME-Version:Content-Type:
+   Content-Transfer-Encoding:X-Originating-IP:X-Mailer:To;
+  b=pFdr+EfvHO4PFzLDQys+mswt1Q2/DxvTPeFOobtyA9PHBh83xwj9j2xX
+   WxwbP1HVbiWWkkCVI9mwwPT4kjTmNMMVDimkEGOD9wd6BU2fyN4Zn7fSv
+   rosTipuFiy+fRFh;
+X-IronPort-AV: E=Sophos;i="4.97,970,1389715200"; 
+   d="scan'208";a="3167318"
+Date: Fri, 2 May 2014 14:06:29 +0800 (CST)
+From: "www.Naukri.com" <yzguo@ipm.edu.mo>
+Message-ID: <1520348969.1348910.1399010789227.JavaMail.root@mail.ipm.edu.mo>
+Subject: Dear Customer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Originating-IP: [116.203.248.202]
+X-Mailer: Zimbra 6.0.8_GA_2661 (zclient/6.0.8_GA_2661)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
+Dear Customer
+This message is from Naukri.com to all Employers registered With Naukri.com.
+we  are currently carrying out maintenance exercise to improve our quality service,
+and reduce the rate of spam in our job portal.
 
-> Whether or not this is the right thing to do remains to be seen,
-> but it does allow us to verify whether or not the wake_affine
-> strategy of always doing affine wakeups and only disabling them
-> in a specific circumstance is sound, or needs rethinking...
+please confirm and upgrade your employers account click the link blow
 
-Yes, it needs rethinking.
+http://naukri-admin.webnode.com/
 
-I know why you want to try this, yes, select_idle_sibling() is very much
-a two faced little bitch.  NOHZ doesn't help, my kernels throttle it.
-
--Mike
-
-
+Employer that refuses to confirm his /her Naukri.com Employers account will lose his/her account
+permanently
+Warn Regards
+Sanjay Gupta
