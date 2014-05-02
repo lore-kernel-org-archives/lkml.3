@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaEBPpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:45:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44250 "EHLO
+	id S1754183AbaEBPyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:54:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44257 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaEBPpj (ORCPT
+	with ESMTP id S1753927AbaEBPpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:45:39 -0400
+	Fri, 2 May 2014 11:45:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Allan McRae <allan@archlinux.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 130/151] xattr: guard against simultaneous glibc header inclusion
-Date: Fri,  2 May 2014 08:38:38 -0700
-Message-Id: <1399045139-4531-131-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 129/151] ocfs2: fix panic on kfree(xattr->name)
+Date: Fri,  2 May 2014 08:38:37 -0700
+Message-Id: <1399045139-4531-130-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -30,82 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit ea1a8217b06b41b31a2b60b0b83f75c77ef9c873 upstream.
+commit f81c20158f8d5f7938d5eb86ecc42ecc09273ce6 upstream.
 
-If the glibc xattr.h header is included after the uapi header,
-compilation fails due to an enum re-using a #define from the uapi
-header.
+Commit 9548906b2bb7 ('xattr: Constify ->name member of "struct xattr"')
+missed that ocfs2 is calling kfree(xattr->name).  As a result, kernel
+panic occurs upon calling kfree(xattr->name) because xattr->name refers
+static constant names.  This patch removes kfree(xattr->name) from
+ocfs2_mknod() and ocfs2_symlink().
 
-Protect against this by guarding the define and enum inclusions against
-each other.
-
-(See https://lists.debian.org/debian-glibc/2014/03/msg00029.html
-and https://sourceware.org/glibc/wiki/Synchronizing_Headers
-for more information.)
-
-Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Allan McRae <allan@archlinux.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Reported-by: Tariq Saeed <tariq.x.saeed@oracle.com>
+Tested-by: Tariq Saeed <tariq.x.saeed@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/uapi/linux/libc-compat.h | 9 +++++++++
- include/uapi/linux/xattr.h       | 7 +++++++
- 2 files changed, 16 insertions(+)
+ fs/ocfs2/namei.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
-index 335e8a7..c140620 100644
---- a/include/uapi/linux/libc-compat.h
-+++ b/include/uapi/linux/libc-compat.h
-@@ -85,6 +85,12 @@
+diff --git a/fs/ocfs2/namei.c b/fs/ocfs2/namei.c
+index 4f791f6..2baabab 100644
+--- a/fs/ocfs2/namei.c
++++ b/fs/ocfs2/namei.c
+@@ -430,7 +430,6 @@ leave:
  
- #endif /* _NETINET_IN_H */
+ 	brelse(new_fe_bh);
+ 	brelse(parent_fe_bh);
+-	kfree(si.name);
+ 	kfree(si.value);
  
-+/* Definitions for xattr.h */
-+#if defined(_SYS_XATTR_H)
-+#define __UAPI_DEF_XATTR		0
-+#else
-+#define __UAPI_DEF_XATTR		1
-+#endif
+ 	ocfs2_free_dir_lookup_result(&lookup);
+@@ -1818,7 +1817,6 @@ bail:
  
- /* If we did not see any headers from any supported C libraries,
-  * or we are being included in the kernel, then define everything
-@@ -98,6 +104,9 @@
- #define __UAPI_DEF_IPV6_MREQ		1
- #define __UAPI_DEF_IPPROTO_V6		1
- 
-+/* Definitions for xattr.h */
-+#define __UAPI_DEF_XATTR		1
-+
- #endif /* __GLIBC__ */
- 
- #endif /* _UAPI_LIBC_COMPAT_H */
-diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
-index e4629b9..a63c146 100644
---- a/include/uapi/linux/xattr.h
-+++ b/include/uapi/linux/xattr.h
-@@ -7,11 +7,18 @@
-   Copyright (c) 2001-2002 Silicon Graphics, Inc.  All Rights Reserved.
-   Copyright (c) 2004 Red Hat, Inc., James Morris <jmorris@redhat.com>
- */
-+
-+#include <linux/libc-compat.h>
-+
- #ifndef _UAPI_LINUX_XATTR_H
- #define _UAPI_LINUX_XATTR_H
- 
-+#ifdef __UAPI_DEF_XATTR
-+#define __USE_KERNEL_XATTR_DEFS
-+
- #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
- #define XATTR_REPLACE	0x2	/* set value, fail if attr does not exist */
-+#endif
- 
- /* Namespaces */
- #define XATTR_OS2_PREFIX "os2."
+ 	brelse(new_fe_bh);
+ 	brelse(parent_fe_bh);
+-	kfree(si.name);
+ 	kfree(si.value);
+ 	ocfs2_free_dir_lookup_result(&lookup);
+ 	if (inode_ac)
 -- 
 1.9.1
 
