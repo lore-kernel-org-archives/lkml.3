@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545AbaEBQFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:05:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44044 "EHLO
+	id S1754549AbaEBQGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:06:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44022 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903AbaEBPnx (ORCPT
+	with ESMTP id S1753496AbaEBPnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:53 -0400
+	Fri, 2 May 2014 11:43:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 042/151] virtio_balloon: don't softlockup on huge balloon changes.
-Date: Fri,  2 May 2014 08:37:10 -0700
-Message-Id: <1399045139-4531-43-git-send-email-kamal@canonical.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 051/151] KVM: s390: Optimize ucontrol path
+Date: Fri,  2 May 2014 08:37:19 -0700
+Message-Id: <1399045139-4531-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -26,43 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
+commit 2955c83f72801245afd0fe5c560cc75b82bea9aa upstream.
 
-When adding or removing 100G from a balloon:
+Since commit 7c470539c95630c1f2a10f109e96f249730b75eb
+(s390/kvm: avoid automatic sie reentry) we will run through the C code
+of KVM on host interrupts instead of just reentering the guest. This
+will result in additional ucontrol exits (at least HZ per second). Let
+handle a 0 intercept in the kernel and dont return to userspace,
+even if in ucontrol mode.
 
-    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
-
-We have a wait_event_interruptible(), but the condition is always true
-(more ballooning to do) so we don't ever sleep.  We also have a
-wait_event() for the host to ack, but that is also always true as QEMU
-is synchronous for balloon operations.
-
-Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/virtio/virtio_balloon.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/s390/kvm/kvm-s390.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 5c4a95b..5f8af50 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -310,6 +310,12 @@ static int balloon(void *_vballoon)
- 		else if (diff < 0)
- 			leak_balloon(vb, -diff);
- 		update_balloon_size(vb);
-+
-+		/*
-+		 * For large balloon changes, we could spend a lot of time
-+		 * and always have work to do.  Be nice if preempt disabled.
-+		 */
-+		cond_resched();
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index bb383df..bfe7726 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -746,7 +746,8 @@ static int vcpu_post_run(struct kvm_vcpu *vcpu, int exit_reason)
+ 
+ 	if (rc == 0) {
+ 		if (kvm_is_ucontrol(vcpu->kvm))
+-			rc = -EOPNOTSUPP;
++			/* Don't exit for host interrupts. */
++			rc = vcpu->arch.sie_block->icptcode ? -EOPNOTSUPP : 0;
+ 		else
+ 			rc = kvm_handle_sie_intercept(vcpu);
  	}
- 	return 0;
- }
 -- 
 1.9.1
 
