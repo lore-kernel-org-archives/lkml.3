@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaEBIql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 04:46:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40937 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751159AbaEBIqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 04:46:38 -0400
-Date: Fri, 2 May 2014 10:46:32 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lczerner@localhost.localdomain
-To: Leon Yu <chianglungyu@gmail.com>
-cc: Benjamin LaHaise <bcrl@kvack.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aio: fix potential leak in aio_run_iocb().
-In-Reply-To: <1398915088-8472-1-git-send-email-chianglungyu@gmail.com>
-Message-ID: <alpine.LFD.2.00.1405021041250.2154@localhost.localdomain>
-References: <1398915088-8472-1-git-send-email-chianglungyu@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751827AbaEBIrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 04:47:48 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:51045 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaEBIrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 04:47:46 -0400
+Message-ID: <53635BB4.30900@linaro.org>
+Date: Fri, 02 May 2014 10:47:48 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] cpuidle / menu: Return error code if there are no
+ suitable states
+References: <2471963.urOyfY8mOG@vostro.rjw.lan> <535E3818.2040905@linaro.org> <2000825.kO1es8ShkW@vostro.rjw.lan> <1516317.nEvPfS8aZ7@vostro.rjw.lan>
+In-Reply-To: <1516317.nEvPfS8aZ7@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 May 2014, Leon Yu wrote:
+On 04/30/2014 01:16 AM, Rafael J. Wysocki wrote:
+> On Tuesday, April 29, 2014 01:28:03 AM Rafael J. Wysocki wrote:
+>> On Monday, April 28, 2014 01:14:32 PM Daniel Lezcano wrote:
+>>> On 04/27/2014 02:55 PM, Rafael J. Wysocki wrote:
 
-> Date: Thu,  1 May 2014 03:31:28 +0000
-> From: Leon Yu <chianglungyu@gmail.com>
-> To: Benjamin LaHaise <bcrl@kvack.org>,
->     Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: linux-aio@kvack.org, linux-fsdevel@vger.kernel.org,
->     linux-kernel@vger.kernel.org, Leon Yu <chianglungyu@gmail.com>
-> Subject: [PATCH] aio: fix potential leak in aio_run_iocb().
-> 
-> iovec should be reclaimed whenever caller of rw_copy_check_uvector() returns,
-> but it doesn't hold when failure happens right after aio_setup_vectored_rw().
-> 
-> Fix that in a such way to avoid hairy goto.
+[ ... ]
 
-
-Hi,
-
-this does not seem right, see bellow
-
-> 
-> Signed-off-by: Leon Yu <chianglungyu@gmail.com>
 > ---
->  fs/aio.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/aio.c b/fs/aio.c
-> index 12a3de0e..04cd768 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -1299,10 +1299,8 @@ rw_common:
->  						&iovec, compat)
->  			: aio_setup_single_vector(req, rw, buf, &nr_segs,
->  						  iovec);
-> -		if (ret)
-> -			return ret;
-> -
-> -		ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: cpuidle / menu: Return (-1) if there are no suitable states
+>
+> If there is a PM QoS latency limit and all of the sufficiently shallow
+> C-states are disabled, the cpuidle menu governor returns 0 which on
+> some systems is CPUIDLE_DRIVER_STATE_START and shouldn't be returned
+> if that C-state has been disabled.
+>
+> Fix the issue by modifying the menu governor to return (-1) in such
+> situations.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>   drivers/cpuidle/governors/menu.c |    2 +-
+>   include/linux/cpuidle.h          |    2 ++
+>   2 files changed, 3 insertions(+), 1 deletion(-)
+>
+> Index: linux-pm/drivers/cpuidle/governors/menu.c
+> ===================================================================
+> --- linux-pm.orig/drivers/cpuidle/governors/menu.c
+> +++ linux-pm/drivers/cpuidle/governors/menu.c
+> @@ -296,7 +296,7 @@ static int menu_select(struct cpuidle_dr
+>   		data->needs_update = 0;
+>   	}
+>
+> -	data->last_state_idx = 0;
+> +	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
 
-here ret could be possibly set to a positive number.
+In case of x86, CPUIDLE_DRIVER_STATE_START will be 1, so the select 
+function could return 0 even this one is disabled and this is not what 
+you want to happen, no ?
 
-> +		if (!ret)
-> +			ret = rw_verify_area(rw, file, &req->ki_pos, req->ki_nbytes);
->  		if (ret < 0) {
 
-but here we're checking for negative and bail out. However this
-changes the way it worked before this patch and the iovec would not
-be reclaimed anyway as you mentioned in the commit description.
+>   	/* Special case when user has set very strict latency requirement */
+>   	if (unlikely(latency_req == 0))
+>
 
-Thanks!
--Lukas
 
->  			if (iovec != &inline_vec)
->  				kfree(iovec);
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
