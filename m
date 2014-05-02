@@ -1,80 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaEBOsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 10:48:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53444 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750991AbaEBOsk (ORCPT
+	id S1752425AbaEBOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 10:55:58 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:41513 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaEBOz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 10:48:40 -0400
-Message-ID: <1399042116.2202.1.camel@dabdike>
-Subject: Re: [PATCH] parisc,metag: Do not hardcode maximum userspace stack
- size
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Helge Deller <deller@gmx.de>, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org, John David Anglin <dave.anglin@bell.net>,
-        linux-metag@vger.kernel.org
-Date: Fri, 02 May 2014 07:48:36 -0700
-In-Reply-To: <5363876A.2030709@imgtec.com>
-References: <20140430212602.GA20601@p100.fritz.box>
-		 <53622DBA.807@imgtec.com> <1398966636.2174.21.camel@dabdike>
-	 <5363876A.2030709@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 2 May 2014 10:55:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <5363A4E0.2000403@intel.com>
+References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+	<20140502151921.014fbeec@redhat.com>
+	<5363A4E0.2000403@intel.com>
+Date: Fri, 2 May 2014 22:55:55 +0800
+Message-ID: <CAABZP2wG-DnmvAzSapaC1nEyg0ArET93tbz-x3-a71-pLd4ELA@mail.gmail.com>
+Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
+From: Zhouyi Zhou <zhouzhouyi@gmail.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: Jesper Dangaard Brouer <brouer@redhat.com>,
+        David Miller <davem@davemloft.net>, steffen.klassert@secunet.com,
+        fan.du@windriver.com, dborkman@redhat.com,
+        Mathias Krause <minipli@googlemail.com>, tgraf@suug.ch,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 12:54 +0100, James Hogan wrote:
-> On 01/05/14 18:50, James Bottomley wrote:
-> > 
-> >> +
-> >> +config MAX_STACK_SIZE_MB
-> >> +	int "Maximum user stack size (MB)"
-> >> +	default 80
-> >> +	range 8 256 if METAG
-> >> +	range 8 2048
-> >> +	depends on STACK_GROWSUP
-> >> +	help
-> >> +	  This is the maximum stack size in Megabytes in the VM layout of user
-> >> +	  processes when the stack grows upwards (currently only on parisc and
-> >> +	  metag arch). The stack will be located at the highest memory address
-> >> +	  minus the given value, unless the RLIMIT_STACK hard limit is changed
-> >> +	  to a smaller value in which case that is used.
-> >> +
-> >> +	  A sane initial value is 80 MB.
-> > 
-> > There's one final issue with this: placement of the stack only really
-> > matters on 32 bits.  We have three expanding memory areas: stack, heap
-> > and maps.  On 64 bits these are placed well separated from each other on
-> > 64 bits, so an artificial limit like this doesn't matter.
-> 
-> Does the following fixup diff look reasonable? It forces
-> MAX_STACK_SIZE_MB to 1024 and hides the Kconfig option for 64BIT,
-> effectively leaving the behaviour unchanged in that case.
-> 
-> diff --git a/mm/Kconfig b/mm/Kconfig
-> index e80075979530..b0307f737bd7 100644
-> --- a/mm/Kconfig
-> +++ b/mm/Kconfig
-> @@ -583,7 +583,8 @@ config GENERIC_EARLY_IOREMAP
->  	bool
-> 
->  config MAX_STACK_SIZE_MB
-> -	int "Maximum user stack size (MB)"
-> +	int "Maximum user stack size (MB)" if !64BIT
-> +	default 1024 if 64BIT
->  	default 80
->  	range 8 256 if METAG
->  	range 8 2048
+Thanks for reviewing
 
-Yes, I think that's probably correct ... parisc doesn't actually have
-anything other than a testbed 64 bit userspace, so this is a bit
-theoretical for us.
-
-James
+On Fri, May 2, 2014 at 10:00 PM, John Fastabend
+<john.r.fastabend@intel.com> wrote:
+> On 5/2/2014 6:19 AM, Jesper Dangaard Brouer wrote:
+>>
+>> On Fri,  2 May 2014 15:18:12 +0800
+>> Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
+>>
+>>> As http://www.spinics.net/lists/netdev/msg165015.html
+>>> pktgen generates shared packet through vlan interface will cause
+>>> oops because of duplicate entering tc queue.
+>>>
+>>> Try to solve this problem by means of packet clone instead of sharing.
+>>
+>>
+>> I really don't like adding this stuff to the fast path of pktgen.
 
 
+>>
+>> Why would you use pktgen on a VLAN?
+
+I use pktgen on a VLAN under a special circumstance.
+
+>
+>
+> Its a good way to test qdiscs. When you run pktgen over the VLAN
+> you exercise the lower devices qdisc.
+>
+> Although I never submitted a patch like this because I figured it
+> was a corner case and we would want to keep the hotpath clean.
+>
+
+I think is_vlan_dev(odev) have great chances to be in a cache line
+that seldom got reset. Could we only judge is_vlan_dev(odev) in my
+first if statement?
+
+
+Also I guess if (nskb && !IS_ERR(nskb)) happens in rarely reached
+cases when the interface is not overload.
+
+>
+>>
+>> Why don't you use the "vlan_id" feature available in pktgen, and send
+>> in the lower real device?
+
+Could we automatically convert the VLAN device's joining effort to
+real device + vlan_id settings in pkt_dev.
+or could we issue a warning or a suggestion
+when user try to add a VLAN device to the pktgen thread?
+
+>>
+>>
+>>
+>>> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+>>> ---
+>>>   net/core/pktgen.c |   20 +++++++++++++++++---
+>>>   1 files changed, 17 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+>>> index 0304f98..ced07fc 100644
+>>> --- a/net/core/pktgen.c
+>>> +++ b/net/core/pktgen.c
+>>> @@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+>>>         netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
+>>>                 = odev->netdev_ops->ndo_start_xmit;
+>>>         struct netdev_queue *txq;
+>>> +       struct sk_buff *nskb = NULL;
+>>>         u16 queue_map;
+>>>         int ret;
+>>>
+>>> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev
+>>> *pkt_dev)
+>>>                 pkt_dev->last_ok = 0;
+>>>                 goto unlock;
+>>>         }
+>>> -       atomic_inc(&(pkt_dev->skb->users));
+>>> -       ret = (*xmit)(pkt_dev->skb, odev);
+>>> +
+>>> +       if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
+>>> +               nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
+>>> +               ret = -ENOMEM;
+>>> +               if (nskb)
+>>> +                       ret = (*xmit)(nskb, odev);
+>>> +               else
+>>> +                       nskb = ERR_PTR(ret);
+>>> +       } else {
+>>> +               atomic_inc(&(pkt_dev->skb->users));
+>>> +               ret = (*xmit)(pkt_dev->skb, odev);
+>>> +       }
+>>>
+>>>         switch (ret) {
+>>>         case NETDEV_TX_OK:
+>>> @@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev
+>>> *pkt_dev)
+>>>         case NETDEV_TX_LOCKED:
+>>>         case NETDEV_TX_BUSY:
+>>>                 /* Retry it next time */
+>>> -               atomic_dec(&(pkt_dev->skb->users));
+>>> +               if (nskb && !IS_ERR(nskb))
+>>> +                       kfree_skb(nskb);
+>>> +               else
+>>> +                       atomic_dec(&(pkt_dev->skb->users));
+>>>                 pkt_dev->last_ok = 0;
+>>>         }
+>>>   unlock:
+>>
+>>
+>>
+>>
+>
