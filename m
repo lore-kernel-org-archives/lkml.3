@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbaEBWeN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:34:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923AbaEBWeM (ORCPT
+	id S1753197AbaEBWfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:35:08 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25191 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655AbaEBWfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:34:12 -0400
-Date: Fri, 2 May 2014 15:34:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-Id: <20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
-In-Reply-To: <87wqf1oi22.fsf@rustcorp.com.au>
-References: <20140402144219.4cafbe37@gandalf.local.home>
-	<20140402221212.GD16570@mguzik.redhat.com>
-	<CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com>
-	<87wqf1oi22.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 2 May 2014 18:35:07 -0400
+Message-ID: <53641D8C.6040601@oracle.com>
+Date: Fri, 02 May 2014 18:34:52 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set
+ pageblock bitmaps
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de> <1398933888-4940-9-git-send-email-mgorman@suse.de>
+In-Reply-To: <1398933888-4940-9-git-send-email-mgorman@suse.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Apr 2014 14:24:45 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
+Hi Mel,
 
-> Subject: param: hand arguments after -- straight to init
-> 
-> The kernel passes any args it doesn't need through to init, except it
-> assumes anything containing '.' belongs to the kernel (for a module).
-> This change means all users can clearly distinguish which arguments
-> are for init.
-> 
-> For example, the kernel uses debug ("dee-bug") to mean log everything to
-> the console, where systemd uses the debug from the Scandinavian "day-boog"
-> meaning "fail to boot".  If a future versions uses argv[] instead of
-> reading /proc/cmdline, this confusion will be avoided.
-> 
-> eg: test 'FOO="this is --foo"' -- 'systemd.debug="true true true"'
-> 
-> Gives:
-> argv[0] = '/debug-init'
-> argv[1] = 'test'
-> argv[2] = 'systemd.debug=true true true'
-> envp[0] = 'HOME=/'
-> envp[1] = 'TERM=linux'
-> envp[2] = 'FOO=this is --foo'
+Vlastimil Babka suggested I should try this patch to work around a different
+issue I'm seeing, and noticed that it doesn't build because:
 
-This (user-facing) feature doesn't seem to have been documented
-anywhere.  Documentation/kernel-parameters.txt, I guess.
+On 05/01/2014 04:44 AM, Mel Gorman wrote:
+> +void set_pageblock_flags_mask(struct page *page,
+> +				unsigned long flags,
+> +				unsigned long end_bitidx,
+> +				unsigned long nr_flag_bits,
+> +				unsigned long mask);
+
+set_pageblock_flags_mask() is declared.
+
+
+> +static inline void set_pageblock_flags_group(struct page *page,
+> +					unsigned long flags,
+> +					int start_bitidx, int end_bitidx)
+> +{
+> +	unsigned long nr_flag_bits = end_bitidx - start_bitidx + 1;
+> +	unsigned long mask = (1 << nr_flag_bits) - 1;
+> +
+> +	set_pageblock_flags_mask(page, flags, end_bitidx, nr_flag_bits, mask);
+> +}
+
+And used here, but never actually defined.
+
+
+Thanks,
+Sasha
