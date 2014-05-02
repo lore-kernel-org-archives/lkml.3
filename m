@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413AbaEBPnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:43:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43959 "EHLO
+	id S1754616AbaEBQJw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:09:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43972 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaEBPnI (ORCPT
+	with ESMTP id S1752914AbaEBPnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:08 -0400
+	Fri, 2 May 2014 11:43:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 025/151] [media] m88rs2000: add caps FE_CAN_INVERSION_AUTO
-Date: Fri,  2 May 2014 08:36:53 -0700
-Message-Id: <1399045139-4531-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 022/151] [media] omap3isp: preview: Fix the crop margins
+Date: Fri,  2 May 2014 08:36:50 -0700
+Message-Id: <1399045139-4531-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -29,32 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Florian Vaussard <florian.vaussard@epfl.ch>
 
-commit 3c8023a782964c72574ad8268ba0ea4e2d9772fc upstream.
+commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
 
-The m88rs2000 frontend is always auto inversion.
+Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
+accidentally changed the previewer's cropping, causing the previewer
+to miss four pixels on each line, thus corrupting the final image.
+Restored the removed setting.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-frontends/m88rs2000.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/platform/omap3isp/isppreview.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
-index 02699c1..5b3b1d3 100644
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -743,7 +743,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
- 		.symbol_rate_tolerance	= 500,	/* ppm */
- 		.caps = FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
- 		      FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 |
--		      FE_CAN_QPSK |
-+		      FE_CAN_QPSK | FE_CAN_INVERSION_AUTO |
- 		      FE_CAN_FEC_AUTO
- 	},
+diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
+index cd8831a..e2e4610 100644
+--- a/drivers/media/platform/omap3isp/isppreview.c
++++ b/drivers/media/platform/omap3isp/isppreview.c
+@@ -1079,6 +1079,7 @@ static void preview_config_input_format(struct isp_prev_device *prev,
+  */
+ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
+ {
++	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
+ 	struct isp_device *isp = to_isp_device(prev);
+ 	unsigned int sph = prev->crop.left;
+ 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
+@@ -1086,6 +1087,14 @@ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
+ 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
+ 	u32 features;
+ 
++	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
++	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
++		sph -= 2;
++		eph += 2;
++		slv -= 2;
++		elv += 2;
++	}
++
+ 	features = (prev->params.params[0].features & active)
+ 		 | (prev->params.params[1].features & ~active);
  
 -- 
 1.9.1
