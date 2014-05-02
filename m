@@ -1,70 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaEBLhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 07:37:36 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:53034 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942AbaEBLhf (ORCPT
+	id S1751990AbaEBLoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 07:44:19 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:62318 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbaEBLoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 07:37:35 -0400
-Date: Fri, 2 May 2014 13:35:51 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: David Airlie <airlied@linux.ie>, gnurou@gmail.com,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm/ttm: remove declaration of ttm_tt_cache_flush
-Message-ID: <20140502113550.GB18693@ulmo>
-References: <1399024162-6528-1-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6sX45UoQRIJXqkqR"
-Content-Disposition: inline
-In-Reply-To: <1399024162-6528-1-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 2 May 2014 07:44:17 -0400
+Subject: Re: [PATCH v1.0 2/16] arcmsr: Support MSI-X interrupt
+From: ching <ching2048@areca.com.tw>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: jbottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, thenzl@redhat.com
+In-Reply-To: <20140502083101.GB4963@mwanda>
+References: <1398851412.1769.16.camel@localhost>
+	 <20140502083101.GB4963@mwanda>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 May 2014 19:44:08 +0800
+Message-ID: <1399031048.5711.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks for Dan's advice.
+I will revise the patch code.
+Next upload will be PATCH v1.1 16 patches.
 
---6sX45UoQRIJXqkqR
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-05-02 at 11:31 +0300, Dan Carpenter wrote:
+> On Wed, Apr 30, 2014 at 05:50:12PM +0800, ching wrote:
+> > From: Ching<ching2048@areca.com.tw>
+> > 
+> > Adding code for supporting MSI-X interrupt
+> > 
+> > Signed-off-by: Ching<ching2048@areca.com.tw>
+> > ---
+> 
+> These patches seem to be broken up nicely into patches which do one
+> thing per patch and they are much easier to review now.  Thanks!
+> 
+> > +static int arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
+> > +{
+> > +	int	i, j, r;
+> > +	struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
+> > +
+> 
+> This function is more confusing than necessary and it goes over the 80
+> character limit.  One hint for improving it is that you should always
+> test for failure and handle the failure condition first before moving
+> on.  In other words reverse these tests.
+> 
+> Also let's rename LEG_INT to legacy_int: and MSI_INT to msi_int:.
+> 
+> > +	if (pci_find_capability(pdev, PCI_CAP_ID_MSIX)) {
+> 
+> 	if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
+> 		goto msi_int;
+> 
+> We can pull the following code in one indent level.
+> 
+> > +		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
+> > +			entries[i].entry = i;
+> > +		}
+> 
+> Remove unneeded curly braces.
+> 
+> > +		r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
+> 
+> 		if (r < 0)
+> 			goto msi_int;
+> 
+> > +		if (r == 0) {
+> > +			for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
+> > +				if (request_irq(entries[i].vector,
+> > +					arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> > +					pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +						acb->host->host_no, pdev->irq);
+> > +					for (j = 0 ; j < i ; j++)
+> > +						free_irq(entries[i].vector, acb);
+> > +					pci_disable_msix(pdev);
+> > +					goto MSI_INT;
+> > +				}
+> > +				acb->entries[i] = entries[i];
+> > +			}
+> > +			acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> > +			pr_warn("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> 
+> This should be pr_info().  pr_warn() will probably trigger a popup in
+> gnome.
+> 			return ARC_SUCCESS;
+> 
+> Returning right away is easier to understand than a return at the end
+> of the function.
+> 
+> > +		} else if (r > 0) {
+> 
+> This else statement is not needed because we already handled the other
+> cases.  Pull the code in one additional indent level.
+> 
+> > +			if (!pci_enable_msix(pdev, entries, r)) {
+> 
+> 			if (pci_enable_msix(pdev, entries, r))
+> 				goto msi_int;
+> 
+> Pull the code in a third indent level.
+> 
+> > +				for (i = 0; i < r; i++) {
+> > +					if (request_irq(entries[i].vector,
+> > +						arcmsr_do_interrupt, 0, "arcmsr", acb)) {
+> > +						pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +							acb->host->host_no, pdev->irq);
+> > +						for (j = 0 ; j < i ; j++)
+> > +							free_irq(entries[i].vector, acb);
+> > +						pci_disable_msix(pdev);
+> > +						goto MSI_INT;
+> > +					}
+> > +					acb->entries[i] = entries[i];
+> > +				}
+> > +				acb->acb_flags |= ACB_F_MSIX_ENABLED;
+> > +				pr_warn("arcmsr%d: msi-x enabled\n", acb->host->host_no);
+> 
+> 
+> Same thing.  Change this to pr_info() and add a return ARC_SUCCESS;
+> 
+> > +			} else {
+> > +				goto MSI_INT;
+> > +			}
+> > +		} else {
+> 
+> 
+> Ok.  At this point we have removed a lot of indenting so we are back to
+> level 1 indenting.
+> 
+> msi_int:
+> 	if (!pci_find_capability(pdev, PCI_CAP_ID_MSI))
+> 		goto legacy_int;
+> 	if (pci_enable_msi(pdev))
+> 		goto legacy_int;
+> 	if (request_irq(...)) {
+> 		....
+> 		goto legacy_int;
+> 	}
+> 
+> > +MSI_INT:
+> > +			if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {
+> > +				if (pci_enable_msi(pdev))
+> > +					goto LEG_INT;
+> > +				if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +					IRQF_SHARED, "arcmsr", acb)) {
+> > +					pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +						acb->host->host_no, pdev->irq);
+> > +					pci_disable_msi(pdev);
+> > +					goto LEG_INT;
+> > +				}
+> > +				acb->acb_flags |= ACB_F_MSI_ENABLED;
+> > +				pr_warn("arcmsr%d: msi enabled\n", acb->host->host_no);
+> 
+> return sucess.
+> 
+> > +			} else {
+> > +				goto LEG_INT;
+> > +			}
+> > +		}
+> 
+> 
+> The following block is all duplicative code and we have already handled
+> msi_int.  Just delete it.
+> 
+> > +	} else if (pci_find_capability(pdev, PCI_CAP_ID_MSI)) {
+> > +		if (pci_enable_msi(pdev))
+> > +			goto LEG_INT;
+> > +		if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +			IRQF_SHARED, "arcmsr", acb)) {
+> > +			pr_warn("arcmsr%d: request_irq =%d failed!\n",
+> > +				acb->host->host_no, pdev->irq);
+> > +			pci_disable_msi(pdev);
+> > +			goto LEG_INT;
+> > +		}
+> > +		acb->acb_flags |= ACB_F_MSI_ENABLED;
+> > +		pr_warn("arcmsr%d: msi enabled\n", acb->host->host_no);
+> > +	} else {
+> 
+> Ok.  We're back to level one indenting now.
+> 
+> legacy_int:
+> 	if (request_irq(...) {
+> 		...
+> 		return ARC_FAILURE;
+> 	}
+> 	return ARC_SUCCESS;
+> 
+> Flipping the conditions around and adding immediate returns makes the
+> code a lot easier to read.
+> 
+> > +LEG_INT:
+> > +		if (request_irq(pdev->irq, arcmsr_do_interrupt,
+> > +			IRQF_SHARED, "arcmsr", acb)) {
+> > +			pr_warn("arcmsr%d: request_irq = %d failed!\n",
+> > +				acb->host->host_no, pdev->irq);
+> > +			return ARC_FAILURE;
+> > +		}
+> > +	}
+> > +	return ARC_SUCCESS;
+> > +}
+> > +
+> 
+> regards,
+> dan carpenter
 
-On Fri, May 02, 2014 at 06:49:22PM +0900, Alexandre Courbot wrote:
-> ttm_tt_cache_flush's implementation was removed in 2009 by commit
-> c9c97b8c, but its declaration has been hiding in ttm_bo_driver.h since
-> then.
->=20
-> It has been surviving in the dark for too long now ; give it the coup
-> de gr=C3=A2ce.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  include/drm/ttm/ttm_bo_driver.h | 12 ------------
->  1 file changed, 12 deletions(-)
 
-Reviewed-by: Thierry Reding <treding@nvidia.com>
-
---6sX45UoQRIJXqkqR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTY4MWAAoJEN0jrNd/PrOh52AQAKEfe57pYldOgkvrnjKmBexG
-41etB1x5bD+tAqW65jf0iQLgvkgHEkrHo29NALcpyyKPL+KQUhu9Grryg8mIwpdA
-PxNbU4RYWdyKt5VX8kVTW3uRCuGwrkUEm9FpXSr9M0WjzWvJgYcMaI1SJHs5OGMw
-YtZCXbipSht6EyvH33Uwe7e0dA1wnkzWs6DhqWCtBqhchdL7EhJOWiYdv2/HjzKB
-wthHW1yVzbz+S3iUJyWBqh855YmW3pYCKr6j7RtNfVxNepZVdlcSbzyclKAPQ4s2
-GhjHF5fXmCiKI4cg7ZvUIW4TCiS+m/4fo7Xomymup88i10kjfZfSjgPmHLWG2lyU
-8AB4guAZ/kJYxvNHyhVDpFsto0r8Izu7Qg0RXqI0va/xod7kLF5zn9DmifUgQgbj
-RrLKOlHSXT8aFruThOhgiyolFZm9Izqph2SV+vz3haZrS4OpDDUKdgTjVGVoszMK
-R/jwYyOkQJ48qgjNL0ab2Wzn+v3iLS053VLZ+guJGyas2gHv/YUeZBA3ZkpogCh1
-KGxjfvJfeRIQwgcR9VjJ0et/g9gm/zut8q1zKVuRlnh217V7Ey1GlESr8+V3Fp+4
-PTqCHBggX6ShL4kAnXzL6FmgVWEhvCfdfeSH8lkv5KEdkbdOz2qs6okHjjCyV64U
-CDtZidLSRnY/BjBMCo1B
-=+DfA
------END PGP SIGNATURE-----
-
---6sX45UoQRIJXqkqR--
