@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751561AbaEBCdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 22:33:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36478 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795AbaEBCds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 22:33:48 -0400
-Message-ID: <1398998002.2925.15.camel@pasglop>
-Subject: Re: [4/5] IBM Akebono: Add the Akebono platform
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alistair Popple <alistair@popple.id.au>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Fri, 02 May 2014 12:33:22 +1000
-In-Reply-To: <10214508.Vq3Ynjy2Co@mexican>
-References: <1394077948-8395-5-git-send-email-alistair@popple.id.au>
-	 <1398936447.4121.12.camel@x220> <10214508.Vq3Ynjy2Co@mexican>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751670AbaEBCic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 22:38:32 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:57802 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaEBCib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 May 2014 22:38:31 -0400
+Date: Thu, 1 May 2014 19:38:27 -0700
+From: Kent Overstreet <kmo@daterainc.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <tom.leiming@gmail.com>, Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shaohua Li <shli@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+Message-ID: <20140502023827.GA2276@kmo>
+References: <CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com>
+ <535716A5.6050108@kernel.dk>
+ <CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com>
+ <535AD235.90604@kernel.dk>
+ <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
+ <535B13D7.4050202@kernel.dk>
+ <CACVXFVORX_qgJNXcB3OFpscVx0eQAbLPv2Jr1N3_yBKrPsGXFA@mail.gmail.com>
+ <53601602.5060306@kernel.dk>
+ <20140501224744.GA2285@kmo-pixel>
+ <536300BB.5060906@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536300BB.5060906@kernel.dk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 10:35 +1000, Alistair Popple wrote:
-
-> > The plan to add MMC_SDHCI_OF_476GTR seems to have been abandoned (see
-> > the discussion of https://lkml.org/lkml/2014/2/21/24 ). So this select
-> > is not needed. Should I submit a trivial patch to drop this select?
+On Thu, May 01, 2014 at 08:19:39PM -0600, Jens Axboe wrote:
+> On 2014-05-01 16:47, Kent Overstreet wrote:
+> >On Tue, Apr 29, 2014 at 03:13:38PM -0600, Jens Axboe wrote:
+> >>On 04/29/2014 05:35 AM, Ming Lei wrote:
+> >>>On Sat, Apr 26, 2014 at 10:03 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> >>>>On 2014-04-25 18:01, Ming Lei wrote:
+> >>>>>
+> >>>>>Hi Jens,
+> >>>>>
+> >>>>>On Sat, Apr 26, 2014 at 5:23 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> >>>>>>
+> >>>>>>On 04/25/2014 03:10 AM, Ming Lei wrote:
+> >>>>>>
+> >>>>>>Sorry, I did run it the other day. It has little to no effect here, but
+> >>>>>>that's mostly because there's so much other crap going on in there. The
+> >>>>>>most effective way to currently make it work better, is just to ensure
+> >>>>>>the caching pool is of a sane size.
+> >>>>>
+> >>>>>
+> >>>>>Yes, that is just what the patch is doing, :-)
+> >>>>
+> >>>>
+> >>>>But it's not enough.
+> >>>
+> >>>Yes, the patch is only for cases of mutli hw queue and having
+> >>>offline CPUs existed.
+> >>>
+> >>>>For instance, my test case, it's 255 tags and 64 CPUs.
+> >>>>We end up in cross-cpu spinlock nightmare mode.
+> >>>
+> >>>IMO, the scaling problem for the above case might be
+> >>>caused by either current percpu ida design or blk-mq's
+> >>>usage on it.
+> >>
+> >>That is pretty much my claim, yes. Basically I don't think per-cpu tag
+> >>caching is ever going to be the best solution for the combination of
+> >>modern machines and the hardware that is out there (limited tags).
+> >
+> >Sorry for not being more active in the discussion earlier, but anyways - I'm in
+> >100% agreement with this.
+> >
+> >Percpu freelists are _fundamentally_ only _useful_ when you don't need to be
+> >using all your available tags, because percpu sharding requires wasting your tag
+> >space. I could write a mathematical proof of this if I cared enough.
+> >
+> >Otherwise what happens is on alloc failure you're touching all the other
+> >cachelines every single time and now you're bouncing _more_ cachelines than if
+> >you just had a single global freelist.
+> >
+> >So yeah, for small tag spaces just use a single simple bit vector on a single
+> >cacheline.
 > 
-> Thanks for pointing this out, I should have removed the select for 
-> MMC_SDHCI_OF_476GTR as suggested. I can submit a patch to drop the select or 
-> send an updated version of the original patch. Which is easiest for you Ben?
+> I've taken the consequence of this and implemented another tagging scheme
+> that blk-mq will use if it deems that percpu_ida isn't going to be effective
+> for the device being initialized. But I really hate to have both of them in
+> there. Unfortunately I have no devices available that have a tag space that
+> will justify using percu_ida, so comparisons are a bit hard at the moment.
+> NVMe should change that, though, so decision will have to be deferred until
+> that is tested.
 
-I don't rebase next so it has to be a followup patch.
+Yeah, I agree that is annoying. I've thought about the issue too though and I
+haven't been able to come up with any better ideas, myself.
 
-Cheers,
-Ben.
+A given driver probably should be able to always use one or the other though, so
+we shouldn't _need_ a runtime conditional because of this, though structuring
+the code that way might be more trouble than it's worth from my vague
+recollection of what blk-mq looks likee...
 
-> > > +	select ATA
-> > > +	select SATA_AHCI_PLATFORM
-> > > +	help
-> > > +	  This option enables support for the IBM Akebono (476gtr) evaluation
-> > > board +
-> > > +
-> > > 
-> > >  config ICON
-> > >  
-> > >  	bool "Icon"
-> > >  	depends on 44x
-> > 
-> > Paul Bolle
+(I've actually been fighting with unrelated issues at a very similar layer of
+abstraction, it's quite annoying.).
+
+> >BTW, Shaohua Li's patch d835502f3dacad1638d516ab156d66f0ba377cf5 that changed
+> >when steal_tags() runs was fundamentally wrong and broken in this respect, and
+> >should be reverted, whatever usage it was that was expecting to be able to
+> >allocate the entire tag space was the problem.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> It's hard to blame Shaohua, and I helped push that. It was an attempt in
+> making percpu_ida actually useful for what blk-mq needs it for, and being
+> the primary user of it, it was definitely worth doing. A tagging scheme that
+> requires the tag space to be effectively sparse/huge to be fast is not a
+> good generic tagging algorithm.
 
-
+Yeah it was definitely not an unreasonable attempt and it's probably my own
+fault for not speaking up louder at the time (I can't remember how much I
+commented at the time). Ah well, irritating problem space :)
