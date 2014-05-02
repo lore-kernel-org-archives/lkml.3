@@ -1,120 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaEBXeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 19:34:06 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:37209 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127AbaEBXeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 19:34:04 -0400
-MIME-Version: 1.0
-Date: Sat, 3 May 2014 01:34:01 +0200
-X-Google-Sender-Auth: aESOFVT_7gEXhklTwNTFvRqQSZA
-Message-ID: <CAJZ5v0gVEfcv6NeYwiNL8=0jtJXd3po_TK3+fP4q_3Rz0hBy_g@mail.gmail.com>
-Subject: [GIT PULL] ACPI and power management fixes for v3.15-rc4
-From: "Rafael J. Wysocki" <rafael@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752793AbaEBXnP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 19:43:15 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:32957 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127AbaEBXnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 19:43:14 -0400
+Subject: Re: [PATCH v2] uprobes: fix scratch register selection for
+ rip-relative fixups
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
+References: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 May 2014 16:43:09 -0700
+Message-ID: <1399074189.4821.10.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050223-7182-0000-0000-00000A7E196B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2014-05-02 at 17:04 +0200, Denys Vlasenko wrote:
+> Before this patch, instructions such as div, mul,
+> shifts with count in CL, cmpxchg are mishandled.
 
-Please pull from
+I just noticed that this sounds rather worse than it is.  It would be
+more precise to say, "Before this patch, the rip-relative addressing
+mode in instructions such as ... is mishandled."
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git \
- pm+acpi-3.15-rc4
+...
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Jim Keniston <jkenisto@us.ibm.com>
+> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/x86/kernel/uprobes.c | 179 +++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 128 insertions(+), 51 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index dbbf6cd..5b387b7 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -41,8 +41,12 @@
+>  /* Instruction will modify TF, don't change it */
+>  #define UPROBE_FIX_SETF		0x04
+> 
+> -#define UPROBE_FIX_RIP_AX	0x08
+> -#define UPROBE_FIX_RIP_CX	0x10
+> +#define UPROBE_FIX_RIP_SI	0x08
+> +#define UPROBE_FIX_RIP_DI	0x10
+> +#define UPROBE_FIX_RIP_BX	0x20
+> +#define UPROBE_FIX_RIP_MASK	(UPROBE_FIX_RIP_SI \
+> +				| UPROBE_FIX_RIP_DI \
+> +				| UPROBE_FIX_RIP_BX)
 
-to receive ACPI, power management and PNP fixes for v3.15-rc4
-with top-most commit de3afce5336af3214374de6df360f9eb010a9a36
+Yes.
 
-  Merge branches 'acpi-ec' and 'acpi-processor'
+...
+> +	/* Fetch vex.vvvv */
+> +	reg2 = 0xff;
+> +	if (insn->vex_prefix.nbytes == 2) {
+> +		reg2 = insn->vex_prefix.bytes[1];
+> +	}
+> +	if (insn->vex_prefix.nbytes == 3) {
+> +		reg2 = insn->vex_prefix.bytes[2];
+> +	}
+> +	/* TODO: add XOP, EXEV vvvv reading */
+> +	/*
+> +	 * vex.vvvv field is in bits 6-3, bits are inverted.
+> +	 * But in 32-bit mode, high-order bit may be ignored.
+> +	 * Therefore, let's consider only 3 low-order bits.
+> +	 */
+> +	reg2 = ((reg2 >> 3) & 0x7) ^ 0x7;
+> 
+> +	/* Register numbering is ax,cx,dx,bx, sp,bp,si,di, r8..r15 */
+> +	/*
+> +	 * Choose scratch reg. Order is important:
+> +	 * must not select bx if we can use si (cmpxchg8b case!)
 
-on top of commit d1db0eea852497762cab43b905b879dfcd3b8987
+It'd be good to add here:
+	 * For instructions without a VEX prefix, reg2 is 0 here.
 
-  Linux 3.15-rc3
+Otherwise it kind of looks like you forgot to address that case, and the
+reader shouldn't have to do the bit fiddling to figure it out.
 
-A bunch of regression fixes this time.  They fix two regressions
-in the PNP subsystem, one in the ACPI processor driver and one in
-the ACPI EC driver, four cpufreq driver regressions and an unrelated
-bug in one of the drivers.  The regressions are recent or introduced
-in 3.14.
+> +	 */
+> +	if (reg != 6 && reg2 != 6) {
+> +		reg2 = 6;
+> +		auprobe->def.fixups |= UPROBE_FIX_RIP_SI;
+> +	} else if (reg != 7 && reg2 != 7) {
+> +		reg2 = 7;
+> +		auprobe->def.fixups |= UPROBE_FIX_RIP_DI;
+> +		/* TODO (paranoia): force maskmovq to not use di */
+> +	} else {
+> +		reg2 = 3; /* BX */
+> +		auprobe->def.fixups |= UPROBE_FIX_RIP_BX;
+> +	}
 
-Specifics:
+Yes.  Looks good from here down.
 
- - There are two bugs in the ACPI PNP core that cause errors to
-   be returned if optional ACPI methods are not present.  After
-   an ACPI core change made in 3.14 one of those errors leads
-   to serial port suspend failures on some systems.  Fix from
-   yours truly.
-
- - A recently added PNP quirk related to Intel chipsets intorduced
-   a build error in unusual configurations (PNP without PCI).  Fix
-   from Bjorn Helgaas.
-
- - An ACPI EC workaround related to system suspend on Samsung machines
-   added in 3.14 introduced a race causing some valid EC events to be
-   discarded.  Fix from Kieran Clancy.
-
- - The acpi-cpufreq driver fails to load on some systems after a 3.14
-   commit related to APIC ID parsing that overlooked one corner case.
-   Fix from Lan Tianyu.
-
- - Fix for a recently introduced build problem in the ppc-corenet
-   cpufreq driver from Tim Gardner.
-
- - A recent cpufreq core change to ensure serialization of frequency
-   transitions for drivers with a ->target_index() callback overlooked
-   the fact that some of those drivers had been doing operations
-   introduced by it into the core already by themselves.  That resulted
-   in a mess in which the core and the drivers try to do the same thing
-   and block each other which leads to deadlocks.  Fixes for the
-   powernow-k7, powernow-k6, and longhaul cpufreq drivers from
-   Srivatsa S Bhat.
-
- - Fix for a computational error in the powernow-k6 cpufreq driver
-   from Srivatsa S Bhat.
-
-Thanks!
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 
 
----------------
-
-Bjorn Helgaas (1):
-      PNP: Fix compile error in quirks.c
-
-Kieran Clancy (1):
-      ACPI / EC: Process rather than discard events in acpi_ec_clear
-
-Lan Tianyu (1):
-      ACPI / processor: Fix failure of loading acpi-cpufreq driver
-
-Rafael J. Wysocki (1):
-      PNP / ACPI: Do not return errors if _DIS or _SRS are not present
-
-Srivatsa S. Bhat (4):
-      cpufreq: longhaul: Fix double invocation of
-cpufreq_freq_transition_begin/end
-      cpufreq: powernow-k6: Fix incorrect comparison with max_multipler
-      cpufreq: powernow-k6: Fix double invocation of
-cpufreq_freq_transition_begin/end
-      cpufreq: powernow-k7: Fix double invocation of
-cpufreq_freq_transition_begin/end
-
-Tim Gardner (1):
-      cpufreq: ppc-corenet-cpufreq: Fix __udivdi3 modpost error
-
----------------
-
- drivers/acpi/acpi_processor.c         |  7 +++---
- drivers/acpi/ec.c                     | 21 ++++++++++-------
- drivers/cpufreq/longhaul.c            | 36 ++++++++++++++++++----------
- drivers/cpufreq/powernow-k6.c         | 23 ++++++++++--------
- drivers/cpufreq/powernow-k7.c         |  4 ----
- drivers/cpufreq/ppc-corenet-cpufreq.c |  5 +++-
- drivers/pnp/pnpacpi/core.c            | 44 +++++++++++++++++++++--------------
- drivers/pnp/quirks.c                  |  4 ++--
- 8 files changed, 85 insertions(+), 59 deletions(-)
