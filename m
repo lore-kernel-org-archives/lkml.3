@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757AbaEBTBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 15:01:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43783 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074AbaEBTBq (ORCPT
+	id S1752816AbaEBTCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 15:02:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:13231 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751784AbaEBTCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 15:01:46 -0400
-Date: Fri, 2 May 2014 21:01:50 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-cc: Steven Rostedt <rostedt@goodmis.org>, Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-In-Reply-To: <20140502183824.GH9178@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1405022100351.6261@ionos.tec.linutronix.de>
-References: <534C3606.7010206@meduna.org> <534C731F.1050406@meduna.org> <534DADF1.6060608@meduna.org> <20140422115439.GA20669@linutronix.de> <20140422094657.5b6ca1e2@gandalf.local.home> <53569E05.8010600@linutronix.de> <20140422134802.73fc1fa4@gandalf.local.home>
- <20140422141650.7f43d5ba@gandalf.local.home> <20140502183824.GH9178@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 2 May 2014 15:02:15 -0400
+Date: Fri, 2 May 2014 15:02:06 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 1/8] ftrace: make CALLER_ADDRx macros more generic
+Message-ID: <20140502150206.4afa9b1a@gandalf.local.home>
+In-Reply-To: <20140502181348.GD14645@arm.com>
+References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+	<1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
+	<1398851676-16389-2-git-send-email-takahiro.akashi@linaro.org>
+	<20140502181348.GD14645@arm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014, Sebastian Andrzej Siewior wrote:
-> * Steven Rostedt | 2014-04-22 14:16:50 [-0400]:
-> > /*
-> >  * Called by the local, per-CPU timer interrupt on SMP.
-> >  */
-> >@@ -1467,7 +1473,7 @@ void run_local_timers(void)
-> > 		return;
-> > 	}
-> > 
-> >-	if (!spin_do_trylock(&base->lock)) {
-> >+	if (timer_should_raise_softirq(&base->lock)) {
-> > 		raise_softirq(TIMER_SOFTIRQ);
-> > 		return;
-> > 	}
+On Fri, 2 May 2014 19:13:48 +0100
+Will Deacon <will.deacon@arm.com> wrote:
+
+> Hi Akashi,
 > 
-> Okay. So Peter said that it is okay to apply this since FULL_NO_HZ users
-> wouldn't complain on UP. I still wouldn't say it is broken but that is a
-> different story.
-> We have two users of this trylock. run_local_timers() which pops up
-> quite often (and you patched here) and the other is
-> get_next_timer_interrupt(). What do you suggest we do here? It is
-> basically the same thing.
+> On Wed, Apr 30, 2014 at 10:54:29AM +0100, AKASHI Takahiro wrote:
+> > Most archs with HAVE_ARCH_CALLER_ADDR have the almost same definitions
+> > of CALLER_ADDRx(n), and so put them into linux/ftrace.h.
+> > 
+> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> > ---
+> >  arch/arm/include/asm/ftrace.h      |   10 +---------
+> >  arch/blackfin/include/asm/ftrace.h |   11 +----------
+> >  arch/parisc/include/asm/ftrace.h   |   10 +---------
+> >  arch/sh/include/asm/ftrace.h       |   10 +---------
+> >  arch/xtensa/include/asm/ftrace.h   |   14 ++++----------
+> >  include/linux/ftrace.h             |   34 ++++++++++++++++++----------------
+> >  6 files changed, 26 insertions(+), 63 deletions(-)
+> 
+> This one looks a bit too widespread to be merged via the arm64 tree. I
+> wonder if the ftrace maintainers would consider taking it as a cleanup?
+> 
 
-It's different as it CANNOT fail on UP. That's called from the idle
-code and there is no way that anything holds that lock on UP when idle
-runs.
+I actually was the one to recommend this approach. But I have some
+small comments to the patch. I'll reply directly to the patch with them.
 
-Thanks,
-
-	tglx
+-- Steve
