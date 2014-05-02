@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbaEBUB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 16:01:56 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:56287 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaEBUBz (ORCPT
+	id S1752730AbaEBUFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 16:05:01 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55575 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaEBUE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 16:01:55 -0400
-Date: Fri, 2 May 2014 15:01:52 -0500
-From: Seth Jennings <sjennings@variantweb.net>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] mm: zpool: implement zsmalloc shrinking
-Message-ID: <20140502200152.GA18670@cerebellum.variantweb.net>
-References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
- <1397922764-1512-3-git-send-email-ddstreet@ieee.org>
- <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
+	Fri, 2 May 2014 16:04:59 -0400
+Date: Fri, 2 May 2014 13:04:33 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Zi Shen Lim <zlim@broadcom.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140502200433.GX3245@sirena.org.uk>
+References: <1398814573-27389-1-git-send-email-zlim@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Zppk1xGhJD+Z6rqE"
 Content-Disposition: inline
-In-Reply-To: <CAL1ERfMPcfyUeACnmZ2QF5WxJUQ2PaKbtRzis8sPbQsjnvf_GQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398814573-27389-1-git-send-email-zlim@broadcom.com>
+X-Cookie: Keep it short for pithy sake.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 209.49.225.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv3] arm64: topology: add MPIDR-based detection
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 26, 2014 at 04:37:31PM +0800, Weijie Yang wrote:
-> On Sat, Apr 19, 2014 at 11:52 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> > Add zs_shrink() and helper functions to zsmalloc.  Update zsmalloc
-> > zs_create_pool() creation function to include ops param that provides
-> > an evict() function for use during shrinking.  Update helper function
-> > fix_fullness_group() to always reinsert changed zspages even if the
-> > fullness group did not change, so they are updated in the fullness
-> > group lru.  Also update zram to use the new zsmalloc pool creation
-> > function but pass NULL as the ops param, since zram does not use
-> > pool shrinking.
-> >
-> 
-> I only review the code without test, however, I think this patch is
-> not acceptable.
-> 
-> The biggest problem is it will call zswap_writeback_entry() under lock,
-> zswap_writeback_entry() may sleep, so it is a bug. see below
-> 
-> The 3/4 patch has a lot of #ifdef, I don't think it's a good kind of
-> abstract way.
-> 
-> What about just disable zswap reclaim when using zsmalloc?
 
-I agree here.  Making a generic allocator layer and zsmalloc reclaim
-support should be two different efforts, since zsmalloc reclaim is
-fraught with peril.
+--Zppk1xGhJD+Z6rqE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The generic layer can be done though, as long as you provide a way for
-the backend to indicate that it doesn't support reclaim, which just
-results in lru-inverse overflow to the swap device at the zswap layer.
-Hopefully, if the user overrides the default to use zsmalloc, they
-understand the implications and have sized their workload properly.
+On Tue, Apr 29, 2014 at 04:36:13PM -0700, Zi Shen Lim wrote:
 
-Also, the fallback logic shouldn't be in this generic layer.  It should
-not be transparent to the user.  The user (in this case zswap) should
-implement the fallback if they care to have it.  The generic allocator
-layer makes it trivial for the user to implement.
+This looks good to me, modulo a couple of really tiny nitpicks.
 
-Thanks,
-Seth
+Reviwed-by: Mark Brown <broonie@linaro.org>
+
+I'm just doing some brief testing now, I'll repost my series with this
+and Lorenzo's changes included shortly assuming no issues.
+
+>  	if (cpuid_topo->cluster_id =3D=3D -1) {
+> -		/*
+> -		 * DT does not contain topology information for this cpu.
+> -		 */
+> +		/* No topology information for this cpu ?! */
+>  		pr_debug("CPU%u: No topology information configured\n", cpuid);
+>  		return;
+>  	}
+
+Now that we have MPIDR support (well, will with this patch) this should
+probably be raised to a pr_err() since we've got ourselves confused
+somehow if it ever happens - we should always be able to get topology
+=66rom MPIDR.  I'll tweak this when I repost.
+
+> +	pr_debug("CPU%u: cluster %d core %d thread %d mpidr %llx\n",
+> +		 cpuid, cpuid_topo->cluster_id, cpuid_topo->core_id,
+> +		 cpuid_topo->thread_id, mpidr);
+
+I do wonder if we should print this either unconditionally or not at
+all (rather than only if using MPIDR), I know Catalin and/or Lorenzo
+weren't keen on noise but it is just at debug level and it's nice and
+easy to refer to.
+
+--Zppk1xGhJD+Z6rqE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTY/pOAAoJELSic+t+oim9JBgP/1iYjzLoStbXnJq2E98LIkm9
+BMzrA7t93hb9hq8rYlKmjIpDo8SYk0cTZC1AlSF/LsVZnbpKW4zpqd9VvRkuDOqc
+g0S6Zf1IKUT0vbHgz7ULd9KEjvDIxoVHmJngQ7kmkxDPlsNBCavmkKhvvjcQPZUO
+8x2tMT+EyhmwkX5U0V3m1XENvX3/aP2ofySATqjzyKt78zeaGGBZovwiTVPw3VtW
+8sDdKGoKQxlA0YJwNevtsCBqH031h6S3PaBr4g3Yc9EfWWgcUCPLR2aGUGiRoBcb
+AL6p0yqordD3jLAdD90ot7vpLjcgPj59ETaV7NN8IxIhdmAzB0qmcSadUnQewzmb
+Qb2zWbY0LeYJVACU8DGsNykEA7PvaEL6tgx14mM1QOO4eRcSW3uGSseUb0rR2bCm
+poTGEfqjUexC5GPLdBJtkVNXhwiPCvuGHLr7PiZp4XBfuLZtrPqXmmeP1+vWlQ1P
+xPwOd1cKUMxyeosk4yA2Cnm5j+8AjmlGxa0jGrPJaY+4fJzV7oWEQvKSX73IQp3B
+r0Jn5I7DQfmvLCu1dP6WEztA4qCslULcoU/1H3xa9Tro096a6oqI9nNbV6RHBbtq
+F2tDYJivrCOAxbUxEQ1AjkP8s31AdjjDXm2vqf0JwEqUk6zPMQES/ZAYwIaI8h31
+tGqWKXg1cTxHseSnTziP
+=8wUB
+-----END PGP SIGNATURE-----
+
+--Zppk1xGhJD+Z6rqE--
