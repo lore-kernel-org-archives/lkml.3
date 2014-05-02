@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaEBTCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 15:02:16 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:13231 "EHLO
+	id S1752824AbaEBTDg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 15:03:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:39008 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751784AbaEBTCP (ORCPT
+	by vger.kernel.org with ESMTP id S1751857AbaEBTDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 15:02:15 -0400
-Date: Fri, 2 May 2014 15:02:06 -0400
+	Fri, 2 May 2014 15:03:35 -0400
+Date: Fri, 2 May 2014 15:03:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Will Deacon <will.deacon@arm.com>
 Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
@@ -23,7 +23,7 @@ Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
         "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH v8 1/8] ftrace: make CALLER_ADDRx macros more generic
-Message-ID: <20140502150206.4afa9b1a@gandalf.local.home>
+Message-ID: <20140502150333.4af8b89c@gandalf.local.home>
 In-Reply-To: <20140502181348.GD14645@arm.com>
 References: <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
 	<1398851676-16389-1-git-send-email-takahiro.akashi@linaro.org>
@@ -42,27 +42,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Fri, 2 May 2014 19:13:48 +0100
 Will Deacon <will.deacon@arm.com> wrote:
 
-> Hi Akashi,
-> 
-> On Wed, Apr 30, 2014 at 10:54:29AM +0100, AKASHI Takahiro wrote:
-> > Most archs with HAVE_ARCH_CALLER_ADDR have the almost same definitions
-> > of CALLER_ADDRx(n), and so put them into linux/ftrace.h.
-> > 
-> > Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> > ---
-> >  arch/arm/include/asm/ftrace.h      |   10 +---------
-> >  arch/blackfin/include/asm/ftrace.h |   11 +----------
-> >  arch/parisc/include/asm/ftrace.h   |   10 +---------
-> >  arch/sh/include/asm/ftrace.h       |   10 +---------
-> >  arch/xtensa/include/asm/ftrace.h   |   14 ++++----------
-> >  include/linux/ftrace.h             |   34 ++++++++++++++++++----------------
-> >  6 files changed, 26 insertions(+), 63 deletions(-)
-> 
 > This one looks a bit too widespread to be merged via the arm64 tree. I
 > wonder if the ftrace maintainers would consider taking it as a cleanup?
-> 
 
-I actually was the one to recommend this approach. But I have some
-small comments to the patch. I'll reply directly to the patch with them.
+Oh, and I can take the patch if you feel uncomfortable with taking
+something so spread out. As it deals with ftrace I probably can get
+away with a cross the board arch change to it.
 
 -- Steve
