@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaEBPrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:47:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44392 "EHLO
+	id S1754110AbaEBPqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:46:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44357 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaEBPq5 (ORCPT
+	with ESMTP id S1754067AbaEBPqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:57 -0400
+	Fri, 2 May 2014 11:46:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 112/151] s390/bitops,atomic: add missing memory barriers
-Date: Fri,  2 May 2014 08:38:20 -0700
-Message-Id: <1399045139-4531-113-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 122/151] drm/radeon: call drm_edid_to_eld when we update the edid
+Date: Fri,  2 May 2014 08:38:30 -0700
+Message-Id: <1399045139-4531-123-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,370 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 0ccc8b7ac86053388e793bad20bd26bd777752eb upstream.
+commit 16086279353cbfecbb3ead474072dced17b97ddc upstream.
 
-When reworking the bitops and atomic ops I missed that those instructions
-that got atomic behaviour only perform a "specific-operand-serialization"
-instead of a full "serialization".
-The compare-and-swap instruction used before performs a full serialization
-before and after the instruction is executed, which means it has full
-memory barrier semantics.
-In order to give the new bitops and atomic ops functions also full memory
-barrier semantics add a "bcr 14,0" before and after each of those new
-instructions which performs full serialization as well.
+This needs to be done to update some of the fields in
+the connector structure used by the audio code.
 
-This restores memory barrier semantics for bitops and atomic ops functions
-which return values, like e.g. atomic_add_return(), but not for functions
-which do not return a value, like e.g. atomic_add().
-This is consistent to other architectures and what common code requires.
+Noticed by several users on irc.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/include/asm/atomic.h | 70 +++++++++++++++++++++++++-----------------
- arch/s390/include/asm/bitops.h | 41 ++++++++++++++-----------
- 2 files changed, 65 insertions(+), 46 deletions(-)
+ drivers/gpu/drm/radeon/radeon_display.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index fa9aaf7..1d47061 100644
---- a/arch/s390/include/asm/atomic.h
-+++ b/arch/s390/include/asm/atomic.h
-@@ -15,23 +15,29 @@
- 
- #include <linux/compiler.h>
- #include <linux/types.h>
-+#include <asm/barrier.h>
- #include <asm/cmpxchg.h>
- 
- #define ATOMIC_INIT(i)  { (i) }
- 
-+#define __ATOMIC_NO_BARRIER	"\n"
-+
- #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
- 
- #define __ATOMIC_OR	"lao"
- #define __ATOMIC_AND	"lan"
- #define __ATOMIC_ADD	"laa"
-+#define __ATOMIC_BARRIER "bcr	14,0\n"
- 
--#define __ATOMIC_LOOP(ptr, op_val, op_string)				\
-+#define __ATOMIC_LOOP(ptr, op_val, op_string, __barrier)		\
- ({									\
- 	int old_val;							\
- 									\
- 	typecheck(atomic_t *, ptr);					\
- 	asm volatile(							\
-+		__barrier						\
- 		op_string "	%0,%2,%1\n"				\
-+		__barrier						\
- 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
- 		: "d" (op_val)						\
- 		: "cc", "memory");					\
-@@ -43,8 +49,9 @@
- #define __ATOMIC_OR	"or"
- #define __ATOMIC_AND	"nr"
- #define __ATOMIC_ADD	"ar"
-+#define __ATOMIC_BARRIER "\n"
- 
--#define __ATOMIC_LOOP(ptr, op_val, op_string)				\
-+#define __ATOMIC_LOOP(ptr, op_val, op_string, __barrier)		\
- ({									\
- 	int old_val, new_val;						\
- 									\
-@@ -82,7 +89,7 @@ static inline void atomic_set(atomic_t *v, int i)
- 
- static inline int atomic_add_return(int i, atomic_t *v)
- {
--	return __ATOMIC_LOOP(v, i, __ATOMIC_ADD) + i;
-+	return __ATOMIC_LOOP(v, i, __ATOMIC_ADD, __ATOMIC_BARRIER) + i;
- }
- 
- static inline void atomic_add(int i, atomic_t *v)
-@@ -94,12 +101,10 @@ static inline void atomic_add(int i, atomic_t *v)
- 			: "+Q" (v->counter)
- 			: "i" (i)
- 			: "cc", "memory");
--	} else {
--		atomic_add_return(i, v);
-+		return;
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+index 7b25381..0ec48ea 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -790,6 +790,7 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
+ 	if (radeon_connector->edid) {
+ 		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
+ 		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
++		drm_edid_to_eld(&radeon_connector->base, radeon_connector->edid);
+ 		return ret;
  	}
--#else
--	atomic_add_return(i, v);
- #endif
-+	__ATOMIC_LOOP(v, i, __ATOMIC_ADD, __ATOMIC_NO_BARRIER);
- }
- 
- #define atomic_add_negative(_i, _v)	(atomic_add_return(_i, _v) < 0)
-@@ -115,12 +120,12 @@ static inline void atomic_add(int i, atomic_t *v)
- 
- static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
- {
--	__ATOMIC_LOOP(v, ~mask, __ATOMIC_AND);
-+	__ATOMIC_LOOP(v, ~mask, __ATOMIC_AND, __ATOMIC_NO_BARRIER);
- }
- 
- static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
- {
--	__ATOMIC_LOOP(v, mask, __ATOMIC_OR);
-+	__ATOMIC_LOOP(v, mask, __ATOMIC_OR, __ATOMIC_NO_BARRIER);
- }
- 
- #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-@@ -157,19 +162,24 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- 
- #ifdef CONFIG_64BIT
- 
-+#define __ATOMIC64_NO_BARRIER	"\n"
-+
- #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
- 
- #define __ATOMIC64_OR	"laog"
- #define __ATOMIC64_AND	"lang"
- #define __ATOMIC64_ADD	"laag"
-+#define __ATOMIC64_BARRIER "bcr	14,0\n"
- 
--#define __ATOMIC64_LOOP(ptr, op_val, op_string)				\
-+#define __ATOMIC64_LOOP(ptr, op_val, op_string, __barrier)		\
- ({									\
- 	long long old_val;						\
- 									\
- 	typecheck(atomic64_t *, ptr);					\
- 	asm volatile(							\
-+		__barrier						\
- 		op_string "	%0,%2,%1\n"				\
-+		__barrier						\
- 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
- 		: "d" (op_val)						\
- 		: "cc", "memory");					\
-@@ -181,8 +191,9 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- #define __ATOMIC64_OR	"ogr"
- #define __ATOMIC64_AND	"ngr"
- #define __ATOMIC64_ADD	"agr"
-+#define __ATOMIC64_BARRIER "\n"
- 
--#define __ATOMIC64_LOOP(ptr, op_val, op_string)				\
-+#define __ATOMIC64_LOOP(ptr, op_val, op_string, __barrier)		\
- ({									\
- 	long long old_val, new_val;					\
- 									\
-@@ -220,17 +231,32 @@ static inline void atomic64_set(atomic64_t *v, long long i)
- 
- static inline long long atomic64_add_return(long long i, atomic64_t *v)
- {
--	return __ATOMIC64_LOOP(v, i, __ATOMIC64_ADD) + i;
-+	return __ATOMIC64_LOOP(v, i, __ATOMIC64_ADD, __ATOMIC64_BARRIER) + i;
-+}
-+
-+static inline void atomic64_add(long long i, atomic64_t *v)
-+{
-+#ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
-+	if (__builtin_constant_p(i) && (i > -129) && (i < 128)) {
-+		asm volatile(
-+			"agsi	%0,%1\n"
-+			: "+Q" (v->counter)
-+			: "i" (i)
-+			: "cc", "memory");
-+		return;
-+	}
-+#endif
-+	__ATOMIC64_LOOP(v, i, __ATOMIC64_ADD, __ATOMIC64_NO_BARRIER);
- }
- 
- static inline void atomic64_clear_mask(unsigned long mask, atomic64_t *v)
- {
--	__ATOMIC64_LOOP(v, ~mask, __ATOMIC64_AND);
-+	__ATOMIC64_LOOP(v, ~mask, __ATOMIC64_AND, __ATOMIC64_NO_BARRIER);
- }
- 
- static inline void atomic64_set_mask(unsigned long mask, atomic64_t *v)
- {
--	__ATOMIC64_LOOP(v, mask, __ATOMIC64_OR);
-+	__ATOMIC64_LOOP(v, mask, __ATOMIC64_OR, __ATOMIC64_NO_BARRIER);
- }
- 
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
-@@ -334,25 +360,13 @@ static inline void atomic64_clear_mask(unsigned long long mask, atomic64_t *v)
- 	} while (atomic64_cmpxchg(v, old, new) != old);
- }
- 
--#endif /* CONFIG_64BIT */
--
- static inline void atomic64_add(long long i, atomic64_t *v)
- {
--#ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
--	if (__builtin_constant_p(i) && (i > -129) && (i < 128)) {
--		asm volatile(
--			"agsi	%0,%1\n"
--			: "+Q" (v->counter)
--			: "i" (i)
--			: "cc", "memory");
--	} else {
--		atomic64_add_return(i, v);
--	}
--#else
- 	atomic64_add_return(i, v);
--#endif
- }
- 
-+#endif /* CONFIG_64BIT */
-+
- static inline int atomic64_add_unless(atomic64_t *v, long long i, long long u)
- {
- 	long long c, old;
-diff --git a/arch/s390/include/asm/bitops.h b/arch/s390/include/asm/bitops.h
-index 6e6ad06..4e20612 100644
---- a/arch/s390/include/asm/bitops.h
-+++ b/arch/s390/include/asm/bitops.h
-@@ -47,14 +47,18 @@
- 
- #include <linux/typecheck.h>
- #include <linux/compiler.h>
-+#include <asm/barrier.h>
-+
-+#define __BITOPS_NO_BARRIER	"\n"
- 
- #ifndef CONFIG_64BIT
- 
- #define __BITOPS_OR		"or"
- #define __BITOPS_AND		"nr"
- #define __BITOPS_XOR		"xr"
-+#define __BITOPS_BARRIER	"\n"
- 
--#define __BITOPS_LOOP(__addr, __val, __op_string)		\
-+#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
- ({								\
- 	unsigned long __old, __new;				\
- 								\
-@@ -67,7 +71,7 @@
- 		"	jl	0b"				\
- 		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
- 		: "d" (__val)					\
--		: "cc");					\
-+		: "cc", "memory");				\
- 	__old;							\
- })
- 
-@@ -78,17 +82,20 @@
- #define __BITOPS_OR		"laog"
- #define __BITOPS_AND		"lang"
- #define __BITOPS_XOR		"laxg"
-+#define __BITOPS_BARRIER	"bcr	14,0\n"
- 
--#define __BITOPS_LOOP(__addr, __val, __op_string)		\
-+#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
- ({								\
- 	unsigned long __old;					\
- 								\
- 	typecheck(unsigned long *, (__addr));			\
- 	asm volatile(						\
-+		__barrier					\
- 		__op_string "	%0,%2,%1\n"			\
-+		__barrier					\
- 		: "=d" (__old),	"+Q" (*(__addr))		\
- 		: "d" (__val)					\
--		: "cc");					\
-+		: "cc", "memory");				\
- 	__old;							\
- })
- 
-@@ -97,8 +104,9 @@
- #define __BITOPS_OR		"ogr"
- #define __BITOPS_AND		"ngr"
- #define __BITOPS_XOR		"xgr"
-+#define __BITOPS_BARRIER	"\n"
- 
--#define __BITOPS_LOOP(__addr, __val, __op_string)		\
-+#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
- ({								\
- 	unsigned long __old, __new;				\
- 								\
-@@ -111,7 +119,7 @@
- 		"	jl	0b"				\
- 		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
- 		: "d" (__val)					\
--		: "cc");					\
-+		: "cc", "memory");				\
- 	__old;							\
- })
- 
-@@ -149,12 +157,12 @@ static inline void set_bit(unsigned long nr, volatile unsigned long *ptr)
- 			"oi	%0,%b1\n"
- 			: "+Q" (*caddr)
- 			: "i" (1 << (nr & 7))
--			: "cc");
-+			: "cc", "memory");
- 		return;
- 	}
- #endif
- 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
--	__BITOPS_LOOP(addr, mask, __BITOPS_OR);
-+	__BITOPS_LOOP(addr, mask, __BITOPS_OR, __BITOPS_NO_BARRIER);
- }
- 
- static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
-@@ -170,12 +178,12 @@ static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
- 			"ni	%0,%b1\n"
- 			: "+Q" (*caddr)
- 			: "i" (~(1 << (nr & 7)))
--			: "cc");
-+			: "cc", "memory");
- 		return;
- 	}
- #endif
- 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
--	__BITOPS_LOOP(addr, mask, __BITOPS_AND);
-+	__BITOPS_LOOP(addr, mask, __BITOPS_AND, __BITOPS_NO_BARRIER);
- }
- 
- static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
-@@ -191,12 +199,12 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
- 			"xi	%0,%b1\n"
- 			: "+Q" (*caddr)
- 			: "i" (1 << (nr & 7))
--			: "cc");
-+			: "cc", "memory");
- 		return;
- 	}
- #endif
- 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
--	__BITOPS_LOOP(addr, mask, __BITOPS_XOR);
-+	__BITOPS_LOOP(addr, mask, __BITOPS_XOR, __BITOPS_NO_BARRIER);
- }
- 
- static inline int
-@@ -206,8 +214,7 @@ test_and_set_bit(unsigned long nr, volatile unsigned long *ptr)
- 	unsigned long old, mask;
- 
- 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
--	old = __BITOPS_LOOP(addr, mask, __BITOPS_OR);
--	barrier();
-+	old = __BITOPS_LOOP(addr, mask, __BITOPS_OR, __BITOPS_BARRIER);
- 	return (old & mask) != 0;
- }
- 
-@@ -218,8 +225,7 @@ test_and_clear_bit(unsigned long nr, volatile unsigned long *ptr)
- 	unsigned long old, mask;
- 
- 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
--	old = __BITOPS_LOOP(addr, mask, __BITOPS_AND);
--	barrier();
-+	old = __BITOPS_LOOP(addr, mask, __BITOPS_AND, __BITOPS_BARRIER);
- 	return (old & ~mask) != 0;
- }
- 
-@@ -230,8 +236,7 @@ test_and_change_bit(unsigned long nr, volatile unsigned long *ptr)
- 	unsigned long old, mask;
- 
- 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
--	old = __BITOPS_LOOP(addr, mask, __BITOPS_XOR);
--	barrier();
-+	old = __BITOPS_LOOP(addr, mask, __BITOPS_XOR, __BITOPS_BARRIER);
- 	return (old & mask) != 0;
- }
- 
+ 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
 -- 
 1.9.1
 
