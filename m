@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbaEBQzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:55:06 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:42528 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaEBQzD (ORCPT
+	id S1752696AbaEBQ4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:56:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55335 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbaEBQ4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:55:03 -0400
-Date: Fri, 2 May 2014 10:54:59 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-Message-ID: <20140502165459.GA29511@google.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
- <1398353407-2345-5-git-send-email-santosh.shilimkar@ti.com>
+	Fri, 2 May 2014 12:56:04 -0400
+Date: Fri, 2 May 2014 09:55:46 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Message-ID: <20140502165546.GP3245@sirena.org.uk>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140429183758.GH15125@sirena.org.uk>
+ <20140430180609.GC3000@lukather>
+ <20140501011811.GF3245@sirena.org.uk>
+ <20140501223629.GJ3000@lukather>
+ <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QzTImLEHWgBoPYMi"
 Content-Disposition: inline
-In-Reply-To: <1398353407-2345-5-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+X-Cookie: Keep it short for pithy sake.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 209.49.225.226
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:30:04AM -0400, Santosh Shilimkar wrote:
-> Retrieve DMA configuration from DT and setup platform device's DMA
-> parameters. The DMA configuration in DT has to be specified using
-> "dma-ranges" and "dma-coherent" properties if supported.
-> 
-> We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
-> using "dma-coherent" device tree properties.
-> 
-> The set_arch_dma_coherent_ops macro has to be defined by arch if
-> it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
-> declared as nop.
-> 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  drivers/of/platform.c       |   48 ++++++++++++++++++++++++++++++++++++++++---
->  include/linux/dma-mapping.h |    7 +++++++
->  2 files changed, 52 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 48de98f..270c0b9 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -187,6 +187,50 @@ struct platform_device *of_device_alloc(struct device_node *np,
->  EXPORT_SYMBOL(of_device_alloc);
->  
->  /**
-> + * of_dma_configure - Setup DMA configuration
-> + * @dev:	Device to apply DMA configuration
-> + *
-> + * Try to get devices's DMA configuration from DT and update it
-> + * accordingly.
-> + *
-> + * In case if platform code need to use own special DMA configuration,it
-> + * can use Platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE event
-> + * to fix up DMA configuration.
-> + */
-> +static void of_dma_configure(struct device *dev)
-> +{
-> +	u64 dma_addr, paddr, size;
-> +	int ret;
-> +
-> +	dev->coherent_dma_mask = DMA_BIT_MASK(32);
-> +	if (!dev->dma_mask)
-> +		dev->dma_mask = &dev->coherent_dma_mask;
-> +
-> +	/*
-> +	 * if dma-coherent property exist, call arch hook to setup
-> +	 * dma coherent operations.
-> +	 */
-> +	if (of_dma_is_coherent(dev->of_node)) {
-> +		set_arch_dma_coherent_ops(dev);
-> +		dev_dbg(dev, "device is dma coherent\n");
-> +	}
-> +
-> +	/*
-> +	 * if dma-ranges property doesn't exist - just return else
-> +	 * setup the dma offset
-> +	 */
-> +	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
-> +	if ((ret == -ENODEV) || (ret < 0)) {
-> +		dev_dbg(dev, "no dma range information to setup\n");
-> +		return;
-> +	}
-> +
-> +	/* DMA ranges found. Calculate and set dma_pfn_offset */
-> +	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
-> +	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
 
-Is this effectively the same as an IOMMU that applies a constant offset
-to the bus address?  Could or should this be done by adding a simple IOMMU
-driver instead of adding dma_pfn_offset to struct device?
+--QzTImLEHWgBoPYMi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-If we had both dma-ranges (and we set dma_pfn_offset as you do here) and an
-IOMMU, how would the combination work?  If the IOMMU driver managed
-dma_pfn_offset internally, it seems like we'd have two entities dealing
-with it.  If the IOMMU driver doesn't use dma_pfn_offset, it seems like
-it would be exposing a weird intermediate address space that's not usable
-by either CPU or device.
+On Fri, May 02, 2014 at 01:28:26AM +0200, Geert Uytterhoeven wrote:
+
+> And then you want spidev to bind to it. Would it help if DT offered a feature
+> to add a compatible entry to a driver at runtime, cfr.
+> /sys/bus/pci/drivers/.../new_id on PCI?
+
+Yes, that's what I'd been under the impression that the bind file did -
+allowed modification of the list of devices to bind.
+
+--QzTImLEHWgBoPYMi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTY84PAAoJELSic+t+oim99qAP/1G1pCv1j12jRAdOuTxiwDKz
+UPlaDgRSOyKe/FcrGPVVp5LzXp/Ix7diTeTay3/iMcOIloD33UR272cUC9UipliH
+0N1ATpF4TQ6ird6UZPhKwFkrcWrsQwyZ1aw0LJUtCNhp9M6pZIf09FhVwwe1XQ3a
+Vrsyu5OeS0EB5U+jfMKcNiEZLGmK3E+xhZTeXQ/OYbv2Y5UP3QdxMzpAWyb+ZBMk
+sd8v4x71keqXrquP9FaD7gsFA346qtjMPuVKIcIflhhzaSt3FJBHty6abKTTSVzb
+rlsu4jgY5dRDsVTTYOBxw0PhbxVmi7zwNMwrE33c3t5rH2E9tbvrmIfHZhCOihCe
+P81geH9Z+HsHFoFlqyq1vgM2aDSOt6VlXxlEAIBj7pS7MIusoV7fbNm1ydGoUoTj
+bw//FCpvvr5XXjoV3TYRY3OalG1IyYo29Nvy1fFOeYl1x+7J6GwXHuaEDdLJKPsN
+uV1FzcGUQNLFfcGUbPOGU060JTWknsIdnzc0Pf0GfoP5hi1j0XFFdymxpyuUQkZM
+2yvW2NsRnZpN5vE5ud36vmvJ02FRZ9mFhhY6WA1WMT3/NyRR1UnKStZB3F0S7bgy
+LhjEr0WYMhhgp4mwBhOrfAc1dR2eLj5RcRLTJSK51eCzGla1++1gCQumSBDpwlnf
+WJAS0tx+YoUejbMMDSut
+=2Spb
+-----END PGP SIGNATURE-----
+
+--QzTImLEHWgBoPYMi--
