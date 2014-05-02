@@ -1,106 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750962AbaECE3e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 00:29:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38048 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaECE3c (ORCPT
+	id S1751099AbaECEaJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 00:30:09 -0400
+Received: from tamar.safe-mail.net ([213.8.161.229]:34157 "EHLO
+	tamar.safe-mail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaECEaH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 00:29:32 -0400
-Date: Fri, 2 May 2014 21:29:25 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-watchdog@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonas Jensen <jonas.jensen@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] watchdog: Add API to trigger reboots
-Message-ID: <20140503042925.GB5882@roeck-us.net>
-References: <1398958893-30049-1-git-send-email-linux@roeck-us.net>
- <1398958893-30049-2-git-send-email-linux@roeck-us.net>
- <20140503012243.GG4090@lukather>
+	Sat, 3 May 2014 00:30:07 -0400
+X-Greylist: delayed 43563 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 May 2014 00:30:07 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+	s=N1-0105; d=Safe-mail.net;
+	b=TcPp/R9Q4WLPOZ0slRCAZyjOTARL47DLhFZRJJ4aN4arGTefLY1tFUVDraxi4fb/
+	JNQ8Ag0qujTEzNaLfHquI2EcrDOtSFrDg21eSzvYOeFdRNe+cxFg63dMljpiTEar
+	N5sUv+smYLMBWn8O5BvEK8oYRifhwlIr6hsb5oJK+0w=;
+Subject: Hello dear,
+Date: Fri, 2 May 2014 12:23:32 -0400
+From: "Grace Zina" <gracezz0b06@Safe-mail.net>
+To: adenapatrick_1@hotmail.com
+Reply-To: adenapatrick_1@hotmail.com
+X-SMType: Regular
+X-SMRef: N1B-QSEAkJ5Aaw
+Message-Id: <N1B-QSEAkJ5Aaw@Safe-mail.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140503012243.GG4090@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-SMSignature: mnD4brQ+RHIJomdJstysztA9Wx+doQyEz6akk5h/e3xUBTtsZOv1NKzBs3tiVKbG
+	O+zVgNj14LvYj1Tddl02GmO65lXtxEjoq2g/AoUSJd5wd7BZ0ivGI22LZgAM30rk
+	lFK9m95W+DsDwFaPlDNkn5wAOOYKQIxmp2y3Cyeh7SM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 06:22:43PM -0700, Maxime Ripard wrote:
-> Hi Guenter,
-> 
-> On Thu, May 01, 2014 at 08:41:29AM -0700, Guenter Roeck wrote:
-> > Some hardware implements reboot through its watchdog hardware,
-> > for example by triggering a watchdog timeout. Platform specific
-> > code starts to spread into watchdog drivers, typically by setting
-> > pointers to a callback functions which is then called from the
-> > platform reset handler.
-> > 
-> > To simplify code and provide a unified API to trigger reboots by
-> > watchdog drivers, provide a single API to trigger such reboots
-> > through the watchdog subsystem.
-> > 
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  drivers/watchdog/watchdog_core.c |   17 +++++++++++++++++
-> >  include/linux/watchdog.h         |   11 +++++++++++
-> >  2 files changed, 28 insertions(+)
-> > 
-> > diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
-> > index cec9b55..4ec6e2f 100644
-> > --- a/drivers/watchdog/watchdog_core.c
-> > +++ b/drivers/watchdog/watchdog_core.c
-> > @@ -43,6 +43,17 @@
-> >  static DEFINE_IDA(watchdog_ida);
-> >  static struct class *watchdog_class;
-> >  
-> > +static struct watchdog_device *wdd_reboot_dev;
-> > +
-> > +void watchdog_do_reboot(enum reboot_mode mode, const char *cmd)
-> > +{
-> > +	if (wdd_reboot_dev) {
-> > +		if (wdd_reboot_dev->ops->reboot)
-> > +			wdd_reboot_dev->ops->reboot(wdd_reboot_dev, mode, cmd);
-> > +	}
-> > +}
-> > +EXPORT_SYMBOL(watchdog_do_reboot);
-> > +
-> >  static void watchdog_check_min_max_timeout(struct watchdog_device *wdd)
-> >  {
-> >  	/*
-> > @@ -162,6 +173,9 @@ int watchdog_register_device(struct watchdog_device *wdd)
-> >  		return ret;
-> >  	}
-> >  
-> > +	if (wdd->ops->reboot)
-> > +		wdd_reboot_dev = wdd;
-> > +
-> 
-> Overall, it looks really great, but I guess we can make it a
-> list. Otherwise, we might end up in a situation where we could not
-> reboot anymore, like this one for example:
->   - a first watchdog is probed, registers a reboot function
->   - a second watchdog is probed, registers a reboot function that
->     overwrites the first one.
->   - then, the second watchdog disappears for some reason, and the
->     reboot is set to NULL
-> 
-I thought about that, but how likely (or unlikely) is that to ever happen ?
-So I figured it is not worth the effort, and would just add complexity without
-real gain. We could always add the list later if we ever encounter a situation
-where two watchdogs in the same system provide a reboot callback.
-
-> Or maybe we can just use the start callback, with the min timeout already
-> registered, and prevent the user to kick the watchdog.
-> 
-Doesn't always work, unfortunately, even now. The moxart driver causes 
-an explicit and immediate reset. Also, some watchdogs don't reset the system
-directly but get an interrupt, which then calls the reset handler. Which,
-in our case, would call the start callback again, and you would have an endless
-loop.
-
-Guenter
+Hello dear,
+My name is Miss Adena, I'm very glad when i come across your profile today while searching for a partnership which interest me to write to you, I will like to build a good relationship with you because i see you as a one with a good heart .I want you to understand that a Good friend is like a tissue that wipe away tears, please if you don't mind i will like you to contact me through this my email address (adenapatrick_1@hotmail.com) for us to express ourselves and make exchange of our pictures and share a vital information's about my ourselves,
+Thanks,
