@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaEBWFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:05:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49115 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaEBWFS (ORCPT
+	id S1753030AbaEBWJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:09:33 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:44206 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882AbaEBWJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:05:18 -0400
-Date: Fri, 2 May 2014 15:05:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Jianyu Zhan <nasa4836@gmail.com>,
-        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.com
-Subject: Re: [PATCH 2/2] mm/memcontrol.c: introduce helper
- mem_cgroup_zoneinfo_zone()
-Message-Id: <20140502150516.d42792bad53d86fb727816bd@linux-foundation.org>
-In-Reply-To: <20140501125450.GA23420@cmpxchg.org>
-References: <1397862103-31982-1-git-send-email-nasa4836@gmail.com>
-	<20140422095923.GD29311@dhcp22.suse.cz>
-	<20140428150426.GB24807@dhcp22.suse.cz>
-	<20140501125450.GA23420@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 2 May 2014 18:09:30 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 2/4] printk: Rename printk_sched to printk_deferred
+Date: Fri,  2 May 2014 15:09:16 -0700
+Message-Id: <1399068558-2373-3-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
+References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 May 2014 08:54:50 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+After learning we'll need some sort of deferred printk functionality
+in the timekeeping core, Peter suggested we rename the printk_sched
+function so it can be reused by needed subsystems.
 
-> On Mon, Apr 28, 2014 at 05:04:26PM +0200, Michal Hocko wrote:
-> > On Tue 22-04-14 11:59:23, Michal Hocko wrote:
-> > > On Sat 19-04-14 07:01:43, Jianyu Zhan wrote:
-> > > > introduce helper mem_cgroup_zoneinfo_zone(). This will make
-> > > > mem_cgroup_iter() code more compact.
-> > > 
-> > > I dunno. Helpers are usually nice but this one adds more code then it
-> > > removes. It also doesn't help the generated code.
-> > > 
-> > > So I don't see any reason to merge it.
-> > 
-> > So should we drop it from mmotm?
-> 
-> Yes, please.
-> 
-> > > > Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> > > > ---
-> > > >  mm/memcontrol.c | 15 +++++++++++----
-> > > >  1 file changed, 11 insertions(+), 4 deletions(-)
-> 
-> This helper adds no value, but more code and indirection.
-> 
-> Cc'd Andrew - this is about
-> mm-memcontrolc-introduce-helper-mem_cgroup_zoneinfo_zone.patch
-> mm-memcontrolc-introduce-helper-mem_cgroup_zoneinfo_zone-checkpatch-fixes.patch
+This only changes the function name and name of the associated buffer.
+No logic changes.
 
-The patch seemed rather nice to me.  mem_cgroup_zoneinfo_zone()
-encapsulates a particular concept and gives it a name.  That's better
-than splattering the logic into callsites.
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/printk.h  | 6 +++---
+ kernel/printk/printk.c  | 2 +-
+ kernel/sched/core.c     | 2 +-
+ kernel/sched/deadline.c | 2 +-
+ kernel/sched/rt.c       | 2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
-The patch makes no change to code size but that's because gcc is silly.
-Mark mem_cgroup_zoneinfo_zone() as noinline and the patch shrinks
-.text by 40 bytes.
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 8752f75..7847301 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -128,9 +128,9 @@ asmlinkage __printf(1, 2) __cold
+ int printk(const char *fmt, ...);
+ 
+ /*
+- * Special printk facility for scheduler use only, _DO_NOT_USE_ !
++ * Special printk facility for scheduler/timekeeping use only, _DO_NOT_USE_ !
+  */
+-__printf(1, 2) __cold int printk_sched(const char *fmt, ...);
++__printf(1, 2) __cold int printk_deferred(const char *fmt, ...);
+ 
+ /*
+  * Please don't use printk_ratelimit(), because it shares ratelimiting state
+@@ -165,7 +165,7 @@ int printk(const char *s, ...)
+ 	return 0;
+ }
+ static inline __printf(1, 2) __cold
+-int printk_sched(const char *s, ...)
++int printk_deferred(const char *s, ...)
+ {
+ 	return 0;
+ }
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index bf62f2b..ffcb487 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -2584,7 +2584,7 @@ void wake_up_klogd(void)
+ 	preempt_enable();
+ }
+ 
+-int printk_sched(const char *fmt, ...)
++int printk_deferred(const char *fmt, ...)
+ {
+ 	unsigned long flags;
+ 	va_list args;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 805b8a9..263c790 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1336,7 +1336,7 @@ out:
+ 		 * leave kernel.
+ 		 */
+ 		if (p->mm && printk_ratelimit()) {
+-			printk_sched("process %d (%s) no longer affine to cpu%d\n",
++			printk_deferred("process %d (%s) no longer affine to cpu%d\n",
+ 					task_pid_nr(p), p->comm, cpu);
+ 		}
+ 	}
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index b080957..657ed68 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -352,7 +352,7 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
+ 
+ 		if (!lag_once) {
+ 			lag_once = true;
+-			printk_sched("sched: DL replenish lagged to much\n");
++			printk_deferred("sched: DL replenish lagged to much\n");
+ 		}
+ 		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
+ 		dl_se->runtime = pi_se->dl_runtime;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 7795e29..e7dc728 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -896,7 +896,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+ 
+ 			if (!once) {
+ 				once = true;
+-				printk_sched("sched: RT throttling activated\n");
++				printk_deferred("sched: RT throttling activated\n");
+ 			}
+ 		} else {
+ 			/*
+-- 
+1.9.1
 
