@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaEBFtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 01:49:09 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:42865 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751329AbaEBFtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 01:49:08 -0400
-Message-ID: <1399009745.5109.0.camel@violet>
-Subject: Re: [PATCH v7 16/20] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Date: Fri, 02 May 2014 08:49:05 +0300
-In-Reply-To: <20140430162705.GL23679@saruman.home>
-References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
-	 <1398354495-20782-17-git-send-email-iivanov@mm-sol.com>
-	 <20140430162705.GL23679@saruman.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751776AbaEBFvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 01:51:31 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58929 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaEBFva (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 01:51:30 -0400
+Date: Fri, 2 May 2014 06:51:27 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: dcache shrink list corruption?
+Message-ID: <20140502055127.GH18016@ZenIV.linux.org.uk>
+References: <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
+ <20140429181610.GJ18016@ZenIV.linux.org.uk>
+ <20140429191015.GK18016@ZenIV.linux.org.uk>
+ <20140429211851.GA32204@dastard>
+ <20140429214842.GL18016@ZenIV.linux.org.uk>
+ <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
+ <20140429232013.GM18016@ZenIV.linux.org.uk>
+ <20140430023142.GN18016@ZenIV.linux.org.uk>
+ <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
+ <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-30 at 11:27 -0500, Felipe Balbi wrote:
-> On Thu, Apr 24, 2014 at 06:48:11PM +0300, Ivan T. Ivanov wrote:
-> > From: Tim Bird <tbird20d@gmail.com>
+On Wed, Apr 30, 2014 at 11:15:15AM +0200, Miklos Szeredi wrote:
+> On Tue, Apr 29, 2014 at 07:56:13PM -0700, Linus Torvalds wrote:
+> > On Tue, Apr 29, 2014 at 7:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > OK, aggregate diff follows, more readable splitup (3 commits) attached.
+> > > It seems to survive beating here; testing, review and comments are
+> > > welcome.
 > > 
-> > Fix the value used for Parallel Transceiver Select (PTS) for the MSM USB
-> > controller.  This is a standard chipidea PORTSC definition, where
-> > a PHY_TYPE of 10b (<<30) is ULPI and 11b (<<30) is SERIAL.
-> > Fix the definitions and use them correctly in the driver code.
+> > Miklos, did you have some particular load that triggered this, or was
+> > it just some reports? It would be really good to get this patch some
+> > stress-testing.
 > > 
-> > Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+> > I like how the patch removes more lines than it adds, but apart from
+> > that it's hard to read the patch (even the split-out ones) and say
+> > anything more about it. I think this needs a *lot* of testing.
 > 
-> since you're the one sending the patch, you must add your signed-off-by
-> too. If you reply with your SoB I'll add to proper patches.
-> 
+> IBM is triggering this with the host01 test from the LTP suite.  I haven't yet
+> tried to reproduce it.
 
-Sure. 
-
-Signed-of-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-
-Thanks.
-
-
+Could you repost their report?  So far I hadn't managed to get actual list
+corruption on mainline kernel - it definitely is possible, but on all
+testcases so far the race window is too narrow.  So if they have a reproducer
+that doesn't take an insane amount of time, I'd really like to see it...
