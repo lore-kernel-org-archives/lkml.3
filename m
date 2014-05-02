@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218AbaEBPT4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:19:56 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:50207 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650AbaEBPTy (ORCPT
+	id S1752585AbaEBPUs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:20:48 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:45221 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382AbaEBPUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:19:54 -0400
-Message-ID: <5363B795.4090908@cogentembedded.com>
-Date: Fri, 02 May 2014 19:19:49 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Fri, 2 May 2014 11:20:46 -0400
+Date: Fri, 2 May 2014 11:20:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+Message-ID: <20140502152042.GD10204@htj.dyndns.org>
+References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
+ <20140423141908.GA4781@htj.dyndns.org>
+ <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140424143517.GC14460@htj.dyndns.org>
+ <20140424145206.GB2206@localhost>
+ <1398392217.2805.150.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140425101501.GD2206@localhost>
+ <1398645587.3046.19.camel@ThinkPad-T5421>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Tony Luck <tony.luck@intel.com>
-CC: linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/8] sh, irq: Remove irq_reserve_irq calling
-References: <1398986302-30455-1-git-send-email-yinghai@kernel.org> <1398986302-30455-3-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1398986302-30455-3-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398645587.3046.19.camel@ThinkPad-T5421>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Apr 28, 2014 at 08:39:47AM +0800, Li Zhong wrote:
+> Yes, maybe try to get the module reference is not bad before writing to
+> driver attributes, as it doesn't make much sense to really call the
+> callbacks for the driver attribute if the driver is being unload.
 
-On 05/02/2014 03:18 AM, Yinghai Lu wrote:
+Please don't do that spuriously.  Active protection is the primary
+mechanism for that sort of protection and adding spurious things just
+make them confusing.
 
-> in sh calling path:
-> 	register_intc_controller
-> 		==> irq_create_identity_mapping/irq_create_strict_mappins
-> 			==>irq_alloc_desc: it will set bits on allocate_irq
-> 		==> intc_register_irq
-> 			==> irq_reserve_irq: set bits again
+> And after we get the reference, it is safe for us to break the active.
+> But if we don't have such real cases(lockdep warnings), we actually
+> don't need to break it. 
 
-> so we can kill this irq_reserve_irq calling.
+Yeah, for cases where active protection should be broken, other
+measures should be taken to prevent the underlying data structure /
+code from going away.
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Cc: linux-sh@vger.kernel.org
-> ---
->   drivers/sh/intc/core.c | 5 +----
->   1 file changed, 1 insertion(+), 4 deletions(-)
+Thanks.
 
-> diff --git a/drivers/sh/intc/core.c b/drivers/sh/intc/core.c
-> index 8f32a13..05118f92 100644
-> --- a/drivers/sh/intc/core.c
-> +++ b/drivers/sh/intc/core.c
-> @@ -81,11 +81,8 @@ static void __init intc_register_irq(struct intc_desc *desc,
->   	unsigned long flags;
->
->   	/*
-> -	 * Register the IRQ position with the global IRQ map, then insert
-> -	 * it in to the radix tree.
-> +	 * insert it in to the radix tree.
-
-    It makes sense to convert this comment to one-liner now. I'd also have 
-started it with a capital letter.
-
->   	 */
-> -	irq_reserve_irq(irq);
-> -
->   	raw_spin_lock_irqsave(&intc_big_lock, flags);
->   	radix_tree_insert(&d->tree, enum_id, intc_irq_xlate_get(irq));
->   	raw_spin_unlock_irqrestore(&intc_big_lock, flags);
-
-WBR, Sergei
-
+-- 
+tejun
