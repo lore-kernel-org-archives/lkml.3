@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaEBROr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 13:14:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55361 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaEBROq (ORCPT
+	id S1752774AbaEBRWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 13:22:01 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:48670 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbaEBRWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 13:14:46 -0400
-Date: Fri, 2 May 2014 10:14:11 -0700
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140502171411.GS3245@sirena.org.uk>
-References: <1399004974-19566-1-git-send-email-geert@linux-m68k.org>
+	Fri, 2 May 2014 13:22:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JPmhzT54liBDmwDC"
-Content-Disposition: inline
-In-Reply-To: <1399004974-19566-1-git-send-email-geert@linux-m68k.org>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 209.49.225.226
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: core: Protect DMA code by #ifdef CONFIG_HAS_DMA
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <5363CA91.7070203@canonical.com>
+References: <5363CA91.7070203@canonical.com>
+Date: Fri, 2 May 2014 13:21:59 -0400
+Message-ID: <CADnq5_OeiqpDZoPcAccKJn9Tvzz-euNJou4LhZqNKOH64F+7dw@mail.gmail.com>
+Subject: Re: Lenovo x120e resume regression in 3.15-rc1 bisected to
+ 'drm/crtc-helpers: fix dpms on logic'
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, Dave Airlie <airlied@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>
+Content-Type: multipart/mixed; boundary=047d7bf16274e9bfdb04f86e0485
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--047d7bf16274e9bfdb04f86e0485
+Content-Type: text/plain; charset=UTF-8
 
---JPmhzT54liBDmwDC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 2, 2014 at 12:40 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
+> I've bisected a resume regression on a Lenovo x120e to
+> 177cf92de4aa97ec1435987e91696ed8b5023130 (drm/crtc-helpers: fix dpms on
+> logic). Everything works fine with this patch reverted on top of
+> 3.15-rc3. I realize it is correcting a coding error that has been in
+> place since 3.11, but it is also causing this laptop to resume to a
+> black screen wherein the platform appears to be locked up (no console,
+> no network). See attached bisect log and lspci. The BIOS version is 1.15.
+>
 
-On Fri, May 02, 2014 at 06:29:34AM +0200, Geert Uytterhoeven wrote:
-> If NO_DMA=3Dy:
->=20
-> drivers/built-in.o: In function `spi_map_buf':
-> spi.c:(.text+0x21bc60): undefined reference to `dma_map_sg'
-> drivers/built-in.o: In function `spi_unmap_buf.isra.33':
-> spi.c:(.text+0x21c32e): undefined reference to `dma_unmap_sg'
-> make[3]: *** [vmlinux] Error 1
+Does the attached patch help?  I haven't had a chance to unwind all
+the logic in the crtc helper code.
 
-Ugh.  It would seem better to have these functions stubbed out.  But
-applied anyway.
+Alex
 
---JPmhzT54liBDmwDC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--047d7bf16274e9bfdb04f86e0485
+Content-Type: text/x-diff; charset=US-ASCII; 
+	name="0001-drm-radeon-force-connector-dpm-state-to-ON-on-modese.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-force-connector-dpm-state-to-ON-on-modese.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hupqz28n2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTY9JgAAoJELSic+t+oim925YQAIx8ONzIEWzG7IB7HAXx5QC7
-FR5RlQjCD8ZFJfaJ0QQB3QK7OrspE/WqVmUJAjJjDsW9o5EugOMGcP4qm4TUzHIk
-MBjuf8uDkdTiPU0Wu9lkyk4B1H1TxD7VIjvE2Wue6BjI/HtPLEHRYbjYWPl5vpfc
-69Eer+af7l2TKitQFoErnIouwMM0zfwPqmgeEqSKVBoVIdvug3D03RuKOD390t7m
-cudvuxTVknckalehldiYZP89TCgiteG/uk+xlTVyyMiF6GyNN5gCDr6fuS6LK/ka
-XUfne39qfyt5q7sbiKGlumWJQdAa1U6dv8KnfgPZVobF0Mf1f63lMr6MDhBbowu6
-3rZWuzR2MfBU4owkaTjaruwK4LM0Zvl/8/vbVb9Su6ztNhi2X+iHq180ED+2Qzcp
-lrL9LPQr6Bk9Uj4AMSS92sSqXR6imc5kdb4mDPu5Bez7j11W+WMqmyEZ2R6cKCCP
-hgkwP3DLuElrcLHiHVQsYtRfQxu/XYm8jHKgdvYpGu+8kkuajOxdKReJucAq6ni7
-3WLO+mFcEmyWznRRbovPhGEIVRyVzSLR2J1bO9sEjrmcAl2sAEhA/tnNJsKc2D5p
-YexYr2pgY1cDYH/3+McQ00ht7BIn1x3YMLnNXoYj8HKZ3cmVdAFoiudmLKVt0N9r
-D7Rop01lL/byTiMAsSaB
-=fIqD
------END PGP SIGNATURE-----
-
---JPmhzT54liBDmwDC--
+RnJvbSBkYzMxOGIyYzg1ODNkMzcyNmM2NDE3NzAyNGQ3NzdjOTQwOGQzNTM4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IEZyaSwgMiBNYXkgMjAxNCAxMzoxODoyMyAtMDQwMApTdWJqZWN0OiBbUEFUQ0hd
+IGRybS9yYWRlb246IGZvcmNlIGNvbm5lY3RvciBkcG0gc3RhdGUgdG8gT04gb24gbW9kZXNldAoK
+V2UgdHVybiB0aGUgZGlzcGxheSBvbiBhcyBwYXJ0IG9mIHRoZSBtb2Rlc2V0LCBzbyBtYXJrIGl0
+CmFzIHN1Y2guCgpTaWduZWQtb2ZmLWJ5OiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVy
+QGFtZC5jb20+Ci0tLQogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9hdG9tYmlvc19lbmNvZGVycy5j
+IHwgNCArKysrCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRpb25zKCspCgpkaWZmIC0tZ2l0IGEv
+ZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9hdG9tYmlvc19lbmNvZGVycy5jIGIvZHJpdmVycy9ncHUv
+ZHJtL3JhZGVvbi9hdG9tYmlvc19lbmNvZGVycy5jCmluZGV4IGU2ZWI1MDkuLjBiYTAyNWMgMTAw
+NjQ0Ci0tLSBhL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vYXRvbWJpb3NfZW5jb2RlcnMuYworKysg
+Yi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2F0b21iaW9zX2VuY29kZXJzLmMKQEAgLTIzOTcsOSAr
+MjM5NywxMyBAQCBzdGF0aWMgdm9pZCByYWRlb25fYXRvbV9lbmNvZGVyX3ByZXBhcmUoc3RydWN0
+IGRybV9lbmNvZGVyICplbmNvZGVyKQogCiBzdGF0aWMgdm9pZCByYWRlb25fYXRvbV9lbmNvZGVy
+X2NvbW1pdChzdHJ1Y3QgZHJtX2VuY29kZXIgKmVuY29kZXIpCiB7CisJc3RydWN0IGRybV9jb25u
+ZWN0b3IgKmNvbm5lY3RvciA9IHJhZGVvbl9nZXRfY29ubmVjdG9yX2Zvcl9lbmNvZGVyKGVuY29k
+ZXIpOworCiAJLyogbmVlZCB0byBjYWxsIHRoaXMgaGVyZSBhcyB3ZSBuZWVkIHRoZSBjcnRjIHNl
+dCB1cCAqLwogCXJhZGVvbl9hdG9tX2VuY29kZXJfZHBtcyhlbmNvZGVyLCBEUk1fTU9ERV9EUE1T
+X09OKTsKIAlyYWRlb25fYXRvbV9vdXRwdXRfbG9jayhlbmNvZGVyLCBmYWxzZSk7CisJaWYgKGNv
+bm5lY3RvcikKKwkJY29ubmVjdG9yLT5kcG1zID0gRFJNX01PREVfRFBNU19PTjsKIH0KIAogc3Rh
+dGljIHZvaWQgcmFkZW9uX2F0b21fZW5jb2Rlcl9kaXNhYmxlKHN0cnVjdCBkcm1fZW5jb2RlciAq
+ZW5jb2RlcikKLS0gCjEuOC4zLjEKCg==
+--047d7bf16274e9bfdb04f86e0485--
