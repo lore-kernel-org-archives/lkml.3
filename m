@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaEBA4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 May 2014 20:56:49 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:34695 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaEBA4r (ORCPT
+	id S1751511AbaEBA5D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 May 2014 20:57:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58508 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaEBA5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 May 2014 20:56:47 -0400
+	Thu, 1 May 2014 20:57:00 -0400
+Date: Fri, 2 May 2014 01:56:59 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: Connecting to sockets on MNT_READONLY mounts?
+Message-ID: <20140502005659.GF18016@ZenIV.linux.org.uk>
+References: <CALCETrUXbS4BMWMd0XXgFqyvmpu+WML840_mzbPiov8WmaA=Xw@mail.gmail.com>
+ <20140501223432.GD18016@ZenIV.linux.org.uk>
+ <CALCETrXaXsVxaT3TH-CC8DKyDU7k=i9Y5PqBqaSDnH+2rr5E2A@mail.gmail.com>
+ <20140501235135.GE18016@ZenIV.linux.org.uk>
+ <CALCETrXhVKq33-KWLMVxPtCZgHddKsxCOQX9F-LGerXsCrLH5Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1398353407-2345-4-git-send-email-santosh.shilimkar@ti.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
-	<1398353407-2345-4-git-send-email-santosh.shilimkar@ti.com>
-Date: Thu, 1 May 2014 19:56:46 -0500
-Message-ID: <CAL_JsqKmf-OCf_-J06ztHWS0iRaMHAVxV0bOFGnY4Ci3fPgLow@mail.gmail.com>
-Subject: Re: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
-From: Rob Herring <robherring2@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrXhVKq33-KWLMVxPtCZgHddKsxCOQX9F-LGerXsCrLH5Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:30 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> The of_dma_is_coherent() helper parses the given DT device
-> node to see if the "dma-coherent" property is supported and
-> returns true or false accordingly.
->
-> If the arch is always coherent or always noncoherent, then the default
-> DMA ops has to be specified accordingly.
->
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/of/platform.c       |   23 +++++++++++++++++++++++
->  include/linux/of_platform.h |    6 ++++++
+On Thu, May 01, 2014 at 04:57:13PM -0700, Andy Lutomirski wrote:
 
-I thought I said this already, but this does not belong in these files
-as the function does not deal with platform devices. Probably
-address.c/of_address.h would be the best place.
+> Suppose I bind-mount /usr into a private namespace with
+> nosuid,nodev,ro.  How can you use it to attack anything?  The only
+> thing I've thought of is to open fifos and connect to sockets.  I'm
+> assuming that there's a pid namespace blocking ptrace and such and a
+> network namespace blocking abstract sockets.
 
-Rob
+How many FIFOs and sockets are there in your /usr?  Here all I see
+outside of /dev, /run and /tmp (across seven boxen; I can check more, but
+I really doubt it'll catch anything) is the grand total of 4:
+/lib/cryptsetup/passfifo
+/var/lib/oprofile/opd_pipe
+/var/lib/nfs/rpc_pipefs/nfs/clnt0/idmap
+/var/lib/nfs/rpc_pipefs/gssd/clntXX/gssd
 
->  2 files changed, 29 insertions(+)
->
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 404d1da..48de98f 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -485,4 +485,27 @@ int of_platform_populate(struct device_node *root,
->         return rc;
->  }
->  EXPORT_SYMBOL_GPL(of_platform_populate);
-> +
-> +/**
-> + * of_dma_is_coherent - Check if device is coherent
-> + * @np:        device node
-> + *
-> + * It returns true if "dma-coherent" property was found
-> + * for this device in DT.
-> + */
-> +bool of_dma_is_coherent(struct device_node *np)
-> +{
-> +       struct device_node *node = of_node_get(np);
-> +
-> +       while (node) {
-> +               if (of_property_read_bool(node, "dma-coherent")) {
-> +                       of_node_put(node);
-> +                       return true;
-> +               }
-> +               node = of_get_next_parent(node);
-> +       }
-> +       of_node_put(node);
-> +       return false;
-> +}
-> +EXPORT_SYMBOL_GPL(of_dma_is_coherent);
->  #endif /* CONFIG_OF_ADDRESS */
-> diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-> index 05cb4a9..b9a3cb2 100644
-> --- a/include/linux/of_platform.h
-> +++ b/include/linux/of_platform.h
-> @@ -72,6 +72,7 @@ extern int of_platform_populate(struct device_node *root,
->                                 const struct of_device_id *matches,
->                                 const struct of_dev_auxdata *lookup,
->                                 struct device *parent);
-> +extern bool of_dma_is_coherent(struct device_node *np);
->  #else
->  static inline int of_platform_populate(struct device_node *root,
->                                         const struct of_device_id *matches,
-> @@ -80,6 +81,11 @@ static inline int of_platform_populate(struct device_node *root,
->  {
->         return -ENODEV;
->  }
-> +
-> +static inline bool of_dma_is_coherent(struct device_node *np)
-> +{
-> +       return false;
-> +}
->  #endif
->
->  #endif /* _LINUX_OF_PLATFORM_H */
-> --
-> 1.7.9.5
->
+None of those in /usr and I don't believe that you seriously propose to
+bind e.g. /lib/cryptsetup into your sandbox.  And while we are at it,
+exposing host /usr is *not* a good idea - if nothing else, it gives
+quite a bit of information about the versions of software installed on
+the host.  Ability to watch atime of /usr/bin/* also might be interesting,
+etc.
+
+Do you, by any chance, plan to expose the host /tmp or /run?  Or
+rpc_pipefs, for that matter...
