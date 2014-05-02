@@ -1,88 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaEBWqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 18:46:08 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:54486 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaEBWqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 18:46:07 -0400
+	id S1753202AbaEBWqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 18:46:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56925 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751846AbaEBWqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 18:46:37 -0400
+Message-ID: <53642028.2040308@ti.com>
+Date: Fri, 2 May 2014 17:46:00 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-In-Reply-To: <535B2B35.2090502@linux.intel.com>
-References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
-	<CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
-	<5353A1F6.60602@linux.intel.com>
-	<5353B8A4.1080900@linux.intel.com>
-	<1398007690.2674.0.camel@adam.happyassassin.net>
-	<5354BA59.2000008@linux.intel.com>
-	<53551D0F.40906@linux.intel.com>
-	<CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
-	<1398230210.2704.8.camel@adam.happyassassin.net>
-	<20140423083430.GV30677@intel.com>
-	<20140423122344.GX30677@intel.com>
-	<5359120E.2030007@linux.intel.com>
-	<1398375234.2708.122.camel@adam.happyassassin.net>
-	<CACRpkdasjd2HGR199_aqhemAnJD5z6--=Rr=tSoJX_hJ6-ukFA@mail.gmail.com>
-	<1398438814.2708.141.camel@adam.happyassassin.net>
-	<535B2250.2010509@linux.intel.com>
-	<535B2B35.2090502@linux.intel.com>
-Date: Fri, 2 May 2014 15:46:05 -0700
-Message-ID: <CACRpkdboEToKZuq-YbEGrZmAS0d8H6u2R=s6ghpvYTtPMu04rA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on ASUS T100TA
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Jin, Yao" <yao.jin@linux.intel.com>
-Cc: Adam Williamson <awilliam@redhat.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
+To: Rob Herring <robherring2@gmail.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+        linux-omap <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCHv5 01/15] Documentation: dt: add common bindings for hwspinlock
+References: <1398904476-26200-1-git-send-email-s-anna@ti.com>	<1398904476-26200-2-git-send-email-s-anna@ti.com> <CAL_JsqJEVU7j0+biWuW2FiV-avu1_SO4w+OCdirAc6mw2OxrOA@mail.gmail.com>
+In-Reply-To: <CAL_JsqJEVU7j0+biWuW2FiV-avu1_SO4w+OCdirAc6mw2OxrOA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 8:42 PM, Jin, Yao <yao.jin@linux.intel.com> wrote:
-> On 2014/4/26 11:04, Jin, Yao wrote:
-(...)
-> I think we still need a small modification on pinctrl-baytrail.c, that
-> is moving gpiochip_add forward, otherwise the to_irq method is not set.
->
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
-> b/drivers/pinctrl/pinctrl-baytrail.c
-> index e599834..fdfb84b 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -491,12 +491,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
->         gc->can_sleep = false;
->         gc->dev = dev;
->
-> -       ret = gpiochip_add(gc);
-> -       if (ret) {
-> -               dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
-> -               return ret;
-> -       }
-> -
->         /* set up interrupts  */
->         irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->         if (irq_rc && irq_rc->start) {
-> @@ -514,6 +508,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
->                 irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
->         }
->
-> +       ret = gpiochip_add(gc);
-> +       if (ret) {
-> +               dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
-> +               return ret;
-> +       }
-> +
+Hi Rob,
 
-Now I feel I'm not following what combo of patches solves the
-problem any more.
+On 05/02/2014 09:58 AM, Rob Herring wrote:
+> On Wed, Apr 30, 2014 at 7:34 PM, Suman Anna <s-anna@ti.com> wrote:
+>> This patch adds the generic common bindings used to represent
+>> a hwlock device and use/request locks in a device-tree build.
+>>
+>> All the platform-specific hwlock driver implementations need the
+>> number of locks and associated base id for registering the locks
+>> present within the device with the driver core. The number of locks
+>> is represented by 'hwlock-num-locks' property in DT bindings. A
+>> property for base id is not needed in DT binding, as it can be
+>> satisfied using a phandle + args specifier. The args specifier
+>> length is dependent on each vendor-specific implementation and
+>> is represented through the '#hwlock-cells' property.
+>>
+>> Note that the document is named hwlock.txt deliberately to keep it
+>> a bit more generic.
+>>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>> ---
+>>  .../devicetree/bindings/hwlock/hwlock.txt          | 52 ++++++++++++++++++++++
+>>  1 file changed, 52 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>> new file mode 100644
+>> index 0000000..32381cc
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>> @@ -0,0 +1,52 @@
+>> +Generic hwlock bindings
+>> +=======================
+>> +
+>> +Generic bindings that are common to all the hwlock platform specific driver
+>> +implementations, the retrieved values are used for registering the device
+>> +specific parameters with the hwspinlock core.
+>> +
+>> +The validity and need of these common properties may vary from one platform
+>> +implementation to another. The platform specific bindings should explicitly
+>> +state if a property is mandatory or optional. Please look through the
+>> +individual platform specific hwlock binding documentations for identifying
+>> +the applicable properties.
+>> +
+>> +Common properties:
+>> +- #hwlock-cells:       Specifies the number of cells needed to represent a
+>> +                       specific lock.
+> 
+> This should never be optional.
 
-Do you mean you think that this patch combined with Thomas'
-will solve the root cause?
+Thanks for reviewing this. I can add a statement here to make this clear.
 
-Yours,
-Linus Walleij
+> 
+>> +- hwlock-num-locks:    Number of locks present in a hwlock device. This
+>> +                       property is needed on hwlock devices, where the number
+>> +                       of supported locks within a hwlock device cannot be
+>> +                       read from a register.
+> 
+> Do you have any users of this? The omap binding doesn't use it.
+> Wouldn't you typically know this based on the IP block? Similarly you
+> typically don't have to list how many irqs an interrupt controller
+> has.
+
+The MSM Spinlock driver [1] would be using this, it is waiting on this
+series to get finalized. It currently defines a custom property, and the
+number of locks is a generic property that the hwspinlock core uses and
+is common to different platform implementations, so created the generic
+property. OMAP doesn't use this because the number is read directly off
+a IP register.
+
+ can you also take a look at patches 8 and 12 as they add additional
+properties based on discussion in [2]. The hwspinlocks are used for
+arbitration between different initiators on an SoC, and typically would
+need a SoC-level identifier for each lock. All these properties allow a
+hwlock to be statically identified and be assigned to a user and its
+peer user on a different initiator, and not allowing them to be run-time
+assigned.
+
+regards
+Suman
+
+[1] https://lkml.org/lkml/2013/8/14/528
+[2] http://marc.info/?l=linux-omap&m=139510004009415&w=2
+
+> 
+> 
+>> +
+>> +Hwlock Users:
+>> +=============
+>> +
+>> +Nodes that require specific hwlock(s) should specify them using one or more
+>> +properties, each containing a phandle to the hwlock node and an args specifier
+>> +value as indicated by #hwlock-cells. Multiple hwlocks can be requested using
+>> +an array of the phandle and hwlock number specifier tuple.
+>> +
+>> +1. Example of a node using a single specific hwlock:
+>> +
+>> +The following example has a node requesting a hwlock in the bank defined by
+>> +the node hwlock1. hwlock1 is a hwlock provider with an argument specifier
+>> +of length 1.
+>> +
+>> +       node {
+>> +               ...
+>> +               hwlocks = <&hwlock1 2>;
+>> +               ...
+>> +       };
+>> +
+>> +2. Example of a node using multiple specific hwlocks:
+>> +
+>> +The following example has a node requesting two hwlocks, a hwlock within
+>> +the hwlock device node 'hwlock1' with #hwlock-cells value of 1, and another
+>> +hwlock within the hwlock device node 'hwlock2' with #hwlock-cells value of 2.
+>> +
+>> +       node {
+>> +               ...
+>> +               hwlocks = <&hwlock1 2>, <&hwlock2 0 3>;
+>> +               ...
+>> +       };
+>> --
+>> 1.9.2
+>>
+
