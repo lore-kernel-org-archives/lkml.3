@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaEBQjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:39:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:51493 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaEBQji (ORCPT
+	id S1752723AbaEBQjo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:39:44 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:47264 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaEBQjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:39:38 -0400
-Message-ID: <5363CA40.2000808@oracle.com>
-Date: Fri, 02 May 2014 12:39:28 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 2 May 2014 12:39:41 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Fri, 2 May 2014 12:43:17 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140502162234.GX11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
+References: <20140430184437.GH17778@laptop.programming.kicks-ass.net> <alpine.DEB.2.10.1405011003360.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011023400.18142@vincent-weaver-1.umelst.maine.edu> <20140501150948.GR11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405011147340.18142@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405011829190.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405011315250.19082@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405011443410.19874@vincent-weaver-1.umelst.maine.edu>
+ <20140502154217.GW11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu> <20140502162234.GX11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: mm: invalid memory access in zap_pte_range
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, 2 May 2014, Peter Zijlstra wrote:
 
-While fuzzing with trinity inside a KVM tools guest running latest -next
-kernel I've stumbled on the following:
+> In principle the vfs file refcounting should be responsible for that.
+> But I'll go over it in a bit.
 
-[ 5470.347501] BUG: unable to handle kernel paging request at ffffea0003480088
-[ 5470.349619] IP: zap_pte_range (mm/memory.c:1137)
-[ 5470.350338] PGD 37fcc067 PUD 37fcb067 PMD 0
-[ 5470.350338] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 5470.350338] Dumping ftrace buffer:
-[ 5470.350338]    (ftrace buffer empty)
-[ 5470.350338] Modules linked in:
-[ 5470.350338] CPU: 3 PID: 38591 Comm: trinity-c207 Tainted: G        W     3.15.0-rc3-next-20140430-sasha-00016-g4e281fa-dirty #429
-[ 5470.361024] task: ffff88017136b000 ti: ffff88016f068000 task.ti: ffff88016f068000
-[ 5470.361024] RIP: zap_pte_range (mm/memory.c:1137)
-[ 5470.361024] RSP: 0018:ffff88016f069c88  EFLAGS: 00010246
-[ 5470.361024] RAX: ffffea0003480080 RBX: ffff880341a2fd88 RCX: 0000000003480080
-[ 5470.361024] RDX: ffff880341a2fd88 RSI: 00000000403b1000 RDI: ffff880159b05000
-[ 5470.361024] RBP: ffff88016f069d28 R08: ffff88034beb6400 R09: ffff88017136bcf0
-[ 5470.361024] R10: 0000000000000001 R11: 0000000000000000 R12: ffffea0003480080
-[ 5470.361024] R13: ffff88016f069e18 R14: 00000000403b2000 R15: 00000000403b1000
-[ 5470.361024] FS:  00007f59dec96700(0000) GS:ffff88010cc00000(0000) knlGS:0000000000000000
-[ 5470.361024] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 5470.361024] CR2: ffffea0003480088 CR3: 00000001748b7000 CR4: 00000000000006a0
-[ 5470.361024] DR0: 00000000006de000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 5470.361024] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 5470.361024] Stack:
-[ 5470.361024]  ffff88016f069e18 00000000d2002000 00000000d2002fff ffff88017136b000
-[ 5470.361024]  0000000000000000 0000000000000001 ffff880354664008 ffff88033fcfc640
-[ 5470.361024]  00000000d2002730 ffff88034beb6400 0000000000000000 ffff880159b05000
-[ 5470.361024] Call Trace:
-[ 5470.361024] unmap_single_vma (mm/memory.c:1261 mm/memory.c:1282 mm/memory.c:1307 mm/memory.c:1353)
-[ 5470.361024] unmap_vmas (mm/memory.c:1382 (discriminator 1))
-[ 5470.361024] unmap_region (mm/mmap.c:2368 (discriminator 3))
-[ 5470.361024] ? put_lock_stats.isra.12 (kernel/locking/lockdep.c:254)
-[ 5470.361024] ? validate_mm_rb (mm/mmap.c:409)
-[ 5470.361024] ? vma_rb_erase (mm/mmap.c:454 include/linux/rbtree_augmented.h:219 include/linux/rbtree_augmented.h:227 mm/mmap.c:493)
-[ 5470.361024] do_munmap (mm/mmap.c:3264 mm/mmap.c:2566)
-[ 5470.361024] ? vm_munmap (mm/mmap.c:2577)
-[ 5470.361024] vm_munmap (mm/mmap.c:2578)
-[ 5470.361024] SyS_munmap (mm/mmap.c:2583)
-[ 5470.361024] tracesys (arch/x86/kernel/entry_64.S:746)
-[ 5470.361024] Code: e8 de a6 26 03 49 8b 4c 24 10 48 39 c8 74 1c 48 8b 7d b8 48 c1 e1 0c 48 89 da 48 83 c9 40 4c 89 fe e8 95 db ff ff 0f 1f 44 00 00 <41> f6 44 24 08 01 74 08 83 6d c8 01 eb 33 66 90 f6 45 a0 40 74
-[ 5470.361024] RIP zap_pte_range (mm/memory.c:1137)
-[ 5470.361024]  RSP <ffff88016f069c88>
-[ 5470.361024] CR2: ffffea0003480088
+The poll code is ancient and the C-parser in my head really can't handle 
+it very well.
+
+Anyway for completeness this is the kind of thing I'm seeing.
+The poll() manpage isn't very clear about what is supposed to happen if 
+you poll() on a closed file descriptor.
 
 
-Thanks,
-Sasha
+FD#3 closed
+	perf_fuzzer-2293  [003]   286.500137: sys_enter:            NR 3 (3, 7fff841b9eac, 0, 22, 7ff17078110c, 7ff170781120)
+
+Child killed:
+	perf_fuzzer-2293  [003]   286.505587: sys_exit:             NR 62 = 0
+
+Poll started, seems to have freed fd #3 as an argument:
+	perf_fuzzer-2293  [003]   286.505703: sys_enter:            NR 7 (7fff841b9b00, 55, 3, 40e3e3, 7ff1707810dc, 7ff170781120)
+
+(child is still closing out at this point)
+
+
+Event freed:
+	<...>-2701  [004]   286.505904: bprint:               _free_event: freeing with 0 refs; ptr=0x0xffff8800ce88e000
+
+fd#3 is still being polled despite the event being completely gone now:
+	perf_fuzzer-2293  [003]   286.508846: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508847: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508848: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508849: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508850: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508846: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508847: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508848: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508849: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508850: bprint:               do_sys_poll: VMW: poll 3
+	perf_fuzzer-2293  [003]   286.508850: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508851: bprint:               do_sys_poll: VMW: poll 12
+	perf_fuzzer-2293  [003]   286.508850: function:             perf_poll
+	perf_fuzzer-2293  [003]   286.508851: bprint:               do_sys_poll: VMW: poll 12
+
+Finally done polling:
+	perf_fuzzer-2293  [003]   286.509002: sys_exit:             NR 7 = 0
+
