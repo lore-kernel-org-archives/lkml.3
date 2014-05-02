@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaEBPOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:14:48 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:34819 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaEBPOq (ORCPT
+	id S1752701AbaEBPPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:15:11 -0400
+Received: from mail-by1on0157.outbound.o365filtering.com ([207.46.101.157]:64639
+	"EHLO na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751990AbaEBPPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:14:46 -0400
-X-Greylist: delayed 1088 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:14:46 EDT
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 2/2] tty: Fix lockless tty buffer race
-Date: Fri,  2 May 2014 10:56:12 -0400
-Message-Id: <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com>
-References: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Fri, 2 May 2014 11:15:09 -0400
+X-Greylist: delayed 1953 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:15:08 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: RE: randconfig build error with next-20140502, in
+ drivers/net/hyperv/netvsc_drv.c
+Thread-Topic: randconfig build error with next-20140502, in
+ drivers/net/hyperv/netvsc_drv.c
+Thread-Index: AQHPZg5VELXjQQ2rFUCGAjzcri4hopstWxlw
+Date: Fri, 2 May 2014 14:42:06 +0000
+Message-ID: <91a4eac99889460f91f619385208cbca@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
+In-Reply-To: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(51704005)(199002)(189002)(13464003)(164054003)(377454003)(6806004)(19580395003)(76482001)(79102001)(46102001)(80976001)(81686001)(19580405001)(81816001)(83322001)(76796001)(44976005)(87266001)(85306002)(47776003)(31966008)(20776003)(76786001)(77982001)(1511001)(69226001)(33646001)(74502001)(50466002)(80022001)(66066001)(74876001)(90146001)(83072002)(81342001)(94946001)(93516002)(93136001)(94316002)(92566001)(2009001)(97736001)(95666003)(97336001)(97186001)(95416001)(23676002)(81542001)(4396001)(87936001)(74706001)(53806002)(50986002)(86612001)(85852003)(84676001)(74662001)(2656002)(74366001)(63696004)(47446003)(56776002)(54316003)(49866002)(98676001)(54356002)(59766002)(51856002)(47976003)(56816006)(99396002)(47736002)(65816002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB591;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
+X-Forefront-PRVS: 019919A9E4
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s42FFKo4020446
 
-Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
-"tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
-correctly identifies an unsafe race condition between
-__tty_buffer_request_room() and flush_to_ldisc(), where the consumer
-flush_to_ldisc() prematurely advances the head before consuming the
-last of the data committed. For example:
 
-           CPU 0                     |            CPU 1
-__tty_buffer_request_room            | flush_to_ldisc
-  ...                                |   ...
-                                     |   count = head->commit - head->read
-  n = tty_buffer_alloc()             |
-  b->commit = b->used                |
-  b->next = n                        |
-                                     |   if (!count)                /* T */
-                                     |     if (head->next == NULL)  /* F */
-                                     |     buf->head = head->next
 
-In this case, buf->head has been advanced but head->commit may have
-been updated with a new value.
+> -----Original Message-----
+> From: Jim Davis [mailto:jim.epost@gmail.com]
+> Sent: Friday, May 2, 2014 9:56 AM
+> To: Stephen Rothwell; linux-next; linux-kernel; KY Srinivasan; Haiyang
+> Zhang; devel@linuxdriverproject.org; netdev
+> Subject: randconfig build error with next-20140502, in
+> drivers/net/hyperv/netvsc_drv.c
+> 
+> Building with the attached random configuration file,
+> 
+> drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_recv_callbackâ€™:
+> drivers/net/hyperv/netvsc_drv.c:648:11: error: â€˜struct net_deviceâ€™ has
+> no member
+>  named â€˜real_num_rx_queuesâ€™
+>         net->real_num_rx_queues);
+>            ^
+> In file included from drivers/net/hyperv/netvsc_drv.c:26:0:
+> drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_probeâ€™:
+> drivers/net/hyperv/netvsc_drv.c:832:32: error: â€˜struct net_deviceâ€™ has
+> no member named â€˜real_num_rx_queuesâ€™
+>     net->real_num_tx_queues, net->real_num_rx_queues);
+>                                 ^
+> include/linux/device.h:1080:58: note: in definition of macro â€˜dev_infoâ€™
+>  #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+>                                                           ^
+> make[3]: *** [drivers/net/hyperv/netvsc_drv.o] Error 1
 
-Instead of reintroducing an unnecessary lock, fix the race locklessly.
-Read the commit-next pair in the reverse order of writing, which guarantees
-the commit value read is the latest value written if the head is
-advancing.
+real_num_rx_queues is defined in "include/linux/netdevice.h":
+It requires CONFIG_SYSFS flag, which is enabled by default, but not set in 
+your config file.
 
-Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
-Cc: <stable@vger.kernel.org> # 3.12.x+
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/tty_buffer.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+Could you use default config and add hyperv drivers, then try again?
 
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 8ebd9f8..cf78d19 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -258,7 +258,11 @@ static int __tty_buffer_request_room(struct tty_port *port, size_t size,
- 			n->flags = flags;
- 			buf->tail = n;
- 			b->commit = b->used;
--			smp_mb();
-+			/* paired w/ barrier in flush_to_ldisc(); ensures the
-+			 * latest commit value can be read before the head is
-+			 * advanced to the next buffer
-+			 */
-+			smp_wmb();
- 			b->next = n;
- 		} else if (change)
- 			size = 0;
-@@ -444,17 +448,24 @@ static void flush_to_ldisc(struct work_struct *work)
- 
- 	while (1) {
- 		struct tty_buffer *head = buf->head;
-+		struct tty_buffer *next;
- 		int count;
- 
- 		/* Ldisc or user is trying to gain exclusive access */
- 		if (atomic_read(&buf->priority))
- 			break;
- 
-+		next = head->next;
-+		/* paired w/ barrier in __tty_buffer_request_room();
-+		 * ensures commit value read is not stale if the head
-+		 * is advancing to the next buffer
-+		 */
-+		smp_rmb();
- 		count = head->commit - head->read;
- 		if (!count) {
--			if (head->next == NULL)
-+			if (next == NULL)
- 				break;
--			buf->head = head->next;
-+			buf->head = next;
- 			tty_buffer_free(port, head);
- 			continue;
- 		}
--- 
-1.8.1.2
+Thanks,
+- Haiyang
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
