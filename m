@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbaEBQHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:07:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44018 "EHLO
+	id S1753489AbaEBPnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44003 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862AbaEBPne (ORCPT
+	with ESMTP id S1752900AbaEBPn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:34 -0400
+	Fri, 2 May 2014 11:43:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/151] mtip32xx: Unmap the DMA segments before completing the IO request
-Date: Fri,  2 May 2014 08:37:16 -0700
-Message-Id: <1399045139-4531-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 026/151] [media] m88rs2000: prevent frontend crash on continuous transponder scans
+Date: Fri,  2 May 2014 08:36:54 -0700
+Message-Id: <1399045139-4531-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,76 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Franciosi <felipe@paradoxo.org>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 368c89d7ac70f937c93cd6f3b65bcfdfb3ba794f upstream.
+commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
 
-If the buffers are unmapped after completing a request, then stale data
-might be in the request.
+Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
+rate more than 3000000 and delay of 3000ms less than this.
 
-Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Adding min delay prevents crashing the frontend on continuous
+transponder scans. Other dvb_frontend_tune_settings remain as default.
+
+This makes very little time difference to good channel scans, but slows down
+the set frontend where lock can never be achieved i.e. DVB-S2.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/media/dvb-frontends/m88rs2000.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 2730722..f657911a 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -245,6 +245,12 @@ static void mtip_async_complete(struct mtip_port *port,
- 			"Command tag %d failed due to TFE\n", tag);
- 	}
+diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
+index 5b3b1d3..c7a1c8e 100644
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -712,6 +712,22 @@ static int m88rs2000_get_frontend(struct dvb_frontend *fe)
+ 	return 0;
+ }
  
-+	/* Unmap the DMA scatter list entries */
-+	dma_unmap_sg(&dd->pdev->dev,
-+		command->sg,
-+		command->scatter_ents,
-+		command->direction);
++static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
++	struct dvb_frontend_tune_settings *tune)
++{
++	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 +
- 	/* Upper layer callback */
- 	if (likely(command->async_callback))
- 		command->async_callback(command->async_data, cb_status);
-@@ -252,12 +258,6 @@ static void mtip_async_complete(struct mtip_port *port,
- 	command->async_callback = NULL;
- 	command->comp_func = NULL;
- 
--	/* Unmap the DMA scatter list entries */
--	dma_unmap_sg(&dd->pdev->dev,
--		command->sg,
--		command->scatter_ents,
--		command->direction);
--
- 	/* Clear the allocated and active bits for the command */
- 	atomic_set(&port->commands[tag].active, 0);
- 	release_slot(port, tag);
-@@ -688,6 +688,12 @@ static void mtip_timeout_function(unsigned long int data)
- 			 */
- 			writel(1 << bit, port->completed[group]);
- 
-+			/* Unmap the DMA scatter list entries */
-+			dma_unmap_sg(&port->dd->pdev->dev,
-+					command->sg,
-+					command->scatter_ents,
-+					command->direction);
++	if (c->symbol_rate > 3000000)
++		tune->min_delay_ms = 2000;
++	else
++		tune->min_delay_ms = 3000;
 +
- 			/* Call the async completion callback. */
- 			if (likely(command->async_callback))
- 				command->async_callback(command->async_data,
-@@ -695,12 +701,6 @@ static void mtip_timeout_function(unsigned long int data)
- 			command->async_callback = NULL;
- 			command->comp_func = NULL;
++	tune->step_size = c->symbol_rate / 16000;
++	tune->max_drift = c->symbol_rate / 2000;
++
++	return 0;
++}
++
+ static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
+ {
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -763,6 +779,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
  
--			/* Unmap the DMA scatter list entries */
--			dma_unmap_sg(&port->dd->pdev->dev,
--					command->sg,
--					command->scatter_ents,
--					command->direction);
--
- 			/*
- 			 * Clear the allocated bit and active tag for the
- 			 * command.
+ 	.set_frontend = m88rs2000_set_frontend,
+ 	.get_frontend = m88rs2000_get_frontend,
++	.get_tune_settings = m88rs2000_get_tune_settings,
+ };
+ 
+ struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 -- 
 1.9.1
 
