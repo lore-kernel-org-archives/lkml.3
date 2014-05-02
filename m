@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040AbaEBPq0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:46:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44306 "EHLO
+	id S1754052AbaEBPqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:46:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44332 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaEBPqS (ORCPT
+	with ESMTP id S1751811AbaEBPq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:46:18 -0400
+	Fri, 2 May 2014 11:46:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 107/151] NFSv4: Fix a use-after-free problem in open()
-Date: Fri,  2 May 2014 08:38:15 -0700
-Message-Id: <1399045139-4531-108-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 111/151] nfsd: check passed socket's net matches NFSd superblock's one
+Date: Fri,  2 May 2014 08:38:19 -0700
+Message-Id: <1399045139-4531-112-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,77 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit e911b8158ee1def8153849b1641b736026b036e0 upstream.
+commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
 
-If we interrupt the nfs4_wait_for_completion_rpc_task() call in
-nfs4_run_open_task(), then we don't prevent the RPC call from
-completing. So freeing up the opendata->f_attr.mdsthreshold
-in the error path in _nfs4_do_open() leads to a use-after-free
-when the XDR decoder tries to decode the mdsthreshold information
-from the server.
+There could be a case, when NFSd file system is mounted in network, different
+to socket's one, like below:
 
-Fixes: 82be417aa37c0 (NFSv4.1 cache mdsthreshold values on OPEN)
-Tested-by: Steve Dickson <SteveD@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+"ip netns exec" creates new network and mount namespace, which duplicates NFSd
+mount point, created in init_net context. And thus NFS server stop in nested
+network context leads to RPCBIND client destruction in init_net.
+Then, on NFSd start in nested network context, rpc.nfsd process creates socket
+in nested net and passes it into "write_ports", which leads to RPCBIND sockets
+creation in init_net context because of the same reason (NFSd monut point was
+created in init_net context). An attempt to register passed socket in nested
+net leads to panic, because no RPCBIND client present in nexted network
+namespace.
+
+This patch add check that passed socket's net matches NFSd superblock's one.
+And returns -EINVAL error to user psace otherwise.
+
+v2: Put socket on exit.
+
+Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c | 19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ fs/nfsd/nfsctl.c               |  5 +++++
+ include/linux/sunrpc/svcsock.h |  1 +
+ net/sunrpc/svcsock.c           | 16 ++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 0e90bf0..134691e 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1070,6 +1070,7 @@ static void nfs4_opendata_free(struct kref *kref)
- 	dput(p->dentry);
- 	nfs_sb_deactive(sb);
- 	nfs_fattr_free_names(&p->f_attr);
-+	kfree(p->f_attr.mdsthreshold);
- 	kfree(p);
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 7f55517..f34d9de 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+ 	if (err != 0 || fd < 0)
+ 		return -EINVAL;
+ 
++	if (svc_alien_sock(net, fd)) {
++		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
++		return -EINVAL;
++	}
++
+ 	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+index 62fd1b7..947009e 100644
+--- a/include/linux/sunrpc/svcsock.h
++++ b/include/linux/sunrpc/svcsock.h
+@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+ int		svc_send(struct svc_rqst *);
+ void		svc_drop(struct svc_rqst *);
+ void		svc_sock_update_bufs(struct svc_serv *serv);
++bool		svc_alien_sock(struct net *net, int fd);
+ int		svc_addsock(struct svc_serv *serv, const int fd,
+ 					char *name_return, const size_t len);
+ void		svc_init_xprt_sock(void);
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index b6e59f0..d06cb87 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1397,6 +1397,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+ 	return svsk;
  }
  
-@@ -2246,10 +2247,12 @@ static int _nfs4_do_open(struct inode *dir,
- 		}
- 	}
- 
--	if (ctx_th && server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
--		opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
--		if (!opendata->f_attr.mdsthreshold)
--			goto err_free_label;
-+	if (server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
-+		if (!opendata->f_attr.mdsthreshold) {
-+			opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
-+			if (!opendata->f_attr.mdsthreshold)
-+				goto err_free_label;
-+		}
- 		opendata->o_arg.open_bitmap = &nfs4_pnfs_open_bitmap[0];
- 	}
- 	if (dentry->d_inode != NULL)
-@@ -2277,11 +2280,10 @@ static int _nfs4_do_open(struct inode *dir,
- 	if (opendata->file_created)
- 		*opened |= FILE_CREATED;
- 
--	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server))
-+	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server)) {
- 		*ctx_th = opendata->f_attr.mdsthreshold;
--	else
--		kfree(opendata->f_attr.mdsthreshold);
--	opendata->f_attr.mdsthreshold = NULL;
-+		opendata->f_attr.mdsthreshold = NULL;
-+	}
- 
- 	nfs4_label_free(olabel);
- 
-@@ -2291,7 +2293,6 @@ static int _nfs4_do_open(struct inode *dir,
- err_free_label:
- 	nfs4_label_free(olabel);
- err_opendata_put:
--	kfree(opendata->f_attr.mdsthreshold);
- 	nfs4_opendata_put(opendata);
- err_put_state_owner:
- 	nfs4_put_state_owner(sp);
++bool svc_alien_sock(struct net *net, int fd)
++{
++	int err;
++	struct socket *sock = sockfd_lookup(fd, &err);
++	bool ret = false;
++
++	if (!sock)
++		goto out;
++	if (sock_net(sock->sk) != net)
++		ret = true;
++	sockfd_put(sock);
++out:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(svc_alien_sock);
++
+ /**
+  * svc_addsock - add a listener socket to an RPC service
+  * @serv: pointer to RPC service to which to add a new listener
 -- 
 1.9.1
 
