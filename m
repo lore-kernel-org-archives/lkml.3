@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861AbaEBPnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:43:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44033 "EHLO
+	id S1753566AbaEBPn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:43:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaEBPnr (ORCPT
+	with ESMTP id S1753546AbaEBPn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:47 -0400
+	Fri, 2 May 2014 11:43:56 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 037/151] rtlwifi: rtl8723ae: Fix too long disable of IRQs
-Date: Fri,  2 May 2014 08:37:05 -0700
-Message-Id: <1399045139-4531-38-git-send-email-kamal@canonical.com>
+Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>,
+        Tony Lindgren <tony@atomide.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 045/151] ARM: OMAP2+: INTC: Acknowledge stuck active interrupts
+Date: Fri,  2 May 2014 08:37:13 -0700
+Message-Id: <1399045139-4531-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,72 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
 
-commit bfc1010c418a22cbebd8b1bd1e75dad6a527a609 upstream.
+commit 698b48532539484b012fb7c4176b959d32a17d00 upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8723ae.
+When an interrupt has become active on the INTC it will stay active
+until it is acked, even if masked or de-asserted. The
+INTC_PENDING_IRQn registers are however updated and since these are
+used by omap_intc_handle_irq to determine which interrupt to handle,
+it will never see the active interrupt. This will result in a storm of
+useless interrupts that is only stopped when another higher priority
+interrupt is asserted.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix by sending the INTC an acknowledge if we find no interrupts to
+handle.
+
+Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap2/irq.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-index c333dfd..99f6bc5 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -880,14 +880,25 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 	bool rtstatus = true;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
+diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
+index e022a86..6037a9a 100644
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -222,6 +222,7 @@ void __init ti81xx_init_irq(void)
+ static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs *regs)
+ {
+ 	u32 irqnr;
++	int handled_irq = 0;
  
- 	rtlpriv->rtlhal.being_init_adapter = true;
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
+ 	do {
+ 		irqnr = readl_relaxed(base_addr + 0x98);
+@@ -249,8 +250,15 @@ out:
+ 		if (irqnr) {
+ 			irqnr = irq_find_mapping(domain, irqnr);
+ 			handle_IRQ(irqnr, regs);
++			handled_irq = 1;
+ 		}
+ 	} while (irqnr);
 +
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl8712e_init_mac(hw);
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	err = rtl8723ae_download_fw(hw);
-@@ -895,8 +906,7 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -971,6 +981,8 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
- 	}
- 	rtl8723ae_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	return err;
++	/* If an irq is masked or deasserted while active, we will
++	 * keep ending up here with no irq handled. So remove it from
++	 * the INTC with an ack.*/
++	if (!handled_irq)
++		omap_ack_irq(NULL);
  }
+ 
+ asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs)
 -- 
 1.9.1
 
