@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaEBFvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 01:51:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58929 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaEBFva (ORCPT
+	id S1751633AbaEBF7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 01:59:03 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43882 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaEBF7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 01:51:30 -0400
-Date: Fri, 2 May 2014 06:51:27 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140502055127.GH18016@ZenIV.linux.org.uk>
-References: <CAJfpegvbzQc2y12_MV6MZ398ggjkc1w73Px7pXViGnSm=+syNA@mail.gmail.com>
- <20140429181610.GJ18016@ZenIV.linux.org.uk>
- <20140429191015.GK18016@ZenIV.linux.org.uk>
- <20140429211851.GA32204@dastard>
- <20140429214842.GL18016@ZenIV.linux.org.uk>
- <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
- <20140429232013.GM18016@ZenIV.linux.org.uk>
- <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 May 2014 01:59:00 -0400
+Message-ID: <1399010337.5233.50.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, morten.rasmussen@arm.com, mingo@kernel.org,
+        peterz@infradead.org, george.mccollister@gmail.com,
+        ktkhai@parallels.com
+Date: Fri, 02 May 2014 07:58:57 +0200
+In-Reply-To: <1399008721.5233.35.camel@marge.simpson.net>
+References: <20140502004237.79dd3de6@annuminas.surriel.com>
+	 <1399008721.5233.35.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 11:15:15AM +0200, Miklos Szeredi wrote:
-> On Tue, Apr 29, 2014 at 07:56:13PM -0700, Linus Torvalds wrote:
-> > On Tue, Apr 29, 2014 at 7:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > >
-> > > OK, aggregate diff follows, more readable splitup (3 commits) attached.
-> > > It seems to survive beating here; testing, review and comments are
-> > > welcome.
+On Fri, 2014-05-02 at 07:32 +0200, Mike Galbraith wrote: 
+> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote: 
+> > Currently sync wakeups from the wake_affine code cannot work as
+> > designed, because the task doing the sync wakeup from the target
+> > cpu will block its wakee from selecting that cpu.
 > > 
-> > Miklos, did you have some particular load that triggered this, or was
-> > it just some reports? It would be really good to get this patch some
-> > stress-testing.
-> > 
-> > I like how the patch removes more lines than it adds, but apart from
-> > that it's hard to read the patch (even the split-out ones) and say
-> > anything more about it. I think this needs a *lot* of testing.
+> > This is despite the fact that whether or not the wakeup is sync
+> > determines whether or not we want to do an affine wakeup...
 > 
-> IBM is triggering this with the host01 test from the LTP suite.  I haven't yet
-> tried to reproduce it.
+> If the sync hint really did mean we ARE going to schedule RSN, waking
+> local would be a good thing.  It is all too often a big fat lie.
 
-Could you repost their report?  So far I hadn't managed to get actual list
-corruption on mainline kernel - it definitely is possible, but on all
-testcases so far the race window is too narrow.  So if they have a reproducer
-that doesn't take an insane amount of time, I'd really like to see it...
+One example of that is say pgbench.  The mother of all work (server
+thread) for that load wakes with sync hint.  Let the server wake the
+first of a small herd CPU affine, and that first wakee then preempt the
+server (mother of all work) that drives the entire load.
+
+Byebye throughput.
+
+When there's only one wakee, and there's really not enough overlap to at
+least break even, waking CPU affine is a great idea.  Even when your
+wakees only run for a short time, if you wake/get_preempted repeat, the
+load will serialize.
+
+-Mike
+
