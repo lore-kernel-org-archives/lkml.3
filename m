@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975AbaEBVok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 17:44:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39719 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752765AbaEBVoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 17:44:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,974,1389772800"; 
-   d="scan'208";a="426964582"
-Message-ID: <536411C1.4040209@intel.com>
-Date: Fri, 02 May 2014 14:44:33 -0700
-From: "H. Peter Anvin" <h.peter.anvin@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752680AbaEBVsl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 17:48:41 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:62763 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193AbaEBVsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 17:48:40 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 2 May 2014 22:48:20 +0100
+X-Google-Sender-Auth: W-eTt6IUorH5SOULhgtVYiC8K80
+Message-ID: <CACxGe6u8gTypr7zBYzir=4EpnQmZB7-Am7JsRrEqsohb4zZHmw@mail.gmail.com>
+Subject: [git pull] drivercore deferred probe bug fix
+To: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net> <CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com> <CA+55aFygkoYnJKdLas3WOq9q9pCEEk6mBOuj-zbLyLumdhStAA@mail.gmail.com> <alpine.DEB.2.02.1405022222570.6261@ionos.tec.linutronix.de> <CA+55aFyZr3YrNm1+p4XstNx-NY71LMuP1GyTeqettSdR2CufqQ@mail.gmail.com> <CALCETrW+vAuUq834kjo7Ot8JYqDqAdOts78oasm0vPP1wURnWg@mail.gmail.com> <CA+55aFzQiryYPsUTK-yS_rt=MGtzJZBBrj3waGq6Ez3GUqfMnw@mail.gmail.com> <53641035.4040202@intel.com> <CALCETrXP7-mtpVhFmM0Cw0pxHs3JpU8uYNJzxi1Qx6=QXW_Vrg@mail.gmail.com>
-In-Reply-To: <CALCETrXP7-mtpVhFmM0Cw0pxHs3JpU8uYNJzxi1Qx6=QXW_Vrg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 02:42 PM, Andy Lutomirski wrote:
-> 
-> Hah -- I think I just faked both of you out :)
-> 
-> I don't think this has anything to do with the error code, and I think
-> that the errorentry code already does more or less that: it pushes -1.
-> 
-> The real issue here is probably the magic 16-byte stack alignment when
-> a non-stack-switching interrupt happens.
-> 
+Hi Linus,
 
-Errorentry is when there *is* an error code pushed by the hardware.  The
-other variant is zeroentry, which does generate a zero error code --
-eventually.  The -1 means we didn't enter the kernel through a system call.
+This was the pending bug fix I mentioned in my previous pull request.
+Normally this would go through Greg's tree seeing that it is a
+drivercore change, but devicetree exposes the problem. I've discussed
+with Greg and he okayed me asking you to pull directly.
 
-	-hpa
+Cheers,
+g.
 
+The following changes since commit 9ec36cafe43bf835f8f29273597a5b0cbc8267ef:
+
+  of/irq: do irq resolution in platform_get_irq (2014-04-24 21:40:22 +0100)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux tags/dt-for-linus
+
+for you to fetch changes up to 58b116bce13612e5aa6fcd49ecbd4cf8bb59e835:
+
+  drivercore: deferral race condition fix (2014-04-29 15:44:05 +0100)
+
+----------------------------------------------------------------
+Drivercore race condition fix (exposed by devicetree)
+
+This branch fixes a bug where a device can get stuck in the deferred
+list even though all its dependencies are met. The bug has existed for a
+long time, but new platform conversions to device tree have exposed it.
+This patch is needed to get those platforms working.
+
+----------------------------------------------------------------
+Grant Likely (1):
+      drivercore: deferral race condition fix
+
+ drivers/base/dd.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
