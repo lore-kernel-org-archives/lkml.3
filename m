@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047AbaEBMCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 08:02:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51373 "EHLO mx2.suse.de"
+	id S1752109AbaEBMDL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 08:03:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751860AbaEBMCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 08:02:46 -0400
-From: Jan Moskyto Matejka <mq@suse.cz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Shiyan <shc_work@mail.ru>
-Cc: Jan Moskyto Matejka <mq@suse.cz>
-Subject: [PATCH] [linux-next] serial: sc16is7xx: compile I2C when REGMAP_I2C is module
-Date: Fri,  2 May 2014 14:02:25 +0200
-Message-Id: <1399032145-1055-1-git-send-email-mq@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
+	id S1751926AbaEBMDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 08:03:10 -0400
+Date: Fri, 2 May 2014 14:03:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Tejun Heo <tj@kernel.org>,
+        Hugh Dickins <hughd@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH v2 0/4] memcg: Low-limit reclaim
+Message-ID: <20140502120308.GH3446@dhcp22.suse.cz>
+References: <1398688005-26207-1-git-send-email-mhocko@suse.cz>
+ <20140430145238.4215f914f7ad025da4db5470@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140430145238.4215f914f7ad025da4db5470@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/tty/serial/sc16is7xx.c:1060:12: warning: 'sc16is7xx_probe' defined but not used [-Wunused-function]
- static int sc16is7xx_probe(struct device *dev,
-            ^
-drivers/tty/serial/sc16is7xx.c:1176:12: warning: 'sc16is7xx_remove' defined but not used [-Wunused-function]
- static int sc16is7xx_remove(struct device *dev)
-            ^
-drivers/tty/serial/sc16is7xx.c:1215:29: warning: 'regcfg' defined but not used [-Wunused-variable]
- static struct regmap_config regcfg = {
-                             ^
+On Wed 30-04-14 14:52:38, Andrew Morton wrote:
+> On Mon, 28 Apr 2014 14:26:41 +0200 Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Hi,
+> > previous discussions have shown that soft limits cannot be reformed
+> > (http://lwn.net/Articles/555249/). This series introduces an alternative
+> > approach for protecting memory allocated to processes executing within
+> > a memory cgroup controller. It is based on a new tunable that was
+> > discussed with Johannes and Tejun held during the kernel summit 2013 and
+> > at LSF 2014.
+> > 
+> > This patchset introduces such low limit that is functionally similar
+> > to a minimum guarantee. Memcgs which are under their lowlimit are not
+> > considered eligible for the reclaim (both global and hardlimit) unless
+> > all groups under the reclaimed hierarchy are below the low limit when
+> > all of them are considered eligible.
+> 
+> Permitting containers to avoid global reclaim sounds rather worrisome. 
+> 
+> Fairness: won't it permit processes to completely protect their memory
+> while everything else in the system is getting utterly pounded?  We
+> need to consider global-vs-memcg fairness as well as memcg-vs-memgc.
+> 
+> Security: can this feature be used to DoS the machine?  Set up enough
+> hierarchies which are below their low limit and we risk memory
+> exhaustion and swap-thrashing and oom-killings for other processes.
 
-Fixed these warnings by removing the `#ifdef CONFIG_REGMAP_I2C' around their
-calls as this driver selects REGMAP_I2C in Kconfig. This part of driver just
-didn't compile at all when REGMAP_I2C configured as module (CONFIG_REGMAP_I2C
-is not defined, just CONFIG_REGMAP_I2C_MODULE).
-
-Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
----
- drivers/tty/serial/sc16is7xx.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
-index 7206a64..80b0ca6 100644
---- a/drivers/tty/serial/sc16is7xx.c
-+++ b/drivers/tty/serial/sc16is7xx.c
-@@ -1221,7 +1221,6 @@ static struct regmap_config regcfg = {
- 	.precious_reg = sc16is7xx_regmap_precious,
- };
+Johannes has already pointed out that setting the low limit is really
+supposed to be a privileged operation. And, in principle, this is not any
+different from any other guarantee.
  
--#ifdef CONFIG_REGMAP_I2C
- static int sc16is7xx_i2c_probe(struct i2c_client *i2c,
- 			       const struct i2c_device_id *id)
- {
-@@ -1273,7 +1272,6 @@ static struct i2c_driver sc16is7xx_i2c_uart_driver = {
- };
- module_i2c_driver(sc16is7xx_i2c_uart_driver);
- MODULE_ALIAS("i2c:sc16is7xx");
--#endif
- 
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Jon Ringle <jringle@gridpoint.com>");
+> All of that being said, your statement doesn't appear to be true ;)
+
+"
+Memcgs which are under their lowlimit are ignored during the reclaim
+(both global and hardlimit) unless all groups under the reclaimed
+hierarchy are below the low limit. Low limit will be ignored in this
+case for all groups in the hierarchy.
+"
+
+Better?
+
+> > +static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> > +{
+> > +	if (!__shrink_zone(zone, sc, true)) {
+> > +		/*
+> > +		 * First round of reclaim didn't find anything to reclaim
+> > +		 * because of low limit protection so try again and ignore
+> > +		 * the low limit this time.
+> > +		 */
+> > +		__shrink_zone(zone, sc, false);
+> > +	}
+> >  }
+> `
+
 -- 
-1.8.4.5
-
+Michal Hocko
+SUSE Labs
