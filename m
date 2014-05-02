@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbaEBQAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:00:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44149 "EHLO
+	id S1753757AbaEBPo4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:44:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44130 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770AbaEBPo6 (ORCPT
+	with ESMTP id S1753715AbaEBPox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:44:58 -0400
+	Fri, 2 May 2014 11:44:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 089/151] spi: efm32: use $vendor,$device scheme for compatible string
-Date: Fri,  2 May 2014 08:37:57 -0700
-Message-Id: <1399045139-4531-90-git-send-email-kamal@canonical.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 085/151] mfd: kempld-core: Fix potential hang-up during boot
+Date: Fri,  2 May 2014 08:37:53 -0700
+Message-Id: <1399045139-4531-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,59 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 12f6dd860cf8bf036c0bec38c00a53da71bcd43a upstream.
+commit 204747c970c0d568721c76ab8a57dde0e5dcf0d5 upstream.
 
-Wolfram Sang pointed out that "efm32,$device" is non-standard. So use the
-common scheme and prefix device with "efm32-". The old compatible string
-is left in place until arch/arm/boot/dts/efm32* is fixed.
+On PXT and COMe-cPC2 boards it is observed that the hardware
+mutex is acquired but not being released during initialization.
+This can result in a hang-up during boot if the driver is built
+into the kernel.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Releasing the mutex twice if it was acquired fixes the problem.
+Subsequent request/release cycles work as expected, so the fix is
+only needed during initialization.
+
+Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
+Tested-by: Michael Brunner <michael.brunner@kontron.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- Documentation/devicetree/bindings/spi/efm32-spi.txt | 4 ++--
- drivers/spi/spi-efm32.c                             | 3 +++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/mfd/kempld-core.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/spi/efm32-spi.txt b/Documentation/devicetree/bindings/spi/efm32-spi.txt
-index a590ca5..f762e11 100644
---- a/Documentation/devicetree/bindings/spi/efm32-spi.txt
-+++ b/Documentation/devicetree/bindings/spi/efm32-spi.txt
-@@ -3,7 +3,7 @@
- Required properties:
- - #address-cells: see spi-bus.txt
- - #size-cells: see spi-bus.txt
--- compatible: should be "efm32,spi"
-+- compatible: should be "energymicro,efm32-spi"
- - reg: Offset and length of the register set for the controller
- - interrupts: pair specifying rx and tx irq
- - clocks: phandle to the spi clock
-@@ -15,7 +15,7 @@ Example:
- spi1: spi@0x4000c400 { /* USART1 */
- 	#address-cells = <1>;
- 	#size-cells = <0>;
--	compatible = "efm32,spi";
-+	compatible = "energymicro,efm32-spi";
- 	reg = <0x4000c400 0x400>;
- 	interrupts = <15 16>;
- 	clocks = <&cmu 20>;
-diff --git a/drivers/spi/spi-efm32.c b/drivers/spi/spi-efm32.c
-index d4d3cc5..8933eb7 100644
---- a/drivers/spi/spi-efm32.c
-+++ b/drivers/spi/spi-efm32.c
-@@ -487,6 +487,9 @@ static int efm32_spi_remove(struct platform_device *pdev)
+diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
+index d3e2327..38917a8 100644
+--- a/drivers/mfd/kempld-core.c
++++ b/drivers/mfd/kempld-core.c
+@@ -322,9 +322,12 @@ static int kempld_detect_device(struct kempld_device_data *pld)
+ 		return -ENODEV;
+ 	}
  
- static const struct of_device_id efm32_spi_dt_ids[] = {
- 	{
-+		.compatible = "energymicro,efm32-spi",
-+	}, {
-+		/* doesn't follow the "vendor,device" scheme, don't use */
- 		.compatible = "efm32,spi",
- 	}, {
- 		/* sentinel */
+-	/* Release hardware mutex if aquired */
+-	if (!(index_reg & KEMPLD_MUTEX_KEY))
++	/* Release hardware mutex if acquired */
++	if (!(index_reg & KEMPLD_MUTEX_KEY)) {
+ 		iowrite8(KEMPLD_MUTEX_KEY, pld->io_index);
++		/* PXT and COMe-cPC2 boards may require a second release */
++		iowrite8(KEMPLD_MUTEX_KEY, pld->io_index);
++	}
+ 
+ 	mutex_unlock(&pld->lock);
+ 
 -- 
 1.9.1
 
