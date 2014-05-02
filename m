@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021AbaEBQmZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:42:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43283 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584AbaEBQmX (ORCPT
+	id S1753057AbaEBQnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:43:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43404 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaEBQnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 12:42:23 -0400
-Message-ID: <5363CAC7.3020706@ti.com>
-Date: Fri, 2 May 2014 12:41:43 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 2 May 2014 12:43:13 -0400
+Date: Fri, 2 May 2014 09:43:05 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Alexander Gordeev <agordeev@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shaohua Li <shli@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+Message-ID: <20140502164305.GA18747@infradead.org>
+References: <CACVXFVN-roORYH8b-qZ10e2_wrL1W5-xO2P=A_ARPFL2GqDn2Q@mail.gmail.com>
+ <535AD235.90604@kernel.dk>
+ <CACVXFVPkiQT6yxse=sX1yuX8wLbr1sgbT4chQycbbPDR_A6hqA@mail.gmail.com>
+ <535B13D7.4050202@kernel.dk>
+ <CACVXFVORX_qgJNXcB3OFpscVx0eQAbLPv2Jr1N3_yBKrPsGXFA@mail.gmail.com>
+ <53601602.5060306@kernel.dk>
+ <20140501224744.GA2285@kmo-pixel>
+ <536300BB.5060906@kernel.dk>
+ <20140502050523.GA21708@infradead.org>
+ <5363CAC4.4040306@kernel.dk>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v3 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>	<536249D6.3020008@ti.com>	<20140501132516.GG26756@n2100.arm.linux.org.uk> <CAL_JsqKcQ3eHPVGmz7LwE-s1KdkOAKTiF43XPjD3bVS2ghKLJA@mail.gmail.com>
-In-Reply-To: <CAL_JsqKcQ3eHPVGmz7LwE-s1KdkOAKTiF43XPjD3bVS2ghKLJA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5363CAC4.4040306@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 May 2014 10:41 AM, Rob Herring wrote:
-> On Thu, May 1, 2014 at 8:25 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Thu, May 01, 2014 at 09:19:18AM -0400, Santosh Shilimkar wrote:
->>> Rob, Russell,
->>>
->>> On Thursday 24 April 2014 11:30 AM, Santosh Shilimkar wrote:
->>>> Here is an updated v3 of the series. Series introduces support for setting up
->>>> dma parameters based on device tree properties like 'dma-ranges' and
->>>> 'dma-coherent' and also update to ARM 32 bit port. Earlier version of the
->>>> series can be found here [3], [2] and [1].
->>>>
->>>> The 'dma-ranges' helps to take care of few DMAable system memory restrictions
->>>> by use of dma_pfn_offset which we maintain now per device. Arch code then
->>>> uses it for dma address translations for such cases. We update the
->>>> dma_pfn_offset accordingly during DT the device creation process.The
->>>> 'dma-coherent' property is used to setup arch's coherent dma_ops.
->>>>
->>>> Hopefully with acks, tested-by this version can get into 3.16 queue. I will
->>>> post a followup series for Keystone SOC which will use this infrastructure.
->>>> Linus W also wants to use this for ARM integrator platform dma offset issue.
->>>>
->>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> Cc: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Olof Johansson <olof@lixom.net>
->>>> Cc: Grant Likely <grant.likely@linaro.org>
->>>> Cc: Rob Herring <robh+dt@kernel.org>
->>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>>> Cc: Linus Walleij <linus.walleij@linaro.org>
->>>> Cc: Grygorii Strashko <grygorii.strashko@ti.com>
->>>>
->>>> Grygorii Strashko (2):
->>>>   of: introduce of_dma_get_range() helper
->>>>   ARM: dma: Use dma_pfn_offset for dma address translation
->>>>
->>>> Santosh Shilimkar (5):
->>>>   device: introduce per device dma_pfn_offset
->>>>   of: introduce of_dma_is_coherent() helper
->>>>   of: configure the platform device dma parameters
->>>>   ARM: dma: implement set_arch_dma_coherent_ops()
->>>>   ARM: dma: use phys_addr_t in __dma_page_[cpu_to_dev/dev_to_cpu]
->>>>
->>>>  arch/arm/include/asm/dma-mapping.h |   28 ++++++++++--
->>>>  arch/arm/mm/dma-mapping.c          |    4 +-
->>>>  drivers/of/address.c               |   87 ++++++++++++++++++++++++++++++++++++
->>>>  drivers/of/platform.c              |   71 +++++++++++++++++++++++++++--
->>>>  include/linux/device.h             |    2 +
->>>>  include/linux/dma-mapping.h        |    7 +++
->>>>  include/linux/of_address.h         |    8 ++++
->>>>  include/linux/of_platform.h        |    6 +++
->>>>  8 files changed, 204 insertions(+), 9 deletions(-)
->>>>
->>> How do we go about merging this series ? There is a dependency
->>> between the patches and hence the question.
->>
->> I don't know anymore.  People today want to assert exclusive rights over
->> parts of the kernel tree, which makes this kind of cross-patching rather
->> impossible.
+On Fri, May 02, 2014 at 10:41:40AM -0600, Jens Axboe wrote:
+> > At least for SCSI devices _tag space_ is plenty, it's just the we
+> > artifically limit our tag space to the queue depth to avoid having to
+> > track that one separately.  In addition we also preallocaste a request
+> > for each tag, so even if we would track the queue depth separately
+> > we would waste a lot of memory.
 > 
-> I can take this series or provide an ack for the DT parts. Either way
-> it does not matter to me.
-> 
->> The only workable solution I can see is the long winded way to split the
->> series up, merge the first set of dependencies in one merge window, and
->> hold the rest back for the following merge window.  Not ideal, but it
->> stops the arguments.
-> 
-> That should not be necessary. We should be able to sort this out as it
-> is not a difficult problem.
-> 
-yeah. After addressing those few minor comments, I will create a pull
-request for both RMK and arm-soc to pull from with your ack. That way
-I can also add keystone specific parts on top of this series to arm-soc.
+> In practice it comes out to the same, it's not feasible to run a much
+> larger space and track on queue depth. So I don't think that changes the
+> conclusion for SCSI.
 
-Regards,
-Santosh  
+Agreed.  Just had to check if my smart ass hat still fits this morning..
+
