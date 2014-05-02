@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaEBPPL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:15:11 -0400
-Received: from mail-by1on0157.outbound.o365filtering.com ([207.46.101.157]:64639
-	"EHLO na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751990AbaEBPPJ (ORCPT
+	id S1752727AbaEBPPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:15:54 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:58587 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752704AbaEBPPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:15:09 -0400
-X-Greylist: delayed 1953 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:15:08 EDT
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: randconfig build error with next-20140502, in
- drivers/net/hyperv/netvsc_drv.c
-Thread-Topic: randconfig build error with next-20140502, in
- drivers/net/hyperv/netvsc_drv.c
-Thread-Index: AQHPZg5VELXjQQ2rFUCGAjzcri4hopstWxlw
-Date: Fri, 2 May 2014 14:42:06 +0000
-Message-ID: <91a4eac99889460f91f619385208cbca@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
-In-Reply-To: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 2 May 2014 11:15:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: peterz@infradead.org, mingo@elte.hu, amit.kucheria@linaro.org,
+        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] sched: idle: Encapsulate the code to compile it out
+Date: Fri, 02 May 2014 17:32:25 +0200
+Message-ID: <8539453.ED7vQGf2Gc@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53639F1B.5080000@linaro.org>
+References: <1398859263-7632-1-git-send-email-daniel.lezcano@linaro.org> <2782801.UzoMhgfu56@vostro.rjw.lan> <53639F1B.5080000@linaro.org>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(51704005)(199002)(189002)(13464003)(164054003)(377454003)(6806004)(19580395003)(76482001)(79102001)(46102001)(80976001)(81686001)(19580405001)(81816001)(83322001)(76796001)(44976005)(87266001)(85306002)(47776003)(31966008)(20776003)(76786001)(77982001)(1511001)(69226001)(33646001)(74502001)(50466002)(80022001)(66066001)(74876001)(90146001)(83072002)(81342001)(94946001)(93516002)(93136001)(94316002)(92566001)(2009001)(97736001)(95666003)(97336001)(97186001)(95416001)(23676002)(81542001)(4396001)(87936001)(74706001)(53806002)(50986002)(86612001)(85852003)(84676001)(74662001)(2656002)(74366001)(63696004)(47446003)(56776002)(54316003)(49866002)(98676001)(54356002)(59766002)(51856002)(47976003)(56816006)(99396002)(47736002)(65816002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB591;H:hybrid.exchange.microsoft.com;FPR:;PTR:InfoDomainNonexistent;MX:1;LANG:en;
-X-Exchange-Antispam-Report-Test: BL:0;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:
-X-Forefront-PRVS: 019919A9E4
-X-OriginatorOrg: msft.ccsctp.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s42FFKo4020446
 
-
-
-> -----Original Message-----
-> From: Jim Davis [mailto:jim.epost@gmail.com]
-> Sent: Friday, May 2, 2014 9:56 AM
-> To: Stephen Rothwell; linux-next; linux-kernel; KY Srinivasan; Haiyang
-> Zhang; devel@linuxdriverproject.org; netdev
-> Subject: randconfig build error with next-20140502, in
-> drivers/net/hyperv/netvsc_drv.c
+On Friday, May 02, 2014 03:35:23 PM Daniel Lezcano wrote:
+> On 05/02/2014 02:09 PM, Rafael J. Wysocki wrote:
+> > On Friday, May 02, 2014 10:52:27 AM Daniel Lezcano wrote:
+> >> On 05/01/2014 12:47 AM, Rafael J. Wysocki wrote:
+> >>> On Wednesday, April 30, 2014 02:01:02 PM Daniel Lezcano wrote:
+> >>>> Encapsulate the large portion of cpuidle_idle_call inside another
+> >>>> function so when CONFIG_CPU_IDLE=n, the code will be compiled out.
+> >>>> Also that is benefitial for the clarity of the code as it removes
+> >>>> a nested indentation level.
+> >>>>
+> >>>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>>
+> >>> Well, this conflicts with
+> >>>
+> >>> https://patchwork.kernel.org/patch/4071541/
+> >>>
+> >>> which you haven't commented on and I still want cpuidle_select() to be able to
+> >>> return negative values because of
+> >>>
+> >>> https://patchwork.kernel.org/patch/4089631/
+> >>>
+> >>> (and I have one more patch on top of these two that requires this).
+> >>>
+> >>> Any ideas how to resolve that?
+> >>
+> >> I don't think we have a big conflict. If Peter takes your patches before
+> >> than mines then I will refresh and resend them.
+> >
+> > Actually, I was planning the merge them myself, because they are more cpuidle
+> > than the scheduler, but either way would be fine.
 > 
-> Building with the attached random configuration file,
-> 
-> drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_recv_callbackâ€™:
-> drivers/net/hyperv/netvsc_drv.c:648:11: error: â€˜struct net_deviceâ€™ has
-> no member
->  named â€˜real_num_rx_queuesâ€™
->         net->real_num_rx_queues);
->            ^
-> In file included from drivers/net/hyperv/netvsc_drv.c:26:0:
-> drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_probeâ€™:
-> drivers/net/hyperv/netvsc_drv.c:832:32: error: â€˜struct net_deviceâ€™ has
-> no member named â€˜real_num_rx_queuesâ€™
->     net->real_num_tx_queues, net->real_num_rx_queues);
->                                 ^
-> include/linux/device.h:1080:58: note: in definition of macro â€˜dev_infoâ€™
->  #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
->                                                           ^
-> make[3]: *** [drivers/net/hyperv/netvsc_drv.o] Error 1
+> Well I have some patches for the scheduler which will need these 
+> modifications. Is it possible to merge them throw a common branch to be 
+> shared between sched and pm ?
 
-real_num_rx_queues is defined in "include/linux/netdevice.h":
-It requires CONFIG_SYSFS flag, which is enabled by default, but not set in 
-your config file.
+That would be perfectly fine by me, but I'm not sure what Ingo and Peter think
+about that.
 
-Could you use default config and add hyperv drivers, then try again?
+I can set up a branch with sched/idle/cpuidle changes.
 
-Thanks,
-- Haiyang
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
