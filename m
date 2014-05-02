@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaEBPFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:05:46 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:59515 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751636AbaEBPFp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:05:45 -0400
-Message-ID: <5363B446.7010101@hurleysoftware.com>
-Date: Fri, 02 May 2014 11:05:42 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752696AbaEBPF5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:05:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59320 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751636AbaEBPFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:05:54 -0400
+Message-ID: <5363B42C.4010404@ti.com>
+Date: Fri, 2 May 2014 11:05:16 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] tty: Fix lockless tty buffer race
-References: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com> <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
-In-Reply-To: <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v3 5/7] ARM: dma: Use dma_pfn_offset for dma address translation
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <1398353407-2345-6-git-send-email-santosh.shilimkar@ti.com> <20140502145852.GC3693@n2100.arm.linux.org.uk>
+In-Reply-To: <20140502145852.GC3693@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 10:56 AM, Peter Hurley wrote:
-> Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
-> "tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
-> correctly identifies an unsafe race condition between
-> __tty_buffer_request_room() and flush_to_ldisc(), where the consumer
-> flush_to_ldisc() prematurely advances the head before consuming the
-> last of the data committed. For example:
->
->             CPU 0                     |            CPU 1
-> __tty_buffer_request_room            | flush_to_ldisc
->    ...                                |   ...
->                                       |   count = head->commit - head->read
->    n = tty_buffer_alloc()             |
->    b->commit = b->used                |
->    b->next = n                        |
->                                       |   if (!count)                /* T */
->                                       |     if (head->next == NULL)  /* F */
->                                       |     buf->head = head->next
->
-> In this case, buf->head has been advanced but head->commit may have
-> been updated with a new value.
->
-> Instead of reintroducing an unnecessary lock, fix the race locklessly.
-> Read the commit-next pair in the reverse order of writing, which guarantees
-> the commit value read is the latest value written if the head is
-> advancing.
->
-> Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
-> Cc: <stable@vger.kernel.org> # 3.12.x+
+On Friday 02 May 2014 10:58 AM, Russell King - ARM Linux wrote:
+> On Thu, Apr 24, 2014 at 11:30:05AM -0400, Santosh Shilimkar wrote:
+>> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+>> index e701a4d..424fda9 100644
+>> --- a/arch/arm/include/asm/dma-mapping.h
+>> +++ b/arch/arm/include/asm/dma-mapping.h
+>> @@ -58,22 +58,35 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
+>>  #ifndef __arch_pfn_to_dma
+>>  static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
+>>  {
+>> -	return (dma_addr_t)__pfn_to_bus(pfn);
+>> +	if (!dev)
+>> +		return (dma_addr_t)__pfn_to_bus(pfn);
+>> +	else
+>> +		return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
+> 
+> I really don't trust gcc to do this right, so I think it would be better
+> to make life easier on the compiler:
+> 
+> 	if (dev)
+> 		pfn -= dev->dma_pfn_offset;
+> 	return (dma_addr_t)__pfn_to_bus(pfn);
+> 
+This looks better. Will udpate with above.
 
-The patch submitted by Manfred notes the commits which introduced the
-race [1], but attributes those commits to the 3.11 cycle. Those commits
-were merged in the 3.12 cycle.
+>>  static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
+>>  {
+>> -	return __bus_to_pfn(addr);
+>> +	if (!dev)
+>> +		return __bus_to_pfn(addr);
+>> +	else
+>> +		return __bus_to_pfn(addr) + dev->dma_pfn_offset;
+> 
+> and:
+> 
+> 	unsigned long pfn = __bus_to_pfn(addr);
+> 
+> 	if (dev)
+> 		pfn += dev->dma_pfn_offset;
+> 
+> 	return pfn;
+> 
+Ok..
+
+>>  }
+>>  
+>>  static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
+>>  {
+>> -	return (void *)__bus_to_virt((unsigned long)addr);
+>> +	if (!dev)
+>> +		return (void *)__bus_to_virt((unsigned long)addr);
+>> +	else
+>> +		return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
+> 
+> This is quite horrendous.  There's easier ways to do this...  I assume
+> you haven't looked at the assembler resulting from this at all with
+> stuff like the p2v patching enabled?
+> 
+I haven't. Will check.
+
+>>  }
+>>  
+>>  static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+>>  {
+>> -	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
+>> +	if (!dev)
+>> +		return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
+>> +	else
+>> +		return pfn_to_dma(dev,
+>> +				__bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
+> 
+> Same here.
+> 
+ok.
+
+Thanks !!
 
 Regards,
-Peter Hurley
-
-[1] commits e8437d7ecbc50198705331449367d401ebb3181f,
-"tty: Make driver-side flip buffers lockless", and
-e9975fdec0138f1b2a85b9624e41660abd9865d4,
-"tty: Ensure single-threaded flip buffer consumer with mutex"
+Santosh
