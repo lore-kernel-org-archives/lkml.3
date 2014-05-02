@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaEBQ2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:28:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43673 "EHLO
+	id S1754969AbaEBQ2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:28:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43672 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaEBPjS (ORCPT
+	with ESMTP id S1752707AbaEBPjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 2 May 2014 11:39:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Mikulas Patocka <mpatocka@redhat.com>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 009/151] framebuffer: fix cfb_copyarea
-Date: Fri,  2 May 2014 08:36:37 -0700
-Message-Id: <1399045139-4531-10-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 013/151] tgafb: fix data copying
+Date: Fri,  2 May 2014 08:36:41 -0700
+Message-Id: <1399045139-4531-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -30,400 +30,342 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 00a9d699bc85052d2d3ed56251cd928024ce06a3 upstream.
+commit 6b0df6827bb6fcacb158dff29ad0a62d6418b534 upstream.
 
-The function cfb_copyarea is buggy when the copy operation is not aligned on
-long boundary (4 bytes on 32-bit machines, 8 bytes on 64-bit machines).
+The functions for data copying copyarea_foreward_8bpp and
+copyarea_backward_8bpp are buggy, they produce screen corruption.
 
-How to reproduce:
-- use x86-64 machine
-- use a framebuffer driver without acceleration (for example uvesafb)
-- set the framebuffer to 8-bit depth
-	(for example fbset -a 1024x768-60 -depth 8)
-- load a font with character width that is not a multiple of 8 pixels
-	note: the console-tools package cannot load a font that has
-	width different from 8 pixels. You need to install the packages
-	"kbd" and "console-terminus" and use the program "setfont" to
-	set font width (for example: setfont Uni2-Terminus20x10)
-- move some text left and right on the bash command line and you get a
-	screen corruption
-
-To expose more bugs, put this line to the end of uvesafb_init_info:
-info->flags |= FBINFO_HWACCEL_COPYAREA | FBINFO_READS_FAST;
-- Now framebuffer console will use cfb_copyarea for console scrolling.
-You get a screen corruption when console is scrolled.
-
-This patch is a rewrite of cfb_copyarea. It fixes the bugs, with this
-patch, console scrolling in 8-bit depth with a font width that is not a
-multiple of 8 pixels works fine.
-
-The cfb_copyarea code was very buggy and it looks like it was written
-and never tried with non-8-pixel font.
+This patch fixes the functions and moves the logic to one function
+"copyarea_8bpp". For simplicity, the function only handles copying that
+is aligned on 8 pixes. If we copy an unaligned area, generic function
+cfb_copyarea is used.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
 Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/video/cfbcopyarea.c | 153 ++++++++++++++++++++++----------------------
- 1 file changed, 78 insertions(+), 75 deletions(-)
+ drivers/video/tgafb.c | 264 ++++++++++----------------------------------------
+ 1 file changed, 51 insertions(+), 213 deletions(-)
 
-diff --git a/drivers/video/cfbcopyarea.c b/drivers/video/cfbcopyarea.c
-index bb5a96b..bcb5723 100644
---- a/drivers/video/cfbcopyarea.c
-+++ b/drivers/video/cfbcopyarea.c
-@@ -43,13 +43,22 @@
-      */
+diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
+index 6386233..412f4c1 100644
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -1145,222 +1145,57 @@ copyarea_line_32bpp(struct fb_info *info, u32 dy, u32 sy,
+ 	__raw_writel(TGA_MODE_SBM_24BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+ }
  
- static void
--bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
--		const unsigned long __iomem *src, int src_idx, int bits,
-+bitcpy(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
-+		const unsigned long __iomem *src, unsigned src_idx, int bits,
- 		unsigned n, u32 bswapmask)
+-/* The general case of forward copy in 8bpp mode.  */
++/* The (almost) general case of backward copy in 8bpp mode.  */
+ static inline void
+-copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length)
++copyarea_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
++	      u32 height, u32 width, u32 line_length,
++	      const struct fb_copyarea *area)
  {
- 	unsigned long first, last;
- 	int const shift = dst_idx-src_idx;
--	int left, right;
-+
-+#if 0
-+	/*
-+	 * If you suspect bug in this function, compare it with this simple
-+	 * memmove implementation.
-+	 */
-+	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	return;
-+#endif
+ 	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, copied, left;
+-	unsigned long dpos, spos, dalign, salign, yincr;
+-	u32 smask_first, dmask_first, dmask_last;
+-	int pixel_shift, need_prime, need_second;
+-	unsigned long n64, n32, xincr_first;
++	unsigned i, yincr;
++	int depos, sepos, backward, last_step, step;
++	u32 mask_last;
++	unsigned n32;
+ 	void __iomem *tga_regs;
+ 	void __iomem *tga_fb;
  
- 	first = fb_shifted_pixels_mask_long(p, dst_idx, bswapmask);
- 	last = ~fb_shifted_pixels_mask_long(p, (dst_idx+n) % bits, bswapmask);
-@@ -98,9 +107,8 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 		unsigned long d0, d1;
- 		int m;
- 
--		right = shift & (bits - 1);
--		left = -shift & (bits - 1);
--		bswapmask &= shift;
-+		int const left = shift & (bits - 1);
-+		int const right = -shift & (bits - 1);
- 
- 		if (dst_idx+n <= bits) {
- 			// Single destination word
-@@ -110,15 +118,15 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			if (shift > 0) {
- 				// Single source word
--				d0 >>= right;
-+				d0 <<= left;
- 			} else if (src_idx+n <= bits) {
- 				// Single source word
--				d0 <<= left;
-+				d0 >>= right;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src + 1);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0<<left | d1>>right;
-+				d0 = d0 >> right | d1 << left;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-@@ -135,60 +143,59 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			if (shift > 0) {
- 				// Single source word
- 				d1 = d0;
--				d0 >>= right;
--				dst++;
-+				d0 <<= left;
- 				n -= bits - dst_idx;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src++);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
- 
--				d0 = d0<<left | d1>>right;
--				dst++;
-+				d0 = d0 >> right | d1 << left;
- 				n -= bits - dst_idx;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
- 			d0 = d1;
-+			dst++;
- 
- 			// Main chunk
- 			m = n % bits;
- 			n /= bits;
- 			while ((n >= 4) && !bswapmask) {
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				n -= 4;
- 			}
- 			while (n--) {
- 				d1 = FB_READL(src++);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0 << left | d1 >> right;
-+				d0 = d0 >> right | d1 << left;
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(d0, dst++);
- 				d0 = d1;
- 			}
- 
- 			// Trailing bits
--			if (last) {
--				if (m <= right) {
-+			if (m) {
-+				if (m <= bits - right) {
- 					// Single source word
--					d0 <<= left;
-+					d0 >>= right;
- 				} else {
- 					// 2 source words
- 					d1 = FB_READL(src);
- 					d1 = fb_rev_pixels_in_long(d1,
- 								bswapmask);
--					d0 = d0<<left | d1>>right;
-+					d0 = d0 >> right | d1 << left;
- 				}
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
-@@ -202,43 +209,46 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
-      */
- 
- static void
--bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
--		const unsigned long __iomem *src, int src_idx, int bits,
-+bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
-+		const unsigned long __iomem *src, unsigned src_idx, int bits,
- 		unsigned n, u32 bswapmask)
- {
- 	unsigned long first, last;
- 	int shift;
- 
--	dst += (n-1)/bits;
--	src += (n-1)/bits;
--	if ((n-1) % bits) {
--		dst_idx += (n-1) % bits;
--		dst += dst_idx >> (ffs(bits) - 1);
--		dst_idx &= bits - 1;
--		src_idx += (n-1) % bits;
--		src += src_idx >> (ffs(bits) - 1);
--		src_idx &= bits - 1;
+-	yincr = line_length;
+-	if (dy > sy) {
+-		dy += height - 1;
+-		sy += height - 1;
+-		yincr = -yincr;
 -	}
-+#if 0
-+	/*
-+	 * If you suspect bug in this function, compare it with this simple
-+	 * memmove implementation.
-+	 */
-+	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	return;
-+#endif
+-
+-	/* Compute the offsets and alignments in the frame buffer.
+-	   More than anything else, these control how we do copies.  */
+-	dpos = dy * line_length + dx;
+-	spos = sy * line_length + sx;
+-	dalign = dpos & 7;
+-	salign = spos & 7;
+-	dpos &= -8;
+-	spos &= -8;
+-
+-	/* Compute the value for the PIXELSHIFT register.  This controls
+-	   both non-co-aligned source and destination and copy direction.  */
+-	if (dalign >= salign)
+-		pixel_shift = dalign - salign;
+-	else
+-		pixel_shift = 8 - (salign - dalign);
+-
+-	/* Figure out if we need an additional priming step for the
+-	   residue register.  */
+-	need_prime = (salign > dalign);
+-	if (need_prime)
+-		dpos -= 8;
+-
+-	/* Begin by copying the leading unaligned destination.  Copy enough
+-	   to make the next destination address 32-byte aligned.  */
+-	copied = 32 - (dalign + (dpos & 31));
+-	if (copied == 32)
+-		copied = 0;
+-	xincr_first = (copied + 7) & -8;
+-	smask_first = dmask_first = (1ul << copied) - 1;
+-	smask_first <<= salign;
+-	dmask_first <<= dalign + need_prime*8;
+-	if (need_prime && copied > 24)
+-		copied -= 8;
+-	left = width - copied;
+-
+-	/* Care for small copies.  */
+-	if (copied > width) {
+-		u32 t;
+-		t = (1ul << width) - 1;
+-		t <<= dalign + need_prime*8;
+-		dmask_first &= t;
+-		left = 0;
+-	}
+-
+-	/* Attempt to use 64-byte copies.  This is only possible if the
+-	   source and destination are co-aligned at 64 bytes.  */
+-	n64 = need_second = 0;
+-	if ((dpos & 63) == (spos & 63)
+-	    && (height == 1 || line_length % 64 == 0)) {
+-		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
+-		need_second = (dpos + xincr_first) & 63;
+-		if ((need_second & 32) != need_second)
+-			printk(KERN_ERR "tgafb: need_second wrong\n");
+-		if (left >= need_second + 64) {
+-			left -= need_second;
+-			n64 = left / 64;
+-			left %= 64;
+-		} else
+-			need_second = 0;
+-	}
+-
+-	/* Copy trailing full 32-byte sections.  This will be the main
+-	   loop if the 64 byte loop can't be used.  */
+-	n32 = left / 32;
+-	left %= 32;
+-
+-	/* Copy the trailing unaligned destination.  */
+-	dmask_last = (1ul << left) - 1;
+-
+-	tga_regs = par->tga_regs_base;
+-	tga_fb = par->tga_fb_base;
+-
+-	/* Set up the MODE and PIXELSHIFT registers.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_COPY, tga_regs+TGA_MODE_REG);
+-	__raw_writel(pixel_shift, tga_regs+TGA_PIXELSHIFT_REG);
+-	wmb();
+-
+-	for (i = 0; i < height; ++i) {
+-		unsigned long j;
+-		void __iomem *sfb;
+-		void __iomem *dfb;
+-
+-		sfb = tga_fb + spos;
+-		dfb = tga_fb + dpos;
+-		if (dmask_first) {
+-			__raw_writel(smask_first, sfb);
+-			wmb();
+-			__raw_writel(dmask_first, dfb);
+-			wmb();
+-			sfb += xincr_first;
+-			dfb += xincr_first;
+-		}
+-
+-		if (need_second) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
+-			printk(KERN_ERR
+-			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
+-			       sfb, dfb);
+-
+-		for (j = 0; j < n64; ++j) {
+-			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
+-			wmb();
+-			__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
+-			wmb();
+-			sfb += 64;
+-			dfb += 64;
+-		}
+-
+-		for (j = 0; j < n32; ++j) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (dmask_last) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(dmask_last, dfb);
+-			wmb();
+-		}
+-
+-		spos += yincr;
+-		dpos += yincr;
++	/* Do acceleration only if we are aligned on 8 pixels */
++	if ((dx | sx | width) & 7) {
++		cfb_copyarea(info, area);
++		return;
+ 	}
+ 
+-	/* Reset the MODE register to normal.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+-}
+-
+-/* The (almost) general case of backward copy in 8bpp mode.  */
+-static inline void
+-copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length,
+-		       const struct fb_copyarea *area)
+-{
+-	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, left, yincr;
+-	unsigned long depos, sepos, dealign, sealign;
+-	u32 mask_first, mask_last;
+-	unsigned long n32;
+-	void __iomem *tga_regs;
+-	void __iomem *tga_fb;
+-
+ 	yincr = line_length;
+ 	if (dy > sy) {
+ 		dy += height - 1;
+ 		sy += height - 1;
+ 		yincr = -yincr;
+ 	}
++	backward = dy == sy && dx > sx && dx < sx + width;
+ 
+ 	/* Compute the offsets and alignments in the frame buffer.
+ 	   More than anything else, these control how we do copies.  */
+-	depos = dy * line_length + dx + width;
+-	sepos = sy * line_length + sx + width;
+-	dealign = depos & 7;
+-	sealign = sepos & 7;
+-
+-	/* ??? The documentation appears to be incorrect (or very
+-	   misleading) wrt how pixel shifting works in backward copy
+-	   mode, i.e. when PIXELSHIFT is negative.  I give up for now.
+-	   Do handle the common case of co-aligned backward copies,
+-	   but frob everything else back on generic code.  */
+-	if (dealign != sealign) {
+-		cfb_copyarea(info, area);
+-		return;
+-	}
+-
+-	/* We begin the copy with the trailing pixels of the
+-	   unaligned destination.  */
+-	mask_first = (1ul << dealign) - 1;
+-	left = width - dealign;
+-
+-	/* Care for small copies.  */
+-	if (dealign > width) {
+-		mask_first ^= (1ul << (dealign - width)) - 1;
+-		left = 0;
+-	}
++	depos = dy * line_length + dx;
++	sepos = sy * line_length + sx;
++	if (backward)
++		depos += width, sepos += width;
+ 
+ 	/* Next copy full words at a time.  */
+-	n32 = left / 32;
+-	left %= 32;
++	n32 = width / 32;
++	last_step = width % 32;
+ 
+ 	/* Finally copy the unaligned head of the span.  */
+-	mask_last = -1 << (32 - left);
++	mask_last = (1ul << last_step) - 1;
 +
-+	dst += (dst_idx + n - 1) / bits;
-+	src += (src_idx + n - 1) / bits;
-+	dst_idx = (dst_idx + n - 1) % bits;
-+	src_idx = (src_idx + n - 1) % bits;
++	if (!backward) {
++		step = 32;
++		last_step = 32;
++	} else {
++		step = -32;
++		last_step = -last_step;
++		sepos -= 32;
++		depos -= 32;
++	}
  
- 	shift = dst_idx-src_idx;
+ 	tga_regs = par->tga_regs_base;
+ 	tga_fb = par->tga_fb_base;
+@@ -1377,25 +1212,33 @@ copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
  
--	first = fb_shifted_pixels_mask_long(p, bits - 1 - dst_idx, bswapmask);
--	last = ~fb_shifted_pixels_mask_long(p, bits - 1 - ((dst_idx-n) % bits),
--					    bswapmask);
-+	first = ~fb_shifted_pixels_mask_long(p, (dst_idx + 1) % bits, bswapmask);
-+	last = fb_shifted_pixels_mask_long(p, (bits + dst_idx + 1 - n) % bits, bswapmask);
+ 		sfb = tga_fb + sepos;
+ 		dfb = tga_fb + depos;
+-		if (mask_first) {
+-			__raw_writel(mask_first, sfb);
+-			wmb();
+-			__raw_writel(mask_first, dfb);
+-			wmb();
+-		}
  
- 	if (!shift) {
- 		// Same alignment for source and dest
- 
- 		if ((unsigned long)dst_idx+1 >= n) {
- 			// Single word
--			if (last)
--				first &= last;
--			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
-+			if (first)
-+				last &= first;
-+			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
- 		} else {
- 			// Multiple destination words
- 
- 			// Leading bits
--			if (first != ~0UL) {
-+			if (first) {
- 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
- 				dst--;
- 				src--;
-@@ -262,7 +272,7 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 				FB_WRITEL(FB_READL(src--), dst--);
- 
- 			// Trailing bits
--			if (last)
-+			if (last != -1UL)
- 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
+-		for (j = 0; j < n32; ++j) {
+-			sfb -= 32;
+-			dfb -= 32;
++		for (j = 0; j < n32; j++) {
++			if (j < 2 && j + 1 < n32 && !backward &&
++			    !(((unsigned long)sfb | (unsigned long)dfb) & 63)) {
++				do {
++					__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
++					wmb();
++					__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
++					wmb();
++					sfb += 64;
++					dfb += 64;
++					j += 2;
++				} while (j + 1 < n32);
++				j--;
++				continue;
++			}
+ 			__raw_writel(0xffffffff, sfb);
+ 			wmb();
+ 			__raw_writel(0xffffffff, dfb);
+ 			wmb();
++			sfb += step;
++			dfb += step;
  		}
- 	} else {
-@@ -270,29 +280,28 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 		unsigned long d0, d1;
- 		int m;
  
--		int const left = -shift & (bits-1);
--		int const right = shift & (bits-1);
--		bswapmask &= shift;
-+		int const left = shift & (bits-1);
-+		int const right = -shift & (bits-1);
+ 		if (mask_last) {
+-			sfb -= 32;
+-			dfb -= 32;
++			sfb += last_step - step;
++			dfb += last_step - step;
+ 			__raw_writel(mask_last, sfb);
+ 			wmb();
+ 			__raw_writel(mask_last, dfb);
+@@ -1456,14 +1299,9 @@ tgafb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+ 	else if (bpp == 32)
+ 		cfb_copyarea(info, area);
  
- 		if ((unsigned long)dst_idx+1 >= n) {
- 			// Single destination word
--			if (last)
--				first &= last;
-+			if (first)
-+				last &= first;
- 			d0 = FB_READL(src);
- 			if (shift < 0) {
- 				// Single source word
--				d0 <<= left;
-+				d0 >>= right;
- 			} else if (1+(unsigned long)src_idx >= n) {
- 				// Single source word
--				d0 >>= right;
-+				d0 <<= left;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src - 1);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0>>right | d1<<left;
-+				d0 = d0 << left | d1 >> right;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
--			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-+			FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
- 		} else {
- 			// Multiple destination words
- 			/** We must always remember the last value read, because in case
-@@ -307,12 +316,12 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			if (shift < 0) {
- 				// Single source word
- 				d1 = d0;
--				d0 <<= left;
-+				d0 >>= right;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src--);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0>>right | d1<<left;
-+				d0 = d0 << left | d1 >> right;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-@@ -325,39 +334,39 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			n /= bits;
- 			while ((n >= 4) && !bswapmask) {
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				n -= 4;
- 			}
- 			while (n--) {
- 				d1 = FB_READL(src--);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0 >> right | d1 << left;
-+				d0 = d0 << left | d1 >> right;
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(d0, dst--);
- 				d0 = d1;
- 			}
+-	/* Detect overlapping source and destination that requires
+-	   a backward copy.  */
+-	else if (dy == sy && dx > sx && dx < sx + width)
+-		copyarea_backward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length, area);
+ 	else
+-		copyarea_foreward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length);
++		copyarea_8bpp(info, dx, dy, sx, sy, height,
++			      width, line_length, area);
+ }
  
- 			// Trailing bits
--			if (last) {
--				if (m <= left) {
-+			if (m) {
-+				if (m <= bits - left) {
- 					// Single source word
--					d0 >>= right;
-+					d0 <<= left;
- 				} else {
- 					// 2 source words
- 					d1 = FB_READL(src);
- 					d1 = fb_rev_pixels_in_long(d1,
- 								bswapmask);
--					d0 = d0>>right | d1<<left;
-+					d0 = d0 << left | d1 >> right;
- 				}
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
-@@ -371,9 +380,9 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 	u32 dx = area->dx, dy = area->dy, sx = area->sx, sy = area->sy;
- 	u32 height = area->height, width = area->width;
- 	unsigned long const bits_per_line = p->fix.line_length*8u;
--	unsigned long __iomem *dst = NULL, *src = NULL;
-+	unsigned long __iomem *base = NULL;
- 	int bits = BITS_PER_LONG, bytes = bits >> 3;
--	int dst_idx = 0, src_idx = 0, rev_copy = 0;
-+	unsigned dst_idx = 0, src_idx = 0, rev_copy = 0;
- 	u32 bswapmask = fb_compute_bswapmask(p);
  
- 	if (p->state != FBINFO_STATE_RUNNING)
-@@ -389,7 +398,7 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 
- 	// split the base of the framebuffer into a long-aligned address and the
- 	// index of the first bit
--	dst = src = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
-+	base = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
- 	dst_idx = src_idx = 8*((unsigned long)p->screen_base & (bytes-1));
- 	// add offset of source and target area
- 	dst_idx += dy*bits_per_line + dx*p->var.bits_per_pixel;
-@@ -402,20 +411,14 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 		while (height--) {
- 			dst_idx -= bits_per_line;
- 			src_idx -= bits_per_line;
--			dst += dst_idx >> (ffs(bits) - 1);
--			dst_idx &= (bytes - 1);
--			src += src_idx >> (ffs(bits) - 1);
--			src_idx &= (bytes - 1);
--			bitcpy_rev(p, dst, dst_idx, src, src_idx, bits,
-+			bitcpy_rev(p, base + (dst_idx / bits), dst_idx % bits,
-+				base + (src_idx / bits), src_idx % bits, bits,
- 				width*p->var.bits_per_pixel, bswapmask);
- 		}
- 	} else {
- 		while (height--) {
--			dst += dst_idx >> (ffs(bits) - 1);
--			dst_idx &= (bytes - 1);
--			src += src_idx >> (ffs(bits) - 1);
--			src_idx &= (bytes - 1);
--			bitcpy(p, dst, dst_idx, src, src_idx, bits,
-+			bitcpy(p, base + (dst_idx / bits), dst_idx % bits,
-+				base + (src_idx / bits), src_idx % bits, bits,
- 				width*p->var.bits_per_pixel, bswapmask);
- 			dst_idx += bits_per_line;
- 			src_idx += bits_per_line;
 -- 
 1.9.1
 
