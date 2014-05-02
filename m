@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaEBPAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:00:09 -0400
-Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:49979
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751650AbaEBPAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:00:04 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Haiyang Zhang <haiyangz@microsoft.com>, Jim Davis <jim.epost@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: RE: randconfig build error with next-20140502, in
- drivers/net/hyperv/netvsc_drv.c
-Thread-Topic: randconfig build error with next-20140502, in
- drivers/net/hyperv/netvsc_drv.c
-Thread-Index: AQHPZg5GVL3WjyEfhE21zJeJ45+lKJstXUQAgAAEiMA=
-Date: Fri, 2 May 2014 14:59:58 +0000
-Message-ID: <f49938e3920d4e5e9088ccd1de92f69b@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <CA+r1ZhhAdRwEFE3u4E1QQiCSa6Cz5Onhy1iVJHhzB4dUiEOL4g@mail.gmail.com>
- <91a4eac99889460f91f619385208cbca@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-In-Reply-To: <91a4eac99889460f91f619385208cbca@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.135.110.52]
-x-forefront-prvs: 019919A9E4
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(199002)(164054003)(13464003)(51704005)(189002)(1511001)(92566001)(87936001)(64706001)(20776003)(79102001)(19580405001)(31966008)(74502001)(74662001)(2656002)(80976001)(83322001)(19580395003)(77096999)(54356999)(86362001)(76176999)(50986999)(101416001)(4396001)(85852003)(83072002)(99396002)(99286001)(86612001)(76576001)(76482001)(81342001)(66066001)(77982001)(33646001)(74316001)(80022001)(46102001)(81542001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB297;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1752538AbaEBPAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:00:54 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:32233 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaEBPAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 11:00:52 -0400
+X-Greylist: delayed 149191 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:00:52 EDT
+Message-ID: <1399042342.1789.87.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 5/5] x86: initialize secondary CPU only if master CPU
+ will wait for it
+From: Toshi Kani <toshi.kani@hp.com>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Date: Fri, 02 May 2014 08:52:22 -0600
+In-Reply-To: <20140502102120.5415bf5b@nial.usersys.redhat.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	 <1397488277-14865-6-git-send-email-imammedo@redhat.com>
+	 <1398985916.1789.75.camel@misato.fc.hp.com>
+	 <20140502102120.5415bf5b@nial.usersys.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s42F0IPP020335
 
+On Fri, 2014-05-02 at 10:21 +0200, Igor Mammedov wrote:
+> On Thu, 01 May 2014 17:11:56 -0600
+> Toshi Kani <toshi.kani@hp.com> wrote:
+ :
+> > When 10s passed, the master could set a new flag, ex.
+> > cpu_callout_error_mask, which wait_for_master_cpu() checks and call
+> > play_dead() when it is set.  This avoids AP to spin forever when 10s
+> > becomes not long enough.  But it does not have to be part of this
+> > patchset, though.
+> I'm reluctant to add another to already too many cpu_*_mask,
+> maybe we could reuse cpu_initialized_mask by clearing it on timeout.
+> This way AP spinning on cpu_callout_mask could notice it and halt itself.
 
+I agree that there are too many cpu_* masks.  IMHO, these cpu rendezvous
+masks, initialized/callout/callin, should be combined into a per-cpu
+flag.  There is not much point of being individual masks.
 
-> -----Original Message-----
-> From: Haiyang Zhang
-> Sent: Friday, May 2, 2014 7:42 AM
-> To: Jim Davis; Stephen Rothwell; linux-next; linux-kernel; KY Srinivasan;
-> devel@linuxdriverproject.org; netdev
-> Subject: RE: randconfig build error with next-20140502, in
-> drivers/net/hyperv/netvsc_drv.c
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Jim Davis [mailto:jim.epost@gmail.com]
-> > Sent: Friday, May 2, 2014 9:56 AM
-> > To: Stephen Rothwell; linux-next; linux-kernel; KY Srinivasan; Haiyang
-> > Zhang; devel@linuxdriverproject.org; netdev
-> > Subject: randconfig build error with next-20140502, in
-> > drivers/net/hyperv/netvsc_drv.c
-> >
-> > Building with the attached random configuration file,
-> >
-> > drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_recv_callbackâ€™:
-> > drivers/net/hyperv/netvsc_drv.c:648:11: error: â€˜struct net_deviceâ€™ has
-> > no member  named â€˜real_num_rx_queuesâ€™
-> >         net->real_num_rx_queues);
-> >            ^
-> > In file included from drivers/net/hyperv/netvsc_drv.c:26:0:
-> > drivers/net/hyperv/netvsc_drv.c: In function â€˜netvsc_probeâ€™:
-> > drivers/net/hyperv/netvsc_drv.c:832:32: error: â€˜struct net_deviceâ€™ has
-> > no member named â€˜real_num_rx_queuesâ€™
-> >     net->real_num_tx_queues, net->real_num_rx_queues);
-> >                                 ^
-> > include/linux/device.h:1080:58: note: in definition of macro â€˜dev_infoâ€™
-> >  #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
-> >                                                           ^
-> > make[3]: *** [drivers/net/hyperv/netvsc_drv.o] Error 1
-> 
-> real_num_rx_queues is defined in "include/linux/netdevice.h":
-> It requires CONFIG_SYSFS flag, which is enabled by default, but not set in
-> your config file.
-> 
-> Could you use default config and add hyperv drivers, then try again?
+Anyway, I do not think cpu_initialized_mask can be reused here.
 
-Haiyang,
+> It would be better to make it separate patch on top of this series,
+> to reduce delay of bugfixes in this series.
 
-That is the point - the code must compile correctly for all possible configurations.
-You will want to protect the dependencies appropriately.
+Agreed.
 
-K. Y
+> > 
+> > > +	if (!boot_error) {
+> > >  		/*
+> > > -		 * Wait 5s total for a response
+> > > +		 * Wait till AP completes initial initialization
+> > 
+> > We should generally avoid such wait w/o a timeout condition, but since
+> > native_cpu_up() waits till cpu_online(cpu) anyway after this point, this
+> If we don't wait here and fall through into tight loop waiting on
+> cpu_online(cpu) in native_cpu_up() or check_tsc_sync_source() then
+> stop_task for syncing MTTRs initiated from AP won't have a chance
+> to run on the master CPU.
 > 
-> Thanks,
-> - Haiyang
-> 
+> > seems OK...  I wonder if we need touch_nmi_watchdog(), though.
+> There wasn't any touch_nmi_watchdog() in the original code and I don't
+> think we need it here since we are not just spinning on CPU but giving
+> control back to kernel calling schedule(), which would allow watchdog_task
+> to do the job if needed.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Agreed.
+
+Thanks,
+-Toshi
+
