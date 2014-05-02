@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaEBQZB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:25:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43699 "EHLO
+	id S1754861AbaEBQZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:25:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43688 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaEBPjV (ORCPT
+	with ESMTP id S1752719AbaEBPjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:21 -0400
+	Fri, 2 May 2014 11:39:18 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Luis Henriques <luis.henriques@canonical.com>,
+Cc: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 001/151] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-Date: Fri,  2 May 2014 08:36:29 -0700
-Message-Id: <1399045139-4531-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 018/151] x86, AVX-512: AVX-512 Feature Detection
+Date: Fri,  2 May 2014 08:36:46 -0700
+Message-Id: <1399045139-4531-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -31,120 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
+commit 8e5780fdeef7dc490b3f0b3a62704593721fa4f3 upstream.
 
-skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-orphan them. Also, it doesn't handle errors, so this patch takes care of that
-as well, and modify the callers accordingly. skb_tx_error() is also added to
-the callers so they will signal the failed delivery towards the creator of the
-skb.
+AVX-512 is an extention of AVX2. Its spec can be found at:
+http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
- static function in nfnetlink_queue.  We need to patch that and its caller, but
- not openvswitch.]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+This patch detects AVX-512 features by CPUID.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1392931491-33237-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/netfilter/nfnetlink_queue_core.c | 31 ++++++++++++++++++++++---------
- 1 file changed, 22 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
-index 21258cf..b241654 100644
---- a/net/netfilter/nfnetlink_queue_core.c
-+++ b/net/netfilter/nfnetlink_queue_core.c
-@@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue, nfqnl_cmpfn cmpfn, unsigned long data)
- 	spin_unlock_bh(&queue->lock);
- }
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 89270b4..1e49a03 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -216,9 +216,13 @@
+ #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+ #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
+ #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
++#define X86_FEATURE_AVX512F	(9*32+16) /* AVX-512 Foundation */
+ #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+ #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
+ #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
++#define X86_FEATURE_AVX512PF	(9*32+26) /* AVX-512 Prefetch */
++#define X86_FEATURE_AVX512ER	(9*32+27) /* AVX-512 Exponential and Reciprocal */
++#define X86_FEATURE_AVX512CD	(9*32+28) /* AVX-512 Conflict Detection */
  
--static void
--nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
-+static int
-+nfqnl_zcopy(struct sk_buff *to, struct sk_buff *from, int len, int hlen)
- {
- 	int i, j = 0;
- 	int plen = 0; /* length of skb->head fragment */
-+	int ret;
- 	struct page *page;
- 	unsigned int offset;
- 
- 	/* dont bother with small payloads */
--	if (len <= skb_tailroom(to)) {
--		skb_copy_bits(from, 0, skb_put(to, len), len);
--		return;
--	}
-+	if (len <= skb_tailroom(to))
-+		return skb_copy_bits(from, 0, skb_put(to, len), len);
- 
- 	if (hlen) {
--		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-+		if (unlikely(ret))
-+			return ret;
- 		len -= hlen;
- 	} else {
- 		plen = min_t(int, skb_headlen(from), len);
-@@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 	to->len += len + plen;
- 	to->data_len += len + plen;
- 
-+	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
-+		skb_tx_error(from);
-+		return -ENOMEM;
-+	}
-+
- 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
- 		if (!len)
- 			break;
-@@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
- 		j++;
- 	}
- 	skb_shinfo(to)->nr_frags = j;
-+
-+	return 0;
- }
- 
- static int
-@@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
- 
- 	skb = nfnetlink_alloc_skb(net, size, queue->peer_portid,
- 				  GFP_ATOMIC);
--	if (!skb)
-+	if (!skb) {
-+		skb_tx_error(entskb);
- 		return NULL;
-+	}
- 
- 	nlh = nlmsg_put(skb, 0, 0,
- 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
- 			sizeof(struct nfgenmsg), 0);
- 	if (!nlh) {
-+		skb_tx_error(entskb);
- 		kfree_skb(skb);
- 		return NULL;
- 	}
-@@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
- 		nla->nla_type = NFQA_PAYLOAD;
- 		nla->nla_len = nla_attr_size(data_len);
- 
--		nfqnl_zcopy(skb, entskb, data_len, hlen);
-+		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
-+			goto nla_put_failure;
- 	}
- 
- 	nlh->nlmsg_len = skb->len;
- 	return skb;
- 
- nla_put_failure:
-+	skb_tx_error(entskb);
- 	kfree_skb(skb);
- 	net_err_ratelimited("nf_queue: error creating packet message\n");
- 	return NULL;
+ /*
+  * BUG word(s)
 -- 
 1.9.1
 
