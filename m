@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaEBQR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:17:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43855 "EHLO
+	id S1753169AbaEBPmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:42:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43835 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaEBPmI (ORCPT
+	with ESMTP id S1752608AbaEBPmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:08 -0400
+	Fri, 2 May 2014 11:42:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
+Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 080/151] mac80211: fix suspend vs. authentication race
-Date: Fri,  2 May 2014 08:37:48 -0700
-Message-Id: <1399045139-4531-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 060/151] ALSA: hda/realtek - Restore default value for ALC283
+Date: Fri,  2 May 2014 08:37:28 -0700
+Message-Id: <1399045139-4531-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,103 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
+commit 6bd55b04fe05cb26094b0fe494c7a207e6c0c36e upstream.
 
-Since Stanislaw's patch removing the quiescing code, mac80211 had
-a race regarding suspend vs. authentication: as cfg80211 doesn't
-track authentication attempts, it can't abort them. Therefore the
-attempts may be kept running while suspending, which can lead to
-all kinds of issues, in at least some cases causing an error in
-iwlmvm firmware.
+Restore the registers to prevent the abnormal digital power supply
+rising ratio/sequence to the codec and causing the incorrect default
+codec register restoration during initialization.
 
-Fix this by aborting the authentication attempt when suspending.
-
-Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=71861
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/mac80211/ieee80211_i.h |  1 +
- net/mac80211/mlme.c        | 26 ++++++++++++++++++++++++++
- net/mac80211/pm.c          | 14 +++++++++++---
- 3 files changed, 38 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_realtek.c | 85 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 85 insertions(+)
 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 4aea4e7..1fc9190 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1346,6 +1346,7 @@ void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
- 				  __le16 fc, bool acked);
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
- 
- /* IBSS code */
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 90ee798..4eef5fd 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3487,6 +3487,32 @@ static void ieee80211_restart_sta_timer(struct ieee80211_sub_if_data *sdata)
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 8a7eeac..4afa7a0 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2731,6 +2731,89 @@ static void alc269_shutup(struct hda_codec *codec)
+ 	snd_hda_shutup_pins(codec);
  }
  
- #ifdef CONFIG_PM
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
++static void alc283_restore_default_value(struct hda_codec *codec)
 +{
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-+	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
++	int val;
 +
-+	sdata_lock(sdata);
-+
-+	if (ifmgd->auth_data) {
-+		/*
-+		 * If we are trying to authenticate while suspending, cfg80211
-+		 * won't know and won't actually abort those attempts, thus we
-+		 * need to do that ourselves.
-+		 */
-+		ieee80211_send_deauth_disassoc(sdata,
-+					       ifmgd->auth_data->bss->bssid,
-+					       IEEE80211_STYPE_DEAUTH,
-+					       WLAN_REASON_DEAUTH_LEAVING,
-+					       false, frame_buf);
-+		ieee80211_destroy_auth_data(sdata, false);
-+		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
-+				      IEEE80211_DEAUTH_FRAME_LEN);
-+	}
-+
-+	sdata_unlock(sdata);
++	/* Power Down Control */
++	alc_write_coef_idx(codec, 0x03, 0x0002);
++	/* FIFO and filter clock */
++	alc_write_coef_idx(codec, 0x05, 0x0700);
++	/* DMIC control */
++	alc_write_coef_idx(codec, 0x07, 0x0200);
++	/* Analog clock */
++	val = alc_read_coef_idx(codec, 0x06);
++	alc_write_coef_idx(codec, 0x06, (val & ~0x00f0) | 0x0);
++	/* JD */
++	val = alc_read_coef_idx(codec, 0x08);
++	alc_write_coef_idx(codec, 0x08, (val & ~0xfffc) | 0x0c2c);
++	/* JD offset1 */
++	alc_write_coef_idx(codec, 0x0a, 0xcccc);
++	/* JD offset2 */
++	alc_write_coef_idx(codec, 0x0b, 0xcccc);
++	/* LDO1/2/3, DAC/ADC */
++	alc_write_coef_idx(codec, 0x0e, 0x6fc0);
++	/* JD */
++	val = alc_read_coef_idx(codec, 0x0f);
++	alc_write_coef_idx(codec, 0x0f, (val & ~0xf800) | 0x1000);
++	/* Capless */
++	val = alc_read_coef_idx(codec, 0x10);
++	alc_write_coef_idx(codec, 0x10, (val & ~0xfc00) | 0x0c00);
++	/* Class D test 4 */
++	alc_write_coef_idx(codec, 0x3a, 0x0);
++	/* IO power down directly */
++	val = alc_read_coef_idx(codec, 0x0c);
++	alc_write_coef_idx(codec, 0x0c, (val & ~0xfe00) | 0x0);
++	/* ANC */
++	alc_write_coef_idx(codec, 0x22, 0xa0c0);
++	/* AGC MUX */
++	val = alc_read_coefex_idx(codec, 0x53, 0x01);
++	alc_write_coefex_idx(codec, 0x53, 0x01, (val & ~0x000f) | 0x0008);
++	/* DAC simple content protection */
++	val = alc_read_coef_idx(codec, 0x1d);
++	alc_write_coef_idx(codec, 0x1d, (val & ~0x00e0) | 0x0);
++	/* ADC simple content protection */
++	val = alc_read_coef_idx(codec, 0x1f);
++	alc_write_coef_idx(codec, 0x1f, (val & ~0x00e0) | 0x0);
++	/* DAC ADC Zero Detection */
++	alc_write_coef_idx(codec, 0x21, 0x8804);
++	/* PLL */
++	alc_write_coef_idx(codec, 0x2e, 0x2902);
++	/* capless control 2 */
++	alc_write_coef_idx(codec, 0x33, 0xa080);
++	/* capless control 3 */
++	alc_write_coef_idx(codec, 0x34, 0x3400);
++	/* capless control 4 */
++	alc_write_coef_idx(codec, 0x35, 0x2f3e);
++	/* capless control 5 */
++	alc_write_coef_idx(codec, 0x36, 0x0);
++	/* class D test 2 */
++	val = alc_read_coef_idx(codec, 0x38);
++	alc_write_coef_idx(codec, 0x38, (val & ~0x0fff) | 0x0900);
++	/* class D test 3 */
++	alc_write_coef_idx(codec, 0x39, 0x110a);
++	/* class D test 5 */
++	val = alc_read_coef_idx(codec, 0x3b);
++	alc_write_coef_idx(codec, 0x3b, (val & ~0x00f8) | 0x00d8);
++	/* class D test 6 */
++	alc_write_coef_idx(codec, 0x3c, 0x0014);
++	/* classD OCP */
++	alc_write_coef_idx(codec, 0x3d, 0xc2ba);
++	/* classD pure DC test */
++	val = alc_read_coef_idx(codec, 0x42);
++	alc_write_coef_idx(codec, 0x42, (val & ~0x0f80) | 0x0);
++	/* test mode */
++	alc_write_coef_idx(codec, 0x49, 0x0);
++	/* Class D DC enable */
++	val = alc_read_coef_idx(codec, 0x40);
++	alc_write_coef_idx(codec, 0x40, (val & ~0xf800) | 0x9800);
++	/* DC offset */
++	val = alc_read_coef_idx(codec, 0x42);
++	alc_write_coef_idx(codec, 0x42, (val & ~0xf000) | 0x2000);
++	/* Class D amp control */
++	alc_write_coef_idx(codec, 0x37, 0xfc06);
 +}
 +
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
+ static void alc283_init(struct hda_codec *codec)
  {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-diff --git a/net/mac80211/pm.c b/net/mac80211/pm.c
-index 3401262..efb510e 100644
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -101,10 +101,18 @@ int __ieee80211_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
+ 	struct alc_spec *spec = codec->spec;
+@@ -2738,6 +2821,8 @@ static void alc283_init(struct hda_codec *codec)
+ 	bool hp_pin_sense;
+ 	int val;
  
- 	/* remove all interfaces that were created in the driver */
- 	list_for_each_entry(sdata, &local->interfaces, list) {
--		if (!ieee80211_sdata_running(sdata) ||
--		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
--		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
-+		if (!ieee80211_sdata_running(sdata))
- 			continue;
-+		switch (sdata->vif.type) {
-+		case NL80211_IFTYPE_AP_VLAN:
-+		case NL80211_IFTYPE_MONITOR:
-+			continue;
-+		case NL80211_IFTYPE_STATION:
-+			ieee80211_mgd_quiesce(sdata);
-+			break;
-+		default:
-+			break;
-+		}
- 
- 		drv_remove_interface(local, sdata);
- 	}
++	alc283_restore_default_value(codec);
++
+ 	if (!hp_pin)
+ 		return;
+ 	hp_pin_sense = snd_hda_jack_detect(codec, hp_pin);
 -- 
 1.9.1
 
