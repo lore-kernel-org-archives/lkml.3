@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080AbaEBMrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 08:47:55 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:61559 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987AbaEBMrw (ORCPT
+	id S1752139AbaEBMsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 08:48:01 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:53155 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987AbaEBMr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 08:47:52 -0400
+	Fri, 2 May 2014 08:47:57 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
@@ -14,64 +14,117 @@ Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
         gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
         t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com,
         Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v5 0/4] usb: ehci/ohci-exynos: Move to generic phy framework
-Date: Fri,  2 May 2014 18:17:31 +0530
-Message-Id: <1399034855-9686-1-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v3 1/4] usb: ohci-exynos: Use struct device instead of platform_device
+Date: Fri,  2 May 2014 18:17:32 +0530
+Message-Id: <1399034855-9686-2-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1399034855-9686-1-git-send-email-gautam.vivek@samsung.com>
+References: <1399034855-9686-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based and tested on 'usb-next' branch of Greg's usb tree, with relevant
-device tree patches[1]
+Change to use struct device instead of struct platform_device
+for some static functions.
 
-Hi Alan,
- I have included your Acked-by in all the four patches, but there has been
- some amount of restructuring as suggested by Tomasz Figa.
- Please let me know if you have some comments on this patch-series.
-
-Changes from v4:
- - Addressed review comments for restructuring exynos_ohci_get_phy()
-   and exynos_ehci_get_phy(); and thereby adding proper checks in
-   exynos_ohci_phy_enable()/disable() as well as exynos_ehci_phy_enable()/
-   disable().
-
-Changes from v3:
- - Calling usb_phy_shutdown() when exynos_o/ehci_phy_enable() is failing.
- - Made exynos_o/ehci_phy_disable() return void, since its return value
-   did not serve any purpose.
- - Calling clk_disable_unprepare() in exynos_o/ehci_resume() when
-   exynos_o/ehci_phy_enable() is failed.
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+---
 
 Changes from v2:
- - Added two patches in the series for some cleanup.
-   usb: ohci-exynos: Use struct device instead of platform_device
-   usb: ehci-exynos: Use struct device instead of platform_device
- - Addressed review comments.
-   -- Moved exynos_ohci_phyg_on()/off routines inside
-      exynos_ohci_phy_enable()/disable.
-   -- Added functions exynos_ehci_phy_enable() and exynos_ehci_phy_disable()
-      and moved exynos_ehci_phyg_on()/off routines respectively in them.
-   -- Added necessary checks.
+ - none
 
-[1]: [PATCH 0/4] dts: Add usb2phy to Exynos 5250/5420
-     https://lkml.org/lkml/2014/4/30/119
+ drivers/usb/host/ohci-exynos.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-Kamil Debski (1):
-  usb: ehci-exynos: Change to use phy provided by the generic phy
-    framework
-
-Vivek Gautam (3):
-  usb: ohci-exynos: Use struct device instead of platform_device
-  usb: ehci-exynos: Use struct device instead of platform_device
-  usb: ohci-exynos: Add facility to use phy provided by the generic phy
-    framework
-
- .../devicetree/bindings/usb/exynos-usb.txt         |   31 +++++
- drivers/usb/host/ehci-exynos.c                     |  136 ++++++++++++++++----
- drivers/usb/host/ohci-exynos.c                     |  134 +++++++++++++++----
- 3 files changed, 254 insertions(+), 47 deletions(-)
-
+diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+index 9cf80cb..05f00e3 100644
+--- a/drivers/usb/host/ohci-exynos.c
++++ b/drivers/usb/host/ohci-exynos.c
+@@ -39,18 +39,18 @@ struct exynos_ohci_hcd {
+ 	struct usb_otg *otg;
+ };
+ 
+-static void exynos_ohci_phy_enable(struct platform_device *pdev)
++static void exynos_ohci_phy_enable(struct device *dev)
+ {
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++	struct usb_hcd *hcd = dev_get_drvdata(dev);
+ 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+ 
+ 	if (exynos_ohci->phy)
+ 		usb_phy_init(exynos_ohci->phy);
+ }
+ 
+-static void exynos_ohci_phy_disable(struct platform_device *pdev)
++static void exynos_ohci_phy_disable(struct device *dev)
+ {
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++	struct usb_hcd *hcd = dev_get_drvdata(dev);
+ 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+ 
+ 	if (exynos_ohci->phy)
+@@ -139,7 +139,7 @@ skip_phy:
+ 
+ 	platform_set_drvdata(pdev, hcd);
+ 
+-	exynos_ohci_phy_enable(pdev);
++	exynos_ohci_phy_enable(&pdev->dev);
+ 
+ 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err) {
+@@ -150,7 +150,7 @@ skip_phy:
+ 	return 0;
+ 
+ fail_add_hcd:
+-	exynos_ohci_phy_disable(pdev);
++	exynos_ohci_phy_disable(&pdev->dev);
+ fail_io:
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ fail_clk:
+@@ -168,7 +168,7 @@ static int exynos_ohci_remove(struct platform_device *pdev)
+ 	if (exynos_ohci->otg)
+ 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+ 
+-	exynos_ohci_phy_disable(pdev);
++	exynos_ohci_phy_disable(&pdev->dev);
+ 
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ 
+@@ -190,7 +190,6 @@ static int exynos_ohci_suspend(struct device *dev)
+ {
+ 	struct usb_hcd *hcd = dev_get_drvdata(dev);
+ 	struct exynos_ohci_hcd *exynos_ohci = to_exynos_ohci(hcd);
+-	struct platform_device *pdev = to_platform_device(dev);
+ 	bool do_wakeup = device_may_wakeup(dev);
+ 	int rc = ohci_suspend(hcd, do_wakeup);
+ 
+@@ -200,7 +199,7 @@ static int exynos_ohci_suspend(struct device *dev)
+ 	if (exynos_ohci->otg)
+ 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+ 
+-	exynos_ohci_phy_disable(pdev);
++	exynos_ohci_phy_disable(dev);
+ 
+ 	clk_disable_unprepare(exynos_ohci->clk);
+ 
+@@ -211,14 +210,13 @@ static int exynos_ohci_resume(struct device *dev)
+ {
+ 	struct usb_hcd *hcd			= dev_get_drvdata(dev);
+ 	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
+-	struct platform_device *pdev		= to_platform_device(dev);
+ 
+ 	clk_prepare_enable(exynos_ohci->clk);
+ 
+ 	if (exynos_ohci->otg)
+ 		exynos_ohci->otg->set_host(exynos_ohci->otg, &hcd->self);
+ 
+-	exynos_ohci_phy_enable(pdev);
++	exynos_ohci_phy_enable(dev);
+ 
+ 	ohci_resume(hcd, false);
+ 
 -- 
 1.7.10.4
 
