@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaEBHTC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 03:19:02 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:32771 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaEBHS7 (ORCPT
+	id S1751655AbaEBH3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 03:29:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41785 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaEBH3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 03:18:59 -0400
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: <davem@davemloft.net>, <steffen.klassert@secunet.com>,
-        <fan.du@windriver.com>, <dborkman@redhat.com>,
-        <minipli@googlemail.com>, <tgraf@suug.ch>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Subject: [PATCH] netdev: pktgen xmit packet through vlan interface
-Date: Fri,  2 May 2014 15:18:12 +0800
-Message-Id: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 2 May 2014 03:29:20 -0400
+Date: Fri, 2 May 2014 10:29:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Karim Raslan <karim.allah.ahmed@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        SeongJae Park <sj38.park@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Cruz Julian Bishop <cruzjbishop@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fixing coding style issues in android alarm-dev.c
+Message-ID: <20140502072905.GA4963@mwanda>
+References: <1398891959-10437-1-git-send-email-karim.allah.ahmed@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398891959-10437-1-git-send-email-karim.allah.ahmed@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As http://www.spinics.net/lists/netdev/msg165015.html
-pktgen generates shared packet through vlan interface will cause
-oops because of duplicate entering tc queue.
+On Wed, Apr 30, 2014 at 10:05:53PM +0100, Karim Raslan wrote:
+> fixing "Missing a blank line after declarations" found by checkpatch.pl script
+> 
 
-Try to solve this problem by means of packet clone instead of sharing.
+Use a subject prefix.  Also the subject is too vague.
 
-Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
----
- net/core/pktgen.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+[PATCH] staging: android: alarm-dev: add a blank line
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 0304f98..ced07fc 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
- 	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
- 		= odev->netdev_ops->ndo_start_xmit;
- 	struct netdev_queue *txq;
-+	struct sk_buff *nskb = NULL;
- 	u16 queue_map;
- 	int ret;
- 
-@@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
- 		pkt_dev->last_ok = 0;
- 		goto unlock;
- 	}
--	atomic_inc(&(pkt_dev->skb->users));
--	ret = (*xmit)(pkt_dev->skb, odev);
-+
-+	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
-+		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
-+		ret = -ENOMEM;
-+		if (nskb)
-+			ret = (*xmit)(nskb, odev);
-+		else
-+			nskb = ERR_PTR(ret);
-+	} else {
-+		atomic_inc(&(pkt_dev->skb->users));
-+		ret = (*xmit)(pkt_dev->skb, odev);
-+	}
- 
- 	switch (ret) {
- 	case NETDEV_TX_OK:
-@@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
- 	case NETDEV_TX_LOCKED:
- 	case NETDEV_TX_BUSY:
- 		/* Retry it next time */
--		atomic_dec(&(pkt_dev->skb->users));
-+		if (nskb && !IS_ERR(nskb))
-+			kfree_skb(nskb);
-+		else
-+			atomic_dec(&(pkt_dev->skb->users));
- 		pkt_dev->last_ok = 0;
- 	}
- unlock:
--- 
-1.7.1
+regards,
+dan carpenter
 
