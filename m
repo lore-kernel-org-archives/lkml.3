@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaEBQYl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:24:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43703 "EHLO
+	id S1754422AbaEBQZB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:25:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43699 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaEBPjW (ORCPT
+	with ESMTP id S1752733AbaEBPjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:39:22 -0400
+	Fri, 2 May 2014 11:39:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Luis Henriques <luis.henriques@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 132/151] Skip intel_crt_init for Dell XPS 8700
-Date: Fri,  2 May 2014 08:38:40 -0700
-Message-Id: <1399045139-4531-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 001/151] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Fri,  2 May 2014 08:36:29 -0700
+Message-Id: <1399045139-4531-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,40 +31,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giacomo Comes <comes@naic.edu>
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
+commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
 
-The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
-The call intel_crt_init freeze the machine, so skip such call.
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well, and modify the callers accordingly. skb_tx_error() is also added to
+the callers so they will signal the failed delivery towards the creator of the
+skb.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
-Signed-off-by: Giacomo Comes <comes at naic.edu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
+ static function in nfnetlink_queue.  We need to patch that and its caller, but
+ not openvswitch.]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_crt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/netfilter/nfnetlink_queue_core.c | 31 ++++++++++++++++++++++---------
+ 1 file changed, 22 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-index b5b1b9b..c48e62d 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -764,6 +764,14 @@ static const struct dmi_system_id intel_no_crt[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_crt_dmi_callback,
-+		.ident = "DELL XPS 8700",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
+index 21258cf..b241654 100644
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue, nfqnl_cmpfn cmpfn, unsigned long data)
+ 	spin_unlock_bh(&queue->lock);
+ }
  
+-static void
+-nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
++static int
++nfqnl_zcopy(struct sk_buff *to, struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
+-	}
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 	to->len += len + plen;
+ 	to->data_len += len + plen;
+ 
++	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
++		skb_tx_error(from);
++		return -ENOMEM;
++	}
++
+ 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
+ 		if (!len)
+ 			break;
+@@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
+ }
+ 
+ static int
+@@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 
+ 	skb = nfnetlink_alloc_skb(net, size, queue->peer_portid,
+ 				  GFP_ATOMIC);
+-	if (!skb)
++	if (!skb) {
++		skb_tx_error(entskb);
+ 		return NULL;
++	}
+ 
+ 	nlh = nlmsg_put(skb, 0, 0,
+ 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
+ 			sizeof(struct nfgenmsg), 0);
+ 	if (!nlh) {
++		skb_tx_error(entskb);
+ 		kfree_skb(skb);
+ 		return NULL;
+ 	}
+@@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
+ 
+-		nfqnl_zcopy(skb, entskb, data_len, hlen);
++		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
+ 	}
+ 
+ 	nlh->nlmsg_len = skb->len;
+ 	return skb;
+ 
+ nla_put_failure:
++	skb_tx_error(entskb);
+ 	kfree_skb(skb);
+ 	net_err_ratelimited("nf_queue: error creating packet message\n");
+ 	return NULL;
 -- 
 1.9.1
 
