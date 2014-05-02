@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaEBNlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 09:41:52 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52187 "EHLO
+	id S1752433AbaEBNmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 09:42:10 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:52224 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751990AbaEBNlt (ORCPT
+	by vger.kernel.org with ESMTP id S1752261AbaEBNlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 09:41:49 -0400
+	Fri, 2 May 2014 09:41:51 -0400
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 5/6] mm: Call kmemleak directly from memblock_(alloc|free)
-Date: Fri,  2 May 2014 14:41:09 +0100
-Message-Id: <1399038070-1540-6-git-send-email-catalin.marinas@arm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH 2/6] mm: Introduce kmemleak_update_trace()
+Date: Fri,  2 May 2014 14:41:06 +0100
+Message-Id: <1399038070-1540-3-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.12.3
 In-Reply-To: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com>
 References: <1399038070-1540-1-git-send-email-catalin.marinas@arm.com>
@@ -20,65 +21,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kmemleak could ignore memory blocks allocated via memblock_alloc()
-leading to false positives during scanning. This patch adds the
-corresponding callbacks and removes kmemleak_free_* calls in
-mm/nobootmem.c to avoid duplication. The kmemleak_alloc() in
-mm/nobootmem.c is kept since __alloc_memory_core_early() does not use
-memblock_alloc() directly.
+The memory allocation stack trace is not always useful for debugging
+a memory leak (e.g. radix_tree_preload). This function, when called,
+updates the stack trace for an already allocated object.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/memblock.c  | 9 ++++++++-
- mm/nobootmem.c | 2 --
- 2 files changed, 8 insertions(+), 3 deletions(-)
+ Documentation/kmemleak.txt |  1 +
+ include/linux/kmemleak.h   |  4 ++++
+ mm/kmemleak.c              | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 39 insertions(+)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index e9d6ca9a01a9..8813a31d7fbd 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -681,6 +681,7 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
- 		     (unsigned long long)base + size - 1,
- 		     (void *)_RET_IP_);
- 
-+	kmemleak_free_part(__va(base), size);
- 	return __memblock_remove(&memblock.reserved, base, size);
+diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+index a7563ec4ea7b..b772418bf064 100644
+--- a/Documentation/kmemleak.txt
++++ b/Documentation/kmemleak.txt
+@@ -142,6 +142,7 @@ kmemleak_alloc_percpu	 - notify of a percpu memory block allocation
+ kmemleak_free		 - notify of a memory block freeing
+ kmemleak_free_part	 - notify of a partial memory block freeing
+ kmemleak_free_percpu	 - notify of a percpu memory block freeing
++kmemleak_update_trace	 - update object allocation stack trace
+ kmemleak_not_leak	 - mark an object as not a leak
+ kmemleak_ignore		 - do not scan or report an object as leak
+ kmemleak_scan_area	 - add scan areas inside a memory block
+diff --git a/include/linux/kmemleak.h b/include/linux/kmemleak.h
+index 5bb424659c04..057e95971014 100644
+--- a/include/linux/kmemleak.h
++++ b/include/linux/kmemleak.h
+@@ -30,6 +30,7 @@ extern void kmemleak_alloc_percpu(const void __percpu *ptr, size_t size) __ref;
+ extern void kmemleak_free(const void *ptr) __ref;
+ extern void kmemleak_free_part(const void *ptr, size_t size) __ref;
+ extern void kmemleak_free_percpu(const void __percpu *ptr) __ref;
++extern void kmemleak_update_trace(const void *ptr) __ref;
+ extern void kmemleak_not_leak(const void *ptr) __ref;
+ extern void kmemleak_ignore(const void *ptr) __ref;
+ extern void kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp) __ref;
+@@ -83,6 +84,9 @@ static inline void kmemleak_free_recursive(const void *ptr, unsigned long flags)
+ static inline void kmemleak_free_percpu(const void __percpu *ptr)
+ {
  }
++static inline void kmemleak_update_trace(const void *ptr)
++{
++}
+ static inline void kmemleak_not_leak(const void *ptr)
+ {
+ }
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 3a36e2b16cba..61a64ed2fbef 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -990,6 +990,40 @@ void __ref kmemleak_free_percpu(const void __percpu *ptr)
+ EXPORT_SYMBOL_GPL(kmemleak_free_percpu);
  
-@@ -985,8 +986,14 @@ static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
- 		align = SMP_CACHE_BYTES;
- 
- 	found = memblock_find_in_range_node(size, align, 0, max_addr, nid);
--	if (found && !memblock_reserve(found, size))
-+	if (found && !memblock_reserve(found, size)) {
-+		/*
-+		 * The min_count is set to 0 so that memblock allocations are
-+		 * never reported as leaks.
-+		 */
-+		kmemleak_alloc(__va(found), size, 0, 0);
- 		return found;
+ /**
++ * kmemleak_update_trace - update object allocation stack trace
++ * @ptr:	pointer to beginning of the object
++ *
++ * Override the object allocation stack trace for cases where the actual
++ * allocation place is not always useful.
++ */
++void __ref kmemleak_update_trace(const void *ptr)
++{
++	struct kmemleak_object *object;
++	unsigned long flags;
++
++	pr_debug("%s(0x%p)\n", __func__, ptr);
++
++	if (!kmemleak_enabled || IS_ERR_OR_NULL(ptr))
++		return;
++
++	object = find_and_get_object((unsigned long)ptr, 1);
++	if (!object) {
++#ifdef DEBUG
++		kmemleak_warn("Updating stack trace for unknown object at %p\n",
++			      ptr);
++#endif
++		return;
 +	}
- 
- 	return 0;
- }
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 04a9d94333a5..7ed58602e71b 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -197,7 +197,6 @@ unsigned long __init free_all_bootmem(void)
- void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
- 			      unsigned long size)
- {
--	kmemleak_free_part(__va(physaddr), size);
- 	memblock_free(physaddr, size);
- }
- 
-@@ -212,7 +211,6 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
-  */
- void __init free_bootmem(unsigned long addr, unsigned long size)
- {
--	kmemleak_free_part(__va(addr), size);
- 	memblock_free(addr, size);
- }
- 
++
++	spin_lock_irqsave(&object->lock, flags);
++	object->trace_len = __save_stack_trace(object->trace);
++	spin_unlock_irqrestore(&object->lock, flags);
++
++	put_object(object);
++}
++EXPORT_SYMBOL(kmemleak_update_trace);
++
++/**
+  * kmemleak_not_leak - mark an allocated object as false positive
+  * @ptr:	pointer to beginning of the object
+  *
