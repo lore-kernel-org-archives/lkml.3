@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602AbaEBPO3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 11:14:29 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:61744 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764AbaEBPO2 convert rfc822-to-8bit (ORCPT
+	id S1752663AbaEBPOs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 11:14:48 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:34819 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197AbaEBPOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:14:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
-Date: Fri, 02 May 2014 17:13:46 +0200
-Message-ID: <4526988.X68ZFJZdRl@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53639A0C.8070306@ti.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <5279118.J5305KQNjB@wuerfel> <53639A0C.8070306@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:vi6fGQr3XAETudpQY/Nv/7vXnNByMolA7v33znar3Ow
- oab/hzcS+uhPWvxbDOKGzNgaIJe740U7V6FSBrH4OGsISWw2R+
- IXoTzUEADQMZgYqZlBz0K3ANh0qZVVsFTvz1Dv2eksczHbuJHx
- XxMQ5FUbQDht91UeFhu50K9FBsZNau7bdKMA2g4GsjF+/rgqwL
- OB1hckk3nClvxEoRLMia4rLfGwCNHY+/XgMTziACo095DmCtBV
- SNY6c9n6J9dpmIg4iKMY7WXPu3cYnYsunc13po2lNCH0jq9/Jg
- EyXgVT0gXBC1619wzMyh+IlseVb2Zueku1E8v40+Osly+Iege4
- F4scw8+xZqEmnttm5KeM=
+	Fri, 2 May 2014 11:14:46 -0400
+X-Greylist: delayed 1088 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 May 2014 11:14:46 EDT
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Manfred Schlaegl <manfred.schlaegl@gmx.at>,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH 2/2] tty: Fix lockless tty buffer race
+Date: Fri,  2 May 2014 10:56:12 -0400
+Message-Id: <1399042572-6533-2-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com>
+References: <1399042572-6533-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 May 2014 09:13:48 Santosh Shilimkar wrote:
-> On Friday 02 May 2014 05:58 AM, Arnd Bergmann wrote:
-> > On Thursday 01 May 2014 14:12:10 Grant Likely wrote:
-> >>>> I've got two concerns here. of_dma_get_range() retrieves only the first
-> >>>> tuple from the dma-ranges property, but it is perfectly valid for
-> >>>> dma-ranges to contain multiple tuples. How should we handle it if a
-> >>>> device has multiple ranges it can DMA from?
-> >>>>
-> >>>
-> >>> We've not found any cases in current Linux where more than one dma-ranges
-> >>> would be used. Moreover, The MM (definitely for ARM) isn't supported such
-> >>> cases at all (if i understand everything right).
-> >>> - there are only one arm_dma_pfn_limit
-> >>> - there is only one MM zone is used for ARM
-> >>> - some arches like x86,mips can support 2 zones (per arch - not per device or bus)
-> >>>   DMA & DMA32, but they configured once and forever per arch.
-> >>
-> >> Okay. If anyone ever does implement multiple ranges then this code will
-> >> need to be revisited.
-> > 
-> > I wonder if it's needed for platforms implementing the standard "ARM memory map" [1].
-> > The document only talks about addresses as seen from the CPU, and I can see
-> > two logical interpretations how the RAM is supposed to be visible from a device:
-> > either all RAM would be visible contiguously at DMA address zero, or everything
-> > would be visible at the same physical address as the CPU sees it.
-> > 
-> > If anyone picks the first interpretation, we will have to implement that
-> > in Linux. We can of course hope that all hardware designs follow the second
-> > interpretation, which would be more convenient for us here.
-> >
-> not sure if I got your point correctly but DMA address 0 isn't used as DRAM start in
-> any of the ARM SOC today, mainly because of the boot architecture where address 0 is
-> typically used by ROM code. RAM start will be at some offset always and hence I
-> believe ARM SOCs will follow second interpretation. This was one of the main reason
-> we ended up fixing the max*pfn stuff. 
-> 26ba47b {ARM: 7805/1: mm: change max*pfn to include the physical offset of memory}
+Commit 6a20dbd6caa2358716136144bf524331d70b1e03,
+"tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
+correctly identifies an unsafe race condition between
+__tty_buffer_request_room() and flush_to_ldisc(), where the consumer
+flush_to_ldisc() prematurely advances the head before consuming the
+last of the data committed. For example:
 
-Marvell normally has memory starting at physical address zero.
+           CPU 0                     |            CPU 1
+__tty_buffer_request_room            | flush_to_ldisc
+  ...                                |   ...
+                                     |   count = head->commit - head->read
+  n = tty_buffer_alloc()             |
+  b->commit = b->used                |
+  b->next = n                        |
+                                     |   if (!count)                /* T */
+                                     |     if (head->next == NULL)  /* F */
+                                     |     buf->head = head->next
 
-Even if RAM starts elsewhere, I don't think that is a reason to have
-the DMA address do the same. The memory controller internally obviously
-starts at zero, and it wouldn't be unreasonable to have the DMA space
-match what the memory controller sees rather than have it match what
-the CPU sees.
+In this case, buf->head has been advanced but head->commit may have
+been updated with a new value.
 
-If you look at the table 3.1.4, you have both addresses listed:
+Instead of reintroducing an unnecessary lock, fix the race locklessly.
+Read the commit-next pair in the reverse order of writing, which guarantees
+the commit value read is the latest value written if the head is
+advancing.
 
-	  Physical Addresses in SoC	Offset	 		Internal DRAM address
+Reported-by: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+Cc: <stable@vger.kernel.org> # 3.12.x+
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/tty_buffer.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-2 GBytes	0x00 8000 0000 –	-0x00 8000 0000		0x00 0000 0000 –
-		0x00 FFFF FFFF			 		0x00 7FFF FFFF
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 8ebd9f8..cf78d19 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -258,7 +258,11 @@ static int __tty_buffer_request_room(struct tty_port *port, size_t size,
+ 			n->flags = flags;
+ 			buf->tail = n;
+ 			b->commit = b->used;
+-			smp_mb();
++			/* paired w/ barrier in flush_to_ldisc(); ensures the
++			 * latest commit value can be read before the head is
++			 * advanced to the next buffer
++			 */
++			smp_wmb();
+ 			b->next = n;
+ 		} else if (change)
+ 			size = 0;
+@@ -444,17 +448,24 @@ static void flush_to_ldisc(struct work_struct *work)
+ 
+ 	while (1) {
+ 		struct tty_buffer *head = buf->head;
++		struct tty_buffer *next;
+ 		int count;
+ 
+ 		/* Ldisc or user is trying to gain exclusive access */
+ 		if (atomic_read(&buf->priority))
+ 			break;
+ 
++		next = head->next;
++		/* paired w/ barrier in __tty_buffer_request_room();
++		 * ensures commit value read is not stale if the head
++		 * is advancing to the next buffer
++		 */
++		smp_rmb();
+ 		count = head->commit - head->read;
+ 		if (!count) {
+-			if (head->next == NULL)
++			if (next == NULL)
+ 				break;
+-			buf->head = head->next;
++			buf->head = next;
+ 			tty_buffer_free(port, head);
+ 			continue;
+ 		}
+-- 
+1.8.1.2
 
-30 GBytes	0x08 8000 0000 – 	-0x08 0000 0000		0x00 8000 0000 –
-		0x0F FFFF FFFF					0x07 FFFF FFFF
-
-32 GBytes	0x88 0000 0000 -	-0x80 0000 0000	 	0x08 0000 0000 -
-		0x8F FFFF FFFF					0x0F FFFF FFFF
-
-The wording "Physical Addresses in SoC" would indeed suggest that the
-same address is used for DMA, but I would trust everybody to do that.
-
-	Arnd
