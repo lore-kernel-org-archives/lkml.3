@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaEBQQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:16:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43878 "EHLO
+	id S1754155AbaEBQQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:16:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43864 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbaEBPm1 (ORCPT
+	with ESMTP id S1753204AbaEBPmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:42:27 -0400
+	Fri, 2 May 2014 11:42:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 073/151] mfd: 88pm860x: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Fri,  2 May 2014 08:37:41 -0700
-Message-Id: <1399045139-4531-74-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 062/151] regulator: arizona-ldo1: Correct default regulator init_data
+Date: Fri,  2 May 2014 08:37:30 -0700
+Message-Id: <1399045139-4531-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
 References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
@@ -27,43 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 159ce52a6b777fc82fa0b51c7440e25f9e4c6feb upstream.
+commit a35ff2861690eaf9dbb38fa744a8a9e6f4ebfd61 upstream.
 
-During probe the driver allocates dummy I2C device for companion chip
-with i2c_new_dummy() but it does not check the return value of this call.
+Both 5102 and 8997 have the regulator capable of supplying 1.8V, and the
+voltage step from the 5110 regulator is different from what is specified
+in the default description. This patch updates the default regulator
+description to match 5110 and selects the 1.8V capable description for
+8997.
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by regmap_init_i2c().
-
-If i2c_new_dummy() fails for companion device, fail also the probe for
-main MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/88pm860x-core.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/regulator/arizona-ldo1.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 2461014..bcfc9e8 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_client *client,
- 		chip->companion_addr = pdata->companion_addr;
- 		chip->companion = i2c_new_dummy(chip->client->adapter,
- 						chip->companion_addr);
-+		if (!chip->companion) {
-+			dev_err(&client->dev,
-+				"Failed to allocate I2C companion device\n");
-+			return -ENODEV;
-+		}
- 		chip->regmap_companion = regmap_init_i2c(chip->companion,
- 							&pm860x_regmap_config);
- 		if (IS_ERR(chip->regmap_companion)) {
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 4f6c205..f0ea4fd 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -153,11 +153,9 @@ static const struct regulator_desc arizona_ldo1 = {
+ 
+ 	.vsel_reg = ARIZONA_LDO1_CONTROL_1,
+ 	.vsel_mask = ARIZONA_LDO1_VSEL_MASK,
+-	.bypass_reg = ARIZONA_LDO1_CONTROL_1,
+-	.bypass_mask = ARIZONA_LDO1_BYPASS,
+ 	.min_uV = 900000,
+-	.uV_step = 50000,
+-	.n_voltages = 7,
++	.uV_step = 25000,
++	.n_voltages = 13,
+ 	.enable_time = 500,
+ 
+ 	.owner = THIS_MODULE,
+@@ -203,6 +201,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	 */
+ 	switch (arizona->type) {
+ 	case WM5102:
++	case WM8997:
+ 		desc = &arizona_ldo1_hc;
+ 		ldo1->init_data = arizona_ldo1_dvfs;
+ 		break;
 -- 
 1.9.1
 
