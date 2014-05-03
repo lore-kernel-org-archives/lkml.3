@@ -1,54 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaECQBJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 12:01:09 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60366 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750855AbaECQBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 12:01:07 -0400
-Date: Sat, 3 May 2014 18:01:02 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] iio: fix possible buffer overflow
-Message-ID: <20140503160101.GA4707@piout.net>
-References: <1399070450-23391-1-git-send-email-alexandre.belloni@free-electrons.com>
- <5364C0E6.4020401@kernel.org>
+	id S1752635AbaECQML (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 12:12:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20700 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaECQMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 12:12:10 -0400
+Date: Sat, 3 May 2014 18:11:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: lock_task_sighand() && rcu_boost()
+Message-ID: <20140503161133.GA8838@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5364C0E6.4020401@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2014 at 11:11:50 +0100, Jonathan Cameron wrote :
-> On 02/05/14 23:40, Alexandre Belloni wrote:
-> >Found using smatch:
-> >drivers/iio/industrialio-core.c:719 iio_device_add_info_mask_type() error:
-> >buffer overflow 'iio_chan_info_postfix' 17 <= 63
-> >
-> >It was probably never hit because the info_mask_* members are filled by using
-> >the BIT() macro with values from the iio_chan_info_enum enum that also serve as
-> >the index of the iio_chan_info_postfix array.
-> >
-> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> See
-> ef4b4856593fc3d9d169bededdaf7acf62f83a52
-> iio:core: Fix bug in length of event info_mask and catch unhandled bits set in masks.
-> 
-> Which fixes the same issue in a slightly different way.
-> 
-> Pretty recent patch though and this was there for ages before that.
-> Better to have two fixes than none.
-> 
+Paul,
 
-Yeah, I missed your patch and it didn't hit Linus' tree yet. Sorry about
-the noise, next time I'll try to remember to check your tree.
+I just noticed by accident that __lock_task_sighand() looks ugly and
+mysterious ;) And I am puzzled.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+a841796f11c90d53 "signal: align __lock_task_sighand() irq disabling and RCU"
+says:
+
+	The __lock_task_sighand() function calls rcu_read_lock() with interrupts
+	and preemption enabled, but later calls rcu_read_unlock() with interrupts
+	disabled.  It is therefore possible that this RCU read-side critical
+	section will be preempted and later RCU priority boosted, which means that
+	rcu_read_unlock() will call rt_mutex_unlock() in order to deboost itself, but
+	with interrupts disabled. This results in lockdep splats ...
+
+OK, if we can't rcu_read_unlock() with irqs disabled, then we can at least
+cleanup it (and document the problem). Say,
+
+	struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+						   unsigned long *flags)
+	{
+		struct sighand_struct *sighand;
+
+		rcu_read_lock();
+		for (;;) {
+			sighand = rcu_dereference(tsk->sighand);
+			if (unlikely(sighand == NULL))
+				break;
+
+			spin_lock_irqsave(&sighand->siglock, *flags);
+			/*
+			 * We delay rcu_read_unlock() till unlock_task_sighand()
+			 * to avoid rt_mutex_unlock(current->rcu_boost_mutex) with
+			 * irqs disabled.
+			 */
+			if (likely(sighand == tsk->sighand))
+				return sighand;
+			spin_unlock_irqrestore(&sighand->siglock, *flags);
+		}
+		rcu_read_unlock();
+
+		return sighand;	/* NULL */
+	}
+
+and add rcu_read_unlock() into unlock_task_sighand().
+
+But. I simply can't understand why lockdep should complain? Why it is bad
+to lock/unlock ->wait_lock with irqs disabled?
+
+wakeup_next_waiter() and rt_mutex_adjust_prio() should be fine, they start
+with _irqsave().
+
+The changelog also says:
+
+	It is quite possible that a better long-term fix is to make rt_mutex_unlock()
+	disable irqs when acquiring the rt_mutex structure's ->wait_lock.
+
+and if it is actually bad, then how the change above can fix the problem?
+
+Help!
+
+Oleg.
+
