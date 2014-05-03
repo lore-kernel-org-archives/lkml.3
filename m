@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaEDAxH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 20:53:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58509 "EHLO
+	id S1753510AbaEDAxw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 20:53:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58522 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaEDAxF (ORCPT
+	with ESMTP id S1752987AbaEDAxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 20:53:05 -0400
-Date: Sat, 3 May 2014 18:16:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-Message-ID: <20140503221658.GA13403@kroah.com>
-References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
- <1397859600-11507-4-git-send-email-robherring2@gmail.com>
- <CAE9FiQVrwypK4u5yTCt-AxMuBnOn7jv=V3d4Zb3cd9JDNEUVPw@mail.gmail.com>
- <CAL_JsqKux+BTHeYo6XEzzQMAFJZHVjbURM973oHT=t698GbJbA@mail.gmail.com>
- <20140503220731.GA10927@kroah.com>
+	Sat, 3 May 2014 20:53:50 -0400
+Date: Sat, 3 May 2014 19:17:26 -0400
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-doc@vger.kernel.org, t.figa@samsung.com,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
+        robh+dt@kernel.org, arnd@arndb.de, grant.likely@linaro.org,
+        kgene.kim@samsung.com, rdunlap@infradead.org, ben-linux@fluff.org
+Subject: Re: [PATCH 0/2] Add support for sii9234 chip
+Message-ID: <20140503231726.GA20212@kroah.com>
+References: <1397216910-15904-1-git-send-email-t.stanislaws@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140503220731.GA10927@kroah.com>
+In-Reply-To: <1397216910-15904-1-git-send-email-t.stanislaws@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 06:07:31PM -0400, Greg Kroah-Hartman wrote:
-> On Mon, Apr 28, 2014 at 06:20:53PM -0500, Rob Herring wrote:
-> > On Sat, Apr 26, 2014 at 1:19 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > > On Fri, Apr 18, 2014 at 3:19 PM, Rob Herring <robherring2@gmail.com> wrote:
-> > >> From: Rob Herring <robh@kernel.org>
-> > >>
-> > >> With the generic earlycon infrastructure in place, convert the 8250
-> > >> early console to use it.
-> > >>
-> > >> Signed-off-by: Rob Herring <robh@kernel.org>
-> > >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > >> Cc: Jiri Slaby <jslaby@suse.cz>
-> > >> ---
-> > >>  drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
-> > >>  drivers/tty/serial/8250/Kconfig      |   1 +
-> > >>  2 files changed, 16 insertions(+), 123 deletions(-)
-> > >
-> > > Hi Greg, Rob
-> > >
-> > > This one in tty-next breaks booting: "console=uart8250,io,0x3f8,115200".
-> > > No early console and regular console anymore.
-> > >
-> > > It should produce "early con and regular con".
-> > 
-> > This is what I get for running checkpatch and converting
-> > simple_strtoul to kstrto* which are not so equivalent. kstrto* will
-> > not convert things such as 115200n8 to a number.
-> > 
-> > Greg, Do you want a fix or for me to respin the series? The fix looks like this:
+On Fri, Apr 11, 2014 at 01:48:28PM +0200, Tomasz Stanislawski wrote:
+> Hi everyone,
+> This patchset adds support for sii9234 HD Mobile Link Bridge.  The chip is used
+> to convert HDMI signal into MHL.  The driver enables HDMI output on Trats and
+> Trats2 boards.
 > 
-> As this is in my tree now (right?), I need a fix to apply to it.
+> The code is based on the driver [1] developed by:
+>        Adam Hampson <ahampson@sta.samsung.com>
+>        Erik Gilling <konkers@android.com>
+> with additional contributions from:
+>        Shankar Bandal <shankar.b@samsung.com>
+>        Dharam Kumar <dharam.kr@samsung.com>
+> 
+> The drivers architecture was greatly simplified and transformed into a form
+> accepted (hopefully) by opensource community.  The main differences from
+> original code are:
+> * using single I2C client instead of 4 subclients
+> * remove all logic non-related to establishing HDMI link
+> * simplify error handling
+> * rewrite state machine in interrupt handler
+> * wakeup and discovery triggered by an extcon event
+> * integrate with Device Tree
+> 
+> For now, the driver is added to drivers/misc/ directory because it has neigher
+> userspace nor kernel interface.  The chip is capable of receiving and
+> processing CEC events, so the driver may export an input device in /dev/ in the
+> future.  However CEC could be also handled by HDMI driver.
+> 
+> I kindly ask for suggestions about the best location for this driver.
 
-Nevermind, you already sent it...
+It really is an extcon driver, so why not put it in drivers/extcon?  And
+that might solve any build issues you have if you don't select extcon in
+your .config file and try to build this code :)
+
+thanks,
+
+greg k-h
