@@ -1,94 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904AbaECRip (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 13:38:45 -0400
-Received: from mout.gmx.net ([212.227.17.22]:65260 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136AbaECRim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 13:38:42 -0400
+	id S1753160AbaECRuI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 13:50:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60484 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752193AbaECRuG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 13:50:06 -0400
+Date: Sat, 3 May 2014 10:45:20 -0700
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] ARM: sunxi: Add documentation for sunxi consumer
+ infrared devices
+Message-ID: <20140503174520.GA15342@lukather>
+References: <1398871010-30681-1-git-send-email-bay@hackerdom.ru>
+ <1398871010-30681-2-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-Message-ID: <trinity-96c5af7b-0fcf-4dc9-bfd9-f6d9d79a8938-1399138714679@msvc018>
-From: tbilles@gmx.com
-To: "Hans de Goede" <hdegoede@redhat.com>, "Zhang Rui" <rui.zhang@intel.com>,
-        "Len Brown" <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Aaron Lu" <aaron.lu@intel.com>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Possible regression: sluggish inputs
-Content-Type: text/plain; charset=UTF-8
-Importance: normal
-Date: Sat, 3 May 2014 19:38:34 +0200
-X-Priority: 3
-X-Provags-ID: V03:K0:0YFomjvYu2rBFI061ynl//neHqL8d5cCQk9I7/N4n2r
- 7Oj05KnC1+Tu1nOAi2UFnDUoTF0IJxDOb7JcM+7d2chWZKliDk
- Bcy0Af+x9PFz/ok29DZ7vTH0bTA7giNekKUwRWPhn+HopJf3Ty
- 0ad0cg1rDYoskNOnvR56QMs15a0XfTpb6EwP5XzQN44AB8YoPX
- SHZnAl+cerQSaa7Gtoi1PMRB0cNBe3Bc2DMm/O4PmgWDhiKnv5
- pX2W4YOM6Sq2A5e4Z7xcXVpEkHfTeyOaK0bAXu7MJs3viYoRZs YAxhuo=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="huq684BweRXVnRxX"
+Content-Disposition: inline
+In-Reply-To: <1398871010-30681-2-git-send-email-bay@hackerdom.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Saturday, 03 May 2014 at 10:00:38, Hans de Goede wrote:
+--huq684BweRXVnRxX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 05/02/2014 07:03 PM, Tibor Billes wrote:
->
-> > Hi,
-> >
-> > I've upgraded my 3.13.5 kernel to 3.14.2 and I noticed that
-> > sometimes my mouse is slow to react. By slow I mean the pointer on
-> > the screen doesn't follow its path smoothly, instead it jumps from
-> > one position to the next at only a few jumps per second rate. Like
-> > if the kernel could only process 2 or 3 position updates per second
-> > from the mouse. (As far as I can tell, the machine is in idle.)
-> > After experimenting a little I found out that the keyboard is also
-> > affected. Keystrokes are delayed, letters appearing in bursts. This
-> > behaviour (for both the mouse and the keyboard) lasts only for a
-> > couple of seconds, then it suddenly goes away and everything works
-> > as expected. I also noticed that this behaviour shows up after I
-> > haven't touched the mouse or the keyboard for short time (around 10
-> > seconds, but I didn't measure this).
-> 
->
-> What I think is happening is that you've auto screen dimming on
-> inactivity enabled in your desktop environment settings, which results
-> in trying to change the backlight after 10 seconds of inactivity. Then
-> the intel video driver likely directly writes to
-> /sys/class/backlight/acpi_video0/brightness and gets stuck in that
-> write because the acpi code gets stuck.
+On Wed, Apr 30, 2014 at 09:16:48PM +0600, Alexander Bersenev wrote:
+> This patch adds documentation for Device-Tree bindings for sunxi IR
+> controller.
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
+> ---
+>  .../devicetree/bindings/media/sunxi-ir.txt         | 23 ++++++++++++++++=
+++++++
+>  1 file changed, 23 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/media/sunxi-ir.txt
+>=20
+> diff --git a/Documentation/devicetree/bindings/media/sunxi-ir.txt b/Docum=
+entation/devicetree/bindings/media/sunxi-ir.txt
+> new file mode 100644
+> index 0000000..d502cf4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/media/sunxi-ir.txt
+> @@ -0,0 +1,23 @@
+> +Device-Tree bindings for SUNXI IR controller found in sunXi SoC family
+> +
+> +Required properties:
+> +- compatible	    : should be "allwinner,sun7i-a20-ir";
+> +- clocks	    : list of clock specifiers, corresponding to
+> +		      entries in clock-names property;
+> +- clock-names	    : should contain "apb0_ir0" and "ir0" entries;
+> +- interrupts	    : should contain IR IRQ number;
+> +- reg		    : should contain IO map address for IR.
+> +
+> +Optional properties:
+> +- linux,rc-map-name : Remote control map name.
+> +
+> +Example:
+> +
+> +ir0: ir@01c21800 {
+> +       	compatible =3D "allwinner,sun7i-a20-ir";
+> +       	clocks =3D <&apb0_gates 6>, <&ir0_clk>;
+> +       	clock-names =3D "apb0_ir0", "ir0";
 
-Did you figure out why the acpi code gets stuck? Sounds like it
-shouldn't do that :) I'm not a kernel developer so I can't do much about
-it, I'm just curious.
+Most of the time, we use something like "apb" and "ir". The names
+being generic, if there ever comes a time where you have a second
+controller, you don't have to do anything confusing or inconsistent.
 
-> I've seen this happen occasionally on my E6430 both with and without
-> the patch the bisect points too. I can trigger it by pressing
-> brightness up / down as fast as I can. Likely the dimming on
-> inactivity code is doing a much better job at sending brightness
-> change commands as fast as possible, making it easier to trigger this.
-> As for the commit you've bisected it too, it may be that that subtly
-> changes things to make the problem easier to trigger, 
+Thanks!
+Maxime
 
-I don't have auto screen dimming enabled, but there could be something
-else triggering it. Other than this, it all makes sense. The brightness
-up / down buttons always act slowly for me. I can too trigger the sluggish
-behaviour by pressing the brightness up or down buttons fast and
-simultaneously moving the mouse. So yes, your patch is not the cause
-of this, but for some reason it makes it easier to trigger. 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-> but I distinctly remember having the same issue before I wrote that
-> patch.
+--huq684BweRXVnRxX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Let me try this 'your patch reverted on top of 3.14.2' kernel for a few
-days to see if this behaviour shows up. Maybe I had it too, I just
-didn't notice, because it was less frequent.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-> Have you tried updating your BIOS ?
+iQIcBAEBAgAGBQJTZSswAAoJEBx+YmzsjxAg5gYP/2lsQUHZgbQkji8OwT4EDdzy
+JSsE8bmWB+YZjkD0GHMKEn5RUqxt0VCNiNngpKAFwT0A8n3HFN5AlCo3ZZz70RyN
+88l5R2pfq/ftzhDJE+Pp8Q5ToQ+XR2k4CmEA5UpdMsJ8+stxNRlaKOnYIPfnK1Wj
+Hmi9xSyJZ1Nz6sdw7fxy051lmPiWWSvrmVjh6OqAxGte+Odw5lz0fiosNv9VpJo6
+8luskf+PHPAk5clbTqd7RyZ//sGB9r6htc5ybeh5ql4OJ1Yp/ntWs/yhZ3Sn3iyA
+V6vgGNEmdsJleWOeN0on3/cccTFLnDkWNQXYOQDPGx573WTtWoSwW94nJICFe0Hl
+8P1ZTvwD3bVrAebdWEGa6yAJ1vETU5heTFCY2llO0JZLaeCL6DaSU2f8fjWHJOp+
+7g2zAdISKm9qaPRdVF/K1Hdt2flp8TWAq4sxZUer7eTGab6NYGrGmG4cATpBhcDr
+ZGcYmGjoC7kswPP5frVg7q+6r3RWu1r+BA9ZqdJGHHZjrHrINANLyn1uybKPTTgB
+h2RuKVdfIm4DvMIMaiVE8x4dK/NjXa2Y4ptdG20eNVaxIuPQ9gAZN878Pdf4u7Iu
+B/jAqkE4r3lVfjarMyHMSKx1yjXKgjBujhCj0J1eveiLWCOeg+MLIzUGNQoyjlPO
+vfI/90NAa3X3SlyoQ8tY
+=B/uK
+-----END PGP SIGNATURE-----
 
-No, I haven't. Have you tried it? Did it help? I'm reluctant to upgrade
-my BIOS, I've never done this before. I'm afraid I do something wrong
-and I end up with comupter that is unable to boot.
-
-Regards,
-Tibor
+--huq684BweRXVnRxX--
