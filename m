@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaECA6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 20:58:34 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38734 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752846AbaECA6c (ORCPT
+	id S1752794AbaECBGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 21:06:41 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:51587 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaECBGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 20:58:32 -0400
+	Fri, 2 May 2014 21:06:40 -0400
+Message-ID: <53644114.9000201@gmail.com>
+Date: Sat, 03 May 2014 09:06:28 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <5363C545.90600@cogentembedded.com>
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-	<5363C545.90600@cogentembedded.com>
-Date: Sat, 3 May 2014 08:58:31 +0800
-Message-ID: <CAABZP2z4OQ5fHDDAJPU5RAteBFK9wwmCqRSg8Knp635auCj4ZA@mail.gmail.com>
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-From: Zhouyi Zhou <zhouzhouyi@gmail.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: David Miller <davem@davemloft.net>, steffen.klassert@secunet.com,
-        fan.du@windriver.com, dborkman@redhat.com,
-        Mathias Krause <minipli@googlemail.com>, tgraf@suug.ch,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-Content-Type: text/plain; charset=UTF-8
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] arch/unicore32/include/asm/io.h: add readl_relaxed() generic
+ definition
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank Sergei for reviewing.
+Need generic definition for readl_relaxed(), like other architectures
+have done. Or can not pass compiling with allmodconfig, the related
+error:
 
-I think
-On Sat, May 3, 2014 at 12:18 AM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
+    CC [M]  drivers/message/fusion/mptbase.o
+  drivers/message/fusion/mptbase.c: In function ‘mpt_send_handshake_request’:
+  drivers/message/fusion/mptbase.c:1224: error: implicit declaration of function ‘readl_relaxed’
 
->> +
->> +       if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
->> +               nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
->> +               ret = -ENOMEM;
->> +               if (nskb)
->> +                       ret = (*xmit)(nskb, odev);
-if (is_vlan_dev(odev) && pkt_dev->clone_skb) {
-        nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
-        ret = -ENOMEM;
-        if (nskb)
-             ret = (*xmit)(nskb, odev);
-}
->
-and
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ arch/unicore32/include/asm/io.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-case NETDEV_TX_LOCKED:
-case NETDEV_TX_BUSY:
-     /* Retry it next time */
-     atomic_dec(&(pkt_dev->skb->users));
-     if (is_vlan_dev(odev) && pkt_dev->clone_skb && nskb)
-                 kfree_skb(nskb);
-     else
-                 atomic_dec(&(pkt_dev->skb->users));
-
-is better, because is_vlan_dev(odev) is probably in  read most cache line.
-
-Zhouyi
+diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
+index ae327e4..cb1d8fd 100644
+--- a/arch/unicore32/include/asm/io.h
++++ b/arch/unicore32/include/asm/io.h
+@@ -39,6 +39,10 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
+ #define ioremap_nocache(cookie, size)	__uc32_ioremap(cookie, size)
+ #define iounmap(cookie)			__uc32_iounmap(cookie)
+ 
++#define readb_relaxed readb
++#define readw_relaxed readw
++#define readl_relaxed readl
++
+ #define HAVE_ARCH_PIO_SIZE
+ #define PIO_OFFSET		(unsigned int)(PCI_IOBASE)
+ #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
+-- 
+1.9.2.459.g68773ac
