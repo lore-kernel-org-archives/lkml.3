@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaECLsG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 07:48:06 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49276 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaECLsE (ORCPT
+	id S1753303AbaECLsX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 07:48:23 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:64403 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576AbaECLsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 07:48:04 -0400
+	Sat, 3 May 2014 07:48:20 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 08/15] staging: rtl8188eu: Remove pdata, phead, ptail and pend from struct recv_buf
-Date: Sat,  3 May 2014 17:15:25 +0530
-Message-Id: <1399117532-8521-9-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 09/15] staging: rtl8188eu: Remove 'irp_pending' from struct recv_buf
+Date: Sat,  3 May 2014 17:15:26 +0530
+Message-Id: <1399117532-8521-10-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1399117532-8521-1-git-send-email-navin.patidar@gmail.com>
 References: <1399117532-8521-1-git-send-email-navin.patidar@gmail.com>
@@ -21,89 +21,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver is not making use of value stored in removed variables.
+irp_pending is initialized to false inside rtw_os_recvbuf_resource_alloc()
+and value of irq_pending never changed after that, so 'if (!precvbuf->irp_pending)'
+inside rtw_os_read_port() function will be always true.
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c |    8 --------
- drivers/staging/rtl8188eu/hal/usb_ops_linux.c  |    9 ---------
- drivers/staging/rtl8188eu/include/rtw_recv.h   |    4 ----
- drivers/staging/rtl8188eu/os_dep/recv_linux.c  |    4 ----
- 4 files changed, 25 deletions(-)
+ drivers/staging/rtl8188eu/include/rtw_recv.h  |    1 -
+ drivers/staging/rtl8188eu/os_dep/recv_linux.c |    6 ++----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-index ee7fa64..41a0c0d 100644
---- a/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-+++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_recv.c
-@@ -31,15 +31,7 @@
- void rtl8188eu_init_recvbuf(struct adapter *padapter, struct recv_buf *precvbuf)
- {
- 	precvbuf->len = 0;
--
- 	precvbuf->ref_cnt = 0;
--
--	if (precvbuf->pbuf) {
--		precvbuf->pdata = precvbuf->pbuf;
--		precvbuf->phead = precvbuf->pbuf;
--		precvbuf->ptail = precvbuf->pbuf;
--		precvbuf->pend = precvbuf->pdata + MAX_RECVBUF_SZ;
--	}
- }
- 
- int	rtl8188eu_init_recv_priv(struct adapter *padapter)
-diff --git a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-index 285cb5f..654c5b3 100644
---- a/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-+++ b/drivers/staging/rtl8188eu/hal/usb_ops_linux.c
-@@ -615,18 +615,9 @@ static u32 usb_read_port(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, u8 *rmem)
- 		alignment = tmpaddr & (RECVBUFF_ALIGN_SZ-1);
- 		skb_reserve(precvbuf->pskb, (RECVBUFF_ALIGN_SZ - alignment));
- 
--		precvbuf->phead = precvbuf->pskb->head;
--		precvbuf->pdata = precvbuf->pskb->data;
--		precvbuf->ptail = skb_tail_pointer(precvbuf->pskb);
--		precvbuf->pend = skb_end_pointer(precvbuf->pskb);
- 		precvbuf->pbuf = precvbuf->pskb->data;
- 	} else { /* reuse skb */
--		precvbuf->phead = precvbuf->pskb->head;
--		precvbuf->pdata = precvbuf->pskb->data;
--		precvbuf->ptail = skb_tail_pointer(precvbuf->pskb);
--		precvbuf->pend = skb_end_pointer(precvbuf->pskb);
- 		precvbuf->pbuf = precvbuf->pskb->data;
--
- 		precvbuf->reuse = false;
- 	}
- 
 diff --git a/drivers/staging/rtl8188eu/include/rtw_recv.h b/drivers/staging/rtl8188eu/include/rtw_recv.h
-index cac8acb..8d3424b 100644
+index 8d3424b..987445a 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_recv.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_recv.h
-@@ -240,10 +240,6 @@ struct recv_buf {
- 	u8	*pbuf;
- 	u8	*pallocated_buf;
+@@ -242,7 +242,6 @@ struct recv_buf {
  	u32	len;
--	u8	*phead;
--	u8	*pdata;
--	u8	*ptail;
--	u8	*pend;
  	struct urb *purb;
  	u32 alloc_sz;
- 	u8  irp_pending;
+-	u8  irp_pending;
+ 	struct sk_buff *pskb;
+ 	u8	reuse;
+ };
 diff --git a/drivers/staging/rtl8188eu/os_dep/recv_linux.c b/drivers/staging/rtl8188eu/os_dep/recv_linux.c
-index 0838339..99b5910 100644
+index 99b5910..7f9b654 100644
 --- a/drivers/staging/rtl8188eu/os_dep/recv_linux.c
 +++ b/drivers/staging/rtl8188eu/os_dep/recv_linux.c
-@@ -63,10 +63,6 @@ int rtw_os_recvbuf_resource_alloc(struct adapter *padapter,
+@@ -55,7 +55,6 @@ int rtw_os_recvbuf_resource_alloc(struct adapter *padapter,
+ {
+ 	int res = _SUCCESS;
+ 
+-	precvbuf->irp_pending = false;
+ 	precvbuf->purb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (precvbuf->purb == NULL)
+ 		res = _FAIL;
+@@ -229,9 +228,8 @@ void rtw_os_read_port(struct adapter *padapter, struct recv_buf *precvbuf)
+ 	dev_kfree_skb_any(precvbuf->pskb);
+ 	precvbuf->pskb = NULL;
  	precvbuf->reuse = false;
- 	precvbuf->pallocated_buf = NULL;
- 	precvbuf->pbuf = NULL;
--	precvbuf->pdata = NULL;
--	precvbuf->phead = NULL;
--	precvbuf->ptail = NULL;
--	precvbuf->pend = NULL;
- 	precvbuf->len = 0;
- 	return res;
+-	if (!precvbuf->irp_pending)
+-		rtw_read_port(padapter, precvpriv->ff_hwaddr, 0,
+-			      (unsigned char *)precvbuf);
++	rtw_read_port(padapter, precvpriv->ff_hwaddr, 0,
++			(unsigned char *)precvbuf);
  }
+ 
+ static void _rtw_reordering_ctrl_timeout_handler(void *func_context)
 -- 
 1.7.10.4
 
