@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaECVEb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 17:04:31 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:35737 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaECVE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 17:04:29 -0400
-From: Mathieu Souchaud <mattieu.souchaud@free.fr>
-To: tony.luck@intel.com, bp@alien8.de, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-edac@vger.kernel.org,
+	id S1753361AbaECVJS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 17:09:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44411 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972AbaECVJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 17:09:16 -0400
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: Mathieu Souchaud <mattieu.souchaud@free.fr>
-Subject: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
-Date: Sat,  3 May 2014 23:03:51 +0200
-Message-Id: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
-X-Mailer: git-send-email 1.7.9.5
+Subject: Re: [patch] staging: rtl8723au: fix some confusing indenting
+References: <20140503201919.GB32753@mwanda>
+Date: Sat, 03 May 2014 23:09:07 +0200
+In-Reply-To: <20140503201919.GB32753@mwanda> (Dan Carpenter's message of "Sat,
+	3 May 2014 23:19:19 +0300")
+Message-ID: <wrfjvbtmpo24.fsf@ultrasam.lan.trained-monkey.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return code of every function called by mcheck_init_device().
+Dan Carpenter <dan.carpenter@oracle.com> writes:
+> The break and the "unknown++" are at the same indent level so my static
+> checker complains.  The if statement should be indented more.
+>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   49 +++++++++++++++++++++++++++++++-------
- 1 file changed, 41 insertions(+), 8 deletions(-)
+Urgh yes, that should be cleaned up!
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68317c8..284cfad 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2437,32 +2437,65 @@ static __init int mcheck_init_device(void)
- 	int err;
- 	int i = 0;
- 
--	if (!mce_available(&boot_cpu_data))
--		return -EIO;
-+	if (!mce_available(&boot_cpu_data)) {
-+		err = -EIO;
-+		goto err_out;
-+	}
- 
--	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
-+	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
-+		err = -ENOMEM;
-+		goto err_out;
-+	}
- 
- 	mce_init_banks();
- 
- 	err = subsys_system_register(&mce_subsys, NULL);
- 	if (err)
--		return err;
-+		goto err_out_mem;
- 
- 	cpu_notifier_register_begin();
- 	for_each_online_cpu(i) {
- 		err = mce_device_create(i);
- 		if (err) {
--			cpu_notifier_register_done();
--			return err;
-+			goto err_device_create;
- 		}
- 	}
- 
- 	register_syscore_ops(&mce_syscore_ops);
--	__register_hotcpu_notifier(&mce_cpu_notifier);
-+	err = __register_hotcpu_notifier(&mce_cpu_notifier);
-+	if (err)
-+		goto err_reg_hotcpu;
- 	cpu_notifier_register_done();
- 
- 	/* register character device /dev/mcelog */
--	misc_register(&mce_chrdev_device);
-+	err = misc_register(&mce_chrdev_device);
-+	if (err)
-+		goto err_register;
-+
-+	return 0;
-+
-+
-+err_register:
-+	cpu_notifier_register_begin();
-+	__unregister_hotcpu_notifier(&mce_cpu_notifier);
-+
-+err_reg_hotcpu:
-+	unregister_syscore_ops(&mce_syscore_ops);
-+
-+err_device_create:
-+	/*
-+	 * mce_device_remove behave properly if mce_device_create was not
-+	 * called on that device.
-+	 */
-+	for_each_possible_cpu(i)
-+		mce_device_remove(i);
-+	cpu_notifier_register_done();
-+
-+err_out_mem:
-+	free_cpumask_var(mce_device_initialized);
-+
-+err_out:
-+	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
- 
- 	return err;
- }
--- 
-1.7.9.5
+Acked-by: Jes Sorensen <Jes.Sorensen@redhat.com>
 
+>
+> diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
+> index eb7b98e..4ad80e7 100644
+> --- a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
+> +++ b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
+> @@ -1235,8 +1235,8 @@ static int rtw_validate_frame_ies(const u8 *start, uint len)
+>  		case WLAN_EID_ERP_INFO:
+>  		case WLAN_EID_EXT_SUPP_RATES:
+>  		case WLAN_EID_VENDOR_SPECIFIC:
+> -		if (rtw_validate_vendor_specific_ies(pos, elen))
+> -			unknown++;
+> +			if (rtw_validate_vendor_specific_ies(pos, elen))
+> +				unknown++;
+>  			break;
+>  		case WLAN_EID_RSN:
+>  		case WLAN_EID_PWR_CAPABILITY:
