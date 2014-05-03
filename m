@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaEBQGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 May 2014 12:06:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44022 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496AbaEBPnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 May 2014 11:43:35 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 051/151] KVM: s390: Optimize ucontrol path
-Date: Fri,  2 May 2014 08:37:19 -0700
-Message-Id: <1399045139-4531-52-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-References: <1399045139-4531-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1754575AbaEBQGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 May 2014 12:06:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27756 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553AbaEBQGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 May 2014 12:06:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,973,1389772800"; 
+   d="scan'208";a="525023568"
+Date: Sat, 3 May 2014 00:05:41 -0400
+From: Zhuang Jin Can <jin.can.zhuang@intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        David Cohen <david.a.cohen@linux.intel.com>
+Subject: Re: [PATCH] usb: dwc3: gadget: giveback request if start transfer
+ fail
+Message-ID: <20140503040541.GC19925@intel.com>
+Reply-To: jin.can.zhuang@intel.com
+References: <20140501063608.GA30575@intel.com>
+ <20140430195829.GA3839@saruman.home>
+ <20140501204452.GD30575@intel.com>
+ <20140501151328.GB6355@saruman.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501151328.GB6355@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.1 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Thu, May 01, 2014 at 10:13:28AM -0500, Felipe Balbi wrote:
+> On Thu, May 01, 2014 at 04:44:52PM -0400, Zhuang Jin Can wrote:
+> > On Wed, Apr 30, 2014 at 02:58:29PM -0500, Felipe Balbi wrote:
+> > > On Thu, May 01, 2014 at 02:36:08AM -0400, Zhuang Jin Can wrote:
+> > > > At least we should giveback the current request to the
+> > > > gadget. Otherwise, the gadget will be stuck without knowing
+> > > > anything.
+> > > > 
+> > > > It was oberved that the failure can happen if the request is
+> > > > queued when the run/stop bit of controller is not set.
+> > > 
+> > > why is your gadget queueing any requests before calling ->udc_start() ?
+> > > 
+> > > A better question, what modification have you done to udc-core.c which
+> > > broke this ? udc-core *always* calls ->udc_start() by the time you load
+> > > a gadget driver so this case will *never* happen. Whatever modification
+> > > you did, broke this assumption and I will *not* accept this patch
+> > > because the bug is elsewhere and *not* in mainline kernel.
+> > > 
+> > It's found in Android using kernel 3.10.20. Android has its own
+> > usb_composite_driver usb/gadget/android.c (not in mainline), and it
+> 
+> so you found something on an old kernel using an out-of-tree gadget
+> driver.
+> 
+> > allows userspace to disconnect the pullup (i.e clear run/stop bit in dwc3)
+> > and remove the gadget functions like adb, mtp and then add new functions
+> > like rndis, acm. The problem is when you disconnect the pullup, a gadget
+> > maybe in the middle of queuing a request, and result in the "start
+> > transfer cmd failure". I think this is also a common issue for other
+> 
+> Android gadget needs to learn how to cope with that.
+> 
+Agree.
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+> > usb_composite_drivers too. Normally, if one of the gadget deactivate its
+> > own function, the pullup will be disconnected, other gadgets won't get
+> > notified until their requests are failed. So it makes dwc3 more robust
+> > to deal with these situations.
+> 
+> Right, but Android gadget can run on top of several other UDCs and you
+> want to have a single one of them cope with android's bug ?
+> 
+> You'd be better off getting google to accept a bugfix to the android
+> gadget, since that's where the problem lies.
+> 
+I agree. I'll try to push the fix to google.
+It's really hard to fix the race condition (for me), as any gadget or
+/sys/class/udc/soft_connect can just disconnect the pullup anytime they
+want. The only thing I can do is giving back the request to the
+gadget if the condition happens.
 
-commit 2955c83f72801245afd0fe5c560cc75b82bea9aa upstream.
-
-Since commit 7c470539c95630c1f2a10f109e96f249730b75eb
-(s390/kvm: avoid automatic sie reentry) we will run through the C code
-of KVM on host interrupts instead of just reentering the guest. This
-will result in additional ucontrol exits (at least HZ per second). Let
-handle a 0 intercept in the kernel and dont return to userspace,
-even if in ucontrol mode.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/s390/kvm/kvm-s390.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index bb383df..bfe7726 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -746,7 +746,8 @@ static int vcpu_post_run(struct kvm_vcpu *vcpu, int exit_reason)
- 
- 	if (rc == 0) {
- 		if (kvm_is_ucontrol(vcpu->kvm))
--			rc = -EOPNOTSUPP;
-+			/* Don't exit for host interrupts. */
-+			rc = vcpu->arch.sie_block->icptcode ? -EOPNOTSUPP : 0;
- 		else
- 			rc = kvm_handle_sie_intercept(vcpu);
- 	}
--- 
-1.9.1
-
+Jincan
