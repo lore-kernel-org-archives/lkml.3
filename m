@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750930AbaECGk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 02:40:56 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:44210 "EHLO extserv.mm-sol.com"
+	id S1751053AbaECGpX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 02:45:23 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:44386 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaECGkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 02:40:55 -0400
-Message-ID: <1399099252.4310.1.camel@violet>
-Subject: Re: [PATCH] i2c: qup: Fix pm_runtime_get_sync usage
+	id S1750790AbaECGpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 02:45:22 -0400
+Message-ID: <1399099520.7131.1.camel@violet>
+Subject: Re: [PATCH v8 17/20] usb: phy: msm: Select secondary PHY via TCSR
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Andy Gross <agross@codeaurora.org>
-Cc: linux-i2c@vger.kernel.org,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org
-Date: Sat, 03 May 2014 09:40:52 +0300
-In-Reply-To: <1399082069-6666-1-git-send-email-agross@codeaurora.org>
-References: <1399082069-6666-1-git-send-email-agross@codeaurora.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tim Bird <tbird20d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Date: Sat, 03 May 2014 09:45:20 +0300
+In-Reply-To: <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
+References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
+	 <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
@@ -25,30 +26,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 20:54 -0500, Andy Gross wrote:
-> This patch corrects the error check on the call to pm_runtime_get_sync.
+On Mon, 2014-04-28 at 16:34 +0300, Ivan T. Ivanov wrote:
+> From: Tim Bird <tbird20d@gmail.com>
 > 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-
-
-Reviewed-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-
-> ---
->  drivers/i2c/busses/i2c-qup.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Select the secondary PHY using the TCSR register, if phy-num=1
+> in the DTS (or phy_number is set in the platform data).  The
+> SOC has 2 PHYs which can be used with the OTG port, and this
+> code allows configuring the correct one.
 > 
-> diff --git a/drivers/i2c/busses/i2c-qup.c b/drivers/i2c/busses/i2c-qup.c
-> index 1b4cf14..2a5efb5 100644
-> --- a/drivers/i2c/busses/i2c-qup.c
-> +++ b/drivers/i2c/busses/i2c-qup.c
-> @@ -479,7 +479,7 @@ static int qup_i2c_xfer(struct i2c_adapter *adap,
->  	int ret, idx;
->  
->  	ret = pm_runtime_get_sync(qup->dev);
-> -	if (ret)
-> +	if (ret < 0)
->  		goto out;
->  
->  	writel(1, qup->base + QUP_SW_RESET);
+> Note: This resolves the problem I was seeing where I couldn't
+> get the USB driver working at all on a dragonboard, from cold
+> boot.  This patch depends on patch 5/14 from Ivan's msm USB
+> patch set.  It does not use DT for the register address, as
+> there's no evidence that this address changes between SoC
+> versions.
+> 
+> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 
+Missed this:
+
+Signed-of-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+
+Regards,
+Ivan
 
