@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249AbaECSH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 14:07:59 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:64273 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbaECSH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 14:07:58 -0400
+	id S1753272AbaECSOQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 14:14:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38562 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753050AbaECSOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 14:14:14 -0400
+Message-ID: <536531EB.7000102@redhat.com>
+Date: Sat, 03 May 2014 20:14:03 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140503042604.GM18016@ZenIV.linux.org.uk>
-References: <CA+55aFwcWcyRpwv3us9BbnsjUEfEr1mRjz4RWbcy_tSnZjc_Sw@mail.gmail.com>
-	<20140429232013.GM18016@ZenIV.linux.org.uk>
-	<20140430023142.GN18016@ZenIV.linux.org.uk>
-	<CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
-	<20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
-	<20140502055127.GH18016@ZenIV.linux.org.uk>
-	<CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
-	<20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
-	<CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
-	<20140502224022.GJ18016@ZenIV.linux.org.uk>
-	<20140503042604.GM18016@ZenIV.linux.org.uk>
-Date: Sat, 3 May 2014 11:07:57 -0700
-X-Google-Sender-Auth: ejp96VjtNGqj-XK2KTJkAhFhqPo
-Message-ID: <CA+55aFwA57CEkCrRTrNUgtVxSFvaVfRfbi=MEqWzpm+2igEpmg@mail.gmail.com>
-Subject: Re: dcache shrink list corruption?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+To: tbilles@gmx.com, Zhang Rui <rui.zhang@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Aaron Lu <aaron.lu@intel.com>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Possible regression: sluggish inputs
+References: <trinity-96c5af7b-0fcf-4dc9-bfd9-f6d9d79a8938-1399138714679@msvc018>
+In-Reply-To: <trinity-96c5af7b-0fcf-4dc9-bfd9-f6d9d79a8938-1399138714679@msvc018>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 9:26 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> See vfs.git#dentry_kill-3; warning - this is completely untested and I would
-> really like comments on spinning case there (i.e. the one where select_collect()
-> finds some stuff already on some other shrink list and nothing with zero
-> refcount that wouldn't be there).
+Hi,
 
-I'm not seeing why you say that there can be no other shrinkers active
-during umount (that whole "buggered" thing).
+On 05/03/2014 07:38 PM, tbilles@gmx.com wrote:
+> Hi,
+> 
+> On Saturday, 03 May 2014 at 10:00:38, Hans de Goede wrote:
+> 
+>> On 05/02/2014 07:03 PM, Tibor Billes wrote:
+>>
+>>> Hi,
+>>>
+>>> I've upgraded my 3.13.5 kernel to 3.14.2 and I noticed that
+>>> sometimes my mouse is slow to react. By slow I mean the pointer on
+>>> the screen doesn't follow its path smoothly, instead it jumps from
+>>> one position to the next at only a few jumps per second rate. Like
+>>> if the kernel could only process 2 or 3 position updates per second
+>>> from the mouse. (As far as I can tell, the machine is in idle.)
+>>> After experimenting a little I found out that the keyboard is also
+>>> affected. Keystrokes are delayed, letters appearing in bursts. This
+>>> behaviour (for both the mouse and the keyboard) lasts only for a
+>>> couple of seconds, then it suddenly goes away and everything works
+>>> as expected. I also noticed that this behaviour shows up after I
+>>> haven't touched the mouse or the keyboard for short time (around 10
+>>> seconds, but I didn't measure this).
+>>
+>>
+>> What I think is happening is that you've auto screen dimming on
+>> inactivity enabled in your desktop environment settings, which results
+>> in trying to change the backlight after 10 seconds of inactivity. Then
+>> the intel video driver likely directly writes to
+>> /sys/class/backlight/acpi_video0/brightness and gets stuck in that
+>> write because the acpi code gets stuck.
+> 
+> Did you figure out why the acpi code gets stuck?
 
-Sure, umount itself should be serialized by the sb lock, so there
-should be only one umount dentry collector. But why wouldn't there be
-shrinkers active due to memory pressure?
+No, I can read and write C fluently, and I'm also somewhat versed in the
+kernel but debugging actual ACPI code is a skill I've yet to master
+(note my patch only touches pure C-code).
 
-generic_unmount_super() is called by ->kill_sb(), which is done
-*before* the superblock shrinker is unregistered  So any memory
-pressure during that will cause dentries to be shrunk other ways.
+> Sounds like it shouldn't do that :)
 
-What am I missing?
+Agreed.
 
-                Linus
+> I'm not a kernel developer so I can't do much about
+> it, I'm just curious.
+
+
+> 
+>> I've seen this happen occasionally on my E6430 both with and without
+>> the patch the bisect points too. I can trigger it by pressing
+>> brightness up / down as fast as I can. Likely the dimming on
+>> inactivity code is doing a much better job at sending brightness
+>> change commands as fast as possible, making it easier to trigger this.
+>> As for the commit you've bisected it too, it may be that that subtly
+>> changes things to make the problem easier to trigger, 
+> 
+> I don't have auto screen dimming enabled, but there could be something
+> else triggering it. Other than this, it all makes sense. The brightness
+> up / down buttons always act slowly for me. I can too trigger the sluggish
+> behaviour by pressing the brightness up or down buttons fast and
+> simultaneously moving the mouse. So yes, your patch is not the cause
+> of this, but for some reason it makes it easier to trigger. 
+> 
+>> but I distinctly remember having the same issue before I wrote that
+>> patch.
+> 
+> Let me try this 'your patch reverted on top of 3.14.2' kernel for a few
+> days to see if this behaviour shows up. Maybe I had it too, I just
+> didn't notice, because it was less frequent.
+> 
+>> Have you tried updating your BIOS ?
+> 
+> No, I haven't. Have you tried it? Did it help? I'm reluctant to upgrade
+> my BIOS, I've never done this before. I'm afraid I do something wrong
+> and I end up with comupter that is unable to boot.
+
+I've updated my BIOS and things seem to be better, but the issue is not
+completely gone.
+
+Regards,
+
+Hans
