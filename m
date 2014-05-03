@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaECOmt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 10:42:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59073 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaECOmr (ORCPT
+	id S1752541AbaECPDS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 11:03:18 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:56394 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaECPDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 10:42:47 -0400
-Message-ID: <53650053.5050402@infradead.org>
-Date: Sat, 03 May 2014 07:42:27 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Sat, 3 May 2014 11:03:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, t.figa@samsung.com,
+        kgene.kim@samsung.com, linux@arm.linux.org.uk
+Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
+Date: Sat, 03 May 2014 17:02:37 +0200
+Message-ID: <13946837.RfnRDPQdge@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
-        Aaron Tomlin <atomlin@redhat.com>, Li Zefan <lizefan@huawei.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Ryan Mallon <rmallon@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Dario Faggioli <raistlin@linux.it>, Jens Axboe <axboe@fb.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Michael Ellerman <michael@ellerman.id.au>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 4/4] test: validate sysctl_writes_strict
-References: <1398979597-3589-1-git-send-email-keescook@chromium.org> <1398979597-3589-5-git-send-email-keescook@chromium.org>
-In-Reply-To: <1398979597-3589-5-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yNIcMQdjf1IUSSApkGvk6X9kZiZROjdlRmZoubrmIyC
+ CDFesYMRHWvHEcXTbgXyIh6JbarkIhHWNR5ixft0gZ+AaOgCNw
+ 8b03nFgqQsB+eChiN/UDfZK1C1gFhgjYaFX2glnNuoocJ6NwhP
+ e4HBpCRxrBpvGAusfMrAy54JVbmeMPenAWBXuCA0ZF9aYiLeuQ
+ GireYvQuHO8A1dSWGyt4t4tqSJnHYr3HTxIVWAhxLKolniMl1N
+ bvhJ4VWCozC1fvouTTvCqezg4hdExeUIK0z9UJCBbyNtEsaCHw
+ jAhJfUrxHqTP39Itcl8OQLORBaye81ftnjbRDXo/QVviq7tALL
+ +iwkGmy+cV0IhHUpU/K4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 02:26 PM, Kees Cook wrote:
-> This adds several behavioral tests to sysctl string and number writing
-> to detect unexpected cases that behaved differently when the sysctl
-> kernel.sysctl_writes_strict != 1.
->
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->   kernel/sysctl.c                                 |    4 +-
->   tools/testing/selftests/Makefile                |    1 +
->   tools/testing/selftests/sysctl/Makefile         |   19 ++++
->   tools/testing/selftests/sysctl/common_tests     |  109 +++++++++++++++++++++++
->   tools/testing/selftests/sysctl/run_numerictests |   10 +++
->   tools/testing/selftests/sysctl/run_stringtests  |   77 ++++++++++++++++
->   6 files changed, 218 insertions(+), 2 deletions(-)
->   create mode 100644 tools/testing/selftests/sysctl/Makefile
->   create mode 100644 tools/testing/selftests/sysctl/common_tests
->   create mode 100644 tools/testing/selftests/sysctl/run_numerictests
->   create mode 100644 tools/testing/selftests/sysctl/run_stringtests
->
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index d5bee7949e4a..51bbf904d694 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1783,8 +1783,8 @@ static int _proc_do_string(char *data, int maxlen, int write,
->
->   static void warn_sysctl_write(struct ctl_table *table)
->   {
-> -	pr_warn("%s wrote to %s when file position was not 0!\n",
-> -		current->task_comm, table->procname);
-> +	pr_warn("write to %s by %s used a non-zero file position!\n",
-> +		table->procname, current->comm);
->   	pr_warn("This will not be supported in the future.\n");
->   	pr_warn("To silence warning, set kernel.sysctl_writes_strict = -1\n");
->   }
+On Saturday 03 May 2014 15:11:36 Pankaj Dubey wrote:
+> This patch series attempts to get rid of soc_is_exynosXXXX macros
+> and eventually with the help of this series we can probably get
+> rid of CONFIG_SOC_EXYNOSXXXX in near future.
+> Each Exynos SoC has ChipID block which can give information about
+> SoC's product Id and revision number. Currently we have single
+> DT binding information for this as "samsung,exynos4210-chipid".
+> But Exynos4 and Exynos5 SoC series have one small difference in
+> chip Id, with resepect to product id bit-masks. So it means we
+> should have separate compatible string for these different series
+> of SoCs. So I have created new binding information for handling
+> this difference. Also currently I can think of putting this driver
+> code under "drivers/misc/" but suggestions are welcome.
+> Also current form of driver is missing platfrom driver and needs
+> init function to be called from machine file (either exynos.c or
+> platsmp.c). I hope lot of suggestions and comments to improve this
+> further.
+> 
+> This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
+> and prepared on top of following patch series and it's dependent
+> patch series.
 
-Why is this patch part of the test patch?
+I think putting it into drivers/soc would be most appropriate.
+We already have a few drivers lined up that we want in there,
+although the directory currently doesn't exist.
 
--- 
-~Randy
+However, I would ask that you use the infrastructure provided by
+drivers/base/soc.c when you add this driver, to also make the
+information available to user space using a standard API.
+
+Ideally this should be done by slightly restructuring the DT
+source to make all on-chip devices appear below the soc node.
+We'd have to think a bit about how to best do this while
+preserving compatibility with existing dts files.
+
+Regarding patch 4, this is not what I meant when I asked for
+removing the soc_is_exynos* macros. You basically do a 1:1 replacement
+using a different interface, but you still have code that does
+things differently based on a global identification.
+The only user left in device drivers is now the cpufreq driver,
+which is going to be replaced anyway, so that is ok. Having
+a global variable that is accessible to random device drivers
+is probably not a good idea though, it will just lead to
+bad coding in drivers again.
+
+To give an example of how I think it should really be restructured,
+let's look at one function:
+
+static const struct exynos_wkup_irq exynos4_wkup_irq[] = {
+        { 76, BIT(1) }, /* RTC alarm */
+        { 77, BIT(2) }, /* RTC tick */
+        { /* sentinel */ },
+};
+
+static const struct exynos_wkup_irq exynos5250_wkup_irq[] = {
+        { 75, BIT(1) }, /* RTC alarm */
+        { 76, BIT(2) }, /* RTC tick */
+        { /* sentinel */ },
+};
+
+static int exynos_irq_set_wake(struct irq_data *data, unsigned int state)
+{
+        const struct exynos_wkup_irq *wkup_irq;
+
+        if (soc_is_exynos5250())
+                wkup_irq = exynos5250_wkup_irq;
+        else
+                wkup_irq = exynos4_wkup_irq;
+
+	...
+}
+
+There are multiple problems with this code:
+
+- As mentioned, you depend on a specific SoC identification for
+  something that could be done completely generic.
+- The knowledge about what is a wakeup source or not doesn't
+  really belong here. We don't have a DT binding for wakeups
+  as far as I'm aware of, but this should probably be handled
+  locally in the RTC device node, possibly in the node that
+  contains the S5P_WAKEUP_MASK register.
+
+	Arnd
