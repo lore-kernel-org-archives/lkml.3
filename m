@@ -1,124 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297AbaECSd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 14:33:59 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:44917 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142AbaECSd6 (ORCPT
+	id S1753237AbaECSuK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 14:50:10 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60917 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752347AbaECSuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 14:33:58 -0400
+	Sat, 3 May 2014 14:50:07 -0400
+Date: Sat, 3 May 2014 11:00:49 -0700
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexander Bersenev <bay@hackerdom.ru>
+Cc: linux-sunxi@googlegroups.com, david@hardeman.nu,
+        devicetree@vger.kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, ijc+devicetree@hellion.org.uk,
+        james.hogan@imgtec.com, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, m.chehab@samsung.com, mark.rutland@arm.com,
+        pawel.moll@arm.com, rdunlap@infradead.org, robh+dt@kernel.org,
+        sean@mess.org, srinivas.kandagatla@st.com, wingrime@linux-sunxi.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v5 3/3] ARM: sunxi: Add IR controller support in DT on A20
+Message-ID: <20140503180049.GD15342@lukather>
+References: <1398871010-30681-1-git-send-email-bay@hackerdom.ru>
+ <1398871010-30681-4-git-send-email-bay@hackerdom.ru>
 MIME-Version: 1.0
-In-Reply-To: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
-Date: Sat, 3 May 2014 20:33:57 +0200
-Message-ID: <CAFLxGvzhd6jwGsu9eOBtXu92JcH1PnZsR9EB_h5LihYRNS-hyQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC] Deprecate BUG/BUG_ON in favour of BUG_AND_HALT/BUG_AND_HALT_ON
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
+Content-Disposition: inline
+In-Reply-To: <1398871010-30681-4-git-send-email-bay@hackerdom.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 5:03 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> A long standing problem for us has been the misuse of BUG/BUG_ON.
-> The typical misuse is someone only thinking of what represents
-> a bug in their local code, and especially for people relatively
-> new to Linux, starting out in device drivers, the appeal of using
-> BUG w/o knowing what it really does is too great.
->
-> So you end up with some trivial non system critical driver bringing
-> the whole system to a grinding halt just because it detected an
-> internal inconsistency.  That just makes users unhappy and looks bad.
->
-> It is hopeless to think we can reclaim BUG/BUG_ON for their original
-> intent, given there are currently ~20k instances.  To make progress
-> here, we create BUG_AND_HALT variants, which leave no doubt as to
-> what they do in name alone.
->
-> Then we can incrementally move the real BUG users (unrecoverable
-> filesystem corruption, page table mangling, etc) onto BUG_AND_HALT,
-> and finally at some time in the future we'll simply make the old
-> BUG/BUG_ON be aliases for WARN/WARN_ON, once we've moved over the
-> bulk of the instances really needing to halt the system.
->
-> Suggested-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, Apr 30, 2014 at 09:16:50PM +0600, Alexander Bersenev wrote:
+> This patch adds IR controller in A20 Device-Tree:
+> - Two IR devices found in A20 user manual
+> - Pins for two devices
+> - One IR device physically found on Cubieboard 2
+> - One IR device physically found on Cubietruck
+>=20
+> Signed-off-by: Alexander Bersenev <bay@hackerdom.ru>
+> Signed-off-by: Alexsey Shestacov <wingrime@linux-sunxi.org>
 > ---
->
-> [This might not be a unique idea; but I'm pretty sure I'd first
-> heard of it during a discussion with Ingo at RT summit last year.]
->
->  include/asm-generic/bug.h | 16 ++++++++++++++++
->  scripts/checkpatch.pl     |  7 +++++++
->  2 files changed, 23 insertions(+)
->
-> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
-> index 630dd2372238..57b79a394ceb 100644
-> --- a/include/asm-generic/bug.h
-> +++ b/include/asm-generic/bug.h
-> @@ -43,6 +43,14 @@ struct bug_entry {
->   * If you're tempted to BUG(), think again:  is completely giving up
->   * really the *only* solution?  There are usually better options, where
->   * users don't need to reboot ASAP and can mostly shut down cleanly.
-> + *
-> + * Sadly nobody listens to the above, and trying to reclaim BUG/BUG_ON
-> + * for their original intent is about as hopeful as wishing "selfie"
-> + * wasn't headed for the OED.  So the plan is to avoid BUG/BUG_ON
-> + * entirely.  Either use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON.
-> + * Once the critical (e.g. fs etc) BUG/BUG_ON users are updated to use
-> + * the clearly named HALT variants, we can point the old BUG/BUG_ON
-> + * defines below to be clones of the less drastic WARN variants.
->   */
->  #ifndef HAVE_ARCH_BUG
->  #define BUG() do { \
-> @@ -51,10 +59,18 @@ struct bug_entry {
->  } while (0)
->  #endif
->
-> +#ifndef HAVE_ARCH_BUG_AND_HALT
-> +#define BUG_AND_HALT BUG
-> +#endif
+>  arch/arm/boot/dts/sun7i-a20-cubieboard2.dts |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts  |  6 ++++++
+>  arch/arm/boot/dts/sun7i-a20.dtsi            | 31 +++++++++++++++++++++++=
+++++++
+>  3 files changed, 43 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts b/arch/arm/boot/=
+dts/sun7i-a20-cubieboard2.dts
+> index feeff64..2564e8c 100644
+> --- a/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+> +++ b/arch/arm/boot/dts/sun7i-a20-cubieboard2.dts
+> @@ -164,6 +164,12 @@
+>  				reg =3D <1>;
+>  			};
+>  		};
 > +
->  #ifndef HAVE_ARCH_BUG_ON
->  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
->  #endif
->
-> +#ifndef HAVE_ARCH_BUG_AND_HALT_ON
-> +#define BUG_AND_HALT_ON BUG_ON
-> +#endif
+> +		ir0: ir@01c21800 {
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&ir0_pins_a>;
+> +			status =3D "okay";
+> +		};
+>  	};
+> =20
+>  	leds {
+> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/d=
+ts/sun7i-a20-cubietruck.dts
+> index e288562..e375e89 100644
+> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> @@ -232,6 +232,12 @@
+>  				reg =3D <1>;
+>  			};
+>  		};
 > +
->  /*
->   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
->   * significant issues that need prompt attention if they should ever
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 34eb2160489d..3cbf3591cf76 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -2010,6 +2010,13 @@ sub process {
->                         $rpt_cleaners = 1;
->                 }
->
-> +# Dont use BUG/BUG_ON; use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON
-> +               if ($rawline =~ /^\+.*BUG\(/ || $rawline =~ /^\+.*BUG_ON\(/) {
-> +                       my $herevet = "$here\n" . cat_vet($rawline) . "\n";
-> +                       WARN("BUG/BUG_ON",
-> +                            "Use of BUG/BUG_ON is deprecated. Use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON\n" . $herevet);
-> +               }
+> +		ir0: ir@01c21800 {
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&ir0_pins_a>;
+> +			status =3D "okay";
+> +		};
+>  	};
+> =20
+>  	leds {
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index 0ae2b77..bb655a5 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -724,6 +724,19 @@
+>  				allwinner,drive =3D <2>;
+>  				allwinner,pull =3D <0>;
+>  			};
 > +
->  # Check for FSF mailing addresses.
->                 if ($rawline =~ /\bwrite to the Free/i ||
->                     $rawline =~ /\b59\s+Temple\s+Pl/i ||
-> --
+> +			ir0_pins_a: ir0@0 {
+> +				    allwinner,pins =3D "PB3","PB4";
+> +				    allwinner,function =3D "ir0";
+> +				    allwinner,drive =3D <0>;
+> +				    allwinner,pull =3D <0>;
+> +			};
+> +			ir1_pins_a: ir1@0 {
+> +				    allwinner,pins =3D "PB22","PB23";
+> +				    allwinner,function =3D "ir1";
+> +				    allwinner,drive =3D <0>;
+> +				    allwinner,pull =3D <0>;
+> +			};
+>  		};
+> =20
+>  		timer@01c20c00 {
+> @@ -937,5 +950,23 @@
+>  			#interrupt-cells =3D <3>;
+>  			interrupts =3D <1 9 0xf04>;
+>  		};
+> +
+> +       		ir0: ir@01c21800 {
 
-I like the idea but not the name.
-What about DIE() and DIE_ON()?
+This line...
 
--- 
-Thanks,
-//richard
+> +	     		compatible =3D "allwinner,sun7i-a20-ir";
+> +			clocks =3D <&apb0_gates 6>, <&ir0_clk>;
+> +			clock-names =3D "apb", "ir";
+> +			interrupts =3D <0 5 4>;
+> +			reg =3D <0x01c21800 0x40>;
+> +			status =3D "disabled";
+> +		};
+> +
+> +       		ir1: ir@01c21c00 {
+
+=2E.. and this one are indented a tab too far.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--uxuisgdDHaNETlh8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTZS7RAAoJEBx+YmzsjxAguBUP/R4YhizsM2BOcvNCLqXUqcdr
+tZzhQzHC9/Lrq55oq6jie35tZAKS9ZVaa7nuihmnLUm68XR4LOQHQy2lSYKDZcX1
+IPWjloMwab+5yQ/dbOL0M08zZh+Oz7s99mTMJR3TKu7D7vfMUbn1s/fUtXOUuKWk
+TacUirouo3sGjtjFX2uQEIUIThOQLN5sbJhdIc3bZBMitoLtBHkmothVkuypRpon
+/FDu6k4HPGMyVVE6emncCX2uzVZAaNkHIvz4rLeExpEnFJpbaN5mWFwrfb7mjNdE
+HYrFQoNKSgjaYWz+yLucOn4tPxFnVoTX3FlmBGCoXNcx95BwOF+sx5udhBjyaHu+
+pv9F/eBP5ttvEt8cWA7IS3ulMEAZ+Wswl/PtaTwq3YUO5RhModf+eKYTfXrKrP/z
+hYn/MnirFnMc21gG5Nas78wsA7CjEmSvA4+h5nQP+0mrRqmBOEH/vyfvuOCWlRJx
+up6Frbol57uGKhWIQslc/yEI/yvdzBly6a4VGVnGnJ+6NwRJzygWllsfsVnVqbwY
+aFM5IVOw1oEkp87LJhqH7AfGB636rdnL3GonadxWfXVAM+8aExA+RwdeG3ZWsQP9
+bL3Ud+rWIiPai3Z/41DKZtuwnymiswiioMrcOQXnbJsZaQiynporAO/P8LQtKu6b
+GONEqcp4bfzQyPlPjvzd
+=hN4V
+-----END PGP SIGNATURE-----
+
+--uxuisgdDHaNETlh8--
