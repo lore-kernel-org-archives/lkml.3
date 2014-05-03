@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaECSx6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 14:53:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46384 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaECSx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 14:53:57 -0400
-Date: Sat, 3 May 2014 20:54:08 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kirill Tkhai <tkhai@yandex.ru>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
-In-Reply-To: <5362122B.8060305@yandex.ru>
-Message-ID: <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
-References: <5362122B.8060305@yandex.ru>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753248AbaECTAt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 15:00:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60995 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347AbaECTAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 15:00:48 -0400
+Message-ID: <53653CC8.1050900@zytor.com>
+Date: Sat, 03 May 2014 12:00:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH v2] x86: Return to kernel without IRET
+References: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net>	<CA+55aFwmhOGRv0Z7Sqgk08pTOYDJg4C9GB_XNHRAtiCLFrHG1g@mail.gmail.com>	<536488C2.8040106@zytor.com> <CA+55aFzSmm=UiK0WA7yPRojNBuOHhVYSYOFqeyXQUDd0ungNUQ@mail.gmail.com>
+In-Reply-To: <CA+55aFzSmm=UiK0WA7yPRojNBuOHhVYSYOFqeyXQUDd0ungNUQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 May 2014, Kirill Tkhai wrote:
-> Higher priority does not provide exclusive privilege
-> of one fair task over the other. In this case priority
-> boosting looks excess.
+On 05/03/2014 06:54 AM, Linus Torvalds wrote:
+> On Fri, May 2, 2014 at 11:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 05/02/2014 09:32 PM, Linus Torvalds wrote:
+>>>
+>>> At least as a proof-of-concept, having a code sequence in user mode
+>>> trampoline that does
+>>>
+>>>    popq %rsi
+>>>    popq %r11
+>>>    retq $128
+>>>
+>>> and building up a stack in user space at '%rsp-128' that has the
+>>> values or rsi/r11/rip should allow us to use 'sysret'. Hmm?
+>>
+>> That would be a security hole if another userspace thread could muck
+>> with the stack.
 > 
-> On RT patch with enabled PREEMPT_RT_FULL I see a lot of
-> rt_mutex_setprio() actions like
+> No, all of the above is in user space, and the pre-restore register
+> values for rsi/r11/rip/rsp are all user space values (just not the
+> right ones for the "real" return point). So no security issue.
 > 
-> 	120 -> 118
-> 	118 -> 120
+> Now, replacing "iret" with "sysret + user-space trampoline" doesn't
+> work in general (it gets RF wrong, for example, so it's useless for
+> single-stepping and breakpoint handling), but I was more thinking that
+> it would be an interesting way to see what the performance impact of a
+> faster iret would be.
 > 
-> They harm RT tasks.
 
-That's not the main problem. The point is that it is useless and
-therefor harming performace and throughput as well.
- 
-> RT patch has lazy preemtion feature, so if idea is we care
-> about excess preemption inside fair class, we should care
-> about excess priority inheritance too.
-> 
-> In case of vanila kernel the problem is the same, but there
-> are no so many rt mutexes. Do I skip anything?
+Right, brain failure on my part.  I somehow got it in my head you'd run
+the above off the user stack while in CPL 0, which would be obviously crazy.
 
-Almost a decade ago we decided to do the boosting for everything
-including SCHED_OTHER due to the very simple reason that exercising
-that code path more is likely to trigger more bugs.
- 
-But yes in a production environment, it's pointless for SCHED_OTHER
-tasks.
+I think this would be rather interesting experiment.
 
-Though exercising that code path as much as we can is not a bad thing
-either. So I'd like to see that made compile time conditional on one
-of the lock testing CONFIG items.
+	-hpa
 
-And the patch should be made against mainline, where we have the same
-issue (reduced to PI-futexes).
 
-Thanks,
-
-	tglx
-
-> Kirill
-> ---
->  kernel/locking/rtmutex.c | 21 ++++++++++++++-------
->  1 file changed, 14 insertions(+), 7 deletions(-)
-> 
-> diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-> index aa4dff0..609a57e 100644
-> --- a/kernel/locking/rtmutex.c
-> +++ b/kernel/locking/rtmutex.c
-> @@ -197,11 +197,14 @@ rt_mutex_dequeue_pi(struct task_struct *task,
-> struct rt_mutex_waiter *waiter)
->   */
->  int rt_mutex_getprio(struct task_struct *task)
->  {
-> -	if (likely(!task_has_pi_waiters(task)))
-> -		return task->normal_prio;
-> +	if (unlikely(task_has_pi_waiters(task))) {
-> +		int prio = task_top_pi_waiter(task)->prio;
-> +
-> +		if (rt_prio(prio) || dl_prio(prio))
-> +			return min(prio, task->normal_prio);
-> +	}
-> 
-> -	return min(task_top_pi_waiter(task)->prio,
-> -		   task->normal_prio);
-> +	return task->normal_prio;
->  }
-> 
->  struct task_struct *rt_mutex_get_top_task(struct task_struct *task)
-> @@ -218,10 +221,14 @@ struct task_struct *rt_mutex_get_top_task(struct
-> task_struct *task)
->   */
->  int rt_mutex_check_prio(struct task_struct *task, int newprio)
->  {
-> -	if (!task_has_pi_waiters(task))
-> -		return 0;
-> +	if (unlikely(task_has_pi_waiters(task))) {
-> +		int prio = task_top_pi_waiter(task)->task->prio;
-> 
-> -	return task_top_pi_waiter(task)->task->prio <= newprio;
-> +		if (rt_prio(prio) || dl_prio(prio))
-> +			return prio <= newprio;
-> +	}
-> +
-> +	return 0;
->  }
-> 
->  /*
-> 
