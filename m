@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaECPqi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 11:46:38 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:42516 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaECPqh (ORCPT
+	id S1752753AbaECQBJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 12:01:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60366 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750855AbaECQBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 11:46:37 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] tracing: Remove myself as a tracing maintainer
-Date: Sat,  3 May 2014 17:46:31 +0200
-Message-Id: <1399131991-13216-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sat, 3 May 2014 12:01:07 -0400
+Date: Sat, 3 May 2014 18:01:02 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] iio: fix possible buffer overflow
+Message-ID: <20140503160101.GA4707@piout.net>
+References: <1399070450-23391-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <5364C0E6.4020401@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5364C0E6.4020401@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It has been a while since I last sent a tracing patch. I always keep an
-eye on tracing evolutions and contributions in general but given
-how busy I am with nohz, isolation and more generally core cleanups stuff,
-I seldom have time left to provide deep reviews of tracing patches nor
-simply for reviews to begin with.
+On 03/05/2014 at 11:11:50 +0100, Jonathan Cameron wrote :
+> On 02/05/14 23:40, Alexandre Belloni wrote:
+> >Found using smatch:
+> >drivers/iio/industrialio-core.c:719 iio_device_add_info_mask_type() error:
+> >buffer overflow 'iio_chan_info_postfix' 17 <= 63
+> >
+> >It was probably never hit because the info_mask_* members are filled by using
+> >the BIT() macro with values from the iio_chan_info_enum enum that also serve as
+> >the index of the iio_chan_info_postfix array.
+> >
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> See
+> ef4b4856593fc3d9d169bededdaf7acf62f83a52
+> iio:core: Fix bug in length of event info_mask and catch unhandled bits set in masks.
+> 
+> Which fixes the same issue in a slightly different way.
+> 
+> Pretty recent patch though and this was there for ages before that.
+> Better to have two fixes than none.
+> 
 
-I've been very lucky to start kernel development on a very young subsystem
-with tons of low hanging fruits back in 2008. Given that it deals with
-a lot of tricky stuffs all around (sched, timers, irq, preemption, NMIs,
-SMP, RCU, ....) I basically learned everything there.
+Yeah, I missed your patch and it didn't hit Linus' tree yet. Sorry about
+the noise, next time I'll try to remember to check your tree.
 
-Steve has been doing most of the incredible work these last years.
-Thanks a lot!
-
-Of course consider me always available to help on tracing if any hard
-days happen.
-
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 6dc67b1..b69be85 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9041,7 +9041,6 @@ F:	drivers/char/tpm/
- 
- TRACING
- M:	Steven Rostedt <rostedt@goodmis.org>
--M:	Frederic Weisbecker <fweisbec@gmail.com>
- M:	Ingo Molnar <mingo@redhat.com>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
- S:	Maintained
 -- 
-1.8.3.1
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
