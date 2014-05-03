@@ -1,118 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaECV0N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 17:26:13 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:49477 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaECV0L (ORCPT
+	id S1753296AbaECV6x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 17:58:53 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49460 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750972AbaECV6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 17:26:11 -0400
-Message-ID: <53655ED7.8030404@free.fr>
-Date: Sat, 03 May 2014 23:25:43 +0200
-From: mathieu souchaud <rodolphe.souchaud@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mathieu Souchaud <mattieu.souchaud@free.fr>, tony.luck@intel.com,
-        bp@alien8.de, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] x86/mce: Improve mcheck_init_device() error handling
-References: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
-In-Reply-To: <1399151031-19905-1-git-send-email-mattieu.souchaud@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sat, 3 May 2014 17:58:52 -0400
+Message-ID: <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
+        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
+Date: Sat, 03 May 2014 14:58:48 -0700
+In-Reply-To: <cover.1398176489.git.rgb@redhat.com>
+References: <cover.1398176489.git.rgb@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I took some time to make a light kvm guest and "inject" errors. It seems to work fine (after solving a deadlock issue :) ).
+On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
+> Questions:
+> Is there a way to link serial numbers of namespaces involved in migration of a
+> container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> identifier for each running instance of a kernel?  Or at least some identifier
+> within the container migration realm?
 
-Mathieu S.
+Are you asking for a way of distinguishing an migrated container from an
+unmigrated one?  The answer is pretty much "no" because the job of
+migration is to restore to the same state as much as possible.
 
-Le 03/05/2014 23:03, Mathieu Souchaud a écrit :
-> Check return code of every function called by mcheck_init_device().
->
-> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
-> ---
->   arch/x86/kernel/cpu/mcheck/mce.c |   49 +++++++++++++++++++++++++++++++-------
->   1 file changed, 41 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 68317c8..284cfad 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -2437,32 +2437,65 @@ static __init int mcheck_init_device(void)
->   	int err;
->   	int i = 0;
->   
-> -	if (!mce_available(&boot_cpu_data))
-> -		return -EIO;
-> +	if (!mce_available(&boot_cpu_data)) {
-> +		err = -EIO;
-> +		goto err_out;
-> +	}
->   
-> -	zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL);
-> +	if (!zalloc_cpumask_var(&mce_device_initialized, GFP_KERNEL)) {
-> +		err = -ENOMEM;
-> +		goto err_out;
-> +	}
->   
->   	mce_init_banks();
->   
->   	err = subsys_system_register(&mce_subsys, NULL);
->   	if (err)
-> -		return err;
-> +		goto err_out_mem;
->   
->   	cpu_notifier_register_begin();
->   	for_each_online_cpu(i) {
->   		err = mce_device_create(i);
->   		if (err) {
-> -			cpu_notifier_register_done();
-> -			return err;
-> +			goto err_device_create;
->   		}
->   	}
->   
->   	register_syscore_ops(&mce_syscore_ops);
-> -	__register_hotcpu_notifier(&mce_cpu_notifier);
-> +	err = __register_hotcpu_notifier(&mce_cpu_notifier);
-> +	if (err)
-> +		goto err_reg_hotcpu;
->   	cpu_notifier_register_done();
->   
->   	/* register character device /dev/mcelog */
-> -	misc_register(&mce_chrdev_device);
-> +	err = misc_register(&mce_chrdev_device);
-> +	if (err)
-> +		goto err_register;
-> +
-> +	return 0;
-> +
-> +
-> +err_register:
-> +	cpu_notifier_register_begin();
-> +	__unregister_hotcpu_notifier(&mce_cpu_notifier);
-> +
-> +err_reg_hotcpu:
-> +	unregister_syscore_ops(&mce_syscore_ops);
-> +
-> +err_device_create:
-> +	/*
-> +	 * mce_device_remove behave properly if mce_device_create was not
-> +	 * called on that device.
-> +	 */
-> +	for_each_possible_cpu(i)
-> +		mce_device_remove(i);
-> +	cpu_notifier_register_done();
-> +
-> +err_out_mem:
-> +	free_cpumask_var(mce_device_initialized);
-> +
-> +err_out:
-> +	pr_err("Unable to init device /dev/mcelog (rc: %d)\n", err);
->   
->   	return err;
->   }
+Reading between the lines, I think your goal is to correlate audit
+information across a container migration, right?  Ideally the management
+system should be able to cough up an audit trail for a container
+wherever it's running and however many times it's been migrated?
+
+In that case, I think your idea of a numeric serial number in a dense
+range is wrong.  Because the range is dense you're obviously never going
+to be able to use the same serial number across a migration.  However,
+if you look at all the management systems for containers, they all have
+a concept of some unique ID per container, be it name, UUID or even
+GUID.  I suspect it's that you should be using to tag the audit trail
+with.
+
+James
+
 
