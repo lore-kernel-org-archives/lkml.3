@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538AbaEDAyB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 20:54:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58536 "EHLO
+	id S1753479AbaEDA56 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 20:57:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987AbaEDAx7 (ORCPT
+	with ESMTP id S1752987AbaEDA55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 20:53:59 -0400
-Date: Sat, 3 May 2014 19:17:54 -0400
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-doc@vger.kernel.org, t.figa@samsung.com,
-        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
-        robh+dt@kernel.org, arnd@arndb.de, grant.likely@linaro.org,
-        kgene.kim@samsung.com, rdunlap@infradead.org, ben-linux@fluff.org
-Subject: Re: [PATCH 1/2] misc: add sii9234 driver
-Message-ID: <20140503231754.GB20212@kroah.com>
-References: <1397216910-15904-1-git-send-email-t.stanislaws@samsung.com>
- <1397216910-15904-2-git-send-email-t.stanislaws@samsung.com>
+	Sat, 3 May 2014 20:57:57 -0400
+Date: Sat, 3 May 2014 19:29:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: Re: [PATCH] staging/lustre: Replace jobid acquiring with per node
+ setting
+Message-ID: <20140503232945.GA15714@kroah.com>
+References: <1398651712-5015-1-git-send-email-green@linuxhacker.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397216910-15904-2-git-send-email-t.stanislaws@samsung.com>
+In-Reply-To: <1398651712-5015-1-git-send-email-green@linuxhacker.ru>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 01:48:29PM +0200, Tomasz Stanislawski wrote:
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 1cb7408..3b7f266 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -515,6 +515,14 @@ config SRAM
->  	  the genalloc API. It is supposed to be used for small on-chip SRAM
->  	  areas found on many SoCs.
->  
-> +config SII9234
-> +	tristate "Silicon Image SII9234 Driver"
-> +	depends on I2C
+On Sun, Apr 27, 2014 at 10:21:52PM -0400, Oleg Drokin wrote:
+> Insted of meddling directly in process environment variables
+> (which is also not possible on certain platforms due to not exported
+> symbols), create jobid_name proc file to represent this info
+> (to be filled by job scheduler epilogue).
 
-I doubt this is the only dependency, right?
+That looks better, but what are you going to do about getting rid of all
+of these proc files?  Just move them all at once?  I really don't like
+the idea of adding new ones, and want a plan for what you all are going
+to do here moving forward.
+
+I'll take this for now, as it is better than what you are doing with the
+environment variables...
 
 thanks,
 
