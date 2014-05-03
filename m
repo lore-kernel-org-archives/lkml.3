@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaECNyU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 09:54:20 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:46997 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaECNyT (ORCPT
+	id S1752732AbaECN5b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 09:57:31 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:62361 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbaECN5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 09:54:19 -0400
+	Sat, 3 May 2014 09:57:30 -0400
+From: Liu Hua <sdu.liu@huawei.com>
+To: <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+CC: <mika.westerberg@iki.fi>, <alonid@stratoscale.com>,
+        <catalin.marinas@arm.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>,
+        <wangnan0@huawei.com>, Liu Hua <sdu.liu@huawei.com>
+Subject: [RESEND PATCH] ARM: kdump: Add vmcore_elf64_check_arch
+Date: Sat, 3 May 2014 21:44:46 +0800
+Message-ID: <1399124686-63299-1-git-send-email-sdu.liu@huawei.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-In-Reply-To: <536488C2.8040106@zytor.com>
-References: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net>
-	<CA+55aFwmhOGRv0Z7Sqgk08pTOYDJg4C9GB_XNHRAtiCLFrHG1g@mail.gmail.com>
-	<536488C2.8040106@zytor.com>
-Date: Sat, 3 May 2014 06:54:18 -0700
-X-Google-Sender-Auth: Seyzb2SbxT8IzMhxqdB-Dq6pZew
-Message-ID: <CA+55aFzSmm=UiK0WA7yPRojNBuOHhVYSYOFqeyXQUDd0ungNUQ@mail.gmail.com>
-Subject: Re: [PATCH v2] x86: Return to kernel without IRET
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 11:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/02/2014 09:32 PM, Linus Torvalds wrote:
->>
->> At least as a proof-of-concept, having a code sequence in user mode
->> trampoline that does
->>
->>    popq %rsi
->>    popq %r11
->>    retq $128
->>
->> and building up a stack in user space at '%rsp-128' that has the
->> values or rsi/r11/rip should allow us to use 'sysret'. Hmm?
->
-> That would be a security hole if another userspace thread could muck
-> with the stack.
+Hi Will or Russell,
 
-No, all of the above is in user space, and the pre-restore register
-values for rsi/r11/rip/rsp are all user space values (just not the
-right ones for the "real" return point). So no security issue.
+With CONFIG_LPAE=y, memory in 32-bit ARM systems can exceed
+4G. So if we use kdump in such systems. The capture kernel
+should parse 64-bit elf header(parse_crash_elf64_headers).
 
-Now, replacing "iret" with "sysret + user-space trampoline" doesn't
-work in general (it gets RF wrong, for example, so it's useless for
-single-stepping and breakpoint handling), but I was more thinking that
-it would be an interesting way to see what the performance impact of a
-faster iret would be.
+And this process can not pass because ARM linux only provides
+zero vmcore_elf64_check_arch function by commit 4b3bf7aef.
 
-              Linus
+This patch adds check functions related to elf64 header.
+
+Thanks,
+Liu Hua
+
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+---
+ arch/arm/include/asm/elf.h |  4 +++-
+ arch/arm/kernel/elf.c      | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+index f4b46d3..8651699 100644
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -90,14 +90,16 @@ typedef struct user_fp elf_fpregset_t;
+ extern char elf_platform[];
+ 
+ struct elf32_hdr;
++struct elf64_hdr;
+ 
+ /*
+  * This is used to ensure we don't load something for the wrong architecture.
+  */
+ extern int elf_check_arch(const struct elf32_hdr *);
++extern int elf_check_arch_64(const struct elf64_hdr *);
+ #define elf_check_arch elf_check_arch
+ 
+-#define vmcore_elf64_check_arch(x) (0)
++#define vmcore_elf64_check_arch(x) (elf_check_arch_64(x))
+ 
+ extern int arm_elf_read_implies_exec(const struct elf32_hdr *, int);
+ #define elf_read_implies_exec(ex,stk) arm_elf_read_implies_exec(&(ex), stk)
+diff --git a/arch/arm/kernel/elf.c b/arch/arm/kernel/elf.c
+index d0d1e83..452086a 100644
+--- a/arch/arm/kernel/elf.c
++++ b/arch/arm/kernel/elf.c
+@@ -38,6 +38,39 @@ int elf_check_arch(const struct elf32_hdr *x)
+ }
+ EXPORT_SYMBOL(elf_check_arch);
+ 
++int elf_check_arch_64(const struct elf64_hdr *x)
++{
++	unsigned int eflags;
++
++	/* Make sure it's an ARM executable */
++	if (x->e_machine != EM_ARM)
++		return 0;
++
++	/* Make sure the entry address is reasonable */
++	if (x->e_entry & 1) {
++		if (!(elf_hwcap & HWCAP_THUMB))
++			return 0;
++	} else if (x->e_entry & 3)
++		return 0;
++
++	eflags = x->e_flags;
++	if ((eflags & EF_ARM_EABI_MASK) == EF_ARM_EABI_UNKNOWN) {
++		unsigned int flt_fmt;
++
++		/* APCS26 is only allowed if the CPU supports it */
++		if ((eflags & EF_ARM_APCS_26) && !(elf_hwcap & HWCAP_26BIT))
++			return 0;
++
++		flt_fmt = eflags & (EF_ARM_VFP_FLOAT | EF_ARM_SOFT_FLOAT);
++
++		/* VFP requires the supporting code */
++		if (flt_fmt == EF_ARM_VFP_FLOAT && !(elf_hwcap & HWCAP_VFP))
++			return 0;
++	}
++	return 1;
++}
++EXPORT_SYMBOL(elf_check_arch_64);
++
+ void elf_set_personality(const struct elf32_hdr *x)
+ {
+ 	unsigned int eflags = x->e_flags;
+-- 
+1.9.0
+
