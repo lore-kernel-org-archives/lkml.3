@@ -1,53 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaECVJS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 17:09:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44411 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972AbaECVJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 17:09:16 -0400
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] staging: rtl8723au: fix some confusing indenting
-References: <20140503201919.GB32753@mwanda>
-Date: Sat, 03 May 2014 23:09:07 +0200
-In-Reply-To: <20140503201919.GB32753@mwanda> (Dan Carpenter's message of "Sat,
-	3 May 2014 23:19:19 +0300")
-Message-ID: <wrfjvbtmpo24.fsf@ultrasam.lan.trained-monkey.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753306AbaECVUU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 17:20:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33719 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaECVUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 17:20:18 -0400
+Date: Sat, 3 May 2014 14:19:17 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        strauman@slac.stanford.edu, austin@peloton-tech.com,
+        mkl@pengutronix.de, socketcan@hartkopp.net, wg@grandegger.com,
+        pisa@cmp.felk.cvut.cz, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        strauman@slac.stanford.edu, austin@peloton-tech.com,
+        mkl@pengutronix.de, socketcan@hartkopp.net, pisa@cmp.felk.cvut.cz,
+        wg@grandegger.com, tglx@linutronix.de
+In-Reply-To: <alpine.LFD.2.02.1303071450130.22263@ionos>
+References: <alpine.LFD.2.02.1303071450130.22263@ionos>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq:
+  Sanitize spurious interrupt detection of threaded irqs
+Git-Commit-ID: 1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter <dan.carpenter@oracle.com> writes:
-> The break and the "unknown++" are at the same indent level so my static
-> checker complains.  The if statement should be indented more.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Commit-ID:  1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c
+Gitweb:     http://git.kernel.org/tip/1e77d0a1ed7417d2a5a52a7b8d32aea1833faa6c
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 7 Mar 2013 14:53:45 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 3 May 2014 23:15:39 +0200
 
-Urgh yes, that should be cleaned up!
+genirq: Sanitize spurious interrupt detection of threaded irqs
 
-Acked-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+Till reported that the spurious interrupt detection of threaded
+interrupts is broken in two ways:
 
->
-> diff --git a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-> index eb7b98e..4ad80e7 100644
-> --- a/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-> +++ b/drivers/staging/rtl8723au/core/rtw_mlme_ext.c
-> @@ -1235,8 +1235,8 @@ static int rtw_validate_frame_ies(const u8 *start, uint len)
->  		case WLAN_EID_ERP_INFO:
->  		case WLAN_EID_EXT_SUPP_RATES:
->  		case WLAN_EID_VENDOR_SPECIFIC:
-> -		if (rtw_validate_vendor_specific_ies(pos, elen))
-> -			unknown++;
-> +			if (rtw_validate_vendor_specific_ies(pos, elen))
-> +				unknown++;
->  			break;
->  		case WLAN_EID_RSN:
->  		case WLAN_EID_PWR_CAPABILITY:
+- note_interrupt() is called for each action thread of a shared
+  interrupt line. That's wrong as we are only interested whether none
+  of the device drivers felt responsible for the interrupt, but by
+  calling multiple times for a single interrupt line we account
+  IRQ_NONE even if one of the drivers felt responsible.
+
+- note_interrupt() when called from the thread handler is not
+  serialized. That leaves the members of irq_desc which are used for
+  the spurious detection unprotected.
+
+To solve this we need to defer the spurious detection of a threaded
+interrupt to the next hardware interrupt context where we have
+implicit serialization.
+
+If note_interrupt is called with action_ret == IRQ_WAKE_THREAD, we
+check whether the previous interrupt requested a deferred check. If
+not, we request a deferred check for the next hardware interrupt and
+return. 
+
+If set, we check whether one of the interrupt threads signaled
+success. Depending on this information we feed the result into the
+spurious detector.
+
+If one primary handler of a shared interrupt returns IRQ_HANDLED we
+disable the deferred check of irq threads on the same line, as we have
+found at least one device driver who cared.
+
+Reported-by: Till Straumann <strauman@slac.stanford.edu>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Austin Schuh <austin@peloton-tech.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: linux-can@vger.kernel.org
+Cc: stable@vger.kernel.org
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1303071450130.22263@ionos
+
+---
+ include/linux/irqdesc.h |   4 ++
+ kernel/irq/manage.c     |   4 +-
+ kernel/irq/spurious.c   | 106 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 108 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 26e2661..472c021 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -27,6 +27,8 @@ struct irq_desc;
+  * @irq_count:		stats field to detect stalled irqs
+  * @last_unhandled:	aging timer for unhandled count
+  * @irqs_unhandled:	stats field for spurious unhandled interrupts
++ * @threads_handled:	stats field for deferred spurious detection of threaded handlers
++ * @threads_handled_last: comparator field for deferred spurious detection of theraded handlers
+  * @lock:		locking for SMP
+  * @affinity_hint:	hint to user space for preferred irq affinity
+  * @affinity_notify:	context for notification of affinity changes
+@@ -52,6 +54,8 @@ struct irq_desc {
+ 	unsigned int		irq_count;	/* For detecting broken IRQs */
+ 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
+ 	unsigned int		irqs_unhandled;
++	atomic_t		threads_handled;
++	int			threads_handled_last;
+ 	raw_spinlock_t		lock;
+ 	struct cpumask		*percpu_enabled;
+ #ifdef CONFIG_SMP
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index d34131c..3dc6a61 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -886,8 +886,8 @@ static int irq_thread(void *data)
+ 		irq_thread_check_affinity(desc, action);
+ 
+ 		action_ret = handler_fn(desc, action);
+-		if (!noirqdebug)
+-			note_interrupt(action->irq, desc, action_ret);
++		if (action_ret == IRQ_HANDLED)
++			atomic_inc(&desc->threads_handled);
+ 
+ 		wake_threads_waitq(desc);
+ 	}
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index a1d8cc6..e2514b0 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -270,6 +270,8 @@ try_misrouted_irq(unsigned int irq, struct irq_desc *desc,
+ 	return action && (action->flags & IRQF_IRQPOLL);
+ }
+ 
++#define SPURIOUS_DEFERRED	0x80000000
++
+ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 		    irqreturn_t action_ret)
+ {
+@@ -277,15 +279,111 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
+ 	    irq_settings_is_polled(desc))
+ 		return;
+ 
+-	/* we get here again via the threaded handler */
+-	if (action_ret == IRQ_WAKE_THREAD)
+-		return;
+-
+ 	if (bad_action_ret(action_ret)) {
+ 		report_bad_irq(irq, desc, action_ret);
+ 		return;
+ 	}
+ 
++	/*
++	 * We cannot call note_interrupt from the threaded handler
++	 * because we need to look at the compound of all handlers
++	 * (primary and threaded). Aside of that in the threaded
++	 * shared case we have no serialization against an incoming
++	 * hardware interrupt while we are dealing with a threaded
++	 * result.
++	 *
++	 * So in case a thread is woken, we just note the fact and
++	 * defer the analysis to the next hardware interrupt.
++	 *
++	 * The threaded handlers store whether they sucessfully
++	 * handled an interrupt and we check whether that number
++	 * changed versus the last invocation.
++	 *
++	 * We could handle all interrupts with the delayed by one
++	 * mechanism, but for the non forced threaded case we'd just
++	 * add pointless overhead to the straight hardirq interrupts
++	 * for the sake of a few lines less code.
++	 */
++	if (action_ret & IRQ_WAKE_THREAD) {
++		/*
++		 * There is a thread woken. Check whether one of the
++		 * shared primary handlers returned IRQ_HANDLED. If
++		 * not we defer the spurious detection to the next
++		 * interrupt.
++		 */
++		if (action_ret == IRQ_WAKE_THREAD) {
++			int handled;
++			/*
++			 * We use bit 31 of thread_handled_last to
++			 * denote the deferred spurious detection
++			 * active. No locking necessary as
++			 * thread_handled_last is only accessed here
++			 * and we have the guarantee that hard
++			 * interrupts are not reentrant.
++			 */
++			if (!(desc->threads_handled_last & SPURIOUS_DEFERRED)) {
++				desc->threads_handled_last |= SPURIOUS_DEFERRED;
++				return;
++			}
++			/*
++			 * Check whether one of the threaded handlers
++			 * returned IRQ_HANDLED since the last
++			 * interrupt happened.
++			 *
++			 * For simplicity we just set bit 31, as it is
++			 * set in threads_handled_last as well. So we
++			 * avoid extra masking. And we really do not
++			 * care about the high bits of the handled
++			 * count. We just care about the count being
++			 * different than the one we saw before.
++			 */
++			handled = atomic_read(&desc->threads_handled);
++			handled |= SPURIOUS_DEFERRED;
++			if (handled != desc->threads_handled_last) {
++				action_ret = IRQ_HANDLED;
++				/*
++				 * Note: We keep the SPURIOUS_DEFERRED
++				 * bit set. We are handling the
++				 * previous invocation right now.
++				 * Keep it for the current one, so the
++				 * next hardware interrupt will
++				 * account for it.
++				 */
++				desc->threads_handled_last = handled;
++			} else {
++				/*
++				 * None of the threaded handlers felt
++				 * responsible for the last interrupt
++				 *
++				 * We keep the SPURIOUS_DEFERRED bit
++				 * set in threads_handled_last as we
++				 * need to account for the current
++				 * interrupt as well.
++				 */
++				action_ret = IRQ_NONE;
++			}
++		} else {
++			/*
++			 * One of the primary handlers returned
++			 * IRQ_HANDLED. So we don't care about the
++			 * threaded handlers on the same line. Clear
++			 * the deferred detection bit.
++			 *
++			 * In theory we could/should check whether the
++			 * deferred bit is set and take the result of
++			 * the previous run into account here as
++			 * well. But it's really not worth the
++			 * trouble. If every other interrupt is
++			 * handled we never trigger the spurious
++			 * detector. And if this is just the one out
++			 * of 100k unhandled ones which is handled
++			 * then we merily delay the spurious detection
++			 * by one hard interrupt. Not a real problem.
++			 */
++			desc->threads_handled_last &= ~SPURIOUS_DEFERRED;
++		}
++	}
++
+ 	if (unlikely(action_ret == IRQ_NONE)) {
+ 		/*
+ 		 * If we are seeing only the odd spurious IRQ caused by
