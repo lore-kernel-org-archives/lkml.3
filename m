@@ -1,53 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaECSZc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 14:25:32 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36770 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaECSZa (ORCPT
+	id S1753297AbaECSd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 14:33:59 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:44917 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142AbaECSd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 14:25:30 -0400
-Date: Sat, 3 May 2014 19:25:28 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140503182528.GO18016@ZenIV.linux.org.uk>
-References: <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
- <20140502055127.GH18016@ZenIV.linux.org.uk>
- <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
- <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
- <20140502224022.GJ18016@ZenIV.linux.org.uk>
- <20140503042604.GM18016@ZenIV.linux.org.uk>
- <CA+55aFwA57CEkCrRTrNUgtVxSFvaVfRfbi=MEqWzpm+2igEpmg@mail.gmail.com>
+	Sat, 3 May 2014 14:33:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwA57CEkCrRTrNUgtVxSFvaVfRfbi=MEqWzpm+2igEpmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1398870207-52889-1-git-send-email-paul.gortmaker@windriver.com>
+Date: Sat, 3 May 2014 20:33:57 +0200
+Message-ID: <CAFLxGvzhd6jwGsu9eOBtXu92JcH1PnZsR9EB_h5LihYRNS-hyQ@mail.gmail.com>
+Subject: Re: [PATCH/RFC] Deprecate BUG/BUG_ON in favour of BUG_AND_HALT/BUG_AND_HALT_ON
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 11:07:57AM -0700, Linus Torvalds wrote:
-> Sure, umount itself should be serialized by the sb lock, so there
-> should be only one umount dentry collector. But why wouldn't there be
-> shrinkers active due to memory pressure?
-> 
-> generic_unmount_super() is called by ->kill_sb(), which is done
-> *before* the superblock shrinker is unregistered  So any memory
-> pressure during that will cause dentries to be shrunk other ways.
-> 
-> What am I missing?
+On Wed, Apr 30, 2014 at 5:03 PM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+> A long standing problem for us has been the misuse of BUG/BUG_ON.
+> The typical misuse is someone only thinking of what represents
+> a bug in their local code, and especially for people relatively
+> new to Linux, starting out in device drivers, the appeal of using
+> BUG w/o knowing what it really does is too great.
+>
+> So you end up with some trivial non system critical driver bringing
+> the whole system to a grinding halt just because it detected an
+> internal inconsistency.  That just makes users unhappy and looks bad.
+>
+> It is hopeless to think we can reclaim BUG/BUG_ON for their original
+> intent, given there are currently ~20k instances.  To make progress
+> here, we create BUG_AND_HALT variants, which leave no doubt as to
+> what they do in name alone.
+>
+> Then we can incrementally move the real BUG users (unrecoverable
+> filesystem corruption, page table mangling, etc) onto BUG_AND_HALT,
+> and finally at some time in the future we'll simply make the old
+> BUG/BUG_ON be aliases for WARN/WARN_ON, once we've moved over the
+> bulk of the instances really needing to halt the system.
+>
+> Suggested-by: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>
+> [This might not be a unique idea; but I'm pretty sure I'd first
+> heard of it during a discussion with Ingo at RT summit last year.]
+>
+>  include/asm-generic/bug.h | 16 ++++++++++++++++
+>  scripts/checkpatch.pl     |  7 +++++++
+>  2 files changed, 23 insertions(+)
+>
+> diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+> index 630dd2372238..57b79a394ceb 100644
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -43,6 +43,14 @@ struct bug_entry {
+>   * If you're tempted to BUG(), think again:  is completely giving up
+>   * really the *only* solution?  There are usually better options, where
+>   * users don't need to reboot ASAP and can mostly shut down cleanly.
+> + *
+> + * Sadly nobody listens to the above, and trying to reclaim BUG/BUG_ON
+> + * for their original intent is about as hopeful as wishing "selfie"
+> + * wasn't headed for the OED.  So the plan is to avoid BUG/BUG_ON
+> + * entirely.  Either use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON.
+> + * Once the critical (e.g. fs etc) BUG/BUG_ON users are updated to use
+> + * the clearly named HALT variants, we can point the old BUG/BUG_ON
+> + * defines below to be clones of the less drastic WARN variants.
+>   */
+>  #ifndef HAVE_ARCH_BUG
+>  #define BUG() do { \
+> @@ -51,10 +59,18 @@ struct bug_entry {
+>  } while (0)
+>  #endif
+>
+> +#ifndef HAVE_ARCH_BUG_AND_HALT
+> +#define BUG_AND_HALT BUG
+> +#endif
+> +
+>  #ifndef HAVE_ARCH_BUG_ON
+>  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
+>  #endif
+>
+> +#ifndef HAVE_ARCH_BUG_AND_HALT_ON
+> +#define BUG_AND_HALT_ON BUG_ON
+> +#endif
+> +
+>  /*
+>   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
+>   * significant issues that need prompt attention if they should ever
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 34eb2160489d..3cbf3591cf76 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2010,6 +2010,13 @@ sub process {
+>                         $rpt_cleaners = 1;
+>                 }
+>
+> +# Dont use BUG/BUG_ON; use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON
+> +               if ($rawline =~ /^\+.*BUG\(/ || $rawline =~ /^\+.*BUG_ON\(/) {
+> +                       my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+> +                       WARN("BUG/BUG_ON",
+> +                            "Use of BUG/BUG_ON is deprecated. Use WARN/WARN_ON or BUG_AND_HALT/BUG_AND_HALT_ON\n" . $herevet);
+> +               }
+> +
+>  # Check for FSF mailing addresses.
+>                 if ($rawline =~ /\bwrite to the Free/i ||
+>                     $rawline =~ /\b59\s+Temple\s+Pl/i ||
+> --
 
-This:
-        if (!grab_super_passive(sb))
-                return SHRINK_STOP;
-before calling prune_dcache_sb().  grab_super_passive() returns with
-->s_umount held shared on success (with down_read_trylock()) and ->kill_sb()
-is called only with ->s_umount held exclusive.
+I like the idea but not the name.
+What about DIE() and DIE_ON()?
+
+-- 
+Thanks,
+//richard
