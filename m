@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383AbaECWsk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 18:48:40 -0400
-Received: from mail.siteground.com ([67.19.240.234]:44596 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752855AbaECWsj (ORCPT
+	id S1753422AbaECWvN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 18:51:13 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:35155 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855AbaECWvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 18:48:39 -0400
-Message-ID: <5365723D.7030303@1h.com>
-Date: Sun, 04 May 2014 01:48:29 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 3 May 2014 18:51:12 -0400
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, davidlohr@hp.com, n-horiguchi@ah.jp.nec.com,
-        Greg KH <gregkh@linuxfoundation.org>, manfred@colorfullife.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: [PATCH] IPC initialize shmmax and shmall from the current value not
- the default
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20140430114548.GQ28159@titan.lakedaemon.net>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+	<1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+	<535A8FC9.8040707@wwwdotorg.org>
+	<20140429190603.GB9418@norris-Latitude-E6410>
+	<20140430114548.GQ28159@titan.lakedaemon.net>
+Date: Sat, 3 May 2014 15:51:11 -0700
+Message-ID: <CAOesGMi0zK8H=Ok81ZLhssvG5gsbvanY4dct_PF95Exq6p3tfg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
+From: Olof Johansson <olof@lixom.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Marek Vasut <marex@denx.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the 
-values of the current shmmax and shmall to the new namespace.
+On Wed, Apr 30, 2014 at 4:45 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Tue, Apr 29, 2014 at 12:06:03PM -0700, Brian Norris wrote:
+>> Hi Stephen,
+>>
+>> On Fri, Apr 25, 2014 at 10:39:37AM -0600, Stephen Warren wrote:
+>> > On 04/17/2014 01:21 AM, Brian Norris wrote:
+>> > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
+>> > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+>> > > relevant defconfigs.
+>> > >
+>> > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+>> >
+>> > I hadn't realized that the problem this patch solves was already present
+>> > in the code, so this patch is simply catching up the defconfigs rather
+>> > than part of a series which changed the code to cause the problem.
+>>
+>> Yes, this is "catching up the defconfigs." The SPI_NOR framework is new,
+>> and I didn't want to generate defconfig noise until a few things
+>> stabilized (particularly, its Kconfig symbol name).
+>>
+>> > So, this needs to be applied ASAP.
+>> >
+>> > I think this should be split it up so that each defconfig can go through
+>> > the tree that owns it to avoid conflicts. If you repost split up, I can
+>> > apply the tegra_defconfig change to the Tegra tree.
+>>
+>> OK, I'll try to split it up. Is ARM unique in tracking defconfigs in
+>> separate trees? I assume MIPS, PowerPC, and Blackfin won't require the
+>> same splitting? I'd like to avoid 31 patches when <20 could suffice.
+>
+> wrt arm-soc, typically they take all changes to multi_v7_defconfig
+> directly since it is prone to conflicts.  All the other ones are managed
+> by the individual sub-arch maintainers.
+>
+>> I'll also rebase on linux-next. I think there may be a few conflicts.
+>
+> I can't speak for the other sub-archs, but I typically prefer that
+> patches be based on an -rc tag, -rc1 if possible.
 
-Copying the values of the init_ipc_ns would allow us to create new ipc namespaces with different values without granting 
-them privileges to change those values.
+This is making a trivial patch a pain to get merged.
 
-Here is the proposed patch:
+Cases like these are easiest that we just take the patch directly in
+an early-merge branch (i.e. cleanup or fixes-non-critical, or a
+generic depends branch), and if there's conflicts as topics are merged
+in from subplatforms we can deal with it then.
 
----
-  ipc/shm.c | 9 +++++++--
-  1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 7a51443..b7a4728 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -74,8 +74,13 @@ static int sysvipc_shm_proc_show(struct seq_file *s, void *it);
-
-  void shm_init_ns(struct ipc_namespace *ns)
-  {
--       ns->shm_ctlmax = SHMMAX;
--       ns->shm_ctlall = SHMALL;
-+       if (ns == &init_ipc_ns) {
-+               ns->shm_ctlmax = SHMMAX;
-+               ns->shm_ctlall = SHMALL;
-+       } else {
-+               ns->shm_ctlmax = init_ipc_ns.shm_ctlmax;
-+               ns->shm_ctlall = init_ipc_ns.shm_ctlall;
-+       }
-         ns->shm_ctlmni = SHMMNI;
-         ns->shm_rmid_forced = 0;
-         ns->shm_tot = 0;
--- 
-1.8.4
-
--- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
+-Olof
