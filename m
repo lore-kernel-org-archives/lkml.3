@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053AbaECGpX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 02:45:23 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:44386 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaECGpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 02:45:22 -0400
-Message-ID: <1399099520.7131.1.camel@violet>
-Subject: Re: [PATCH v8 17/20] usb: phy: msm: Select secondary PHY via TCSR
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Date: Sat, 03 May 2014 09:45:20 +0300
-In-Reply-To: <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
-References: <1398692063-11372-1-git-send-email-iivanov@mm-sol.com>
-	 <1398692063-11372-18-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751023AbaECHd3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 03:33:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:42938 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaECHd2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 03:33:28 -0400
+Date: Sat, 3 May 2014 09:33:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140503073314.GJ17778@laptop.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
+ <20140502162234.GX11096@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
+ <20140502172731.GK30445@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu>
+ <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-28 at 16:34 +0300, Ivan T. Ivanov wrote:
-> From: Tim Bird <tbird20d@gmail.com>
+On Fri, May 02, 2014 at 11:02:25PM -0400, Vince Weaver wrote:
+> On Fri, 2 May 2014, Vince Weaver wrote:
 > 
-> Select the secondary PHY using the TCSR register, if phy-num=1
-> in the DTS (or phy_number is set in the platform data).  The
-> SOC has 2 PHYs which can be used with the OTG port, and this
-> code allows configuring the correct one.
+> > I've been fuzzing without your additional patch for 6 hours and all looks
+> > (almost) good.  I can add in your patch and let it fuzz overnight.
 > 
-> Note: This resolves the problem I was seeing where I couldn't
-> get the USB driver working at all on a dragonboard, from cold
-> boot.  This patch depends on patch 5/14 from Ivan's msm USB
-> patch set.  It does not use DT for the register address, as
-> there's no evidence that this address changes between SoC
-> versions.
+> and I applied the additional patch, installed the kernel, hit reboot, and 
+> the following happened (this was caused by rebooting while fuzzing
+> was ongoing) :(
 > 
-> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+> I'm remote from the system too so the poor machine is going to be sitting 
+> there oopsing away until Monday.
 
-Missed this:
+Yeah, my system did the same when I tried to shut it down last night. I
+have remote power though (or else I would've been forced to like walk
+downstairs) :-)
 
-Signed-of-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-
-Regards,
-Ivan
-
+I suppose that means I'll have something to do come Monday morning.
