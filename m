@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099AbaECEaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 00:30:09 -0400
-Received: from tamar.safe-mail.net ([213.8.161.229]:34157 "EHLO
-	tamar.safe-mail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaECEaH convert rfc822-to-8bit (ORCPT
+	id S1751169AbaECEcz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 00:32:55 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:57273 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaECEcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 00:30:07 -0400
-X-Greylist: delayed 43563 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 May 2014 00:30:07 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-	s=N1-0105; d=Safe-mail.net;
-	b=TcPp/R9Q4WLPOZ0slRCAZyjOTARL47DLhFZRJJ4aN4arGTefLY1tFUVDraxi4fb/
-	JNQ8Ag0qujTEzNaLfHquI2EcrDOtSFrDg21eSzvYOeFdRNe+cxFg63dMljpiTEar
-	N5sUv+smYLMBWn8O5BvEK8oYRifhwlIr6hsb5oJK+0w=;
-Subject: Hello dear,
-Date: Fri, 2 May 2014 12:23:32 -0400
-From: "Grace Zina" <gracezz0b06@Safe-mail.net>
-To: adenapatrick_1@hotmail.com
-Reply-To: adenapatrick_1@hotmail.com
-X-SMType: Regular
-X-SMRef: N1B-QSEAkJ5Aaw
-Message-Id: <N1B-QSEAkJ5Aaw@Safe-mail.net>
+	Sat, 3 May 2014 00:32:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-SMSignature: mnD4brQ+RHIJomdJstysztA9Wx+doQyEz6akk5h/e3xUBTtsZOv1NKzBs3tiVKbG
-	O+zVgNj14LvYj1Tddl02GmO65lXtxEjoq2g/AoUSJd5wd7BZ0ivGI22LZgAM30rk
-	lFK9m95W+DsDwFaPlDNkn5wAOOYKQIxmp2y3Cyeh7SM=
+In-Reply-To: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net>
+References: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net>
+Date: Fri, 2 May 2014 21:32:53 -0700
+X-Google-Sender-Auth: bw3EgB8wuY598PLHFhFMIZf9-30
+Message-ID: <CA+55aFwmhOGRv0Z7Sqgk08pTOYDJg4C9GB_XNHRAtiCLFrHG1g@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Return to kernel without IRET
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello dear,
-My name is Miss Adena, I'm very glad when i come across your profile today while searching for a partnership which interest me to write to you, I will like to build a good relationship with you because i see you as a one with a good heart .I want you to understand that a Good friend is like a tissue that wipe away tears, please if you don't mind i will like you to contact me through this my email address (adenapatrick_1@hotmail.com) for us to express ourselves and make exchange of our pictures and share a vital information's about my ourselves,
-Thanks,
+On Fri, May 2, 2014 at 4:53 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On my box, this saves about 100ns on each interrupt and trap that
+> happens while running in kernel space.  This speeds up my kernel_pf
+> microbenchmark by about 17%.
+
+Btw, would you mind _trying_ to do a similar trick for the "return to
+user space" case?
+
+At least as a proof-of-concept, having a code sequence in user mode
+trampoline that does
+
+   popq %rsi
+   popq %r11
+   retq $128
+
+and building up a stack in user space at '%rsp-128' that has the
+values or rsi/r11/rip should allow us to use 'sysret'. Hmm?
+
+            Linus
