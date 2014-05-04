@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988AbaEDQ6w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:58:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35877 "EHLO
+	id S1756971AbaEDQ6u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:58:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578AbaEDPlP (ORCPT
+	with ESMTP id S1752603AbaEDPlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>,
+        Dave Martin <Dave.Martin@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Alex Wu <wuquanming@huawei.com>, Xiangyu Lu <luxiangyu@huawei.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 017/158] ARM: 8007/1: Remove extraneous kcmp syscall ignore
-Date: Sun,  4 May 2014 11:38:46 -0400
-Message-Id: <20140504154032.400717167@linuxfoundation.org>
+Subject: [PATCH 3.14 018/158] ARM: 8027/1: fix do_div() bug in big-endian systems
+Date: Sun,  4 May 2014 11:38:47 -0400
+Message-Id: <20140504154032.517818928@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,31 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Covington <cov@codeaurora.org>
+From: Xiangyu Lu <luxiangyu@huawei.com>
 
-commit 95c52fe063351192e0f4ffb70ef9bac1aa26f5a4 upstream.
+commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
 
-The kcmp system call was ported to ARM in
-commit 3f7d1fe108dbaefd0c57a41753fc2c90b395f458
-"ARM: 7665/1: Wire up kcmp syscall".
+In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
 
-Fixes: 3f7d1fe108db ("ARM: 7665/1: Wire up kcmp syscall")
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
+When viewing ftrace record in big-endian ARM systems, we found that
+the timestamp errors:
+
+swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
+events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
+swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
+swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
+swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
+swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
+
+When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
+
+Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Alex Wu <wuquanming@huawei.com>
+Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/unistd.h |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/include/asm/div64.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -48,6 +48,5 @@
-  */
- #define __IGNORE_fadvise64_64
- #define __IGNORE_migrate_pages
--#define __IGNORE_kcmp
- 
- #endif /* __ASM_ARM_UNISTD_H */
+--- a/arch/arm/include/asm/div64.h
++++ b/arch/arm/include/asm/div64.h
+@@ -156,7 +156,7 @@
+ 		/* Select the best insn combination to perform the   */	\
+ 		/* actual __m * __n / (__p << 64) operation.         */	\
+ 		if (!__c) {						\
+-			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
++			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
+ 				"mov	%Q0, #0"			\
+ 				: "=&r" (__res)				\
+ 				: "r" (__m), "r" (__n)			\
 
 
