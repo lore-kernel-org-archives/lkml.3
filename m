@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaEDQKw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:10:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36551 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655AbaEDPm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754650AbaEDPm1 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36525 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622AbaEDPmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alec Berg <alecaberg@chromium.org>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 38/86] iio: querying buffer scan_mask should return 0/1
-Date: Sun,  4 May 2014 11:41:13 -0400
-Message-Id: <20140504154145.564121087@linuxfoundation.org>
+        David Fries <David@Fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [PATCH 3.10 31/86] w1: fix w1_send_slave dropping a slave id
+Date: Sun,  4 May 2014 11:41:06 -0400
+Message-Id: <20140504154144.629329146@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,48 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alec Berg <alecaberg@chromium.org>
+From: David Fries <David@Fries.net>
 
-commit 2076a20fc1a06f7b0333c62a2bb4eeeac7ed1bcb upstream.
+commit 6b355b33a64fd6d8ead2b838ec16fb9b551f71e8 upstream.
 
-Ensure that querying the IIO buffer scan_mask returns a value of
-0 or 1. Currently querying the scan mask has the value returned
-by test_bit(), which returns either true or false. For some
-architectures test_bit() may return -1 for true, which will appear
-to return an error when returning from iio_scan_mask_query().
+Previous logic,
+if (avail > 8) {
+	store slave;
+	return;
+}
+send data; clear;
 
-Additionally, it's important for the sysfs interface to consistently
-return the same thing when querying the scan_mask.
+The logic error is, if there isn't space send the buffer and clear,
+but the slave wasn't added to the now empty buffer loosing that slave
+id.  It also should have been "if (avail >= 8)" because when it is 8,
+there is space.
 
-Signed-off-by: Alec Berg <alecaberg@chromium.org>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Instead, if there isn't space send and clear the buffer, then there is
+always space for the slave id.
+
+Signed-off-by: David Fries <David@Fries.net>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/industrialio-buffer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/w1/w1_netlink.c |   27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -119,7 +119,8 @@ static ssize_t iio_scan_el_show(struct d
- 	int ret;
- 	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+--- a/drivers/w1/w1_netlink.c
++++ b/drivers/w1/w1_netlink.c
+@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_mast
+ 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
+ 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
+ 	int avail;
++	u64 *data;
  
--	ret = test_bit(to_iio_dev_attr(attr)->address,
-+	/* Ensure ret is 0 or 1. */
-+	ret = !!test_bit(to_iio_dev_attr(attr)->address,
- 		       indio_dev->buffer->scan_mask);
+ 	/* update kernel slave list */
+ 	w1_slave_found(dev, rn);
  
- 	return sprintf(buf, "%d\n", ret);
-@@ -762,7 +763,8 @@ int iio_scan_mask_query(struct iio_dev *
- 	if (!buffer->scan_mask)
- 		return 0;
+ 	avail = dev->priv_size - cmd->len;
  
--	return test_bit(bit, buffer->scan_mask);
-+	/* Ensure return value is 0 or 1. */
-+	return !!test_bit(bit, buffer->scan_mask);
- };
- EXPORT_SYMBOL_GPL(iio_scan_mask_query);
+-	if (avail > 8) {
+-		u64 *data = (void *)(cmd + 1) + cmd->len;
+-
+-		*data = rn;
+-		cmd->len += 8;
+-		hdr->len += 8;
+-		msg->len += 8;
+-		return;
++	if (avail < 8) {
++		msg->ack++;
++		cn_netlink_send(msg, 0, GFP_KERNEL);
++
++		msg->len = sizeof(struct w1_netlink_msg) +
++			sizeof(struct w1_netlink_cmd);
++		hdr->len = sizeof(struct w1_netlink_cmd);
++		cmd->len = 0;
+ 	}
  
+-	msg->ack++;
+-	cn_netlink_send(msg, 0, GFP_KERNEL);
++	data = (void *)(cmd + 1) + cmd->len;
+ 
+-	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
+-	hdr->len = sizeof(struct w1_netlink_cmd);
+-	cmd->len = 0;
++	*data = rn;
++	cmd->len += 8;
++	hdr->len += 8;
++	msg->len += 8;
+ }
+ 
+ static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
 
 
