@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaEDPln (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36083 "EHLO
+	id S1755382AbaEDQkf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:40:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaEDPll (ORCPT
+	with ESMTP id S1754050AbaEDPlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:41 -0400
+	Sun, 4 May 2014 11:41:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.14 090/158] SCSI: arcmsr: upper 32 of dma address lost
-Date: Sun,  4 May 2014 11:39:59 -0400
-Message-Id: <20140504154042.156106573@linuxfoundation.org>
+        Benny Halevy <bhalevy@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 072/158] nfsd4: buffer-length check for SUPPATTR_EXCLCREAT
+Date: Sun,  4 May 2014 11:39:41 -0400
+Message-Id: <20140504154039.704900068@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,43 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit e2c70425f05219b142b3a8a9489a622c736db39d upstream.
+commit de3997a7eeb9ea286b15879fdf8a95aae065b4f7 upstream.
 
-The original code always set the upper 32 bits to zero because it was
-doing a shift of the wrong variable.
+This was an omission from 8c18f2052e756e7d5dea712fc6e7ed70c00e8a39
+"nfsd41: SUPPATTR_EXCLCREAT attribute".
 
-Fixes: 1a4f550a09f8 ('[SCSI] arcmsr: 1.20.00.15: add SATA RAID plus other fixes')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Benny Halevy <bhalevy@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/arcmsr/arcmsr_hba.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4xdr.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2500,16 +2500,15 @@ static int arcmsr_polling_ccbdone(struct
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
- {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
--	dma_addr_t dma_coherent_handle;
-+
- 	/*
- 	********************************************************************
- 	** here we need to tell iop 331 our freeccb.HighPart
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	dma_coherent_handle = acb->dma_coherent_handle;
--	cdb_phyaddr = (uint32_t)(dma_coherent_handle);
--	cdb_phyaddr_hi32 = (uint32_t)((cdb_phyaddr >> 16) >> 16);
-+	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2483,6 +2483,8 @@ out_acl:
+ 			goto out;
+ 	}
+ 	if (bmval2 & FATTR4_WORD2_SUPPATTR_EXCLCREAT) {
++		if ((buflen -= 16) < 0)
++			goto out_resource;
+ 		WRITE32(3);
+ 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD0);
+ 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD1);
 
 
