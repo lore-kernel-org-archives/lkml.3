@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaEDPlu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36167 "EHLO
+	id S1755098AbaEDQfk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:35:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116AbaEDPlr (ORCPT
+	with ESMTP id S1754164AbaEDPlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:47 -0400
+	Sun, 4 May 2014 11:41:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 3.14 105/158] usb: gadget: zero: Fix SuperSpeed enumeration for alternate setting 1
-Date: Sun,  4 May 2014 11:40:14 -0400
-Message-Id: <20140504154044.216201150@linuxfoundation.org>
+        Olivier Martin <olivier.martin@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.14 098/158] efi: Pass correct file handle to efi_file_{read,close}
+Date: Sun,  4 May 2014 11:40:07 -0400
+Message-Id: <20140504154043.265030285@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,48 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 9c1b70361e0b38e4acb8e62b54da66538cb77ff2 upstream.
+commit 47514c996fac5e6f13ef3a4c5e23f1c5cffabb7b upstream.
 
-It was impossible to enumerate on a SuperSpeed (XHCI) host
-with alternate setting = 1 due to the wrongly set 'bMaxBurst'
-field in the SuperSpeed Endpoint Companion descriptor.
+We're currently passing the file handle for the root file system to
+efi_file_read() and efi_file_close(), instead of the file handle for the
+file we wish to read/close.
 
-Testcase:
-<host> modprobe -r usbtest; modprobe usbtest alt=1
-<device> modprobe g_zero
-plug device to SuperSpeed port on the host.
+While this has worked up until now, it seems that it has only been by
+pure luck. Olivier explains,
 
-Without this patch the host always complains like so
-"usb 12-2: Not enough bandwidth for new device state.
- usb 12-2: Not enough bandwidth for altsetting 1"
+ "The issue is the UEFI Fat driver might return the same function for
+  'fh->read()' and 'h->read()'. While in our case it does not work with
+  a different implementation of EFI_SIMPLE_FILE_SYSTEM_PROTOCOL. In our
+  case, we return a different pointer when reading a directory and
+  reading a file."
 
-Bug was introduced by commit cf9a08ae in v3.9
+Fixing this actually clears up the two functions because we can drop one
+of the arguments, and instead only pass a file 'handle' argument.
 
-Fixes: cf9a08ae5aec (usb: gadget: convert source sink and loopback to
-new function interface)
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reported-by: Olivier Martin <olivier.martin@arm.com>
+Reviewed-by: Olivier Martin <olivier.martin@arm.com>
+Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/gadget/zero.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/zero.c
-+++ b/drivers/usb/gadget/zero.c
-@@ -300,7 +300,7 @@ static int __init zero_bind(struct usb_c
- 	ss_opts->isoc_interval = gzero_options.isoc_interval;
- 	ss_opts->isoc_maxpacket = gzero_options.isoc_maxpacket;
- 	ss_opts->isoc_mult = gzero_options.isoc_mult;
--	ss_opts->isoc_maxburst = gzero_options.isoc_maxpacket;
-+	ss_opts->isoc_maxburst = gzero_options.isoc_maxburst;
- 	ss_opts->bulk_buflen = gzero_options.bulk_buflen;
+---
+ drivers/firmware/efi/efi-stub-helper.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -468,7 +468,7 @@ grow:
+ 					chunksize = EFI_READ_CHUNK_SIZE;
+ 				else
+ 					chunksize = size;
+-				status = efi_call_phys3(fh->read,
++				status = efi_call_phys3(files[j].handle->read,
+ 							files[j].handle,
+ 							&chunksize,
+ 							(void *)addr);
+@@ -480,7 +480,7 @@ grow:
+ 				size -= chunksize;
+ 			}
  
- 	func_ss = usb_get_function(func_inst_ss);
+-			efi_call_phys1(fh->close, files[j].handle);
++			efi_call_phys1(files[j].handle->close, files[j].handle);
+ 		}
+ 
+ 	}
+@@ -497,7 +497,7 @@ free_file_total:
+ 
+ close_handles:
+ 	for (k = j; k < i; k++)
+-		efi_call_phys1(fh->close, files[k].handle);
++		efi_call_phys1(files[k].handle->close, files[k].handle);
+ free_files:
+ 	efi_call_phys1(sys_table_arg->boottime->free_pool, files);
+ fail:
 
 
