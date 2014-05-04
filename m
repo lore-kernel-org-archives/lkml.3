@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbaEDIk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 04:40:29 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:56331
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752655AbaEDIk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 04:40:27 -0400
-Message-ID: <5365FCF2.9090008@freescale.com>
-Date: Sun, 4 May 2014 16:40:18 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	id S1753437AbaEDIo6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 04:44:58 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:48100 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655AbaEDIo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 04:44:56 -0400
+Message-ID: <5365FE04.3020208@gmail.com>
+Date: Sun, 04 May 2014 11:44:52 +0300
+From: Tair Rzayev <tair.rzayev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <scottwood@freescale.com>,
-        <leo.li@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 7/8] DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
-References: <1397809071-5353-1-git-send-email-hongbo.zhang@freescale.com>
- <1397809071-5353-8-git-send-email-hongbo.zhang@freescale.com>
- <20140502165143.GI32284@intel.com>
-In-Reply-To: <20140502165143.GI32284@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: keucr: smilmain.c: cosmetic updates
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(51704005)(479174003)(377454003)(189002)(199002)(86362001)(31966008)(44976005)(33656001)(76176999)(92726001)(46102001)(59896001)(74662001)(83506001)(83072002)(36756003)(85852003)(99396002)(80022001)(80976001)(65956001)(50466002)(4396001)(74502001)(64126003)(83322001)(20776003)(23756003)(87936001)(87266999)(19580395003)(79102001)(81342001)(77096999)(47776003)(81542001)(76482001)(54356999)(6806004)(101416001)(19580405001)(92566001)(65806001)(65816999)(50986999)(77982001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB394;H:tx30smr01.am.freescale.net;FPR:A454F836.AE364785.B6D06F87.20B0C02D.20190;MLV:sfv;PTR:gate-tx3.freescale.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 02015246A9
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Move Check_D_MediaFmt() implementation up in smilmain.c to keep all the 
+  non-static functions at the top of the file;
+* Remove unnecessary extern and newlines from "init.h";
 
-On 05/03/2014 12:51 AM, Vinod Koul wrote:
-> On Fri, Apr 18, 2014 at 04:17:50PM +0800, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>
->> The usage of spin_lock_irqsave() is a stronger locking mechanism than is
->> required throughout the driver. The minimum locking required should be used
->> instead. Interrupts will be turned off and context will be saved, it is
->> unnecessary to use irqsave.
->>
->> This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
->> manipulation of protected fields is done using tasklet context or weaker, which
->> makes spin_lock_bh() the correct choice.
->>
-> This doesnt apply, perhpas due to depends on 6/8
->
-So let's wait for the review result of 6/8.
+Signed-off-by: Tair Rzayev <tair.rzayev@gmail.com>
+---
+ drivers/staging/keucr/init.h     |  4 ----
+ drivers/staging/keucr/smilmain.c | 34 +++++++++++++++++-----------------
+ 2 files changed, 17 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/staging/keucr/init.h b/drivers/staging/keucr/init.h
+index 32c724d..d1367e7 100644
+--- a/drivers/staging/keucr/init.h
++++ b/drivers/staging/keucr/init.h
+@@ -1,9 +1,5 @@
+ #include "common.h"
+ 
+-extern u32 MediaChange;
+-
+-
+-
+ static u8 SM_Init[] = {
+ 0x7B, 0x09, 0x7C, 0xF0, 0x7D, 0x10, 0x7E, 0xE9,
+ 0x7F, 0xCC, 0x12, 0x2F, 0x71, 0x90, 0xE9, 0xCC,
+diff --git a/drivers/staging/keucr/smilmain.c b/drivers/staging/keucr/smilmain.c
+index fc7cbc6..42ec8a6 100644
+--- a/drivers/staging/keucr/smilmain.c
++++ b/drivers/staging/keucr/smilmain.c
+@@ -141,23 +141,6 @@ int Media_D_CopySector(struct us_data *us, u32 start, u16 count, u8 *buf)
+ 	return NO_ERROR;
+ }
+ 
+-/* ----- Release_D_CopySector() ------------------------------------------ */
+-static int Release_D_CopySector(struct us_data *us)
+-{
+-	Log2Phy[Media.Zone][Media.LogBlock] = WriteBlock;
+-	Media.PhyBlock = ReadBlock;
+-
+-	if (Media.PhyBlock == NO_ASSIGN) {
+-		Media.PhyBlock = WriteBlock;
+-		return SMSUCCESS;
+-	}
+-
+-	Clr_D_Bit(Assign[Media.Zone], Media.PhyBlock);
+-	Media.PhyBlock = WriteBlock;
+-
+-	return SMSUCCESS;
+-}
+-
+ /* SmartMedia Physical Format Test Subroutine */
+ /* ----- Check_D_MediaFmt() --------------------------------------------- */
+ int Check_D_MediaFmt(struct us_data *us)
+@@ -184,6 +167,23 @@ int Check_D_MediaFmt(struct us_data *us)
+ 	return SMSUCCESS;
+ }
+ 
++/* ----- Release_D_CopySector() ------------------------------------------ */
++static int Release_D_CopySector(struct us_data *us)
++{
++	Log2Phy[Media.Zone][Media.LogBlock] = WriteBlock;
++	Media.PhyBlock = ReadBlock;
++
++	if (Media.PhyBlock == NO_ASSIGN) {
++		Media.PhyBlock = WriteBlock;
++		return SMSUCCESS;
++	}
++
++	Clr_D_Bit(Assign[Media.Zone], Media.PhyBlock);
++	Media.PhyBlock = WriteBlock;
++
++	return SMSUCCESS;
++}
++
+ /* SmartMedia Physical Address Control Subroutine */
+ /* ----- Conv_D_MediaAddr() --------------------------------------------- */
+ static int Conv_D_MediaAddr(struct us_data *us, u32 addr)
+-- 
+1.9.1
 
 
