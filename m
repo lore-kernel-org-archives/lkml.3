@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaEDPmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36590 "EHLO
+	id S1755847AbaEDP7Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:59:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726AbaEDPmc (ORCPT
+	with ESMTP id S1754832AbaEDPml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:32 -0400
+	Sun, 4 May 2014 11:42:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 3.10 59/86] usb: gadget: zero: Fix SuperSpeed enumeration for alternate setting 1
-Date: Sun,  4 May 2014 11:41:34 -0400
-Message-Id: <20140504154148.461471187@linuxfoundation.org>
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 63/86] media: uvcvideo: Do not use usb_set_interface on bulk EP
+Date: Sun,  4 May 2014 11:41:38 -0400
+Message-Id: <20140504154149.031533397@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,48 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Quadros <rogerq@ti.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 9c1b70361e0b38e4acb8e62b54da66538cb77ff2 upstream.
+commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
 
-It was impossible to enumerate on a SuperSpeed (XHCI) host
-with alternate setting = 1 due to the wrongly set 'bMaxBurst'
-field in the SuperSpeed Endpoint Companion descriptor.
+The UVC specification uses alternate setting selection to notify devices
+of stream start/stop. This breaks when using bulk-based devices, as the
+video streaming interface has a single alternate setting in that case,
+making video stream start and video stream stop events to appear
+identical to the device. Bulk-based devices are thus not well supported
+by UVC.
 
-Testcase:
-<host> modprobe -r usbtest; modprobe usbtest alt=1
-<device> modprobe g_zero
-plug device to SuperSpeed port on the host.
+The webcam built in the Asus Zenbook UX302LA ignores the set interface
+request and will keep the video stream enabled when the driver tries to
+stop it. If USB autosuspend is enabled the device will then be suspended
+and will crash, requiring a cold reboot.
 
-Without this patch the host always complains like so
-"usb 12-2: Not enough bandwidth for new device state.
- usb 12-2: Not enough bandwidth for altsetting 1"
+USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
+request to the bulk endpoint when stopping the stream instead of
+selecting alternate setting 0. The camera then behaves correctly, and
+thus seems to require that behaviour.
 
-Bug was introduced by commit cf9a08ae in v3.9
+Replace selection of alternate setting 0 with clearing of the endpoint
+halt feature at video stream stop for bulk-based devices. Let's refrain
+from blaming Microsoft this time, as it's not clear whether this
+Windows-specific but USB-compliant behaviour was specifically developed
+to handle bulkd-based UVC devices, or if the camera just took advantage
+of it.
 
-Fixes: cf9a08ae5aec (usb: gadget: convert source sink and loopback to
-new function interface)
-
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/zero.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/uvc/uvc_video.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/zero.c
-+++ b/drivers/usb/gadget/zero.c
-@@ -280,7 +280,7 @@ static int __init zero_bind(struct usb_c
- 	ss_opts->isoc_interval = gzero_options.isoc_interval;
- 	ss_opts->isoc_maxpacket = gzero_options.isoc_maxpacket;
- 	ss_opts->isoc_mult = gzero_options.isoc_mult;
--	ss_opts->isoc_maxburst = gzero_options.isoc_maxpacket;
-+	ss_opts->isoc_maxburst = gzero_options.isoc_maxburst;
- 	ss_opts->bulk_buflen = gzero_options.bulk_buflen;
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1846,7 +1846,25 @@ int uvc_video_enable(struct uvc_streamin
  
- 	func_ss = usb_get_function(func_inst_ss);
+ 	if (!enable) {
+ 		uvc_uninit_video(stream, 1);
+-		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++		if (stream->intf->num_altsetting > 1) {
++			usb_set_interface(stream->dev->udev,
++					  stream->intfnum, 0);
++		} else {
++			/* UVC doesn't specify how to inform a bulk-based device
++			 * when the video stream is stopped. Windows sends a
++			 * CLEAR_FEATURE(HALT) request to the video streaming
++			 * bulk endpoint, mimic the same behaviour.
++			 */
++			unsigned int epnum = stream->header.bEndpointAddress
++					   & USB_ENDPOINT_NUMBER_MASK;
++			unsigned int dir = stream->header.bEndpointAddress
++					 & USB_ENDPOINT_DIR_MASK;
++			unsigned int pipe;
++
++			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
++			usb_clear_halt(stream->dev->udev, pipe);
++		}
++
+ 		uvc_queue_enable(&stream->queue, 0);
+ 		uvc_video_clock_cleanup(stream);
+ 		return 0;
 
 
