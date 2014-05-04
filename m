@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaEDPlq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36139 "EHLO
+	id S1755867AbaEDQiF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:38:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36163 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaEDPln (ORCPT
+	with ESMTP id S1754104AbaEDPlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:43 -0400
+	Sun, 4 May 2014 11:41:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 074/158] nfsd4: leave reply buffer space for failed setattr
-Date: Sun,  4 May 2014 11:39:43 -0400
-Message-Id: <20140504154039.966436385@linuxfoundation.org>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 104/158] usb: gadget: atmel_usba: fix crashed during stopping when DEBUG is enabled
+Date: Sun,  4 May 2014 11:40:13 -0400
+Message-Id: <20140504154044.086260694@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,31 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit 04819bf6449094e62cebaf5199d85d68d711e667 upstream.
+commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
 
-This fixes an ommission from 18032ca062e621e15683cb61c066ef3dc5414a7b
-"NFSD: Server implementation of MAC Labeling", which increased the size
-of the setattr error reply without increasing COMPOUND_ERR_SLACK_SPACE.
+commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
+unbinding) introduced a crash when DEBUG is enabled.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+The debug trace in the atmel_usba_stop function made the assumption that the
+driver pointer passed in parameter was not NULL, but since the commit above,
+such assumption was no longer always true.
+
+This commit now uses the driver pointer stored in udc which fixes this
+issue.
+
+[ balbi@ti.com : improved commit log a bit ]
+
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfsd.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/atmel_usba_udc.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfsd/nfsd.h
-+++ b/fs/nfsd/nfsd.h
-@@ -282,7 +282,7 @@ void		nfsd_lockd_shutdown(void);
-  * reason.
-  */
- #define	COMPOUND_SLACK_SPACE		140    /* OP_GETFH */
--#define COMPOUND_ERR_SLACK_SPACE	12     /* OP_SETATTR */
-+#define COMPOUND_ERR_SLACK_SPACE	16     /* OP_SETATTR */
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1827,12 +1827,12 @@ static int atmel_usba_stop(struct usb_ga
+ 	toggle_bias(0);
+ 	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
  
- #define NFSD_LAUNDROMAT_MINTIMEOUT      1   /* seconds */
+-	udc->driver = NULL;
+-
+ 	clk_disable_unprepare(udc->hclk);
+ 	clk_disable_unprepare(udc->pclk);
  
+-	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
++	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
++
++	udc->driver = NULL;
+ 
+ 	return 0;
+ }
 
 
