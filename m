@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634AbaEDQHB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:07:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36583 "EHLO
+	id S1755653AbaEDQHa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:07:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710AbaEDPmb (ORCPT
+	with ESMTP id S1754706AbaEDPmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.10 57/86] reiserfs: fix race in readdir
-Date: Sun,  4 May 2014 11:41:32 -0400
-Message-Id: <20140504154148.189057778@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH 3.10 37/86] USB: fix crash during hotplug of PCI USB controller card
+Date: Sun,  4 May 2014 11:41:12 -0400
+Message-Id: <20140504154145.429407446@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,47 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
+commit a2ff864b53eac9a0e9b05bfe9d1781ccd6c2af71 upstream.
 
-jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
+The code in hcd-pci.c that matches up EHCI controllers with their
+companion UHCI or OHCI controllers assumes that the private drvdata
+fields don't get set too early.  However, it turns out that this field
+gets set by usb_create_hcd(), before hcd-pci expects it, and this can
+result in a crash when two controllers are probed in parallel (as can
+happen when a new controller card is hotplugged).
 
-The -ENOENT is due to readdir calling dir_emit on the same entry twice.
+The companions_rwsem lock was supposed to prevent this sort of thing,
+but usb_create_hcd() is called outside the scope of the rwsem.
 
-If the dir_emit callback sleeps and the tree is changed underneath us,
-we won't be able to trust deh_offset(deh) anymore. We need to save
-next_pos before we might sleep so we can find the next entry.
+A simple solution is to check that the root-hub pointer has been
+initialized as well as the drvdata field.  This doesn't happen until
+usb_add_hcd() is called; that call and the check are both protected by
+the rwsem.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+This patch should be applied to stable kernels from 3.10 onward.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Stefani Seibold <stefani@seibold.net>
+Tested-by: Stefani Seibold <stefani@seibold.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/dir.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/hcd-pci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -128,6 +128,7 @@ int reiserfs_readdir_dentry(struct dentr
- 				char *d_name;
- 				off_t d_off;
- 				ino_t d_ino;
-+				loff_t cur_pos = deh_offset(deh);
- 
- 				if (!de_visible(deh))
- 					/* it is hidden entry */
-@@ -200,8 +201,9 @@ int reiserfs_readdir_dentry(struct dentr
- 				if (local_buf != small_buf) {
- 					kfree(local_buf);
- 				}
--				// next entry should be looked for with such offset
--				next_pos = deh_offset(deh) + 1;
-+
-+				/* deh_offset(deh) may be invalid now. */
-+				next_pos = cur_pos + 1;
- 
- 				if (item_moved(&tmp_ih, &path_to_entry)) {
- 					set_cpu_key_k_offset(&pos_key,
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -75,7 +75,7 @@ static void for_each_companion(struct pc
+ 				PCI_SLOT(companion->devfn) != slot)
+ 			continue;
+ 		companion_hcd = pci_get_drvdata(companion);
+-		if (!companion_hcd)
++		if (!companion_hcd || !companion_hcd->self.root_hub)
+ 			continue;
+ 		fn(pdev, hcd, companion, companion_hcd);
+ 	}
 
 
