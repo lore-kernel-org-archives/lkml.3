@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaEDMlr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 08:41:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39199 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753383AbaEDMlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 08:41:46 -0400
-Message-ID: <53663565.9080306@redhat.com>
-Date: Sun, 04 May 2014 08:41:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753797AbaEDM5z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 08:57:55 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:39865 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbaEDM5x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 08:57:53 -0400
 MIME-Version: 1.0
-To: Preeti Murthy <preeti.lkml@gmail.com>, umgwanakikbuti@gmail.com
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        george.mccollister@gmail.com, ktkhai@parallels.com,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-References: <20140502004237.79dd3de6@annuminas.surriel.com>	<1399011219.5233.55.camel@marge.simpson.net>	<53633B81.1080403@redhat.com> <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
-In-Reply-To: <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
+In-Reply-To: <2225372.rvnmuAdhHE@phil>
+References: <1398973835-26303-1-git-send-email-b.galvani@gmail.com>
+	<2225372.rvnmuAdhHE@phil>
+Date: Sun, 4 May 2014 14:57:52 +0200
+Message-ID: <CABuKBe+fFCU2__rEHfiU+XPQwKE613VBxQ4=8xiA3PXQkBiMDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] of: add bq and radxa vendor prefixes
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Beniamino Galvani <b.galvani@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 07:44 AM, Preeti Murthy wrote:
-> Hi Rik, Mike
-> 
-> On Fri, May 2, 2014 at 12:00 PM, Rik van Riel <riel@redhat.com> wrote:
->> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
->>> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
->>>
->>>> Whether or not this is the right thing to do remains to be seen,
->>>> but it does allow us to verify whether or not the wake_affine
->>>> strategy of always doing affine wakeups and only disabling them
->>>> in a specific circumstance is sound, or needs rethinking...
->>>
->>> Yes, it needs rethinking.
->>>
->>> I know why you want to try this, yes, select_idle_sibling() is very much
->>> a two faced little bitch.
+2014-05-02 1:32 GMT+02:00 Heiko Stübner <heiko@sntech.de>:
+> Hi Beniamino,
+>
+> Am Donnerstag, 1. Mai 2014, 21:50:34 schrieb Beniamino Galvani:
+>> Add new vendor prefixes for:
 >>
->> My biggest problem with select_idle_sibling and wake_affine in
->> general is that it will override NUMA placement, even when
->> processes only wake each other up infrequently...
-> 
-> As far as my understanding goes, the logic in select_task_rq_fair()
-> does wake_affine() or calls select_idle_sibling() only at those
-> levels of sched domains where the flag SD_WAKE_AFFINE is set.
-> This flag is not set at the numa domain and hence they will not be
-> balancing across numa nodes. So I don't understand how
-> *these functions* are affecting NUMA placements.
+>>     * bq, a company that sells multimedia devices and 3D printers
+>
+> bq is actually only a brandname. The company itself is "Mundo Reader S.L.".
+> I'm not sure what the actual policy is concerning the vendor prefix, i.e. if it
+> should use the visible brand name or the actual company name.
+>
+> I.e. another possibility would be to add the vendor prefix
+>         mundoreader     Mundo Reader S.L.
+> and name the currie
+>         mundoreader,bq-curie2
 
-Even on 8-node DL980 systems, the NUMA distance in the
-SLIT table is less than RECLAIM_DISTANCE, and we will
-do wake_affine across the entire system.
+I think we should stick to the brand name, as this is the name people know.
 
-> The wake_affine() and select_idle_sibling() will shuttle tasks
-> within a NUMA node as far as I can see.i.e. if the cpu that the task
-> previously ran on and the waker cpu belong to the same node.
-> Else they are not called.
+>
+>
+> Heiko
+>
+>>     * Radxa, manufacturer of ARM boards
+>>
+>> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
+>> ---
+>>  Documentation/devicetree/bindings/vendor-prefixes.txt |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> b/Documentation/devicetree/bindings/vendor-prefixes.txt index
+>> abc3080..6f8177c 100644
+>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>> @@ -21,6 +21,7 @@ atmel       Atmel Corporation
+>>  auo  AU Optronics Corporation
+>>  avago        Avago Technologies
+>>  bosch        Bosch Sensortec GmbH
+>> +bq   bq
+>>  brcm Broadcom Corporation
+>>  buffalo      Buffalo, Inc.
+>>  calxeda      Calxeda
+>> @@ -98,6 +99,7 @@ powervr     PowerVR (deprecated, use img)
+>>  qca  Qualcomm Atheros, Inc.
+>>  qcom Qualcomm Technologies, Inc
+>>  qnap QNAP Systems, Inc.
+>> +radxa        Radxa
+>>  raidsonic    RaidSonic Technology GmbH
+>>  ralink       Mediatek/Ralink Technology Corp.
+>>  ramtron      Ramtron International
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-That is what I first hoped, too. I was wrong.
 
-> If the prev_cpu and the waker cpu are on different NUMA nodes
-> then naturally the tasks will get shuttled across NUMA nodes but
-> the culprits are the find_idlest* functions.
->    They do a top-down search for the idlest group and cpu, starting
-> at the NUMA domain *attached to the waker and not the prev_cpu*.
-> This means that the task will end up on a different NUMA node.
-> Looks to me that the problem lies here and not in the wake_affine()
-> and select_idle_siblings().
-
-I have a patch for find_idlest_group that takes the NUMA
-distance between each group and the task's preferred node
-into account.
-
-However, as long as the wake_affine stuff still gets to
-override it, that does not make much difference :)
 
 -- 
-All rights reversed
+motzblog.wordpress.com
