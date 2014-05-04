@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238AbaEDQWo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:22:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36368 "EHLO
+	id S1756226AbaEDQWm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:22:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbaEDPmJ (ORCPT
+	with ESMTP id S1754340AbaEDPmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:09 -0400
+	Sun, 4 May 2014 11:42:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Tariq Saeed <tariq.x.saeed@oracle.com>,
-        Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 144/158] ocfs2: fix panic on kfree(xattr->name)
-Date: Sun,  4 May 2014 11:40:53 -0400
-Message-Id: <20140504154049.598108902@linuxfoundation.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 147/158] block: Fix for_each_bvec()
+Date: Sun,  4 May 2014 11:40:56 -0400
+Message-Id: <20140504154050.002033457@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -31,47 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit f81c20158f8d5f7938d5eb86ecc42ecc09273ce6 upstream.
+commit b7aa84d9cb9f26da1a9312c3e39dbd1a3c25a426 upstream.
 
-Commit 9548906b2bb7 ('xattr: Constify ->name member of "struct xattr"')
-missed that ocfs2 is calling kfree(xattr->name).  As a result, kernel
-panic occurs upon calling kfree(xattr->name) because xattr->name refers
-static constant names.  This patch removes kfree(xattr->name) from
-ocfs2_mknod() and ocfs2_symlink().
+Commit 4550dd6c6b062 introduced for_each_bvec() which iterates over each
+bvec attached to a bio or bip. However, the macro fails to check bi_size
+before dereferencing which can lead to crashes while counting/mapping
+integrity scatterlist segments.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Reported-by: Tariq Saeed <tariq.x.saeed@oracle.com>
-Tested-by: Tariq Saeed <tariq.x.saeed@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/namei.c |    2 --
- 1 file changed, 2 deletions(-)
+ include/linux/bio.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/ocfs2/namei.c
-+++ b/fs/ocfs2/namei.c
-@@ -450,7 +450,6 @@ leave:
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -216,9 +216,9 @@ static inline void bvec_iter_advance(str
+ }
  
- 	brelse(new_fe_bh);
- 	brelse(parent_fe_bh);
--	kfree(si.name);
- 	kfree(si.value);
+ #define for_each_bvec(bvl, bio_vec, iter, start)			\
+-	for ((iter) = start;						\
+-	     (bvl) = bvec_iter_bvec((bio_vec), (iter)),			\
+-		(iter).bi_size;						\
++	for (iter = (start);						\
++	     (iter).bi_size &&						\
++		((bvl = bvec_iter_bvec((bio_vec), (iter))), 1);	\
+ 	     bvec_iter_advance((bio_vec), &(iter), (bvl).bv_len))
  
- 	ocfs2_free_dir_lookup_result(&lookup);
-@@ -1855,7 +1854,6 @@ bail:
  
- 	brelse(new_fe_bh);
- 	brelse(parent_fe_bh);
--	kfree(si.name);
- 	kfree(si.value);
- 	ocfs2_free_dir_lookup_result(&lookup);
- 	if (inode_ac)
 
 
