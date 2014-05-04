@@ -1,171 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751300AbaEDOZb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 10:25:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8306 "EHLO mga02.intel.com"
+	id S1751660AbaEDOdA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 10:33:00 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60325 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaEDOZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 10:25:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,982,1389772800"; 
-   d="scan'208";a="534452740"
-Message-ID: <53664DD3.60907@intel.com>
-Date: Sun, 04 May 2014 22:25:23 +0800
-From: Xiao Jin <jin.xiao@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1750962AbaEDOc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 10:32:59 -0400
+Date: Sun, 4 May 2014 10:32:51 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: linux-mm@kvack.org
+Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 9/9] mm: memcontrol: rewrite uncharge API
+Message-ID: <20140504143251.GA1524@cmpxchg.org>
+References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
+ <1398889543-23671-10-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yanmin.zhang@intel.com,
-        juan.zou@intel.com, david.a.cohen@linux.intel.com
-Subject: Re: [PATCH] USB: ehci-hub: wait for RESUME finished when hub try
- to clear SUSPEND
-References: <Pine.LNX.4.44L0.1405031107350.16021-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1405031107350.16021-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398889543-23671-10-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 30, 2014 at 04:25:43PM -0400, Johannes Weiner wrote:
+> The memcg uncharging code that is involved towards the end of a page's
+> lifetime - truncation, reclaim, swapout, migration - is impressively
+> complicated and fragile.
+> 
+> Because anonymous and file pages were always charged before they had
+> their page->mapping established, uncharges had to happen when the page
+> type could be known from the context, as in unmap for anonymous, page
+> cache removal for file and shmem pages, and swap cache truncation for
+> swap pages.  However, these operations also happen well before the
+> page is actually freed, and so a lot of synchronization is necessary:
+> 
+> - On page migration, the old page might be unmapped but then reused,
+>   so memcg code has to prevent an untimely uncharge in that case.
+>   Because this code - which should be a simple charge transfer - is so
+>   special-cased, it is not reusable for replace_page_cache().
+> 
+> - Swap cache truncation happens during both swap-in and swap-out, and
+>   possibly repeatedly before the page is actually freed.  This means
+>   that the memcg swapout code is called from many contexts that make
+>   no sense and it has to figure out the direction from page state to
+>   make sure memory and memory+swap are always correctly charged.
+> 
+> But now that charged pages always have a page->mapping, introduce
+> mem_cgroup_uncharge(), which is called after the final put_page(),
+> when we know for sure that nobody is looking at the page anymore.
+> 
+> For page migration, introduce mem_cgroup_migrate(), which is called
+> after the migration is successful and the new page is fully rmapped.
+> Because the old page is no longer uncharged after migration, prevent
+> double charges by decoupling the page's memcg association (PCG_USED
+> and pc->mem_cgroup) from the page holding an actual charge.  The new
+> bits PCG_MEM and PCG_MEMSW represent the respective charges and are
+> transferred to the new page during migration.
+> 
+> mem_cgroup_migrate() is suitable for replace_page_cache() as well.
+> 
+> Swap accounting is massively simplified: because the page is no longer
+> uncharged as early as swap cache deletion, a new mem_cgroup_swapout()
+> can transfer the page's memory+swap charge (PCG_MEMSW) to the swap
+> entry before the final put_page() in page reclaim.
+> 
+> Finally, because pages are now charged under proper serialization
+> (anon: exclusive; cache: page lock; swapin: page lock; migration: page
+> lock), and uncharged under full exclusion, they can not race with
+> themselves.  Because they are also off-LRU during charge/uncharge,
+> charge migration can not race, with that, either.  Remove the crazily
+> expensive the page_cgroup lock and set pc->flags non-atomically.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-On 05/03/2014 11:20 PM, Alan Stern wrote:
-> On Sat, 3 May 2014, xiao jin wrote:
->
->> We use usb ehci to connect with modem and run stress test on ehci
->> remote wake. Sometimes usb disconnect. We add more debug ftrace
->> (Kernel version: 3.10) and list the key log to show how problem
->> happened.
->>
->> <idle>-0     [000] d.h2 26879.385095: ehci_irq: irq status 1008c PPCE FLR PCD
->> <idle>-0     [000] d.h2 26879.385099: ehci_irq: rh_state[2] hcd->state[132] pstatus[0][238014c5] suspended_ports[1] reset_done[0]
-=> kernel receive a remote wakeup irq from controller
->> <...>-12873 [000] d..1 26879.393536: ehci_hub_control: GetStatus port:1 status 238014c5 17  ERR POWER sig=k SUSPEND RESUME PE CONNECT
-=> PORTSC = 238014c5 (line status = K-state, suspend = 1, force port 
-resume = 1, J-to-K transition is detected)
->> <...>-12873 [000] d..1 26879.393549: ehci_hub_control: typeReq [2301] wIndex[1] wValue[2]
->> <...>-12873 [000] d..1 26879.393553: ehci_hub_control: [ehci_hub_control]line[891]  port[0] hostpc_reg [44000202]->[44000202]
->> <idle>-0     [001] ..s. 26879.403122: ehci_hub_status_data: wgq[ehci_hub_status_data] ignore_oc[0] resuming_ports[1]
->> <...>-12873 [000] d..1 26879.413379: ehci_hub_control: [ehci_hub_control]line[907]  port[0] write portsc_reg[238014c5] reset_done[2105769]
-=> kernel write 238014c5 to PORTSC
->> <...>-12873 [000] d..1 26879.453173: ehci_hub_control: GetStatus port:1 status 23801885 17  ERR POWER sig=j SUSPEND PE CONNECT
-=> PORTSC = 23801885 (line status = J-state, suspend = 1), is the status 
-weird?
->> <...>-12873 [000] .... 26879.473158: check_port_resume_type: port 1 status 0000.0507 after resume, -19
->> <...>-12873 [000] .... 26879.473160: usb_port_resume: status = -19 after check_port_resume_type
->> <...>-12873 [000] .... 26879.473161: usb_port_resume: can't resume, status -19
->> <...>-12873 [000] .... 26879.473162: hub_port_logical_disconnect: logical disconnect on port 1
->
-> This is a little difficult to understand...
->
+Follow-up fixlets to this change that fell out of more testing in
+production and more auditing so far:
 
-We add some debug log manually, please let me explain a little more. See 
-above "=>".
+- Document mem_cgroup_move_account() exclusion
+- Catch uncharged swapin readahead pages in mem_cgroup_swapout()
+- Fix DEBUG_VM build after last-minute identifier rename
+- Drop duplicate lru_cache_add_active_or_unevictable() in THP migration
 
->> There is a in-band remote wakeup and controller run in k-state. Then kernel
->
-> What do you mean by "in-band"?
->
-
-We use EHCI as host and have two kinds of mechanism to remote wakeup 
-event, "in-band" is ehci controller self wakeup, sorry to make you 
-misunderstanding.
-
->> driver(ClearPortFeature/USB_PORT_FEAT_SUSPEND) write RESUME|LS(k-state) bit
->> into controller.
->
-> Why did it do that?  Did the kernel try to resume the port at the same
-> time as the device issued a remote wakeup request?  In other words, was
-> there a race between resume and remote wakeup?
->
-
-Yes, I mean a race between kernel driver resume and controller remote 
-wakeup.
-
->>   It makes controller status weird.
->
-> Why?  Your log shows that the RESUME bit was already turned on, so
-> writing a 1 to it shouldn't make any difference.  (And the LS(k-state)
-> bit is RO, so writing a 1 to it shouldn't matter.)
->
-
-Here the problem is, after remote wakeup, the controller still is in 
-SUSPEND and kernel report disconnect finally. Could kernel write 
-"SUSPEND" or "Force Port Resume" bit be related to the problem we meet with?
-
->>   It's defined in EHCI
->> controller spec(Revision 1.0), "If it has enabled remote wake-up, a K-state
->> on the bus will turn the transceiver clock and generate an interrupt. The
->> software will then have to wait 20 ms for the resume to complete and the
->> port to go back to an active state."
->
-> Where in the spec did you find that quote?  It's not present in my copy
-> of the EHCI Rev 1.0 spec.
->
-
-I am sorry to make a mistake, I quote it from controller reference 
-manual. I can find the similar definition in EHCI Rev 1.0,
-4.3.1 Port Suspend/Resume.
-
-"When Force Port Resume bit is a one, the host controller sends resume 
-signaling down the port. System software times the duration of the 
-resume (nominally 20 milliseconds) then sets the Force Port Resume bit 
-to a zero."
-
-
->>   In this case Kernel should wait for
->> the wakeup finished, then judge what should do next step.
->>
->> We have some thought and give a patch. This patch is to wait for controller
->> RESUME finished when hub try to clear port SUSPEND feature.
->>
-
->
-> This is definitely wrong.  For one thing, you mustn't have a 20-ms
-> delay with interrupts disabled.  For another, the spec states (Table
-> 2-16, the entry for bits 11:10) that the Line Status value is valid
-> only when the port enable bit is 0, so you shouldn't rely on it.
-> Lastly, there really is no need to do anything, because the remote
-> wakeup will finish all by itself.
->
-
-I agree disable irq for maximum 20-ms is not good, but I can find 
-another case when ehci_hub_control() deal with GetPortStatus.
-
-I have no idea how controller run, from both EHCI spec and reference 
-manual, I can only deduce that it's better kernel driver don't touch 
-PORTSC until resume finished. Otherwise how to explain the problem we 
-meet with? (After remote wakeup, the controller still is in SUSPEND and 
-kernel report disconnect finally.)
-
-When we try the original change in the mail, we never see the same 
-problem until now.
-
-
-> Try the patch below instead.
->
-
-OK.
-
-Jin
-
-> Alan Stern
->
->
->
-> Index: usb-3.15/drivers/usb/host/ehci-hub.c
-> ===================================================================
-> --- usb-3.15.orig/drivers/usb/host/ehci-hub.c
-> +++ usb-3.15/drivers/usb/host/ehci-hub.c
-> @@ -935,7 +935,8 @@ static int ehci_hub_control (
->   				break;
->   			}
->   #endif
-> -			if (!(temp & PORT_SUSPEND))
-> +			/* Port not suspended, or remote wakeup in progress? */
-> +			if (!(temp & PORT_SUSPEND) || (temp & PORT_RESUME))
->   				break;
->   			if ((temp & PORT_PE) == 0)
->   				goto error;
->
-
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 0add8b7b3a6c..f73df16b8115 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3387,6 +3387,12 @@ static int mem_cgroup_move_account(struct page *page,
+ 
+ 	mem_cgroup_charge_statistics(from, page, -nr_pages);
+ 
++	/*
++	 * It is safe to change pc->mem_cgroup here because the page
++	 * is referenced, charged, and isolated - we can't race with
++	 * uncharging, charging, migration, or LRU putback.
++	 */
++
+ 	/* caller should have done css_get */
+ 	pc->mem_cgroup = to;
+ 	mem_cgroup_charge_statistics(to, page, nr_pages);
+@@ -6234,6 +6240,12 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+ 
+ 	pc = lookup_page_cgroup(page);
+ 
++	/* Readahead page, never charged */
++	if (!PageCgroupUsed(pc))
++		return;
++
++	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
++
+ 	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
+ 	VM_BUG_ON_PAGE(oldid, page);
+ 
+@@ -6723,8 +6735,8 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+ 	if (!PageCgroupUsed(pc))
+ 		return;
+ 
+-	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), page);
+-	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
++	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
++	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), oldpage);
+ 	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
+ 
+ 	if (PageTransHuge(oldpage)) {
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 80d33e62eb16..afe688021699 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1839,7 +1839,6 @@ fail_putback:
+ 	 */
+ 	flush_cache_range(vma, mmun_start, mmun_end);
+ 	page_add_new_anon_rmap(new_page, vma, mmun_start);
+-	lru_cache_add_active_or_unevictable(new_page, vma);
+ 	pmdp_clear_flush(vma, mmun_start, pmd);
+ 	set_pmd_at(mm, mmun_start, pmd, entry);
+ 	flush_tlb_range(vma, mmun_start, mmun_end);
