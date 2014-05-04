@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341AbaEDQtu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:49:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36001 "EHLO
+	id S1756825AbaEDQuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:50:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35998 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867AbaEDPl3 (ORCPT
+	with ESMTP id S1753377AbaEDPl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:29 -0400
+	Sun, 4 May 2014 11:41:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Fries <David@Fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [PATCH 3.14 051/158] w1: fix w1_send_slave dropping a slave id
-Date: Sun,  4 May 2014 11:39:20 -0400
-Message-Id: <20140504154036.889265027@linuxfoundation.org>
+        Tomas Novotny <tomas@novotny.cz>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.14 050/158] mfd: twl-core: Fix accessibility of some twl4030 audio registers
+Date: Sun,  4 May 2014 11:39:19 -0400
+Message-Id: <20140504154036.794192030@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,77 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Fries <David@Fries.net>
+From: Tomas Novotny <tomas@novotny.cz>
 
-commit 6b355b33a64fd6d8ead2b838ec16fb9b551f71e8 upstream.
+commit 56816b700c8c773270f3aaf4c92be53e359a03fd upstream.
 
-Previous logic,
-if (avail > 8) {
-	store slave;
-	return;
-}
-send data; clear;
+There are some unused registers in twl4030 at I2C address 0x49 and function
+twl4030_49_nop_reg() is used to check accessibility of that registers. These
+registers are written in decimal format but the values are correct in
+hexadecimal format. (It can be checked few lines above the patched code -
+these registers are marked as unused there.)
 
-The logic error is, if there isn't space send the buffer and clear,
-but the slave wasn't added to the now empty buffer loosing that slave
-id.  It also should have been "if (avail >= 8)" because when it is 8,
-there is space.
+As a consequence three registers of audio submodule are treated as
+inaccessible (preamplifier carkit right and both handsfree registers).
 
-Instead, if there isn't space send and clear the buffer, then there is
-always space for the slave id.
-
-Signed-off-by: David Fries <David@Fries.net>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Signed-off-by: Tomas Novotny <tomas@novotny.cz>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/w1/w1_netlink.c |   27 ++++++++++++++-------------
- 1 file changed, 14 insertions(+), 13 deletions(-)
+ drivers/mfd/twl-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_mast
- 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
- 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
- 	int avail;
-+	u64 *data;
- 
- 	/* update kernel slave list */
- 	w1_slave_found(dev, rn);
- 
- 	avail = dev->priv_size - cmd->len;
- 
--	if (avail > 8) {
--		u64 *data = (void *)(cmd + 1) + cmd->len;
--
--		*data = rn;
--		cmd->len += 8;
--		hdr->len += 8;
--		msg->len += 8;
--		return;
-+	if (avail < 8) {
-+		msg->ack++;
-+		cn_netlink_send(msg, 0, GFP_KERNEL);
-+
-+		msg->len = sizeof(struct w1_netlink_msg) +
-+			sizeof(struct w1_netlink_cmd);
-+		hdr->len = sizeof(struct w1_netlink_cmd);
-+		cmd->len = 0;
- 	}
- 
--	msg->ack++;
--	cn_netlink_send(msg, 0, GFP_KERNEL);
-+	data = (void *)(cmd + 1) + cmd->len;
- 
--	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
--	hdr->len = sizeof(struct w1_netlink_cmd);
--	cmd->len = 0;
-+	*data = rn;
-+	cmd->len += 8;
-+	hdr->len += 8;
-+	msg->len += 8;
- }
- 
- static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -282,11 +282,11 @@ static struct reg_default twl4030_49_def
+ static bool twl4030_49_nop_reg(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
+-	case 0:
+-	case 3:
+-	case 40:
+-	case 41:
+-	case 42:
++	case 0x00:
++	case 0x03:
++	case 0x40:
++	case 0x41:
++	case 0x42:
+ 		return false;
+ 	default:
+ 		return true;
 
 
