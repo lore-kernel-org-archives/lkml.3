@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbaEDQEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:04:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36620 "EHLO
+	id S1754752AbaEDPme (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaEDPmf (ORCPT
+	with ESMTP id S1754552AbaEDPmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:35 -0400
+	Sun, 4 May 2014 11:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 52/86] SCSI: qla2xxx: fix error handling of qla2x00_mem_alloc()
-Date: Sun,  4 May 2014 11:41:27 -0400
-Message-Id: <20140504154147.493342597@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 28/86] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:41:03 -0400
+Message-Id: <20140504154144.220152338@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,51 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit b2a72ec32d0f499aaadf41264232517a12326df0 upstream.
+commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
 
-qla2x00_mem_alloc() returns 1 on success and -ENOMEM on failure.  On the
-one hand the caller assumes non-zero is success but on the other hand
-the caller also assumes that it returns an error code.
+During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
 
-I've fixed it to return zero on success and a negative error code on
-failure.  This matches the documentation as well.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-[jejb: checkpatch fix]
-Fixes: e315cd28b9ef ('[SCSI] qla2xxx: Code changes for qla data structure refactoring')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+If i2c_new_dummy() fails for RTC device, fail also the probe for
+main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_os.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/max8998.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -2553,7 +2553,7 @@ qla2x00_probe_one(struct pci_dev *pdev,
- 	    ha->flags.enable_64bit_addressing ? "enable" :
- 	    "disable");
- 	ret = qla2x00_mem_alloc(ha, req_length, rsp_length, &req, &rsp);
--	if (!ret) {
-+	if (ret) {
- 		ql_log_pci(ql_log_fatal, pdev, 0x0031,
- 		    "Failed to allocate memory for adapter, aborting.\n");
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -152,6 +152,10 @@ static int max8998_i2c_probe(struct i2c_
+ 	mutex_init(&max8998->iolock);
  
-@@ -3458,10 +3458,10 @@ qla2x00_mem_alloc(struct qla_hw_data *ha
- 	else {
- 		qla2x00_set_reserved_loop_ids(ha);
- 		ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0123,
--		    "loop_id_map=%p. \n", ha->loop_id_map);
-+		    "loop_id_map=%p.\n", ha->loop_id_map);
- 	}
+ 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!max8998->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8998->rtc, max8998);
  
--	return 1;
-+	return 0;
- 
- fail_async_pd:
- 	dma_pool_free(ha->s_dma_pool, ha->ex_init_cb, ha->ex_init_cb_dma);
+ 	max8998_irq_init(max8998);
 
 
