@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaEDQWm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:22:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
+	id S1755670AbaEDQWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:22:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaEDPmK (ORCPT
+	with ESMTP id S1754446AbaEDPmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 147/158] block: Fix for_each_bvec()
-Date: Sun,  4 May 2014 11:40:56 -0400
-Message-Id: <20140504154050.002033457@linuxfoundation.org>
+        Kazuya Mio <k-mio@sx.jp.nec.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.14 148/158] ext4: FIBMAP ioctl causes BUG_ON due to handle EXT_MAX_BLOCKS
+Date: Sun,  4 May 2014 11:40:57 -0400
+Message-Id: <20140504154050.134260742@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,39 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Kazuya Mio <k-mio@sx.jp.nec.com>
 
-commit b7aa84d9cb9f26da1a9312c3e39dbd1a3c25a426 upstream.
+commit 4adb6ab3e0fa71363a5ef229544b2d17de6600d7 upstream.
 
-Commit 4550dd6c6b062 introduced for_each_bvec() which iterates over each
-bvec attached to a bio or bip. However, the macro fails to check bi_size
-before dereferencing which can lead to crashes while counting/mapping
-integrity scatterlist segments.
+When we try to get 2^32-1 block of the file which has the extent
+(ee_block=2^32-2, ee_len=1) with FIBMAP ioctl, it causes BUG_ON
+in ext4_ext_put_gap_in_cache().
 
-Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+To avoid the problem, ext4_map_blocks() needs to check the file logical block
+number. ext4_ext_put_gap_in_cache() called via ext4_map_blocks() cannot
+handle 2^32-1 because the maximum file logical block number is 2^32-2.
+
+Note that ext4_ind_map_blocks() returns -EIO when the block number is invalid.
+So ext4_map_blocks() should also return the same errno.
+
+Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/bio.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -216,9 +216,9 @@ static inline void bvec_iter_advance(str
- }
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -515,6 +515,10 @@ int ext4_map_blocks(handle_t *handle, st
+ 		  "logical block %lu\n", inode->i_ino, flags, map->m_len,
+ 		  (unsigned long) map->m_lblk);
  
- #define for_each_bvec(bvl, bio_vec, iter, start)			\
--	for ((iter) = start;						\
--	     (bvl) = bvec_iter_bvec((bio_vec), (iter)),			\
--		(iter).bi_size;						\
-+	for (iter = (start);						\
-+	     (iter).bi_size &&						\
-+		((bvl = bvec_iter_bvec((bio_vec), (iter))), 1);	\
- 	     bvec_iter_advance((bio_vec), &(iter), (bvl).bv_len))
- 
- 
++	/* We can handle the block number less than EXT_MAX_BLOCKS */
++	if (unlikely(map->m_lblk >= EXT_MAX_BLOCKS))
++		return -EIO;
++
+ 	/* Lookup extent status tree firstly */
+ 	if (ext4_es_lookup_extent(inode, map->m_lblk, &es)) {
+ 		ext4_es_lru_add(inode);
 
 
