@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaEDQUf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:20:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36410 "EHLO
+	id S1756200AbaEDQVA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:21:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754385AbaEDPmN (ORCPT
+	with ESMTP id S1754220AbaEDPmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:13 -0400
+	Sun, 4 May 2014 11:42:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.14 156/158] dt: tegra: remove non-existent clock IDs
-Date: Sun,  4 May 2014 11:41:05 -0400
-Message-Id: <20140504154051.204835199@linuxfoundation.org>
+        Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 3.14 158/158] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
+Date: Sun,  4 May 2014 11:41:07 -0400
+Message-Id: <20140504154051.472251228@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,51 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Aaron Sanders <aaron.sanders@hp.com>
 
-commit 9ef1af9ea28c23d0eaed97f7f5142788b6cf570a upstream.
+commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
 
-The Tegra124 clock DT binding currently provides 3 clocks that don't
-actually exist; 2 for NAND and one for UART5/UARTE. Delete these. While
-this is technically an incompatible DT ABI change, nothing could have
-used these clock IDs for anything practical, since the HW doesn't exist.
+Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+LD960: 03f0:0B39
+LCM220: 03f0:3139
+LCM960: 03f0:3239
+
+[ Johan: fix indentation and sort PIDs numerically ]
+
+Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/dt-bindings/clock/tegra124-car.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/pl2303.c |    3 +++
+ drivers/usb/serial/pl2303.h |    5 ++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/include/dt-bindings/clock/tegra124-car.h
-+++ b/include/dt-bindings/clock/tegra124-car.h
-@@ -29,7 +29,7 @@
- /* 10 (register bit affects spdif_in and spdif_out) */
- #define TEGRA124_CLK_I2S1 11
- #define TEGRA124_CLK_I2C1 12
--#define TEGRA124_CLK_NDFLASH 13
-+/* 13 */
- #define TEGRA124_CLK_SDMMC1 14
- #define TEGRA124_CLK_SDMMC4 15
- /* 16 */
-@@ -83,7 +83,7 @@
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -83,6 +83,9 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
+ 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
+ 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
++	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
+ 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
+ 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
+ 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -121,8 +121,11 @@
+ #define SUPERIAL_VENDOR_ID	0x5372
+ #define SUPERIAL_PRODUCT_ID	0x2303
  
- /* 64 */
- #define TEGRA124_CLK_UARTD 65
--#define TEGRA124_CLK_UARTE 66
-+/* 66 */
- #define TEGRA124_CLK_I2C3 67
- #define TEGRA124_CLK_SBC4 68
- #define TEGRA124_CLK_SDMMC3 69
-@@ -97,7 +97,7 @@
- #define TEGRA124_CLK_TRACE 77
- #define TEGRA124_CLK_SOC_THERM 78
- #define TEGRA124_CLK_DTV 79
--#define TEGRA124_CLK_NDSPEED 80
-+/* 80 */
- #define TEGRA124_CLK_I2CSLOW 81
- #define TEGRA124_CLK_DSIB 82
- #define TEGRA124_CLK_TSEC 83
+-/* Hewlett-Packard LD220-HP POS Pole Display */
++/* Hewlett-Packard POS Pole Displays */
+ #define HP_VENDOR_ID		0x03f0
++#define HP_LD960_PRODUCT_ID	0x0b39
++#define HP_LCM220_PRODUCT_ID	0x3139
++#define HP_LCM960_PRODUCT_ID	0x3239
+ #define HP_LD220_PRODUCT_ID	0x3524
+ 
+ /* Cressi Edy (diving computer) PC interface */
 
 
