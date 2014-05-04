@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278AbaEDQYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:24:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36300 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754410AbaEDPmH (ORCPT
+	id S1756316AbaEDQYo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:24:44 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:51742 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755260AbaEDQYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:07 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.14 154/158] ARM: tegra: remove UART5/UARTE from tegra124.dtsi
-Date: Sun,  4 May 2014 11:41:03 -0400
-Message-Id: <20140504154050.938613338@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
-References: <20140504154029.975081050@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 4 May 2014 12:24:40 -0400
+Date: Sun, 4 May 2014 18:24:22 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org, davem@davemloft.net,
+        jeffrey.t.kirsher@intel.com, dborkman@redhat.com, ast@plumgrid.com,
+        tklauser@distanz.ch, mpa@pengutronix.de, bhutchings@solarflare.com,
+        zonque@gmail.com, balbi@ti.com, mugunthanvnm@ti.com, t-kristo@ti.com,
+        mturquette@linaro.org, linux@arm.linux.org.uk, galak@codeaurora.org,
+        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, tony@atomide.com,
+        bcousson@baylibre.com
+Subject: Re: [PATCH v2 0/6] Add CPTS support for AM437x
+Message-ID: <20140504162422.GA28908@netboy>
+References: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Fri, May 02, 2014 at 12:01:58PM +0530, George Cherian wrote:
+> The series adds CPTS support for AM4372.
+> 
+> Patch 1 - DT changes w.r.t clock changes for AM33xx.
+> Patch 2 - CPTS clock name harcoding in the driver is removed. 
+> 	  Easier to pass the clock name from dt rather than hardcoding in driver.
+> 	  Also in prepration for DRA7x CPTS support.
+> Patch 3 - Enable the CPTS support for both DRA7x and AM4372 in the driver.
+> Patch 4 - Enable the Annexe F for L2 PTP for AM437x and DRA7x.
+> Patch 5 - Change the default clocksource to dpll_core_m5 
+> Patch 6 - DT changes for AM4372.
+> 
+> 
+> v1 -> v2
+> 	Patch 1 and 2 Re-ordering.
+> 	Seperate TS_BITS define for Hw version V2 and V3
 
-------------------
-
-From: Stephen Warren <swarren@nvidia.com>
-
-commit 862f0eea38409ff0d7f226c1245b787e3f0e2607 upstream.
-
-Tegra124 only has 4 UARTs. Parts of the documentation hint at a fifth
-UART, but this appears to be left-over from earlier SoC documentation.
-Remove the non-existent DT node for UART5.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/boot/dts/tegra124.dtsi |   13 -------------
- 1 file changed, 13 deletions(-)
-
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -164,19 +164,6 @@
- 		status = "disabled";
- 	};
- 
--	serial@70006400 {
--		compatible = "nvidia,tegra124-uart", "nvidia,tegra20-uart";
--		reg = <0x70006400 0x40>;
--		reg-shift = <2>;
--		interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
--		clocks = <&tegra_car TEGRA124_CLK_UARTE>;
--		resets = <&tegra_car 66>;
--		reset-names = "serial";
--		dmas = <&apbdma 20>, <&apbdma 20>;
--		dma-names = "rx", "tx";
--		status = "disabled";
--	};
--
- 	pwm@7000a000 {
- 		compatible = "nvidia,tegra124-pwm", "nvidia,tegra20-pwm";
- 		reg = <0x7000a000 0x100>;
-
-
+Acked-by: Richard Cochran <richardcochran@gmail.com>
