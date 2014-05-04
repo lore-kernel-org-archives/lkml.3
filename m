@@ -1,83 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544AbaEDG3V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 02:29:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38587 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaEDG3U (ORCPT
+	id S1753598AbaEDGdS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 02:33:18 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:36013 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaEDGdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 02:29:20 -0400
-Date: Sun, 4 May 2014 07:29:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: dcache shrink list corruption?
-Message-ID: <20140504062915.GQ18016@ZenIV.linux.org.uk>
-References: <20140430023142.GN18016@ZenIV.linux.org.uk>
- <CA+55aFypNxsjJTq_rc2Jx4p_3scJo2VWdt=e8n-9eJ-ZQphnpQ@mail.gmail.com>
- <20140430091515.GB3113@tucsk.piliscsaba.szeredi.hu>
- <20140502055127.GH18016@ZenIV.linux.org.uk>
- <CAELBmZC9g91+8B6HsnbmwWJBmiYXgMW6QfdREJYyd8EP5RpRpQ@mail.gmail.com>
- <20140502210813.GB32527@tucsk.piliscsaba.szeredi.hu>
- <CA+55aFzbtGwxTf_d97pSLc4hAciErGDdkOSzLkpt_hP-UmLPWg@mail.gmail.com>
- <20140502224022.GJ18016@ZenIV.linux.org.uk>
- <20140503042604.GM18016@ZenIV.linux.org.uk>
- <20140503182110.GN18016@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140503182110.GN18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 4 May 2014 02:33:17 -0400
+From: Qipan Li <swingboard@gmail.com>
+To: broonie@kernel.org, baohua@kernel.org
+Cc: linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        Qipan Li <Qipan.Li@csr.com>, Barry Song <Baohua.Song@csr.com>
+Subject: [PATCH v2 2/2] spi: sirf: decrease the interrupt count and latency of PIO mode 
+Date: Sun,  4 May 2014 14:32:36 +0800
+Message-Id: <1399185156-521-1-git-send-email-swingboard@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 07:21:11PM +0100, Al Viro wrote:
-> On Sat, May 03, 2014 at 05:26:04AM +0100, Al Viro wrote:
-> 
-> > See vfs.git#dentry_kill-3; warning - this is completely untested and I would
-> > really like comments on spinning case there (i.e. the one where select_collect()
-> > finds some stuff already on some other shrink list and nothing with zero
-> > refcount that wouldn't be there).  In that case (and it's basically "somebody
-> > else is evicting stuff in our subtree and they'd already picked everything
-> > we want evicted") I just let the loop in check_submounts_and_drop() repeat
-> > (we do have cond_resched() there).  Any better suggestions would be welcome...
-> 
-> Hmm...  As the matter of fact, the whole shrink_dcache_for_umount() could
-> be made a lot saner.  What we need is to reuse shrink_dcache_parent()
-> and follow it with d_walk() that would just go through whatever remains and
-> complain about the leaves of that.  For anon roots we'll obviously need to
-> wrap that into dget and d_drop/dput.
-> 
-> I'm testing that right now; everything seems to be working so far and if
-> it survives, I'll push that sucker out.  Total since the beginning of
-> the whole series:
->  fs/dcache.c            |  310 ++++++++++++++++++++++++++++++++---------------------------------------------------------
->  include/linux/dcache.h |    2 +
->  2 files changed, 112 insertions(+), 200 deletions(-)
+From: Qipan Li <Qipan.Li@csr.com>
 
-No regressions compared to mainline; force-pushed into vfs#dentry_kill-3.
-Review and testing would be very welcome...  Summary for that branch:
-(it's *not* a pull request yet; the thing really needs review)
-Shortlog:
-Al Viro (8):
-      fix races between __d_instantiate() and checks of dentry flags
-      fold d_kill() and d_free()
-      fold try_prune_one_dentry()
-      new helper: dentry_free()
-      expand the call of dentry_lru_del() in dentry_kill()
-      dentry_kill(): don't try to remove from shrink list
-      don't remove from shrink list in select_collect()
-      more graceful recovery in umount_collect()
+current PIO tranfer method be described as follows:
+1. fill as much as bytes but no more than 256 bytes(fifo size)
+2. enable oflow/uflow/txfifo_empty interrupt
+3. isr process 3 interrupt signal, do complete works.
+4. after isr done, if there are left bytes go into 1 else go into 5
+5. transfer end
 
-Miklos Szeredi (1):
-      dcache: don't need rcu in shrink_dentry_list()
+by current PIO transfer method:
+1. reduce interrupt counts in spi interrupt line.
+2. reduce interrupt latency because no do data fill/fetch in isr.
 
-Diffstat:
- fs/dcache.c            |  318 +++++++++++++++++++++++++++++------------------------------------------------------------
- fs/namei.c             |    6 +-
- include/linux/dcache.h |    2 +
- 3 files changed, 107 insertions(+), 219 deletions(-)
+Signed-off-by: Qipan Li <Qipan.Li@csr.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+---
+-v2
+use do {} while statement to replace for(;;) statement pointed by Mark Brown
+ drivers/spi/spi-sirf.c | 101 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 54 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/spi/spi-sirf.c b/drivers/spi/spi-sirf.c
+index 2d23899..95ac276 100644
+--- a/drivers/spi/spi-sirf.c
++++ b/drivers/spi/spi-sirf.c
+@@ -86,6 +86,7 @@
+ #define SIRFSOC_SPI_TX_DONE		BIT(1)
+ #define SIRFSOC_SPI_RX_OFLOW		BIT(2)
+ #define SIRFSOC_SPI_TX_UFLOW		BIT(3)
++#define SIRFSOC_SPI_RX_IO_DMA		BIT(4)
+ #define SIRFSOC_SPI_RX_FIFO_FULL	BIT(6)
+ #define SIRFSOC_SPI_TXFIFO_EMPTY	BIT(7)
+ #define SIRFSOC_SPI_RXFIFO_THD_REACH	BIT(8)
+@@ -265,41 +266,34 @@ static irqreturn_t spi_sirfsoc_irq(int irq, void *dev_id)
+ {
+ 	struct sirfsoc_spi *sspi = dev_id;
+ 	u32 spi_stat = readl(sspi->base + SIRFSOC_SPI_INT_STATUS);
+-
+-	writel(spi_stat, sspi->base + SIRFSOC_SPI_INT_STATUS);
+-
+ 	if (sspi->tx_by_cmd && (spi_stat & SIRFSOC_SPI_FRM_END)) {
+ 		complete(&sspi->tx_done);
+ 		writel(0x0, sspi->base + SIRFSOC_SPI_INT_EN);
++		writel(SIRFSOC_SPI_INT_MASK_ALL,
++				sspi->base + SIRFSOC_SPI_INT_STATUS);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+ 	/* Error Conditions */
+ 	if (spi_stat & SIRFSOC_SPI_RX_OFLOW ||
+ 			spi_stat & SIRFSOC_SPI_TX_UFLOW) {
++		complete(&sspi->tx_done);
+ 		complete(&sspi->rx_done);
+ 		writel(0x0, sspi->base + SIRFSOC_SPI_INT_EN);
++		writel(SIRFSOC_SPI_INT_MASK_ALL,
++				sspi->base + SIRFSOC_SPI_INT_STATUS);
++		return IRQ_HANDLED;
+ 	}
++	if (spi_stat & SIRFSOC_SPI_TXFIFO_EMPTY)
++		complete(&sspi->tx_done);
++	while (!(readl(sspi->base + SIRFSOC_SPI_INT_STATUS) &
++		SIRFSOC_SPI_RX_IO_DMA))
++		cpu_relax();
++	complete(&sspi->rx_done);
++	writel(0x0, sspi->base + SIRFSOC_SPI_INT_EN);
++	writel(SIRFSOC_SPI_INT_MASK_ALL,
++			sspi->base + SIRFSOC_SPI_INT_STATUS);
+ 
+-	if (spi_stat & (SIRFSOC_SPI_FRM_END
+-			| SIRFSOC_SPI_RXFIFO_THD_REACH))
+-		while (!((readl(sspi->base + SIRFSOC_SPI_RXFIFO_STATUS)
+-				& SIRFSOC_SPI_FIFO_EMPTY)) &&
+-				sspi->left_rx_word)
+-			sspi->rx_word(sspi);
+-
+-	if (spi_stat & (SIRFSOC_SPI_TXFIFO_EMPTY |
+-			SIRFSOC_SPI_TXFIFO_THD_REACH))
+-		while (!((readl(sspi->base + SIRFSOC_SPI_TXFIFO_STATUS)
+-				& SIRFSOC_SPI_FIFO_FULL)) &&
+-				sspi->left_tx_word)
+-			sspi->tx_word(sspi);
+-
+-	/* Received all words */
+-	if ((sspi->left_rx_word == 0) && (sspi->left_tx_word == 0)) {
+-		complete(&sspi->rx_done);
+-		writel(0x0, sspi->base + SIRFSOC_SPI_INT_EN);
+-	}
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -420,32 +414,45 @@ static void spi_sirfsoc_pio_transfer(struct spi_device *spi,
+ 	int timeout = t->len * 10;
+ 
+ 	sspi = spi_master_get_devdata(spi->master);
+-	writel(SIRFSOC_SPI_FIFO_RESET, sspi->base + SIRFSOC_SPI_RXFIFO_OP);
+-	writel(SIRFSOC_SPI_FIFO_RESET, sspi->base + SIRFSOC_SPI_TXFIFO_OP);
+-	writel(SIRFSOC_SPI_FIFO_START, sspi->base + SIRFSOC_SPI_RXFIFO_OP);
+-	writel(SIRFSOC_SPI_FIFO_START, sspi->base + SIRFSOC_SPI_TXFIFO_OP);
+-	writel(0, sspi->base + SIRFSOC_SPI_INT_EN);
+-	writel(SIRFSOC_SPI_INT_MASK_ALL, sspi->base + SIRFSOC_SPI_INT_STATUS);
+-	writel(readl(sspi->base + SIRFSOC_SPI_CTRL) | SIRFSOC_SPI_MUL_DAT_MODE |
+-		SIRFSOC_SPI_ENA_AUTO_CLR, sspi->base + SIRFSOC_SPI_CTRL);
+-	writel(sspi->left_tx_word - 1,
+-			sspi->base + SIRFSOC_SPI_TX_DMA_IO_LEN);
+-	writel(sspi->left_rx_word - 1,
+-			sspi->base + SIRFSOC_SPI_RX_DMA_IO_LEN);
+-	sspi->tx_word(sspi);
+-	writel(SIRFSOC_SPI_TXFIFO_EMPTY_INT_EN | SIRFSOC_SPI_TX_UFLOW_INT_EN |
+-		SIRFSOC_SPI_RX_OFLOW_INT_EN | SIRFSOC_SPI_RXFIFO_THD_INT_EN |
+-		SIRFSOC_SPI_TXFIFO_THD_INT_EN | SIRFSOC_SPI_FRM_END_INT_EN|
+-		SIRFSOC_SPI_RXFIFO_FULL_INT_EN,
+-		sspi->base + SIRFSOC_SPI_INT_EN);
+-	writel(SIRFSOC_SPI_RX_EN | SIRFSOC_SPI_TX_EN,
++	do {
++		writel(SIRFSOC_SPI_FIFO_RESET,
++			sspi->base + SIRFSOC_SPI_RXFIFO_OP);
++		writel(SIRFSOC_SPI_FIFO_RESET,
++			sspi->base + SIRFSOC_SPI_TXFIFO_OP);
++		writel(SIRFSOC_SPI_FIFO_START,
++			sspi->base + SIRFSOC_SPI_RXFIFO_OP);
++		writel(SIRFSOC_SPI_FIFO_START,
++			sspi->base + SIRFSOC_SPI_TXFIFO_OP);
++		writel(0, sspi->base + SIRFSOC_SPI_INT_EN);
++		writel(SIRFSOC_SPI_INT_MASK_ALL,
++			sspi->base + SIRFSOC_SPI_INT_STATUS);
++		writel(readl(sspi->base + SIRFSOC_SPI_CTRL) |
++			SIRFSOC_SPI_MUL_DAT_MODE | SIRFSOC_SPI_ENA_AUTO_CLR,
++			sspi->base + SIRFSOC_SPI_CTRL);
++		writel(min(sspi->left_tx_word, (u32)(256 / sspi->word_width))
++				- 1, sspi->base + SIRFSOC_SPI_TX_DMA_IO_LEN);
++		writel(min(sspi->left_rx_word, (u32)(256 / sspi->word_width))
++				- 1, sspi->base + SIRFSOC_SPI_RX_DMA_IO_LEN);
++		while (!((readl(sspi->base + SIRFSOC_SPI_TXFIFO_STATUS)
++			& SIRFSOC_SPI_FIFO_FULL)) && sspi->left_tx_word)
++			sspi->tx_word(sspi);
++		writel(SIRFSOC_SPI_TXFIFO_EMPTY_INT_EN |
++			SIRFSOC_SPI_TX_UFLOW_INT_EN |
++			SIRFSOC_SPI_RX_OFLOW_INT_EN,
++			sspi->base + SIRFSOC_SPI_INT_EN);
++		writel(SIRFSOC_SPI_RX_EN | SIRFSOC_SPI_TX_EN,
+ 			sspi->base + SIRFSOC_SPI_TX_RX_EN);
+-	if (wait_for_completion_timeout(&sspi->rx_done, timeout) == 0)
+-		dev_err(&spi->dev, "transfer timeout\n");
+-	writel(0, sspi->base + SIRFSOC_SPI_RXFIFO_OP);
+-	writel(0, sspi->base + SIRFSOC_SPI_TXFIFO_OP);
+-	writel(0, sspi->base + SIRFSOC_SPI_TX_RX_EN);
+-	writel(0, sspi->base + SIRFSOC_SPI_INT_EN);
++		if (!wait_for_completion_timeout(&sspi->tx_done, timeout) ||
++			!wait_for_completion_timeout(&sspi->rx_done, timeout)) {
++			dev_err(&spi->dev, "transfer timeout\n");
++			break;
++		}
++		while (!((readl(sspi->base + SIRFSOC_SPI_RXFIFO_STATUS)
++			& SIRFSOC_SPI_FIFO_EMPTY)) && sspi->left_rx_word)
++			sspi->rx_word(sspi);
++		writel(0, sspi->base + SIRFSOC_SPI_RXFIFO_OP);
++		writel(0, sspi->base + SIRFSOC_SPI_TXFIFO_OP);
++	} while (sspi->left_tx_word != 0 || sspi->left_rx_word != 0);
+ }
+ 
+ static int spi_sirfsoc_transfer(struct spi_device *spi, struct spi_transfer *t)
+-- 
+1.9.1
 
