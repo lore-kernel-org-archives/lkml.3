@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869AbaEDV3w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 17:29:52 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:51382 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649AbaEDV3u (ORCPT
+	id S1753881AbaEDVbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 17:31:25 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:43636 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606AbaEDVbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 17:29:50 -0400
-X-Google-Original-From: Jon Maxwell <jmaxwell@redhat.com>
-From: Jon Maxwell <jmaxwell37@gmail.com>
-To: netdev@vger.kernel.org
-Cc: stephen@networkplumber.org, davem@davemloft.net,
-        makita.toshiaki@lab.ntt.co.jp, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pirko@redhat.com, jmaxwell@redhat.com
-Subject: [PATCH net] bridge: Add port flap detection
-Date: Mon,  5 May 2014 07:29:34 +1000
-Message-Id: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Sun, 4 May 2014 17:31:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <53669C32.2010601@intel.com>
+References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
+	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
+	<CALCETrX8wCxRj9=F7_pM_SKdSxSYttMyLZKAWTy9HurAmtfC2w@mail.gmail.com>
+	<20140504184016.GA16438@gmail.com>
+	<53669C32.2010601@intel.com>
+Date: Sun, 4 May 2014 14:31:23 -0700
+X-Google-Sender-Auth: 9GcOb0jdqjnzlNhRldK36qDugk4
+Message-ID: <CA+55aFxA522TJ8ROr0AJMusvYitm2RntBfBNXAK1eych3TP=dw@mail.gmail.com>
+Subject: Re: [RFC/HACK] x86: Fast return to kernel
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
+On Sun, May 4, 2014 at 12:59 PM, H. Peter Anvin <h.peter.anvin@intel.com> wrote:
+>
+> Maybe let userspace sit in a tight loop doing RDTSC, and look for data
+> points too far apart to have been uninterrupted?
 
-Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
----
- net/bridge/br_fdb.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+That won't work, since Andy's patch improves on the "interrupt
+happened in kernel space", not on the user-space interrupt case.
 
-diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-index 9203d5a..c08607b 100644
---- a/net/bridge/br_fdb.c
-+++ b/net/bridge/br_fdb.c
-@@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
- 					source->dev->name);
- 		} else {
- 			/* fastpath: update of existing entry */
-+			if (source->port_no != fdb->dst->port_no &&
-+				net_ratelimit())
-+				br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
-+					source->dev->name,
-+					addr, source->port_no,
-+					fdb->dst->dev->name, addr,
-+					fdb->dst->port_no);
- 			fdb->dst = source;
- 			fdb->updated = jiffies;
- 			if (unlikely(added_by_user))
--- 
-1.8.3.1
+But some variation on that with a kernel module that does something like
 
+ - take over one CPU and force tons of timer interrupts on that CPU
+using the local APIC
+
+ - for (say) ten billion cycles, do something like this in that kernel module:
+
+   #define TEN_BILLION (10000000000)
+
+        unsigned long prev = 0, sum = 0, end = rdtsc() + TEN_BILLION;
+        for (;;) {
+                unsigned long tsc = rdtsc();
+                if (tsc > end)
+                        break;
+                if (tsc < prev + 500) {
+                        sum += tsc - prev;
+                }
+                prev = tsc;
+        }
+
+and see how big a fraction of the 10 billion cycles you capture in
+'sum'.  The bigger the fraction, the less time the timer interrupts
+stole from your CPU.
+
+That "500" is just a random cut-off. Any interrupt will take more than
+that many TSC cycles. So the above basically counts how much
+uninterrupted time that thread gets.
+
+Hmm?
+
+                   Linus
