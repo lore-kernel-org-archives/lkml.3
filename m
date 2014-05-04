@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290AbaEDPl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36200 "EHLO
+	id S932067AbaEDQaO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:30:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227AbaEDPly (ORCPT
+	with ESMTP id S1754276AbaEDPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:54 -0400
+	Sun, 4 May 2014 11:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 111/158] media: videodev2.h: add parenthesis around macro arguments
-Date: Sun,  4 May 2014 11:40:20 -0400
-Message-Id: <20140504154045.083649859@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 133/158] iser-target: Match FRMR descriptors to available session tags
+Date: Sun,  4 May 2014 11:40:42 -0400
+Message-Id: <20140504154048.091465726@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,41 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit aee786acfc0a12bcd37a1c60f3198fb25cf7181a upstream.
+commit f46d6a8a01d6bbd83a97140f30a72a89b038807b upstream.
 
-bt->width should be (bt)->width, and same for the other fields.
+This patch changes isert_conn_create_fastreg_pool() to follow
+logic in iscsi_target_locate_portal() for determining how many
+FRMR descriptors to allocate based upon the number of possible
+per-session command slots that are available.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+This addresses an OOPs in isert_reg_rdma() where due to the
+use of ISCSI_DEF_XMIT_CMDS_MAX could end up returning a bogus
+fast_reg_descriptor when the number of active tags exceeded
+the original hardcoded max.
+
+Note this also includes moving isert_conn_create_fastreg_pool()
+from isert_connect_request() to isert_put_login_tx() before
+posting the final Login Response PDU in order to determine the
+se_nacl->queue_depth (eg: number of tags) per session the target
+will be enforcing.
+
+v2 changes:
+  - Move isert_conn->conn_fr_pool list_head init into
+    isert_conn_request()
+v3 changes:
+  - Drop unnecessary list_empty() check in isert_reg_rdma()
+    (Sagi)
+
+Cc: Sagi Grimberg <sagig@mellanox.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- include/uapi/linux/videodev2.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   35 ++++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 15 deletions(-)
 
---- a/include/uapi/linux/videodev2.h
-+++ b/include/uapi/linux/videodev2.h
-@@ -1059,14 +1059,14 @@ struct v4l2_bt_timings {
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -436,11 +436,18 @@ isert_conn_create_fastreg_pool(struct is
+ {
+ 	struct fast_reg_descriptor *fr_desc;
+ 	struct isert_device *device = isert_conn->conn_device;
+-	int i, ret;
++	struct se_session *se_sess = isert_conn->conn->sess->se_sess;
++	struct se_node_acl *se_nacl = se_sess->se_node_acl;
++	int i, ret, tag_num;
++	/*
++	 * Setup the number of FRMRs based upon the number of tags
++	 * available to session in iscsi_target_locate_portal().
++	 */
++	tag_num = max_t(u32, ISCSIT_MIN_TAGS, se_nacl->queue_depth);
++	tag_num = (tag_num * 2) + ISCSIT_EXTRA_TAGS;
  
- /* A few useful defines to calculate the total blanking and frame sizes */
- #define V4L2_DV_BT_BLANKING_WIDTH(bt) \
--	(bt->hfrontporch + bt->hsync + bt->hbackporch)
-+	((bt)->hfrontporch + (bt)->hsync + (bt)->hbackporch)
- #define V4L2_DV_BT_FRAME_WIDTH(bt) \
--	(bt->width + V4L2_DV_BT_BLANKING_WIDTH(bt))
-+	((bt)->width + V4L2_DV_BT_BLANKING_WIDTH(bt))
- #define V4L2_DV_BT_BLANKING_HEIGHT(bt) \
--	(bt->vfrontporch + bt->vsync + bt->vbackporch + \
--	 bt->il_vfrontporch + bt->il_vsync + bt->il_vbackporch)
-+	((bt)->vfrontporch + (bt)->vsync + (bt)->vbackporch + \
-+	 (bt)->il_vfrontporch + (bt)->il_vsync + (bt)->il_vbackporch)
- #define V4L2_DV_BT_FRAME_HEIGHT(bt) \
--	(bt->height + V4L2_DV_BT_BLANKING_HEIGHT(bt))
-+	((bt)->height + V4L2_DV_BT_BLANKING_HEIGHT(bt))
+-	INIT_LIST_HEAD(&isert_conn->conn_fr_pool);
+ 	isert_conn->conn_fr_pool_size = 0;
+-	for (i = 0; i < ISCSI_DEF_XMIT_CMDS_MAX; i++) {
++	for (i = 0; i < tag_num; i++) {
+ 		fr_desc = kzalloc(sizeof(*fr_desc), GFP_KERNEL);
+ 		if (!fr_desc) {
+ 			pr_err("Failed to allocate fast_reg descriptor\n");
+@@ -498,6 +505,7 @@ isert_connect_request(struct rdma_cm_id
+ 	kref_get(&isert_conn->conn_kref);
+ 	mutex_init(&isert_conn->conn_mutex);
+ 	spin_lock_init(&isert_conn->conn_lock);
++	INIT_LIST_HEAD(&isert_conn->conn_fr_pool);
  
- /** struct v4l2_dv_timings - DV timings
-  * @type:	the type of the timings
+ 	cma_id->context = isert_conn;
+ 	isert_conn->conn_cm_id = cma_id;
+@@ -569,15 +577,6 @@ isert_connect_request(struct rdma_cm_id
+ 		goto out_mr;
+ 	}
+ 
+-	if (device->use_fastreg) {
+-		ret = isert_conn_create_fastreg_pool(isert_conn);
+-		if (ret) {
+-			pr_err("Conn: %p failed to create fastreg pool\n",
+-			       isert_conn);
+-			goto out_fastreg;
+-		}
+-	}
+-
+ 	ret = isert_conn_setup_qp(isert_conn, cma_id);
+ 	if (ret)
+ 		goto out_conn_dev;
+@@ -591,9 +590,6 @@ isert_connect_request(struct rdma_cm_id
+ 	return 0;
+ 
+ out_conn_dev:
+-	if (device->use_fastreg)
+-		isert_conn_free_fastreg_pool(isert_conn);
+-out_fastreg:
+ 	ib_dereg_mr(isert_conn->conn_mr);
+ out_mr:
+ 	ib_dealloc_pd(isert_conn->conn_pd);
+@@ -967,6 +963,15 @@ isert_put_login_tx(struct iscsi_conn *co
+ 	}
+ 	if (!login->login_failed) {
+ 		if (login->login_complete) {
++			if (isert_conn->conn_device->use_fastreg) {
++				ret = isert_conn_create_fastreg_pool(isert_conn);
++				if (ret) {
++					pr_err("Conn: %p failed to create"
++					       " fastreg pool\n", isert_conn);
++					return ret;
++				}
++			}
++
+ 			ret = isert_alloc_rx_descriptors(isert_conn);
+ 			if (ret)
+ 				return ret;
 
 
