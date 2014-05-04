@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaEDP0s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:26:48 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41965 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752576AbaEDP0p (ORCPT
+	id S1752326AbaEDP0k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:26:40 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:40297 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704AbaEDP0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:26:45 -0400
+	Sun, 4 May 2014 11:26:36 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Inki Dae <inki.dae@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
 Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
@@ -17,9 +17,9 @@ Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         seanpaul@chromium.org, marcheu@chromium.org,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/4] drm/exynos/mixer: planes are not disabled by setting dma_addr to zero
-Date: Sun,  4 May 2014 23:26:20 +0800
-Message-Id: <1399217181-26442-4-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 1/4] drm/exynos/mixer: move format definitions to regs-mixer
+Date: Sun,  4 May 2014 23:26:18 +0800
+Message-Id: <1399217181-26442-2-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
 References: <1399217181-26442-1-git-send-email-djkurtz@chromium.org>
@@ -27,66 +27,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Planes are disabled by calling the win_mode_disable() callback, not by
-calling win_mode_commit()[->vp_video_buffer] with dma_addr set to zero.
+These constants directly define register values, so move them to the
+register definition header.
 
-Thus, the comment in the pixel_format switch default clause is obsolete,
-we should always check if the pixel_format is supported, and therefore,
-since the driver does not actually supported single-buffer formats,
-buf_num will always be 2, and we drop the broken 1-buffer case.
+Also, the logic used for setting fmt from bpp is either/or, so just use
+if/else.
+
+** No functional change
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/gpu/drm/exynos/exynos_mixer.c | 17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/exynos/exynos_mixer.c | 19 ++++---------------
+ drivers/gpu/drm/exynos/regs-mixer.h   |  4 ++++
+ 2 files changed, 8 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_mixer.c b/drivers/gpu/drm/exynos/exynos_mixer.c
-index 40cf39b..b252ec7 100644
+index ce28881..475eb49 100644
 --- a/drivers/gpu/drm/exynos/exynos_mixer.c
 +++ b/drivers/gpu/drm/exynos/exynos_mixer.c
-@@ -382,7 +382,6 @@ static void vp_video_buffer(struct mixer_context *ctx, int win)
- 	unsigned long flags;
- 	struct hdmi_win_data *win_data;
- 	unsigned int x_ratio, y_ratio;
--	unsigned int buf_num = 1;
- 	dma_addr_t luma_addr[2], chroma_addr[2];
- 	bool tiled_mode = false;
- 	bool crcb_mode = false;
-@@ -393,16 +392,12 @@ static void vp_video_buffer(struct mixer_context *ctx, int win)
- 	switch (win_data->pixel_format) {
- 	case DRM_FORMAT_NV12MT:
- 		tiled_mode = true;
-+		/* fall through */
- 	case DRM_FORMAT_NV12:
- 		crcb_mode = false;
--		buf_num = 2;
- 		break;
- 	/* TODO: single buffer format NV12, NV21 */
- 	default:
--		/* ignore pixel format at disable time */
--		if (!win_data->dma_addr)
--			break;
+@@ -518,21 +518,10 @@ static void mixer_graph_buffer(struct mixer_context *ctx, int win)
+ 
+ 	win_data = &ctx->win_data[win];
+ 
+-	#define RGB565 4
+-	#define ARGB1555 5
+-	#define ARGB4444 6
+-	#define ARGB8888 7
 -
- 		DRM_ERROR("pixel format for vp is wrong [%d].\n",
- 				win_data->pixel_format);
- 		return;
-@@ -412,14 +407,8 @@ static void vp_video_buffer(struct mixer_context *ctx, int win)
- 	x_ratio = (win_data->src_width << 16) / win_data->crtc_width;
- 	y_ratio = (win_data->src_height << 16) / win_data->crtc_height;
- 
--	if (buf_num == 2) {
--		luma_addr[0] = win_data->dma_addr;
--		chroma_addr[0] = win_data->chroma_dma_addr;
--	} else {
--		luma_addr[0] = win_data->dma_addr;
--		chroma_addr[0] = win_data->dma_addr
--			+ (win_data->fb_width * win_data->fb_height);
+-	switch (win_data->bpp) {
+-	case 16:
+-		fmt = ARGB4444;
+-		break;
+-	case 32:
+-		fmt = ARGB8888;
+-		break;
+-	default:
+-		fmt = ARGB8888;
 -	}
-+	luma_addr[0] = win_data->dma_addr;
-+	chroma_addr[0] = win_data->chroma_dma_addr;
++	if (win_data->bpp == 16)
++		fmt = MXR_GRP_CFG_FORMAT_ARGB4444;
++	else
++		fmt = MXR_GRP_CFG_FORMAT_ARGB8888;
  
- 	if (win_data->scan_flags & DRM_MODE_FLAG_INTERLACE) {
- 		ctx->interlace = true;
+ 	/* 2x scaling feature */
+ 	x_ratio = 0;
+diff --git a/drivers/gpu/drm/exynos/regs-mixer.h b/drivers/gpu/drm/exynos/regs-mixer.h
+index 4537026..785a97a 100644
+--- a/drivers/gpu/drm/exynos/regs-mixer.h
++++ b/drivers/gpu/drm/exynos/regs-mixer.h
+@@ -114,6 +114,10 @@
+ #define MXR_GRP_CFG_PIXEL_BLEND_EN	(1 << 16)
+ #define MXR_GRP_CFG_FORMAT_VAL(x)	MXR_MASK_VAL(x, 11, 8)
+ #define MXR_GRP_CFG_FORMAT_MASK		MXR_GRP_CFG_FORMAT_VAL(~0)
++#define MXR_GRP_CFG_FORMAT_RGB565	4
++#define MXR_GRP_CFG_FORMAT_ARGB1555	5
++#define MXR_GRP_CFG_FORMAT_ARGB4444	6
++#define MXR_GRP_CFG_FORMAT_ARGB8888	7
+ #define MXR_GRP_CFG_ALPHA_VAL(x)	MXR_MASK_VAL(x, 7, 0)
+ 
+ /* bits for MXR_GRAPHICn_WH */
 -- 
 1.9.1.423.g4596e3a
 
