@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbaEDPmJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36330 "EHLO
+	id S1755448AbaEDQXl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:23:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373AbaEDPmE (ORCPT
+	with ESMTP id S1754419AbaEDPmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:04 -0400
+	Sun, 4 May 2014 11:42:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 130/158] mtip32xx: Set queue bounce limit
-Date: Sun,  4 May 2014 11:40:39 -0400
-Message-Id: <20140504154047.685125973@linuxfoundation.org>
+        Alex Chen <alex.chen@huawei.com>, Joseph Qi <joseph.qi@huawei.com>,
+        Srinivas Eeda <srinivas.eeda@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 143/158] ocfs2: do not put bh when buffer_uptodate failed
+Date: Sun,  4 May 2014 11:40:52 -0400
+Message-Id: <20140504154049.459577281@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,30 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Franciosi <felipe@paradoxo.org>
+From: alex chen <alex.chen@huawei.com>
 
-commit 1044b1bb9278f2e656a1a7b63dc24a59506540aa upstream.
+commit f7cf4f5bfe073ad792ab49c04f247626b3e38db6 upstream.
 
-We need to set the queue bounce limit during the device initialization to
-prevent excessive bouncing on 32 bit architectures.
+Do not put bh when buffer_uptodate failed in ocfs2_write_block and
+ocfs2_write_super_or_backup, because it will put bh in b_end_io.
+Otherwise it will hit a warning "VFS: brelse: Trying to free free
+buffer".
 
-Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Alex Chen <alex.chen@huawei.com>
+Reviewed-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/buffer_head_io.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4213,6 +4213,7 @@ skip_create_disk:
- 	blk_queue_max_hw_sectors(dd->queue, 0xffff);
- 	blk_queue_max_segment_size(dd->queue, 0x400000);
- 	blk_queue_io_min(dd->queue, 4096);
-+	blk_queue_bounce_limit(dd->queue, dd->pdev->dma_mask);
+--- a/fs/ocfs2/buffer_head_io.c
++++ b/fs/ocfs2/buffer_head_io.c
+@@ -90,7 +90,6 @@ int ocfs2_write_block(struct ocfs2_super
+ 		 * information for this bh as it's not marked locally
+ 		 * uptodate. */
+ 		ret = -EIO;
+-		put_bh(bh);
+ 		mlog_errno(ret);
+ 	}
  
- 	/*
- 	 * write back cache is not supported in the device. FUA depends on
+@@ -420,7 +419,6 @@ int ocfs2_write_super_or_backup(struct o
+ 
+ 	if (!buffer_uptodate(bh)) {
+ 		ret = -EIO;
+-		put_bh(bh);
+ 		mlog_errno(ret);
+ 	}
+ 
 
 
