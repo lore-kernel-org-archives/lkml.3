@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543AbaEDQcT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:32:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
+	id S1754226AbaEDPly (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbaEDPlz (ORCPT
+	with ESMTP id S1754028AbaEDPlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:55 -0400
+	Sun, 4 May 2014 11:41:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 114/158] media: v4l2-compat-ioctl32: fix wrong VIDIOC_SUBDEV_G/S_EDID32 support
-Date: Sun,  4 May 2014 11:40:23 -0400
-Message-Id: <20140504154045.497690308@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 3.14 096/158] Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
+Date: Sun,  4 May 2014 11:40:05 -0400
+Message-Id: <20140504154042.987742762@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,33 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit bc826d6e39fe5f09cbadf8723e9183e6331b586f upstream.
+commit 03367ef5ea811475187a0732aada068919e14d61 upstream.
 
-The wrong ioctl numbers were used due to a copy-and-paste error.
+Only ws2012r2 hosts support the ability to reconnect to the host on VMBUS. This functionality
+is needed by kexec in Linux. To use this functionality we need to negotiate version 3.0 of the
+VMBUS protocol.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-compat-ioctl32.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hv/connection.c |    5 ++++-
+ include/linux/hyperv.h  |    4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-+++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-@@ -787,8 +787,8 @@ static int put_v4l2_subdev_edid32(struct
- #define VIDIOC_DQBUF32		_IOWR('V', 17, struct v4l2_buffer32)
- #define VIDIOC_ENUMSTD32	_IOWR('V', 25, struct v4l2_standard32)
- #define VIDIOC_ENUMINPUT32	_IOWR('V', 26, struct v4l2_input32)
--#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 63, struct v4l2_subdev_edid32)
--#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 64, struct v4l2_subdev_edid32)
-+#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 40, struct v4l2_subdev_edid32)
-+#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 41, struct v4l2_subdev_edid32)
- #define VIDIOC_TRY_FMT32      	_IOWR('V', 64, struct v4l2_format32)
- #define VIDIOC_G_EXT_CTRLS32    _IOWR('V', 71, struct v4l2_ext_controls32)
- #define VIDIOC_S_EXT_CTRLS32    _IOWR('V', 72, struct v4l2_ext_controls32)
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -55,6 +55,9 @@ static __u32 vmbus_get_next_version(__u3
+ 	case (VERSION_WIN8):
+ 		return VERSION_WIN7;
+ 
++	case (VERSION_WIN8_1):
++		return VERSION_WIN8;
++
+ 	case (VERSION_WS2008):
+ 	default:
+ 		return VERSION_INVAL;
+@@ -77,7 +80,7 @@ static int vmbus_negotiate_version(struc
+ 	msg->interrupt_page = virt_to_phys(vmbus_connection.int_page);
+ 	msg->monitor_page1 = virt_to_phys(vmbus_connection.monitor_pages[0]);
+ 	msg->monitor_page2 = virt_to_phys(vmbus_connection.monitor_pages[1]);
+-	if (version == VERSION_WIN8)
++	if (version == VERSION_WIN8_1)
+ 		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
+ 
+ 	/*
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -464,15 +464,17 @@ hv_get_ringbuffer_availbytes(struct hv_r
+  * 0 . 13 (Windows Server 2008)
+  * 1 . 1  (Windows 7)
+  * 2 . 4  (Windows 8)
++ * 3 . 0  (Windows 8 R2)
+  */
+ 
+ #define VERSION_WS2008  ((0 << 16) | (13))
+ #define VERSION_WIN7    ((1 << 16) | (1))
+ #define VERSION_WIN8    ((2 << 16) | (4))
++#define VERSION_WIN8_1    ((3 << 16) | (0))
+ 
+ #define VERSION_INVAL -1
+ 
+-#define VERSION_CURRENT VERSION_WIN8
++#define VERSION_CURRENT VERSION_WIN8_1
+ 
+ /* Make maximum size of pipe payload of 16K */
+ #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
 
 
