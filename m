@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956AbaEDPmv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36736 "EHLO
+	id S1755417AbaEDPyP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:54:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36795 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611AbaEDPmp (ORCPT
+	with ESMTP id S1754950AbaEDPmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:45 -0400
+	Sun, 4 May 2014 11:42:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Janne=20Kujanp=C3=A4=C3=A4?= <jikuja@iki.fi>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 67/86] media: em28xx: fix PCTV 290e LNA oops
-Date: Sun,  4 May 2014 11:41:42 -0400
-Message-Id: <20140504154149.571884340@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.4 07/43] ALSA: ice1712: Fix boundary checks in PCM pointer ops
+Date: Sun,  4 May 2014 11:42:01 -0400
+Message-Id: <20140504154225.235559048@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
-References: <20140504154140.444932005@linuxfoundation.org>
+In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
+References: <20140504154224.211508175@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 3ec40dcfb413214b2874aec858870502b61c2202 upstream.
+commit 4f8e940095536bc002a81666a4107a581c84e9b9 upstream.
 
-Pointer to device state has been moved to different location during
-some change. PCTV 290e LNA function still uses old pointer, carried
-over FE priv, and it crash.
+PCM pointer callbacks in ice1712 driver check the buffer size boundary
+wrongly between bytes and frames.  This leads to PCM core warnings
+like:
+   snd_pcm_update_hw_ptr0: 105 callbacks suppressed
+   ALSA pcm_lib.c:352 BUG: pcmC3D0c:0, pos = 5461, buffer size = 5461, period size = 2730
 
-Reported-by: Janne Kujanpää <jikuja@iki.fi>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+This patch fixes these checks to be placed after the proper unit
+conversions.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/em28xx/em28xx-dvb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/ice1712/ice1712.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/media/usb/em28xx/em28xx-dvb.c
-+++ b/drivers/media/usb/em28xx/em28xx-dvb.c
-@@ -673,7 +673,8 @@ static void pctv_520e_init(struct em28xx
- static int em28xx_pctv_290e_set_lna(struct dvb_frontend *fe)
- {
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
--	struct em28xx *dev = fe->dvb->priv;
-+	struct em28xx_i2c_bus *i2c_bus = fe->dvb->priv;
-+	struct em28xx *dev = i2c_bus->dev;
- #ifdef CONFIG_GPIOLIB
- 	struct em28xx_dvb *dvb = dev->dvb;
- 	int ret;
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -686,9 +686,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 	if (!(snd_ice1712_read(ice, ICE1712_IREG_PBK_CTRL) & 1))
+ 		return 0;
+ 	ptr = runtime->buffer_size - inw(ice->ddma_port + 4);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
+ 
+ static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substream *substream)
+@@ -705,9 +706,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 		addr = ICE1712_DSC_ADDR0;
+ 	ptr = snd_ice1712_ds_read(ice, substream->number * 2, addr) -
+ 		ice->playback_con_virt_addr[substream->number];
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
+ 
+ static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *substream)
+@@ -718,9 +720,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
+ 	if (!(snd_ice1712_read(ice, ICE1712_IREG_CAP_CTRL) & 1))
+ 		return 0;
+ 	ptr = inl(ICEREG(ice, CONCAP_ADDR)) - ice->capture_con_virt_addr;
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
+ 
+ static const struct snd_pcm_hardware snd_ice1712_playback = {
+@@ -1114,9 +1117,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_PLAYBACK_START))
+ 		return 0;
+ 	ptr = ice->playback_pro_size - (inw(ICEMT(ice, PLAYBACK_SIZE)) << 2);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
+ 
+ static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substream *substream)
+@@ -1127,9 +1131,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
+ 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_CAPTURE_START_SHADOW))
+ 		return 0;
+ 	ptr = ice->capture_pro_size - (inw(ICEMT(ice, CAPTURE_SIZE)) << 2);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
+ 
+ static const struct snd_pcm_hardware snd_ice1712_playback_pro = {
 
 
