@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaEDPnk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:43:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36942 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbaEDPnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755160AbaEDPnF (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:43:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36867 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754873AbaEDPm6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.4 43/43] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
-Date: Sun,  4 May 2014 11:42:37 -0400
-Message-Id: <20140504154230.096378910@linuxfoundation.org>
+        Arshad Hussain <arshad.hussain@calsoftinc.com>,
+        santosh kulkarni <santosh.kulkarni@calsoftinc.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.4 27/43] iscsi-target: Fix ERL=2 ASYNC_EVENT connection pointer bug
+Date: Sun,  4 May 2014 11:42:21 -0400
+Message-Id: <20140504154227.960046821@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -26,53 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Sanders <aaron.sanders@hp.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
+commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
 
-Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
+This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
+where during ERL=2 connection recovery, a bogus conn_p pointer could
+end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
+notifying the initiator that cmd->logout_cid has failed.
 
-LD960: 03f0:0B39
-LCM220: 03f0:3139
-LCM960: 03f0:3239
+The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
+a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
 
-[ Johan: fix indentation and sort PIDs numerically ]
-
-Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |    3 +++
- drivers/usb/serial/pl2303.h |    5 ++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -86,6 +86,9 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
- 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
- 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
- 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
- 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -121,8 +121,11 @@
- #define SUPERIAL_VENDOR_ID	0x5372
- #define SUPERIAL_PRODUCT_ID	0x2303
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -2352,6 +2352,7 @@ static void iscsit_build_conn_drop_async
+ {
+ 	struct iscsi_cmd *cmd;
+ 	struct iscsi_conn *conn_p;
++	bool found = false;
  
--/* Hewlett-Packard LD220-HP POS Pole Display */
-+/* Hewlett-Packard POS Pole Displays */
- #define HP_VENDOR_ID		0x03f0
-+#define HP_LD960_PRODUCT_ID	0x0b39
-+#define HP_LCM220_PRODUCT_ID	0x3139
-+#define HP_LCM960_PRODUCT_ID	0x3239
- #define HP_LD220_PRODUCT_ID	0x3524
+ 	/*
+ 	 * Only send a Asynchronous Message on connections whos network
+@@ -2360,11 +2361,12 @@ static void iscsit_build_conn_drop_async
+ 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
+ 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
+ 			iscsit_inc_conn_usage_count(conn_p);
++			found = true;
+ 			break;
+ 		}
+ 	}
  
- /* Cressi Edy (diving computer) PC interface */
+-	if (!conn_p)
++	if (!found)
+ 		return;
+ 
+ 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
 
 
