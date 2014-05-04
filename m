@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaEDQ31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:29:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36269 "EHLO
+	id S1756444AbaEDQ3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:29:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299AbaEDPl7 (ORCPT
+	with ESMTP id S1754227AbaEDPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:59 -0400
+	Sun, 4 May 2014 11:41:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Kees Cook <keescook@chromium.org>, Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 135/158] sh: fix format string bug in stack tracer
-Date: Sun,  4 May 2014 11:40:44 -0400
-Message-Id: <20140504154048.361462134@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 134/158] [PATCH-v3.14.y 2/2] iser-target: Add missing se_cmd put for WRITE_PENDING in tx_comp_err
+Date: Sun,  4 May 2014 11:40:43 -0400
+Message-Id: <20140504154048.225824780@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -29,40 +27,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
 
-commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Kees reported the following error:
+commit 03e7848a64ed535a30f5d7fc6dede2d5a6a2534b upstream.
 
-   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
-   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
+This patch fixes a bug where outstanding RDMA_READs with WRITE_PENDING
+status require an extra target_put_sess_cmd() in isert_put_cmd() code
+when called from isert_cq_tx_comp_err() + isert_cq_drain_comp_llist()
+context during session shutdown.
 
-Use the "%s" format so that it's impossible to interpret 'data' as a
-format string.
+The extra kref PUT is required so that transport_generic_free_cmd()
+invokes the last target_put_sess_cmd() -> target_release_cmd_kref(),
+which will complete(&se_cmd->cmd_wait_comp) the outstanding se_cmd
+descriptor with WRITE_PENDING status, and awake the completion in
+target_wait_for_sess_cmds() to invoke TFO->release_cmd().
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Reported-by: Kees Cook <keescook@chromium.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The bug was manifesting itself in target_wait_for_sess_cmds() where
+a se_cmd descriptor with WRITE_PENDING status would end up sleeping
+indefinately.
+
+Acked-by: Sagi Grimberg <sagig@mellanox.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/sh/kernel/dumpstack.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   35 +++++++++++++++++++++-----------
+ 1 file changed, 24 insertions(+), 11 deletions(-)
 
---- a/arch/sh/kernel/dumpstack.c
-+++ b/arch/sh/kernel/dumpstack.c
-@@ -115,7 +115,7 @@ static int print_trace_stack(void *data,
-  */
- static void print_trace_address(void *data, unsigned long addr, int reliable)
- {
--	printk(data);
-+	printk("%s", (char *)data);
- 	printk_address(addr, reliable);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -1456,7 +1456,7 @@ isert_unreg_rdma(struct isert_cmd *isert
  }
  
+ static void
+-isert_put_cmd(struct isert_cmd *isert_cmd)
++isert_put_cmd(struct isert_cmd *isert_cmd, bool comp_err)
+ {
+ 	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
+ 	struct isert_conn *isert_conn = isert_cmd->conn;
+@@ -1472,8 +1472,21 @@ isert_put_cmd(struct isert_cmd *isert_cm
+ 			list_del_init(&cmd->i_conn_node);
+ 		spin_unlock_bh(&conn->cmd_lock);
+ 
+-		if (cmd->data_direction == DMA_TO_DEVICE)
++		if (cmd->data_direction == DMA_TO_DEVICE) {
+ 			iscsit_stop_dataout_timer(cmd);
++			/*
++			 * Check for special case during comp_err where
++			 * WRITE_PENDING has been handed off from core,
++			 * but requires an extra target_put_sess_cmd()
++			 * before transport_generic_free_cmd() below.
++			 */
++			if (comp_err &&
++			    cmd->se_cmd.t_state == TRANSPORT_WRITE_PENDING) {
++				struct se_cmd *se_cmd = &cmd->se_cmd;
++
++				target_put_sess_cmd(se_cmd->se_sess, se_cmd);
++			}
++		}
+ 
+ 		device->unreg_rdma_mem(isert_cmd, isert_conn);
+ 		transport_generic_free_cmd(&cmd->se_cmd, 0);
+@@ -1528,7 +1541,7 @@ isert_unmap_tx_desc(struct iser_tx_desc
+ 
+ static void
+ isert_completion_put(struct iser_tx_desc *tx_desc, struct isert_cmd *isert_cmd,
+-		     struct ib_device *ib_dev)
++		     struct ib_device *ib_dev, bool comp_err)
+ {
+ 	if (isert_cmd->pdu_buf_dma != 0) {
+ 		pr_debug("Calling ib_dma_unmap_single for isert_cmd->pdu_buf_dma\n");
+@@ -1538,7 +1551,7 @@ isert_completion_put(struct iser_tx_desc
+ 	}
+ 
+ 	isert_unmap_tx_desc(tx_desc, ib_dev);
+-	isert_put_cmd(isert_cmd);
++	isert_put_cmd(isert_cmd, comp_err);
+ }
+ 
+ static void
+@@ -1582,14 +1595,14 @@ isert_do_control_comp(struct work_struct
+ 		iscsit_tmr_post_handler(cmd, cmd->conn);
+ 
+ 		cmd->i_state = ISTATE_SENT_STATUS;
+-		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
++		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
+ 		break;
+ 	case ISTATE_SEND_REJECT:
+ 		pr_debug("Got isert_do_control_comp ISTATE_SEND_REJECT: >>>\n");
+ 		atomic_dec(&isert_conn->post_send_buf_count);
+ 
+ 		cmd->i_state = ISTATE_SENT_STATUS;
+-		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
++		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
+ 		break;
+ 	case ISTATE_SEND_LOGOUTRSP:
+ 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
+@@ -1603,7 +1616,7 @@ isert_do_control_comp(struct work_struct
+ 	case ISTATE_SEND_TEXTRSP:
+ 		atomic_dec(&isert_conn->post_send_buf_count);
+ 		cmd->i_state = ISTATE_SENT_STATUS;
+-		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev);
++		isert_completion_put(&isert_cmd->tx_desc, isert_cmd, ib_dev, false);
+ 		break;
+ 	default:
+ 		pr_err("Unknown do_control_comp i_state %d\n", cmd->i_state);
+@@ -1634,7 +1647,7 @@ isert_response_completion(struct iser_tx
+ 	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+ 
+ 	cmd->i_state = ISTATE_SENT_STATUS;
+-	isert_completion_put(tx_desc, isert_cmd, ib_dev);
++	isert_completion_put(tx_desc, isert_cmd, ib_dev, false);
+ }
+ 
+ static void
+@@ -1715,7 +1728,7 @@ isert_cq_drain_comp_llist(struct isert_c
+ 		wr = &t->isert_cmd->rdma_wr;
+ 
+ 		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+-		isert_completion_put(t, t->isert_cmd, ib_dev);
++		isert_completion_put(t, t->isert_cmd, ib_dev, true);
+ 	}
+ }
+ 
+@@ -1734,14 +1747,14 @@ isert_cq_tx_comp_err(struct iser_tx_desc
+ 		wr = &t->isert_cmd->rdma_wr;
+ 
+ 		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+-		isert_completion_put(t, t->isert_cmd, ib_dev);
++		isert_completion_put(t, t->isert_cmd, ib_dev, true);
+ 	}
+ 	tx_desc->comp_llnode_batch = NULL;
+ 
+ 	if (!isert_cmd)
+ 		isert_unmap_tx_desc(tx_desc, ib_dev);
+ 	else
+-		isert_completion_put(tx_desc, isert_cmd, ib_dev);
++		isert_completion_put(tx_desc, isert_cmd, ib_dev, true);
+ }
+ 
+ static void
 
 
