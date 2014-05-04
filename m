@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136AbaEDQhq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:37:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36175 "EHLO
+	id S1754118AbaEDPlq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36139 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbaEDPlr (ORCPT
+	with ESMTP id S1754028AbaEDPln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:47 -0400
+	Sun, 4 May 2014 11:41:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Turischev <denis@compulab.co.il>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 107/158] xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
-Date: Sun,  4 May 2014 11:40:16 -0400
-Message-Id: <20140504154044.491368450@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 074/158] nfsd4: leave reply buffer space for failed setattr
+Date: Sun,  4 May 2014 11:39:43 -0400
+Message-Id: <20140504154039.966436385@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,40 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Turischev <denis.turischev@compulab.co.il>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit c09ec25d3684cad74d851c0f028a495999591279 upstream.
+commit 04819bf6449094e62cebaf5199d85d68d711e667 upstream.
 
-The same issue like with Panther Point chipsets. If the USB ports are
-switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
-which will wake the system. Some BIOS have work around for this, but not all.
-One example is Compulab's mini-desktop, the Intense-PC2.
+This fixes an ommission from 18032ca062e621e15683cb61c066ef3dc5414a7b
+"NFSD: Server implementation of MAC Labeling", which increased the size
+of the setattr error reply without increasing COMPOUND_ERR_SLACK_SPACE.
 
-The bug can be avoided if the USB ports are switched back to EHCI on
-shutdown.
-
-This patch should be backported to stable kernels as old as 3.12,
-that contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016
-"xhci: Fix spurious wakeups after S5 on Haswell"
-
-Signed-off-by: Denis Turischev <denis@compulab.co.il>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/nfsd.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -134,6 +134,8 @@ static void xhci_pci_quirks(struct devic
- 		 */
- 		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
- 			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
-+
-+		xhci->quirks |= XHCI_SPURIOUS_REBOOT;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
- 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
+--- a/fs/nfsd/nfsd.h
++++ b/fs/nfsd/nfsd.h
+@@ -282,7 +282,7 @@ void		nfsd_lockd_shutdown(void);
+  * reason.
+  */
+ #define	COMPOUND_SLACK_SPACE		140    /* OP_GETFH */
+-#define COMPOUND_ERR_SLACK_SPACE	12     /* OP_SETATTR */
++#define COMPOUND_ERR_SLACK_SPACE	16     /* OP_SETATTR */
+ 
+ #define NFSD_LAUNDROMAT_MINTIMEOUT      1   /* seconds */
+ 
 
 
