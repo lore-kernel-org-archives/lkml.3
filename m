@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaEDPmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36375 "EHLO
+	id S1756061AbaEDQOf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:14:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437AbaEDPmJ (ORCPT
+	with ESMTP id S1754571AbaEDPmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:09 -0400
+	Sun, 4 May 2014 11:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 3.14 145/158] clk: s2mps11: Fix possible NULL pointer dereference
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 19/86] ALSA: hda/realtek - Add support of ALC288 codec
 Date: Sun,  4 May 2014 11:40:54 -0400
-Message-Id: <20140504154049.737859516@linuxfoundation.org>
+Message-Id: <20140504154142.987728209@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
-References: <20140504154029.975081050@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 238e14055da87d0d012257788e39fe0df3a82226 upstream.
+commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
 
-If parent device does not have of_node set the s2mps11_clk_parse_dt()
-returned NULL. This NULL was later passed to of_clk_add_provider() which
-dereferenced it in pr_debug() call.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/clk-s2mps11.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -130,7 +130,7 @@ static struct device_node *s2mps11_clk_p
- 	int i;
- 
- 	if (!iodev->dev->of_node)
--		return NULL;
-+		return ERR_PTR(-EINVAL);
- 
- 	clk_np = of_find_node_by_name(iodev->dev->of_node, "clocks");
- 	if (!clk_np) {
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3903,6 +3903,7 @@ static int patch_alc269(struct hda_codec
+ 		spec->codec_variant = ALC269_TYPE_ALC284;
+ 		break;
+ 	case 0x10ec0286:
++	case 0x10ec0288:
+ 		spec->codec_variant = ALC269_TYPE_ALC286;
+ 		break;
+ 	case 0x10ec0255:
+@@ -4645,6 +4646,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
++	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
 
 
