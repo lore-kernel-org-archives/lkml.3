@@ -1,70 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbaEDChQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 22:37:16 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28871 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753472AbaEDChP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 22:37:15 -0400
-Message-ID: <5365A73E.1060006@huawei.com>
-Date: Sun, 4 May 2014 10:34:38 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <will.deacon@arm.com>, <vitalya@ti.com>, <cyril@ti.com>,
-        <santosh.shilimkar@ti.com>, <lauraa@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <peifeiyue@huawei.com>, <liusdu@126.co>
-Subject: Re: [PATCH v3 0/2] change ARM linux memory layout to support 32 CPUs
-References: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com> <20140422213114.GA24070@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1404221949510.980@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1404221949510.980@knanqh.ubzr>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
+	id S932091AbaEDDH0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 23:07:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58607 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512AbaEDDHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 23:07:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,980,1389772800"; 
+   d="scan'208";a="533128477"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, lenb@kernel.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 1/2] ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"
+Date: Sun,  4 May 2014 11:07:24 +0800
+Message-Id: <1399172845-2878-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/23 7:50, Nicolas Pitre wrote:
-> On Tue, 22 Apr 2014, Russell King - ARM Linux wrote:
-> 
->> On Tue, Apr 15, 2014 at 07:06:05PM +0800, Liu Hua wrote:
->>> This patch series change fixmap mapping region to suppport 32 CPUs.
->>> Because the "top_pmd" covers 0xfffe0000 - 0xffffffff(2M). And part 
->>> is used by vector table. So I move this region down to 0xffc00000
->>>  - 0xffdffff. 
->>
->> Can you explain why you have submitted these patches to my patch tracker
->> with a copy to stable@vger.kernel.org ?
->>
->> What makes these qualify for stable tree inclusion?  What regression are
->> they fixing?
->>
->> We don't put patches into the stable tree for things that /never/ worked
->> in the past.  We've never supported 32 CPUs so I don't think these
->> qualify.
-> 
-> Indeed.  The stable qualifier should be dropped.
-> 
-> 
-> Nicolas
-> 
-> .
-> 
-I am very sorry to ignore this mail for ten days! We have a platform of 16
-CPUs, for which these patches are necessary(15CPUs for old memory layout).
-But only with these patches, the ARM linux can not run on it.(gic part
-should also be changed)
+The commit 1e2d9cd and 7d7ee95 remove ACPI Proc Battery
+directory and breaks some old userspace tools. This patch
+is to revert 7d7ee95.
 
-So you are right. It seems to be a new feature. Sorry for this mistake.
-If anything I should do, please inform me!
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/acpi/Kconfig  |  17 ++++++++
+ drivers/acpi/Makefile |   1 +
+ drivers/acpi/cm_sbs.c | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 123 insertions(+)
+ create mode 100644 drivers/acpi/cm_sbs.c
 
-Thanks,
-Liu Hua
-
-
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index ab686b3..c0160bb 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -47,6 +47,23 @@ config ACPI_SLEEP
+ 	depends on SUSPEND || HIBERNATION
+ 	default y
+ 
++config ACPI_PROCFS_POWER
++	bool "Deprecated power /proc/acpi directories"
++	depends on PROC_FS
++	help
++	  For backwards compatibility, this option allows
++          deprecated power /proc/acpi/ directories to exist, even when
++          they have been replaced by functions in /sys.
++          The deprecated directories (and their replacements) include:
++	  /proc/acpi/battery/* (/sys/class/power_supply/*)
++	  /proc/acpi/ac_adapter/* (sys/class/power_supply/*)
++	  This option has no effect on /proc/acpi/ directories
++	  and functions, which do not yet exist in /sys
++	  This option, together with the proc directories, will be
++	  deleted in 2.6.39.
++
++	  Say N to delete power /proc/acpi/ directories that have moved to /sys/
++
+ config ACPI_EC_DEBUGFS
+ 	tristate "EC read/write access through /sys/kernel/debug/ec"
+ 	default n
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index 0331f91..bce34af 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -47,6 +47,7 @@ acpi-y				+= sysfs.o
+ acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
+ acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
+ acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
++acpi-$(CONFIG_ACPI_PROCFS_POWER) += cm_sbs.o
+ ifdef CONFIG_ACPI_VIDEO
+ acpi-y				+= video_detect.o
+ endif
+diff --git a/drivers/acpi/cm_sbs.c b/drivers/acpi/cm_sbs.c
+new file mode 100644
+index 0000000..6c9ee68
+--- /dev/null
++++ b/drivers/acpi/cm_sbs.c
+@@ -0,0 +1,105 @@
++/*
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or (at
++ *  your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/types.h>
++#include <linux/proc_fs.h>
++#include <linux/seq_file.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++
++#define PREFIX "ACPI: "
++
++ACPI_MODULE_NAME("cm_sbs");
++#define ACPI_AC_CLASS		"ac_adapter"
++#define ACPI_BATTERY_CLASS	"battery"
++#define _COMPONENT		ACPI_SBS_COMPONENT
++static struct proc_dir_entry *acpi_ac_dir;
++static struct proc_dir_entry *acpi_battery_dir;
++
++static DEFINE_MUTEX(cm_sbs_mutex);
++
++static int lock_ac_dir_cnt;
++static int lock_battery_dir_cnt;
++
++struct proc_dir_entry *acpi_lock_ac_dir(void)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (!acpi_ac_dir)
++		acpi_ac_dir = proc_mkdir(ACPI_AC_CLASS, acpi_root_dir);
++	if (acpi_ac_dir) {
++		lock_ac_dir_cnt++;
++	} else {
++		printk(KERN_ERR PREFIX
++				  "Cannot create %s\n", ACPI_AC_CLASS);
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return acpi_ac_dir;
++}
++EXPORT_SYMBOL(acpi_lock_ac_dir);
++
++void acpi_unlock_ac_dir(struct proc_dir_entry *acpi_ac_dir_param)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (acpi_ac_dir_param)
++		lock_ac_dir_cnt--;
++	if (lock_ac_dir_cnt == 0 && acpi_ac_dir_param && acpi_ac_dir) {
++		remove_proc_entry(ACPI_AC_CLASS, acpi_root_dir);
++		acpi_ac_dir = NULL;
++	}
++	mutex_unlock(&cm_sbs_mutex);
++}
++EXPORT_SYMBOL(acpi_unlock_ac_dir);
++
++struct proc_dir_entry *acpi_lock_battery_dir(void)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (!acpi_battery_dir) {
++		acpi_battery_dir =
++		    proc_mkdir(ACPI_BATTERY_CLASS, acpi_root_dir);
++	}
++	if (acpi_battery_dir) {
++		lock_battery_dir_cnt++;
++	} else {
++		printk(KERN_ERR PREFIX
++				  "Cannot create %s\n", ACPI_BATTERY_CLASS);
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return acpi_battery_dir;
++}
++EXPORT_SYMBOL(acpi_lock_battery_dir);
++
++void acpi_unlock_battery_dir(struct proc_dir_entry *acpi_battery_dir_param)
++{
++	mutex_lock(&cm_sbs_mutex);
++	if (acpi_battery_dir_param)
++		lock_battery_dir_cnt--;
++	if (lock_battery_dir_cnt == 0 && acpi_battery_dir_param
++	    && acpi_battery_dir) {
++		remove_proc_entry(ACPI_BATTERY_CLASS, acpi_root_dir);
++		acpi_battery_dir = NULL;
++	}
++	mutex_unlock(&cm_sbs_mutex);
++	return;
++}
++EXPORT_SYMBOL(acpi_unlock_battery_dir);
+-- 
+1.8.3.1
 
