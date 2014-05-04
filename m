@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262AbaEDPoL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:44:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36935 "EHLO
+	id S1755271AbaEDPof (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:44:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159AbaEDPnF (ORCPT
+	with ESMTP id S1755152AbaEDPnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:43:05 -0400
+	Sun, 4 May 2014 11:43:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Chen <alex.chen@huawei.com>, Joseph Qi <joseph.qi@huawei.com>,
+        Junxiao Bi <junxiao.bi@oracle.com>,
         Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Wengang Wang <wen.gang.wang@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 41/43] ocfs2: do not put bh when buffer_uptodate failed
-Date: Sun,  4 May 2014 11:42:35 -0400
-Message-Id: <20140504154229.834633765@linuxfoundation.org>
+Subject: [PATCH 3.4 40/43] ocfs2: dlm: fix recovery hung
+Date: Sun,  4 May 2014 11:42:34 -0400
+Message-Id: <20140504154229.700953729@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -30,45 +31,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: alex chen <alex.chen@huawei.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit f7cf4f5bfe073ad792ab49c04f247626b3e38db6 upstream.
+commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
 
-Do not put bh when buffer_uptodate failed in ocfs2_write_block and
-ocfs2_write_super_or_backup, because it will put bh in b_end_io.
-Otherwise it will hit a warning "VFS: brelse: Trying to free free
-buffer".
+There is a race window in dlm_do_recovery() between dlm_remaster_locks()
+and dlm_reset_recovery() when the recovery master nearly finish the
+recovery process for a dead node.  After the master sends FINALIZE_RECO
+message in dlm_remaster_locks(), another node may become the recovery
+master for another dead node, and then send the BEGIN_RECO message to
+all the nodes included the old master, in the handler of this message
+dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
+dlm->reco.new_master will be set to the second dead node and the new
+master, then in dlm_reset_recovery(), these two variables will be reset
+to default value.  This will cause new recovery master can not finish
+the recovery process and hung, at last the whole cluster will hung for
+recovery.
 
-Signed-off-by: Alex Chen <alex.chen@huawei.com>
-Reviewed-by: Joseph Qi <joseph.qi@huawei.com>
+old recovery master:                                 new recovery master:
+dlm_remaster_locks()
+                                                  become recovery master for
+                                                  another dead node.
+                                                  dlm_send_begin_reco_message()
+dlm_begin_reco_handler()
+{
+ if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
+  return -EAGAIN;
+ }
+ dlm_set_reco_master(dlm, br->node_idx);
+ dlm_set_reco_dead_node(dlm, br->dead_node);
+}
+dlm_reset_recovery()
+{
+ dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
+ dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
+}
+                                                  will hang in dlm_remaster_locks() for
+                                                  request dlm locks info
+
+Before send FINALIZE_RECO message, recovery master should set
+DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
+this can break the race windows as the BEGIN_RECO messages will not be
+handled before DLM_RECO_STATE_FINALIZE flag is cleared.
+
+A similar race may happen between new recovery master and normal node
+which is in dlm_finalize_reco_handler(), also fix it.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
 Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
 Cc: Mark Fasheh <mfasheh@suse.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/buffer_head_io.c |    2 --
- 1 file changed, 2 deletions(-)
+ fs/ocfs2/dlm/dlmrecovery.c |   15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
---- a/fs/ocfs2/buffer_head_io.c
-+++ b/fs/ocfs2/buffer_head_io.c
-@@ -90,7 +90,6 @@ int ocfs2_write_block(struct ocfs2_super
- 		 * information for this bh as it's not marked locally
- 		 * uptodate. */
- 		ret = -EIO;
--		put_bh(bh);
- 		mlog_errno(ret);
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -540,7 +540,10 @@ master_here:
+ 		/* success!  see if any other nodes need recovery */
+ 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
+ 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
+-		dlm_reset_recovery(dlm);
++		spin_lock(&dlm->spinlock);
++		__dlm_reset_recovery(dlm);
++		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++		spin_unlock(&dlm->spinlock);
  	}
+ 	dlm_end_recovery(dlm);
  
-@@ -420,7 +419,6 @@ int ocfs2_write_super_or_backup(struct o
+@@ -698,6 +701,14 @@ static int dlm_remaster_locks(struct dlm
+ 		if (all_nodes_done) {
+ 			int ret;
  
- 	if (!buffer_uptodate(bh)) {
- 		ret = -EIO;
--		put_bh(bh);
- 		mlog_errno(ret);
- 	}
- 
++			/* Set this flag on recovery master to avoid
++			 * a new recovery for another dead node start
++			 * before the recovery is not done. That may
++			 * cause recovery hung.*/
++			spin_lock(&dlm->spinlock);
++			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
++			spin_unlock(&dlm->spinlock);
++
+ 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
+ 	 		 * just send a finalize message to everyone and
+ 	 		 * clean up */
+@@ -2872,8 +2883,8 @@ int dlm_finalize_reco_handler(struct o2n
+ 				BUG();
+ 			}
+ 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++			__dlm_reset_recovery(dlm);
+ 			spin_unlock(&dlm->spinlock);
+-			dlm_reset_recovery(dlm);
+ 			dlm_kick_recovery_thread(dlm);
+ 			break;
+ 		default:
 
 
