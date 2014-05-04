@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831AbaEDP7X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:59:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36692 "EHLO
+	id S1755277AbaEDP75 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:59:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754828AbaEDPml (ORCPT
+	with ESMTP id S1754819AbaEDPmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:41 -0400
+	Sun, 4 May 2014 11:42:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>,
-        Wengang Wang <wen.gang.wang@oracle.com>,
-        Sunil Mushran <sunil.mushran@gmail.com>,
-        Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 81/86] ocfs2: dlm: fix lock migration crash
-Date: Sun,  4 May 2014 11:41:56 -0400
-Message-Id: <20140504154151.450775598@linuxfoundation.org>
+Subject: [PATCH 3.10 79/86] mm: hugetlb: fix softlockup when a large number of hugepages are freed.
+Date: Sun,  4 May 2014 11:41:54 -0400
+Message-Id: <20140504154151.175617188@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -32,119 +33,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
 
-commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
+commit 55f67141a8927b2be3e51840da37b8a2320143ed upstream.
 
-This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
-list_for_each_entry where benefical") in 2007 where it replaced
-list_for_each with list_for_each_entry.  The variable "lock" will point
-to invalid data if "tmpq" list is empty and a panic will be triggered
-due to this.  Sunil advised reverting it back, but the old version was
-also not right.  At the end of the outer for loop, that
-list_for_each_entry will also set "lock" to an invalid data, then in the
-next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
-data and cause the panic.  So reverting the list_for_each back and reset
-"lock" to NULL to fix this issue.
+When I decrease the value of nr_hugepage in procfs a lot, softlockup
+happens.  It is because there is no chance of context switch during this
+process.
 
-Another concern is that this seemes can not happen because the "tmpq"
-list should not be empty.  Let me describe how.
+On the other hand, when I allocate a large number of hugepages, there is
+some chance of context switch.  Hence softlockup doesn't happen during
+this process.  So it's necessary to add the context switch in the
+freeing process as same as allocating process to avoid softlockup.
 
-old lock resource owner(node 1):                                  migratation target(node 2):
-image there's lockres with a EX lock from node 2 in
-granted list, a NR lock from node x with convert_type
-EX in converting list.
-dlm_empty_lockres() {
- dlm_pick_migration_target() {
-   pick node 2 as target as its lock is the first one
-   in granted list.
- }
- dlm_migrate_lockres() {
-   dlm_mark_lockres_migrating() {
-     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
-     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
-	 //after the above code, we can not dirty lockres any more,
-     // so dlm_thread shuffle list will not run
-                                                                   downconvert lock from EX to NR
-                                                                   upconvert lock from NR to EX
-<<< migration may schedule out here, then
-<<< node 2 send down convert request to convert type from EX to
-<<< NR, then send up convert request to convert type from NR to
-<<< EX, at this time, lockres granted list is empty, and two locks
-<<< in the converting list, node x up convert lock followed by
-<<< node 2 up convert lock.
+When I freed 12 TB hugapages with kernel-2.6.32-358.el6, the freeing
+process occupied a CPU over 150 seconds and following softlockup message
+appeared twice or more.
 
-	 // will set lockres RES_MIGRATING flag, the following
-	 // lock/unlock can not run
-     dlm_lockres_release_ast(dlm, res);
-   }
+$ echo 6000000 > /proc/sys/vm/nr_hugepages
+$ cat /proc/sys/vm/nr_hugepages
+6000000
+$ grep ^Huge /proc/meminfo
+HugePages_Total:   6000000
+HugePages_Free:    6000000
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+$ echo 0 > /proc/sys/vm/nr_hugepages
 
-   dlm_send_one_lockres()
-                                                                 dlm_process_recovery_data()
-                                                                   for (i=0; i<mres->num_locks; i++)
-                                                                     if (ml->node == dlm->node_num)
-                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
-                                                                        list_for_each_entry(lock, tmpq, list)
-                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
-                                                                       }
-                                                                       if (lock->ml.node != ml->node)
-                                                                         BUG() >>> crash here
- }
+BUG: soft lockup - CPU#16 stuck for 67s! [sh:12883] ...
+Pid: 12883, comm: sh Not tainted 2.6.32-358.el6.x86_64 #1
+Call Trace:
+  free_pool_huge_page+0xb8/0xd0
+  set_max_huge_pages+0x128/0x190
+  hugetlb_sysctl_handler_common+0x113/0x140
+  hugetlb_sysctl_handler+0x1e/0x20
+  proc_sys_call_handler+0x97/0xd0
+  proc_sys_write+0x14/0x20
+  vfs_write+0xb8/0x1a0
+  sys_write+0x51/0x90
+  __audit_syscall_exit+0x265/0x290
+  system_call_fastpath+0x16/0x1b
 
-I see the above locks status from a vmcore of our internal bug.
+I have not confirmed this problem with upstream kernels because I am not
+able to prepare the machine equipped with 12TB memory now.  However I
+confirmed that the amount of decreasing hugepages was directly
+proportional to the amount of required time.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Sunil Mushran <sunil.mushran@gmail.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
+I measured required times on a smaller machine.  It showed 130-145
+hugepages decreased in a millisecond.
+
+  Amount of decreasing     Required time      Decreasing rate
+  hugepages                     (msec)         (pages/msec)
+  ------------------------------------------------------------
+  10,000 pages == 20GB         70 -  74          135-142
+  30,000 pages == 60GB        208 - 229          131-144
+
+It means decrement of 6TB hugepages will trigger softlockup with the
+default threshold 20sec, in this decreasing rate.
+
+Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/dlm/dlmrecovery.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ mm/hugetlb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1751,13 +1751,13 @@ static int dlm_process_recovery_data(str
- 				     struct dlm_migratable_lockres *mres)
- {
- 	struct dlm_migratable_lock *ml;
--	struct list_head *queue;
-+	struct list_head *queue, *iter;
- 	struct list_head *tmpq = NULL;
- 	struct dlm_lock *newlock = NULL;
- 	struct dlm_lockstatus *lksb = NULL;
- 	int ret = 0;
- 	int i, j, bad;
--	struct dlm_lock *lock = NULL;
-+	struct dlm_lock *lock;
- 	u8 from = O2NM_MAX_NODES;
- 	unsigned int added = 0;
- 	__be64 c;
-@@ -1792,14 +1792,16 @@ static int dlm_process_recovery_data(str
- 			/* MIGRATION ONLY! */
- 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
- 
-+			lock = NULL;
- 			spin_lock(&res->spinlock);
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
--				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+				list_for_each(iter, tmpq) {
-+					lock = list_entry(iter,
-+						  struct dlm_lock, list);
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
-+					lock = NULL;
- 				}
- 				if (lock)
- 					break;
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1487,6 +1487,7 @@ static unsigned long set_max_huge_pages(
+ 	while (min_count < persistent_huge_pages(h)) {
+ 		if (!free_pool_huge_page(h, nodes_allowed, 0))
+ 			break;
++		cond_resched_lock(&hugetlb_lock);
+ 	}
+ 	while (count < persistent_huge_pages(h)) {
+ 		if (!adjust_pool_surplus(h, nodes_allowed, 1))
 
 
