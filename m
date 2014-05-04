@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbaEDQjc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:39:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36148 "EHLO
+	id S1754060AbaEDPln (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070AbaEDPlo (ORCPT
+	with ESMTP id S1754028AbaEDPll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:44 -0400
+	Sun, 4 May 2014 11:41:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.14 077/158] nfsd4: fix memory leak in nfsd4_encode_fattr()
-Date: Sun,  4 May 2014 11:39:46 -0400
-Message-Id: <20140504154040.376748779@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.14 090/158] SCSI: arcmsr: upper 32 of dma address lost
+Date: Sun,  4 May 2014 11:39:59 -0400
+Message-Id: <20140504154042.156106573@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,33 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 18df11d0eacf67bbcd8dda755b568bbbd7264735 upstream.
+commit e2c70425f05219b142b3a8a9489a622c736db39d upstream.
 
-fh_put() does not free the temporary file handle.
+The original code always set the upper 32 bits to zero because it was
+doing a shift of the wrong variable.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: 1a4f550a09f8 ('[SCSI] arcmsr: 1.20.00.15: add SATA RAID plus other fixes')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/arcmsr/arcmsr_hba.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2501,8 +2501,10 @@ out:
- 		security_release_secctx(context, contextlen);
- #endif /* CONFIG_NFSD_V4_SECURITY_LABEL */
- 	kfree(acl);
--	if (tempfh)
-+	if (tempfh) {
- 		fh_put(tempfh);
-+		kfree(tempfh);
-+	}
- 	return status;
- out_nfserr:
- 	status = nfserrno(err);
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -2500,16 +2500,15 @@ static int arcmsr_polling_ccbdone(struct
+ static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
+ {
+ 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
+-	dma_addr_t dma_coherent_handle;
++
+ 	/*
+ 	********************************************************************
+ 	** here we need to tell iop 331 our freeccb.HighPart
+ 	** if freeccb.HighPart is not zero
+ 	********************************************************************
+ 	*/
+-	dma_coherent_handle = acb->dma_coherent_handle;
+-	cdb_phyaddr = (uint32_t)(dma_coherent_handle);
+-	cdb_phyaddr_hi32 = (uint32_t)((cdb_phyaddr >> 16) >> 16);
++	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
++	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
+ 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
+ 	/*
+ 	***********************************************************************
 
 
