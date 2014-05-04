@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaEDQD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:03:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36623 "EHLO
+	id S932090AbaEDQEW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:04:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36615 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754755AbaEDPmf (ORCPT
+	with ESMTP id S1754754AbaEDPme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:35 -0400
+	Sun, 4 May 2014 11:42:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 53/86] SCSI: arcmsr: upper 32 of dma address lost
-Date: Sun,  4 May 2014 11:41:28 -0400
-Message-Id: <20140504154147.650253075@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Vinod Kumar <vinod.kumar@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 51/86] ib_srpt: Use correct ib_sg_dma primitives
+Date: Sun,  4 May 2014 11:41:26 -0400
+Message-Id: <20140504154147.353442712@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,43 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit e2c70425f05219b142b3a8a9489a622c736db39d upstream.
+commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
 
-The original code always set the upper 32 bits to zero because it was
-doing a shift of the wrong variable.
+The code was incorrectly using sg_dma_address() and
+sg_dma_len() instead of ib_sg_dma_address() and
+ib_sg_dma_len().
 
-Fixes: 1a4f550a09f8 ('[SCSI] arcmsr: 1.20.00.15: add SATA RAID plus other fixes')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This prevents srpt from functioning with the
+Intel HCA and indeed will corrupt memory
+badly.
+
+Cc: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Tested-by: Vinod Kumar <vinod.kumar@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/arcmsr/arcmsr_hba.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/arcmsr/arcmsr_hba.c
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-@@ -2501,16 +2501,15 @@ static int arcmsr_polling_ccbdone(struct
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(stru
+ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 				 struct srpt_send_ioctx *ioctx)
  {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
--	dma_addr_t dma_coherent_handle;
-+
++	struct ib_device *dev = ch->sport->sdev->device;
+ 	struct se_cmd *cmd;
+ 	struct scatterlist *sg, *sg_orig;
+ 	int sg_cnt;
+@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct
+ 
+ 	db = ioctx->rbufs;
+ 	tsize = cmd->data_length;
+-	dma_len = sg_dma_len(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
+ 	riu = ioctx->rdma_ius;
+ 
  	/*
- 	********************************************************************
- 	** here we need to tell iop 331 our freeccb.HighPart
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	dma_coherent_handle = acb->dma_coherent_handle;
--	cdb_phyaddr = (uint32_t)(dma_coherent_handle);
--	cdb_phyaddr_hi32 = (uint32_t)((cdb_phyaddr >> 16) >> 16);
-+	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
+@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
+@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct
+ 	tsize = cmd->data_length;
+ 	riu = ioctx->rdma_ius;
+ 	sg = sg_orig;
+-	dma_len = sg_dma_len(&sg[0]);
+-	dma_addr = sg_dma_address(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
++	dma_addr = ib_sg_dma_address(dev, &sg[0]);
+ 
+ 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
+ 	for (i = 0, j = 0;
+@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
+-						dma_addr = sg_dma_address(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
++						dma_addr = ib_sg_dma_address(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
 
 
