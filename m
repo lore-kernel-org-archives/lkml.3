@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903AbaEDQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:56:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35927 "EHLO
+	id S1756490AbaEDQ5P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:57:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248AbaEDPlS (ORCPT
+	with ESMTP id S1753082AbaEDPlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 026/158] ALSA: hda - Fix silent speaker output due to mute LED fixup
-Date: Sun,  4 May 2014 11:38:55 -0400
-Message-Id: <20140504154033.586473215@linuxfoundation.org>
+        "W. Trevor King" <wking@tremily.us>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 024/158] ALSA: hda - Enable beep for ASUS 1015E
+Date: Sun,  4 May 2014 11:38:53 -0400
+Message-Id: <20140504154033.318483614@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,40 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "W. Trevor King" <wking@tremily.us>
 
-commit 415d555e6b398b00fc1733f0113065a54df9106a upstream.
+commit a4b7f21d7b42b33609df3f86992a8deff80abfaf upstream.
 
-The recent fixups for HP laptops to support the mute LED made the
-speaker output silent on some machines.  It turned out that they use
-the NID 0x18 for the speaker while it's also used for controlling the
-LED via VREF bits although the current driver code blindly assumes
-that such a node is a mic pin (where 0x18 is usually so).
+The `lspci -nnvv` output contains (wrapped for line length):
 
-This patch fixes the problem by only changing the VREF bits and
-keeping the other pin ctl bits.
+  00:1b.0 Audio device [0403]:
+    Intel Corporation 7 Series/C210 Series Chipset Family
+    High Definition Audio Controller [8086:1e20] (rev 04)
+        Subsystem: ASUSTeK Computer Inc. Device [1043:115d]
 
-Reported-and-tested-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: W. Trevor King <wking@tremily.us>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -3212,8 +3212,9 @@ static void alc269_fixup_mic_mute_hook(v
+@@ -993,6 +993,7 @@ static int alc_codec_rename_from_preset(
  
- 	if (spec->mute_led_polarity)
- 		enabled = !enabled;
--	pinval = AC_PINCTL_IN_EN |
--		(enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
-+	pinval = snd_hda_codec_get_pin_target(codec, spec->mute_led_nid);
-+	pinval &= ~AC_PINCTL_VREFEN;
-+	pinval |= enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80;
- 	if (spec->mute_led_nid)
- 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
- }
+ static const struct snd_pci_quirk beep_white_list[] = {
+ 	SND_PCI_QUIRK(0x1043, 0x103c, "ASUS", 1),
++	SND_PCI_QUIRK(0x1043, 0x115d, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x8376, "EeePC", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
 
 
