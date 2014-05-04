@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbaEDPms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36704 "EHLO
+	id S1755686AbaEDP4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:56:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36761 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876AbaEDPmp (ORCPT
+	with ESMTP id S1754899AbaEDPms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:45 -0400
+	Sun, 4 May 2014 11:42:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 69/86] media: omap3isp: preview: Fix the crop margins
-Date: Sun,  4 May 2014 11:41:44 -0400
-Message-Id: <20140504154149.838174917@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.4 01/43] ASoC: cs42l73: Fix mask bits for SOC_VALUE_ENUM_SINGLE
+Date: Sun,  4 May 2014 11:41:55 -0400
+Message-Id: <20140504154224.419919205@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
-References: <20140504154140.444932005@linuxfoundation.org>
+In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
+References: <20140504154224.211508175@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
+commit 1555b652970e541fa1cb80c61ffc696bbfb92bb7 upstream.
 
-Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
-accidentally changed the previewer's cropping, causing the previewer
-to miss four pixels on each line, thus corrupting the final image.
-Restored the removed setting.
+The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the mono mix controls.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Reported-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/omap3isp/isppreview.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/soc/codecs/cs42l73.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -1079,6 +1079,7 @@ static void preview_config_input_format(
-  */
- static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- {
-+	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
- 	struct isp_device *isp = to_isp_device(prev);
- 	unsigned int sph = prev->crop.left;
- 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
-@@ -1086,6 +1087,14 @@ static void preview_config_input_size(st
- 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
- 	u32 features;
+--- a/sound/soc/codecs/cs42l73.c
++++ b/sound/soc/codecs/cs42l73.c
+@@ -327,7 +327,7 @@ static const char * const cs42l73_mono_m
+ static const unsigned int cs42l73_mono_mix_values[] = { 0, 1, 2 };
  
-+	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
-+	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
-+		sph -= 2;
-+		eph += 2;
-+		slv -= 2;
-+		elv += 2;
-+	}
-+
- 	features = (prev->params.params[0].features & active)
- 		 | (prev->params.params[1].features & ~active);
+ static const struct soc_enum spk_asp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 1,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
+@@ -345,7 +345,7 @@ static const struct snd_kcontrol_new spk
+ 	SOC_DAPM_ENUM("Route", spk_xsp_enum);
  
+ static const struct soc_enum esl_asp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 5,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
+@@ -354,7 +354,7 @@ static const struct snd_kcontrol_new esl
+ 	SOC_DAPM_ENUM("Route", esl_asp_enum);
+ 
+ static const struct soc_enum esl_xsp_enum =
+-	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 7,
++	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 3,
+ 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
+ 			      cs42l73_mono_mix_texts,
+ 			      cs42l73_mono_mix_values);
 
 
