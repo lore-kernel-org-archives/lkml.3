@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaEDBN4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 21:13:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58987 "EHLO
+	id S1753708AbaEDBOP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 21:14:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58994 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753647AbaEDBNz (ORCPT
+	with ESMTP id S1753689AbaEDBON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 21:13:55 -0400
-Date: Sat, 3 May 2014 20:24:14 -0400
+	Sat, 3 May 2014 21:14:13 -0400
+Date: Sat, 3 May 2014 20:26:17 -0400
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Christian Engelmayer <cengelma@gmx.at>
-Cc: devel@driverdev.osuosl.org, mcgrof@do-not-panic.com,
-        linux-kernel@vger.kernel.org, oat.elena@gmail.com,
-        dan.carpenter@oracle.com, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH v2] staging: rtl8188eu: fix potential leak in
- rtw_set_key()
-Message-ID: <20140504002414.GA10375@kroah.com>
-References: <20140501123057.5f00e30d@spike>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8821ae: mark pointer in pci_iounmap as
+ __iomem
+Message-ID: <20140504002617.GA16403@kroah.com>
+References: <1399129848-1833-1-git-send-email-martink@posteo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140501123057.5f00e30d@spike>
+In-Reply-To: <1399129848-1833-1-git-send-email-martink@posteo.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 01, 2014 at 12:30:57PM +0200, Christian Engelmayer wrote:
-> Fix a potential leak in the error path of rtw_set_key(). In case the requested
-> algorithm is not supported by the driver, the function returns without
-> enqueuing or freeing the already allocated command and parameter structs. Use
-> a centralized exit path and make sure that all memory is freed correctly.
-> Detected by Coverity - CID 1077716, 1077717.
+On Sat, May 03, 2014 at 05:10:48PM +0200, Martin Kepplinger wrote:
+> pci_iounmap is used that way in drivers/net/wireless/rtlwifi and this
+> fixes sparse warnings.
 > 
-> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
-> Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Martin Kepplinger <martink@posteo.de>
 > ---
-> v2: Added changes requested by Dan Carpenter:
+>  drivers/staging/rtl8821ae/pci.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
->    * Just return directly where no cleanup is needed.
->    * Prefer naming labels by the labeled action rather than the goto location.
-> 
-> Compile tested and applies against branch staging-next of tree
-> git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+> diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
+> index a562aa6..d934ecb 100644
+> --- a/drivers/staging/rtl8821ae/pci.c
+> +++ b/drivers/staging/rtl8821ae/pci.c
+> @@ -2416,7 +2416,7 @@ fail3:
+>  	ieee80211_free_hw(hw);
+>  
+>  	if (rtlpriv->io.pci_mem_start != 0)
+> -		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
+> +		pci_iounmap(pdev, (void __iomem *)rtlpriv->io.pci_mem_start);
 
-This patch doesn't apply to my tree, can you refresh and resend it?
+Shouldn't pci_mem_start be a __iomem pointer instead?
 
 thanks,
 
