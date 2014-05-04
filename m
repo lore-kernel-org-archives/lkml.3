@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845AbaEDQ2o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:28:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36285 "EHLO
+	id S1756416AbaEDQ3B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:29:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754238AbaEDPmA (ORCPT
+	with ESMTP id S1754232AbaEDPl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:00 -0400
+	Sun, 4 May 2014 11:41:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <bob.liu@oracle.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 137/158] mm: try_to_unmap_cluster() should lock_page() before mlocking
-Date: Sun,  4 May 2014 11:40:46 -0400
-Message-Id: <20140504154048.636475765@linuxfoundation.org>
+Subject: [PATCH 3.14 136/158] mm: page_alloc: spill to remote nodes before waking kswapd
+Date: Sun,  4 May 2014 11:40:45 -0400
+Message-Id: <20140504154048.501231569@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -35,90 +29,227 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 57e68e9cd65b4b8eb4045a1e0d0746458502554c upstream.
+commit 3a025760fc158b3726eac89ee95d7f29599e9dfa upstream.
 
-A BUG_ON(!PageLocked) was triggered in mlock_vma_page() by Sasha Levin
-fuzzing with trinity.  The call site try_to_unmap_cluster() does not lock
-the pages other than its check_page parameter (which is already locked).
+On NUMA systems, a node may start thrashing cache or even swap anonymous
+pages while there are still free pages on remote nodes.
 
-The BUG_ON in mlock_vma_page() is not documented and its purpose is
-somewhat unclear, but apparently it serializes against page migration,
-which could otherwise fail to transfer the PG_mlocked flag.  This would
-not be fatal, as the page would be eventually encountered again, but
-NR_MLOCK accounting would become distorted nevertheless.  This patch adds
-a comment to the BUG_ON in mlock_vma_page() and munlock_vma_page() to that
-effect.
+This is a result of commits 81c0a2bb515f ("mm: page_alloc: fair zone
+allocator policy") and fff4068cba48 ("mm: page_alloc: revert NUMA aspect
+of fair allocation policy").
 
-The call site try_to_unmap_cluster() is fixed so that for page !=
-check_page, trylock_page() is attempted (to avoid possible deadlocks as we
-already have check_page locked) and mlock_vma_page() is performed only
-upon success.  If the page lock cannot be obtained, the page is left
-without PG_mlocked, which is again not a problem in the whole unevictable
-memory design.
+Before those changes, the allocator would first try all allowed zones,
+including those on remote nodes, before waking any kswapds.  But now,
+the allocator fastpath doubles as the fairness pass, which in turn can
+only consider the local node to prevent remote spilling based on
+exhausted fairness batches alone.  Remote nodes are only considered in
+the slowpath, after the kswapds are woken up.  But if remote nodes still
+have free memory, kswapd should not be woken to rebalance the local node
+or it may thrash cash or swap prematurely.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Bob Liu <bob.liu@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Fix this by adding one more unfair pass over the zonelist that is
+allowed to spill to remote nodes after the local fairness pass fails but
+before entering the slowpath and waking the kswapds.
+
+This also gets rid of the GFP_THISNODE exemption from the fairness
+protocol because the unfair pass is no longer tied to kswapd, which
+GFP_THISNODE is not allowed to wake up.
+
+However, because remote spills can be more frequent now - we prefer them
+over local kswapd reclaim - the allocation batches on remote nodes could
+underflow more heavily.  When resetting the batches, use
+atomic_long_read() directly instead of zone_page_state() to calculate the
+delta as the latter filters negative counter values.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 Acked-by: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mlock.c |    2 ++
- mm/rmap.c  |   14 ++++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ mm/internal.h   |    1 
+ mm/page_alloc.c |   89 ++++++++++++++++++++++++++++----------------------------
+ 2 files changed, 46 insertions(+), 44 deletions(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -79,6 +79,7 @@ void clear_page_mlock(struct page *page)
-  */
- void mlock_vma_page(struct page *page)
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -370,5 +370,6 @@ unsigned long reclaim_clean_pages_from_l
+ #define ALLOC_HIGH		0x20 /* __GFP_HIGH set */
+ #define ALLOC_CPUSET		0x40 /* check for correct cpuset */
+ #define ALLOC_CMA		0x80 /* allow allocations from CMA areas */
++#define ALLOC_FAIR		0x100 /* fair zone allocation */
+ 
+ #endif	/* __MM_INTERNAL_H */
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1238,15 +1238,6 @@ void drain_zone_pages(struct zone *zone,
+ 	}
+ 	local_irq_restore(flags);
+ }
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
+-}
+-#else
+-static bool gfp_thisnode_allocation(gfp_t gfp_mask)
+-{
+-	return false;
+-}
+ #endif
+ 
+ /*
+@@ -1583,12 +1574,7 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
+ 
+-	/*
+-	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
+-	 * aging protocol, so they can't be fair.
+-	 */
+-	if (!gfp_thisnode_allocation(gfp_flags))
+-		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+ 
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+@@ -1954,23 +1940,12 @@ zonelist_scan:
+ 		 * zone size to ensure fair page aging.  The zone a
+ 		 * page was allocated in should have no effect on the
+ 		 * time the page has in memory before being reclaimed.
+-		 *
+-		 * Try to stay in local zones in the fastpath.  If
+-		 * that fails, the slowpath is entered, which will do
+-		 * another pass starting with the local zones, but
+-		 * ultimately fall back to remote zones that do not
+-		 * partake in the fairness round-robin cycle of this
+-		 * zonelist.
+-		 *
+-		 * NOTE: GFP_THISNODE allocations do not partake in
+-		 * the kswapd aging protocol, so they can't be fair.
+ 		 */
+-		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+-		    !gfp_thisnode_allocation(gfp_mask)) {
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+-				continue;
++		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				continue;
++			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++				continue;
+ 		}
+ 		/*
+ 		 * When allocating a page cache page for writing, we
+@@ -2408,32 +2383,40 @@ __alloc_pages_high_priority(gfp_t gfp_ma
+ 	return page;
+ }
+ 
+-static void prepare_slowpath(gfp_t gfp_mask, unsigned int order,
+-			     struct zonelist *zonelist,
+-			     enum zone_type high_zoneidx,
+-			     struct zone *preferred_zone)
++static void reset_alloc_batches(struct zonelist *zonelist,
++				enum zone_type high_zoneidx,
++				struct zone *preferred_zone)
  {
-+	/* Serialize with page migration */
- 	BUG_ON(!PageLocked(page));
+ 	struct zoneref *z;
+ 	struct zone *zone;
  
- 	if (!TestSetPageMlocked(page)) {
-@@ -174,6 +175,7 @@ unsigned int munlock_vma_page(struct pag
- 	unsigned int nr_pages;
- 	struct zone *zone = page_zone(page);
+ 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		if (!(gfp_mask & __GFP_NO_KSWAPD))
+-			wakeup_kswapd(zone, order, zone_idx(preferred_zone));
+ 		/*
+ 		 * Only reset the batches of zones that were actually
+-		 * considered in the fast path, we don't want to
+-		 * thrash fairness information for zones that are not
++		 * considered in the fairness pass, we don't want to
++		 * trash fairness information for zones that are not
+ 		 * actually part of this zonelist's round-robin cycle.
+ 		 */
+ 		if (!zone_local(preferred_zone, zone))
+ 			continue;
+ 		mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-				    high_wmark_pages(zone) -
+-				    low_wmark_pages(zone) -
+-				    zone_page_state(zone, NR_ALLOC_BATCH));
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
+ 	}
+ }
  
-+	/* For try_to_munlock() and to serialize with page migration */
- 	BUG_ON(!PageLocked(page));
++static void wake_all_kswapds(unsigned int order,
++			     struct zonelist *zonelist,
++			     enum zone_type high_zoneidx,
++			     struct zone *preferred_zone)
++{
++	struct zoneref *z;
++	struct zone *zone;
++
++	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx)
++		wakeup_kswapd(zone, order, zone_idx(preferred_zone));
++}
++
+ static inline int
+ gfp_to_alloc_flags(gfp_t gfp_mask)
+ {
+@@ -2522,12 +2505,13 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+ 	 * allowed per node queues are empty and that nodes are
+ 	 * over allocated.
+ 	 */
+-	if (gfp_thisnode_allocation(gfp_mask))
++	if (IS_ENABLED(CONFIG_NUMA) &&
++	    (gfp_mask & GFP_THISNODE) == GFP_THISNODE)
+ 		goto nopage;
+ 
+ restart:
+-	prepare_slowpath(gfp_mask, order, zonelist,
+-			 high_zoneidx, preferred_zone);
++	if (!(gfp_mask & __GFP_NO_KSWAPD))
++		wake_all_kswapds(order, zonelist, high_zoneidx, preferred_zone);
  
  	/*
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1322,9 +1322,19 @@ static int try_to_unmap_cluster(unsigned
- 		BUG_ON(!page || PageAnon(page));
+ 	 * OK, we're below the kswapd watermark and have kicked background
+@@ -2711,7 +2695,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, u
+ 	struct page *page = NULL;
+ 	int migratetype = allocflags_to_migratetype(gfp_mask);
+ 	unsigned int cpuset_mems_cookie;
+-	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET;
++	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
+ 	struct mem_cgroup *memcg = NULL;
  
- 		if (locked_vma) {
--			mlock_vma_page(page);   /* no-op if already mlocked */
--			if (page == check_page)
-+			if (page == check_page) {
-+				/* we know we have check_page locked */
-+				mlock_vma_page(page);
- 				ret = SWAP_MLOCK;
-+			} else if (trylock_page(page)) {
-+				/*
-+				 * If we can lock the page, perform mlock.
-+				 * Otherwise leave the page alone, it will be
-+				 * eventually encountered again later.
-+				 */
-+				mlock_vma_page(page);
-+				unlock_page(page);
-+			}
- 			continue;	/* don't unmap */
- 		}
- 
+ 	gfp_mask &= gfp_allowed_mask;
+@@ -2752,12 +2736,29 @@ retry_cpuset:
+ 	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+ 		alloc_flags |= ALLOC_CMA;
+ #endif
++retry:
+ 	/* First allocation attempt */
+ 	page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL, nodemask, order,
+ 			zonelist, high_zoneidx, alloc_flags,
+ 			preferred_zone, migratetype);
+ 	if (unlikely(!page)) {
+ 		/*
++		 * The first pass makes sure allocations are spread
++		 * fairly within the local node.  However, the local
++		 * node might have free pages left after the fairness
++		 * batches are exhausted, and remote zones haven't
++		 * even been considered yet.  Try once more without
++		 * fairness, and include remote zones now, before
++		 * entering the slowpath and waking kswapd: prefer
++		 * spilling to a remote zone over swapping locally.
++		 */
++		if (alloc_flags & ALLOC_FAIR) {
++			reset_alloc_batches(zonelist, high_zoneidx,
++					    preferred_zone);
++			alloc_flags &= ~ALLOC_FAIR;
++			goto retry;
++		}
++		/*
+ 		 * Runtime PM, block IO and its error handling path
+ 		 * can deadlock because I/O on the device might not
+ 		 * complete.
 
 
