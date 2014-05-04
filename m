@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426AbaEDQFr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36603 "EHLO
+	id S1754727AbaEDPmc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734AbaEDPmd (ORCPT
+	with ESMTP id S1754623AbaEDPmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:33 -0400
+	Sun, 4 May 2014 11:42:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.10 48/86] IB/nes: Return an error on ib_copy_from_udata() failure instead of NULL
-Date: Sun,  4 May 2014 11:41:23 -0400
-Message-Id: <20140504154146.943909229@linuxfoundation.org>
+        Himangi Saraogi <himangi774@gmail.com>
+Subject: [PATCH 3.10 32/86] staging:serqt_usb2: Fix sparse warning restricted __le16 degrades to integer
+Date: Sun,  4 May 2014 11:41:07 -0400
+Message-Id: <20140504154144.758817628@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,47 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Himangi Saraogi <himangi774@gmail.com>
 
-commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
+commit abe5d64d1a74195a44cd14624f8178b9f48b7cc7 upstream.
 
-In case of error while accessing to userspace memory, function
-nes_create_qp() returns NULL instead of an error code wrapped through
-ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
-check for error with IS_ERR().
+This patch fixes the following sparse warning :
+drivers/staging/serqt_usb2/serqt_usb2.c:727:40: warning: restricted __le16 degrades to integer
 
-As page 0 is likely not mapped, it is going to trigger an Oops when
-the kernel will try to dereference NULL pointer to access to struct
-ib_qp's fields.
-
-In some rare cases, page 0 could be mapped by userspace, which could
-turn this bug to a vulnerability that could be exploited: the function
-pointers in struct ib_device will be under userspace total control.
-
-This was caught when using spatch (aka. coccinelle)
-to rewrite calls to ib_copy_{from,to}_udata().
-
-Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/nes/nes_verbs.c |    2 +-
+ drivers/staging/serqt_usb2/serqt_usb2.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1186,7 +1186,7 @@ static struct ib_qp *nes_create_qp(struc
- 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
- 					kfree(nesqp->allocated_buffer);
- 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
--					return NULL;
-+					return ERR_PTR(-EFAULT);
- 				}
- 				if (req.user_wqe_buffers) {
- 					virt_wqs = 1;
+--- a/drivers/staging/serqt_usb2/serqt_usb2.c
++++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+@@ -725,7 +725,7 @@ static int qt_startup(struct usb_serial
+ 		goto startup_error;
+ 	}
+ 
+-	switch (serial->dev->descriptor.idProduct) {
++	switch (le16_to_cpu(serial->dev->descriptor.idProduct)) {
+ 	case QUATECH_DSU100:
+ 	case QUATECH_QSU100:
+ 	case QUATECH_ESU100A:
 
 
