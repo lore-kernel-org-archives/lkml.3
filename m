@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575AbaEDHSH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 03:18:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50933 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaEDHSG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 03:18:06 -0400
-Date: Sun, 4 May 2014 09:17:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kirill Tkhai <tkhai@yandex.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
-Message-ID: <20140504071758.GK17778@laptop.programming.kicks-ass.net>
-References: <5362122B.8060305@yandex.ru>
- <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
+	id S1753220AbaEDH2P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 03:28:15 -0400
+Received: from mout.gmx.net ([212.227.17.22]:51708 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258AbaEDH2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 03:28:14 -0400
+Message-ID: <5365EC05.5080900@gmx.de>
+Date: Sun, 04 May 2014 09:28:05 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        James Hogan <james.hogan@imgtec.com>
+CC: linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
+        John David Anglin <dave.anglin@bell.net>, linux-metag@vger.kernel.org
+Subject: Re: [PATCH] parisc,metag: Do not hardcode maximum userspace stack
+ size
+References: <20140430212602.GA20601@p100.fritz.box>		 <53622DBA.807@imgtec.com> <1398966636.2174.21.camel@dabdike>	 <5363876A.2030709@imgtec.com> <1399042116.2202.1.camel@dabdike>
+In-Reply-To: <1399042116.2202.1.camel@dabdike>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:/NZyqSbuDp45CDoXvPfbOxjAsvRzBAoqtaDmH02rqsI75bNaj7P
+ NgIQZi5kNcJj1qWEHaE53R301q45KuCeiu/YLgNQsmNIp6r/QWiGVOHCadmq3mPHl34rixP
+ 8YdEOXmaRvxGPS4vDUax67QESK0wpiX0wW+yBs1rbckG0OfwTI2VomUQUX7brBEw4cmF9j0
+ nGd0QDW7/RXVuXFL3YbuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 08:54:08PM +0200, Thomas Gleixner wrote:
-> On Thu, 1 May 2014, Kirill Tkhai wrote:
-> > Higher priority does not provide exclusive privilege
-> > of one fair task over the other. In this case priority
-> > boosting looks excess.
-> > 
-> > On RT patch with enabled PREEMPT_RT_FULL I see a lot of
-> > rt_mutex_setprio() actions like
-> > 
-> > 	120 -> 118
-> > 	118 -> 120
-> > 
-> > They harm RT tasks.
+On 05/02/2014 04:48 PM, James Bottomley wrote:
+> On Fri, 2014-05-02 at 12:54 +0100, James Hogan wrote:
+>> On 01/05/14 18:50, James Bottomley wrote:
+>>>
+>>>> +
+>>>> +config MAX_STACK_SIZE_MB
+>>>> +	int "Maximum user stack size (MB)"
+>>>> +	default 80
+>>>> +	range 8 256 if METAG
+>>>> +	range 8 2048
+>>>> +	depends on STACK_GROWSUP
+>>>> +	help
+>>>> +	  This is the maximum stack size in Megabytes in the VM layout of user
+>>>> +	  processes when the stack grows upwards (currently only on parisc and
+>>>> +	  metag arch). The stack will be located at the highest memory address
+>>>> +	  minus the given value, unless the RLIMIT_STACK hard limit is changed
+>>>> +	  to a smaller value in which case that is used.
+>>>> +
+>>>> +	  A sane initial value is 80 MB.
+>>>
+>>> There's one final issue with this: placement of the stack only really
+>>> matters on 32 bits.  We have three expanding memory areas: stack, heap
+>>> and maps.  On 64 bits these are placed well separated from each other on
+>>> 64 bits, so an artificial limit like this doesn't matter.
+>>
+>> Does the following fixup diff look reasonable? It forces
+>> MAX_STACK_SIZE_MB to 1024 and hides the Kconfig option for 64BIT,
+>> effectively leaving the behaviour unchanged in that case.
+>>
+>> diff --git a/mm/Kconfig b/mm/Kconfig
+>> index e80075979530..b0307f737bd7 100644
+>> --- a/mm/Kconfig
+>> +++ b/mm/Kconfig
+>> @@ -583,7 +583,8 @@ config GENERIC_EARLY_IOREMAP
+>>  	bool
+>>
+>>  config MAX_STACK_SIZE_MB
+>> -	int "Maximum user stack size (MB)"
+>> +	int "Maximum user stack size (MB)" if !64BIT
+>> +	default 1024 if 64BIT
+>>  	default 80
+>>  	range 8 256 if METAG
+>>  	range 8 2048
 > 
-> That's not the main problem. The point is that it is useless and
-> therefor harming performace and throughput as well.
->  
-> > RT patch has lazy preemtion feature, so if idea is we care
-> > about excess preemption inside fair class, we should care
-> > about excess priority inheritance too.
-> > 
-> > In case of vanila kernel the problem is the same, but there
-> > are no so many rt mutexes. Do I skip anything?
-> 
-> Almost a decade ago we decided to do the boosting for everything
-> including SCHED_OTHER due to the very simple reason that exercising
-> that code path more is likely to trigger more bugs.
->  
-> But yes in a production environment, it's pointless for SCHED_OTHER
-> tasks.
-> 
-> Though exercising that code path as much as we can is not a bad thing
-> either. So I'd like to see that made compile time conditional on one
-> of the lock testing CONFIG items.
-> 
-> And the patch should be made against mainline, where we have the same
-> issue (reduced to PI-futexes).
+> Yes, I think that's probably correct ... 
 
-And of course, if we ever get to PEP, we very much want all the classes
-to participate :)
+No, it's not correct.
+It will then choose then a 1GB stack for compat tasks on 64bit kernel.
+
+Helge
+
+> parisc doesn't actually have
+> anything other than a testbed 64 bit userspace, so this is a bit
+> theoretical for us.
+
+
+
+
