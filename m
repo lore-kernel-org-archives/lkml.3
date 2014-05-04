@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaEDQco (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:32:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36225 "EHLO
+	id S1756553AbaEDQcm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:32:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210AbaEDPlx (ORCPT
+	with ESMTP id S1754217AbaEDPlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfram Sang <wsa@the-dreams.de>, Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 121/158] media: media: gspca: sn9c20x: add ID for Genius Look 1320 V2
-Date: Sun,  4 May 2014 11:40:30 -0400
-Message-Id: <20140504154046.442087799@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 122/158] usb: dwc3: fix wrong bit mask in dwc3_event_devt
+Date: Sun,  4 May 2014 11:40:31 -0400
+Message-Id: <20140504154046.575164586@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,39 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
+commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Around DWC USB3 2.30a release another bit has been added to the
+Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
+
+Because of that, what used to be 8 bits long, has become 9 bits long.
+
+Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
+Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
+not 8 bits. And the following reserved field uses [31:25] bits not
+[31:24] bits, and it has 7 bits.
+
+So in dwc3_event_devt, the bit mask should be:
+event_info	[24:16]		9 bits
+reserved31_25	[31:25]		7 bits
+
+This patch makes sure that newer core releases will work fine with
+Linux and that we will decode the event information properly on new
+core releases.
+
+[ balbi@ti.com : improve commit log a bit ]
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/video4linux/gspca.txt |    1 +
- drivers/media/usb/gspca/sn9c20x.c   |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/dwc3/core.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/Documentation/video4linux/gspca.txt
-+++ b/Documentation/video4linux/gspca.txt
-@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
- sonixj		0458:7025	Genius Eye 311Q
- sn9c20x		0458:7029	Genius Look 320s
- sonixj		0458:702e	Genius Slim 310 NB
-+sn9c20x		0458:7045	Genius Look 1320 V2
- sn9c20x		0458:704a	Genius Slim 1320
- sn9c20x		0458:704c	Genius i-Look 1321
- sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
---- a/drivers/media/usb/gspca/sn9c20x.c
-+++ b/drivers/media/usb/gspca/sn9c20x.c
-@@ -2359,6 +2359,7 @@ static const struct usb_device_id device
- 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
- 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
- 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
-+	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
- 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -815,15 +815,15 @@ struct dwc3_event_depevt {
+  *	12	- VndrDevTstRcved
+  * @reserved15_12: Reserved, not used
+  * @event_info: Information about this event
+- * @reserved31_24: Reserved, not used
++ * @reserved31_25: Reserved, not used
+  */
+ struct dwc3_event_devt {
+ 	u32	one_bit:1;
+ 	u32	device_event:7;
+ 	u32	type:4;
+ 	u32	reserved15_12:4;
+-	u32	event_info:8;
+-	u32	reserved31_24:8;
++	u32	event_info:9;
++	u32	reserved31_25:7;
+ } __packed;
+ 
+ /**
 
 
