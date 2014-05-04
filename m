@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596AbaEDQGG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:06:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36595 "EHLO
+	id S1755212AbaEDQGE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:06:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730AbaEDPmc (ORCPT
+	with ESMTP id S1754623AbaEDPmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:32 -0400
+	Sun, 4 May 2014 11:42:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [PATCH 3.10 60/86] xhci: Prevent runtime pm from autosuspending during initialization
-Date: Sun,  4 May 2014 11:41:35 -0400
-Message-Id: <20140504154148.598326185@linuxfoundation.org>
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.10 61/86] xhci: extend quirk for Renesas cards
+Date: Sun,  4 May 2014 11:41:36 -0400
+Message-Id: <20140504154148.734107538@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,71 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 
-commit bcffae7708eb8352f44dc510b326541fe43a02a4 upstream.
+commit 6db249ebefc6bf5c39f35dfaacc046d8ad3ffd70 upstream.
 
-xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
-to register its usb-2 bus, and then continue to manually register the
-usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
-might thus trigger a runtime suspend before the usb-3 bus is ready.
+After suspend another Renesas PCI-X USB 3.0 card doesn't work.
+[root@fedora-20 ~]# lspci -vmnnd 1912:
+Device:	03:00.0
+Class:	USB controller [0c03]
+Vendor:	Renesas Technology Corp. [1912]
+Device:	uPD720202 USB 3.0 Host Controller [0015]
+SVendor:	Renesas Technology Corp. [1912]
+SDevice:	uPD720202 USB 3.0 Host Controller [0015]
+Rev:	02
+ProgIf:	30
 
-Prevent the runtime suspend by increasing the usage count in the
-beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
-ready.
+This patch should be applied to stable kernel 3.14 that contain
+the commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
+"xhci: Fix resume issues on Renesas chips in Samsung laptops"
 
-xhci-platform driver is not using usb_hcd_pci_probe to set up
-busses and should not need to have it's usage count increased during probe.
-
+Reported-and-tested-by: Anatoly Kharchenko <rfr-bugs@yandex.ru>
+Reference: http://redmine.russianfedora.pro/issues/1315
+Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Acked-by: Dan Williams <dan.j.williams@intel.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
 --- a/drivers/usb/host/xhci-pci.c
 +++ b/drivers/usb/host/xhci-pci.c
-@@ -161,6 +161,10 @@ static int xhci_pci_probe(struct pci_dev
- 	struct usb_hcd *hcd;
- 
- 	driver = (struct hc_driver *)id->driver_data;
-+
-+	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
-+	pm_runtime_get_noresume(&dev->dev);
-+
- 	/* Register the USB 2.0 roothub.
- 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
- 	 * This is sort of silly, because we could just set the HCD driver flags
-@@ -170,7 +174,7 @@ static int xhci_pci_probe(struct pci_dev
- 	retval = usb_hcd_pci_probe(dev, id);
- 
- 	if (retval)
--		return retval;
-+		goto put_runtime_pm;
- 
- 	/* USB 2.0 roothub is stored in the PCI device now. */
- 	hcd = dev_get_drvdata(&dev->dev);
-@@ -199,12 +203,17 @@ static int xhci_pci_probe(struct pci_dev
- 	if (xhci->quirks & XHCI_LPM_SUPPORT)
- 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
- 
-+	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
-+	pm_runtime_put_noidle(&dev->dev);
-+
- 	return 0;
- 
- put_usb3_hcd:
- 	usb_put_hcd(xhci->shared_hcd);
- dealloc_usb2_hcd:
- 	usb_hcd_pci_remove(dev);
-+put_runtime_pm:
-+	pm_runtime_put_noidle(&dev->dev);
- 	return retval;
- }
- 
+@@ -114,9 +114,7 @@ static void xhci_pci_quirks(struct devic
+ 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
+-			pdev->device == 0x0015 &&
+-			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
+-			pdev->subsystem_device == 0xc0cd)
++			pdev->device == 0x0015)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
 
 
