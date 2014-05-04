@@ -1,138 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532AbaEDPmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36300 "EHLO
+	id S1755923AbaEDQTW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:19:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36421 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaEDPmF (ORCPT
+	with ESMTP id S1754372AbaEDPmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:05 -0400
+	Sun, 4 May 2014 11:42:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jim Davis <jim.epost@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 123/158] usb: dwc3: fix randconfig build errors
-Date: Sun,  4 May 2014 11:40:32 -0400
-Message-Id: <20140504154046.711693688@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 03/86] ASoC: cs42l51: Fix SOC_DOUBLE_R_SX_TLV shift values for ADC, PCM, and Analog kcontrols
+Date: Sun,  4 May 2014 11:40:38 -0400
+Message-Id: <20140504154140.890714364@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
-References: <20140504154029.975081050@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Brian Austin <brian.austin@cirrus.com>
 
-commit 610183051d8f9421f138c4203ca894387f9f8839 upstream.
+commit 7272e051157ccd5871b5d939548d0ba5a94a2965 upstream.
 
-commit 388e5c5 (usb: dwc3: remove dwc3 dependency
-on host AND gadget.) created the possibility for
-host-only and peripheral-only dwc3 builds but
-left a possible randconfig build error when host-only
-builds are selected.
+The shift values for the ADC,PCM, and Analog kcontrols were wrong causing wrong values for the SOC_DOUBLE_R_SX_TLV macros
+Fixed the TLV for aout_tlv to show -102dB correctly
 
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Fixes: 1d99f2436d (ASoC: core: Rework SOC_DOUBLE_R_SX_TLV add SOC_SINGLE_SX_TLV)
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Brian Austin <brian.austin@cirrus.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/core.h   |   33 +++++++++++++++++++++++++++++++++
- drivers/usb/dwc3/gadget.h |   12 ------------
- 2 files changed, 33 insertions(+), 12 deletions(-)
+ sound/soc/codecs/cs42l51.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -856,6 +856,19 @@ union dwc3_event {
- 	struct dwc3_event_gevt		gevt;
- };
+--- a/sound/soc/codecs/cs42l51.c
++++ b/sound/soc/codecs/cs42l51.c
+@@ -124,9 +124,8 @@ static int cs42l51_set_chan_mix(struct s
  
-+/**
-+ * struct dwc3_gadget_ep_cmd_params - representation of endpoint command
-+ * parameters
-+ * @param2: third parameter
-+ * @param1: second parameter
-+ * @param0: first parameter
-+ */
-+struct dwc3_gadget_ep_cmd_params {
-+	u32	param2;
-+	u32	param1;
-+	u32	param0;
-+};
+ static const DECLARE_TLV_DB_SCALE(adc_pcm_tlv, -5150, 50, 0);
+ static const DECLARE_TLV_DB_SCALE(tone_tlv, -1050, 150, 0);
+-/* This is a lie. after -102 db, it stays at -102 */
+-/* maybe a range would be better */
+-static const DECLARE_TLV_DB_SCALE(aout_tlv, -11550, 50, 0);
 +
- /*
-  * DWC3 Features to be used as Driver Data
-  */
-@@ -881,11 +894,31 @@ static inline void dwc3_host_exit(struct
- #if IS_ENABLED(CONFIG_USB_DWC3_GADGET) || IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
- int dwc3_gadget_init(struct dwc3 *dwc);
- void dwc3_gadget_exit(struct dwc3 *dwc);
-+int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
-+int dwc3_gadget_get_link_state(struct dwc3 *dwc);
-+int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
-+int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
-+		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
-+int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
- #else
- static inline int dwc3_gadget_init(struct dwc3 *dwc)
- { return 0; }
- static inline void dwc3_gadget_exit(struct dwc3 *dwc)
- { }
-+static inline int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode)
-+{ return 0; }
-+static inline int dwc3_gadget_get_link_state(struct dwc3 *dwc)
-+{ return 0; }
-+static inline int dwc3_gadget_set_link_state(struct dwc3 *dwc,
-+		enum dwc3_link_state state)
-+{ return 0; }
-+
-+static inline int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
-+		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params)
-+{ return 0; }
-+static inline int dwc3_send_gadget_generic_command(struct dwc3 *dwc,
-+		int cmd, u32 param)
-+{ return 0; }
- #endif
++static const DECLARE_TLV_DB_SCALE(aout_tlv, -10200, 50, 0);
  
- /* power management interface */
---- a/drivers/usb/dwc3/gadget.h
-+++ b/drivers/usb/dwc3/gadget.h
-@@ -56,12 +56,6 @@ struct dwc3;
- /* DEPXFERCFG parameter 0 */
- #define DWC3_DEPXFERCFG_NUM_XFER_RES(n)	((n) & 0xffff)
- 
--struct dwc3_gadget_ep_cmd_params {
--	u32	param2;
--	u32	param1;
--	u32	param0;
--};
--
- /* -------------------------------------------------------------------------- */
- 
- #define to_dwc3_request(r)	(container_of(r, struct dwc3_request, request))
-@@ -85,9 +79,6 @@ static inline void dwc3_gadget_move_requ
- void dwc3_gadget_giveback(struct dwc3_ep *dep, struct dwc3_request *req,
- 		int status);
- 
--int dwc3_gadget_set_test_mode(struct dwc3 *dwc, int mode);
--int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
--
- void dwc3_ep0_interrupt(struct dwc3 *dwc,
- 		const struct dwc3_event_depevt *event);
- void dwc3_ep0_out_start(struct dwc3 *dwc);
-@@ -95,9 +86,6 @@ int dwc3_gadget_ep0_set_halt(struct usb_
- int dwc3_gadget_ep0_queue(struct usb_ep *ep, struct usb_request *request,
- 		gfp_t gfp_flags);
- int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value);
--int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
--		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
--int dwc3_send_gadget_generic_command(struct dwc3 *dwc, int cmd, u32 param);
- 
- /**
-  * dwc3_gadget_ep_get_transfer_index - Gets transfer index from HW
+ static const DECLARE_TLV_DB_SCALE(boost_tlv, 1600, 1600, 0);
+ static const char *chan_mix[] = {
+@@ -141,7 +140,7 @@ static const struct soc_enum cs42l51_cha
+ static const struct snd_kcontrol_new cs42l51_snd_controls[] = {
+ 	SOC_DOUBLE_R_SX_TLV("PCM Playback Volume",
+ 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL,
+-			6, 0x19, 0x7F, adc_pcm_tlv),
++			0, 0x19, 0x7F, adc_pcm_tlv),
+ 	SOC_DOUBLE_R("PCM Playback Switch",
+ 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL, 7, 1, 1),
+ 	SOC_DOUBLE_R_SX_TLV("Analog Playback Volume",
+@@ -149,7 +148,7 @@ static const struct snd_kcontrol_new cs4
+ 			0, 0x34, 0xE4, aout_tlv),
+ 	SOC_DOUBLE_R_SX_TLV("ADC Mixer Volume",
+ 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL,
+-			6, 0x19, 0x7F, adc_pcm_tlv),
++			0, 0x19, 0x7F, adc_pcm_tlv),
+ 	SOC_DOUBLE_R("ADC Mixer Switch",
+ 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL, 7, 1, 1),
+ 	SOC_SINGLE("Playback Deemphasis Switch", CS42L51_DAC_CTL, 3, 1, 0),
 
 
