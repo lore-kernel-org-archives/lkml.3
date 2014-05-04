@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbaEDQz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:55:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
+	id S1756899AbaEDQ4T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:56:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35929 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309AbaEDPlT (ORCPT
+	with ESMTP id S1753274AbaEDPlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 028/158] ALSA: hda/realtek - Add headset Mic support for Dell machine
-Date: Sun,  4 May 2014 11:38:57 -0400
-Message-Id: <20140504154033.860638872@linuxfoundation.org>
+Subject: [PATCH 3.14 027/158] ALSA: hda/realtek - Add support of ALC288 codec
+Date: Sun,  4 May 2014 11:38:56 -0400
+Message-Id: <20140504154033.725561795@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kailang Yang <kailang@realtek.com>
 
-commit 8dc9abb93dde94e7f2bc719032fe16f5713df05c upstream.
+commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
 
 Signed-off-by: Kailang Yang <kailang@realtek.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
@@ -40,14 +40,21 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -5275,6 +5275,8 @@ static const struct snd_pci_quirk alc662
- 	SND_PCI_QUIRK(0x1028, 0x0626, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x1028, 0x0628, "Dell", ALC668_FIXUP_AUTO_MUTE),
- 	SND_PCI_QUIRK(0x1028, 0x064e, "Dell", ALC668_FIXUP_AUTO_MUTE),
-+	SND_PCI_QUIRK(0x1028, 0x0696, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
-+	SND_PCI_QUIRK(0x1028, 0x0698, "Dell", ALC668_FIXUP_DELL_MIC_NO_PRESENCE),
- 	SND_PCI_QUIRK(0x103c, 0x1632, "HP RP5800", ALC662_FIXUP_HP_RP5800),
- 	SND_PCI_QUIRK(0x1043, 0x11cd, "Asus N550", ALC662_FIXUP_BASS_1A_CHMAP),
- 	SND_PCI_QUIRK(0x1043, 0x1477, "ASUS N56VZ", ALC662_FIXUP_BASS_CHMAP),
+@@ -4708,6 +4708,7 @@ static int patch_alc269(struct hda_codec
+ 		spec->codec_variant = ALC269_TYPE_ALC285;
+ 		break;
+ 	case 0x10ec0286:
++	case 0x10ec0288:
+ 		spec->codec_variant = ALC269_TYPE_ALC286;
+ 		break;
+ 	case 0x10ec0255:
+@@ -5514,6 +5515,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0285, .name = "ALC285", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
++	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0293, .name = "ALC293", .patch = patch_alc269 },
 
 
