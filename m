@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070AbaEDQPC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:15:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36488 "EHLO
+	id S1756088AbaEDQPk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:15:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569AbaEDPmU (ORCPT
+	with ESMTP id S1754565AbaEDPmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:20 -0400
+	Sun, 4 May 2014 11:42:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 18/86] ALSA: hda - Fix silent speaker output due to mute LED fixup
-Date: Sun,  4 May 2014 11:40:53 -0400
-Message-Id: <20140504154142.852471571@linuxfoundation.org>
+        Krzysztof Halasa <khc@pm.waw.pl>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 15/86] ARM: 7728/1: mm: Use phys_addr_t properly for ioremap functions
+Date: Sun,  4 May 2014 11:40:50 -0400
+Message-Id: <20140504154142.485633454@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,40 +30,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-commit 415d555e6b398b00fc1733f0113065a54df9106a upstream.
+commit 9b97173e785a54c5df0aa23d1e1f680f61e36e43 upstream.
 
-The recent fixups for HP laptops to support the mute LED made the
-speaker output silent on some machines.  It turned out that they use
-the NID 0x18 for the speaker while it's also used for controlling the
-LED via VREF bits although the current driver code blindly assumes
-that such a node is a mic pin (where 0x18 is usually so).
+Several of the ioremap functions use unsigned long in places
+resulting in truncation if physical addresses greater than
+4G are passed in. Change the types of the functions and the
+callers accordingly.
 
-This patch fixes the problem by only changing the VREF bits and
-keeping the other pin ctl bits.
-
-Reported-and-tested-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/io.h     |    8 ++++----
+ arch/arm/mach-ebsa110/core.c  |    2 +-
+ arch/arm/mach-imx/mm-imx3.c   |    2 +-
+ arch/arm/mach-iop13xx/io.c    |    2 +-
+ arch/arm/mach-ixp4xx/common.c |    2 +-
+ arch/arm/mach-msm/common.h    |    2 +-
+ arch/arm/mach-msm/io.c        |    2 +-
+ arch/arm/mm/ioremap.c         |   10 +++++-----
+ arch/arm/mm/nommu.c           |    6 +++---
+ 9 files changed, 18 insertions(+), 18 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2859,8 +2859,9 @@ static void alc269_fixup_mic_mute_hook(v
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -130,16 +130,16 @@ static inline u32 __raw_readl(const vola
+  */
+ extern void __iomem *__arm_ioremap_pfn_caller(unsigned long, unsigned long,
+ 	size_t, unsigned int, void *);
+-extern void __iomem *__arm_ioremap_caller(unsigned long, size_t, unsigned int,
++extern void __iomem *__arm_ioremap_caller(phys_addr_t, size_t, unsigned int,
+ 	void *);
  
- 	if (spec->mute_led_polarity)
- 		enabled = !enabled;
--	pinval = AC_PINCTL_IN_EN |
--		(enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
-+	pinval = snd_hda_codec_get_pin_target(codec, spec->mute_led_nid);
-+	pinval &= ~AC_PINCTL_VREFEN;
-+	pinval |= enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80;
- 	if (spec->mute_led_nid)
- 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
+ extern void __iomem *__arm_ioremap_pfn(unsigned long, unsigned long, size_t, unsigned int);
+-extern void __iomem *__arm_ioremap(unsigned long, size_t, unsigned int);
+-extern void __iomem *__arm_ioremap_exec(unsigned long, size_t, bool cached);
++extern void __iomem *__arm_ioremap(phys_addr_t, size_t, unsigned int);
++extern void __iomem *__arm_ioremap_exec(phys_addr_t, size_t, bool cached);
+ extern void __iounmap(volatile void __iomem *addr);
+ extern void __arm_iounmap(volatile void __iomem *addr);
+ 
+-extern void __iomem * (*arch_ioremap_caller)(unsigned long, size_t,
++extern void __iomem * (*arch_ioremap_caller)(phys_addr_t, size_t,
+ 	unsigned int, void *);
+ extern void (*arch_iounmap)(volatile void __iomem *);
+ 
+--- a/arch/arm/mach-ebsa110/core.c
++++ b/arch/arm/mach-ebsa110/core.c
+@@ -116,7 +116,7 @@ static void __init ebsa110_map_io(void)
+ 	iotable_init(ebsa110_io_desc, ARRAY_SIZE(ebsa110_io_desc));
  }
+ 
+-static void __iomem *ebsa110_ioremap_caller(unsigned long cookie, size_t size,
++static void __iomem *ebsa110_ioremap_caller(phys_addr_t cookie, size_t size,
+ 					    unsigned int flags, void *caller)
+ {
+ 	return (void __iomem *)cookie;
+--- a/arch/arm/mach-imx/mm-imx3.c
++++ b/arch/arm/mach-imx/mm-imx3.c
+@@ -65,7 +65,7 @@ static void imx3_idle(void)
+ 		: "=r" (reg));
+ }
+ 
+-static void __iomem *imx3_ioremap_caller(unsigned long phys_addr, size_t size,
++static void __iomem *imx3_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 					 unsigned int mtype, void *caller)
+ {
+ 	if (mtype == MT_DEVICE) {
+--- a/arch/arm/mach-iop13xx/io.c
++++ b/arch/arm/mach-iop13xx/io.c
+@@ -23,7 +23,7 @@
+ 
+ #include "pci.h"
+ 
+-static void __iomem *__iop13xx_ioremap_caller(unsigned long cookie,
++static void __iomem *__iop13xx_ioremap_caller(phys_addr_t cookie,
+ 	size_t size, unsigned int mtype, void *caller)
+ {
+ 	void __iomem * retval;
+--- a/arch/arm/mach-ixp4xx/common.c
++++ b/arch/arm/mach-ixp4xx/common.c
+@@ -559,7 +559,7 @@ void ixp4xx_restart(char mode, const cha
+  * fallback to the default.
+  */
+ 
+-static void __iomem *ixp4xx_ioremap_caller(unsigned long addr, size_t size,
++static void __iomem *ixp4xx_ioremap_caller(phys_addr_t addr, size_t size,
+ 					   unsigned int mtype, void *caller)
+ {
+ 	if (!is_pci_memory(addr))
+--- a/arch/arm/mach-msm/common.h
++++ b/arch/arm/mach-msm/common.h
+@@ -23,7 +23,7 @@ extern void msm_map_msm8x60_io(void);
+ extern void msm_map_msm8960_io(void);
+ extern void msm_map_qsd8x50_io(void);
+ 
+-extern void __iomem *__msm_ioremap_caller(unsigned long phys_addr, size_t size,
++extern void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 					  unsigned int mtype, void *caller);
+ 
+ extern struct smp_operations msm_smp_ops;
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -172,7 +172,7 @@ void __init msm_map_msm7x30_io(void)
+ }
+ #endif /* CONFIG_ARCH_MSM7X30 */
+ 
+-void __iomem *__msm_ioremap_caller(unsigned long phys_addr, size_t size,
++void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 				   unsigned int mtype, void *caller)
+ {
+ 	if (mtype == MT_DEVICE) {
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -331,10 +331,10 @@ void __iomem * __arm_ioremap_pfn_caller(
+ 	return (void __iomem *) (offset + addr);
+ }
+ 
+-void __iomem *__arm_ioremap_caller(unsigned long phys_addr, size_t size,
++void __iomem *__arm_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 	unsigned int mtype, void *caller)
+ {
+-	unsigned long last_addr;
++	phys_addr_t last_addr;
+  	unsigned long offset = phys_addr & ~PAGE_MASK;
+  	unsigned long pfn = __phys_to_pfn(phys_addr);
+ 
+@@ -367,12 +367,12 @@ __arm_ioremap_pfn(unsigned long pfn, uns
+ }
+ EXPORT_SYMBOL(__arm_ioremap_pfn);
+ 
+-void __iomem * (*arch_ioremap_caller)(unsigned long, size_t,
++void __iomem * (*arch_ioremap_caller)(phys_addr_t, size_t,
+ 				      unsigned int, void *) =
+ 	__arm_ioremap_caller;
+ 
+ void __iomem *
+-__arm_ioremap(unsigned long phys_addr, size_t size, unsigned int mtype)
++__arm_ioremap(phys_addr_t phys_addr, size_t size, unsigned int mtype)
+ {
+ 	return arch_ioremap_caller(phys_addr, size, mtype,
+ 		__builtin_return_address(0));
+@@ -387,7 +387,7 @@ EXPORT_SYMBOL(__arm_ioremap);
+  * CONFIG_GENERIC_ALLOCATOR for allocating external memory.
+  */
+ void __iomem *
+-__arm_ioremap_exec(unsigned long phys_addr, size_t size, bool cached)
++__arm_ioremap_exec(phys_addr_t phys_addr, size_t size, bool cached)
+ {
+ 	unsigned int mtype;
+ 
+--- a/arch/arm/mm/nommu.c
++++ b/arch/arm/mm/nommu.c
+@@ -87,16 +87,16 @@ void __iomem *__arm_ioremap_pfn_caller(u
+ 	return __arm_ioremap_pfn(pfn, offset, size, mtype);
+ }
+ 
+-void __iomem *__arm_ioremap(unsigned long phys_addr, size_t size,
++void __iomem *__arm_ioremap(phys_addr_t phys_addr, size_t size,
+ 			    unsigned int mtype)
+ {
+ 	return (void __iomem *)phys_addr;
+ }
+ EXPORT_SYMBOL(__arm_ioremap);
+ 
+-void __iomem * (*arch_ioremap_caller)(unsigned long, size_t, unsigned int, void *);
++void __iomem * (*arch_ioremap_caller)(phys_addr_t, size_t, unsigned int, void *);
+ 
+-void __iomem *__arm_ioremap_caller(unsigned long phys_addr, size_t size,
++void __iomem *__arm_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 				   unsigned int mtype, void *caller)
+ {
+ 	return __arm_ioremap(phys_addr, size, mtype);
 
 
