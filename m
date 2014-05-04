@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790AbaEDQX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:23:57 -0400
+	id S1756294AbaEDQYV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:24:21 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:36337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418AbaEDPmI (ORCPT
+	with ESMTP id S1754403AbaEDPmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:08 -0400
+	Sun, 4 May 2014 11:42:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>,
-        Srinivas Eeda <srinivas.eeda@oracle.com>,
-        Wengang Wang <wen.gang.wang@oracle.com>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 142/158] ocfs2: dlm: fix recovery hung
-Date: Sun,  4 May 2014 11:40:51 -0400
-Message-Id: <20140504154049.318396359@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 153/158] usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
+Date: Sun,  4 May 2014 11:41:02 -0400
+Message-Id: <20140504154050.800856946@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -31,103 +27,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
+commit 1f81b6d22a5980955b01e08cf27fb745dc9b686f upstream.
 
-There is a race window in dlm_do_recovery() between dlm_remaster_locks()
-and dlm_reset_recovery() when the recovery master nearly finish the
-recovery process for a dead node.  After the master sends FINALIZE_RECO
-message in dlm_remaster_locks(), another node may become the recovery
-master for another dead node, and then send the BEGIN_RECO message to
-all the nodes included the old master, in the handler of this message
-dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
-dlm->reco.new_master will be set to the second dead node and the new
-master, then in dlm_reset_recovery(), these two variables will be reset
-to default value.  This will cause new recovery master can not finish
-the recovery process and hung, at last the whole cluster will hung for
-recovery.
+We have observed a rare cycle state desync bug after Set TR Dequeue
+Pointer commands on Intel LynxPoint xHCs (resulting in an endpoint that
+doesn't fetch new TRBs and thus an unresponsive USB device). It always
+triggers when a previous Set TR Dequeue Pointer command has set the
+pointer to the final Link TRB of a segment, and then another URB gets
+enqueued and cancelled again before it can be completed. Further
+investigation showed that the xHC had returned the Link TRB in the TRB
+Pointer field of the Transfer Event (CC == Stopped -- Length Invalid),
+but when xhci_find_new_dequeue_state() later accesses the Endpoint
+Context's TR Dequeue Pointer field it is set to the first TRB of the
+next segment.
 
-old recovery master:                                 new recovery master:
-dlm_remaster_locks()
-                                                  become recovery master for
-                                                  another dead node.
-                                                  dlm_send_begin_reco_message()
-dlm_begin_reco_handler()
-{
- if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
-  return -EAGAIN;
- }
- dlm_set_reco_master(dlm, br->node_idx);
- dlm_set_reco_dead_node(dlm, br->dead_node);
-}
-dlm_reset_recovery()
-{
- dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
- dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
-}
-                                                  will hang in dlm_remaster_locks() for
-                                                  request dlm locks info
+The driver expects those two values to be the same in this situation,
+and uses the cycle state of the latter together with the address of the
+former. This should be fine according to the XHCI specification, since
+the endpoint ring should be stopped when returning the Transfer Event
+and thus should not advance over the Link TRB before it gets restarted.
+However, real-world XHCI implementations apparently don't really care
+that much about these details, so the driver should follow a more
+defensive approach to try to work around HC spec violations.
 
-Before send FINALIZE_RECO message, recovery master should set
-DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
-this can break the race windows as the BEGIN_RECO messages will not be
-handled before DLM_RECO_STATE_FINALIZE flag is cleared.
+This patch removes the stopped_trb variable that had been used to store
+the TRB Pointer from the last Transfer Event of a stopped TRB. Instead,
+xhci_find_new_dequeue_state() now relies only on the Endpoint Context,
+requiring a small amount of additional processing to find the virtual
+address corresponding to the TR Dequeue Pointer. Some other parts of the
+function were slightly rearranged to better fit into this model.
 
-A similar race may happen between new recovery master and normal node
-which is in dlm_finalize_reco_handler(), also fix it.
+This patch should be backported to kernels as old as 2.6.31 that contain
+the commit ae636747146ea97efa18e04576acd3416e2514f5 "USB: xhci: URB
+cancellation support."
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/dlm/dlmrecovery.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-ring.c |   67 +++++++++++++++++++------------------------
+ drivers/usb/host/xhci.c      |    1 
+ drivers/usb/host/xhci.h      |    2 -
+ 3 files changed, 31 insertions(+), 39 deletions(-)
 
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -537,7 +537,10 @@ master_here:
- 		/* success!  see if any other nodes need recovery */
- 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
- 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
--		dlm_reset_recovery(dlm);
-+		spin_lock(&dlm->spinlock);
-+		__dlm_reset_recovery(dlm);
-+		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+		spin_unlock(&dlm->spinlock);
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -550,6 +550,7 @@ void xhci_find_new_dequeue_state(struct
+ 	struct xhci_generic_trb *trb;
+ 	struct xhci_ep_ctx *ep_ctx;
+ 	dma_addr_t addr;
++	u64 hw_dequeue;
+ 
+ 	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
+ 			ep_index, stream_id);
+@@ -559,56 +560,57 @@ void xhci_find_new_dequeue_state(struct
+ 				stream_id);
+ 		return;
  	}
- 	dlm_end_recovery(dlm);
+-	state->new_cycle_state = 0;
+-	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+-			"Finding segment containing stopped TRB.");
+-	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
+-			dev->eps[ep_index].stopped_trb,
+-			&state->new_cycle_state);
+-	if (!state->new_deq_seg) {
+-		WARN_ON(1);
+-		return;
+-	}
  
-@@ -695,6 +698,14 @@ static int dlm_remaster_locks(struct dlm
- 		if (all_nodes_done) {
- 			int ret;
- 
-+			/* Set this flag on recovery master to avoid
-+			 * a new recovery for another dead node start
-+			 * before the recovery is not done. That may
-+			 * cause recovery hung.*/
-+			spin_lock(&dlm->spinlock);
-+			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
-+			spin_unlock(&dlm->spinlock);
+ 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+ 			"Finding endpoint context");
+ 	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
+-	state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
++	hw_dequeue = le64_to_cpu(ep_ctx->deq);
 +
- 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
- 	 		 * just send a finalize message to everyone and
- 	 		 * clean up */
-@@ -2884,8 +2895,8 @@ int dlm_finalize_reco_handler(struct o2n
- 				BUG();
- 			}
- 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
-+			__dlm_reset_recovery(dlm);
- 			spin_unlock(&dlm->spinlock);
--			dlm_reset_recovery(dlm);
- 			dlm_kick_recovery_thread(dlm);
- 			break;
- 		default:
++	/* Find virtual address and segment of hardware dequeue pointer */
++	state->new_deq_seg = ep_ring->deq_seg;
++	state->new_deq_ptr = ep_ring->dequeue;
++	while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
++			!= (dma_addr_t)(hw_dequeue & ~0xf)) {
++		next_trb(xhci, ep_ring, &state->new_deq_seg,
++					&state->new_deq_ptr);
++		if (state->new_deq_ptr == ep_ring->dequeue) {
++			WARN_ON(1);
++			return;
++		}
++	}
++	/*
++	 * Find cycle state for last_trb, starting at old cycle state of
++	 * hw_dequeue. If there is only one segment ring, find_trb_seg() will
++	 * return immediately and cannot toggle the cycle state if this search
++	 * wraps around, so add one more toggle manually in that case.
++	 */
++	state->new_cycle_state = hw_dequeue & 0x1;
++	if (ep_ring->first_seg == ep_ring->first_seg->next &&
++			cur_td->last_trb < state->new_deq_ptr)
++		state->new_cycle_state ^= 0x1;
+ 
+ 	state->new_deq_ptr = cur_td->last_trb;
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+ 			"Finding segment containing last TRB in TD.");
+ 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
+-			state->new_deq_ptr,
+-			&state->new_cycle_state);
++			state->new_deq_ptr, &state->new_cycle_state);
+ 	if (!state->new_deq_seg) {
+ 		WARN_ON(1);
+ 		return;
+ 	}
+ 
++	/* Increment to find next TRB after last_trb. Cycle if appropriate. */
+ 	trb = &state->new_deq_ptr->generic;
+ 	if (TRB_TYPE_LINK_LE32(trb->field[3]) &&
+ 	    (trb->field[3] & cpu_to_le32(LINK_TOGGLE)))
+ 		state->new_cycle_state ^= 0x1;
+ 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
+ 
+-	/*
+-	 * If there is only one segment in a ring, find_trb_seg()'s while loop
+-	 * will not run, and it will return before it has a chance to see if it
+-	 * needs to toggle the cycle bit.  It can't tell if the stalled transfer
+-	 * ended just before the link TRB on a one-segment ring, or if the TD
+-	 * wrapped around the top of the ring, because it doesn't have the TD in
+-	 * question.  Look for the one-segment case where stalled TRB's address
+-	 * is greater than the new dequeue pointer address.
+-	 */
+-	if (ep_ring->first_seg == ep_ring->first_seg->next &&
+-			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
+-		state->new_cycle_state ^= 0x1;
++	/* Don't update the ring cycle state for the producer (us). */
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+ 			"Cycle state = 0x%x", state->new_cycle_state);
+ 
+-	/* Don't update the ring cycle state for the producer (us). */
+ 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+ 			"New dequeue segment = %p (virtual)",
+ 			state->new_deq_seg);
+@@ -791,7 +793,6 @@ static void xhci_handle_cmd_stop_ep(stru
+ 	if (list_empty(&ep->cancelled_td_list)) {
+ 		xhci_stop_watchdog_timer_in_irq(xhci, ep);
+ 		ep->stopped_td = NULL;
+-		ep->stopped_trb = NULL;
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 		return;
+ 	}
+@@ -859,11 +860,9 @@ remove_finished_td:
+ 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
+ 	}
+ 
+-	/* Clear stopped_td and stopped_trb if endpoint is not halted */
+-	if (!(ep->ep_state & EP_HALTED)) {
++	/* Clear stopped_td if endpoint is not halted */
++	if (!(ep->ep_state & EP_HALTED))
+ 		ep->stopped_td = NULL;
+-		ep->stopped_trb = NULL;
+-	}
+ 
+ 	/*
+ 	 * Drop the lock and complete the URBs in the cancelled TD list.
+@@ -1908,14 +1907,12 @@ static void xhci_cleanup_halted_endpoint
+ 	struct xhci_virt_ep *ep = &xhci->devs[slot_id]->eps[ep_index];
+ 	ep->ep_state |= EP_HALTED;
+ 	ep->stopped_td = td;
+-	ep->stopped_trb = event_trb;
+ 	ep->stopped_stream = stream_id;
+ 
+ 	xhci_queue_reset_ep(xhci, slot_id, ep_index);
+ 	xhci_cleanup_stalled_ring(xhci, td->urb->dev, ep_index);
+ 
+ 	ep->stopped_td = NULL;
+-	ep->stopped_trb = NULL;
+ 	ep->stopped_stream = 0;
+ 
+ 	xhci_ring_cmd_db(xhci);
+@@ -1997,7 +1994,6 @@ static int finish_td(struct xhci_hcd *xh
+ 		 * the ring dequeue pointer or take this TD off any lists yet.
+ 		 */
+ 		ep->stopped_td = td;
+-		ep->stopped_trb = event_trb;
+ 		return 0;
+ 	} else {
+ 		if (trb_comp_code == COMP_STALL) {
+@@ -2009,7 +2005,6 @@ static int finish_td(struct xhci_hcd *xh
+ 			 * USB class driver clear the stall later.
+ 			 */
+ 			ep->stopped_td = td;
+-			ep->stopped_trb = event_trb;
+ 			ep->stopped_stream = ep_ring->stream_id;
+ 		} else if (xhci_requires_manual_halt_cleanup(xhci,
+ 					ep_ctx, trb_comp_code)) {
+@@ -2626,7 +2621,7 @@ static int handle_tx_event(struct xhci_h
+ 				 * successful event after a short transfer.
+ 				 * Ignore it.
+ 				 */
+-				if ((xhci->quirks & XHCI_SPURIOUS_SUCCESS) && 
++				if ((xhci->quirks & XHCI_SPURIOUS_SUCCESS) &&
+ 						ep_ring->last_td_was_short) {
+ 					ep_ring->last_td_was_short = false;
+ 					ret = 0;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2933,7 +2933,6 @@ void xhci_endpoint_reset(struct usb_hcd
+ 		xhci_ring_cmd_db(xhci);
+ 	}
+ 	virt_ep->stopped_td = NULL;
+-	virt_ep->stopped_trb = NULL;
+ 	virt_ep->stopped_stream = 0;
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -864,8 +864,6 @@ struct xhci_virt_ep {
+ #define EP_GETTING_NO_STREAMS	(1 << 5)
+ 	/* ----  Related to URB cancellation ---- */
+ 	struct list_head	cancelled_td_list;
+-	/* The TRB that was last reported in a stopped endpoint ring */
+-	union xhci_trb		*stopped_trb;
+ 	struct xhci_td		*stopped_td;
+ 	unsigned int		stopped_stream;
+ 	/* Watchdog timer for stop endpoint command to cancel URBs */
 
 
