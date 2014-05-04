@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568AbaEDPyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:54:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36793 "EHLO
+	id S1755581AbaEDPyx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:54:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36782 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754942AbaEDPmu (ORCPT
+	with ESMTP id S1754929AbaEDPmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:50 -0400
+	Sun, 4 May 2014 11:42:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "W. Trevor King" <wking@tremily.us>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 06/43] ALSA: hda - Enable beep for ASUS 1015E
-Date: Sun,  4 May 2014 11:42:00 -0400
-Message-Id: <20140504154225.100640176@linuxfoundation.org>
+        Dave Martin <Dave.Martin@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Alex Wu <wuquanming@huawei.com>, Xiangyu Lu <luxiangyu@huawei.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 04/43] ARM: 8027/1: fix do_div() bug in big-endian systems
+Date: Sun,  4 May 2014 11:41:58 -0400
+Message-Id: <20140504154224.825373727@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -26,34 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "W. Trevor King" <wking@tremily.us>
+From: Xiangyu Lu <luxiangyu@huawei.com>
 
-commit a4b7f21d7b42b33609df3f86992a8deff80abfaf upstream.
+commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
 
-The `lspci -nnvv` output contains (wrapped for line length):
+In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
 
-  00:1b.0 Audio device [0403]:
-    Intel Corporation 7 Series/C210 Series Chipset Family
-    High Definition Audio Controller [8086:1e20] (rev 04)
-        Subsystem: ASUSTeK Computer Inc. Device [1043:115d]
+When viewing ftrace record in big-endian ARM systems, we found that
+the timestamp errors:
 
-Signed-off-by: W. Trevor King <wking@tremily.us>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
+events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
+swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
+swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
+swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
+swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
+
+When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
+
+Reviewed-by: Dave Martin <Dave.Martin@arm.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Alex Wu <wuquanming@huawei.com>
+Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/include/asm/div64.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4323,6 +4323,7 @@ static void alc_auto_init_std(struct hda
- 
- static const struct snd_pci_quirk beep_white_list[] = {
- 	SND_PCI_QUIRK(0x1043, 0x103c, "ASUS", 1),
-+	SND_PCI_QUIRK(0x1043, 0x115d, "ASUS", 1),
- 	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
- 	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
- 	SND_PCI_QUIRK(0x1043, 0x831a, "EeePC", 1),
+--- a/arch/arm/include/asm/div64.h
++++ b/arch/arm/include/asm/div64.h
+@@ -156,7 +156,7 @@
+ 		/* Select the best insn combination to perform the   */	\
+ 		/* actual __m * __n / (__p << 64) operation.         */	\
+ 		if (!__c) {						\
+-			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
++			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
+ 				"mov	%Q0, #0"			\
+ 				: "=&r" (__res)				\
+ 				: "r" (__m), "r" (__n)			\
 
 
