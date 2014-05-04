@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaEDQNx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:13:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36500 "EHLO
+	id S1755872AbaEDQNw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:13:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36503 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584AbaEDPmV (ORCPT
+	with ESMTP id S1754437AbaEDPmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Subject: [PATCH 3.10 21/86] mei: me: do not load the driver if the FW doesnt support MEI interface
-Date: Sun,  4 May 2014 11:40:56 -0400
-Message-Id: <20140504154143.256231497@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 22/86] mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
+Date: Sun,  4 May 2014 11:40:57 -0400
+Message-Id: <20140504154143.394570764@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,84 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
+commit 65aba1e04916d72b30c028730a1e31860c225412 upstream.
 
-NM and SPS  FW types that may run on ME device on server platforms
-do not have valid MEI/HECI interface and driver should not
-be bound to it as this might lead to system hung.
-In practice not all BIOSes effectively hide such devices from the
-OS and in some cases it is not possible.
+During probe the sec-core driver allocates dummy I2C device for RTC with
+i2c_new_dummy() but return value is not checked. In case of error
+(i2c_new_device(): memory allocation failure or I2C address cannot be
+used) this function returns NULL which is later used by
+devm_regmap_init_i2c() or i2c_unregister_device().
 
-We determine FW type by examining Host FW status registers in order to
-unbind the driver.
-In this patch we are adding check for ME on Cougar Point, Lynx Point
-Devices
+If i2c_new_dummy() fails for RTC device, fail also the probe for main
+MFD driver.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me-regs.h |    5 +++++
- drivers/misc/mei/pci-me.c     |   30 +++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ drivers/mfd/sec-core.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -115,6 +115,11 @@
- #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
- 
- #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
-+
-+/* Host Firmware Status Registers in PCI Config Space */
-+#define PCI_CFG_HFS_1         0x40
-+#define PCI_CFG_HFS_2         0x48
-+
- /*
-  * MEI HW Section
-  */
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -105,15 +105,31 @@ static bool mei_me_quirk_probe(struct pc
- 				const struct pci_device_id *ent)
- {
- 	u32 reg;
--	if (ent->device == MEI_DEV_ID_PBG_1) {
--		pci_read_config_dword(pdev, 0x48, &reg);
--		/* make sure that bit 9 is up and bit 10 is down */
--		if ((reg & 0x600) == 0x200) {
--			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
--			return false;
--		}
-+	/* Cougar Point || Patsburg */
-+	if (ent->device == MEI_DEV_ID_CPT_1 ||
-+	    ent->device == MEI_DEV_ID_PBG_1) {
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
-+		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
-+		if ((reg & 0x600) == 0x200)
-+			goto no_mei;
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -199,6 +199,10 @@ static int sec_pmic_probe(struct i2c_cli
  	}
-+
-+	/* Lynx Point */
-+	if (ent->device == MEI_DEV_ID_LPT_H  ||
-+	    ent->device == MEI_DEV_ID_LPT_W  ||
-+	    ent->device == MEI_DEV_ID_LPT_HR) {
-+		/* Read ME FW Status check for SPS Firmware */
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
-+		/* if bits [19:16] = 15, running SPS Firmware */
-+		if ((reg & 0xf0000) == 0xf0000)
-+			goto no_mei;
+ 
+ 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!sec_pmic->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
++		return -ENODEV;
 +	}
-+
- 	return true;
-+
-+no_mei:
-+	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
-+	return false;
- }
- /**
-  * mei_probe - Device Initialization Routine
+ 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+ 
+ 	if (pdata && pdata->cfg_pmic_irq)
 
 
