@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaEDQVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:21:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36405 "EHLO
+	id S1756208AbaEDQVB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:21:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220AbaEDPmM (ORCPT
+	with ESMTP id S1754474AbaEDPmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.14 158/158] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
-Date: Sun,  4 May 2014 11:41:07 -0400
-Message-Id: <20140504154051.472251228@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH 3.14 157/158] USB: EHCI: tegra: set txfill_tuning
+Date: Sun,  4 May 2014 11:41:06 -0400
+Message-Id: <20140504154051.336764793@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,53 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Sanders <aaron.sanders@hp.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
+commit 4f2fe2d27472f4a5dbd875888af4fc5175f3fdc5 upstream.
 
-Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
+To avoid memory fetch underflows with larger USB transfers, Tegra SoCs
+need txfill_tuning's txfifothresh register field set to a non-default
+value. Add a custom reset override in order to set this up.
 
-LD960: 03f0:0B39
-LCM220: 03f0:3139
-LCM960: 03f0:3239
+These values are recommended practice for all Tegra chips. However,
+I've only noticed practical problems when not setting them this way on
+systems using Tegra124. Hence, CC: stable only for recent kernels which
+actually support Tegra124.
 
-[ Johan: fix indentation and sort PIDs numerically ]
-
-Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Alexandre Courbot <acourbot@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |    3 +++
- drivers/usb/serial/pl2303.h |    5 ++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-tegra.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -83,6 +83,9 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
- 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
- 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
- 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
- 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -121,8 +121,11 @@
- #define SUPERIAL_VENDOR_ID	0x5372
- #define SUPERIAL_PRODUCT_ID	0x2303
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -513,8 +513,31 @@ static struct platform_driver tegra_ehci
+ 	}
+ };
  
--/* Hewlett-Packard LD220-HP POS Pole Display */
-+/* Hewlett-Packard POS Pole Displays */
- #define HP_VENDOR_ID		0x03f0
-+#define HP_LD960_PRODUCT_ID	0x0b39
-+#define HP_LCM220_PRODUCT_ID	0x3139
-+#define HP_LCM960_PRODUCT_ID	0x3239
- #define HP_LD220_PRODUCT_ID	0x3524
++static int tegra_ehci_reset(struct usb_hcd *hcd)
++{
++	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
++	int retval;
++	int txfifothresh;
++
++	retval = ehci_setup(hcd);
++	if (retval)
++		return retval;
++
++	/*
++	 * We should really pull this value out of tegra_ehci_soc_config, but
++	 * to avoid needing access to it, make use of the fact that Tegra20 is
++	 * the only one so far that needs a value of 10, and Tegra20 is the
++	 * only one which doesn't set has_hostpc.
++	 */
++	txfifothresh = ehci->has_hostpc ? 0x10 : 10;
++	ehci_writel(ehci, txfifothresh << 16, &ehci->regs->txfill_tuning);
++
++	return 0;
++}
++
+ static const struct ehci_driver_overrides tegra_overrides __initconst = {
+ 	.extra_priv_size	= sizeof(struct tegra_ehci_hcd),
++	.reset			= tegra_ehci_reset,
+ };
  
- /* Cressi Edy (diving computer) PC interface */
+ static int __init ehci_tegra_init(void)
 
 
