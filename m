@@ -1,55 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaEDEP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 00:15:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60064 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaEDEPZ (ORCPT
+	id S1753360AbaEDEVJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 00:21:09 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:3110 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaEDEVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 00:15:25 -0400
-Date: Sun, 4 May 2014 00:15:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Oleg Drokin <green@linuxhacker.ru>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH] staging/lustre: Replace jobid acquiring with per node
- setting
-Message-ID: <20140504041524.GA3791@kroah.com>
-References: <1398651712-5015-1-git-send-email-green@linuxhacker.ru>
- <20140503232945.GA15714@kroah.com>
- <AD08F6C5-1BAD-455B-9A09-1FFB8D2CA42E@linuxhacker.ru>
- <20140504023331.GB30871@kroah.com>
- <D18938B7-4D28-4312-8154-B5AE964ECEE4@linuxhacker.ru>
+	Sun, 4 May 2014 00:21:06 -0400
+Message-ID: <5365BF06.7050108@huawei.com>
+Date: Sun, 4 May 2014 12:16:06 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D18938B7-4D28-4312-8154-B5AE964ECEE4@linuxhacker.ru>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
+References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com> <CAErSpo4fa=fmajhxGA7PRm42S1fS2wV_7w+EWaVh_qiawRAQxA@mail.gmail.com>
+In-Reply-To: <CAErSpo4fa=fmajhxGA7PRm42S1fS2wV_7w+EWaVh_qiawRAQxA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 11:08:36PM -0400, Oleg Drokin wrote:
-> Hello!
+> This needs to be posted to the linux-pci list.  The fact that it
+> wasn't means it's not in patchwork, so it's not on my to-do list.
 > 
-> On May 3, 2014, at 10:33 PM, Greg Kroah-Hartman wrote:
-> >> I don't think I saw complaints about proc files, the complaints I saw were mostly about
-> >> reading env variables directly and the like so that was the focus of this patch.
-> >> Did I miss some side discussion? Any pointers?
-> > No, no side discussion, the proc files need to be removed / fixed before
-> > the code can be merged to the "proper" part of the kernel tree.
+> Currently we have one interface: pci_is_bridge().
 > 
-> So, what's broken about them then?
-> It's not like there are no files in proc or that lustre-proc files are causing some
-> sort of breakage (at least not anymore after that recent patch).
+> After your series, we would have two interfaces: pci_is_bridge() and
+> pci_has_subordinate().  Presumably, both are used, and you should
+> explain how you decided which to use at each place.
+> 
+> I assume the difference is that the old pci_is_bridge() is true for a
+> bridge that has a subordinate bus.  The new pci_is_bridge() is true
+> for any bridge, even if there is no subordinate bus.  When do we even
+> have a bridge with no subordinate bus?  This is the sort of stuff you
+> need to explain so we know why we should apply these patches.
+> 
 
-The rule of not adding new proc files that do not relate to processes,
-has been around for over a decade now, since 2.6.0 came out.
+Hi Bjorn, sorry forgot to cc pci list, will resend the v2 patchset with
+some new description for new pci_is_bridge().
 
-Please use sysfs instead, you can put your files in /sys/fs/lustre/ and
-keep them to "one-value-per-file" files and document them in
-Documentation/ABI/
+> 
+>> Yijing Wang (13):
+>>   PCI: rename pci_is_bridge() to pci_has_subordinate()
+>>   PCI: Introduce new pci_is_bridge() helper function
+>>   PCI: Use new pci_is_bridge() to simplify code
+>>   x86/PCI: Use new pci_is_bridge() to simplify code
+>>   IA64/PCI: Use new pci_is_bridge() to simplify code
+>>   powerpc/PCI: Use new pci_is_bridge() to simplify code
+>>   sparc/PCI: Use new pci_is_bridge() to simplify code
+>>   PCI, rpaphp: Use new pci_is_bridge() to simplify code
+>>   PCI, shpchp: Use new pci_is_bridge() to simplify code
+>>   PCI, cpcihp: Use new pci_is_bridge() to simplify code
+>>   PCI, acpiphp: Use new pci_is_bridge() to simplify code
+>>   PCI, pcmcia: Use new pci_is_bridge() to simplify code
+>>   PCI, pciehp: Use new pci_is_bridge() to simplify code
+>>
+>>  arch/ia64/pci/fixup.c                  |    4 +---
+>>  arch/powerpc/kernel/pci-hotplug.c      |    3 +--
+>>  arch/powerpc/kernel/pci_of_scan.c      |    3 +--
+>>  arch/sparc/kernel/pci.c                |    3 +--
+>>  arch/x86/pci/fixup.c                   |    4 +---
+>>  drivers/pci/hotplug/acpiphp_glue.c     |    3 +--
+>>  drivers/pci/hotplug/cpci_hotplug_pci.c |    3 +--
+>>  drivers/pci/hotplug/pciehp_pci.c       |    3 +--
+>>  drivers/pci/hotplug/rpadlpar_core.c    |    3 +--
+>>  drivers/pci/hotplug/shpchp_pci.c       |    3 +--
+>>  drivers/pci/pci-acpi.c                 |    8 +-------
+>>  drivers/pci/pci-driver.c               |    8 ++++----
+>>  drivers/pci/pci.h                      |    2 +-
+>>  drivers/pci/probe.c                    |    3 +--
+>>  drivers/pci/setup-bus.c                |    4 +---
+>>  drivers/pcmcia/cardbus.c               |    3 +--
+>>  include/linux/pci.h                    |    6 ++++++
+>>  17 files changed, 25 insertions(+), 41 deletions(-)
+>>
+>>
+> 
+> .
+> 
 
-thanks,
 
-greg k-h
+-- 
+Thanks!
+Yijing
+
