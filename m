@@ -1,395 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaEDPmS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36352 "EHLO
+	id S1756112AbaEDQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:16:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444AbaEDPmK (ORCPT
+	with ESMTP id S1754538AbaEDPmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:10 -0400
+	Sun, 4 May 2014 11:42:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.14 146/158] smarter propagate_mnt()
-Date: Sun,  4 May 2014 11:40:55 -0400
-Message-Id: <20140504154049.876230384@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.10 10/86] ARM: 7954/1: mm: remove remaining domain support from ARMv6
+Date: Sun,  4 May 2014 11:40:45 -0400
+Message-Id: <20140504154141.817605107@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
-References: <20140504154029.975081050@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-commit f2ebb3a921c1ca1e2ddd9242e95a1989a50c4c68 upstream.
+commit b6ccb9803e90c16b212cf4ed62913a7591e79a39 upstream.
 
-The current mainline has copies propagated to *all* nodes, then
-tears down the copies we made for nodes that do not contain
-counterparts of the desired mountpoint.  That sets the right
-propagation graph for the copies (at teardown time we move
-the slaves of removed node to a surviving peer or directly
-to master), but we end up paying a fairly steep price in
-useless allocations.  It's fairly easy to create a situation
-where N calls of mount(2) create exactly N bindings, with
-O(N^2) vfsmounts allocated and freed in process.
+CPU_32v6 currently selects CPU_USE_DOMAINS if CPU_V6 and MMU. This is
+because ARM 1136 r0pX CPUs lack the v6k extensions, and therefore do
+not have hardware thread registers. The lack of these registers requires
+the kernel to update the vectors page at each context switch in order to
+write a new TLS pointer. This write must be done via the userspace
+mapping, since aliasing caches can lead to expensive flushing when using
+kmap. Finally, this requires the vectors page to be mapped r/w for
+kernel and r/o for user, which has implications for things like put_user
+which must trigger CoW appropriately when targetting user pages.
 
-Fortunately, it is possible to avoid those allocations/freeings.
-The trick is to create copies in the right order and find which
-one would've eventually become a master with the current algorithm.
-It turns out to be possible in O(nodes getting propagation) time
-and with no extra allocations at all.
+The upshot of all this is that a v6/v7 kernel makes use of domains to
+segregate kernel and user memory accesses. This has the nasty
+side-effect of making device mappings executable, which has been
+observed to cause subtle bugs on recent cores (e.g. Cortex-A15
+performing a speculative instruction fetch from the GIC and acking an
+interrupt in the process).
 
-One part is that we need to make sure that eventual master will be
-created before its slaves, so we need to walk the propagation
-tree in a different order - by peer groups.  And iterate through
-the peers before dealing with the next group.
+This patch solves this problem by removing the remaining domain support
+from ARMv6. A new memory type is added specifically for the vectors page
+which allows that page (and only that page) to be mapped as user r/o,
+kernel r/w. All other user r/o pages are mapped also as kernel r/o.
+Patch co-developed with Russell King.
 
-Another thing is finding the (earlier) copy that will be a master
-of one we are about to create; to do that we are (temporary) marking
-the masters of mountpoints we are attaching the copies to.
-
-Either we are in a peer of the last mountpoint we'd dealt with,
-or we have the following situation: we are attaching to mountpoint M,
-the last copy S_0 had been attached to M_0 and there are sequences
-S_0...S_n, M_0...M_n such that S_{i+1} is a master of S_{i},
-S_{i} mounted on M{i} and we need to create a slave of the first S_{k}
-such that M is getting propagation from M_{k}.  It means that the master
-of M_{k} will be among the sequence of masters of M.  On the
-other hand, the nearest marked node in that sequence will either
-be the master of M_{k} or the master of M_{k-1} (the latter -
-in the case if M_{k-1} is a slave of something M gets propagation
-from, but in a wrong peer group).
-
-So we go through the sequence of masters of M until we find
-a marked one (P).  Let N be the one before it.  Then we go through
-the sequence of masters of S_0 until we find one (say, S) mounted
-on a node D that has P as master and check if D is a peer of N.
-If it is, S will be the master of new copy, if not - the master of S
-will be.
-
-That's it for the hard part; the rest is fairly simple.  Iterator
-is in next_group(), handling of one prospective mountpoint is
-propagate_one().
-
-It seems to survive all tests and gives a noticably better performance
-than the current mainline for setups that are seriously using shared
-subtrees.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c        |   11 ++
- fs/pnode.c            |  198 ++++++++++++++++++++++++++++++--------------------
- fs/pnode.h            |    3 
- include/linux/mount.h |    3 
- 4 files changed, 133 insertions(+), 82 deletions(-)
+ arch/arm/include/asm/futex.h          |    6 ------
+ arch/arm/include/asm/pgtable-2level.h |    1 +
+ arch/arm/mm/Kconfig                   |    3 +--
+ arch/arm/mm/mmu.c                     |   10 ++++++++++
+ arch/arm/mm/proc-macros.S             |   19 ++++++-------------
+ arch/arm/mm/proc-v7-2level.S          |    7 -------
+ 6 files changed, 18 insertions(+), 28 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -885,7 +885,7 @@ static struct mount *clone_mnt(struct mo
- 			goto out_free;
- 	}
+--- a/arch/arm/include/asm/futex.h
++++ b/arch/arm/include/asm/futex.h
+@@ -3,11 +3,6 @@
  
--	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~MNT_WRITE_HOLD;
-+	mnt->mnt.mnt_flags = old->mnt.mnt_flags & ~(MNT_WRITE_HOLD|MNT_MARKED);
- 	/* Don't allow unprivileged users to change mount flags */
- 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
- 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
-@@ -1661,9 +1661,9 @@ static int attach_recursive_mnt(struct m
- 		if (err)
- 			goto out;
- 		err = propagate_mnt(dest_mnt, dest_mp, source_mnt, &tree_list);
-+		lock_mount_hash();
- 		if (err)
- 			goto out_cleanup_ids;
--		lock_mount_hash();
- 		for (p = source_mnt; p; p = next_mnt(p, source_mnt))
- 			set_mnt_shared(p);
- 	} else {
-@@ -1690,6 +1690,11 @@ static int attach_recursive_mnt(struct m
- 	return 0;
+ #ifdef __KERNEL__
  
-  out_cleanup_ids:
-+	while (!hlist_empty(&tree_list)) {
-+		child = hlist_entry(tree_list.first, struct mount, mnt_hash);
-+		umount_tree(child, 0);
-+	}
-+	unlock_mount_hash();
- 	cleanup_group_ids(source_mnt, NULL);
-  out:
- 	return err;
-@@ -2044,7 +2049,7 @@ static int do_add_mount(struct mount *ne
- 	struct mount *parent;
- 	int err;
- 
--	mnt_flags &= ~(MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | MNT_DOOMED | MNT_SYNC_UMOUNT);
-+	mnt_flags &= ~MNT_INTERNAL_FLAGS;
- 
- 	mp = lock_mount(path);
- 	if (IS_ERR(mp))
---- a/fs/pnode.c
-+++ b/fs/pnode.c
-@@ -164,46 +164,94 @@ static struct mount *propagation_next(st
- 	}
- }
- 
--/*
-- * return the source mount to be used for cloning
-- *
-- * @dest 	the current destination mount
-- * @last_dest  	the last seen destination mount
-- * @last_src  	the last seen source mount
-- * @type	return CL_SLAVE if the new mount has to be
-- * 		cloned as a slave.
-- */
--static struct mount *get_source(struct mount *dest,
--				struct mount *last_dest,
--				struct mount *last_src,
--				int *type)
-+static struct mount *next_group(struct mount *m, struct mount *origin)
- {
--	struct mount *p_last_src = NULL;
--	struct mount *p_last_dest = NULL;
+-#if defined(CONFIG_CPU_USE_DOMAINS) && defined(CONFIG_SMP)
+-/* ARM doesn't provide unprivileged exclusive memory accessors */
+-#include <asm-generic/futex.h>
+-#else
 -
--	while (last_dest != dest->mnt_master) {
--		p_last_dest = last_dest;
--		p_last_src = last_src;
--		last_dest = last_dest->mnt_master;
--		last_src = last_src->mnt_master;
-+	while (1) {
-+		while (1) {
-+			struct mount *next;
-+			if (!IS_MNT_NEW(m) && !list_empty(&m->mnt_slave_list))
-+				return first_slave(m);
-+			next = next_peer(m);
-+			if (m->mnt_group_id == origin->mnt_group_id) {
-+				if (next == origin)
-+					return NULL;
-+			} else if (m->mnt_slave.next != &next->mnt_slave)
-+				break;
-+			m = next;
-+		}
-+		/* m is the last peer */
-+		while (1) {
-+			struct mount *master = m->mnt_master;
-+			if (m->mnt_slave.next != &master->mnt_slave_list)
-+				return next_slave(m);
-+			m = next_peer(master);
-+			if (master->mnt_group_id == origin->mnt_group_id)
-+				break;
-+			if (master->mnt_slave.next == &m->mnt_slave)
-+				break;
-+			m = master;
-+		}
-+		if (m == origin)
-+			return NULL;
- 	}
-+}
- 
--	if (p_last_dest) {
--		do {
--			p_last_dest = next_peer(p_last_dest);
--		} while (IS_MNT_NEW(p_last_dest));
--		/* is that a peer of the earlier? */
--		if (dest == p_last_dest) {
--			*type = CL_MAKE_SHARED;
--			return p_last_src;
-+/* all accesses are serialized by namespace_sem */
-+static struct user_namespace *user_ns;
-+static struct mount *last_dest, *last_source, *dest_master;
-+static struct mountpoint *mp;
-+static struct hlist_head *list;
-+
-+static int propagate_one(struct mount *m)
-+{
-+	struct mount *child;
-+	int type;
-+	/* skip ones added by this propagate_mnt() */
-+	if (IS_MNT_NEW(m))
-+		return 0;
-+	/* skip if mountpoint isn't covered by it */
-+	if (!is_subdir(mp->m_dentry, m->mnt.mnt_root))
-+		return 0;
-+	if (m->mnt_group_id == last_dest->mnt_group_id) {
-+		type = CL_MAKE_SHARED;
-+	} else {
-+		struct mount *n, *p;
-+		for (n = m; ; n = p) {
-+			p = n->mnt_master;
-+			if (p == dest_master || IS_MNT_MARKED(p)) {
-+				while (last_dest->mnt_master != p) {
-+					last_source = last_source->mnt_master;
-+					last_dest = last_source->mnt_parent;
-+				}
-+				if (n->mnt_group_id != last_dest->mnt_group_id) {
-+					last_source = last_source->mnt_master;
-+					last_dest = last_source->mnt_parent;
-+				}
-+				break;
-+			}
- 		}
-+		type = CL_SLAVE;
-+		/* beginning of peer group among the slaves? */
-+		if (IS_MNT_SHARED(m))
-+			type |= CL_MAKE_SHARED;
- 	}
--	/* slave of the earlier, then */
--	*type = CL_SLAVE;
--	/* beginning of peer group among the slaves? */
--	if (IS_MNT_SHARED(dest))
--		*type |= CL_MAKE_SHARED;
--	return last_src;
-+
-+	/* Notice when we are propagating across user namespaces */
-+	if (m->mnt_ns->user_ns != user_ns)
-+		type |= CL_UNPRIVILEGED;
-+	child = copy_tree(last_source, last_source->mnt.mnt_root, type);
-+	if (IS_ERR(child))
-+		return PTR_ERR(child);
-+	mnt_set_mountpoint(m, mp, child);
-+	last_dest = m;
-+	last_source = child;
-+	if (m->mnt_master != dest_master) {
-+		read_seqlock_excl(&mount_lock);
-+		SET_MNT_MARK(m->mnt_master);
-+		read_sequnlock_excl(&mount_lock);
-+	}
-+	hlist_add_head(&child->mnt_hash, list);
-+	return 0;
- }
- 
- /*
-@@ -222,56 +270,48 @@ static struct mount *get_source(struct m
- int propagate_mnt(struct mount *dest_mnt, struct mountpoint *dest_mp,
- 		    struct mount *source_mnt, struct hlist_head *tree_list)
- {
--	struct user_namespace *user_ns = current->nsproxy->mnt_ns->user_ns;
--	struct mount *m, *child;
-+	struct mount *m, *n;
- 	int ret = 0;
--	struct mount *prev_dest_mnt = dest_mnt;
--	struct mount *prev_src_mnt  = source_mnt;
--	HLIST_HEAD(tmp_list);
--
--	for (m = propagation_next(dest_mnt, dest_mnt); m;
--			m = propagation_next(m, dest_mnt)) {
--		int type;
--		struct mount *source;
--
--		if (IS_MNT_NEW(m))
--			continue;
--
--		source =  get_source(m, prev_dest_mnt, prev_src_mnt, &type);
--
--		/* Notice when we are propagating across user namespaces */
--		if (m->mnt_ns->user_ns != user_ns)
--			type |= CL_UNPRIVILEGED;
--
--		child = copy_tree(source, source->mnt.mnt_root, type);
--		if (IS_ERR(child)) {
--			ret = PTR_ERR(child);
--			tmp_list = *tree_list;
--			tmp_list.first->pprev = &tmp_list.first;
--			INIT_HLIST_HEAD(tree_list);
-+
-+	/*
-+	 * we don't want to bother passing tons of arguments to
-+	 * propagate_one(); everything is serialized by namespace_sem,
-+	 * so globals will do just fine.
-+	 */
-+	user_ns = current->nsproxy->mnt_ns->user_ns;
-+	last_dest = dest_mnt;
-+	last_source = source_mnt;
-+	mp = dest_mp;
-+	list = tree_list;
-+	dest_master = dest_mnt->mnt_master;
-+
-+	/* all peers of dest_mnt, except dest_mnt itself */
-+	for (n = next_peer(dest_mnt); n != dest_mnt; n = next_peer(n)) {
-+		ret = propagate_one(n);
-+		if (ret)
- 			goto out;
--		}
-+	}
- 
--		if (is_subdir(dest_mp->m_dentry, m->mnt.mnt_root)) {
--			mnt_set_mountpoint(m, dest_mp, child);
--			hlist_add_head(&child->mnt_hash, tree_list);
--		} else {
--			/*
--			 * This can happen if the parent mount was bind mounted
--			 * on some subdirectory of a shared/slave mount.
--			 */
--			hlist_add_head(&child->mnt_hash, &tmp_list);
--		}
--		prev_dest_mnt = m;
--		prev_src_mnt  = child;
-+	/* all slave groups */
-+	for (m = next_group(dest_mnt, dest_mnt); m;
-+			m = next_group(m, dest_mnt)) {
-+		/* everything in that slave group */
-+		n = m;
-+		do {
-+			ret = propagate_one(n);
-+			if (ret)
-+				goto out;
-+			n = next_peer(n);
-+		} while (n != m);
- 	}
- out:
--	lock_mount_hash();
--	while (!hlist_empty(&tmp_list)) {
--		child = hlist_entry(tmp_list.first, struct mount, mnt_hash);
--		umount_tree(child, 0);
-+	read_seqlock_excl(&mount_lock);
-+	hlist_for_each_entry(n, tree_list, mnt_hash) {
-+		m = n->mnt_parent;
-+		if (m->mnt_master != dest_mnt->mnt_master)
-+			CLEAR_MNT_MARK(m->mnt_master);
- 	}
--	unlock_mount_hash();
-+	read_sequnlock_excl(&mount_lock);
+ #include <linux/futex.h>
+ #include <linux/uaccess.h>
+ #include <asm/errno.h>
+@@ -164,6 +159,5 @@ futex_atomic_op_inuser (int encoded_op,
  	return ret;
  }
  
---- a/fs/pnode.h
-+++ b/fs/pnode.h
-@@ -16,6 +16,9 @@
- #define IS_MNT_NEW(m)  (!(m)->mnt_ns)
- #define CLEAR_MNT_SHARED(m) ((m)->mnt.mnt_flags &= ~MNT_SHARED)
- #define IS_MNT_UNBINDABLE(m) ((m)->mnt.mnt_flags & MNT_UNBINDABLE)
-+#define IS_MNT_MARKED(m) ((m)->mnt.mnt_flags & MNT_MARKED)
-+#define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
-+#define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
+-#endif /* !(CPU_USE_DOMAINS && SMP) */
+ #endif /* __KERNEL__ */
+ #endif /* _ASM_ARM_FUTEX_H */
+--- a/arch/arm/include/asm/pgtable-2level.h
++++ b/arch/arm/include/asm/pgtable-2level.h
+@@ -140,6 +140,7 @@
+ #define L_PTE_MT_DEV_NONSHARED	(_AT(pteval_t, 0x0c) << 2)	/* 1100 */
+ #define L_PTE_MT_DEV_WC		(_AT(pteval_t, 0x09) << 2)	/* 1001 */
+ #define L_PTE_MT_DEV_CACHED	(_AT(pteval_t, 0x0b) << 2)	/* 1011 */
++#define L_PTE_MT_VECTORS	(_AT(pteval_t, 0x0f) << 2)	/* 1111 */
+ #define L_PTE_MT_MASK		(_AT(pteval_t, 0x0f) << 2)
  
- #define CL_EXPIRE    		0x01
- #define CL_SLAVE     		0x02
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -44,6 +44,8 @@ struct mnt_namespace;
- #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
- #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
+ #ifndef __ASSEMBLY__
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -436,7 +436,6 @@ config CPU_32v5
  
-+#define MNT_INTERNAL_FLAGS (MNT_SHARED | MNT_WRITE_HOLD | MNT_INTERNAL | \
-+			    MNT_DOOMED | MNT_SYNC_UMOUNT | MNT_MARKED)
+ config CPU_32v6
+ 	bool
+-	select CPU_USE_DOMAINS if CPU_V6 && MMU
+ 	select TLS_REG_EMUL if !CPU_32v6K && !MMU
  
- #define MNT_INTERNAL	0x4000
+ config CPU_32v6K
+@@ -651,7 +650,7 @@ config ARM_VIRT_EXT
  
-@@ -51,6 +53,7 @@ struct mnt_namespace;
- #define MNT_LOCKED		0x800000
- #define MNT_DOOMED		0x1000000
- #define MNT_SYNC_UMOUNT		0x2000000
-+#define MNT_MARKED		0x4000000
+ config SWP_EMULATE
+ 	bool "Emulate SWP/SWPB instructions"
+-	depends on !CPU_USE_DOMAINS && CPU_V7
++	depends on CPU_V7
+ 	default y if SMP
+ 	select HAVE_PROC_CPU if PROC_FS
+ 	help
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -459,6 +459,16 @@ static void __init build_mem_type_table(
+ 	hyp_device_pgprot = s2_device_pgprot = mem_types[MT_DEVICE].prot_pte;
  
- struct vfsmount {
- 	struct dentry *mnt_root;	/* root of the mounted tree */
+ 	/*
++	 * We don't use domains on ARMv6 (since this causes problems with
++	 * v6/v7 kernels), so we must use a separate memory type for user
++	 * r/o, kernel r/w to map the vectors page.
++	 */
++#ifndef CONFIG_ARM_LPAE
++	if (cpu_arch == CPU_ARCH_ARMv6)
++		vecs_pgprot |= L_PTE_MT_VECTORS;
++#endif
++
++	/*
+ 	 * ARMv6 and above have extended page tables.
+ 	 */
+ 	if (cpu_arch >= CPU_ARCH_ARMv6 && (cr & CR_XP)) {
+--- a/arch/arm/mm/proc-macros.S
++++ b/arch/arm/mm/proc-macros.S
+@@ -112,13 +112,9 @@
+  *  100x   1   0   1	r/o	no acc
+  *  10x0   1   0   1	r/o	no acc
+  *  1011   0   0   1	r/w	no acc
+- *  110x   0   1   0	r/w	r/o
+- *  11x0   0   1   0	r/w	r/o
+- *  1111   0   1   1	r/w	r/w
+- *
+- * If !CONFIG_CPU_USE_DOMAINS, the following permissions are changed:
+  *  110x   1   1   1	r/o	r/o
+  *  11x0   1   1   1	r/o	r/o
++ *  1111   0   1   1	r/w	r/w
+  */
+ 	.macro	armv6_mt_table pfx
+ \pfx\()_mt_table:
+@@ -137,7 +133,7 @@
+ 	.long	PTE_EXT_TEX(2)					@ L_PTE_MT_DEV_NONSHARED
+ 	.long	0x00						@ unused
+ 	.long	0x00						@ unused
+-	.long	0x00						@ unused
++	.long	PTE_CACHEABLE | PTE_BUFFERABLE | PTE_EXT_APX	@ L_PTE_MT_VECTORS
+ 	.endm
+ 
+ 	.macro	armv6_set_pte_ext pfx
+@@ -158,24 +154,21 @@
+ 
+ 	tst	r1, #L_PTE_USER
+ 	orrne	r3, r3, #PTE_EXT_AP1
+-#ifdef CONFIG_CPU_USE_DOMAINS
+-	@ allow kernel read/write access to read-only user pages
+ 	tstne	r3, #PTE_EXT_APX
+-	bicne	r3, r3, #PTE_EXT_APX | PTE_EXT_AP0
+-#endif
++
++	@ user read-only -> kernel read-only
++	bicne	r3, r3, #PTE_EXT_AP0
+ 
+ 	tst	r1, #L_PTE_XN
+ 	orrne	r3, r3, #PTE_EXT_XN
+ 
+-	orr	r3, r3, r2
++	eor	r3, r3, r2
+ 
+ 	tst	r1, #L_PTE_YOUNG
+ 	tstne	r1, #L_PTE_PRESENT
+ 	moveq	r3, #0
+-#ifndef CONFIG_CPU_USE_DOMAINS
+ 	tstne	r1, #L_PTE_NONE
+ 	movne	r3, #0
+-#endif
+ 
+ 	str	r3, [r0]
+ 	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
+--- a/arch/arm/mm/proc-v7-2level.S
++++ b/arch/arm/mm/proc-v7-2level.S
+@@ -90,21 +90,14 @@ ENTRY(cpu_v7_set_pte_ext)
+ 
+ 	tst	r1, #L_PTE_USER
+ 	orrne	r3, r3, #PTE_EXT_AP1
+-#ifdef CONFIG_CPU_USE_DOMAINS
+-	@ allow kernel read/write access to read-only user pages
+-	tstne	r3, #PTE_EXT_APX
+-	bicne	r3, r3, #PTE_EXT_APX | PTE_EXT_AP0
+-#endif
+ 
+ 	tst	r1, #L_PTE_XN
+ 	orrne	r3, r3, #PTE_EXT_XN
+ 
+ 	tst	r1, #L_PTE_YOUNG
+ 	tstne	r1, #L_PTE_VALID
+-#ifndef CONFIG_CPU_USE_DOMAINS
+ 	eorne	r1, r1, #L_PTE_NONE
+ 	tstne	r1, #L_PTE_NONE
+-#endif
+ 	moveq	r3, #0
+ 
+  ARM(	str	r3, [r0, #2048]! )
 
 
