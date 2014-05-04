@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaEDQAY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:00:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36669 "EHLO
+	id S1755859AbaEDQAu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:00:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36661 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814AbaEDPmk (ORCPT
+	with ESMTP id S1754806AbaEDPmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:40 -0400
+	Sun, 4 May 2014 11:42:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <bob.liu@oracle.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Michel Lespinasse <walken@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Kees Cook <keescook@chromium.org>, Paul Mundt <lethal@linux-sh.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 78/86] mm: try_to_unmap_cluster() should lock_page() before mlocking
-Date: Sun,  4 May 2014 11:41:53 -0400
-Message-Id: <20140504154151.037941315@linuxfoundation.org>
+Subject: [PATCH 3.10 77/86] sh: fix format string bug in stack tracer
+Date: Sun,  4 May 2014 11:41:52 -0400
+Message-Id: <20140504154150.899751808@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -35,90 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlastimil Babka <vbabka@suse.cz>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit 57e68e9cd65b4b8eb4045a1e0d0746458502554c upstream.
+commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
 
-A BUG_ON(!PageLocked) was triggered in mlock_vma_page() by Sasha Levin
-fuzzing with trinity.  The call site try_to_unmap_cluster() does not lock
-the pages other than its check_page parameter (which is already locked).
+Kees reported the following error:
 
-The BUG_ON in mlock_vma_page() is not documented and its purpose is
-somewhat unclear, but apparently it serializes against page migration,
-which could otherwise fail to transfer the PG_mlocked flag.  This would
-not be fatal, as the page would be eventually encountered again, but
-NR_MLOCK accounting would become distorted nevertheless.  This patch adds
-a comment to the BUG_ON in mlock_vma_page() and munlock_vma_page() to that
-effect.
+   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
+   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
 
-The call site try_to_unmap_cluster() is fixed so that for page !=
-check_page, trylock_page() is attempted (to avoid possible deadlocks as we
-already have check_page locked) and mlock_vma_page() is performed only
-upon success.  If the page lock cannot be obtained, the page is left
-without PG_mlocked, which is again not a problem in the whole unevictable
-memory design.
+Use the "%s" format so that it's impossible to interpret 'data' as a
+format string.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Bob Liu <bob.liu@oracle.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: Kees Cook <keescook@chromium.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mlock.c |    2 ++
- mm/rmap.c  |   14 ++++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ arch/sh/kernel/dumpstack.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -76,6 +76,7 @@ void clear_page_mlock(struct page *page)
+--- a/arch/sh/kernel/dumpstack.c
++++ b/arch/sh/kernel/dumpstack.c
+@@ -115,7 +115,7 @@ static int print_trace_stack(void *data,
   */
- void mlock_vma_page(struct page *page)
+ static void print_trace_address(void *data, unsigned long addr, int reliable)
  {
-+	/* Serialize with page migration */
- 	BUG_ON(!PageLocked(page));
- 
- 	if (!TestSetPageMlocked(page)) {
-@@ -106,6 +107,7 @@ unsigned int munlock_vma_page(struct pag
- {
- 	unsigned int page_mask = 0;
- 
-+	/* For try_to_munlock() and to serialize with page migration */
- 	BUG_ON(!PageLocked(page));
- 
- 	if (TestClearPageMlocked(page)) {
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1390,9 +1390,19 @@ static int try_to_unmap_cluster(unsigned
- 		BUG_ON(!page || PageAnon(page));
- 
- 		if (locked_vma) {
--			mlock_vma_page(page);   /* no-op if already mlocked */
--			if (page == check_page)
-+			if (page == check_page) {
-+				/* we know we have check_page locked */
-+				mlock_vma_page(page);
- 				ret = SWAP_MLOCK;
-+			} else if (trylock_page(page)) {
-+				/*
-+				 * If we can lock the page, perform mlock.
-+				 * Otherwise leave the page alone, it will be
-+				 * eventually encountered again later.
-+				 */
-+				mlock_vma_page(page);
-+				unlock_page(page);
-+			}
- 			continue;	/* don't unmap */
- 		}
+-	printk(data);
++	printk("%s", (char *)data);
+ 	printk_address(addr, reliable);
+ }
  
 
 
