@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067AbaEDQaO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:30:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
+	id S1756479AbaEDQam (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:30:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36259 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754276AbaEDPl5 (ORCPT
+	with ESMTP id S1754267AbaEDPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 133/158] iser-target: Match FRMR descriptors to available session tags
-Date: Sun,  4 May 2014 11:40:42 -0400
-Message-Id: <20140504154048.091465726@linuxfoundation.org>
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 109/158] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
+Date: Sun,  4 May 2014 11:40:18 -0400
+Message-Id: <20140504154044.795593889@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,114 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit f46d6a8a01d6bbd83a97140f30a72a89b038807b upstream.
+commit 01bb59ebffdec314da8da66266edf29529372f9b upstream.
 
-This patch changes isert_conn_create_fastreg_pool() to follow
-logic in iscsi_target_locate_portal() for determining how many
-FRMR descriptors to allocate based upon the number of possible
-per-session command slots that are available.
+When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
+warning:
+drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
+but not used [-Wunused-function]
 
-This addresses an OOPs in isert_reg_rdma() where due to the
-use of ISCSI_DEF_XMIT_CMDS_MAX could end up returning a bogus
-fast_reg_descriptor when the number of active tags exceeded
-the original hardcoded max.
+Instead of creating nested #ifdefs, this patch fixes it by defining the
+xHCI PCI stubs as inline.
 
-Note this also includes moving isert_conn_create_fastreg_pool()
-from isert_connect_request() to isert_put_login_tx() before
-posting the final Login Response PDU in order to determine the
-se_nacl->queue_depth (eg: number of tags) per session the target
-will be enforcing.
+This warning has been in since 3.2 kernel and was
+caused by commit 421aa841a134f6a743111cf44d0c6d3b45e3cf8c
+"usb/xhci: hide MSI code behind PCI bars", but wasn't noticed
+until 3.13 when a configuration with these options was tried
 
-v2 changes:
-  - Move isert_conn->conn_fr_pool list_head init into
-    isert_conn_request()
-v3 changes:
-  - Drop unnecessary list_empty() check in isert_reg_rdma()
-    (Sagi)
-
-Cc: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/infiniband/ulp/isert/ib_isert.c |   35 ++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 15 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -436,11 +436,18 @@ isert_conn_create_fastreg_pool(struct is
+---
+ drivers/usb/host/xhci.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -404,16 +404,16 @@ static int xhci_try_enable_msi(struct us
+ 
+ #else
+ 
+-static int xhci_try_enable_msi(struct usb_hcd *hcd)
++static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
  {
- 	struct fast_reg_descriptor *fr_desc;
- 	struct isert_device *device = isert_conn->conn_device;
--	int i, ret;
-+	struct se_session *se_sess = isert_conn->conn->sess->se_sess;
-+	struct se_node_acl *se_nacl = se_sess->se_node_acl;
-+	int i, ret, tag_num;
-+	/*
-+	 * Setup the number of FRMRs based upon the number of tags
-+	 * available to session in iscsi_target_locate_portal().
-+	 */
-+	tag_num = max_t(u32, ISCSIT_MIN_TAGS, se_nacl->queue_depth);
-+	tag_num = (tag_num * 2) + ISCSIT_EXTRA_TAGS;
- 
--	INIT_LIST_HEAD(&isert_conn->conn_fr_pool);
- 	isert_conn->conn_fr_pool_size = 0;
--	for (i = 0; i < ISCSI_DEF_XMIT_CMDS_MAX; i++) {
-+	for (i = 0; i < tag_num; i++) {
- 		fr_desc = kzalloc(sizeof(*fr_desc), GFP_KERNEL);
- 		if (!fr_desc) {
- 			pr_err("Failed to allocate fast_reg descriptor\n");
-@@ -498,6 +505,7 @@ isert_connect_request(struct rdma_cm_id
- 	kref_get(&isert_conn->conn_kref);
- 	mutex_init(&isert_conn->conn_mutex);
- 	spin_lock_init(&isert_conn->conn_lock);
-+	INIT_LIST_HEAD(&isert_conn->conn_fr_pool);
- 
- 	cma_id->context = isert_conn;
- 	isert_conn->conn_cm_id = cma_id;
-@@ -569,15 +577,6 @@ isert_connect_request(struct rdma_cm_id
- 		goto out_mr;
- 	}
- 
--	if (device->use_fastreg) {
--		ret = isert_conn_create_fastreg_pool(isert_conn);
--		if (ret) {
--			pr_err("Conn: %p failed to create fastreg pool\n",
--			       isert_conn);
--			goto out_fastreg;
--		}
--	}
--
- 	ret = isert_conn_setup_qp(isert_conn, cma_id);
- 	if (ret)
- 		goto out_conn_dev;
-@@ -591,9 +590,6 @@ isert_connect_request(struct rdma_cm_id
  	return 0;
+ }
  
- out_conn_dev:
--	if (device->use_fastreg)
--		isert_conn_free_fastreg_pool(isert_conn);
--out_fastreg:
- 	ib_dereg_mr(isert_conn->conn_mr);
- out_mr:
- 	ib_dealloc_pd(isert_conn->conn_pd);
-@@ -967,6 +963,15 @@ isert_put_login_tx(struct iscsi_conn *co
- 	}
- 	if (!login->login_failed) {
- 		if (login->login_complete) {
-+			if (isert_conn->conn_device->use_fastreg) {
-+				ret = isert_conn_create_fastreg_pool(isert_conn);
-+				if (ret) {
-+					pr_err("Conn: %p failed to create"
-+					       " fastreg pool\n", isert_conn);
-+					return ret;
-+				}
-+			}
-+
- 			ret = isert_alloc_rx_descriptors(isert_conn);
- 			if (ret)
- 				return ret;
+-static void xhci_cleanup_msix(struct xhci_hcd *xhci)
++static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
+ {
+ }
+ 
+-static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
++static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+ {
+ }
+ 
 
 
