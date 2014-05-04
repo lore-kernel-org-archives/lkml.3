@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaEDQAu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:00:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36661 "EHLO
+	id S1754796AbaEDPmi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36516 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806AbaEDPmj (ORCPT
+	with ESMTP id S1754613AbaEDPmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:39 -0400
+	Sun, 4 May 2014 11:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Kees Cook <keescook@chromium.org>, Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 77/86] sh: fix format string bug in stack tracer
-Date: Sun,  4 May 2014 11:41:52 -0400
-Message-Id: <20140504154150.899751808@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 25/86] mfd: max77686: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:41:00 -0400
+Message-Id: <20140504154143.811898229@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -29,40 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
+commit b9e183a1d495cd65412abe0f9df19b151716bfe7 upstream.
 
-Kees reported the following error:
+During probe the driver allocates dummy I2C device for RTC with
+i2c_new_dummy() but it does not check the return value of this call.
 
-   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
-   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-Use the "%s" format so that it's impossible to interpret 'data' as a
-format string.
+If i2c_new_dummy() fails for RTC device, fail also the probe for main
+MFD driver.
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Reported-by: Kees Cook <keescook@chromium.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sh/kernel/dumpstack.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/max77686.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/sh/kernel/dumpstack.c
-+++ b/arch/sh/kernel/dumpstack.c
-@@ -115,7 +115,7 @@ static int print_trace_stack(void *data,
-  */
- static void print_trace_address(void *data, unsigned long addr, int reliable)
- {
--	printk(data);
-+	printk("%s", (char *)data);
- 	printk_address(addr, reliable);
- }
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -121,6 +121,10 @@ static int max77686_i2c_probe(struct i2c
+ 		dev_info(max77686->dev, "device found\n");
  
+ 	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max77686->rtc) {
++		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max77686->rtc, max77686);
+ 
+ 	max77686_irq_init(max77686);
 
 
