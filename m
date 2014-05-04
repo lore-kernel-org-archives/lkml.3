@@ -1,138 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaEDOdA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 10:33:00 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:60325 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962AbaEDOc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 10:32:59 -0400
-Date: Sun, 4 May 2014 10:32:51 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: linux-mm@kvack.org
-Cc: Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
-        Tejun Heo <tj@kernel.org>, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 9/9] mm: memcontrol: rewrite uncharge API
-Message-ID: <20140504143251.GA1524@cmpxchg.org>
-References: <1398889543-23671-1-git-send-email-hannes@cmpxchg.org>
- <1398889543-23671-10-git-send-email-hannes@cmpxchg.org>
+	id S1751775AbaEDOkN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 10:40:13 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:64831 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaEDOkL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 10:40:11 -0400
+Message-ID: <53665143.8000000@gmail.com>
+Date: Sun, 04 May 2014 16:40:03 +0200
+From: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398889543-23671-10-git-send-email-hannes@cmpxchg.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: perf not compiling on 64bit kernel 32bit userspace
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 04:25:43PM -0400, Johannes Weiner wrote:
-> The memcg uncharging code that is involved towards the end of a page's
-> lifetime - truncation, reclaim, swapout, migration - is impressively
-> complicated and fragile.
-> 
-> Because anonymous and file pages were always charged before they had
-> their page->mapping established, uncharges had to happen when the page
-> type could be known from the context, as in unmap for anonymous, page
-> cache removal for file and shmem pages, and swap cache truncation for
-> swap pages.  However, these operations also happen well before the
-> page is actually freed, and so a lot of synchronization is necessary:
-> 
-> - On page migration, the old page might be unmapped but then reused,
->   so memcg code has to prevent an untimely uncharge in that case.
->   Because this code - which should be a simple charge transfer - is so
->   special-cased, it is not reusable for replace_page_cache().
-> 
-> - Swap cache truncation happens during both swap-in and swap-out, and
->   possibly repeatedly before the page is actually freed.  This means
->   that the memcg swapout code is called from many contexts that make
->   no sense and it has to figure out the direction from page state to
->   make sure memory and memory+swap are always correctly charged.
-> 
-> But now that charged pages always have a page->mapping, introduce
-> mem_cgroup_uncharge(), which is called after the final put_page(),
-> when we know for sure that nobody is looking at the page anymore.
-> 
-> For page migration, introduce mem_cgroup_migrate(), which is called
-> after the migration is successful and the new page is fully rmapped.
-> Because the old page is no longer uncharged after migration, prevent
-> double charges by decoupling the page's memcg association (PCG_USED
-> and pc->mem_cgroup) from the page holding an actual charge.  The new
-> bits PCG_MEM and PCG_MEMSW represent the respective charges and are
-> transferred to the new page during migration.
-> 
-> mem_cgroup_migrate() is suitable for replace_page_cache() as well.
-> 
-> Swap accounting is massively simplified: because the page is no longer
-> uncharged as early as swap cache deletion, a new mem_cgroup_swapout()
-> can transfer the page's memory+swap charge (PCG_MEMSW) to the swap
-> entry before the final put_page() in page reclaim.
-> 
-> Finally, because pages are now charged under proper serialization
-> (anon: exclusive; cache: page lock; swapin: page lock; migration: page
-> lock), and uncharged under full exclusion, they can not race with
-> themselves.  Because they are also off-LRU during charge/uncharge,
-> charge migration can not race, with that, either.  Remove the crazily
-> expensive the page_cgroup lock and set pc->flags non-atomically.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hello,
 
-Follow-up fixlets to this change that fell out of more testing in
-production and more auditing so far:
+compiling perf on 32 bit userspace and 64 bit kernel fails on x86 because
+x86-64 assembly is compiled in:
 
-- Document mem_cgroup_move_account() exclusion
-- Catch uncharged swapin readahead pages in mem_cgroup_swapout()
-- Fix DEBUG_VM build after last-minute identifier rename
-- Drop duplicate lru_cache_add_active_or_unevictable() in THP migration
+  CC       bench/mem-memcpy-x86-64-asm.o
+  CC       bench/mem-memset-x86-64-asm.o
+bench/../../../arch/x86/lib/memcpy_64.S: Assembler messages:
+bench/../../../arch/x86/lib/memcpy_64.S:29: Error: bad register name `%rdi'
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0add8b7b3a6c..f73df16b8115 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3387,6 +3387,12 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	mem_cgroup_charge_statistics(from, page, -nr_pages);
- 
-+	/*
-+	 * It is safe to change pc->mem_cgroup here because the page
-+	 * is referenced, charged, and isolated - we can't race with
-+	 * uncharging, charging, migration, or LRU putback.
-+	 */
-+
- 	/* caller should have done css_get */
- 	pc->mem_cgroup = to;
- 	mem_cgroup_charge_statistics(to, page, nr_pages);
-@@ -6234,6 +6240,12 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
- 
- 	pc = lookup_page_cgroup(page);
- 
-+	/* Readahead page, never charged */
-+	if (!PageCgroupUsed(pc))
-+		return;
-+
-+	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
-+
- 	oldid = swap_cgroup_record(entry, mem_cgroup_id(pc->mem_cgroup));
- 	VM_BUG_ON_PAGE(oldid, page);
- 
-@@ -6723,8 +6735,8 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
- 	if (!PageCgroupUsed(pc))
- 		return;
- 
--	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), page);
--	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
-+	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-+	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), oldpage);
- 	pc->flags &= ~(PCG_MEM | PCG_MEMSW);
- 
- 	if (PageTransHuge(oldpage)) {
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 80d33e62eb16..afe688021699 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1839,7 +1839,6 @@ fail_putback:
- 	 */
- 	flush_cache_range(vma, mmun_start, mmun_end);
- 	page_add_new_anon_rmap(new_page, vma, mmun_start);
--	lru_cache_add_active_or_unevictable(new_page, vma);
- 	pmdp_clear_flush(vma, mmun_start, pmd);
- 	set_pmd_at(mm, mmun_start, pmd, entry);
- 	flush_tlb_range(vma, mmun_start, mmun_end);
+Switching the check from RAW_ARCH to ARCH does the trick here on 3.14.2.
+If someone could please take care of fixing Linus' master and add this to
+the stable queue it would be much appreciated.
+
+Thanks!
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 7257e7e..00f632f 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -414,7 +414,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+ BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+-ifeq ($(RAW_ARCH),x86_64)
++ifeq ($(ARCH),x86_64)
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+ endif
+
+-- 
+Riccardo Magliocchetti
