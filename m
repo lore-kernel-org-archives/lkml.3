@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869AbaEDPmo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36686 "EHLO
+	id S1755731AbaEDP5Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:57:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611AbaEDPml (ORCPT
+	with ESMTP id S1754867AbaEDPmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:41 -0400
+	Sun, 4 May 2014 11:42:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Liu Hua <sdu.liu@huawei.com>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 80/86] hung_task: check the value of "sysctl_hung_task_timeout_sec"
-Date: Sun,  4 May 2014 11:41:55 -0400
-Message-Id: <20140504154151.313097047@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 65/86] media: m88rs2000: prevent frontend crash on continuous transponder scans
+Date: Sun,  4 May 2014 11:41:40 -0400
+Message-Id: <20140504154149.292402686@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -29,55 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Hua <sdu.liu@huawei.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
+commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
 
-As sysctl_hung_task_timeout_sec is unsigned long, when this value is
-larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
-watchdog will return immediately without sleep and with print :
+Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
+rate more than 3000000 and delay of 3000ms less than this.
 
-  schedule_timeout: wrong timeout value ffffffffffffff83
+Adding min delay prevents crashing the frontend on continuous
+transponder scans. Other dvb_frontend_tune_settings remain as default.
 
-and then the funtion watchdog will call schedule_timeout_interruptible
-again and again.  The screen will be filled with
+This makes very little time difference to good channel scans, but slows down
+the set frontend where lock can never be achieved i.e. DVB-S2.
 
-	"schedule_timeout: wrong timeout value ffffffffffffff83"
-
-This patch does some check and correction in sysctl, to let the function
-schedule_timeout_interruptible allways get the valid parameter.
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sysctl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/media/dvb-frontends/m88rs2000.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -712,6 +712,22 @@ static int m88rs2000_get_frontend(struct
+ 	return 0;
+ }
  
-+/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
-+#endif
++static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
++	struct dvb_frontend_tune_settings *tune)
++{
++	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
 +
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
- #endif
-@@ -966,6 +971,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dohung_task_timeout_secs,
-+		.extra2		= &hung_task_timeout_max,
- 	},
- 	{
- 		.procname	= "hung_task_warnings",
++	if (c->symbol_rate > 3000000)
++		tune->min_delay_ms = 2000;
++	else
++		tune->min_delay_ms = 3000;
++
++	tune->step_size = c->symbol_rate / 16000;
++	tune->max_drift = c->symbol_rate / 2000;
++
++	return 0;
++}
++
+ static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
+ {
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -763,6 +779,7 @@ static struct dvb_frontend_ops m88rs2000
+ 
+ 	.set_frontend = m88rs2000_set_frontend,
+ 	.get_frontend = m88rs2000_get_frontend,
++	.get_tune_settings = m88rs2000_get_tune_settings,
+ };
+ 
+ struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 
 
