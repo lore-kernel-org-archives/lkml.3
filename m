@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218AbaEDQVo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:21:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
+	id S1755589AbaEDQVn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:21:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459AbaEDPmL (ORCPT
+	with ESMTP id S1754465AbaEDPmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.14 150/158] ext4: fix jbd2 warning under heavy xattr load
-Date: Sun,  4 May 2014 11:40:59 -0400
-Message-Id: <20140504154050.405989378@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>,
+        Wengang Wang <wen.gang.wang@oracle.com>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Srinivas Eeda <srinivas.eeda@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 141/158] ocfs2: dlm: fix lock migration crash
+Date: Sun,  4 May 2014 11:40:50 -0400
+Message-Id: <20140504154049.179706196@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,131 +32,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
+commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
 
-When heavily exercising xattr code the assertion that
-jbd2_journal_dirty_metadata() shouldn't return error was triggered:
+This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
+list_for_each_entry where benefical") in 2007 where it replaced
+list_for_each with list_for_each_entry.  The variable "lock" will point
+to invalid data if "tmpq" list is empty and a panic will be triggered
+due to this.  Sunil advised reverting it back, but the old version was
+also not right.  At the end of the outer for loop, that
+list_for_each_entry will also set "lock" to an invalid data, then in the
+next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
+data and cause the panic.  So reverting the list_for_each back and reset
+"lock" to NULL to fix this issue.
 
-WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
-jbd2_journal_dirty_metadata+0x1ba/0x260()
+Another concern is that this seemes can not happen because the "tmpq"
+list should not be empty.  Let me describe how.
 
-CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
-Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
- ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
- ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
- 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
-Call Trace:
- [<ffffffff816311b0>] dump_stack+0x19/0x1b
- [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
- [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
- [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
- [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
- [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
- [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
- [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
- [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
- [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
- [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
- [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
- [<ffffffff8119421e>] setxattr+0x13e/0x1e0
- [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
- [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
- [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
- [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
- [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
+old lock resource owner(node 1):                                  migratation target(node 2):
+image there's lockres with a EX lock from node 2 in
+granted list, a NR lock from node x with convert_type
+EX in converting list.
+dlm_empty_lockres() {
+ dlm_pick_migration_target() {
+   pick node 2 as target as its lock is the first one
+   in granted list.
+ }
+ dlm_migrate_lockres() {
+   dlm_mark_lockres_migrating() {
+     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
+     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
+	 //after the above code, we can not dirty lockres any more,
+     // so dlm_thread shuffle list will not run
+                                                                   downconvert lock from EX to NR
+                                                                   upconvert lock from NR to EX
+<<< migration may schedule out here, then
+<<< node 2 send down convert request to convert type from EX to
+<<< NR, then send up convert request to convert type from NR to
+<<< EX, at this time, lockres granted list is empty, and two locks
+<<< in the converting list, node x up convert lock followed by
+<<< node 2 up convert lock.
 
-The reason for the warning is that buffer_head passed into
-jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
-caused by the following race of two ext4_xattr_release_block() calls:
+	 // will set lockres RES_MIGRATING flag, the following
+	 // lock/unlock can not run
+     dlm_lockres_release_ast(dlm, res);
+   }
 
-CPU1                                CPU2
-ext4_xattr_release_block()          ext4_xattr_release_block()
-lock_buffer(bh);
-/* False */
-if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-} else {
-  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
-  unlock_buffer(bh);
-                                    lock_buffer(bh);
-                                    /* True */
-                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
-                                      get_bh(bh);
-                                      ext4_free_blocks()
-                                        ...
-                                        jbd2_journal_forget()
-                                          jbd2_journal_unfile_buffer()
-                                          -> JH is gone
-  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-  -> triggers the warning
+   dlm_send_one_lockres()
+                                                                 dlm_process_recovery_data()
+                                                                   for (i=0; i<mres->num_locks; i++)
+                                                                     if (ml->node == dlm->node_num)
+                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+                                                                        list_for_each_entry(lock, tmpq, list)
+                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
+                                                                       }
+                                                                       if (lock->ml.node != ml->node)
+                                                                         BUG() >>> crash here
+ }
 
-We fix the problem by moving ext4_handle_dirty_xattr_block() under the
-buffer lock. Sadly this cannot be done in nojournal mode as that
-function can call sync_dirty_buffer() which would deadlock. Luckily in
-nojournal mode the race is harmless (we only dirty already freed buffer)
-and thus for nojournal mode we leave the dirtying outside of the buffer
-lock.
+I see the above locks status from a vmcore of our internal bug.
 
-Reported-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/xattr.c |   23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+ fs/ocfs2/dlm/dlmrecovery.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -517,8 +517,8 @@ static void ext4_xattr_update_super_bloc
- }
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -1750,13 +1750,13 @@ static int dlm_process_recovery_data(str
+ 				     struct dlm_migratable_lockres *mres)
+ {
+ 	struct dlm_migratable_lock *ml;
+-	struct list_head *queue;
++	struct list_head *queue, *iter;
+ 	struct list_head *tmpq = NULL;
+ 	struct dlm_lock *newlock = NULL;
+ 	struct dlm_lockstatus *lksb = NULL;
+ 	int ret = 0;
+ 	int i, j, bad;
+-	struct dlm_lock *lock = NULL;
++	struct dlm_lock *lock;
+ 	u8 from = O2NM_MAX_NODES;
+ 	unsigned int added = 0;
+ 	__be64 c;
+@@ -1791,14 +1791,16 @@ static int dlm_process_recovery_data(str
+ 			/* MIGRATION ONLY! */
+ 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
  
- /*
-- * Release the xattr block BH: If the reference count is > 1, decrement
-- * it; otherwise free the block.
-+ * Release the xattr block BH: If the reference count is > 1, decrement it;
-+ * otherwise free the block.
-  */
- static void
- ext4_xattr_release_block(handle_t *handle, struct inode *inode,
-@@ -538,16 +538,31 @@ ext4_xattr_release_block(handle_t *handl
- 		if (ce)
- 			mb_cache_entry_free(ce);
- 		get_bh(bh);
-+		unlock_buffer(bh);
- 		ext4_free_blocks(handle, inode, bh, 0, 1,
- 				 EXT4_FREE_BLOCKS_METADATA |
- 				 EXT4_FREE_BLOCKS_FORGET);
--		unlock_buffer(bh);
- 	} else {
- 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
- 		if (ce)
- 			mb_cache_entry_release(ce);
-+		/*
-+		 * Beware of this ugliness: Releasing of xattr block references
-+		 * from different inodes can race and so we have to protect
-+		 * from a race where someone else frees the block (and releases
-+		 * its journal_head) before we are done dirtying the buffer. In
-+		 * nojournal mode this race is harmless and we actually cannot
-+		 * call ext4_handle_dirty_xattr_block() with locked buffer as
-+		 * that function can call sync_dirty_buffer() so for that case
-+		 * we handle the dirtying after unlocking the buffer.
-+		 */
-+		if (ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		unlock_buffer(bh);
--		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
-+		if (!ext4_handle_valid(handle))
-+			error = ext4_handle_dirty_xattr_block(handle, inode,
-+							      bh);
- 		if (IS_SYNC(inode))
- 			ext4_handle_sync(handle);
- 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
++			lock = NULL;
+ 			spin_lock(&res->spinlock);
+ 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+ 				tmpq = dlm_list_idx_to_ptr(res, j);
+-				list_for_each_entry(lock, tmpq, list) {
+-					if (lock->ml.cookie != ml->cookie)
+-						lock = NULL;
+-					else
++				list_for_each(iter, tmpq) {
++					lock = list_entry(iter,
++						  struct dlm_lock, list);
++					if (lock->ml.cookie == ml->cookie)
+ 						break;
++					lock = NULL;
+ 				}
+ 				if (lock)
+ 					break;
 
 
