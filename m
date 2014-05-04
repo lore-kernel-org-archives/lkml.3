@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaEDPm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36523 "EHLO
+	id S1755800AbaEDQJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:09:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621AbaEDPmY (ORCPT
+	with ESMTP id S1754682AbaEDPm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:24 -0400
+	Sun, 4 May 2014 11:42:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.10 30/86] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
-Date: Sun,  4 May 2014 11:41:05 -0400
-Message-Id: <20140504154144.496350226@linuxfoundation.org>
+        Matthew Rahtz <mrahtz@rapitasystems.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.10 42/86] nfsd: notify_change needs elevated write count
+Date: Sun,  4 May 2014 11:41:17 -0400
+Message-Id: <20140504154146.109620291@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,44 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
+commit 9f67f189939eccaa54f3d2c9cf10788abaf2d584 upstream.
 
-Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
+Looks like this bug has been here since these write counts were
+introduced, not sure why it was just noticed now.
 
-tps65910_irq_init() sets 'tps65910->chip_irq' before calling
-regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
-memory allocation of regmap_irq_chip_data members then:
+Thanks also to Jan Kara for pointing out the problem.
 
-1. The 'tps65910->chip_irq' will still hold some value
-2. 'tps65910->irq_data' will be pointing to already freed memory
-   (because regmap_add_irq_chip() will free it on error)
-
-This results in invalid memory access during driver remove because the
-tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reported-by: Matthew Rahtz <mrahtz@rapitasystems.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/tps65910.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/nfsd/vfs.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps6
- 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
- 		IRQF_ONESHOT, pdata->irq_base,
- 		tps6591x_irqs_chip, &tps65910->irq_data);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
-+		tps65910->chip_irq = 0;
-+	}
- 	return ret;
- }
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -406,6 +406,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	umode_t		ftype = 0;
+ 	__be32		err;
+ 	int		host_err;
++	bool		get_write_count;
+ 	int		size_change = 0;
  
+ 	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+@@ -413,10 +414,18 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	if (iap->ia_valid & ATTR_SIZE)
+ 		ftype = S_IFREG;
+ 
++	/* Callers that do fh_verify should do the fh_want_write: */
++	get_write_count = !fhp->fh_dentry;
++
+ 	/* Get inode */
+ 	err = fh_verify(rqstp, fhp, ftype, accmode);
+ 	if (err)
+ 		goto out;
++	if (get_write_count) {
++		host_err = fh_want_write(fhp);
++		if (host_err)
++			return nfserrno(host_err);
++	}
+ 
+ 	dentry = fhp->fh_dentry;
+ 	inode = dentry->d_inode;
 
 
