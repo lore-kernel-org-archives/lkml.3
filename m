@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098AbaEDQfk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:35:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
+	id S1756110AbaEDQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:35:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36175 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754164AbaEDPlu (ORCPT
+	with ESMTP id S1754155AbaEDPlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier Martin <olivier.martin@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
+        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
         Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.14 098/158] efi: Pass correct file handle to efi_file_{read,close}
-Date: Sun,  4 May 2014 11:40:07 -0400
-Message-Id: <20140504154043.265030285@linuxfoundation.org>
+Subject: [PATCH 3.14 097/158] x86/efi: Correct EFI boot stub use of code32_start
+Date: Sun,  4 May 2014 11:40:06 -0400
+Message-Id: <20140504154043.129294801@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,66 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Matt Fleming <matt@console-pimps.org>
 
-commit 47514c996fac5e6f13ef3a4c5e23f1c5cffabb7b upstream.
+commit 7e8213c1f3acc064aef37813a39f13cbfe7c3ce7 upstream.
 
-We're currently passing the file handle for the root file system to
-efi_file_read() and efi_file_close(), instead of the file handle for the
-file we wish to read/close.
+code32_start should point at the start of the protected mode code, and
+*not* at the beginning of the bzImage. This is much easier to do in
+assembly so document that callers of make_boot_params() need to fill out
+code32_start.
 
-While this has worked up until now, it seems that it has only been by
-pure luck. Olivier explains,
+The fallout from this bug is that we would end up relocating the image
+but copying the image at some offset, resulting in what appeared to be
+memory corruption.
 
- "The issue is the UEFI Fat driver might return the same function for
-  'fh->read()' and 'h->read()'. While in our case it does not work with
-  a different implementation of EFI_SIMPLE_FILE_SYSTEM_PROTOCOL. In our
-  case, we return a different pointer when reading a directory and
-  reading a file."
-
-Fixing this actually clears up the two functions because we can drop one
-of the arguments, and instead only pass a file 'handle' argument.
-
-Reported-by: Olivier Martin <olivier.martin@arm.com>
-Reviewed-by: Olivier Martin <olivier.martin@arm.com>
-Reviewed-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>
+Reported-by: Thomas Bächler <thomas@archlinux.org>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/firmware/efi/efi-stub-helper.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/boot/compressed/eboot.c   |    5 +++--
+ arch/x86/boot/compressed/head_32.S |   14 ++++++++------
+ arch/x86/boot/compressed/head_64.S |    9 +++------
+ 3 files changed, 14 insertions(+), 14 deletions(-)
 
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -468,7 +468,7 @@ grow:
- 					chunksize = EFI_READ_CHUNK_SIZE;
- 				else
- 					chunksize = size;
--				status = efi_call_phys3(fh->read,
-+				status = efi_call_phys3(files[j].handle->read,
- 							files[j].handle,
- 							&chunksize,
- 							(void *)addr);
-@@ -480,7 +480,7 @@ grow:
- 				size -= chunksize;
- 			}
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -425,6 +425,9 @@ void setup_graphics(struct boot_params *
+  * Because the x86 boot code expects to be passed a boot_params we
+  * need to create one ourselves (usually the bootloader would create
+  * one for us).
++ *
++ * The caller is responsible for filling out ->code32_start in the
++ * returned boot_params.
+  */
+ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
+ {
+@@ -483,8 +486,6 @@ struct boot_params *make_boot_params(voi
+ 	hdr->vid_mode = 0xffff;
+ 	hdr->boot_flag = 0xAA55;
  
--			efi_call_phys1(fh->close, files[j].handle);
-+			efi_call_phys1(files[j].handle->close, files[j].handle);
- 		}
+-	hdr->code32_start = (__u64)(unsigned long)image->image_base;
+-
+ 	hdr->type_of_loader = 0x21;
  
- 	}
-@@ -497,7 +497,7 @@ free_file_total:
+ 	/* Convert unicode cmdline to ascii */
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -50,6 +50,13 @@ ENTRY(efi_pe_entry)
+ 	pushl	%eax
+ 	pushl	%esi
+ 	pushl	%ecx
++
++	call	reloc
++reloc:
++	popl	%ecx
++	subl	reloc, %ecx
++	movl	%ecx, BP_code32_start(%eax)
++
+ 	sub	$0x4, %esp
  
- close_handles:
- 	for (k = j; k < i; k++)
--		efi_call_phys1(fh->close, files[k].handle);
-+		efi_call_phys1(files[k].handle->close, files[k].handle);
- free_files:
- 	efi_call_phys1(sys_table_arg->boottime->free_pool, files);
- fail:
+ ENTRY(efi_stub_entry)
+@@ -63,12 +70,7 @@ ENTRY(efi_stub_entry)
+ 	hlt
+ 	jmp	1b
+ 2:
+-	call	3f
+-3:
+-	popl	%eax
+-	subl	$3b, %eax
+-	subl	BP_pref_address(%esi), %eax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leal	preferred_addr(%eax), %eax
+ 	jmp	*%eax
+ 
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -217,6 +217,8 @@ ENTRY(efi_pe_entry)
+ 	cmpq	$0,%rax
+ 	je	1f
+ 	mov	%rax, %rdx
++	leaq	startup_32(%rip), %rax
++	movl	%eax, BP_code32_start(%rdx)
+ 	popq	%rsi
+ 	popq	%rdi
+ 
+@@ -230,12 +232,7 @@ ENTRY(efi_stub_entry)
+ 	hlt
+ 	jmp	1b
+ 2:
+-	call	3f
+-3:
+-	popq	%rax
+-	subq	$3b, %rax
+-	subq	BP_pref_address(%rsi), %rax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leaq	preferred_addr(%rax), %rax
+ 	jmp	*%rax
+ 
 
 
