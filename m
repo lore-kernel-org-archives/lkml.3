@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465AbaEDI5e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 04:57:34 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:57021 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753282AbaEDI5d (ORCPT
+	id S1753463AbaEDJ3S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 05:29:18 -0400
+Received: from mail.siteground.com ([67.19.240.234]:45769 "EHLO
+	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282AbaEDJ3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 04:57:33 -0400
-Message-ID: <1399193850.8729.4.camel@x220>
-Subject: [PATCH] usb: musb: tusb: remove dead code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 04 May 2014 10:57:30 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sun, 4 May 2014 05:29:17 -0400
+Message-ID: <53660864.2070908@1h.com>
+Date: Sun, 04 May 2014 12:29:08 +0300
+From: Marian Marinov <mm@1h.com>
+Organization: 1H Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
+        Greg KH <gregkh@linuxfoundation.org>, manfred@colorfullife.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
+ not the default
+References: <5365723D.7030303@1h.com>	 <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net>	 <536589B5.8060900@1h.com> <1399166450.2573.15.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1399166450.2573.15.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 May 2014 08:57:30.0699 (UTC) FILETIME=[E1AC21B0:01CF6776]
-X-RcptDomain: vger.kernel.org
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - mail.siteground.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - 1h.com
+X-Get-Message-Sender-Via: mail.siteground.com: none
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-musb_in_tusb() is always set to 0, because CONFIG_USB_TUSB6010 is never
-set (it should have been CONFIG_USB_MUSB_TUSB6010). But musb_in_tusb()
-is unused anyway, so remove a few lines of dead code.
+On 05/04/2014 04:20 AM, Davidlohr Bueso wrote:
+> On Sun, 2014-05-04 at 03:28 +0300, Marian Marinov wrote:
+>> On 05/04/2014 02:53 AM, Davidlohr Bueso wrote:
+>>> On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
+>>>> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the
+>>>> values of the current shmmax and shmall to the new namespace.
+>>>
+>>> Why is this a good idea?
+>>>
+>>> This would break userspace that relies on the current behavior.
+>>> Furthermore we've recently changed the default value of both these
+>>> limits to be as large as you can get, thus deprecating them. I don't
+>>> like the idea of this being replaced by namespaces.
+>>>
+>>> Thanks,
+>>> Davidlohr
+>>>
+>>
+>> The current behavior is create_ipc_ns()->shm_init_ns()
+>>
+>> void shm_init_ns(struct ipc_namespace *ns)
+>> {
+>>       ns->shm_ctlmax = SHMMAX;
+>>       ns->shm_ctlall = SHMALL;
+>>       ns->shm_ctlmni = SHMMNI;
+>>       ns->shm_rmid_forced = 0;
+>>       ns->shm_tot = 0;
+>>       ipc_init_ids(&shm_ids(ns));
+>> }
+>>
+>> This means that whenever you are creating an IPC namespace it gets its SHMMAX and SHMALL values from the defaults for
+>> the kernel.
+>
+> This is exactly what I meant by 'current behavior'.
+>
+>> If for some reason you want to have smaller(or bigger, for older kernels) limit. This means changing the values in
+>> /proc/sys/kernel/shmmax and /proc/sys/kernel/shmall. However the program that is started with the new IPC namespace may
+>> lack privileges to write to these files and so it can not modify them.
+>
+> I see no reason why namespaces should behave any different than the rest
+> of the system, wrt this. And this changes how *and* when these limits
+> are set, which impacts at a userspace level with no justification.
+>
+>> What I'm proposing is simply to copy the current values of the host machine, as set by a privileged process before the
+>> namespace creation.
+>>
+>> Maybe a better approach would be to allow the changes to be done by processes having CAP_SYS_RESOURCE inside the new
+>> namespace?
+>
+> Why do you need this? Is there any real impact/issue you're seeing?
+>
+I'm using Linux Containers and I need to be able to either start containers with different SHMMAX or set different 
+SHMMAX to already running containers without giving them full root access.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Usb, musb, and tusb! Is somebody sneaking nursery rhymes in the kernel
-tree? Anyhow, this patch is tested with git grep only.
-
- drivers/usb/musb/tusb6010.h | 6 ------
- 1 file changed, 6 deletions(-)
-
-diff --git a/drivers/usb/musb/tusb6010.h b/drivers/usb/musb/tusb6010.h
-index 35c933a5d991..1864e24ac965 100644
---- a/drivers/usb/musb/tusb6010.h
-+++ b/drivers/usb/musb/tusb6010.h
-@@ -14,12 +14,6 @@
- 
- extern u8 tusb_get_revision(struct musb *musb);
- 
--#ifdef CONFIG_USB_TUSB6010
--#define musb_in_tusb()			1
--#else
--#define musb_in_tusb()			0
--#endif
--
- #ifdef CONFIG_USB_TUSB_OMAP_DMA
- #define tusb_dma_omap()			1
- #else
--- 
-1.9.0
-
+-Marian
