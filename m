@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbaEDRBe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 13:01:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35873 "EHLO
+	id S1757123AbaEDRBd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 13:01:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaEDPlM (ORCPT
+	with ESMTP id S1751723AbaEDPlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Suman Anna <s-anna@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Paul Walmsley <paul@pwsan.com>
-Subject: [PATCH 3.14 008/158] ARM: OMAP2+: hwmod: fix missing braces in _init()
-Date: Sun,  4 May 2014 11:38:37 -0400
-Message-Id: <20140504154031.158262827@linuxfoundation.org>
+        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 007/158] ARM: OMAP2+: INTC: Acknowledge stuck active interrupts
+Date: Sun,  4 May 2014 11:38:36 -0400
+Message-Id: <20140504154031.023067695@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,52 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suman Anna <s-anna@ti.com>
+From: Stefan Sørensen <stefan.sorensen@spectralink.com>
 
-commit 3d36ad7e7a9be0d130c862727a052ed279046437 upstream.
+commit 698b48532539484b012fb7c4176b959d32a17d00 upstream.
 
-Bug was introduced by commit 'f92d959: ARM: OMAP2+: hwmod:
-Extract no-idle and no-reset info from DT'
+When an interrupt has become active on the INTC it will stay active
+until it is acked, even if masked or de-asserted. The
+INTC_PENDING_IRQn registers are however updated and since these are
+used by omap_intc_handle_irq to determine which interrupt to handle,
+it will never see the active interrupt. This will result in a storm of
+useless interrupts that is only stopped when another higher priority
+interrupt is asserted.
 
-There were 2 versions of the patch posted which resulted in the above
-commit. While v1 [1] had the bug, v2 [2] had it fixed.
-However v1 apparently seemed to have been pulled in by mistake
-introducing the bug.
+Fix by sending the INTC an acknowledge if we find no interrupts to
+handle.
 
-Given of_find_property() does return NULL when the node passed is
-NULL, it did not introduce any functional issues as such, just the
-fact that the second if check was executed unnecessarily.
-
-[1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg94220.html
-[2] http://www.spinics.net/lists/linux-omap/msg98490.html
-
-Cc: Nishanth Menon <nm@ti.com>
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-Signed-off-by: Suman Anna <s-anna@ti.com>
-Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
-Fixes: f92d9597f781f6a5a39c73dc71604bd8a21c5299 ("ARM: OMAP2+: hwmod: Extract no-idle and no-reset info from DT")
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-omap2/irq.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2546,11 +2546,12 @@ static int __init _init(struct omap_hwmo
- 		return -EINVAL;
- 	}
+--- a/arch/arm/mach-omap2/irq.c
++++ b/arch/arm/mach-omap2/irq.c
+@@ -222,6 +222,7 @@ void __init ti81xx_init_irq(void)
+ static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs *regs)
+ {
+ 	u32 irqnr;
++	int handled_irq = 0;
  
--	if (np)
-+	if (np) {
- 		if (of_find_property(np, "ti,no-reset-on-init", NULL))
- 			oh->flags |= HWMOD_INIT_NO_RESET;
- 		if (of_find_property(np, "ti,no-idle-on-init", NULL))
- 			oh->flags |= HWMOD_INIT_NO_IDLE;
-+	}
+ 	do {
+ 		irqnr = readl_relaxed(base_addr + 0x98);
+@@ -249,8 +250,15 @@ out:
+ 		if (irqnr) {
+ 			irqnr = irq_find_mapping(domain, irqnr);
+ 			handle_IRQ(irqnr, regs);
++			handled_irq = 1;
+ 		}
+ 	} while (irqnr);
++
++	/* If an irq is masked or deasserted while active, we will
++	 * keep ending up here with no irq handled. So remove it from
++	 * the INTC with an ack.*/
++	if (!handled_irq)
++		omap_ack_irq(NULL);
+ }
  
- 	oh->_state = _HWMOD_STATE_INITIALIZED;
- 
+ asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs)
 
 
