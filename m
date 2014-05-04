@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaEDPlw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36175 "EHLO
+	id S1755363AbaEDQeg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:34:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36209 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaEDPls (ORCPT
+	with ESMTP id S1754179AbaEDPlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:48 -0400
+	Sun, 4 May 2014 11:41:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Svec <martin.svec@zoner.cz>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 093/158] Target/sbc: Initialize COMPARE_AND_WRITE write_sg scatterlist
-Date: Sun,  4 May 2014 11:40:02 -0400
-Message-Id: <20140504154042.577278992@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 101/158] DRM: armada: fix corruption while loading cursors
+Date: Sun,  4 May 2014 11:40:10 -0400
+Message-Id: <20140504154043.675989489@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,38 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Svec <martin.svec@zoner.cz>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit a1e1774c6dfa3a524dd8df51ca95185fe5ef3247 upstream.
+commit c39b06951f1dc2e384650288676c5b7dcc0ec92c upstream.
 
-When compiled with CONFIG_DEBUG_SG set, uninitialized SGL leads
-to BUG() in compare_and_write_callback().
+Loading cursors to the LCD controller's SRAM can be corrupted when the
+configured pixel clock is relatively slow.  This seems to be caused
+when we write back-to-back to the SRAM registers.
 
-Signed-off-by: Martin Svec <martin.svec@zoner.cz>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+There doesn't appear to be any status register we can read to check
+when an access has completed.
+
+Inserting a dummy read between the writes appears to fix the problem.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_sbc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/armada/armada_crtc.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/target/target_core_sbc.c
-+++ b/drivers/target/target_core_sbc.c
-@@ -425,13 +425,14 @@ static sense_reason_t compare_and_write_
- 		goto out;
- 	}
- 
--	write_sg = kzalloc(sizeof(struct scatterlist) * cmd->t_data_nents,
-+	write_sg = kmalloc(sizeof(struct scatterlist) * cmd->t_data_nents,
- 			   GFP_KERNEL);
- 	if (!write_sg) {
- 		pr_err("Unable to allocate compare_and_write sg\n");
- 		ret = TCM_OUT_OF_RESOURCES;
- 		goto out;
- 	}
-+	sg_init_table(write_sg, cmd->t_data_nents);
- 	/*
- 	 * Setup verify and write data payloads from total NumberLBAs.
- 	 */
+--- a/drivers/gpu/drm/armada/armada_crtc.c
++++ b/drivers/gpu/drm/armada/armada_crtc.c
+@@ -678,6 +678,7 @@ static void armada_load_cursor_argb(void
+ 				       base + LCD_SPU_SRAM_WRDAT);
+ 			writel_relaxed(addr | SRAM_WRITE,
+ 				       base + LCD_SPU_SRAM_CTRL);
++			readl_relaxed(base + LCD_SPU_HWC_OVSA_HPXL_VLN);
+ 			addr += 1;
+ 			if ((addr & 0x00ff) == 0)
+ 				addr += 0xf00;
 
 
