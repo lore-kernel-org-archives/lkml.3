@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaEDPwi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:52:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36812 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983AbaEDPmw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754980AbaEDPmw (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36748 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754877AbaEDPmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.4 02/43] ARM: OMAP2+: INTC: Acknowledge stuck active interrupts
-Date: Sun,  4 May 2014 11:41:56 -0400
-Message-Id: <20140504154224.558032799@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>, Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 70/86] media: media: gspca: sn9c20x: add ID for Genius Look 1320 V2
+Date: Sun,  4 May 2014 11:41:45 -0400
+Message-Id: <20140504154149.979479671@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
-References: <20140504154224.211508175@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefan Sørensen <stefan.sorensen@spectralink.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit 698b48532539484b012fb7c4176b959d32a17d00 upstream.
+commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
 
-When an interrupt has become active on the INTC it will stay active
-until it is acked, even if masked or de-asserted. The
-INTC_PENDING_IRQn registers are however updated and since these are
-used by omap_intc_handle_irq to determine which interrupt to handle,
-it will never see the active interrupt. This will result in a storm of
-useless interrupts that is only stopped when another higher priority
-interrupt is asserted.
-
-Fix by sending the INTC an acknowledge if we find no interrupts to
-handle.
-
-Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/irq.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ Documentation/video4linux/gspca.txt |    1 +
+ drivers/media/usb/gspca/sn9c20x.c   |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -220,6 +220,7 @@ void __init ti81xx_init_irq(void)
- static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs *regs)
- {
- 	u32 irqnr;
-+	int handled_irq = 0;
- 
- 	do {
- 		irqnr = readl_relaxed(base_addr + 0x98);
-@@ -247,8 +248,15 @@ out:
- 		if (irqnr) {
- 			irqnr = irq_find_mapping(domain, irqnr);
- 			handle_IRQ(irqnr, regs);
-+			handled_irq = 1;
- 		}
- 	} while (irqnr);
-+
-+	/* If an irq is masked or deasserted while active, we will
-+	 * keep ending up here with no irq handled. So remove it from
-+	 * the INTC with an ack.*/
-+	if (!handled_irq)
-+		omap_ack_irq(NULL);
- }
- 
- asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs)
+--- a/Documentation/video4linux/gspca.txt
++++ b/Documentation/video4linux/gspca.txt
+@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
+ sonixj		0458:7025	Genius Eye 311Q
+ sn9c20x		0458:7029	Genius Look 320s
+ sonixj		0458:702e	Genius Slim 310 NB
++sn9c20x		0458:7045	Genius Look 1320 V2
+ sn9c20x		0458:704a	Genius Slim 1320
+ sn9c20x		0458:704c	Genius i-Look 1321
+ sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
+--- a/drivers/media/usb/gspca/sn9c20x.c
++++ b/drivers/media/usb/gspca/sn9c20x.c
+@@ -2394,6 +2394,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
+ 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
+ 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
++	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
+ 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
 
 
