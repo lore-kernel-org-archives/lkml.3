@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694AbaEDQnh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:43:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36095 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711AbaEDPli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753991AbaEDPli (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:41:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36053 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaEDPld (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:41:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 085/158] IB/qib: Fix debugfs ordering issue with multiple HCAs
-Date: Sun,  4 May 2014 11:39:54 -0400
-Message-Id: <20140504154041.440874789@linuxfoundation.org>
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.14 057/158] x86, AVX-512: AVX-512 Feature Detection
+Date: Sun,  4 May 2014 11:39:26 -0400
+Message-Id: <20140504154037.711981794@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,78 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit f8b6c47a44c063062317646683a73371c24c69ee upstream.
+commit 8e5780fdeef7dc490b3f0b3a62704593721fa4f3 upstream.
 
-The debugfs init code was incorrectly called before the idr mechanism
-is used to get the unit number, so the dd->unit hasn't been
-initialized.  This caused the unit relative directory creation to fail
-after the first.
+AVX-512 is an extention of AVX2. Its spec can be found at:
+http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
 
-This patch moves the init for the debugfs stuff until after all of the
-failures and after the unit number has been determined.
+This patch detects AVX-512 features by CPUID.
 
-A bug in unwind code in qib_alloc_devdata() is also fixed.
-
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1392931491-33237-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_init.c |   25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/cpufeature.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/infiniband/hw/qib/qib_init.c
-+++ b/drivers/infiniband/hw/qib/qib_init.c
-@@ -1097,14 +1097,10 @@ struct qib_devdata *qib_alloc_devdata(st
- 	int ret;
- 
- 	dd = (struct qib_devdata *) ib_alloc_device(sizeof(*dd) + extra);
--	if (!dd) {
--		dd = ERR_PTR(-ENOMEM);
--		goto bail;
--	}
-+	if (!dd)
-+		return ERR_PTR(-ENOMEM);
- 
--#ifdef CONFIG_DEBUG_FS
--	qib_dbg_ibdev_init(&dd->verbs_dev);
--#endif
-+	INIT_LIST_HEAD(&dd->list);
- 
- 	idr_preload(GFP_KERNEL);
- 	spin_lock_irqsave(&qib_devs_lock, flags);
-@@ -1121,11 +1117,6 @@ struct qib_devdata *qib_alloc_devdata(st
- 	if (ret < 0) {
- 		qib_early_err(&pdev->dev,
- 			      "Could not allocate unit ID: error %d\n", -ret);
--#ifdef CONFIG_DEBUG_FS
--		qib_dbg_ibdev_exit(&dd->verbs_dev);
--#endif
--		ib_dealloc_device(&dd->verbs_dev.ibdev);
--		dd = ERR_PTR(ret);
- 		goto bail;
- 	}
- 
-@@ -1139,9 +1130,15 @@ struct qib_devdata *qib_alloc_devdata(st
- 			qib_early_err(&pdev->dev,
- 				"Could not alloc cpulist info, cpu affinity might be wrong\n");
- 	}
--
--bail:
-+#ifdef CONFIG_DEBUG_FS
-+	qib_dbg_ibdev_init(&dd->verbs_dev);
-+#endif
- 	return dd;
-+bail:
-+	if (!list_empty(&dd->list))
-+		list_del_init(&dd->list);
-+	ib_dealloc_device(&dd->verbs_dev.ibdev);
-+	return ERR_PTR(ret);;
- }
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -217,9 +217,13 @@
+ #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
+ #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
+ #define X86_FEATURE_MPX		(9*32+14) /* Memory Protection Extension */
++#define X86_FEATURE_AVX512F	(9*32+16) /* AVX-512 Foundation */
+ #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+ #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
+ #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
++#define X86_FEATURE_AVX512PF	(9*32+26) /* AVX-512 Prefetch */
++#define X86_FEATURE_AVX512ER	(9*32+27) /* AVX-512 Exponential and Reciprocal */
++#define X86_FEATURE_AVX512CD	(9*32+28) /* AVX-512 Conflict Detection */
  
  /*
+  * BUG word(s)
 
 
