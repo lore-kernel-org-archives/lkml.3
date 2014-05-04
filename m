@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328AbaEDQsH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:48:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35967 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaEDPlb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753906AbaEDPlb (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:41:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36008 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703AbaEDPl3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:41:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kevin Tsai <ktsai@capellamicro.com>,
-        Beomho Seo <beomho.seo@samsung.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 067/158] iio: cm32181: Fix read integration time function
-Date: Sun,  4 May 2014 11:39:36 -0400
-Message-Id: <20140504154039.036484719@linuxfoundation.org>
+        Troy Kisky <troy.kisky@boundarydevices.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Marek Vasut <marex@denx.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.14 062/158] PCI: imx6: Wait for retraining
+Date: Sun,  4 May 2014 11:39:31 -0400
+Message-Id: <20140504154038.372626103@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,31 +28,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Beomho Seo <beomho.seo@samsung.com>
+From: Marek Vasut <marex@denx.de>
 
-commit 41c897f8789d0d1039ed873ddcd0caabd5756e0f upstream.
+commit f95d3ae771916c8c7024fecfb6c420e5dfeced05 upstream.
 
-In read integration time function, assign 0 to val.
-Because, prevent return inaccurate value when call read integration time.
+This patch handles the case where the PCIe link is up and running, yet
+drops into the LTSSM training mode. The link spends short time in the LTSSM
+training mode, but the current code can misinterpret it as the link being
+stalled.  Waiting for the LTSSM training to complete fixes the issue.
 
-Cc: Kevin Tsai <ktsai@capellamicro.com>
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Quoting Sascha:
+
+  This is broken since commit 7f9f40c01cce ('PCI: imx6: Report "link up"
+  only after link training completes').
+
+  The designware driver changes the PORT_LOGIC_SPEED_CHANGE bit in
+  dw_pcie_host_init() which causes the link to be retrained. During the
+  next call to dw_pcie_rd_conf() the link is then reported being down and
+  the function returns PCIBIOS_DEVICE_NOT_FOUND resulting in nonfunctioning
+  PCIe.
+
+Fixes: 7f9f40c01cce (PCI: imx6: Report "link up" only after link training completes)
+Tested-by: Troy Kisky <troy.kisky@boundarydevices.com>
+Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Troy Kisky <troy.kisky@boundarydevices.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/light/cm32181.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pci/host/pci-imx6.c |   47 +++++++++++++++++++++++++++++++-------------
+ 1 file changed, 34 insertions(+), 13 deletions(-)
 
---- a/drivers/iio/light/cm32181.c
-+++ b/drivers/iio/light/cm32181.c
-@@ -221,6 +221,7 @@ static int cm32181_read_raw(struct iio_d
- 		*val = cm32181->calibscale;
- 		return IIO_VAL_INT;
- 	case IIO_CHAN_INFO_INT_TIME:
-+		*val = 0;
- 		ret = cm32181_read_als_it(cm32181, val2);
- 		return ret;
- 	}
+--- a/drivers/pci/host/pci-imx6.c
++++ b/drivers/pci/host/pci-imx6.c
+@@ -424,20 +424,40 @@ static void imx6_pcie_reset_phy(struct p
+ 
+ static int imx6_pcie_link_up(struct pcie_port *pp)
+ {
+-	u32 rc, ltssm, rx_valid;
++	u32 rc, debug_r0, rx_valid;
++	int count = 5;
+ 
+ 	/*
+-	 * Test if the PHY reports that the link is up and also that
+-	 * the link training finished.  It might happen that the PHY
+-	 * reports the link is already up, but the link training bit
+-	 * is still set, so make sure to check the training is done
+-	 * as well here.
++	 * Test if the PHY reports that the link is up and also that the LTSSM
++	 * training finished. There are three possible states of the link when
++	 * this code is called:
++	 * 1) The link is DOWN (unlikely)
++	 *     The link didn't come up yet for some reason. This usually means
++	 *     we have a real problem somewhere. Reset the PHY and exit. This
++	 *     state calls for inspection of the DEBUG registers.
++	 * 2) The link is UP, but still in LTSSM training
++	 *     Wait for the training to finish, which should take a very short
++	 *     time. If the training does not finish, we have a problem and we
++	 *     need to inspect the DEBUG registers. If the training does finish,
++	 *     the link is up and operating correctly.
++	 * 3) The link is UP and no longer in LTSSM training
++	 *     The link is up and operating correctly.
+ 	 */
+-	rc = readl(pp->dbi_base + PCIE_PHY_DEBUG_R1);
+-	if ((rc & PCIE_PHY_DEBUG_R1_XMLH_LINK_UP) &&
+-	    !(rc & PCIE_PHY_DEBUG_R1_XMLH_LINK_IN_TRAINING))
+-		return 1;
+-
++	while (1) {
++		rc = readl(pp->dbi_base + PCIE_PHY_DEBUG_R1);
++		if (!(rc & PCIE_PHY_DEBUG_R1_XMLH_LINK_UP))
++			break;
++		if (!(rc & PCIE_PHY_DEBUG_R1_XMLH_LINK_IN_TRAINING))
++			return 1;
++		if (!count--)
++			break;
++		dev_dbg(pp->dev, "Link is up, but still in training\n");
++		/*
++		 * Wait a little bit, then re-check if the link finished
++		 * the training.
++		 */
++		usleep_range(1000, 2000);
++	}
+ 	/*
+ 	 * From L0, initiate MAC entry to gen2 if EP/RC supports gen2.
+ 	 * Wait 2ms (LTSSM timeout is 24ms, PHY lock is ~5us in gen2).
+@@ -446,15 +466,16 @@ static int imx6_pcie_link_up(struct pcie
+ 	 * to gen2 is stuck
+ 	 */
+ 	pcie_phy_read(pp->dbi_base, PCIE_PHY_RX_ASIC_OUT, &rx_valid);
+-	ltssm = readl(pp->dbi_base + PCIE_PHY_DEBUG_R0) & 0x3F;
++	debug_r0 = readl(pp->dbi_base + PCIE_PHY_DEBUG_R0);
+ 
+ 	if (rx_valid & 0x01)
+ 		return 0;
+ 
+-	if (ltssm != 0x0d)
++	if ((debug_r0 & 0x3f) != 0x0d)
+ 		return 0;
+ 
+ 	dev_err(pp->dev, "transition to gen2 is stuck, reset PHY!\n");
++	dev_dbg(pp->dev, "debug_r0=%08x debug_r1=%08x\n", debug_r0, rc);
+ 
+ 	imx6_pcie_reset_phy(pp);
+ 
 
 
