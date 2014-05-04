@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941AbaEDQIv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:08:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36571 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754621AbaEDPm3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754683AbaEDPm3 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36523 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621AbaEDPmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weng Meiling <wengmeiling.weng@huawei.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.10 43/86] nfsd: check passed sockets net matches NFSd superblocks one
-Date: Sun,  4 May 2014 11:41:18 -0400
-Message-Id: <20140504154146.247332711@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 30/86] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
+Date: Sun,  4 May 2014 11:41:05 -0400
+Message-Id: <20140504154144.496350226@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,87 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
+commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
 
-There could be a case, when NFSd file system is mounted in network, different
-to socket's one, like below:
+Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
 
-"ip netns exec" creates new network and mount namespace, which duplicates NFSd
-mount point, created in init_net context. And thus NFS server stop in nested
-network context leads to RPCBIND client destruction in init_net.
-Then, on NFSd start in nested network context, rpc.nfsd process creates socket
-in nested net and passes it into "write_ports", which leads to RPCBIND sockets
-creation in init_net context because of the same reason (NFSd monut point was
-created in init_net context). An attempt to register passed socket in nested
-net leads to panic, because no RPCBIND client present in nexted network
-namespace.
+tps65910_irq_init() sets 'tps65910->chip_irq' before calling
+regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
+memory allocation of regmap_irq_chip_data members then:
 
-This patch add check that passed socket's net matches NFSd superblock's one.
-And returns -EINVAL error to user psace otherwise.
+1. The 'tps65910->chip_irq' will still hold some value
+2. 'tps65910->irq_data' will be pointing to already freed memory
+   (because regmap_add_irq_chip() will free it on error)
 
-v2: Put socket on exit.
+This results in invalid memory access during driver remove because the
+tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
 
-Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfsctl.c               |    5 +++++
- include/linux/sunrpc/svcsock.h |    1 +
- net/sunrpc/svcsock.c           |   16 ++++++++++++++++
- 3 files changed, 22 insertions(+)
+ drivers/mfd/tps65910.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
- 
-+	if (svc_alien_sock(net, fd)) {
-+		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
-+		return -EINVAL;
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps6
+ 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
+ 		IRQF_ONESHOT, pdata->irq_base,
+ 		tps6591x_irqs_chip, &tps65910->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
++		tps65910->chip_irq = 0;
 +	}
-+
- 	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
---- a/include/linux/sunrpc/svcsock.h
-+++ b/include/linux/sunrpc/svcsock.h
-@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
- int		svc_send(struct svc_rqst *);
- void		svc_drop(struct svc_rqst *);
- void		svc_sock_update_bufs(struct svc_serv *serv);
-+bool		svc_alien_sock(struct net *net, int fd);
- int		svc_addsock(struct svc_serv *serv, const int fd,
- 					char *name_return, const size_t len);
- void		svc_init_xprt_sock(void);
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1393,6 +1393,22 @@ static struct svc_sock *svc_setup_socket
- 	return svsk;
+ 	return ret;
  }
  
-+bool svc_alien_sock(struct net *net, int fd)
-+{
-+	int err;
-+	struct socket *sock = sockfd_lookup(fd, &err);
-+	bool ret = false;
-+
-+	if (!sock)
-+		goto out;
-+	if (sock_net(sock->sk) != net)
-+		ret = true;
-+	sockfd_put(sock);
-+out:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(svc_alien_sock);
-+
- /**
-  * svc_addsock - add a listener socket to an RPC service
-  * @serv: pointer to RPC service to which to add a new listener
 
 
