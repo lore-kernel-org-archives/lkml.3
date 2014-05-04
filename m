@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaEDPme (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36489 "EHLO
+	id S1755534AbaEDQE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:04:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaEDPmX (ORCPT
+	with ESMTP id S1754745AbaEDPme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:23 -0400
+	Sun, 4 May 2014 11:42:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.10 28/86] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Sun,  4 May 2014 11:41:03 -0400
-Message-Id: <20140504154144.220152338@linuxfoundation.org>
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.10 50/86] IB/ehca: Returns an error on ib_copy_to_udata() failure
+Date: Sun,  4 May 2014 11:41:25 -0400
+Message-Id: <20140504154147.214802809@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,39 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
+commit 5bdb0f02add5994b0bc17494f4726925ca5d6ba1 upstream.
 
-During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
+In case of error when writing to userspace, function ehca_create_cq()
+does not set an error code before following its error path.
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
+This patch sets the error code to -EFAULT when ib_copy_to_udata()
+fails.
 
-If i2c_new_dummy() fails for RTC device, fail also the probe for
-main MFD driver.
+This was caught when using spatch (aka. coccinelle)
+to rewrite call to ib_copy_{from,to}_udata().
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/max8998.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/hw/ehca/ehca_cq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -152,6 +152,10 @@ static int max8998_i2c_probe(struct i2c_
- 	mutex_init(&max8998->iolock);
- 
- 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!max8998->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max8998->rtc, max8998);
- 
- 	max8998_irq_init(max8998);
+--- a/drivers/infiniband/hw/ehca/ehca_cq.c
++++ b/drivers/infiniband/hw/ehca/ehca_cq.c
+@@ -283,6 +283,7 @@ struct ib_cq *ehca_create_cq(struct ib_d
+ 			(my_cq->galpas.user.fw_handle & (PAGE_SIZE - 1));
+ 		if (ib_copy_to_udata(udata, &resp, sizeof(resp))) {
+ 			ehca_err(device, "Copy to udata failed.");
++			cq = ERR_PTR(-EFAULT);
+ 			goto create_cq_exit4;
+ 		}
+ 	}
 
 
