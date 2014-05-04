@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaEDQyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:54:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35962 "EHLO
+	id S1756874AbaEDQyd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:54:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710AbaEDPlX (ORCPT
+	with ESMTP id S1753596AbaEDPlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:23 -0400
+	Sun, 4 May 2014 11:41:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Subject: [PATCH 3.14 037/158] mei: me: do not load the driver if the FW doesnt support MEI interface
-Date: Sun,  4 May 2014 11:39:06 -0400
-Message-Id: <20140504154035.008716728@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.14 034/158] s390/bitops,atomic: add missing memory barriers
+Date: Sun,  4 May 2014 11:39:03 -0400
+Message-Id: <20140504154034.595939541@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,84 +27,366 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
+commit 0ccc8b7ac86053388e793bad20bd26bd777752eb upstream.
 
-NM and SPS  FW types that may run on ME device on server platforms
-do not have valid MEI/HECI interface and driver should not
-be bound to it as this might lead to system hung.
-In practice not all BIOSes effectively hide such devices from the
-OS and in some cases it is not possible.
+When reworking the bitops and atomic ops I missed that those instructions
+that got atomic behaviour only perform a "specific-operand-serialization"
+instead of a full "serialization".
+The compare-and-swap instruction used before performs a full serialization
+before and after the instruction is executed, which means it has full
+memory barrier semantics.
+In order to give the new bitops and atomic ops functions also full memory
+barrier semantics add a "bcr 14,0" before and after each of those new
+instructions which performs full serialization as well.
 
-We determine FW type by examining Host FW status registers in order to
-unbind the driver.
-In this patch we are adding check for ME on Cougar Point, Lynx Point
-Devices
+This restores memory barrier semantics for bitops and atomic ops functions
+which return values, like e.g. atomic_add_return(), but not for functions
+which do not return a value, like e.g. atomic_add().
+This is consistent to other architectures and what common code requires.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/mei/hw-me-regs.h |    5 +++++
- drivers/misc/mei/pci-me.c     |   30 +++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ arch/s390/include/asm/atomic.h |   70 ++++++++++++++++++++++++-----------------
+ arch/s390/include/asm/bitops.h |   41 +++++++++++++-----------
+ 2 files changed, 65 insertions(+), 46 deletions(-)
 
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -115,6 +115,11 @@
- #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
+--- a/arch/s390/include/asm/atomic.h
++++ b/arch/s390/include/asm/atomic.h
+@@ -15,23 +15,29 @@
  
- #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
+ #include <linux/compiler.h>
+ #include <linux/types.h>
++#include <asm/barrier.h>
+ #include <asm/cmpxchg.h>
+ 
+ #define ATOMIC_INIT(i)  { (i) }
+ 
++#define __ATOMIC_NO_BARRIER	"\n"
 +
-+/* Host Firmware Status Registers in PCI Config Space */
-+#define PCI_CFG_HFS_1         0x40
-+#define PCI_CFG_HFS_2         0x48
-+
- /*
-  * MEI HW Section
-  */
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -100,15 +100,31 @@ static bool mei_me_quirk_probe(struct pc
- 				const struct pci_device_id *ent)
+ #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
+ 
+ #define __ATOMIC_OR	"lao"
+ #define __ATOMIC_AND	"lan"
+ #define __ATOMIC_ADD	"laa"
++#define __ATOMIC_BARRIER "bcr	14,0\n"
+ 
+-#define __ATOMIC_LOOP(ptr, op_val, op_string)				\
++#define __ATOMIC_LOOP(ptr, op_val, op_string, __barrier)		\
+ ({									\
+ 	int old_val;							\
+ 									\
+ 	typecheck(atomic_t *, ptr);					\
+ 	asm volatile(							\
++		__barrier						\
+ 		op_string "	%0,%2,%1\n"				\
++		__barrier						\
+ 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
+ 		: "d" (op_val)						\
+ 		: "cc", "memory");					\
+@@ -43,8 +49,9 @@
+ #define __ATOMIC_OR	"or"
+ #define __ATOMIC_AND	"nr"
+ #define __ATOMIC_ADD	"ar"
++#define __ATOMIC_BARRIER "\n"
+ 
+-#define __ATOMIC_LOOP(ptr, op_val, op_string)				\
++#define __ATOMIC_LOOP(ptr, op_val, op_string, __barrier)		\
+ ({									\
+ 	int old_val, new_val;						\
+ 									\
+@@ -82,7 +89,7 @@ static inline void atomic_set(atomic_t *
+ 
+ static inline int atomic_add_return(int i, atomic_t *v)
  {
- 	u32 reg;
--	if (ent->device == MEI_DEV_ID_PBG_1) {
--		pci_read_config_dword(pdev, 0x48, &reg);
--		/* make sure that bit 9 is up and bit 10 is down */
--		if ((reg & 0x600) == 0x200) {
--			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
--			return false;
--		}
-+	/* Cougar Point || Patsburg */
-+	if (ent->device == MEI_DEV_ID_CPT_1 ||
-+	    ent->device == MEI_DEV_ID_PBG_1) {
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
-+		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
-+		if ((reg & 0x600) == 0x200)
-+			goto no_mei;
- 	}
-+
-+	/* Lynx Point */
-+	if (ent->device == MEI_DEV_ID_LPT_H  ||
-+	    ent->device == MEI_DEV_ID_LPT_W  ||
-+	    ent->device == MEI_DEV_ID_LPT_HR) {
-+		/* Read ME FW Status check for SPS Firmware */
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
-+		/* if bits [19:16] = 15, running SPS Firmware */
-+		if ((reg & 0xf0000) == 0xf0000)
-+			goto no_mei;
-+	}
-+
- 	return true;
-+
-+no_mei:
-+	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
-+	return false;
+-	return __ATOMIC_LOOP(v, i, __ATOMIC_ADD) + i;
++	return __ATOMIC_LOOP(v, i, __ATOMIC_ADD, __ATOMIC_BARRIER) + i;
  }
- /**
-  * mei_probe - Device Initialization Routine
+ 
+ static inline void atomic_add(int i, atomic_t *v)
+@@ -94,12 +101,10 @@ static inline void atomic_add(int i, ato
+ 			: "+Q" (v->counter)
+ 			: "i" (i)
+ 			: "cc", "memory");
+-	} else {
+-		atomic_add_return(i, v);
++		return;
+ 	}
+-#else
+-	atomic_add_return(i, v);
+ #endif
++	__ATOMIC_LOOP(v, i, __ATOMIC_ADD, __ATOMIC_NO_BARRIER);
+ }
+ 
+ #define atomic_add_negative(_i, _v)	(atomic_add_return(_i, _v) < 0)
+@@ -115,12 +120,12 @@ static inline void atomic_add(int i, ato
+ 
+ static inline void atomic_clear_mask(unsigned int mask, atomic_t *v)
+ {
+-	__ATOMIC_LOOP(v, ~mask, __ATOMIC_AND);
++	__ATOMIC_LOOP(v, ~mask, __ATOMIC_AND, __ATOMIC_NO_BARRIER);
+ }
+ 
+ static inline void atomic_set_mask(unsigned int mask, atomic_t *v)
+ {
+-	__ATOMIC_LOOP(v, mask, __ATOMIC_OR);
++	__ATOMIC_LOOP(v, mask, __ATOMIC_OR, __ATOMIC_NO_BARRIER);
+ }
+ 
+ #define atomic_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -157,19 +162,24 @@ static inline int __atomic_add_unless(at
+ 
+ #ifdef CONFIG_64BIT
+ 
++#define __ATOMIC64_NO_BARRIER	"\n"
++
+ #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
+ 
+ #define __ATOMIC64_OR	"laog"
+ #define __ATOMIC64_AND	"lang"
+ #define __ATOMIC64_ADD	"laag"
++#define __ATOMIC64_BARRIER "bcr	14,0\n"
+ 
+-#define __ATOMIC64_LOOP(ptr, op_val, op_string)				\
++#define __ATOMIC64_LOOP(ptr, op_val, op_string, __barrier)		\
+ ({									\
+ 	long long old_val;						\
+ 									\
+ 	typecheck(atomic64_t *, ptr);					\
+ 	asm volatile(							\
++		__barrier						\
+ 		op_string "	%0,%2,%1\n"				\
++		__barrier						\
+ 		: "=d" (old_val), "+Q" ((ptr)->counter)			\
+ 		: "d" (op_val)						\
+ 		: "cc", "memory");					\
+@@ -181,8 +191,9 @@ static inline int __atomic_add_unless(at
+ #define __ATOMIC64_OR	"ogr"
+ #define __ATOMIC64_AND	"ngr"
+ #define __ATOMIC64_ADD	"agr"
++#define __ATOMIC64_BARRIER "\n"
+ 
+-#define __ATOMIC64_LOOP(ptr, op_val, op_string)				\
++#define __ATOMIC64_LOOP(ptr, op_val, op_string, __barrier)		\
+ ({									\
+ 	long long old_val, new_val;					\
+ 									\
+@@ -220,17 +231,32 @@ static inline void atomic64_set(atomic64
+ 
+ static inline long long atomic64_add_return(long long i, atomic64_t *v)
+ {
+-	return __ATOMIC64_LOOP(v, i, __ATOMIC64_ADD) + i;
++	return __ATOMIC64_LOOP(v, i, __ATOMIC64_ADD, __ATOMIC64_BARRIER) + i;
++}
++
++static inline void atomic64_add(long long i, atomic64_t *v)
++{
++#ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
++	if (__builtin_constant_p(i) && (i > -129) && (i < 128)) {
++		asm volatile(
++			"agsi	%0,%1\n"
++			: "+Q" (v->counter)
++			: "i" (i)
++			: "cc", "memory");
++		return;
++	}
++#endif
++	__ATOMIC64_LOOP(v, i, __ATOMIC64_ADD, __ATOMIC64_NO_BARRIER);
+ }
+ 
+ static inline void atomic64_clear_mask(unsigned long mask, atomic64_t *v)
+ {
+-	__ATOMIC64_LOOP(v, ~mask, __ATOMIC64_AND);
++	__ATOMIC64_LOOP(v, ~mask, __ATOMIC64_AND, __ATOMIC64_NO_BARRIER);
+ }
+ 
+ static inline void atomic64_set_mask(unsigned long mask, atomic64_t *v)
+ {
+-	__ATOMIC64_LOOP(v, mask, __ATOMIC64_OR);
++	__ATOMIC64_LOOP(v, mask, __ATOMIC64_OR, __ATOMIC64_NO_BARRIER);
+ }
+ 
+ #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
+@@ -334,25 +360,13 @@ static inline void atomic64_clear_mask(u
+ 	} while (atomic64_cmpxchg(v, old, new) != old);
+ }
+ 
+-#endif /* CONFIG_64BIT */
+-
+ static inline void atomic64_add(long long i, atomic64_t *v)
+ {
+-#ifdef CONFIG_HAVE_MARCH_Z196_FEATURES
+-	if (__builtin_constant_p(i) && (i > -129) && (i < 128)) {
+-		asm volatile(
+-			"agsi	%0,%1\n"
+-			: "+Q" (v->counter)
+-			: "i" (i)
+-			: "cc", "memory");
+-	} else {
+-		atomic64_add_return(i, v);
+-	}
+-#else
+ 	atomic64_add_return(i, v);
+-#endif
+ }
+ 
++#endif /* CONFIG_64BIT */
++
+ static inline int atomic64_add_unless(atomic64_t *v, long long i, long long u)
+ {
+ 	long long c, old;
+--- a/arch/s390/include/asm/bitops.h
++++ b/arch/s390/include/asm/bitops.h
+@@ -47,14 +47,18 @@
+ 
+ #include <linux/typecheck.h>
+ #include <linux/compiler.h>
++#include <asm/barrier.h>
++
++#define __BITOPS_NO_BARRIER	"\n"
+ 
+ #ifndef CONFIG_64BIT
+ 
+ #define __BITOPS_OR		"or"
+ #define __BITOPS_AND		"nr"
+ #define __BITOPS_XOR		"xr"
++#define __BITOPS_BARRIER	"\n"
+ 
+-#define __BITOPS_LOOP(__addr, __val, __op_string)		\
++#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
+ ({								\
+ 	unsigned long __old, __new;				\
+ 								\
+@@ -67,7 +71,7 @@
+ 		"	jl	0b"				\
+ 		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
+ 		: "d" (__val)					\
+-		: "cc");					\
++		: "cc", "memory");				\
+ 	__old;							\
+ })
+ 
+@@ -78,17 +82,20 @@
+ #define __BITOPS_OR		"laog"
+ #define __BITOPS_AND		"lang"
+ #define __BITOPS_XOR		"laxg"
++#define __BITOPS_BARRIER	"bcr	14,0\n"
+ 
+-#define __BITOPS_LOOP(__addr, __val, __op_string)		\
++#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
+ ({								\
+ 	unsigned long __old;					\
+ 								\
+ 	typecheck(unsigned long *, (__addr));			\
+ 	asm volatile(						\
++		__barrier					\
+ 		__op_string "	%0,%2,%1\n"			\
++		__barrier					\
+ 		: "=d" (__old),	"+Q" (*(__addr))		\
+ 		: "d" (__val)					\
+-		: "cc");					\
++		: "cc", "memory");				\
+ 	__old;							\
+ })
+ 
+@@ -97,8 +104,9 @@
+ #define __BITOPS_OR		"ogr"
+ #define __BITOPS_AND		"ngr"
+ #define __BITOPS_XOR		"xgr"
++#define __BITOPS_BARRIER	"\n"
+ 
+-#define __BITOPS_LOOP(__addr, __val, __op_string)		\
++#define __BITOPS_LOOP(__addr, __val, __op_string, __barrier)	\
+ ({								\
+ 	unsigned long __old, __new;				\
+ 								\
+@@ -111,7 +119,7 @@
+ 		"	jl	0b"				\
+ 		: "=&d" (__old), "=&d" (__new), "+Q" (*(__addr))\
+ 		: "d" (__val)					\
+-		: "cc");					\
++		: "cc", "memory");				\
+ 	__old;							\
+ })
+ 
+@@ -149,12 +157,12 @@ static inline void set_bit(unsigned long
+ 			"oi	%0,%b1\n"
+ 			: "+Q" (*caddr)
+ 			: "i" (1 << (nr & 7))
+-			: "cc");
++			: "cc", "memory");
+ 		return;
+ 	}
+ #endif
+ 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
+-	__BITOPS_LOOP(addr, mask, __BITOPS_OR);
++	__BITOPS_LOOP(addr, mask, __BITOPS_OR, __BITOPS_NO_BARRIER);
+ }
+ 
+ static inline void clear_bit(unsigned long nr, volatile unsigned long *ptr)
+@@ -170,12 +178,12 @@ static inline void clear_bit(unsigned lo
+ 			"ni	%0,%b1\n"
+ 			: "+Q" (*caddr)
+ 			: "i" (~(1 << (nr & 7)))
+-			: "cc");
++			: "cc", "memory");
+ 		return;
+ 	}
+ #endif
+ 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
+-	__BITOPS_LOOP(addr, mask, __BITOPS_AND);
++	__BITOPS_LOOP(addr, mask, __BITOPS_AND, __BITOPS_NO_BARRIER);
+ }
+ 
+ static inline void change_bit(unsigned long nr, volatile unsigned long *ptr)
+@@ -191,12 +199,12 @@ static inline void change_bit(unsigned l
+ 			"xi	%0,%b1\n"
+ 			: "+Q" (*caddr)
+ 			: "i" (1 << (nr & 7))
+-			: "cc");
++			: "cc", "memory");
+ 		return;
+ 	}
+ #endif
+ 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
+-	__BITOPS_LOOP(addr, mask, __BITOPS_XOR);
++	__BITOPS_LOOP(addr, mask, __BITOPS_XOR, __BITOPS_NO_BARRIER);
+ }
+ 
+ static inline int
+@@ -206,8 +214,7 @@ test_and_set_bit(unsigned long nr, volat
+ 	unsigned long old, mask;
+ 
+ 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
+-	old = __BITOPS_LOOP(addr, mask, __BITOPS_OR);
+-	barrier();
++	old = __BITOPS_LOOP(addr, mask, __BITOPS_OR, __BITOPS_BARRIER);
+ 	return (old & mask) != 0;
+ }
+ 
+@@ -218,8 +225,7 @@ test_and_clear_bit(unsigned long nr, vol
+ 	unsigned long old, mask;
+ 
+ 	mask = ~(1UL << (nr & (BITS_PER_LONG - 1)));
+-	old = __BITOPS_LOOP(addr, mask, __BITOPS_AND);
+-	barrier();
++	old = __BITOPS_LOOP(addr, mask, __BITOPS_AND, __BITOPS_BARRIER);
+ 	return (old & ~mask) != 0;
+ }
+ 
+@@ -230,8 +236,7 @@ test_and_change_bit(unsigned long nr, vo
+ 	unsigned long old, mask;
+ 
+ 	mask = 1UL << (nr & (BITS_PER_LONG - 1));
+-	old = __BITOPS_LOOP(addr, mask, __BITOPS_XOR);
+-	barrier();
++	old = __BITOPS_LOOP(addr, mask, __BITOPS_XOR, __BITOPS_BARRIER);
+ 	return (old & mask) != 0;
+ }
+ 
 
 
