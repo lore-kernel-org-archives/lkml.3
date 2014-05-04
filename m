@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409AbaEDQCa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:02:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36633 "EHLO
+	id S1755407AbaEDQC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:02:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaEDPmh (ORCPT
+	with ESMTP id S1754775AbaEDPmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:37 -0400
+	Sun, 4 May 2014 11:42:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 72/86] usb: musb: avoid NULL pointer dereference
-Date: Sun,  4 May 2014 11:41:47 -0400
-Message-Id: <20140504154150.252593566@linuxfoundation.org>
+        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.10 56/86] x86/efi: Correct EFI boot stub use of code32_start
+Date: Sun,  4 May 2014 11:41:31 -0400
+Message-Id: <20140504154148.053325584@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,50 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Matt Fleming <matt@console-pimps.org>
 
-commit eee3f15d5f1f4f0c283dd4db67dc1b874a2852d1 upstream.
+commit 7e8213c1f3acc064aef37813a39f13cbfe7c3ce7 upstream.
 
-instead of relying on the otg pointer, which
-can be NULL in certain cases, we can use the
-gadget and host pointers we already hold inside
-struct musb.
+code32_start should point at the start of the protected mode code, and
+*not* at the beginning of the bzImage. This is much easier to do in
+assembly so document that callers of make_boot_params() need to fill out
+code32_start.
 
-Tested-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The fallout from this bug is that we would end up relocating the image
+but copying the image at some offset, resulting in what appeared to be
+memory corruption.
+
+Reported-by: Thomas Bächler <thomas@archlinux.org>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/musb_core.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/boot/compressed/eboot.c   |    5 +++--
+ arch/x86/boot/compressed/head_32.S |   14 ++++++++------
+ arch/x86/boot/compressed/head_64.S |    9 +++------
+ 3 files changed, 14 insertions(+), 14 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -440,7 +440,6 @@ void musb_hnp_stop(struct musb *musb)
- static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb,
- 				u8 devctl)
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -865,6 +865,9 @@ fail:
+  * Because the x86 boot code expects to be passed a boot_params we
+  * need to create one ourselves (usually the bootloader would create
+  * one for us).
++ *
++ * The caller is responsible for filling out ->code32_start in the
++ * returned boot_params.
+  */
+ struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
  {
--	struct usb_otg *otg = musb->xceiv->otg;
- 	irqreturn_t handled = IRQ_NONE;
+@@ -921,8 +924,6 @@ struct boot_params *make_boot_params(voi
+ 	hdr->vid_mode = 0xffff;
+ 	hdr->boot_flag = 0xAA55;
  
- 	dev_dbg(musb->controller, "<== DevCtl=%02x, int_usb=0x%x\n", devctl,
-@@ -655,7 +654,7 @@ static irqreturn_t musb_stage0_irq(struc
- 				break;
- 		case OTG_STATE_B_PERIPHERAL:
- 			musb_g_suspend(musb);
--			musb->is_active = otg->gadget->b_hnp_enable;
-+			musb->is_active = musb->g.b_hnp_enable;
- 			if (musb->is_active) {
- 				musb->xceiv->state = OTG_STATE_B_WAIT_ACON;
- 				dev_dbg(musb->controller, "HNP: Setting timer for b_ase0_brst\n");
-@@ -671,7 +670,7 @@ static irqreturn_t musb_stage0_irq(struc
- 			break;
- 		case OTG_STATE_A_HOST:
- 			musb->xceiv->state = OTG_STATE_A_SUSPEND;
--			musb->is_active = otg->host->b_hnp_enable;
-+			musb->is_active = musb->hcd->self.b_hnp_enable;
- 			break;
- 		case OTG_STATE_B_HOST:
- 			/* Transition to B_PERIPHERAL, see 6.8.2.6 p 44 */
+-	hdr->code32_start = (__u64)(unsigned long)image->image_base;
+-
+ 	hdr->type_of_loader = 0x21;
+ 
+ 	/* Convert unicode cmdline to ascii */
+--- a/arch/x86/boot/compressed/head_32.S
++++ b/arch/x86/boot/compressed/head_32.S
+@@ -50,6 +50,13 @@ ENTRY(efi_pe_entry)
+ 	pushl	%eax
+ 	pushl	%esi
+ 	pushl	%ecx
++
++	call	reloc
++reloc:
++	popl	%ecx
++	subl	reloc, %ecx
++	movl	%ecx, BP_code32_start(%eax)
++
+ 	sub	$0x4, %esp
+ 
+ ENTRY(efi_stub_entry)
+@@ -63,12 +70,7 @@ ENTRY(efi_stub_entry)
+ 	hlt
+ 	jmp	1b
+ 2:
+-	call	3f
+-3:
+-	popl	%eax
+-	subl	$3b, %eax
+-	subl	BP_pref_address(%esi), %eax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leal	preferred_addr(%eax), %eax
+ 	jmp	*%eax
+ 
+--- a/arch/x86/boot/compressed/head_64.S
++++ b/arch/x86/boot/compressed/head_64.S
+@@ -217,6 +217,8 @@ ENTRY(efi_pe_entry)
+ 	cmpq	$0,%rax
+ 	je	1f
+ 	mov	%rax, %rdx
++	leaq	startup_32(%rip), %rax
++	movl	%eax, BP_code32_start(%rdx)
+ 	popq	%rsi
+ 	popq	%rdi
+ 
+@@ -230,12 +232,7 @@ ENTRY(efi_stub_entry)
+ 	hlt
+ 	jmp	1b
+ 2:
+-	call	3f
+-3:
+-	popq	%rax
+-	subq	$3b, %rax
+-	subq	BP_pref_address(%rsi), %rax
+-	add	BP_code32_start(%esi), %eax
++	movl	BP_code32_start(%esi), %eax
+ 	leaq	preferred_addr(%rax), %rax
+ 	jmp	*%rax
+ 
 
 
