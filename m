@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741AbaEDP5p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:57:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36723 "EHLO
+	id S1755761AbaEDP6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:58:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754859AbaEDPmn (ORCPT
+	with ESMTP id S1754849AbaEDPmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 64/86] media: v4l2-compat-ioctl32: fix wrong VIDIOC_SUBDEV_G/S_EDID32 support
-Date: Sun,  4 May 2014 11:41:39 -0400
-Message-Id: <20140504154149.160535082@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.10 85/86] ext4: use i_size_read in ext4_unaligned_aio()
+Date: Sun,  4 May 2014 11:42:00 -0400
+Message-Id: <20140504154151.993961273@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,33 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit bc826d6e39fe5f09cbadf8723e9183e6331b586f upstream.
+commit 6e6358fc3c3c862bfe9a5bc029d3f8ce43dc9765 upstream.
 
-The wrong ioctl numbers were used due to a copy-and-paste error.
+We haven't taken i_mutex yet, so we need to use i_size_read().
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-compat-ioctl32.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-+++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
-@@ -787,8 +787,8 @@ static int put_v4l2_subdev_edid32(struct
- #define VIDIOC_DQBUF32		_IOWR('V', 17, struct v4l2_buffer32)
- #define VIDIOC_ENUMSTD32	_IOWR('V', 25, struct v4l2_standard32)
- #define VIDIOC_ENUMINPUT32	_IOWR('V', 26, struct v4l2_input32)
--#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 63, struct v4l2_subdev_edid32)
--#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 64, struct v4l2_subdev_edid32)
-+#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 40, struct v4l2_subdev_edid32)
-+#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 41, struct v4l2_subdev_edid32)
- #define VIDIOC_TRY_FMT32      	_IOWR('V', 64, struct v4l2_format32)
- #define VIDIOC_G_EXT_CTRLS32    _IOWR('V', 71, struct v4l2_ext_controls32)
- #define VIDIOC_S_EXT_CTRLS32    _IOWR('V', 72, struct v4l2_ext_controls32)
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -82,7 +82,7 @@ ext4_unaligned_aio(struct inode *inode,
+ 	size_t count = iov_length(iov, nr_segs);
+ 	loff_t final_size = pos + count;
+ 
+-	if (pos >= inode->i_size)
++	if (pos >= i_size_read(inode))
+ 		return 0;
+ 
+ 	if ((pos & blockmask) || (final_size & blockmask))
 
 
