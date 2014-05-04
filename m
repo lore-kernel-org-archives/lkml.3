@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573AbaEDQD0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:03:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36633 "EHLO
+	id S1755917AbaEDQDn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:03:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754766AbaEDPmg (ORCPT
+	with ESMTP id S1754759AbaEDPmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Grover <agrover@redhat.com>,
+        Arshad Hussain <arshad.hussain@calsoftinc.com>,
+        santosh kulkarni <santosh.kulkarni@calsoftinc.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 55/86] target/tcm_fc: Fix use-after-free of ft_tpg
-Date: Sun,  4 May 2014 11:41:30 -0400
-Message-Id: <20140504154147.924082131@linuxfoundation.org>
+Subject: [PATCH 3.10 54/86] iscsi-target: Fix ERL=2 ASYNC_EVENT connection pointer bug
+Date: Sun,  4 May 2014 11:41:29 -0400
+Message-Id: <20140504154147.787061965@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,52 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
+commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
 
-ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
-tport when the tpg is being removed. Set this pointer in ft_tport_create,
-or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
-a deleted object.
+This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
+where during ERL=2 connection recovery, a bogus conn_p pointer could
+end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
+notifying the initiator that cmd->logout_cid has failed.
 
-This patch sets tpg->tport in ft_tport_create, because that's what
-ft_del_tpg checks, and is the only way to get back to the tport to
-clear tport->tpg.
+The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
+a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
 
-The bug was occuring when:
-
-- lport created, tport (our per-lport, per-provider context) is
-  allocated.
-  tport->tpg = NULL
-- tpg created
-- a PRLI is received. ft_tport_create is called, tpg is found and
-  tport->tpg is set
-- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
-  set, tport->tpg is not cleared and points at freed memory
-- Future calls to ft_tport_create return tport via first conditional,
-  instead of searching for new tpg by calling ft_lport_find_tpg.
-  tport->tpg is still invalid, and will access freed memory.
-
-see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
-
-Signed-off-by: Andy Grover <agrover@redhat.com>
+Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
+Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tfc_sess.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -2454,6 +2454,7 @@ static void iscsit_build_conn_drop_async
+ {
+ 	struct iscsi_cmd *cmd;
+ 	struct iscsi_conn *conn_p;
++	bool found = false;
  
- 	if (tport) {
- 		tport->tpg = tpg;
-+		tpg->tport = tport;
- 		return tport;
+ 	/*
+ 	 * Only send a Asynchronous Message on connections whos network
+@@ -2462,11 +2463,12 @@ static void iscsit_build_conn_drop_async
+ 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
+ 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
+ 			iscsit_inc_conn_usage_count(conn_p);
++			found = true;
+ 			break;
+ 		}
  	}
  
+-	if (!conn_p)
++	if (!found)
+ 		return;
+ 
+ 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
 
 
