@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaEDBOP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 21:14:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58994 "EHLO
+	id S1753736AbaEDBOX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 21:14:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58999 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689AbaEDBON (ORCPT
+	with ESMTP id S1753718AbaEDBOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 21:14:13 -0400
-Date: Sat, 3 May 2014 20:26:17 -0400
+	Sat, 3 May 2014 21:14:21 -0400
+Date: Sat, 3 May 2014 20:27:35 -0400
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8821ae: mark pointer in pci_iounmap as
- __iomem
-Message-ID: <20140504002617.GA16403@kroah.com>
-References: <1399129848-1833-1-git-send-email-martink@posteo.de>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: devel@driverdev.osuosl.org, florian.c.schilhabel@googlemail.com,
+        linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net,
+        alexandre.f.demers@gmail.com
+Subject: Re: [PATCH] staging: rtl8712: fix potential leaks in r8712_set_key()
+Message-ID: <20140504002735.GA16794@kroah.com>
+References: <20140501235402.48ced880@spike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1399129848-1833-1-git-send-email-martink@posteo.de>
+In-Reply-To: <20140501235402.48ced880@spike>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 03, 2014 at 05:10:48PM +0200, Martin Kepplinger wrote:
-> pci_iounmap is used that way in drivers/net/wireless/rtlwifi and this
-> fixes sparse warnings.
+On Thu, May 01, 2014 at 11:54:02PM +0200, Christian Engelmayer wrote:
+> Fix potential leaks in the error paths of r8712_set_key(). In case the
+> algorithm specific checks fail, the function returns without enqueuing
+> or freeing the already allocated command and parameter structs. Use a
+> centralized exit path and make sure that all memory is freed correctly.
+> Detected by Coverity - CID 144370, 144371.
 > 
-> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 > ---
->  drivers/staging/rtl8821ae/pci.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
-> index a562aa6..d934ecb 100644
-> --- a/drivers/staging/rtl8821ae/pci.c
-> +++ b/drivers/staging/rtl8821ae/pci.c
-> @@ -2416,7 +2416,7 @@ fail3:
->  	ieee80211_free_hw(hw);
->  
->  	if (rtlpriv->io.pci_mem_start != 0)
-> -		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
-> +		pci_iounmap(pdev, (void __iomem *)rtlpriv->io.pci_mem_start);
+> Compile tested and applies against branch staging-next of tree
+> git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
 
-Shouldn't pci_mem_start be a __iomem pointer instead?
+This doesn't apply either, and neither does one of your other patches,
+what is going on?
+
+Can you just refresh all of the outstanding patches you have sent me
+that I have not applied and resend them?
 
 thanks,
 
