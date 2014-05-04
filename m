@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756603AbaEDQex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:34:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36175 "EHLO
+	id S1754172AbaEDPlu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36167 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177AbaEDPlv (ORCPT
+	with ESMTP id S1754116AbaEDPlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:51 -0400
+	Sun, 4 May 2014 11:41:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.14 100/158] arm64: __NR_compat_syscalls fix
-Date: Sun,  4 May 2014 11:40:09 -0400
-Message-Id: <20140504154043.539198942@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 3.14 105/158] usb: gadget: zero: Fix SuperSpeed enumeration for alternate setting 1
+Date: Sun,  4 May 2014 11:40:14 -0400
+Message-Id: <20140504154044.216201150@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,31 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 838977f0178334bf3d7f3e974ea3154b68979be0 upstream.
+commit 9c1b70361e0b38e4acb8e62b54da66538cb77ff2 upstream.
 
-This fixes commit 6290b53de025 (arm64: compat: Wire up new AArch32 syscalls)
-which did not update __NR_compat_syscalls accordingly.
+It was impossible to enumerate on a SuperSpeed (XHCI) host
+with alternate setting = 1 due to the wrongly set 'bMaxBurst'
+field in the SuperSpeed Endpoint Companion descriptor.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Testcase:
+<host> modprobe -r usbtest; modprobe usbtest alt=1
+<device> modprobe g_zero
+plug device to SuperSpeed port on the host.
+
+Without this patch the host always complains like so
+"usb 12-2: Not enough bandwidth for new device state.
+ usb 12-2: Not enough bandwidth for altsetting 1"
+
+Bug was introduced by commit cf9a08ae in v3.9
+
+Fixes: cf9a08ae5aec (usb: gadget: convert source sink and loopback to
+new function interface)
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/unistd32.h |    2 +-
+ drivers/usb/gadget/zero.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm64/include/asm/unistd32.h
-+++ b/arch/arm64/include/asm/unistd32.h
-@@ -404,7 +404,7 @@ __SYSCALL(379, sys_finit_module)
- __SYSCALL(380, sys_sched_setattr)
- __SYSCALL(381, sys_sched_getattr)
+--- a/drivers/usb/gadget/zero.c
++++ b/drivers/usb/gadget/zero.c
+@@ -300,7 +300,7 @@ static int __init zero_bind(struct usb_c
+ 	ss_opts->isoc_interval = gzero_options.isoc_interval;
+ 	ss_opts->isoc_maxpacket = gzero_options.isoc_maxpacket;
+ 	ss_opts->isoc_mult = gzero_options.isoc_mult;
+-	ss_opts->isoc_maxburst = gzero_options.isoc_maxpacket;
++	ss_opts->isoc_maxburst = gzero_options.isoc_maxburst;
+ 	ss_opts->bulk_buflen = gzero_options.bulk_buflen;
  
--#define __NR_compat_syscalls		379
-+#define __NR_compat_syscalls		382
- 
- /*
-  * Compat syscall numbers used by the AArch64 kernel.
+ 	func_ss = usb_get_function(func_inst_ss);
 
 
