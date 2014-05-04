@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaEDEVJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 00:21:09 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:3110 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaEDEVG (ORCPT
+	id S1753425AbaEDFxL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 01:53:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50151 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750713AbaEDFxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 00:21:06 -0400
-Message-ID: <5365BF06.7050108@huawei.com>
-Date: Sun, 4 May 2014 12:16:06 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
-References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com> <CAErSpo4fa=fmajhxGA7PRm42S1fS2wV_7w+EWaVh_qiawRAQxA@mail.gmail.com>
-In-Reply-To: <CAErSpo4fa=fmajhxGA7PRm42S1fS2wV_7w+EWaVh_qiawRAQxA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Sun, 4 May 2014 01:53:09 -0400
+Message-ID: <1399182786.2505.42.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] SCSI fixes for 3.15-rc4
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 03 May 2014 22:53:06 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This needs to be posted to the linux-pci list.  The fact that it
-> wasn't means it's not in patchwork, so it's not on my to-do list.
-> 
-> Currently we have one interface: pci_is_bridge().
-> 
-> After your series, we would have two interfaces: pci_is_bridge() and
-> pci_has_subordinate().  Presumably, both are used, and you should
-> explain how you decided which to use at each place.
-> 
-> I assume the difference is that the old pci_is_bridge() is true for a
-> bridge that has a subordinate bus.  The new pci_is_bridge() is true
-> for any bridge, even if there is no subordinate bus.  When do we even
-> have a bridge with no subordinate bus?  This is the sort of stuff you
-> need to explain so we know why we should apply these patches.
-> 
+This is two patches both fixing bugs in drivers (virtio-scsi and
+mpt2sas) causing an oops in certain circumstances.
 
-Hi Bjorn, sorry forgot to cc pci list, will resend the v2 patchset with
-some new description for new pci_is_bridge().
+The patch is available here:
 
-> 
->> Yijing Wang (13):
->>   PCI: rename pci_is_bridge() to pci_has_subordinate()
->>   PCI: Introduce new pci_is_bridge() helper function
->>   PCI: Use new pci_is_bridge() to simplify code
->>   x86/PCI: Use new pci_is_bridge() to simplify code
->>   IA64/PCI: Use new pci_is_bridge() to simplify code
->>   powerpc/PCI: Use new pci_is_bridge() to simplify code
->>   sparc/PCI: Use new pci_is_bridge() to simplify code
->>   PCI, rpaphp: Use new pci_is_bridge() to simplify code
->>   PCI, shpchp: Use new pci_is_bridge() to simplify code
->>   PCI, cpcihp: Use new pci_is_bridge() to simplify code
->>   PCI, acpiphp: Use new pci_is_bridge() to simplify code
->>   PCI, pcmcia: Use new pci_is_bridge() to simplify code
->>   PCI, pciehp: Use new pci_is_bridge() to simplify code
->>
->>  arch/ia64/pci/fixup.c                  |    4 +---
->>  arch/powerpc/kernel/pci-hotplug.c      |    3 +--
->>  arch/powerpc/kernel/pci_of_scan.c      |    3 +--
->>  arch/sparc/kernel/pci.c                |    3 +--
->>  arch/x86/pci/fixup.c                   |    4 +---
->>  drivers/pci/hotplug/acpiphp_glue.c     |    3 +--
->>  drivers/pci/hotplug/cpci_hotplug_pci.c |    3 +--
->>  drivers/pci/hotplug/pciehp_pci.c       |    3 +--
->>  drivers/pci/hotplug/rpadlpar_core.c    |    3 +--
->>  drivers/pci/hotplug/shpchp_pci.c       |    3 +--
->>  drivers/pci/pci-acpi.c                 |    8 +-------
->>  drivers/pci/pci-driver.c               |    8 ++++----
->>  drivers/pci/pci.h                      |    2 +-
->>  drivers/pci/probe.c                    |    3 +--
->>  drivers/pci/setup-bus.c                |    4 +---
->>  drivers/pcmcia/cardbus.c               |    3 +--
->>  include/linux/pci.h                    |    6 ++++++
->>  17 files changed, 25 insertions(+), 41 deletions(-)
->>
->>
-> 
-> .
-> 
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
 
+The short changelog is:
 
--- 
-Thanks!
-Yijing
+Fam Zheng (1):
+      virtio-scsi: Skip setting affinity on uninitialized vq
+
+Tyler Stachecki (1):
+      mpt2sas: Don't disable device twice at suspend.
+
+And diffstat:
+
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c | 1 -
+ drivers/scsi/virtio_scsi.c           | 6 +++++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+With full diff below.
+
+James
+
+---
+
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index 7f0af4f..6fd7d40 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -8293,7 +8293,6 @@ _scsih_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ 	mpt2sas_base_free_resources(ioc);
+ 	pci_save_state(pdev);
+-	pci_disable_device(pdev);
+ 	pci_set_power_state(pdev, device_state);
+ 	return 0;
+ }
+diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+index 16bfd50..db3b494 100644
+--- a/drivers/scsi/virtio_scsi.c
++++ b/drivers/scsi/virtio_scsi.c
+@@ -750,8 +750,12 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+ 
+ 		vscsi->affinity_hint_set = true;
+ 	} else {
+-		for (i = 0; i < vscsi->num_queues; i++)
++		for (i = 0; i < vscsi->num_queues; i++) {
++			if (!vscsi->req_vqs[i].vq)
++				continue;
++
+ 			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
++		}
+ 
+ 		vscsi->affinity_hint_set = false;
+ 	}
+
 
