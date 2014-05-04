@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123AbaEDQg1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:36:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36175 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149AbaEDPlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754150AbaEDPlt (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:41:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaEDPlr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:41:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 095/158] target/tcm_fc: Fix use-after-free of ft_tpg
-Date: Sun,  4 May 2014 11:40:04 -0400
-Message-Id: <20140504154042.851833039@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.14 106/158] xhci: Prevent runtime pm from autosuspending during initialization
+Date: Sun,  4 May 2014 11:40:15 -0400
+Message-Id: <20140504154044.355019908@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,52 +32,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
+commit bcffae7708eb8352f44dc510b326541fe43a02a4 upstream.
 
-ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
-tport when the tpg is being removed. Set this pointer in ft_tport_create,
-or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
-a deleted object.
+xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
+to register its usb-2 bus, and then continue to manually register the
+usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
+might thus trigger a runtime suspend before the usb-3 bus is ready.
 
-This patch sets tpg->tport in ft_tport_create, because that's what
-ft_del_tpg checks, and is the only way to get back to the tport to
-clear tport->tpg.
+Prevent the runtime suspend by increasing the usage count in the
+beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
+ready.
 
-The bug was occuring when:
+xhci-platform driver is not using usb_hcd_pci_probe to set up
+busses and should not need to have it's usage count increased during probe.
 
-- lport created, tport (our per-lport, per-provider context) is
-  allocated.
-  tport->tpg = NULL
-- tpg created
-- a PRLI is received. ft_tport_create is called, tpg is found and
-  tport->tpg is set
-- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
-  set, tport->tpg is not cleared and points at freed memory
-- Future calls to ft_tport_create return tport via first conditional,
-  instead of searching for new tpg by calling ft_lport_find_tpg.
-  tport->tpg is still invalid, and will access freed memory.
-
-see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
-
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/tcm_fc/tfc_sess.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci-pci.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -190,6 +190,10 @@ static int xhci_pci_probe(struct pci_dev
+ 	struct usb_hcd *hcd;
  
- 	if (tport) {
- 		tport->tpg = tpg;
-+		tpg->tport = tport;
- 		return tport;
- 	}
+ 	driver = (struct hc_driver *)id->driver_data;
++
++	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
++	pm_runtime_get_noresume(&dev->dev);
++
+ 	/* Register the USB 2.0 roothub.
+ 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
+ 	 * This is sort of silly, because we could just set the HCD driver flags
+@@ -199,7 +203,7 @@ static int xhci_pci_probe(struct pci_dev
+ 	retval = usb_hcd_pci_probe(dev, id);
+ 
+ 	if (retval)
+-		return retval;
++		goto put_runtime_pm;
+ 
+ 	/* USB 2.0 roothub is stored in the PCI device now. */
+ 	hcd = dev_get_drvdata(&dev->dev);
+@@ -228,12 +232,17 @@ static int xhci_pci_probe(struct pci_dev
+ 	if (xhci->quirks & XHCI_LPM_SUPPORT)
+ 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
+ 
++	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
++	pm_runtime_put_noidle(&dev->dev);
++
+ 	return 0;
+ 
+ put_usb3_hcd:
+ 	usb_put_hcd(xhci->shared_hcd);
+ dealloc_usb2_hcd:
+ 	usb_hcd_pci_remove(dev);
++put_runtime_pm:
++	pm_runtime_put_noidle(&dev->dev);
+ 	return retval;
+ }
  
 
 
