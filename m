@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaEDKkq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 06:40:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753380AbaEDKko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 06:40:44 -0400
-Message-ID: <1399200049.4302.3.camel@localhost.localdomain>
-Subject: Re: [PATCH] PCI/shpchp: fix a bus speed issue on hotplug
-From: Marcel Apfelbaum <marcel.a@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Wilcox <matthew@wil.cx>, "Michael S. Tsirkin" <mst@redhat.com>
-Date: Sun, 04 May 2014 13:40:49 +0300
-In-Reply-To: <CAErSpo6SOc-OPQDyjweAataRXwjPYgXM3+P1nhK7zQ2vRjRE2g@mail.gmail.com>
-References: <1398954948-24219-1-git-send-email-marcel.a@redhat.com>
-	 <CAErSpo4KLq7m8PXzAEhv20e29Wk=sAtageDf3CgziDLno0JUCw@mail.gmail.com>
-	 <1398968025.18595.22.camel@localhost.localdomain>
-	 <1398970625.18595.24.camel@localhost.localdomain>
-	 <CAErSpo6SOc-OPQDyjweAataRXwjPYgXM3+P1nhK7zQ2vRjRE2g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753685AbaEDKrU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 06:47:20 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15381 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753475AbaEDKrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 06:47:19 -0400
+Date: Sun, 4 May 2014 11:46:33 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] arm64 fixes for 3.15
+Message-ID: <20140504104628.GA17370@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-05-01 at 14:00 -0600, Bjorn Helgaas wrote:
-> On Thu, May 1, 2014 at 12:57 PM, Marcel Apfelbaum
-> <marcel.apfelbaum@gmail.com> wrote:
-> > On Thu, 2014-05-01 at 21:13 +0300, Marcel Apfelbaum wrote:
-> >> On Thu, 2014-05-01 at 12:02 -0600, Bjorn Helgaas wrote:
-> >> > On Thu, May 1, 2014 at 8:35 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
-> >> > > When a board is added, the shpchp driver checks if there
-> >> > > is a mismatch between the bridge's adapter and the bus speed.
-> >> > > If there is, it sets the subordinate speed (if there is no device on it).
-> >> > >
-> >> > > However, it takes the reference of the board speed from the primary bus
-> >> > > and not from the subordinate. If the primary bus is PCI and not PCIX/PCIe,
-> >> > > its speed is not updated and remains 0xff. As a result hotplug fails
-> >> > > with error: "Speed of bus ff and adapter 0 mismatch".
-> >> >
-> >> > It'd be cool to have a bugzilla for this with lspci and dmesg output.
-> >> > I'll also have to check the other hotplug drivers for similar issues,
-> >> > unless you've already done that.
-> >> I'll open a BZ with the details, sure.
-> > Done: https://bugzilla.kernel.org/show_bug.cgi?id=75251
-> > If you need further details, please let me know.
-> 
-> Thanks.  Would you mind attaching the "lspci -vv" output?  That should
-> show more details, including the information used to compute the bus
-> speed.
-> 
-> Also, you checked the "regression" box.  Can you confirm that and
-> identify a known-working kernel?  If we know which kernels are broken,
-> we can potentially mark the fix to be backported to them.
-I checked 2.6.24-26-generic that comes with Ubuntu 8.04 and it works OK.
-So we have a working version.
+Hi Linus,
 
-I hope it helps,
-Marcel
+Please pull the arm64 patches below for 3.15. These are mostly arm64
+fixes with an additional arm(64) platform fix for the initialisation of
+vexpress clocks (the latter only affecting arm64; the arch/arm64 code
+is SoC agnostic and does not rely on early SoC-specific calls). Thanks.
 
-> 
-> Bjorn
+The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
 
+  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
 
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
+
+for you to fetch changes up to e715eb2e73918f4cefbba0b717ff8902e8030b39:
+
+  vexpress: Initialise the sysregs before setting up the clocks (2014-05-04 11:35:29 +0100)
+
+----------------------------------------------------------------
+- vexpress platform clocks initialisation moved earlier following the
+  arm64 move of of_clk_init() call in a previous commit
+- Default DMA ops changed to non-coherent to preserve compatibility with
+  32-bit ARM DT files. The "dma-coherent" property can be used to
+  explicitly mark a device coherent. The Applied Micro DT file has been
+  updated to avoid DMA cache maintenance for the X-Gene SATA controller
+  (the only arm64 related driver with such assumption in -rc mainline)
+- Fixmap correction for earlyprintk
+- kern_addr_valid() fix for huge pages
+
+----------------------------------------------------------------
+Catalin Marinas (3):
+      arm64: Use bus notifiers to set per-device coherent DMA ops
+      arm64: Mark the Applied Micro X-Gene SATA controller as DMA coherent
+      vexpress: Initialise the sysregs before setting up the clocks
+
+Dave Anderson (1):
+      arm64: Fix for the arm64 kern_addr_valid() function
+
+Marc Zyngier (1):
+      arm64: fixmap: fix missing sub-page offset for earlyprintk
+
+Ritesh Harjani (1):
+      arm64: Make default dma_ops to be noncoherent
+
+ .../devicetree/bindings/ata/apm-xgene.txt          |  3 ++
+ arch/arm64/boot/dts/apm-storm.dtsi                 |  3 ++
+ arch/arm64/kernel/early_printk.c                   |  6 ++--
+ arch/arm64/kernel/setup.c                          |  2 +-
+ arch/arm64/mm/dma-mapping.c                        | 35 ++++++++++++++++++++--
+ arch/arm64/mm/mmu.c                                |  3 ++
+ drivers/clk/versatile/clk-vexpress-osc.c           |  2 ++
+ include/asm-generic/fixmap.h                       |  3 ++
+ 8 files changed, 50 insertions(+), 7 deletions(-)
+
+-- 
+Catalin
