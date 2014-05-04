@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061AbaEDQOf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:14:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36489 "EHLO
+	id S1755154AbaEDQOd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:14:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36495 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754571AbaEDPmU (ORCPT
+	with ESMTP id S1754579AbaEDPmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 19/86] ALSA: hda/realtek - Add support of ALC288 codec
-Date: Sun,  4 May 2014 11:40:54 -0400
-Message-Id: <20140504154142.987728209@linuxfoundation.org>
+        Mike Frysinger <vapier@gentoo.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.10 20/86] s390/cio: fix driver callback initialization for ccw consoles
+Date: Sun,  4 May 2014 11:40:55 -0400
+Message-Id: <20140504154143.126299536@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,35 +30,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
+commit 2253e8d79237c69086ded391e6767afe16972527 upstream.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+ccw consoles are in use before they can be properly registered with
+the driver core. For devices which are in use by a device driver we
+rely on the ccw_device's pointer to the driver callbacks to be valid.
+For ccw consoles this pointer is NULL until they are registered later
+during boot and we dereferenced this pointer. This worked by
+chance on 64 bit builds (cdev->drv was NULL but the optional callback
+cdev->drv->path_event was also NULL by coincidence) and was unnoticed
+until we received reports about boot failures on 31 bit systems.
+Fix it by initializing the driver pointer for ccw consoles.
+
+Reported-by: Mike Frysinger <vapier@gentoo.org>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/s390/include/asm/ccwdev.h |    2 +-
+ drivers/s390/char/con3215.c    |    2 +-
+ drivers/s390/char/con3270.c    |    6 +-----
+ drivers/s390/char/raw3270.c    |   10 +++++++++-
+ drivers/s390/char/raw3270.h    |    2 +-
+ drivers/s390/cio/device.c      |    3 ++-
+ 6 files changed, 15 insertions(+), 10 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3903,6 +3903,7 @@ static int patch_alc269(struct hda_codec
- 		spec->codec_variant = ALC269_TYPE_ALC284;
- 		break;
- 	case 0x10ec0286:
-+	case 0x10ec0288:
- 		spec->codec_variant = ALC269_TYPE_ALC286;
- 		break;
- 	case 0x10ec0255:
-@@ -4645,6 +4646,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
- 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
-+	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+--- a/arch/s390/include/asm/ccwdev.h
++++ b/arch/s390/include/asm/ccwdev.h
+@@ -219,7 +219,7 @@ extern void ccw_device_get_id(struct ccw
+ #define to_ccwdev(n) container_of(n, struct ccw_device, dev)
+ #define to_ccwdrv(n) container_of(n, struct ccw_driver, driver)
+ 
+-extern struct ccw_device *ccw_device_probe_console(void);
++extern struct ccw_device *ccw_device_probe_console(struct ccw_driver *);
+ extern void ccw_device_wait_idle(struct ccw_device *);
+ extern int ccw_device_force_console(struct ccw_device *);
+ 
+--- a/drivers/s390/char/con3215.c
++++ b/drivers/s390/char/con3215.c
+@@ -922,7 +922,7 @@ static int __init con3215_init(void)
+ 		raw3215_freelist = req;
+ 	}
+ 
+-	cdev = ccw_device_probe_console();
++	cdev = ccw_device_probe_console(&raw3215_ccw_driver);
+ 	if (IS_ERR(cdev))
+ 		return -ENODEV;
+ 
+--- a/drivers/s390/char/con3270.c
++++ b/drivers/s390/char/con3270.c
+@@ -576,7 +576,6 @@ static struct console con3270 = {
+ static int __init
+ con3270_init(void)
+ {
+-	struct ccw_device *cdev;
+ 	struct raw3270 *rp;
+ 	void *cbuf;
+ 	int i;
+@@ -591,10 +590,7 @@ con3270_init(void)
+ 		cpcmd("TERM AUTOCR OFF", NULL, 0, NULL);
+ 	}
+ 
+-	cdev = ccw_device_probe_console();
+-	if (IS_ERR(cdev))
+-		return -ENODEV;
+-	rp = raw3270_setup_console(cdev);
++	rp = raw3270_setup_console();
+ 	if (IS_ERR(rp))
+ 		return PTR_ERR(rp);
+ 
+--- a/drivers/s390/char/raw3270.c
++++ b/drivers/s390/char/raw3270.c
+@@ -776,16 +776,24 @@ raw3270_setup_device(struct ccw_device *
+ }
+ 
+ #ifdef CONFIG_TN3270_CONSOLE
++/* Tentative definition - see below for actual definition. */
++static struct ccw_driver raw3270_ccw_driver;
++
+ /*
+  * Setup 3270 device configured as console.
+  */
+-struct raw3270 __init *raw3270_setup_console(struct ccw_device *cdev)
++struct raw3270 __init *raw3270_setup_console(void)
+ {
++	struct ccw_device *cdev;
+ 	unsigned long flags;
+ 	struct raw3270 *rp;
+ 	char *ascebc;
+ 	int rc;
+ 
++	cdev = ccw_device_probe_console(&raw3270_ccw_driver);
++	if (IS_ERR(cdev))
++		return ERR_CAST(cdev);
++
+ 	rp = kzalloc(sizeof(struct raw3270), GFP_KERNEL | GFP_DMA);
+ 	ascebc = kzalloc(256, GFP_KERNEL);
+ 	rc = raw3270_setup_device(cdev, rp, ascebc);
+--- a/drivers/s390/char/raw3270.h
++++ b/drivers/s390/char/raw3270.h
+@@ -190,7 +190,7 @@ raw3270_put_view(struct raw3270_view *vi
+ 		wake_up(&raw3270_wait_queue);
+ }
+ 
+-struct raw3270 *raw3270_setup_console(struct ccw_device *cdev);
++struct raw3270 *raw3270_setup_console(void);
+ void raw3270_wait_cons_dev(struct raw3270 *);
+ 
+ /* Notifier for device addition/removal */
+--- a/drivers/s390/cio/device.c
++++ b/drivers/s390/cio/device.c
+@@ -1610,7 +1610,7 @@ out_unlock:
+ 	return rc;
+ }
+ 
+-struct ccw_device *ccw_device_probe_console(void)
++struct ccw_device *ccw_device_probe_console(struct ccw_driver *drv)
+ {
+ 	struct io_subchannel_private *io_priv;
+ 	struct ccw_device *cdev;
+@@ -1632,6 +1632,7 @@ struct ccw_device *ccw_device_probe_cons
+ 		kfree(io_priv);
+ 		return cdev;
+ 	}
++	cdev->drv = drv;
+ 	set_io_private(sch, io_priv);
+ 	ret = ccw_device_console_enable(cdev, sch);
+ 	if (ret) {
 
 
