@@ -1,128 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbaEDIen (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 04:34:43 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	id S1753391AbaEDIk3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 04:40:29 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:56331
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752541AbaEDIe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 04:34:28 -0400
-Message-ID: <5365FB8A.8080303@nod.at>
-Date: Sun, 04 May 2014 10:34:18 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1752655AbaEDIk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 04:40:27 -0400
+Message-ID: <5365FCF2.9090008@freescale.com>
+Date: Sun, 4 May 2014 16:40:18 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-Subject: Re: [PATCH] mm: Fix force_flush behavior in zap_pte_range()
-References: <alpine.LSU.2.11.1404161239320.6778@eggly.anvils>	<1399160247-32093-1-git-send-email-richard@nod.at> <CA+55aFzbSUPGWyO42KM7geAy8WrP8e=q+KoqdOBY68zay0jrZA@mail.gmail.com>
-In-Reply-To: <CA+55aFzbSUPGWyO42KM7geAy8WrP8e=q+KoqdOBY68zay0jrZA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Vinod Koul <vinod.koul@intel.com>
+CC: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <scottwood@freescale.com>,
+        <leo.li@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 7/8] DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
+References: <1397809071-5353-1-git-send-email-hongbo.zhang@freescale.com>
+ <1397809071-5353-8-git-send-email-hongbo.zhang@freescale.com>
+ <20140502165143.GI32284@intel.com>
+In-Reply-To: <20140502165143.GI32284@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.1;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(51704005)(479174003)(377454003)(189002)(199002)(86362001)(31966008)(44976005)(33656001)(76176999)(92726001)(46102001)(59896001)(74662001)(83506001)(83072002)(36756003)(85852003)(99396002)(80022001)(80976001)(65956001)(50466002)(4396001)(74502001)(64126003)(83322001)(20776003)(23756003)(87936001)(87266999)(19580395003)(79102001)(81342001)(77096999)(47776003)(81542001)(76482001)(54356999)(6806004)(101416001)(19580405001)(92566001)(65806001)(65816999)(50986999)(77982001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB394;H:tx30smr01.am.freescale.net;FPR:A454F836.AE364785.B6D06F87.20B0C02D.20190;MLV:sfv;PTR:gate-tx3.freescale.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 02015246A9
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Am 04.05.2014 01:57, schrieb Linus Torvalds:
-> On Sat, May 3, 2014 at 4:37 PM, Richard Weinberger <richard@nod.at> wrote:
->> Commit 1cf35d47 (mm: split 'tlb_flush_mmu()' into tlb flushing and memory freeing parts)
->> accidently changed the behavior of the force_flush variable.
-> 
-> No it didn't. There was nothing accidental about it, and it doesn't
-> even change it the way you claim.
-> 
->> Before the patch it was set by __tlb_remove_page(). Now it is only set to 1
->> if __tlb_remove_page() returns false but never set back to 0 if __tlb_remove_page()
->> returns true.
-> 
-> It starts out as zero. If __tlb_remove_page() returns true, it never
-> gets set to anything *but* zero, except by the dirty shared mapping
-> case that *needs* to set it to non-zero, exactly because it *needs* to
-> flush the TLB before releasing the pte lock.
-> 
-> Which was the whole point of the patch.
-> 
-> Your explanation makes no sense for _another_ reason: even with your
-> patch, it never gets set back to zero, since if it gets set to one you
-> have that "break" in there. So the whole "gets set back to zero" is
-> simply not relevant or true, with or with the patch.
-
-Hmm, I got confused by:
-                        if (PageAnon(page))
-                                rss[MM_ANONPAGES]--;
-                        else {
-                                if (pte_dirty(ptent)) {
-                                        force_flush = 1;
-
-Here you set force_flush.
-
-                                        set_page_dirty(page);
-                                }
-                                if (pte_young(ptent) &&
-                                    likely(!(vma->vm_flags & VM_SEQ_READ)))
-                                        mark_page_accessed(page);
-                                rss[MM_FILEPAGES]--;
-                        }
-                        page_remove_rmap(page);
-                        if (unlikely(page_mapcount(page) < 0))
-                                print_bad_pte(vma, addr, ptent, page);
-                        if (unlikely(!__tlb_remove_page(tlb, page))) {
-                                force_flush = 1;
-                                break;
-                        }
-
-And here it cannot get back to 0.
-
-                        continue;
+On 05/03/2014 12:51 AM, Vinod Koul wrote:
+> On Fri, Apr 18, 2014 at 04:17:50PM +0800, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>
+>> The usage of spin_lock_irqsave() is a stronger locking mechanism than is
+>> required throughout the driver. The minimum locking required should be used
+>> instead. Interrupts will be turned off and context will be saved, it is
+>> unnecessary to use irqsave.
+>>
+>> This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
+>> manipulation of protected fields is done using tasklet context or weaker, which
+>> makes spin_lock_bh() the correct choice.
+>>
+> This doesnt apply, perhpas due to depends on 6/8
+>
+So let's wait for the review result of 6/8.
 
 
-
-> The only place it actually gets zeroed (apart from initialization) is
-> for the "goto again" case, which does it (and always did it)
-> 
->> Fixes BUG: Bad rss-counter state ...
->> and
->> kernel BUG at mm/filemap.c:202!
-> 
-> So tell us more about those actual problems, because your patch and
-> explanation is clearly wrong.
-> 
-> What hardware, what load, what "kernel BUG at filemap.c:202"?
-
-With your patch applied I see lots of BUG: Bad rss-counter state messages on UML (x86_32)
-when fuzzing with trinity the mremap syscall.
-And sometimes I face BUG at mm/filemap.c:202.
-
-UML is here a bit special. It maps two pages into every process (the stub pages)
-to issue mmap(), munmap() or mprotect() upon a page fault to fix memory mappings
-for the faulting process on the host side.
-It has to make sure that a guest process cannot mess with its stub pages.
-Otherwise a guest could execute code on the host side.
-
-Trinity manages to destroy these stub pages, UML detects this upon TLB handling
-and kills the current process immediately.
-After killing a trinity child I start observing the said issues.
-
-e.g.
-fix_range_common: failed, killing current process: 841
-fix_range_common: failed, killing current process: 842
-fix_range_common: failed, killing current process: 843
-BUG: Bad rss-counter state mm:28e69600 idx:0 val:2
-
-> The shared dirty fix may certainly be exposing some other issue, but
-> the only report I have seen about filemap.c:202 was reported by Dave
-> Jones ten *days* before the commit you talk about was even done.
-
-Mea culpa, I've not noticed that fact.
-Back to the drawing board...
-
-Thanks,
-//richard
