@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212AbaEDQGE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:06:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36599 "EHLO
+	id S1755605AbaEDQGo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:06:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36586 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754623AbaEDPmd (ORCPT
+	with ESMTP id S1754717AbaEDPmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:33 -0400
+	Sun, 4 May 2014 11:42:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.10 61/86] xhci: extend quirk for Renesas cards
-Date: Sun,  4 May 2014 11:41:36 -0400
-Message-Id: <20140504154148.734107538@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3.10 58/86] usb: gadget: tcm_usb_gadget: stop format strings
+Date: Sun,  4 May 2014 11:41:33 -0400
+Message-Id: <20140504154148.323637063@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,47 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 6db249ebefc6bf5c39f35dfaacc046d8ad3ffd70 upstream.
+commit aba37fd975f0dd58e025c99c2a79b61b20190831 upstream.
 
-After suspend another Renesas PCI-X USB 3.0 card doesn't work.
-[root@fedora-20 ~]# lspci -vmnnd 1912:
-Device:	03:00.0
-Class:	USB controller [0c03]
-Vendor:	Renesas Technology Corp. [1912]
-Device:	uPD720202 USB 3.0 Host Controller [0015]
-SVendor:	Renesas Technology Corp. [1912]
-SDevice:	uPD720202 USB 3.0 Host Controller [0015]
-Rev:	02
-ProgIf:	30
+This makes sure that the name coming out of configfs cannot be used
+accidentally as a format string.
 
-This patch should be applied to stable kernel 3.14 that contain
-the commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
-"xhci: Fix resume issues on Renesas chips in Samsung laptops"
-
-Reported-and-tested-by: Anatoly Kharchenko <rfr-bugs@yandex.ru>
-Reference: http://redmine.russianfedora.pro/issues/1315
-Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/usb/gadget/tcm_usb_gadget.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -114,9 +114,7 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+--- a/drivers/usb/gadget/tcm_usb_gadget.c
++++ b/drivers/usb/gadget/tcm_usb_gadget.c
+@@ -1614,7 +1614,7 @@ static struct se_wwn *usbg_make_tport(
+ 		return ERR_PTR(-ENOMEM);
  	}
- 	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
--			pdev->device == 0x0015 &&
--			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
--			pdev->subsystem_device == 0xc0cd)
-+			pdev->device == 0x0015)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 	tport->tport_wwpn = wwpn;
+-	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
++	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
+ 	return &tport->tport_wwn;
+ }
+ 
 
 
