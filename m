@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605AbaEDQGo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:06:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36586 "EHLO
+	id S1755634AbaEDQHB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:07:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36583 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717AbaEDPmc (ORCPT
+	with ESMTP id S1754710AbaEDPmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:32 -0400
+	Sun, 4 May 2014 11:42:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.10 58/86] usb: gadget: tcm_usb_gadget: stop format strings
-Date: Sun,  4 May 2014 11:41:33 -0400
-Message-Id: <20140504154148.323637063@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 57/86] reiserfs: fix race in readdir
+Date: Sun,  4 May 2014 11:41:32 -0400
+Message-Id: <20140504154148.189057778@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,30 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit aba37fd975f0dd58e025c99c2a79b61b20190831 upstream.
+commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
 
-This makes sure that the name coming out of configfs cannot be used
-accidentally as a format string.
+jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
+The -ENOENT is due to readdir calling dir_emit on the same entry twice.
+
+If the dir_emit callback sleeps and the tree is changed underneath us,
+we won't be able to trust deh_offset(deh) anymore. We need to save
+next_pos before we might sleep so we can find the next entry.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/tcm_usb_gadget.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/reiserfs/dir.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/tcm_usb_gadget.c
-+++ b/drivers/usb/gadget/tcm_usb_gadget.c
-@@ -1614,7 +1614,7 @@ static struct se_wwn *usbg_make_tport(
- 		return ERR_PTR(-ENOMEM);
- 	}
- 	tport->tport_wwpn = wwpn;
--	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
-+	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
- 	return &tport->tport_wwn;
- }
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -128,6 +128,7 @@ int reiserfs_readdir_dentry(struct dentr
+ 				char *d_name;
+ 				off_t d_off;
+ 				ino_t d_ino;
++				loff_t cur_pos = deh_offset(deh);
  
+ 				if (!de_visible(deh))
+ 					/* it is hidden entry */
+@@ -200,8 +201,9 @@ int reiserfs_readdir_dentry(struct dentr
+ 				if (local_buf != small_buf) {
+ 					kfree(local_buf);
+ 				}
+-				// next entry should be looked for with such offset
+-				next_pos = deh_offset(deh) + 1;
++
++				/* deh_offset(deh) may be invalid now. */
++				next_pos = cur_pos + 1;
+ 
+ 				if (item_moved(&tmp_ih, &path_to_entry)) {
+ 					set_cpu_key_k_offset(&pos_key,
 
 
