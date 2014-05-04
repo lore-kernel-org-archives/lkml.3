@@ -1,58 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbaEDGCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 02:02:33 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:20022 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaEDGCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 02:02:31 -0400
-Message-ID: <5365D7EF.7050802@huawei.com>
-Date: Sun, 4 May 2014 14:02:23 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hannes@cmpxchg.org>, <mhocko@suse.cz>, <nasa4836@gmail.com>
-Subject: Re: [PATCH 6/6] cgroup, memcg: implement css->id and convert css_from_id()
- to use it
-References: <1398373333-1521-1-git-send-email-tj@kernel.org> <1398373333-1521-7-git-send-email-tj@kernel.org> <535DCBFC.4000404@huawei.com> <20140501154630.GG31611@htj.dyndns.org>
-In-Reply-To: <20140501154630.GG31611@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	id S1753515AbaEDGHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 02:07:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61809 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390AbaEDGHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 02:07:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,980,1389772800"; 
+   d="scan'208";a="525643604"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: rjw@rjwysocki.net, lenb@kernel.org
+Cc: Lan Tianyu <tianyu.lan@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI/Battery: Accelerate battery resume callback
+Date: Sun,  4 May 2014 14:07:06 +0800
+Message-Id: <1399183626-13152-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Just came back from a short vacation)
+Most time of battery resume callback is spent on executing AML code
+_BTP, _BIF and _BIF to get battery info, status and set alarm. These
+AML methods may access EC operation regions several times and consumes
+time.
 
-On 2014/5/1 23:46, Tejun Heo wrote:
-> On Mon, Apr 28, 2014 at 11:33:16AM +0800, Li Zefan wrote:
->> On 2014/4/25 5:02, Tejun Heo wrote:
->>> Until now, cgroup->id has been used to identify all the associated
->>> csses and css_from_id() takes cgroup ID and returns the matching css
->>> by looking up the cgroup and then dereferencing the css associated
->>> with it; however, now that the lifetimes of cgroup and css are
->>> separate, this is incorrect and breaks on the unified hierarchy when a
->>> controller is disabled and enabled back again before the previous
->>> instance is released.
->>>
->>> This patch adds css->id which is a subsystem-unique ID and converts
->>> css_from_id() to look up by the new css->id instead.  memcg is the
->>> only user of css_from_id() and also converted to use css->id instead.
->>>
->>
->> netprio_cgroup also needs to be updated.
-> 
-> Why?  Wouldn't it be more natural to tie that to the associated
-> cgroup's ID rather than the specific css instance.  It's different for
-> memcg as it involves css refcnts but netprio_cgroup, AFAICS, only uses
-> it for cgroup identification anyway.
-> 
+These operations are not necessary during devices resume and can run
+during POST_SUSPEND/HIBERNATION event when all processes are thawed.
 
-You're right. I thought it won't work correctly in unified hierarchy
-where controllers can be disabled/enabled.
+This also can avoid removing and adding battery sysfs nodes every system
+resume even if the battery unit is not actually changed. The original code
+updates sysfs nodes without check and this seems not reasonable.
+
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+This patch is to base on the linux pm tree linux-next branch with
+patches "ACPI: Revert "ACPI / Battery: Remove battery's proc directory""
+and "ACPI: Revert "ACPI: Remove CONFIG_ACPI_PROCFS_POWER and cm_sbsc.c"".
+
+ drivers/acpi/battery.c | 36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
+index 6e7b2a1..3b4921e 100644
+--- a/drivers/acpi/battery.c
++++ b/drivers/acpi/battery.c
+@@ -696,7 +696,7 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
+ 	}
+ }
+ 
+-static int acpi_battery_update(struct acpi_battery *battery)
++static int acpi_battery_update(struct acpi_battery *battery, bool resume)
+ {
+ 	int result, old_present = acpi_battery_present(battery);
+ 	result = acpi_battery_get_status(battery);
+@@ -707,6 +707,10 @@ static int acpi_battery_update(struct acpi_battery *battery)
+ 		battery->update_time = 0;
+ 		return 0;
+ 	}
++
++	if (resume)
++		return 0;
++
+ 	if (!battery->update_time ||
+ 	    old_present != acpi_battery_present(battery)) {
+ 		result = acpi_battery_get_info(battery);
+@@ -915,7 +919,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
+ static int acpi_battery_read(int fid, struct seq_file *seq)
+ {
+ 	struct acpi_battery *battery = seq->private;
+-	int result = acpi_battery_update(battery);
++	int result = acpi_battery_update(battery, false);
+ 	return acpi_print_funcs[fid](seq, result);
+ }
+ 
+@@ -1030,7 +1034,7 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
+ 	old = battery->bat.dev;
+ 	if (event == ACPI_BATTERY_NOTIFY_INFO)
+ 		acpi_battery_refresh(battery);
+-	acpi_battery_update(battery);
++	acpi_battery_update(battery, false);
+ 	acpi_bus_generate_netlink_event(device->pnp.device_class,
+ 					dev_name(&device->dev), event,
+ 					acpi_battery_present(battery));
+@@ -1045,13 +1049,27 @@ static int battery_notify(struct notifier_block *nb,
+ {
+ 	struct acpi_battery *battery = container_of(nb, struct acpi_battery,
+ 						    pm_nb);
++	int result;
++
+ 	switch (mode) {
+ 	case PM_POST_HIBERNATION:
+ 	case PM_POST_SUSPEND:
+-		if (battery->bat.dev) {
+-			sysfs_remove_battery(battery);
+-			sysfs_add_battery(battery);
+-		}
++		if (!acpi_battery_present(battery))
++			return 0;
++
++		if (!battery->bat.dev) {
++			result = acpi_battery_get_info(battery);
++			if (result)
++				return result;
++
++			result = sysfs_add_battery(battery);
++			if (result)
++				return result;
++		} else
++			acpi_battery_refresh(battery);
++
++		acpi_battery_init_alarm(battery);
++		acpi_battery_get_state(battery);
+ 		break;
+ 	}
+ 
+@@ -1087,7 +1105,7 @@ static int acpi_battery_add(struct acpi_device *device)
+ 	mutex_init(&battery->sysfs_lock);
+ 	if (acpi_has_method(battery->device->handle, "_BIX"))
+ 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
+-	result = acpi_battery_update(battery);
++	result = acpi_battery_update(battery, false);
+ 	if (result)
+ 		goto fail;
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+@@ -1149,7 +1167,7 @@ static int acpi_battery_resume(struct device *dev)
+ 		return -EINVAL;
+ 
+ 	battery->update_time = 0;
+-	acpi_battery_update(battery);
++	acpi_battery_update(battery, true);
+ 	return 0;
+ }
+ #else
+-- 
+1.8.3.1
 
