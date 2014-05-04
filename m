@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030AbaEDPmy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36751 "EHLO
+	id S1755171AbaEDPvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:51:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878AbaEDPmq (ORCPT
+	with ESMTP id S1755015AbaEDPmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:46 -0400
+	Sun, 4 May 2014 11:42:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 71/86] usb: dwc3: fix wrong bit mask in dwc3_event_devt
-Date: Sun,  4 May 2014 11:41:46 -0400
-Message-Id: <20140504154150.118496884@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.4 16/43] nfsd4: session needs room for following op to error out
+Date: Sun,  4 May 2014 11:42:10 -0400
+Message-Id: <20140504154226.451510262@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
-References: <20140504154140.444932005@linuxfoundation.org>
+In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
+References: <20140504154224.211508175@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
+commit 4c69d5855a16f7378648c5733632628fa10431db upstream.
 
-Around DWC USB3 2.30a release another bit has been added to the
-Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
-
-Because of that, what used to be 8 bits long, has become 9 bits long.
-
-Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
-Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
-not 8 bits. And the following reserved field uses [31:25] bits not
-[31:24] bits, and it has 7 bits.
-
-So in dwc3_event_devt, the bit mask should be:
-event_info	[24:16]		9 bits
-reserved31_25	[31:25]		7 bits
-
-This patch makes sure that newer core releases will work fine with
-Linux and that we will decode the event information properly on new
-core releases.
-
-[ balbi@ti.com : improve commit log a bit ]
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/core.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4proc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -836,15 +836,15 @@ struct dwc3_event_depevt {
-  *	12	- VndrDevTstRcved
-  * @reserved15_12: Reserved, not used
-  * @event_info: Information about this event
-- * @reserved31_24: Reserved, not used
-+ * @reserved31_25: Reserved, not used
-  */
- struct dwc3_event_devt {
- 	u32	one_bit:1;
- 	u32	device_event:7;
- 	u32	type:4;
- 	u32	reserved15_12:4;
--	u32	event_info:8;
--	u32	reserved31_24:8;
-+	u32	event_info:9;
-+	u32	reserved31_25:7;
- } __packed;
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -1245,6 +1245,12 @@ nfsd4_proc_compound(struct svc_rqst *rqs
+ 		/* If op is non-idempotent */
+ 		if (opdesc->op_flags & OP_MODIFIES_SOMETHING) {
+ 			plen = opdesc->op_rsize_bop(rqstp, op);
++			/*
++			 * If there's still another operation, make sure
++			 * we'll have space to at least encode an error:
++			 */
++			if (resp->opcnt < args->opcnt)
++				plen += COMPOUND_ERR_SLACK_SPACE;
+ 			op->status = nfsd4_check_resp_size(resp, plen);
+ 		}
  
- /**
 
 
