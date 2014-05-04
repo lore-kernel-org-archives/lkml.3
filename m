@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771AbaEDPmg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36518 "EHLO
+	id S1755573AbaEDQD0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:03:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618AbaEDPmX (ORCPT
+	with ESMTP id S1754766AbaEDPmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:23 -0400
+	Sun, 4 May 2014 11:42:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 17/86] ALSA: ice1712: Fix boundary checks in PCM pointer ops
-Date: Sun,  4 May 2014 11:40:52 -0400
-Message-Id: <20140504154142.749440880@linuxfoundation.org>
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 55/86] target/tcm_fc: Fix use-after-free of ft_tpg
+Date: Sun,  4 May 2014 11:41:30 -0400
+Message-Id: <20140504154147.924082131@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,87 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Andy Grover <agrover@redhat.com>
 
-commit 4f8e940095536bc002a81666a4107a581c84e9b9 upstream.
+commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
 
-PCM pointer callbacks in ice1712 driver check the buffer size boundary
-wrongly between bytes and frames.  This leads to PCM core warnings
-like:
-   snd_pcm_update_hw_ptr0: 105 callbacks suppressed
-   ALSA pcm_lib.c:352 BUG: pcmC3D0c:0, pos = 5461, buffer size = 5461, period size = 2730
+ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
+tport when the tpg is being removed. Set this pointer in ft_tport_create,
+or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
+a deleted object.
 
-This patch fixes these checks to be placed after the proper unit
-conversions.
+This patch sets tpg->tport in ft_tport_create, because that's what
+ft_del_tpg checks, and is the only way to get back to the tport to
+clear tport->tpg.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The bug was occuring when:
+
+- lport created, tport (our per-lport, per-provider context) is
+  allocated.
+  tport->tpg = NULL
+- tpg created
+- a PRLI is received. ft_tport_create is called, tpg is found and
+  tport->tpg is set
+- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
+  set, tport->tpg is not cleared and points at freed memory
+- Future calls to ft_tport_create return tport via first conditional,
+  instead of searching for new tpg by calling ft_lport_find_tpg.
+  tport->tpg is still invalid, and will access freed memory.
+
+see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/ice1712/ice1712.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/target/tcm_fc/tfc_sess.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/ice1712/ice1712.c
-+++ b/sound/pci/ice1712/ice1712.c
-@@ -685,9 +685,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_PBK_CTRL) & 1))
- 		return 0;
- 	ptr = runtime->buffer_size - inw(ice->ddma_port + 4);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
+--- a/drivers/target/tcm_fc/tfc_sess.c
++++ b/drivers/target/tcm_fc/tfc_sess.c
+@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(
  
- static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substream *substream)
-@@ -704,9 +705,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 		addr = ICE1712_DSC_ADDR0;
- 	ptr = snd_ice1712_ds_read(ice, substream->number * 2, addr) -
- 		ice->playback_con_virt_addr[substream->number];
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
+ 	if (tport) {
+ 		tport->tpg = tpg;
++		tpg->tport = tport;
+ 		return tport;
+ 	}
  
- static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *substream)
-@@ -717,9 +719,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_CAP_CTRL) & 1))
- 		return 0;
- 	ptr = inl(ICEREG(ice, CONCAP_ADDR)) - ice->capture_con_virt_addr;
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback = {
-@@ -1113,9 +1116,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_PLAYBACK_START))
- 		return 0;
- 	ptr = ice->playback_pro_size - (inw(ICEMT(ice, PLAYBACK_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substream *substream)
-@@ -1126,9 +1130,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_CAPTURE_START_SHADOW))
- 		return 0;
- 	ptr = ice->capture_pro_size - (inw(ICEMT(ice, CAPTURE_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback_pro = {
 
 
