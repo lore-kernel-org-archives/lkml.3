@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507AbaEDQa7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:30:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36257 "EHLO
+	id S1754260AbaEDPl4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaEDPl5 (ORCPT
+	with ESMTP id S1754028AbaEDPly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:57 -0400
+	Sun, 4 May 2014 11:41:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Janne=20Kujanp=C3=A4=C3=A4?= <jikuja@iki.fi>,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 118/158] media: em28xx: fix PCTV 290e LNA oops
-Date: Sun,  4 May 2014 11:40:27 -0400
-Message-Id: <20140504154046.034065363@linuxfoundation.org>
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 3.14 112/158] video: atmel_lcdfb: ensure the hardware is initialized with the correct mode
+Date: Sun,  4 May 2014 11:40:21 -0400
+Message-Id: <20140504154045.222198988@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -31,34 +33,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine.tenart@free-electrons.com>
 
-commit 3ec40dcfb413214b2874aec858870502b61c2202 upstream.
+commit 7d3477d801808a5037a511cf5a5aae5718e7ecce upstream.
 
-Pointer to device state has been moved to different location during
-some change. PCTV 290e LNA function still uses old pointer, carried
-over FE priv, and it crash.
+If no driver takeover the atmel_lcdfb, the lcd won't be in a working state
+since atmel_lcdfb_set_par() will never be called. Enabling a driver which does,
+like fbcon, will call the function and put atmel_lcdfb in a working state.
 
-Reported-by: Janne Kujanpää <jikuja@iki.fi>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: b985172b328a (video: atmel_lcdfb: add device tree suport)
+
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Reported-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/em28xx/em28xx-dvb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/video/atmel_lcdfb.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/media/usb/em28xx/em28xx-dvb.c
-+++ b/drivers/media/usb/em28xx/em28xx-dvb.c
-@@ -693,7 +693,8 @@ static void pctv_520e_init(struct em28xx
- static int em28xx_pctv_290e_set_lna(struct dvb_frontend *fe)
- {
- 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
--	struct em28xx *dev = fe->dvb->priv;
-+	struct em28xx_i2c_bus *i2c_bus = fe->dvb->priv;
-+	struct em28xx *dev = i2c_bus->dev;
- #ifdef CONFIG_GPIOLIB
- 	struct em28xx_dvb *dvb = dev->dvb;
- 	int ret;
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -1298,6 +1298,12 @@ static int __init atmel_lcdfb_probe(stru
+ 		goto unregister_irqs;
+ 	}
+ 
++	ret = atmel_lcdfb_set_par(info);
++	if (ret < 0) {
++		dev_err(dev, "set par failed: %d\n", ret);
++		goto unregister_irqs;
++	}
++
+ 	dev_set_drvdata(dev, info);
+ 
+ 	/*
 
 
