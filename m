@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889AbaEDQyz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:54:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
+	id S1756016AbaEDQyy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:54:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbaEDPlV (ORCPT
+	with ESMTP id S1753485AbaEDPlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.14 032/158] s390/cio: fix driver callback initialization for ccw consoles
-Date: Sun,  4 May 2014 11:39:01 -0400
-Message-Id: <20140504154034.324722089@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 3.14 033/158] KVM: s390: Optimize ucontrol path
+Date: Sun,  4 May 2014 11:39:02 -0400
+Message-Id: <20140504154034.459258843@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -30,137 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 2253e8d79237c69086ded391e6767afe16972527 upstream.
+commit 2955c83f72801245afd0fe5c560cc75b82bea9aa upstream.
 
-ccw consoles are in use before they can be properly registered with
-the driver core. For devices which are in use by a device driver we
-rely on the ccw_device's pointer to the driver callbacks to be valid.
-For ccw consoles this pointer is NULL until they are registered later
-during boot and we dereferenced this pointer. This worked by
-chance on 64 bit builds (cdev->drv was NULL but the optional callback
-cdev->drv->path_event was also NULL by coincidence) and was unnoticed
-until we received reports about boot failures on 31 bit systems.
-Fix it by initializing the driver pointer for ccw consoles.
+Since commit 7c470539c95630c1f2a10f109e96f249730b75eb
+(s390/kvm: avoid automatic sie reentry) we will run through the C code
+of KVM on host interrupts instead of just reentering the guest. This
+will result in additional ucontrol exits (at least HZ per second). Let
+handle a 0 intercept in the kernel and dont return to userspace,
+even if in ucontrol mode.
 
-Reported-by: Mike Frysinger <vapier@gentoo.org>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/ccwdev.h |    2 +-
- drivers/s390/char/con3215.c    |    2 +-
- drivers/s390/char/con3270.c    |    6 +-----
- drivers/s390/char/raw3270.c    |   10 +++++++++-
- drivers/s390/char/raw3270.h    |    2 +-
- drivers/s390/cio/device.c      |    3 ++-
- 6 files changed, 15 insertions(+), 10 deletions(-)
+ arch/s390/kvm/kvm-s390.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/s390/include/asm/ccwdev.h
-+++ b/arch/s390/include/asm/ccwdev.h
-@@ -219,7 +219,7 @@ extern void ccw_device_get_id(struct ccw
- #define to_ccwdev(n) container_of(n, struct ccw_device, dev)
- #define to_ccwdrv(n) container_of(n, struct ccw_driver, driver)
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -753,7 +753,8 @@ static int vcpu_post_run(struct kvm_vcpu
  
--extern struct ccw_device *ccw_device_probe_console(void);
-+extern struct ccw_device *ccw_device_probe_console(struct ccw_driver *);
- extern void ccw_device_wait_idle(struct ccw_device *);
- extern int ccw_device_force_console(struct ccw_device *);
- 
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -922,7 +922,7 @@ static int __init con3215_init(void)
- 		raw3215_freelist = req;
+ 	if (rc == 0) {
+ 		if (kvm_is_ucontrol(vcpu->kvm))
+-			rc = -EOPNOTSUPP;
++			/* Don't exit for host interrupts. */
++			rc = vcpu->arch.sie_block->icptcode ? -EOPNOTSUPP : 0;
+ 		else
+ 			rc = kvm_handle_sie_intercept(vcpu);
  	}
- 
--	cdev = ccw_device_probe_console();
-+	cdev = ccw_device_probe_console(&raw3215_ccw_driver);
- 	if (IS_ERR(cdev))
- 		return -ENODEV;
- 
---- a/drivers/s390/char/con3270.c
-+++ b/drivers/s390/char/con3270.c
-@@ -576,7 +576,6 @@ static struct console con3270 = {
- static int __init
- con3270_init(void)
- {
--	struct ccw_device *cdev;
- 	struct raw3270 *rp;
- 	void *cbuf;
- 	int i;
-@@ -591,10 +590,7 @@ con3270_init(void)
- 		cpcmd("TERM AUTOCR OFF", NULL, 0, NULL);
- 	}
- 
--	cdev = ccw_device_probe_console();
--	if (IS_ERR(cdev))
--		return -ENODEV;
--	rp = raw3270_setup_console(cdev);
-+	rp = raw3270_setup_console();
- 	if (IS_ERR(rp))
- 		return PTR_ERR(rp);
- 
---- a/drivers/s390/char/raw3270.c
-+++ b/drivers/s390/char/raw3270.c
-@@ -776,16 +776,24 @@ raw3270_setup_device(struct ccw_device *
- }
- 
- #ifdef CONFIG_TN3270_CONSOLE
-+/* Tentative definition - see below for actual definition. */
-+static struct ccw_driver raw3270_ccw_driver;
-+
- /*
-  * Setup 3270 device configured as console.
-  */
--struct raw3270 __init *raw3270_setup_console(struct ccw_device *cdev)
-+struct raw3270 __init *raw3270_setup_console(void)
- {
-+	struct ccw_device *cdev;
- 	unsigned long flags;
- 	struct raw3270 *rp;
- 	char *ascebc;
- 	int rc;
- 
-+	cdev = ccw_device_probe_console(&raw3270_ccw_driver);
-+	if (IS_ERR(cdev))
-+		return ERR_CAST(cdev);
-+
- 	rp = kzalloc(sizeof(struct raw3270), GFP_KERNEL | GFP_DMA);
- 	ascebc = kzalloc(256, GFP_KERNEL);
- 	rc = raw3270_setup_device(cdev, rp, ascebc);
---- a/drivers/s390/char/raw3270.h
-+++ b/drivers/s390/char/raw3270.h
-@@ -190,7 +190,7 @@ raw3270_put_view(struct raw3270_view *vi
- 		wake_up(&raw3270_wait_queue);
- }
- 
--struct raw3270 *raw3270_setup_console(struct ccw_device *cdev);
-+struct raw3270 *raw3270_setup_console(void);
- void raw3270_wait_cons_dev(struct raw3270 *);
- 
- /* Notifier for device addition/removal */
---- a/drivers/s390/cio/device.c
-+++ b/drivers/s390/cio/device.c
-@@ -1609,7 +1609,7 @@ out_unlock:
- 	return rc;
- }
- 
--struct ccw_device *ccw_device_probe_console(void)
-+struct ccw_device *ccw_device_probe_console(struct ccw_driver *drv)
- {
- 	struct io_subchannel_private *io_priv;
- 	struct ccw_device *cdev;
-@@ -1631,6 +1631,7 @@ struct ccw_device *ccw_device_probe_cons
- 		kfree(io_priv);
- 		return cdev;
- 	}
-+	cdev->drv = drv;
- 	set_io_private(sch, io_priv);
- 	ret = ccw_device_console_enable(cdev, sch);
- 	if (ret) {
 
 
