@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614AbaEDBUf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 21:20:35 -0400
-Received: from linuxhacker.ru ([217.76.32.60]:52766 "EHLO fiona.linuxhacker.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557AbaEDBUe convert rfc822-to-8bit (ORCPT
+	id S1753694AbaEDBU5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 21:20:57 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:13110 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579AbaEDBU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 21:20:34 -0400
-Subject: Re: [PATCH] staging/lustre: Replace jobid acquiring with per node setting
-Mime-Version: 1.0 (Apple Message framework v1283)
-Content-Type: text/plain; charset=us-ascii
-From: Oleg Drokin <green@linuxhacker.ru>
-In-Reply-To: <20140503232945.GA15714@kroah.com>
-Date: Sat, 3 May 2014 21:20:06 -0400
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AD08F6C5-1BAD-455B-9A09-1FFB8D2CA42E@linuxhacker.ru>
-References: <1398651712-5015-1-git-send-email-green@linuxhacker.ru> <20140503232945.GA15714@kroah.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Mailer: Apple Mail (2.1283)
+	Sat, 3 May 2014 21:20:56 -0400
+Message-ID: <1399166450.2573.15.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
+ not the default
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Marian Marinov <mm@1h.com>
+Cc: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
+        Greg KH <gregkh@linuxfoundation.org>, manfred@colorfullife.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>
+Date: Sat, 03 May 2014 18:20:50 -0700
+In-Reply-To: <536589B5.8060900@1h.com>
+References: <5365723D.7030303@1h.com>
+	 <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net>
+	 <536589B5.8060900@1h.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2014-05-04 at 03:28 +0300, Marian Marinov wrote:
+> On 05/04/2014 02:53 AM, Davidlohr Bueso wrote:
+> > On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
+> >> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the
+> >> values of the current shmmax and shmall to the new namespace.
+> >
+> > Why is this a good idea?
+> >
+> > This would break userspace that relies on the current behavior.
+> > Furthermore we've recently changed the default value of both these
+> > limits to be as large as you can get, thus deprecating them. I don't
+> > like the idea of this being replaced by namespaces.
+> >
+> > Thanks,
+> > Davidlohr
+> >
+> 
+> The current behavior is create_ipc_ns()->shm_init_ns()
+> 
+> void shm_init_ns(struct ipc_namespace *ns)
+> {
+>      ns->shm_ctlmax = SHMMAX;
+>      ns->shm_ctlall = SHMALL;
+>      ns->shm_ctlmni = SHMMNI;
+>      ns->shm_rmid_forced = 0;
+>      ns->shm_tot = 0;
+>      ipc_init_ids(&shm_ids(ns));
+> }
+> 
+> This means that whenever you are creating an IPC namespace it gets its SHMMAX and SHMALL values from the defaults for 
+> the kernel.
 
-On May 3, 2014, at 7:29 PM, Greg Kroah-Hartman wrote:
+This is exactly what I meant by 'current behavior'.
 
-> On Sun, Apr 27, 2014 at 10:21:52PM -0400, Oleg Drokin wrote:
->> Insted of meddling directly in process environment variables
->> (which is also not possible on certain platforms due to not exported
->> symbols), create jobid_name proc file to represent this info
->> (to be filled by job scheduler epilogue).
-> That looks better, but what are you going to do about getting rid of all
-> of these proc files?  Just move them all at once?  I really don't like
-> the idea of adding new ones, and want a plan for what you all are going
-> to do here moving forward.
+> If for some reason you want to have smaller(or bigger, for older kernels) limit. This means changing the values in 
+> /proc/sys/kernel/shmmax and /proc/sys/kernel/shmall. However the program that is started with the new IPC namespace may 
+> lack privileges to write to these files and so it can not modify them.
 
-What proc files are to referring to, if I may ask?
-I don't think I saw complaints about proc files, the complaints I saw were mostly about
-reading env variables directly and the like so that was the focus of this patch.
-Did I miss some side discussion? Any pointers?
+I see no reason why namespaces should behave any different than the rest
+of the system, wrt this. And this changes how *and* when these limits
+are set, which impacts at a userspace level with no justification.
 
-Thanks!
+> What I'm proposing is simply to copy the current values of the host machine, as set by a privileged process before the 
+> namespace creation.
+> 
+> Maybe a better approach would be to allow the changes to be done by processes having CAP_SYS_RESOURCE inside the new 
+> namespace?
 
-Bye,
-    Oleg
+Why do you need this? Is there any real impact/issue you're seeing?
+
