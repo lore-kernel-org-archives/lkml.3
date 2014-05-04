@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311AbaEDPl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36200 "EHLO
+	id S1756425AbaEDQ31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:29:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36269 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaEDPlz (ORCPT
+	with ESMTP id S1754299AbaEDPl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:55 -0400
+	Sun, 4 May 2014 11:41:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 113/158] media: v4l2-dv-timings: add module name, description, license
-Date: Sun,  4 May 2014 11:40:22 -0400
-Message-Id: <20140504154045.361445941@linuxfoundation.org>
+        Matt Fleming <matt.fleming@intel.com>,
+        Kees Cook <keescook@chromium.org>, Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 135/158] sh: fix format string bug in stack tracer
+Date: Sun,  4 May 2014 11:40:44 -0400
+Message-Id: <20140504154048.361462134@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,33 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit c4885ada88e4331f8ac56d14296d0058359db2d7 upstream.
+commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
 
-I completely forgot to add them when I made this module. Loading this module
-without it will taint the kernel, which is not intended.
+Kees reported the following error:
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
+   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
+
+Use the "%s" format so that it's impossible to interpret 'data' as a
+format string.
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: Kees Cook <keescook@chromium.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/v4l2-dv-timings.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/sh/kernel/dumpstack.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/media/v4l2-core/v4l2-dv-timings.c
-+++ b/drivers/media/v4l2-core/v4l2-dv-timings.c
-@@ -26,6 +26,10 @@
- #include <linux/v4l2-dv-timings.h>
- #include <media/v4l2-dv-timings.h>
+--- a/arch/sh/kernel/dumpstack.c
++++ b/arch/sh/kernel/dumpstack.c
+@@ -115,7 +115,7 @@ static int print_trace_stack(void *data,
+  */
+ static void print_trace_address(void *data, unsigned long addr, int reliable)
+ {
+-	printk(data);
++	printk("%s", (char *)data);
+ 	printk_address(addr, reliable);
+ }
  
-+MODULE_AUTHOR("Hans Verkuil");
-+MODULE_DESCRIPTION("V4L2 DV Timings Helper Functions");
-+MODULE_LICENSE("GPL");
-+
- const struct v4l2_dv_timings v4l2_dv_timings_presets[] = {
- 	V4L2_DV_BT_CEA_640X480P59_94,
- 	V4L2_DV_BT_CEA_720X480I59_94,
 
 
