@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067AbaEDRAe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 13:00:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35865 "EHLO
+	id S1757156AbaEDRBi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 13:01:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351AbaEDPlN (ORCPT
+	with ESMTP id S1751495AbaEDPlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:13 -0400
+	Sun, 4 May 2014 11:41:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 013/158] ARM: dts: omap4/5: Use l3_ick for the gpmc node
-Date: Sun,  4 May 2014 11:38:42 -0400
-Message-Id: <20140504154031.825643909@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Steve Capper <Steve.Capper@arm.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Subject: [PATCH 3.14 001/158] arm64: Do not synchronise I and D caches for special ptes
+Date: Sun,  4 May 2014 11:38:30 -0400
+Message-Id: <20140504154030.195840317@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,45 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 7b8b6af169a069454936053631d151a50af7b69a upstream.
+commit 71fdb6bf61bf0692f004f9daf5650392c0cfe300 upstream.
 
-The GPMC clock is derived from l3_ick. The simplest solution is
-to reference directly l3_ick to provide the GPMC fck in order to
-get correct timings. The real management of the clock is left to
-hwmod.
+Special pte mappings are not intended to be executable and do not even
+have an associated struct page. This patch ensures that we do not call
+__sync_icache_dcache() on such ptes.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Steve Capper <Steve.Capper@arm.com>
+Tested-by: Laura Abbott <lauraa@codeaurora.org>
+Tested-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/omap4.dtsi |    2 ++
- arch/arm/boot/dts/omap5.dtsi |    2 ++
- 2 files changed, 4 insertions(+)
+ arch/arm64/include/asm/pgtable.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -275,6 +275,8 @@
- 			gpmc,num-waitpins = <4>;
- 			ti,hwmods = "gpmc";
- 			ti,no-idle-on-init;
-+			clocks = <&l3_div_ck>;
-+			clock-names = "fck";
- 		};
- 
- 		uart1: serial@4806a000 {
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -302,6 +302,8 @@
- 			gpmc,num-cs = <8>;
- 			gpmc,num-waitpins = <4>;
- 			ti,hwmods = "gpmc";
-+			clocks = <&l3_iclk_div>;
-+			clock-names = "fck";
- 		};
- 
- 		i2c1: i2c@48070000 {
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -199,7 +199,7 @@ static inline void set_pte_at(struct mm_
+ 			      pte_t *ptep, pte_t pte)
+ {
+ 	if (pte_valid_user(pte)) {
+-		if (pte_exec(pte))
++		if (!pte_special(pte) && pte_exec(pte))
+ 			__sync_icache_dcache(pte, addr);
+ 		if (pte_dirty(pte) && pte_write(pte))
+ 			pte_val(pte) &= ~PTE_RDONLY;
 
 
