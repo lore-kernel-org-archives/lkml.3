@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273AbaEDQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:11:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36545 "EHLO
+	id S1755995AbaEDQLr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:11:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36540 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646AbaEDPm1 (ORCPT
+	with ESMTP id S1754640AbaEDPm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:27 -0400
+	Sun, 4 May 2014 11:42:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 36/86] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-Date: Sun,  4 May 2014 11:41:11 -0400
-Message-Id: <20140504154145.292896765@linuxfoundation.org>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Petr Mladek <pmladek@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 35/86] ftrace/x86: One more missing sync after fixup of function modification failure
+Date: Sun,  4 May 2014 11:41:10 -0400
+Message-Id: <20140504154145.163583374@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,50 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Petr Mladek <pmladek@suse.cz>
 
-commit b3b42ac2cbae1f3cecbb6229964a4d48af31d382 upstream.
+commit 12729f14d8357fb845d75155228b21e76360272d upstream.
 
-The IRET instruction, when returning to a 16-bit segment, only
-restores the bottom 16 bits of the user space stack pointer.  We have
-a software workaround for that ("espfix") for the 32-bit kernel, but
-it relies on a nonzero stack segment base which is not available in
-32-bit mode.
+If a failure occurs while modifying ftrace function, it bails out and will
+remove the tracepoints to be back to what the code originally was.
 
-Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
-(no V86 mode), and most (if not quite all) 64-bit processors support
-virtualization for the users who really need it, simply reject
-attempts at creating a 16-bit segment when running on top of a 64-bit
-kernel.
+There is missing the final sync run across the CPUs after the fix up is done
+and before the ftrace int3 handler flag is reset.
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
+Here's the description of the problem:
+
+	CPU0				CPU1
+	----				----
+  remove_breakpoint();
+  modifying_ftrace_code = 0;
+
+				[still sees breakpoint]
+				<takes trap>
+				[sees modifying_ftrace_code as zero]
+				[no breakpoint handler]
+				[goto failed case]
+				[trap exception - kernel breakpoint, no
+				 handler]
+				BUG()
+
+Link: http://lkml.kernel.org/r/1393258342-29978-2-git-send-email-pmladek@suse.cz
+
+Fixes: 8a4d0a687a5 "ftrace: Use breakpoint method to update ftrace caller"
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/ldt.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ arch/x86/kernel/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, u
- 		}
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -659,8 +659,8 @@ ftrace_modify_code(unsigned long ip, uns
+ 		ret = -EPERM;
+ 		goto out;
  	}
+-	run_sync();
+  out:
++	run_sync();
+ 	return ret;
  
-+	/*
-+	 * On x86-64 we do not support 16-bit segments due to
-+	 * IRET leaking the high bits of the kernel stack address.
-+	 */
-+#ifdef CONFIG_X86_64
-+	if (!ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
-+#endif
-+
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
+  fail_update:
 
 
