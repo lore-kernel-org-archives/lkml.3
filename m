@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbaEDPzV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:55:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36777 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919AbaEDPmt (ORCPT
+	id S1755611AbaEDPzo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:55:44 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55190 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755440AbaEDPzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Roger Quadros <rogerq@ti.com>,
-        Keshava Munegowda <keshava_mgowda@ti.com>,
-        Partha Basak <parthab@india.ti.com>
-Subject: [PATCH 3.4 03/43] ARM: OMAP3: hwmod data: Correct clock domains for USB modules
-Date: Sun,  4 May 2014 11:41:57 -0400
-Message-Id: <20140504154224.691664426@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
+	Sun, 4 May 2014 11:55:42 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <536662F8.6060402@roeck-us.net>
+Date: Sun, 04 May 2014 08:55:36 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.4 00/43] 3.4.89-stable review
 References: <20140504154224.211508175@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 05/04/2014 08:41 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.89 release.
+> There are 43 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Tue May  6 15:42:07 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-------------------
+Build results:
+	total: 120 pass: 97 skipped: 18 fail: 5
 
-From: Roger Quadros <rogerq@ti.com>
+Qemu tests all passed.
 
-commit c6c56697ae4bf1226263c19e8353343d7083f40e upstream.
+There is one new failure, unicore32:defconfig. This is a new build target
+which fails for all releases in my tests, so the failure is undesirable
+but not surprising. Overall results are as expected.
 
-OMAP3 doesn't contain "l3_init_clkdm" clock domain. Use the
-proper clock domains for USB Host and USB TLL modules.
+Details are at http://server.roeck-us.net:8010/builders.
 
-Gets rid of the following warnings during boot
- omap_hwmod: usb_host_hs: could not associate to clkdm l3_init_clkdm
- omap_hwmod: usb_tll_hs: could not associate to clkdm l3_init_clkdm
-
-Reported-by: Nishanth Menon <nm@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Fixes: de231388cb80a8ef3e779bbfa0564ba0157b7377 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: Partha Basak <parthab@india.ti.com>
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3408,7 +3408,7 @@ static struct omap_hwmod_irq_info omap3x
- static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
- 	.name		= "usb_host_hs",
- 	.class		= &omap3xxx_usb_host_hs_hwmod_class,
--	.clkdm_name	= "l3_init_clkdm",
-+	.clkdm_name	= "usbhost_clkdm",
- 	.mpu_irqs	= omap3xxx_usb_host_hs_irqs,
- 	.main_clk	= "usbhost_48m_fck",
- 	.prcm = {
-@@ -3519,7 +3519,7 @@ static struct omap_hwmod_ocp_if *omap3xx
- static struct omap_hwmod omap3xxx_usb_tll_hs_hwmod = {
- 	.name		= "usb_tll_hs",
- 	.class		= &omap3xxx_usb_tll_hs_hwmod_class,
--	.clkdm_name	= "l3_init_clkdm",
-+	.clkdm_name	= "core_l4_clkdm",
- 	.mpu_irqs	= omap3xxx_usb_tll_hs_irqs,
- 	.main_clk	= "usbtll_fck",
- 	.prcm = {
-
+Guenter
 
