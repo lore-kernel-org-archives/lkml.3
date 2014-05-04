@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaEDQdU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:33:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36200 "EHLO
+	id S1756583AbaEDQdt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:33:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaEDPlw (ORCPT
+	with ESMTP id S1754190AbaEDPlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 120/158] media: omap3isp: preview: Fix the crop margins
-Date: Sun,  4 May 2014 11:40:29 -0400
-Message-Id: <20140504154046.304613623@linuxfoundation.org>
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Quinn Tran <quinn.tran@qlogic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 092/158] target/rd: T10-Dif: RAM disk is allocating more space than required.
+Date: Sun,  4 May 2014 11:40:01 -0400
+Message-Id: <20140504154042.444286204@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,48 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
+commit 9d2e59f2a778328a41771fe9a0098dadbc4314ba upstream.
 
-Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
-accidentally changed the previewer's cropping, causing the previewer
-to miss four pixels on each line, thus corrupting the final image.
-Restored the removed setting.
+Ram disk is allocating 8x more space than required for diff data.
+For large RAM disk test, there is small potential for memory
+starvation.
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+(Use block_size when calculating total_sg_needed - sagi + nab)
+
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/platform/omap3isp/isppreview.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/target/target_core_rd.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -1079,6 +1079,7 @@ static void preview_config_input_format(
-  */
- static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
+--- a/drivers/target/target_core_rd.c
++++ b/drivers/target/target_core_rd.c
+@@ -242,7 +242,7 @@ static void rd_release_prot_space(struct
+ 	rd_dev->sg_prot_count = 0;
+ }
+ 
+-static int rd_build_prot_space(struct rd_dev *rd_dev, int prot_length)
++static int rd_build_prot_space(struct rd_dev *rd_dev, int prot_length, int block_size)
  {
-+	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
- 	struct isp_device *isp = to_isp_device(prev);
- 	unsigned int sph = prev->crop.left;
- 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
-@@ -1086,6 +1087,14 @@ static void preview_config_input_size(st
- 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
- 	u32 features;
+ 	struct rd_dev_sg_table *sg_table;
+ 	u32 total_sg_needed, sg_tables;
+@@ -252,8 +252,13 @@ static int rd_build_prot_space(struct rd
  
-+	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
-+	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
-+		sph -= 2;
-+		eph += 2;
-+		slv -= 2;
-+		elv += 2;
-+	}
-+
- 	features = (prev->params.params[0].features & active)
- 		 | (prev->params.params[1].features & ~active);
+ 	if (rd_dev->rd_flags & RDF_NULLIO)
+ 		return 0;
+-
+-	total_sg_needed = rd_dev->rd_page_count / prot_length;
++	/*
++	 * prot_length=8byte dif data
++	 * tot sg needed = rd_page_count * (PGSZ/block_size) *
++	 * 		   (prot_length/block_size) + pad
++	 * PGSZ canceled each other.
++	 */
++	total_sg_needed = (rd_dev->rd_page_count * prot_length / block_size) + 1;
  
+ 	sg_tables = (total_sg_needed / max_sg_per_table) + 1;
+ 
+@@ -606,7 +611,8 @@ static int rd_init_prot(struct se_device
+         if (!dev->dev_attrib.pi_prot_type)
+ 		return 0;
+ 
+-	return rd_build_prot_space(rd_dev, dev->prot_length);
++	return rd_build_prot_space(rd_dev, dev->prot_length,
++				   dev->dev_attrib.block_size);
+ }
+ 
+ static void rd_free_prot(struct se_device *dev)
 
 
