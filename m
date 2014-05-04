@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbaEDKrU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 06:47:20 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:15381 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753475AbaEDKrT (ORCPT
+	id S1753720AbaEDLDQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 07:03:16 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:55775 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753553AbaEDLDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 06:47:19 -0400
-Date: Sun, 4 May 2014 11:46:33 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 fixes for 3.15
-Message-ID: <20140504104628.GA17370@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 4 May 2014 07:03:15 -0400
+Message-ID: <1399201392.8729.7.camel@x220>
+Subject: [PATCH] w83977af_ir: remove two faux Kconfig macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Samuel Ortiz <samuel@sortiz.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 04 May 2014 13:03:12 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 May 2014 11:03:12.0743 (UTC) FILETIME=[7114B770:01CF6788]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Ever since v2.3.5 the driver for "Winbond W83977AF (IR)" contains two
+unneeded preprocessor macros.
 
-Please pull the arm64 patches below for 3.15. These are mostly arm64
-fixes with an additional arm(64) platform fix for the initialisation of
-vexpress clocks (the latter only affecting arm64; the arch/arm64 code
-is SoC agnostic and does not rely on early SoC-specific calls). Thanks.
+CONFIG_NETWINDER_TX_DMA_PROBLEMS is never defined and can safely be
+removed. And CONFIG_NETWINDER_RX_DMA_PROBLEMS is just an alias for
+CONFIG_ARCH_NETWINDER, so that (valid) Kconfig macro can be used
+instead.
 
-The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Compile tested only (on x86_64, that is).
 
-  Linux 3.15-rc3 (2014-04-27 19:29:27 -0700)
+I sneaked in a related whitespace fix.
 
-are available in the git repository at:
+ drivers/net/irda/w83977af_ir.c | 33 ++++-----------------------------
+ 1 file changed, 4 insertions(+), 29 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-fixes
-
-for you to fetch changes up to e715eb2e73918f4cefbba0b717ff8902e8030b39:
-
-  vexpress: Initialise the sysregs before setting up the clocks (2014-05-04 11:35:29 +0100)
-
-----------------------------------------------------------------
-- vexpress platform clocks initialisation moved earlier following the
-  arm64 move of of_clk_init() call in a previous commit
-- Default DMA ops changed to non-coherent to preserve compatibility with
-  32-bit ARM DT files. The "dma-coherent" property can be used to
-  explicitly mark a device coherent. The Applied Micro DT file has been
-  updated to avoid DMA cache maintenance for the X-Gene SATA controller
-  (the only arm64 related driver with such assumption in -rc mainline)
-- Fixmap correction for earlyprintk
-- kern_addr_valid() fix for huge pages
-
-----------------------------------------------------------------
-Catalin Marinas (3):
-      arm64: Use bus notifiers to set per-device coherent DMA ops
-      arm64: Mark the Applied Micro X-Gene SATA controller as DMA coherent
-      vexpress: Initialise the sysregs before setting up the clocks
-
-Dave Anderson (1):
-      arm64: Fix for the arm64 kern_addr_valid() function
-
-Marc Zyngier (1):
-      arm64: fixmap: fix missing sub-page offset for earlyprintk
-
-Ritesh Harjani (1):
-      arm64: Make default dma_ops to be noncoherent
-
- .../devicetree/bindings/ata/apm-xgene.txt          |  3 ++
- arch/arm64/boot/dts/apm-storm.dtsi                 |  3 ++
- arch/arm64/kernel/early_printk.c                   |  6 ++--
- arch/arm64/kernel/setup.c                          |  2 +-
- arch/arm64/mm/dma-mapping.c                        | 35 ++++++++++++++++++++--
- arch/arm64/mm/mmu.c                                |  3 ++
- drivers/clk/versatile/clk-vexpress-osc.c           |  2 ++
- include/asm-generic/fixmap.h                       |  3 ++
- 8 files changed, 50 insertions(+), 7 deletions(-)
-
+diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
+index e641bb240362..11dbdf36d9c1 100644
+--- a/drivers/net/irda/w83977af_ir.c
++++ b/drivers/net/irda/w83977af_ir.c
+@@ -62,10 +62,6 @@
+ #include "w83977af.h"
+ #include "w83977af_ir.h"
+ 
+-#ifdef  CONFIG_ARCH_NETWINDER            /* Adjust to NetWinder differences */
+-#undef  CONFIG_NETWINDER_TX_DMA_PROBLEMS /* Not needed */
+-#define CONFIG_NETWINDER_RX_DMA_PROBLEMS /* Must have this one! */
+-#endif
+ #define CONFIG_USE_W977_PNP        /* Currently needed */
+ #define PIO_MAX_SPEED       115200 
+ 
+@@ -332,7 +328,7 @@ static int w83977af_probe(int iobase, int irq, int dma)
+  		w977_write_reg(0x74, dma+1, efbase[i]);
+ #else
+  		w977_write_reg(0x74, dma, efbase[i]);   
+-#endif /*CONFIG_ARCH_NETWINDER */
++#endif /* CONFIG_ARCH_NETWINDER */
+  		w977_write_reg(0x75, 0x04, efbase[i]);  /* Disable Tx DMA */
+   	
+  		/* Set append hardware CRC, enable IR bank selection */	
+@@ -563,10 +559,6 @@ static netdev_tx_t w83977af_hard_xmit(struct sk_buff *skb,
+ static void w83977af_dma_write(struct w83977af_ir *self, int iobase)
+ {
+ 	__u8 set;
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	unsigned long flags;
+-	__u8 hcr;
+-#endif
+         IRDA_DEBUG(4, "%s(), len=%d\n", __func__ , self->tx_buff.len);
+ 
+ 	/* Save current set */
+@@ -579,30 +571,13 @@ static void w83977af_dma_write(struct w83977af_ir *self, int iobase)
+ 	/* Choose transmit DMA channel  */ 
+ 	switch_bank(iobase, SET2);
+ 	outb(ADCR1_D_CHSW|/*ADCR1_DMA_F|*/ADCR1_ADV_SL, iobase+ADCR1);
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	spin_lock_irqsave(&self->lock, flags);
+-
+-	disable_dma(self->io.dma);
+-	clear_dma_ff(self->io.dma);
+-	set_dma_mode(self->io.dma, DMA_MODE_READ);
+-	set_dma_addr(self->io.dma, self->tx_buff_dma);
+-	set_dma_count(self->io.dma, self->tx_buff.len);
+-#else
+ 	irda_setup_dma(self->io.dma, self->tx_buff_dma, self->tx_buff.len,
+ 		       DMA_MODE_WRITE);	
+-#endif
+ 	self->io.direction = IO_XMIT;
+ 	
+ 	/* Enable DMA */
+  	switch_bank(iobase, SET0);
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	hcr = inb(iobase+HCR);
+-	outb(hcr | HCR_EN_DMA, iobase+HCR);
+-	enable_dma(self->io.dma);
+-	spin_unlock_irqrestore(&self->lock, flags);
+-#else	
+ 	outb(inb(iobase+HCR) | HCR_EN_DMA | HCR_TX_WT, iobase+HCR);
+-#endif
+ 
+ 	/* Restore set register */
+ 	outb(set, iobase+SSR);
+@@ -711,7 +686,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ {
+ 	int iobase;
+ 	__u8 set;
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	unsigned long flags;
+ 	__u8 hcr;
+ #endif
+@@ -736,7 +711,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ 	self->io.direction = IO_RECV;
+ 	self->rx_buff.data = self->rx_buff.head;
+ 
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	spin_lock_irqsave(&self->lock, flags);
+ 
+ 	disable_dma(self->io.dma);
+@@ -759,7 +734,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ 	
+ 	/* Enable DMA */
+ 	switch_bank(iobase, SET0);
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	hcr = inb(iobase+HCR);
+ 	outb(hcr | HCR_EN_DMA, iobase+HCR);
+ 	enable_dma(self->io.dma);
 -- 
-Catalin
+1.9.0
+
