@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825AbaEDQuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:50:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35998 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377AbaEDPl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753860AbaEDPl2 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:41:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693AbaEDPlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:41:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomas Novotny <tomas@novotny.cz>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 050/158] mfd: twl-core: Fix accessibility of some twl4030 audio registers
-Date: Sun,  4 May 2014 11:39:19 -0400
-Message-Id: <20140504154036.794192030@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.14 035/158] s390: fix control register update
+Date: Sun,  4 May 2014 11:39:04 -0400
+Message-Id: <20140504154034.736854242@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,45 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Novotny <tomas@novotny.cz>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit 56816b700c8c773270f3aaf4c92be53e359a03fd upstream.
+commit a8a934e44f2bd0ed613e1aa0471e3478c6a9228a upstream.
 
-There are some unused registers in twl4030 at I2C address 0x49 and function
-twl4030_49_nop_reg() is used to check accessibility of that registers. These
-registers are written in decimal format but the values are correct in
-hexadecimal format. (It can be checked few lines above the patched code -
-these registers are marked as unused there.)
+The git commit c63badebfebacdba827ab1cc1d420fc81bd8d818
+"s390: optimize control register update" broke the update for
+control register 0. After the update do the lctlg from the correct
+value.
 
-As a consequence three registers of audio submodule are treated as
-inaccessible (preamplifier carkit right and both handsfree registers).
-
-Signed-off-by: Tomas Novotny <tomas@novotny.cz>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/twl-core.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/s390/kernel/ptrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -282,11 +282,11 @@ static struct reg_default twl4030_49_def
- static bool twl4030_49_nop_reg(struct device *dev, unsigned int reg)
- {
- 	switch (reg) {
--	case 0:
--	case 3:
--	case 40:
--	case 41:
--	case 42:
-+	case 0x00:
-+	case 0x03:
-+	case 0x40:
-+	case 0x41:
-+	case 0x42:
- 		return false;
- 	default:
- 		return true;
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -64,7 +64,7 @@ void update_cr_regs(struct task_struct *
+ 		if (task->thread.per_flags & PER_FLAG_NO_TE)
+ 			cr_new &= ~(1UL << 55);
+ 		if (cr_new != cr)
+-			__ctl_load(cr, 0, 0);
++			__ctl_load(cr_new, 0, 0);
+ 		/* Set or clear transaction execution TDC bits 62 and 63. */
+ 		__ctl_store(cr, 2, 2);
+ 		cr_new = cr & ~3UL;
 
 
