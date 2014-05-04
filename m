@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717AbaEDQoM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:44:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36036 "EHLO
+	id S1755278AbaEDQpI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:45:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980AbaEDPlh (ORCPT
+	with ESMTP id S1753968AbaEDPlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:37 -0400
+	Sun, 4 May 2014 11:41:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 083/158] IB/mthca: Return an error on ib_copy_to_udata() failure
-Date: Sun,  4 May 2014 11:39:52 -0400
-Message-Id: <20140504154041.168862091@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 080/158] nfsd: set timeparms.to_maxval in setup_callback_client
+Date: Sun,  4 May 2014 11:39:49 -0400
+Message-Id: <20140504154040.779911006@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 08e74c4b00c30c232d535ff368554959403d0432 upstream.
+commit 3758cf7e14b753838fe754ede3862af10b35fdac upstream.
 
-In case of error when writing to userspace, the function mthca_create_cq()
-does not set an error code before following its error path.
+...otherwise the logic in the timeout handling doesn't work correctly.
 
-This patch sets the error code to -EFAULT when ib_copy_to_udata() fails.
-
-This was caught when using spatch (aka. coccinelle)
-to rewrite call to ib_copy_{from,to}_udata().
-
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Spotted-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mthca/mthca_provider.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfs4callback.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/mthca/mthca_provider.c
-+++ b/drivers/infiniband/hw/mthca/mthca_provider.c
-@@ -695,6 +695,7 @@ static struct ib_cq *mthca_create_cq(str
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -637,9 +637,11 @@ static struct rpc_cred *get_backchannel_
  
- 	if (context && ib_copy_to_udata(udata, &cq->cqn, sizeof (__u32))) {
- 		mthca_free_cq(to_mdev(ibdev), cq);
-+		err = -EFAULT;
- 		goto err_free;
- 	}
- 
+ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *conn, struct nfsd4_session *ses)
+ {
++	int maxtime = max_cb_time(clp->net);
+ 	struct rpc_timeout	timeparms = {
+-		.to_initval	= max_cb_time(clp->net),
++		.to_initval	= maxtime,
+ 		.to_retries	= 0,
++		.to_maxval	= maxtime,
+ 	};
+ 	struct rpc_create_args args = {
+ 		.net		= clp->net,
 
 
