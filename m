@@ -1,65 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450AbaEDSoA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 14:44:00 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:44601 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaEDSn7 (ORCPT
+	id S1752621AbaEDSxY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 14:53:24 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:53189 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaEDSxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 14:43:59 -0400
-Date: Sun, 4 May 2014 20:43:51 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Darek Marcinkiewicz <reksio@newterm.pl>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/1] Driver for Beckhoff CX5020 EtherCAT master module.
-Message-ID: <20140504184351.GA4471@electric-eye.fr.zoreil.com>
-References: <20140502175242.GB1156@newterm.pl>
- <20140503114029.GA19315@electric-eye.fr.zoreil.com>
- <20140504110413.GE1156@newterm.pl>
+	Sun, 4 May 2014 14:53:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140504110413.GE1156@newterm.pl>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20140504174216.GV28159@titan.lakedaemon.net>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+	<1397719309-2022-2-git-send-email-computersforpeace@gmail.com>
+	<535A8FC9.8040707@wwwdotorg.org>
+	<20140429190603.GB9418@norris-Latitude-E6410>
+	<20140430114548.GQ28159@titan.lakedaemon.net>
+	<CAOesGMi0zK8H=Ok81ZLhssvG5gsbvanY4dct_PF95Exq6p3tfg@mail.gmail.com>
+	<20140504174216.GV28159@titan.lakedaemon.net>
+Date: Sun, 4 May 2014 11:53:22 -0700
+Message-ID: <CAOesGMh09AQ3Y-cdXFov3-+RZHDYTVw=MWngRumHc0hnB-CGOg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ARM: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
+From: Olof Johansson <olof@lixom.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, Marek Vasut <marex@denx.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Darek Marcinkiewicz <reksio@newterm.pl> :
-> On Sat, May 03, 2014 at 01:40:29PM +0200, Francois Romieu wrote:
-[...]
-> Thank you. I am attaching 2 of thse to this repsonse - the other two 
-> are no longer relevant due to the changes I made into the driver.
-> One of the attached patches is slightly modfied by simply having one hunk
-> removed (that hunk was applying to the code that was removed in next rev 
-> of the driver). Not sure how to proceed with those patches, shall I simply
-> sent out these patches to this list as a separate messages?
+On Sun, May 4, 2014 at 10:42 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Sat, May 03, 2014 at 03:51:11PM -0700, Olof Johansson wrote:
+>> On Wed, Apr 30, 2014 at 4:45 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> > On Tue, Apr 29, 2014 at 12:06:03PM -0700, Brian Norris wrote:
+>> >> Hi Stephen,
+>> >>
+>> >> On Fri, Apr 25, 2014 at 10:39:37AM -0600, Stephen Warren wrote:
+>> >> > On 04/17/2014 01:21 AM, Brian Norris wrote:
+>> >> > > These defconfigs contain the CONFIG_M25P80 symbol, which is now
+>> >> > > dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+>> >> > > relevant defconfigs.
+>> >> > >
+>> >> > > At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
+>> >> >
+>> >> > I hadn't realized that the problem this patch solves was already present
+>> >> > in the code, so this patch is simply catching up the defconfigs rather
+>> >> > than part of a series which changed the code to cause the problem.
+>> >>
+>> >> Yes, this is "catching up the defconfigs." The SPI_NOR framework is new,
+>> >> and I didn't want to generate defconfig noise until a few things
+>> >> stabilized (particularly, its Kconfig symbol name).
+>> >>
+>> >> > So, this needs to be applied ASAP.
+>> >> >
+>> >> > I think this should be split it up so that each defconfig can go through
+>> >> > the tree that owns it to avoid conflicts. If you repost split up, I can
+>> >> > apply the tegra_defconfig change to the Tegra tree.
+>> >>
+>> >> OK, I'll try to split it up. Is ARM unique in tracking defconfigs in
+>> >> separate trees? I assume MIPS, PowerPC, and Blackfin won't require the
+>> >> same splitting? I'd like to avoid 31 patches when <20 could suffice.
+>> >
+>> > wrt arm-soc, typically they take all changes to multi_v7_defconfig
+>> > directly since it is prone to conflicts.  All the other ones are managed
+>> > by the individual sub-arch maintainers.
+>> >
+>> >> I'll also rebase on linux-next. I think there may be a few conflicts.
+>> >
+>> > I can't speak for the other sub-archs, but I typically prefer that
+>> > patches be based on an -rc tag, -rc1 if possible.
+>>
+>> This is making a trivial patch a pain to get merged.
+>
+> Sorry.
 
-You should submit a complete series if you want them separated - git
-format-patch does wonders here - or include these directly in your own
-patch as I don't really care for the credit.
+No worries.
 
-[...]
-> I have changed the code to use much modest value - it is set to be of the
-> size of the fifo now. I think that this value is much better, but of course
-> having this configurable would be even better.
+>> Cases like these are easiest that we just take the patch directly in
+>> an early-merge branch (i.e. cleanup or fixes-non-critical, or a
+>> generic depends branch), and if there's conflicts as topics are merged
+>> in from subplatforms we can deal with it then.
+>
+> Are you referring to basing on -rc1, or the series being split up to
+> the individual sub-arch maintainers?
+>
+> *slightly* confused,
 
-(see ethtool_ops.[gs]et_ringparam)
+I'm referring to us taking the patch into something like our cleanup
+branch, and any branches that come in from you or other subplatforms
+will be merged on top, so we can resolve conflicts there and then.
+We'll merge in the cleanup branch into other next/* branches as needed
+to resolve the conflicts in our tree instead of percolating them all
+the way up.
 
-[...]
-> No, there is really no interrupt, hence the timer. Also on this device I wouldn't 
-> expect any bursts of data. What happens here, during regular operation of the 
-> device, is a periodic exchange of (few) ethernet packets between host cpu and
-> terminals attached to the EtherCAT bus. As for the locking on the tx path,
-> I have removed that completely on receiving path. I simply didn't know 
-> that it is such a big no-no here :)
 
-Ok.
 
-Regarding tx_dnext updates, you may add a short notice in ec_bhf_start_xmit
-and ec_bhf_process_tx explaining that the periodic poller will somehow end
-working with the right value, whence no (smp_)barrier at all.
-
--- 
-Ueimor
+-Olof
