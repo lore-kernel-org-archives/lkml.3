@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581AbaEDPyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:54:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36782 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929AbaEDPmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754931AbaEDPmt (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36739 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754873AbaEDPmp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Martin <Dave.Martin@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Alex Wu <wuquanming@huawei.com>, Xiangyu Lu <luxiangyu@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 04/43] ARM: 8027/1: fix do_div() bug in big-endian systems
-Date: Sun,  4 May 2014 11:41:58 -0400
-Message-Id: <20140504154224.825373727@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 68/86] media: saa7134: fix WARN_ON during resume
+Date: Sun,  4 May 2014 11:41:43 -0400
+Message-Id: <20140504154149.705011135@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
-References: <20140504154224.211508175@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Xiangyu Lu <luxiangyu@huawei.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
+commit 30d652823de5fd7907d40e969a2d8e23938d8d03 upstream.
 
-In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
+Do not attempt to reload the tuner modules when resuming after a suspend.
+This triggers a WARN_ON in kernel/kmod.c:148 __request_module.
 
-When viewing ftrace record in big-endian ARM systems, we found that
-the timestamp errors:
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=69581.
 
-swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
-events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
-swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
-swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
-swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
-swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
+This has always been wrong, but it was never noticed until the WARN_ON
+was added in 3.9.
 
-When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
-
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Alex Wu <wuquanming@huawei.com>
-Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/div64.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/pci/saa7134/saa7134-cards.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/div64.h
-+++ b/arch/arm/include/asm/div64.h
-@@ -156,7 +156,7 @@
- 		/* Select the best insn combination to perform the   */	\
- 		/* actual __m * __n / (__p << 64) operation.         */	\
- 		if (!__c) {						\
--			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
-+			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
- 				"mov	%Q0, #0"			\
- 				: "=&r" (__res)				\
- 				: "r" (__m), "r" (__n)			\
+--- a/drivers/media/pci/saa7134/saa7134-cards.c
++++ b/drivers/media/pci/saa7134/saa7134-cards.c
+@@ -8045,8 +8045,8 @@ int saa7134_board_init2(struct saa7134_d
+ 		break;
+ 	} /* switch() */
+ 
+-	/* initialize tuner */
+-	if (TUNER_ABSENT != dev->tuner_type) {
++	/* initialize tuner (don't do this when resuming) */
++	if (!dev->insuspend && TUNER_ABSENT != dev->tuner_type) {
+ 		int has_demod = (dev->tda9887_conf & TDA9887_PRESENT);
+ 
+ 		/* Note: radio tuner address is always filled in,
 
 
