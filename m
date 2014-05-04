@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaEDPmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36461 "EHLO
+	id S1756050AbaEDQNx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:13:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaEDPmS (ORCPT
+	with ESMTP id S1754584AbaEDPmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:18 -0400
+	Sun, 4 May 2014 11:42:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Martin <Dave.Martin@arm.com>, Nicolas Pitre <nico@linaro.org>,
-        Alex Wu <wuquanming@huawei.com>, Xiangyu Lu <luxiangyu@huawei.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.10 12/86] ARM: 8027/1: fix do_div() bug in big-endian systems
-Date: Sun,  4 May 2014 11:40:47 -0400
-Message-Id: <20140504154142.084805197@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: [PATCH 3.10 21/86] mei: me: do not load the driver if the FW doesnt support MEI interface
+Date: Sun,  4 May 2014 11:40:56 -0400
+Message-Id: <20140504154143.256231497@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,45 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiangyu Lu <luxiangyu@huawei.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit 80bb3ef109ff40a7593d9481c17de9bbc4d7c0e2 upstream.
+commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
 
-In big-endian systems, "%1" get the most significant part of the value, cause the instruction to get the wrong result.
+NM and SPS  FW types that may run on ME device on server platforms
+do not have valid MEI/HECI interface and driver should not
+be bound to it as this might lead to system hung.
+In practice not all BIOSes effectively hide such devices from the
+OS and in some cases it is not possible.
 
-When viewing ftrace record in big-endian ARM systems, we found that
-the timestamp errors:
+We determine FW type by examining Host FW status registers in order to
+unbind the driver.
+In this patch we are adding check for ME on Cougar Point, Lynx Point
+Devices
 
-swapper-0   [001] 1325.970000:   0:120:R ==> [001]    16:120:R events/1
-events/1-16 [001] 1325.970000:   16:120:S ==> [001]    0:120:R swapper
-swapper-0   [000] 1325.1000000:  0:120:R   + [000]    15:120:R events/0
-swapper-0   [000] 1325.1000000:  0:120:R ==> [000]    15:120:R events/0
-swapper-0   [000] 1326.030000:   0:120:R   + [000]  1150:120:R sshd
-swapper-0   [000] 1326.030000:   0:120:R ==> [000]  1150:120:R sshd
-
-When viewed ftrace records, it will call the do_div(n, base) function, which achieved arch/arm/include/asm/div64.h in. When n = 10000000, base = 1000000, in do_div(n, base) will execute "umull %Q0, %R0, %1, %Q2".
-
-Reviewed-by: Dave Martin <Dave.Martin@arm.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Alex Wu <wuquanming@huawei.com>
-Signed-off-by: Xiangyu Lu <luxiangyu@huawei.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/div64.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/mei/hw-me-regs.h |    5 +++++
+ drivers/misc/mei/pci-me.c     |   30 +++++++++++++++++++++++-------
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
---- a/arch/arm/include/asm/div64.h
-+++ b/arch/arm/include/asm/div64.h
-@@ -156,7 +156,7 @@
- 		/* Select the best insn combination to perform the   */	\
- 		/* actual __m * __n / (__p << 64) operation.         */	\
- 		if (!__c) {						\
--			asm (	"umull	%Q0, %R0, %1, %Q2\n\t"		\
-+			asm (	"umull	%Q0, %R0, %Q1, %Q2\n\t"		\
- 				"mov	%Q0, #0"			\
- 				: "=&r" (__res)				\
- 				: "r" (__m), "r" (__n)			\
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -115,6 +115,11 @@
+ #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
+ 
+ #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
++
++/* Host Firmware Status Registers in PCI Config Space */
++#define PCI_CFG_HFS_1         0x40
++#define PCI_CFG_HFS_2         0x48
++
+ /*
+  * MEI HW Section
+  */
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -105,15 +105,31 @@ static bool mei_me_quirk_probe(struct pc
+ 				const struct pci_device_id *ent)
+ {
+ 	u32 reg;
+-	if (ent->device == MEI_DEV_ID_PBG_1) {
+-		pci_read_config_dword(pdev, 0x48, &reg);
+-		/* make sure that bit 9 is up and bit 10 is down */
+-		if ((reg & 0x600) == 0x200) {
+-			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
+-			return false;
+-		}
++	/* Cougar Point || Patsburg */
++	if (ent->device == MEI_DEV_ID_CPT_1 ||
++	    ent->device == MEI_DEV_ID_PBG_1) {
++		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
++		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
++		if ((reg & 0x600) == 0x200)
++			goto no_mei;
+ 	}
++
++	/* Lynx Point */
++	if (ent->device == MEI_DEV_ID_LPT_H  ||
++	    ent->device == MEI_DEV_ID_LPT_W  ||
++	    ent->device == MEI_DEV_ID_LPT_HR) {
++		/* Read ME FW Status check for SPS Firmware */
++		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
++		/* if bits [19:16] = 15, running SPS Firmware */
++		if ((reg & 0xf0000) == 0xf0000)
++			goto no_mei;
++	}
++
+ 	return true;
++
++no_mei:
++	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
++	return false;
+ }
+ /**
+  * mei_probe - Device Initialization Routine
 
 
