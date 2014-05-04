@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836AbaEDPl0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
+	id S1755834AbaEDQwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:52:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaEDPlU (ORCPT
+	with ESMTP id S1753829AbaEDPl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:20 -0400
+	Sun, 4 May 2014 11:41:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 030/158] spi: efm32: use $vendor,$device scheme for compatible string
-Date: Sun,  4 May 2014 11:38:59 -0400
-Message-Id: <20140504154034.082668346@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.14 044/158] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:39:13 -0400
+Message-Id: <20140504154035.978258852@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,55 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 12f6dd860cf8bf036c0bec38c00a53da71bcd43a upstream.
+commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
 
-Wolfram Sang pointed out that "efm32,$device" is non-standard. So use the
-common scheme and prefix device with "efm32-". The old compatible string
-is left in place until arch/arm/boot/dts/efm32* is fixed.
+During probe the driver allocates dummy I2C devices for MUIC and haptic
+with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Acked-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by devm_regmap_init_i2c() and i2c_unregister_device().
+
+If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
+for main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/spi/efm32-spi.txt |    4 ++--
- drivers/spi/spi-efm32.c                             |    3 +++
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/mfd/max77693.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/spi/efm32-spi.txt
-+++ b/Documentation/devicetree/bindings/spi/efm32-spi.txt
-@@ -3,7 +3,7 @@
- Required properties:
- - #address-cells: see spi-bus.txt
- - #size-cells: see spi-bus.txt
--- compatible: should be "efm32,spi"
-+- compatible: should be "energymicro,efm32-spi"
- - reg: Offset and length of the register set for the controller
- - interrupts: pair specifying rx and tx irq
- - clocks: phandle to the spi clock
-@@ -15,7 +15,7 @@ Example:
- spi1: spi@0x4000c400 { /* USART1 */
- 	#address-cells = <1>;
- 	#size-cells = <0>;
--	compatible = "efm32,spi";
-+	compatible = "energymicro,efm32-spi";
- 	reg = <0x4000c400 0x400>;
- 	interrupts = <15 16>;
- 	clocks = <&cmu 20>;
---- a/drivers/spi/spi-efm32.c
-+++ b/drivers/spi/spi-efm32.c
-@@ -487,6 +487,9 @@ static int efm32_spi_remove(struct platf
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -148,9 +148,18 @@ static int max77693_i2c_probe(struct i2c
+ 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
  
- static const struct of_device_id efm32_spi_dt_ids[] = {
- 	{
-+		.compatible = "energymicro,efm32-spi",
-+	}, {
-+		/* doesn't follow the "vendor,device" scheme, don't use */
- 		.compatible = "efm32,spi",
- 	}, {
- 		/* sentinel */
+ 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max77693->muic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max77693->muic, max77693);
+ 
+ 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max77693->haptic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max77693->haptic, max77693);
+ 
+ 	/*
+@@ -184,8 +193,9 @@ err_mfd:
+ 	max77693_irq_exit(max77693);
+ err_irq:
+ err_regmap_muic:
+-	i2c_unregister_device(max77693->muic);
+ 	i2c_unregister_device(max77693->haptic);
++err_i2c_haptic:
++	i2c_unregister_device(max77693->muic);
+ 	return ret;
+ }
+ 
 
 
