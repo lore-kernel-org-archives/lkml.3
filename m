@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392AbaEDPr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:47:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36884 "EHLO
+	id S1755427AbaEDPrn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:47:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36874 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104AbaEDPnA (ORCPT
+	with ESMTP id S1755097AbaEDPm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:43:00 -0400
+	Sun, 4 May 2014 11:42:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.4 31/43] xhci: extend quirk for Renesas cards
-Date: Sun,  4 May 2014 11:42:25 -0400
-Message-Id: <20140504154228.496032617@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.4 29/43] reiserfs: fix race in readdir
+Date: Sun,  4 May 2014 11:42:23 -0400
+Message-Id: <20140504154228.222208999@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -27,47 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Gnatenko <i.gnatenko.brain@gmail.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 6db249ebefc6bf5c39f35dfaacc046d8ad3ffd70 upstream.
+commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
 
-After suspend another Renesas PCI-X USB 3.0 card doesn't work.
-[root@fedora-20 ~]# lspci -vmnnd 1912:
-Device:	03:00.0
-Class:	USB controller [0c03]
-Vendor:	Renesas Technology Corp. [1912]
-Device:	uPD720202 USB 3.0 Host Controller [0015]
-SVendor:	Renesas Technology Corp. [1912]
-SDevice:	uPD720202 USB 3.0 Host Controller [0015]
-Rev:	02
-ProgIf:	30
+jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
 
-This patch should be applied to stable kernel 3.14 that contain
-the commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d
-"xhci: Fix resume issues on Renesas chips in Samsung laptops"
+The -ENOENT is due to readdir calling dir_emit on the same entry twice.
 
-Reported-and-tested-by: Anatoly Kharchenko <rfr-bugs@yandex.ru>
-Reference: http://redmine.russianfedora.pro/issues/1315
-Signed-off-by: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+If the dir_emit callback sleeps and the tree is changed underneath us,
+we won't be able to trust deh_offset(deh) anymore. We need to save
+next_pos before we might sleep so we can find the next entry.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/reiserfs/dir.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -135,9 +135,7 @@ static void xhci_pci_quirks(struct devic
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
- 	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
--			pdev->device == 0x0015 &&
--			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
--			pdev->subsystem_device == 0xc0cd)
-+			pdev->device == 0x0015)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -128,6 +128,7 @@ int reiserfs_readdir_dentry(struct dentr
+ 				char *d_name;
+ 				off_t d_off;
+ 				ino_t d_ino;
++				loff_t cur_pos = deh_offset(deh);
+ 
+ 				if (!de_visible(deh))
+ 					/* it is hidden entry */
+@@ -200,8 +201,9 @@ int reiserfs_readdir_dentry(struct dentr
+ 				if (local_buf != small_buf) {
+ 					kfree(local_buf);
+ 				}
+-				// next entry should be looked for with such offset
+-				next_pos = deh_offset(deh) + 1;
++
++				/* deh_offset(deh) may be invalid now. */
++				next_pos = cur_pos + 1;
+ 
+ 				if (item_moved(&tmp_ih, &path_to_entry)) {
+ 					goto research;
 
 
