@@ -1,84 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176AbaEDRCv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 13:02:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35851 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386AbaEDPlK (ORCPT
+	id S1754100AbaEDRHz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 13:07:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41221 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaEDRHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:10 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Brian Austin <brian.austin@cirrus.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 005/158] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Sun,  4 May 2014 11:38:34 -0400
-Message-Id: <20140504154030.749708634@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
-References: <20140504154029.975081050@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 4 May 2014 13:07:53 -0400
+Date: Sun, 4 May 2014 10:07:25 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-197725de65477bc8509b41388157c1a2283542bb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        richard@nod.at, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        richard@nod.at, tglx@linutronix.de
+In-Reply-To: <1398816946-3351-1-git-send-email-hpa@linux.intel.com>
+References: <1398816946-3351-1-git-send-email-hpa@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/espfix] x86, espfix: Make espfix64 a Kconfig option,
+  fix UML
+Git-Commit-ID: 197725de65477bc8509b41388157c1a2283542bb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  197725de65477bc8509b41388157c1a2283542bb
+Gitweb:     http://git.kernel.org/tip/197725de65477bc8509b41388157c1a2283542bb
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Sun, 4 May 2014 10:00:49 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 4 May 2014 10:00:49 -0700
 
-------------------
+x86, espfix: Make espfix64 a Kconfig option, fix UML
 
-From: Brian Austin <brian.austin@cirrus.com>
+Make espfix64 a hidden Kconfig option.  This fixes the x86-64 UML
+build which had broken due to the non-existence of init_espfix_bsp()
+in UML: since UML uses its own Kconfig, this option does not appear in
+the UML build.
 
-commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
+This also makes it possible to make support for 16-bit segments a
+configuration option, for the people who want to minimize the size of
+the kernel.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
-
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Richard Weinberger <richard@nod.at>
+Link: http://lkml.kernel.org/r/1398816946-3351-1-git-send-email-hpa@linux.intel.com
 ---
- sound/soc/codecs/cs42l52.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/Kconfig          | 4 ++++
+ arch/x86/kernel/Makefile  | 2 +-
+ arch/x86/kernel/smpboot.c | 2 +-
+ init/main.c               | 2 +-
+ 4 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -347,7 +347,7 @@ static const char * const right_swap_tex
- static const unsigned int swap_values[] = { 0, 1, 3 };
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 25d2c6f..9a952a5 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -914,6 +914,10 @@ config VM86
+ 	  XFree86 to initialize some video cards via BIOS. Disabling this
+ 	  option saves about 6k.
  
- static const struct soc_enum adca_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -356,7 +356,7 @@ static const struct snd_kcontrol_new adc
- 	SOC_DAPM_ENUM("Route", adca_swap_enum);
++config X86_ESPFIX64
++	def_bool y
++	depends on X86_64
++
+ config TOSHIBA
+ 	tristate "Toshiba Laptop support"
+ 	depends on X86_32
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 1cc3789..491ef3e 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -29,7 +29,7 @@ obj-$(CONFIG_X86_64)	+= sys_x86_64.o x8664_ksyms_64.o
+ obj-y			+= syscall_$(BITS).o vsyscall_gtod.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_64.o
+ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
+-obj-$(CONFIG_X86_64)	+= espfix_64.o
++obj-$(CONFIG_X86_ESPFIX64)	+= espfix_64.o
+ obj-$(CONFIG_SYSFS)	+= ksysfs.o
+ obj-y			+= bootflag.o e820.o
+ obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 61a5350..5d93ac1 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -246,7 +246,7 @@ static void notrace start_secondary(void *unused)
+ 	/*
+ 	 * Enable the espfix hack for this CPU
+ 	 */
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	init_espfix_ap();
+ #endif
  
- static const struct soc_enum pcma_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -365,7 +365,7 @@ static const struct snd_kcontrol_new pcm
- 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
- 
- static const struct soc_enum adcb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
-@@ -374,7 +374,7 @@ static const struct snd_kcontrol_new adc
- 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
- 
- static const struct soc_enum pcmb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
-
-
+diff --git a/init/main.c b/init/main.c
+index 70fc00e..58c132d 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -617,7 +617,7 @@ asmlinkage void __init start_kernel(void)
+ 	if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 		efi_enter_virtual_mode();
+ #endif
+-#ifdef CONFIG_X86_64
++#ifdef CONFIG_X86_ESPFIX64
+ 	/* Should be run before the first non-init thread is created */
+ 	init_espfix_bsp();
+ #endif
