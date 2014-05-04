@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456AbaEDA2u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 20:28:50 -0400
-Received: from mail.siteground.com ([67.19.240.234]:44721 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370AbaEDA2t (ORCPT
+	id S1753473AbaEDAcG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 20:32:06 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:59725 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaEDAcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 20:28:49 -0400
-Message-ID: <536589B5.8060900@1h.com>
-Date: Sun, 04 May 2014 03:28:37 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sat, 3 May 2014 20:32:04 -0400
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
-        Greg KH <gregkh@linuxfoundation.org>, manfred@colorfullife.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
- not the default
-References: <5365723D.7030303@1h.com> <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CALCETrVVRN3gEhhtg=r3eZK-zH0qV3qFXuiLD8guCEAiOBP__A@mail.gmail.com>
+References: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net>
+ <53646A7E.8010400@zytor.com> <20140503072428.54f89688@gandalf.local.home>
+ <53656B7A.8050606@zytor.com> <CALCETrVVRN3gEhhtg=r3eZK-zH0qV3qFXuiLD8guCEAiOBP__A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 3 May 2014 17:31:41 -0700
+Message-ID: <CALCETrXZyJx_5nMvW273gLJX+PROZpY3L5Wy_cwj=mK=6fSCJQ@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: Return to kernel without IRET
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 02:53 AM, Davidlohr Bueso wrote:
-> On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
->> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the
->> values of the current shmmax and shmall to the new namespace.
+On Sat, May 3, 2014 at 4:51 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sat, May 3, 2014 at 3:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 05/03/2014 04:24 AM, Steven Rostedt wrote:
+>>> On Fri, 02 May 2014 21:03:10 -0700
+>>> "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>>
+>>>>
+>>>> I'd really like to see a workload which would genuinely benefit before
+>>>> adding more complexity.  Now... if we can determine that it doesn't harm
+>>>> anything and would solve the NMI nesting problem cleaner than the
+>>>> current solution, that would justify things, too...
+>>>>
+>>>
+>>> As I stated before. It doesn't solve the NMI nesting problem. It only
+>>> handles page faults. We would have to implement this for breakpoint
+>>> return paths too. Is that a plan as well?
+>>>
+>>
+>> I would assume we would do it for *ALL* the IRETs.  There are only three
+>> IRETs in the kernel last I checked...
 >
-> Why is this a good idea?
+> I think we should carefully avoid doing it for returns from NMI, though :)
 >
-> This would break userspace that relies on the current behavior.
-> Furthermore we've recently changed the default value of both these
-> limits to be as large as you can get, thus deprecating them. I don't
-> like the idea of this being replaced by namespaces.
->
-> Thanks,
-> Davidlohr
->
+> If you want a realistic benchmark that will speed up, packet
+> forwarding might be a good place to look.
 
-The current behavior is create_ipc_ns()->shm_init_ns()
+Hmm.  I think my patch will blow up with EFI mixed mode if any EFI
+functions are called with interrupts enabled.  It may also blow up
+with when suspending or doing other BIOS things like that.  It should
+probably check the actual value of CS as opposed to just the CPL.
 
-void shm_init_ns(struct ipc_namespace *ns)
-{
-     ns->shm_ctlmax = SHMMAX;
-     ns->shm_ctlall = SHMALL;
-     ns->shm_ctlmni = SHMMNI;
-     ns->shm_rmid_forced = 0;
-     ns->shm_tot = 0;
-     ipc_init_ids(&shm_ids(ns));
-}
+I'm not sure what's happening with the alternate GDT in the EFI stuff.
 
-This means that whenever you are creating an IPC namespace it gets its SHMMAX and SHMALL values from the defaults for 
-the kernel.
-If for some reason you want to have smaller(or bigger, for older kernels) limit. This means changing the values in 
-/proc/sys/kernel/shmmax and /proc/sys/kernel/shmall. However the program that is started with the new IPC namespace may 
-lack privileges to write to these files and so it can not modify them.
-
-What I'm proposing is simply to copy the current values of the host machine, as set by a privileged process before the 
-namespace creation.
-
-Maybe a better approach would be to allow the changes to be done by processes having CAP_SYS_RESOURCE inside the new 
-namespace?
-
-Marian
-
--- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
+--Andy
