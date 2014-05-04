@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381AbaEDQtM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:49:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35967 "EHLO
+	id S1753878AbaEDPl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883AbaEDPla (ORCPT
+	with ESMTP id S1753703AbaEDPlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:30 -0400
+	Sun, 4 May 2014 11:41:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 3.14 064/158] USB: fix crash during hotplug of PCI USB controller card
-Date: Sun,  4 May 2014 11:39:33 -0400
-Message-Id: <20140504154038.645614974@linuxfoundation.org>
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>
+Subject: [PATCH 3.14 036/158] mei: fix memory leak of pending write cb objects
+Date: Sun,  4 May 2014 11:39:05 -0400
+Message-Id: <20140504154034.869571321@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,46 +27,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit a2ff864b53eac9a0e9b05bfe9d1781ccd6c2af71 upstream.
+commit cc99ecfdac01215594c73907726b12f251c21e20 upstream.
 
-The code in hcd-pci.c that matches up EHCI controllers with their
-companion UHCI or OHCI controllers assumes that the private drvdata
-fields don't get set too early.  However, it turns out that this field
-gets set by usb_create_hcd(), before hcd-pci expects it, and this can
-result in a crash when two controllers are probed in parallel (as can
-happen when a new controller card is hotplugged).
+Write callbacks are released on the write completed path but
+when file handler is closed before the writes are
+completed those are left dangling on write and write_waiting queues.
 
-The companions_rwsem lock was supposed to prevent this sort of thing,
-but usb_create_hcd() is called outside the scope of the rwsem.
+We add mei_io_list_free function to perform this task
 
-A simple solution is to check that the root-hub pointer has been
-initialized as well as the drvdata field.  This doesn't happen until
-usb_add_hcd() is called; that call and the check are both protected by
-the rwsem.
+Also move static functions to client.c form client.h
 
-This patch should be applied to stable kernels from 3.10 onward.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Stefani Seibold <stefani@seibold.net>
-Tested-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/mei/client.c |   76 +++++++++++++++++++++++++++++++++-------------
+ drivers/misc/mei/client.h |   18 ----------
+ 2 files changed, 55 insertions(+), 39 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -75,7 +75,7 @@ static void for_each_companion(struct pc
- 				PCI_SLOT(companion->devfn) != slot)
- 			continue;
- 		companion_hcd = pci_get_drvdata(companion);
--		if (!companion_hcd)
-+		if (!companion_hcd || !companion_hcd->self.root_hub)
- 			continue;
- 		fn(pdev, hcd, companion, companion_hcd);
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -74,23 +74,69 @@ int mei_me_cl_by_id(struct mei_device *d
+ 
+ 
+ /**
+- * mei_io_list_flush - removes list entry belonging to cl.
++ * mei_cl_cmp_id - tells if the clients are the same
+  *
+- * @list:  An instance of our list structure
+- * @cl: host client
++ * @cl1: host client 1
++ * @cl2: host client 2
++ *
++ * returns true  - if the clients has same host and me ids
++ *         false - otherwise
++ */
++static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
++				const struct mei_cl *cl2)
++{
++	return cl1 && cl2 &&
++		(cl1->host_client_id == cl2->host_client_id) &&
++		(cl1->me_client_id == cl2->me_client_id);
++}
++
++/**
++ * mei_io_list_flush - removes cbs belonging to cl.
++ *
++ * @list:  an instance of our list structure
++ * @cl:    host client, can be NULL for flushing the whole list
++ * @free:  whether to free the cbs
+  */
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++static void __mei_io_list_flush(struct mei_cl_cb *list,
++				struct mei_cl *cl, bool free)
+ {
+ 	struct mei_cl_cb *cb;
+ 	struct mei_cl_cb *next;
+ 
++	/* enable removing everything if no cl is specified */
+ 	list_for_each_entry_safe(cb, next, &list->list, list) {
+-		if (cb->cl && mei_cl_cmp_id(cl, cb->cl))
++		if (!cl || (cb->cl && mei_cl_cmp_id(cl, cb->cl))) {
+ 			list_del(&cb->list);
++			if (free)
++				mei_io_cb_free(cb);
++		}
  	}
+ }
+ 
+ /**
++ * mei_io_list_flush - removes list entry belonging to cl.
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, false);
++}
++
++
++/**
++ * mei_io_list_free - removes cb belonging to cl and free them
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_free(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, true);
++}
++
++/**
+  * mei_io_cb_free - free mei_cb_private related memory
+  *
+  * @cb: mei callback struct
+@@ -196,8 +242,8 @@ int mei_cl_flush_queues(struct mei_cl *c
+ 
+ 	cl_dbg(dev, cl, "remove list entry belonging to cl\n");
+ 	mei_io_list_flush(&cl->dev->read_list, cl);
+-	mei_io_list_flush(&cl->dev->write_list, cl);
+-	mei_io_list_flush(&cl->dev->write_waiting_list, cl);
++	mei_io_list_free(&cl->dev->write_list, cl);
++	mei_io_list_free(&cl->dev->write_waiting_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_wr_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_rd_list, cl);
+ 	mei_io_list_flush(&cl->dev->amthif_cmd_list, cl);
+@@ -942,20 +988,8 @@ void mei_cl_all_wakeup(struct mei_device
+  */
+ void mei_cl_all_write_clear(struct mei_device *dev)
+ {
+-	struct mei_cl_cb *cb, *next;
+-	struct list_head *list;
+-
+-	list = &dev->write_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
+-
+-	list = &dev->write_waiting_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
++	mei_io_list_free(&dev->write_list, NULL);
++	mei_io_list_free(&dev->write_waiting_list, NULL);
+ }
+ 
+ 
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -45,8 +45,6 @@ static inline void mei_io_list_init(stru
+ {
+ 	INIT_LIST_HEAD(&list->list);
+ }
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl);
+-
+ /*
+  * MEI Host Client Functions
+  */
+@@ -61,22 +59,6 @@ int mei_cl_unlink(struct mei_cl *cl);
+ int mei_cl_flush_queues(struct mei_cl *cl);
+ struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl);
+ 
+-/**
+- * mei_cl_cmp_id - tells if file private data have same id
+- *
+- * @fe1: private data of 1. file object
+- * @fe2: private data of 2. file object
+- *
+- * returns true  - if ids are the same and not NULL
+- */
+-static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
+-				const struct mei_cl *cl2)
+-{
+-	return cl1 && cl2 &&
+-		(cl1->host_client_id == cl2->host_client_id) &&
+-		(cl1->me_client_id == cl2->me_client_id);
+-}
+-
+ 
+ int mei_cl_flow_ctrl_creds(struct mei_cl *cl);
+ 
 
 
