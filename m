@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaEDWxh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 18:53:37 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:39212 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbaEDWxg (ORCPT
+	id S1753938AbaEDXqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 19:46:50 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:44067 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695AbaEDXqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 18:53:36 -0400
-Date: Sun, 4 May 2014 15:53:31 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Jon Maxwell <jmaxwell37@gmail.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, makita.toshiaki@lab.ntt.co.jp,
-        vyasevic@redhat.com, bridge@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, pirko@redhat.com, jmaxwell@redhat.com
-Subject: Re: [PATCH net] bridge: Add port flap detection
-Message-ID: <20140504155331.13862a85@nehalam.linuxnetplumber.net>
-In-Reply-To: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-References: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sun, 4 May 2014 19:46:49 -0400
+Message-ID: <5366D163.9000503@redhat.com>
+Date: Mon, 05 May 2014 01:46:43 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "H. Peter Anvin" <h.peter.anvin@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Gleb Natapov <gleb@kernel.org>
+Subject: Re: [RFC/HACK] x86: Fast return to kernel
+References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com> <CA+55aFygkoYnJKdLas3WOq9q9pCEEk6mBOuj-zbLyLumdhStAA@mail.gmail.com>
+In-Reply-To: <CA+55aFygkoYnJKdLas3WOq9q9pCEEk6mBOuj-zbLyLumdhStAA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  5 May 2014 07:29:34 +1000
-Jon Maxwell <jmaxwell37@gmail.com> wrote:
+Il 02/05/2014 21:51, Linus Torvalds ha scritto:
+>> > Also, are you *really* sure that "popf" has the same one-instruction
+>> > interrupt shadow that "sti" has? Because I'm not at all sure that is
+>> > true, and it's not documented as far as I can tell. In contrast, the
+>> > one-instruction shadow after "sti" very much _is_ documented.
+> Yeah, I'm pretty sure about this. The only instructions with an
+> interrupt shadow are "sti", "mov ss" and "pop ss".
 
-> There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
-> 
-> Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
-> ---
->  net/bridge/br_fdb.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
-> index 9203d5a..c08607b 100644
-> --- a/net/bridge/br_fdb.c
-> +++ b/net/bridge/br_fdb.c
-> @@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->  					source->dev->name);
->  		} else {
->  			/* fastpath: update of existing entry */
-> +			if (source->port_no != fdb->dst->port_no &&
-> +				net_ratelimit())
-> +				br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
-> +					source->dev->name,
-> +					addr, source->port_no,
-> +					fdb->dst->dev->name, addr,
-> +					fdb->dst->port_no);
->  			fdb->dst = source;
->  			fdb->updated = jiffies;
->  			if (unlikely(added_by_user))
+Yep.
 
-Ok, but please shorten the message to a single line without excess wordage.
-Plus flapping to mean means link going up and down. Maybe use same message
-as BSD?
+> There may be specific microarchitectures that do it for a "popf" that
+> enables interrupts too, but that is not documented _anywhere_ I could
+> find.
+>
+> Btw, on the "really easy to get wrong in emulation" note and looking
+> at the kernel sources: it looks like KVM gets "pop ss" wrong, and only
+> does the shadow on "mov ss".
 
+Thanks, that's useful to know (and easy to fix).  Note that in practice 
+arch/x86/kvm/emulate.c will only emulate POP SS in big real mode or if 
+the stack is in MMIO memory.  The interrupt shadow will be handled by 
+the processor in all other cases, and Intel calls the bit "Blocking by 
+MOV SS" even if it also applies to POP SS.
+
+Your suggested trick of splitting the return paths for IF=0/IF=1 can be 
+also done like this:
+
+	movq EFLAGS-ARGOFFSET(%rsp), %rdi
+	btrq $9, %rdi		# Clear IF, save old value in CF
+	movq %rdi, (%rsi)
+	...
+	popfq
+	jnc	1f		# If IF was 0, just return
+	sti			# Using STI gets us an interrupt shadow
+1f:
+	retq
+
+Paolo
