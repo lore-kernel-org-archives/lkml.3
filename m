@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbaEDQir (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:38:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36152 "EHLO
+	id S1756103AbaEDQiq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:38:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36155 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084AbaEDPlp (ORCPT
+	with ESMTP id S1754066AbaEDPlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Beomho Seo <beomho.seo@samsung.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 068/158] iio: cm36651: Fix i2c client leak and possible NULL pointer dereference
-Date: Sun,  4 May 2014 11:39:37 -0400
-Message-Id: <20140504154039.163788886@linuxfoundation.org>
+        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.14 102/158] reiserfs: fix race in readdir
+Date: Sun,  4 May 2014 11:40:11 -0400
+Message-Id: <20140504154043.812237005@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,89 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit d0a588a57c2b0748df8307a0865a1bbbf1624c53 upstream.
+commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
 
-During probe the driver allocates dummy I2C devices (i2c_new_dummy())
-but they aren't unregistered during driver remove or probe failure.
+jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
 
-Additionally driver does not check the return value of i2c_new_dummy().
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later
-dereferenced by i2c_smbus_{read,write}_data() functions.
+The -ENOENT is due to readdir calling dir_emit on the same entry twice.
 
-Fix issues by properly checking for i2c_new_dummy() return value and
-unregistering I2C devices on driver remove or probe failure.
+If the dir_emit callback sleeps and the tree is changed underneath us,
+we won't be able to trust deh_offset(deh) anymore. We need to save
+next_pos before we might sleep so we can find the next entry.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Beomho Seo <beomho.seo@samsung.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/light/cm36651.c |   22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ fs/reiserfs/dir.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/iio/light/cm36651.c
-+++ b/drivers/iio/light/cm36651.c
-@@ -652,7 +652,19 @@ static int cm36651_probe(struct i2c_clie
- 	cm36651->client = client;
- 	cm36651->ps_client = i2c_new_dummy(client->adapter,
- 						     CM36651_I2C_ADDR_PS);
-+	if (!cm36651->ps_client) {
-+		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
-+		ret = -ENODEV;
-+		goto error_disable_reg;
-+	}
+--- a/fs/reiserfs/dir.c
++++ b/fs/reiserfs/dir.c
+@@ -125,6 +125,7 @@ int reiserfs_readdir_inode(struct inode
+ 				int d_reclen;
+ 				char *d_name;
+ 				ino_t d_ino;
++				loff_t cur_pos = deh_offset(deh);
+ 
+ 				if (!de_visible(deh))
+ 					/* it is hidden entry */
+@@ -196,8 +197,9 @@ int reiserfs_readdir_inode(struct inode
+ 				if (local_buf != small_buf) {
+ 					kfree(local_buf);
+ 				}
+-				// next entry should be looked for with such offset
+-				next_pos = deh_offset(deh) + 1;
 +
- 	cm36651->ara_client = i2c_new_dummy(client->adapter, CM36651_ARA);
-+	if (!cm36651->ara_client) {
-+		dev_err(&client->dev, "%s: new i2c device failed\n", __func__);
-+		ret = -ENODEV;
-+		goto error_i2c_unregister_ps;
-+	}
-+
- 	mutex_init(&cm36651->lock);
- 	indio_dev->dev.parent = &client->dev;
- 	indio_dev->channels = cm36651_channels;
-@@ -664,7 +676,7 @@ static int cm36651_probe(struct i2c_clie
- 	ret = cm36651_setup_reg(cm36651);
- 	if (ret) {
- 		dev_err(&client->dev, "%s: register setup failed\n", __func__);
--		goto error_disable_reg;
-+		goto error_i2c_unregister_ara;
- 	}
++				/* deh_offset(deh) may be invalid now. */
++				next_pos = cur_pos + 1;
  
- 	ret = request_threaded_irq(client->irq, NULL, cm36651_irq_handler,
-@@ -672,7 +684,7 @@ static int cm36651_probe(struct i2c_clie
- 							"cm36651", indio_dev);
- 	if (ret) {
- 		dev_err(&client->dev, "%s: request irq failed\n", __func__);
--		goto error_disable_reg;
-+		goto error_i2c_unregister_ara;
- 	}
- 
- 	ret = iio_device_register(indio_dev);
-@@ -685,6 +697,10 @@ static int cm36651_probe(struct i2c_clie
- 
- error_free_irq:
- 	free_irq(client->irq, indio_dev);
-+error_i2c_unregister_ara:
-+	i2c_unregister_device(cm36651->ara_client);
-+error_i2c_unregister_ps:
-+	i2c_unregister_device(cm36651->ps_client);
- error_disable_reg:
- 	regulator_disable(cm36651->vled_reg);
- 	return ret;
-@@ -698,6 +714,8 @@ static int cm36651_remove(struct i2c_cli
- 	iio_device_unregister(indio_dev);
- 	regulator_disable(cm36651->vled_reg);
- 	free_irq(client->irq, indio_dev);
-+	i2c_unregister_device(cm36651->ps_client);
-+	i2c_unregister_device(cm36651->ara_client);
- 
- 	return 0;
- }
+ 				if (item_moved(&tmp_ih, &path_to_entry)) {
+ 					set_cpu_key_k_offset(&pos_key,
 
 
