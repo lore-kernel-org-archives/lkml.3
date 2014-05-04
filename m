@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaEDQlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:41:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36115 "EHLO
+	id S1755391AbaEDQmQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:42:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754022AbaEDPll (ORCPT
+	with ESMTP id S1753933AbaEDPlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:41 -0400
+	Sun, 4 May 2014 11:41:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.14 089/158] SCSI: qla2xxx: fix error handling of qla2x00_mem_alloc()
-Date: Sun,  4 May 2014 11:39:58 -0400
-Message-Id: <20140504154041.997973297@linuxfoundation.org>
+        Bart Van Assche <bvanassche@acm.org>,
+        Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Vinod Kumar <vinod.kumar@intel.com>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 088/158] ib_srpt: Use correct ib_sg_dma primitives
+Date: Sun,  4 May 2014 11:39:57 -0400
+Message-Id: <20140504154041.841432514@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,51 +30,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit b2a72ec32d0f499aaadf41264232517a12326df0 upstream.
+commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
 
-qla2x00_mem_alloc() returns 1 on success and -ENOMEM on failure.  On the
-one hand the caller assumes non-zero is success but on the other hand
-the caller also assumes that it returns an error code.
+The code was incorrectly using sg_dma_address() and
+sg_dma_len() instead of ib_sg_dma_address() and
+ib_sg_dma_len().
 
-I've fixed it to return zero on success and a negative error code on
-failure.  This matches the documentation as well.
+This prevents srpt from functioning with the
+Intel HCA and indeed will corrupt memory
+badly.
 
-[jejb: checkpatch fix]
-Fixes: e315cd28b9ef ('[SCSI] qla2xxx: Code changes for qla data structure refactoring')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Tested-by: Vinod Kumar <vinod.kumar@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_os.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/srpt/ib_srpt.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -2536,7 +2536,7 @@ qla2x00_probe_one(struct pci_dev *pdev,
- 	    ha->flags.enable_64bit_addressing ? "enable" :
- 	    "disable");
- 	ret = qla2x00_mem_alloc(ha, req_length, rsp_length, &req, &rsp);
--	if (!ret) {
-+	if (ret) {
- 		ql_log_pci(ql_log_fatal, pdev, 0x0031,
- 		    "Failed to allocate memory for adapter, aborting.\n");
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(stru
+ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 				 struct srpt_send_ioctx *ioctx)
+ {
++	struct ib_device *dev = ch->sport->sdev->device;
+ 	struct se_cmd *cmd;
+ 	struct scatterlist *sg, *sg_orig;
+ 	int sg_cnt;
+@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct
  
-@@ -3478,10 +3478,10 @@ qla2x00_mem_alloc(struct qla_hw_data *ha
- 	else {
- 		qla2x00_set_reserved_loop_ids(ha);
- 		ql_dbg_pci(ql_dbg_init, ha->pdev, 0x0123,
--		    "loop_id_map=%p. \n", ha->loop_id_map);
-+		    "loop_id_map=%p.\n", ha->loop_id_map);
- 	}
+ 	db = ioctx->rbufs;
+ 	tsize = cmd->data_length;
+-	dma_len = sg_dma_len(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
+ 	riu = ioctx->rdma_ius;
  
--	return 1;
-+	return 0;
+ 	/*
+@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
+@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct
+ 	tsize = cmd->data_length;
+ 	riu = ioctx->rdma_ius;
+ 	sg = sg_orig;
+-	dma_len = sg_dma_len(&sg[0]);
+-	dma_addr = sg_dma_address(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
++	dma_addr = ib_sg_dma_address(dev, &sg[0]);
  
- fail_async_pd:
- 	dma_pool_free(ha->s_dma_pool, ha->ex_init_cb, ha->ex_init_cb_dma);
+ 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
+ 	for (i = 0, j = 0;
+@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
+-						dma_addr = sg_dma_address(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
++						dma_addr = ib_sg_dma_address(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
 
 
