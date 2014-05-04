@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660AbaEDHEX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 03:04:23 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:35846 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753566AbaEDHEW (ORCPT
+	id S1753575AbaEDHSH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 03:18:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50933 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaEDHSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 03:04:22 -0400
+	Sun, 4 May 2014 03:18:06 -0400
+Date: Sun, 4 May 2014 09:17:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
+Message-ID: <20140504071758.GK17778@laptop.programming.kicks-ass.net>
+References: <5362122B.8060305@yandex.ru>
+ <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20140303210359.26624.qmail@science.horizon.com>
-References: <20140303210359.26624.qmail@science.horizon.com>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Sun, 4 May 2014 09:04:00 +0200
-X-Google-Sender-Auth: QEpfp_ikgtNGObULtpGF9JLCfdU
-Message-ID: <CAHO5Pa2tJ2XRj7R69o=0i2yV+0mmxg9uOyDQ_HFFudZ0xGmPsQ@mail.gmail.com>
-Subject: Re: Update of file offset on write() etc. is non-atomic with I/O
-To: George Spelvin <linux@horizon.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ouch! I've just seen that trimming the CC on this reply took me out of
-a large part of the subsequent conversation. PLEASE don't trim CCs,
-and especially not the address of the OP!!
+On Sat, May 03, 2014 at 08:54:08PM +0200, Thomas Gleixner wrote:
+> On Thu, 1 May 2014, Kirill Tkhai wrote:
+> > Higher priority does not provide exclusive privilege
+> > of one fair task over the other. In this case priority
+> > boosting looks excess.
+> > 
+> > On RT patch with enabled PREEMPT_RT_FULL I see a lot of
+> > rt_mutex_setprio() actions like
+> > 
+> > 	120 -> 118
+> > 	118 -> 120
+> > 
+> > They harm RT tasks.
+> 
+> That's not the main problem. The point is that it is useless and
+> therefor harming performace and throughput as well.
+>  
+> > RT patch has lazy preemtion feature, so if idea is we care
+> > about excess preemption inside fair class, we should care
+> > about excess priority inheritance too.
+> > 
+> > In case of vanila kernel the problem is the same, but there
+> > are no so many rt mutexes. Do I skip anything?
+> 
+> Almost a decade ago we decided to do the boosting for everything
+> including SCHED_OTHER due to the very simple reason that exercising
+> that code path more is likely to trigger more bugs.
+>  
+> But yes in a production environment, it's pointless for SCHED_OTHER
+> tasks.
+> 
+> Though exercising that code path as much as we can is not a bad thing
+> either. So I'd like to see that made compile time conditional on one
+> of the lock testing CONFIG items.
+> 
+> And the patch should be made against mainline, where we have the same
+> issue (reduced to PI-futexes).
 
-On Mon, Mar 3, 2014 at 10:03 PM, George Spelvin <linux@horizon.com> wrote:
->>  struct fd {
->>       struct file *file;
->> -     int need_put;
->> +     unsigned need_put:1, need_pos_unlock:1;
->>  };
->
-> Since we're rounding up to 2*sizeof(struct file *) anyway, is this a case
-> where wasting space on a couple of char (or bool) flags would generate
-> better code than a bitfield?
->
-> In particular, the code to set need_pos_unlock (which will be executed
-> each read/write for most files) is messy in the bitfield case.
-> A byte store is much cleaner.
->
-> (If you want to use bits, why not use the two lsbits of the file pointer
-> for the purpose?  That would save a lot of space.)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+And of course, if we ever get to PEP, we very much want all the classes
+to participate :)
