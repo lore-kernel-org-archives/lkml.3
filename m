@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368AbaEDQ0d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:26:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36300 "EHLO
+	id S1756388AbaEDQ0v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:26:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaEDPmE (ORCPT
+	with ESMTP id S1754348AbaEDPmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:04 -0400
+	Sun, 4 May 2014 11:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <zonque@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 128/158] usb: phy: am335x-control: wait 1ms after power-up transitions
-Date: Sun,  4 May 2014 11:40:37 -0400
-Message-Id: <20140504154047.392642634@linuxfoundation.org>
+        Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH 3.14 127/158] usb: phy: Add ulpi IDs for SMSC USB3320 and TI TUSB1210
+Date: Sun,  4 May 2014 11:40:36 -0400
+Message-Id: <20140504154047.258368237@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,46 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Michal Simek <michal.simek@xilinx.com>
 
-commit a31a942a148e0083ce560ffeb54fb60e06ab7201 upstream.
+commit ead5178bf442dbae4008ee54bf4f66a1f6a317c9 upstream.
 
-Tests have shown that when a power-up transition is followed by other
-PHY operations too quickly, the USB port appears dead. Waiting 1ms fixes
-this problem.
+Add new ulpi IDs which are available on Xilinx Zynq boards.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/phy/phy-am335x-control.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/usb/phy/phy-ulpi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/phy/phy-am335x-control.c
-+++ b/drivers/usb/phy/phy-am335x-control.c
-@@ -3,6 +3,7 @@
- #include <linux/err.h>
- #include <linux/of.h>
- #include <linux/io.h>
-+#include <linux/delay.h>
- #include "am35x-phy-control.h"
+--- a/drivers/usb/phy/phy-ulpi.c
++++ b/drivers/usb/phy/phy-ulpi.c
+@@ -47,6 +47,8 @@ struct ulpi_info {
+ static struct ulpi_info ulpi_ids[] = {
+ 	ULPI_INFO(ULPI_ID(0x04cc, 0x1504), "NXP ISP1504"),
+ 	ULPI_INFO(ULPI_ID(0x0424, 0x0006), "SMSC USB331x"),
++	ULPI_INFO(ULPI_ID(0x0424, 0x0007), "SMSC USB3320"),
++	ULPI_INFO(ULPI_ID(0x0451, 0x1507), "TI TUSB1210"),
+ };
  
- struct am335x_control_usb {
-@@ -86,6 +87,14 @@ static void am335x_phy_power(struct phy_
- 	}
- 
- 	writel(val, usb_ctrl->phy_reg + reg);
-+
-+	/*
-+	 * Give the PHY ~1ms to complete the power up operation.
-+	 * Tests have shown unstable behaviour if other USB PHY related
-+	 * registers are written too shortly after such a transition.
-+	 */
-+	if (on)
-+		mdelay(1);
- }
- 
- static const struct phy_control ctrl_am335x = {
+ static int ulpi_set_otg_flags(struct usb_phy *phy)
 
 
