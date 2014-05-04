@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731AbaEDP5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:57:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36728 "EHLO
+	id S1755741AbaEDP5p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:57:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36723 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867AbaEDPmo (ORCPT
+	with ESMTP id S1754859AbaEDPmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:44 -0400
+	Sun, 4 May 2014 11:42:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 65/86] media: m88rs2000: prevent frontend crash on continuous transponder scans
-Date: Sun,  4 May 2014 11:41:40 -0400
-Message-Id: <20140504154149.292402686@linuxfoundation.org>
+Subject: [PATCH 3.10 64/86] media: v4l2-compat-ioctl32: fix wrong VIDIOC_SUBDEV_G/S_EDID32 support
+Date: Sun,  4 May 2014 11:41:39 -0400
+Message-Id: <20140504154149.160535082@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,60 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
+commit bc826d6e39fe5f09cbadf8723e9183e6331b586f upstream.
 
-Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
-rate more than 3000000 and delay of 3000ms less than this.
+The wrong ioctl numbers were used due to a copy-and-paste error.
 
-Adding min delay prevents crashing the frontend on continuous
-transponder scans. Other dvb_frontend_tune_settings remain as default.
-
-This makes very little time difference to good channel scans, but slows down
-the set frontend where lock can never be achieved i.e. DVB-S2.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/m88rs2000.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -712,6 +712,22 @@ static int m88rs2000_get_frontend(struct
- 	return 0;
- }
- 
-+static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
-+	struct dvb_frontend_tune_settings *tune)
-+{
-+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-+
-+	if (c->symbol_rate > 3000000)
-+		tune->min_delay_ms = 2000;
-+	else
-+		tune->min_delay_ms = 3000;
-+
-+	tune->step_size = c->symbol_rate / 16000;
-+	tune->max_drift = c->symbol_rate / 2000;
-+
-+	return 0;
-+}
-+
- static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
- {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -763,6 +779,7 @@ static struct dvb_frontend_ops m88rs2000
- 
- 	.set_frontend = m88rs2000_set_frontend,
- 	.get_frontend = m88rs2000_get_frontend,
-+	.get_tune_settings = m88rs2000_get_tune_settings,
- };
- 
- struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
+--- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
++++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+@@ -787,8 +787,8 @@ static int put_v4l2_subdev_edid32(struct
+ #define VIDIOC_DQBUF32		_IOWR('V', 17, struct v4l2_buffer32)
+ #define VIDIOC_ENUMSTD32	_IOWR('V', 25, struct v4l2_standard32)
+ #define VIDIOC_ENUMINPUT32	_IOWR('V', 26, struct v4l2_input32)
+-#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 63, struct v4l2_subdev_edid32)
+-#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 64, struct v4l2_subdev_edid32)
++#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 40, struct v4l2_subdev_edid32)
++#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 41, struct v4l2_subdev_edid32)
+ #define VIDIOC_TRY_FMT32      	_IOWR('V', 64, struct v4l2_format32)
+ #define VIDIOC_G_EXT_CTRLS32    _IOWR('V', 71, struct v4l2_ext_controls32)
+ #define VIDIOC_S_EXT_CTRLS32    _IOWR('V', 72, struct v4l2_ext_controls32)
 
 
