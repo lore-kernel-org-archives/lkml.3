@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaEDVbZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 17:31:25 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43636 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaEDVbX (ORCPT
+	id S1753898AbaEDVdc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 17:33:32 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52350 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821AbaEDVda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 17:31:23 -0400
+	Sun, 4 May 2014 17:33:30 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5366B224.4070809@roeck-us.net>
+Date: Sun, 04 May 2014 14:33:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53669C32.2010601@intel.com>
-References: <210a076ea197ae384705d2c02cfff12a951a62f8.1399057218.git.luto@amacapital.net>
-	<CA+55aFzfDgeFmzk18xJ+ZvCcm-qCsCtd4RrNxYi0CXdfNbZn_A@mail.gmail.com>
-	<CALCETrX8wCxRj9=F7_pM_SKdSxSYttMyLZKAWTy9HurAmtfC2w@mail.gmail.com>
-	<20140504184016.GA16438@gmail.com>
-	<53669C32.2010601@intel.com>
-Date: Sun, 4 May 2014 14:31:23 -0700
-X-Google-Sender-Auth: 9GcOb0jdqjnzlNhRldK36qDugk4
-Message-ID: <CA+55aFxA522TJ8ROr0AJMusvYitm2RntBfBNXAK1eych3TP=dw@mail.gmail.com>
-Subject: Re: [RFC/HACK] x86: Fast return to kernel
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/158] 3.14.3-stable review
+References: <20140504154029.975081050@linuxfoundation.org> <5366769D.2010104@roeck-us.net> <20140504202738.GA25318@kroah.com>
+In-Reply-To: <20140504202738.GA25318@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 4, 2014 at 12:59 PM, H. Peter Anvin <h.peter.anvin@intel.com> wrote:
+On 05/04/2014 01:27 PM, Greg Kroah-Hartman wrote:
+> On Sun, May 04, 2014 at 10:19:25AM -0700, Guenter Roeck wrote:
+>> On 05/04/2014 08:38 AM, Greg Kroah-Hartman wrote:
+>>> This is the start of the stable review cycle for the 3.14.3 release.
+>>> There are 158 patches in this series, all will be posted as a response
+>>> to this one.  If anyone has any issues with these being applied, please
+>>> let me know.
+>>>
+>>> Responses should be made by Tue May  6 15:38:47 UTC 2014.
+>>> Anything received after that time might be too late.
+>>>
+>>
+>> Build results:
+>> 	total: 127 pass: 121 skipped: 4 fail: 2
+>>
+>> Qemu tests all passed.
+>>
+>> Additional failure is from new build target unicore32:defconfig, which fails
+>> in all releases. The second failure is powerpc:allmodconfig which, together
+>> with powerpc:allyesconfig, fails to build in 3.14 and later kernels.
+>> Results are therefore as expected.
+>>
+>> Details are available at http://server.roeck-us.net:8010/builders.
+>>
 >
-> Maybe let userspace sit in a tight loop doing RDTSC, and look for data
-> points too far apart to have been uninterrupted?
+> If unicore32 doesn't build on any kernel version, should we just drop
+> the whole arch?
+>
 
-That won't work, since Andy's patch improves on the "interrupt
-happened in kernel space", not on the user-space interrupt case.
+Idea was to put the maintainer on notice. If nothing changes, that
+may be a good idea.
 
-But some variation on that with a kernel module that does something like
+> I'd suggest the same for powerpc, but odds are, there are still users :)
+>
+Yes, the company paying my salary, for example :-). But then if failure to build
+allmodconfig/allyesconfig is a criteria, arm would be a prime target as well ...
 
- - take over one CPU and force tons of timer interrupts on that CPU
-using the local APIC
+Might be a discussion point for the kernel summit, though: What are criteria
+for an architecture to be accepted, and for it to remain in the kernel ?
+Availability of a pre-built tool set (score drops out)? defconfig build
+failure (unicore32 be gone) ? Something else ?
 
- - for (say) ten billion cycles, do something like this in that kernel module:
+Guenter
 
-   #define TEN_BILLION (10000000000)
-
-        unsigned long prev = 0, sum = 0, end = rdtsc() + TEN_BILLION;
-        for (;;) {
-                unsigned long tsc = rdtsc();
-                if (tsc > end)
-                        break;
-                if (tsc < prev + 500) {
-                        sum += tsc - prev;
-                }
-                prev = tsc;
-        }
-
-and see how big a fraction of the 10 billion cycles you capture in
-'sum'.  The bigger the fraction, the less time the timer interrupts
-stole from your CPU.
-
-That "500" is just a random cut-off. Any interrupt will take more than
-that many TSC cycles. So the above basically counts how much
-uninterrupted time that thread gets.
-
-Hmm?
-
-                   Linus
