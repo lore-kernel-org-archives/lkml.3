@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbaEDQrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:47:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36036 "EHLO
+	id S1756798AbaEDQsL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:48:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36028 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703AbaEDPlc (ORCPT
+	with ESMTP id S1753892AbaEDPlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:32 -0400
+	Sun, 4 May 2014 11:41:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: [PATCH 3.14 053/158] staging: r8712u: Fix case where ethtype was never obtained and always be checked against 0
-Date: Sun,  4 May 2014 11:39:22 -0400
-Message-Id: <20140504154037.165016668@linuxfoundation.org>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Josh Wu <josh.wu@atmel.com>, Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 066/158] iio: adc: at91_adc: Repair broken platform_data support
+Date: Sun,  4 May 2014 11:39:35 -0400
+Message-Id: <20140504154038.918615801@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,53 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-commit f764cd68d9036498f08fe8834deb6a367b5c2542 upstream.
+commit 467a44b0372d8268ce5bd90e58bde7db51c1d476 upstream.
 
-Zero-initializing ether_type masked that the ether type would never be
-obtained for 8021x packets and the comparison against eapol_type
-would always fail.
+Trying to use the at91_adc driver while not using device tree is ending up in a
+kernel crash:
 
-Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Unable to handle kernel NULL pointer dereference at virtual address 00000004
+[...]
+[<c01f3510>] (at91_adc_probe) from [<c0183828>] (platform_drv_probe+0x18/0x48)
+[<c0183828>] (platform_drv_probe) from [<c01824a4>] (driver_probe_device+0x100/0x218)
+[<c01824a4>] (driver_probe_device) from [<c0182648>] (__driver_attach+0x8c/0x90)
+[<c0182648>] (__driver_attach) from [<c0180de4>] (bus_for_each_dev+0x58/0x88)
+[<c0180de4>] (bus_for_each_dev) from [<c0181c7c>] (bus_add_driver+0xd4/0x1d4)
+[<c0181c7c>] (bus_add_driver) from [<c0182c40>] (driver_register+0x78/0xf4)
+[<c0182c40>] (driver_register) from [<c0008998>] (do_one_initcall+0xe8/0x14c)
+[<c0008998>] (do_one_initcall) from [<c02f0b50>] (kernel_init_freeable+0xec/0x1b4)
+[<c02f0b50>] (kernel_init_freeable) from [<c022acdc>] (kernel_init+0x8/0xe4)
+[<c022acdc>] (kernel_init) from [<c0009670>] (ret_from_fork+0x14/0x24)
+
+This is because the at91_adc_caps structure is mandatory but is not filled when
+using platform_data. Correct that by using an id_table. It ensues that the
+driver will not match "at91_adc" anymore but it was crashing anyway.
+
+Fixes: c46016665fff (iio: at91: ADC start-up time calculation changed since at91sam9x5)
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Tested-by: Josh Wu <josh.wu@atmel.com>
+Acked-by: Josh Wu <josh.wu@atmel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/rtl8712/rtl871x_recv.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+ drivers/iio/adc/at91_adc.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/rtl8712/rtl871x_recv.c
-+++ b/drivers/staging/rtl8712/rtl871x_recv.c
-@@ -254,7 +254,7 @@ union recv_frame *r8712_portctrl(struct
- 	struct sta_info *psta;
- 	struct	sta_priv *pstapriv;
- 	union recv_frame *prtnframe;
--	u16 ether_type = 0;
-+	u16 ether_type;
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -765,14 +765,17 @@ static int at91_adc_probe_pdata(struct a
+ 	if (!pdata)
+ 		return -EINVAL;
  
- 	pstapriv = &adapter->stapriv;
- 	ptr = get_recvframe_data(precv_frame);
-@@ -263,15 +263,14 @@ union recv_frame *r8712_portctrl(struct
- 	psta = r8712_get_stainfo(pstapriv, psta_addr);
- 	auth_alg = adapter->securitypriv.AuthAlgrthm;
- 	if (auth_alg == 2) {
-+		/* get ether_type */
-+		ptr = ptr + pfhdr->attrib.hdrlen + LLC_HEADER_SIZE;
-+		memcpy(&ether_type, ptr, 2);
-+		ether_type = ntohs((unsigned short)ether_type);
++	st->caps = (struct at91_adc_caps *)
++			platform_get_device_id(pdev)->driver_data;
 +
- 		if ((psta != NULL) && (psta->ieee8021x_blocked)) {
- 			/* blocked
- 			 * only accept EAPOL frame */
--			prtnframe = precv_frame;
--			/*get ether_type */
--			ptr = ptr + pfhdr->attrib.hdrlen +
--			      pfhdr->attrib.iv_len + LLC_HEADER_SIZE;
--			memcpy(&ether_type, ptr, 2);
--			ether_type = ntohs((unsigned short)ether_type);
- 			if (ether_type == 0x888e)
- 				prtnframe = precv_frame;
- 			else {
+ 	st->use_external = pdata->use_external_triggers;
+ 	st->vref_mv = pdata->vref;
+ 	st->channels_mask = pdata->channels_used;
+-	st->num_channels = pdata->num_channels;
++	st->num_channels = st->caps->num_channels;
+ 	st->startup_time = pdata->startup_time;
+ 	st->trigger_number = pdata->trigger_number;
+ 	st->trigger_list = pdata->trigger_list;
+-	st->registers = pdata->registers;
++	st->registers = &st->caps->registers;
+ 
+ 	return 0;
+ }
+@@ -1101,7 +1104,6 @@ static int at91_adc_remove(struct platfo
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_OF
+ static struct at91_adc_caps at91sam9260_caps = {
+ 	.calc_startup_ticks = calc_startup_ticks_9260,
+ 	.num_channels = 4,
+@@ -1154,11 +1156,27 @@ static const struct of_device_id at91_ad
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, at91_adc_dt_ids);
+-#endif
++
++static const struct platform_device_id at91_adc_ids[] = {
++	{
++		.name = "at91sam9260-adc",
++		.driver_data = (unsigned long)&at91sam9260_caps,
++	}, {
++		.name = "at91sam9g45-adc",
++		.driver_data = (unsigned long)&at91sam9g45_caps,
++	}, {
++		.name = "at91sam9x5-adc",
++		.driver_data = (unsigned long)&at91sam9x5_caps,
++	}, {
++		/* terminator */
++	}
++};
++MODULE_DEVICE_TABLE(platform, at91_adc_ids);
+ 
+ static struct platform_driver at91_adc_driver = {
+ 	.probe = at91_adc_probe,
+ 	.remove = at91_adc_remove,
++	.id_table = at91_adc_ids,
+ 	.driver = {
+ 		   .name = DRIVER_NAME,
+ 		   .of_match_table = of_match_ptr(at91_adc_dt_ids),
 
 
