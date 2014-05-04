@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaEDQVB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:21:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36352 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474AbaEDPmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754477AbaEDPmM (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36337 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220AbaEDPmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 3.14 157/158] USB: EHCI: tegra: set txfill_tuning
-Date: Sun,  4 May 2014 11:41:06 -0400
-Message-Id: <20140504154051.336764793@linuxfoundation.org>
+        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 132/158] mtip32xx: mtip_async_complete() bug fixes
+Date: Sun,  4 May 2014 11:40:41 -0400
+Message-Id: <20140504154047.956578865@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -28,61 +26,178 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Sam Bradshaw <sbradshaw@micron.com>
 
-commit 4f2fe2d27472f4a5dbd875888af4fc5175f3fdc5 upstream.
+commit 5eb9291c36c7d71d7c6c832d5a4f551eb8ac015d upstream.
 
-To avoid memory fetch underflows with larger USB transfers, Tegra SoCs
-need txfill_tuning's txfifothresh register field set to a non-default
-value. Add a custom reset override in order to set this up.
+This patch fixes 2 issues in the fast completion path:
+1) Possible double completions / double dma_unmap_sg() calls due to lack
+of atomicity in the check and subsequent dereference of the upper layer
+callback function. Fixed with cmpxchg before unmap and callback.
+2) Regression in unaligned IO constraining workaround for p420m devices.
+Fixed by checking if IO is unaligned and using proper semaphore if so.
 
-These values are recommended practice for all Tegra chips. However,
-I've only noticed practical problems when not setting them this way on
-systems using Tegra124. Hence, CC: stable only for recent kernels which
-actually support Tegra124.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Alexandre Courbot <acourbot@nvidia.com>
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-tegra.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/block/mtip32xx/mtip32xx.c |   93 +++++++++++++++++++++-----------------
+ drivers/block/mtip32xx/mtip32xx.h |    2 
+ 2 files changed, 53 insertions(+), 42 deletions(-)
 
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -513,8 +513,31 @@ static struct platform_driver tegra_ehci
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -252,38 +252,45 @@ static void mtip_async_complete(struct m
+ 				void *data,
+ 				int status)
+ {
+-	struct mtip_cmd *command;
++	struct mtip_cmd *cmd;
+ 	struct driver_data *dd = data;
+-	int cb_status = status ? -EIO : 0;
++	int unaligned, cb_status = status ? -EIO : 0;
++	void (*func)(void *, int);
+ 
+ 	if (unlikely(!dd) || unlikely(!port))
+ 		return;
+ 
+-	command = &port->commands[tag];
++	cmd = &port->commands[tag];
+ 
+ 	if (unlikely(status == PORT_IRQ_TF_ERR)) {
+ 		dev_warn(&port->dd->pdev->dev,
+ 			"Command tag %d failed due to TFE\n", tag);
  	}
- };
  
-+static int tegra_ehci_reset(struct usb_hcd *hcd)
-+{
-+	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-+	int retval;
-+	int txfifothresh;
-+
-+	retval = ehci_setup(hcd);
-+	if (retval)
-+		return retval;
-+
-+	/*
-+	 * We should really pull this value out of tegra_ehci_soc_config, but
-+	 * to avoid needing access to it, make use of the fact that Tegra20 is
-+	 * the only one so far that needs a value of 10, and Tegra20 is the
-+	 * only one which doesn't set has_hostpc.
-+	 */
-+	txfifothresh = ehci->has_hostpc ? 0x10 : 10;
-+	ehci_writel(ehci, txfifothresh << 16, &ehci->regs->txfill_tuning);
-+
-+	return 0;
-+}
-+
- static const struct ehci_driver_overrides tegra_overrides __initconst = {
- 	.extra_priv_size	= sizeof(struct tegra_ehci_hcd),
-+	.reset			= tegra_ehci_reset,
- };
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
++	/* Clear the active flag */
++	atomic_set(&port->commands[tag].active, 0);
  
- static int __init ehci_tegra_init(void)
+ 	/* Upper layer callback */
+-	if (likely(command->async_callback))
+-		command->async_callback(command->async_data, cb_status);
+-
+-	command->async_callback = NULL;
+-	command->comp_func = NULL;
++	func = cmd->async_callback;
++	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
+ 
+-	/* Clear the allocated and active bits for the command */
+-	atomic_set(&port->commands[tag].active, 0);
+-	release_slot(port, tag);
+-
+-	up(&port->cmd_slot);
++		/* Unmap the DMA scatter list entries */
++		dma_unmap_sg(&dd->pdev->dev,
++			cmd->sg,
++			cmd->scatter_ents,
++			cmd->direction);
++
++		func(cmd->async_data, cb_status);
++		unaligned = cmd->unaligned;
++
++		/* Clear the allocated bit for the command */
++		release_slot(port, tag);
++
++		if (unlikely(unaligned))
++			up(&port->cmd_slot_unal);
++		else
++			up(&port->cmd_slot);
++	}
+ }
+ 
+ /*
+@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsign
+ {
+ 	struct mtip_port *port = (struct mtip_port *) data;
+ 	struct host_to_dev_fis *fis;
+-	struct mtip_cmd *command;
+-	int tag, cmdto_cnt = 0;
++	struct mtip_cmd *cmd;
++	int unaligned, tag, cmdto_cnt = 0;
+ 	unsigned int bit, group;
+ 	unsigned int num_command_slots;
+ 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
++	void (*func)(void *, int);
+ 
+ 	if (unlikely(!port))
+ 		return;
+@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsign
+ 			group = tag >> 5;
+ 			bit = tag & 0x1F;
+ 
+-			command = &port->commands[tag];
+-			fis = (struct host_to_dev_fis *) command->command;
++			cmd = &port->commands[tag];
++			fis = (struct host_to_dev_fis *) cmd->command;
+ 
+ 			set_bit(tag, tagaccum);
+ 			cmdto_cnt++;
+@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsign
+ 			 */
+ 			writel(1 << bit, port->completed[group]);
+ 
+-			/* Unmap the DMA scatter list entries */
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-					command->sg,
+-					command->scatter_ents,
+-					command->direction);
+-
+-			/* Call the async completion callback. */
+-			if (likely(command->async_callback))
+-				command->async_callback(command->async_data,
+-							 -EIO);
+-			command->async_callback = NULL;
+-			command->comp_func = NULL;
+-
+-			/*
+-			 * Clear the allocated bit and active tag for the
+-			 * command.
+-			 */
++			/* Clear the active flag for the command */
+ 			atomic_set(&port->commands[tag].active, 0);
+-			release_slot(port, tag);
+ 
+-			up(&port->cmd_slot);
++			func = cmd->async_callback;
++			if (func &&
++			    cmpxchg(&cmd->async_callback, func, 0) == func) {
++
++				/* Unmap the DMA scatter list entries */
++				dma_unmap_sg(&port->dd->pdev->dev,
++						cmd->sg,
++						cmd->scatter_ents,
++						cmd->direction);
++
++				func(cmd->async_data, -EIO);
++				unaligned = cmd->unaligned;
++
++				/* Clear the allocated bit for the command. */
++				release_slot(port, tag);
++
++				if (unaligned)
++					up(&port->cmd_slot_unal);
++				else
++					up(&port->cmd_slot);
++			}
+ 		}
+ 	}
+ 
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -92,7 +92,7 @@
+ 
+ /* Driver name and version strings */
+ #define MTIP_DRV_NAME		"mtip32xx"
+-#define MTIP_DRV_VERSION	"1.3.0"
++#define MTIP_DRV_VERSION	"1.3.1"
+ 
+ /* Maximum number of minor device numbers per device. */
+ #define MTIP_MAX_MINORS		16
 
 
