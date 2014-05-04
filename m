@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103AbaEDQiq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:38:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36155 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066AbaEDPlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754089AbaEDPlp (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:41:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36083 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066AbaEDPlo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:41:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 102/158] reiserfs: fix race in readdir
-Date: Sun,  4 May 2014 11:40:11 -0400
-Message-Id: <20140504154043.812237005@linuxfoundation.org>
+        Matthew Rahtz <mrahtz@rapitasystems.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 075/158] nfsd: notify_change needs elevated write count
+Date: Sun,  4 May 2014 11:39:44 -0400
+Message-Id: <20140504154040.104967525@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,47 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 01d8885785a60ae8f4c37b0ed75bdc96d0fc6a44 upstream.
+commit 9f67f189939eccaa54f3d2c9cf10788abaf2d584 upstream.
 
-jdm-20004 reiserfs_delete_xattrs: Couldn't delete all xattrs (-2)
+Looks like this bug has been here since these write counts were
+introduced, not sure why it was just noticed now.
 
-The -ENOENT is due to readdir calling dir_emit on the same entry twice.
+Thanks also to Jan Kara for pointing out the problem.
 
-If the dir_emit callback sleeps and the tree is changed underneath us,
-we won't be able to trust deh_offset(deh) anymore. We need to save
-next_pos before we might sleep so we can find the next entry.
-
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: Matthew Rahtz <mrahtz@rapitasystems.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/dir.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ fs/nfsd/vfs.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/fs/reiserfs/dir.c
-+++ b/fs/reiserfs/dir.c
-@@ -125,6 +125,7 @@ int reiserfs_readdir_inode(struct inode
- 				int d_reclen;
- 				char *d_name;
- 				ino_t d_ino;
-+				loff_t cur_pos = deh_offset(deh);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -404,6 +404,7 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	umode_t		ftype = 0;
+ 	__be32		err;
+ 	int		host_err;
++	bool		get_write_count;
+ 	int		size_change = 0;
  
- 				if (!de_visible(deh))
- 					/* it is hidden entry */
-@@ -196,8 +197,9 @@ int reiserfs_readdir_inode(struct inode
- 				if (local_buf != small_buf) {
- 					kfree(local_buf);
- 				}
--				// next entry should be looked for with such offset
--				next_pos = deh_offset(deh) + 1;
+ 	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+@@ -411,10 +412,18 @@ nfsd_setattr(struct svc_rqst *rqstp, str
+ 	if (iap->ia_valid & ATTR_SIZE)
+ 		ftype = S_IFREG;
+ 
++	/* Callers that do fh_verify should do the fh_want_write: */
++	get_write_count = !fhp->fh_dentry;
 +
-+				/* deh_offset(deh) may be invalid now. */
-+				next_pos = cur_pos + 1;
+ 	/* Get inode */
+ 	err = fh_verify(rqstp, fhp, ftype, accmode);
+ 	if (err)
+ 		goto out;
++	if (get_write_count) {
++		host_err = fh_want_write(fhp);
++		if (host_err)
++			return nfserrno(host_err);
++	}
  
- 				if (item_moved(&tmp_ih, &path_to_entry)) {
- 					set_cpu_key_k_offset(&pos_key,
+ 	dentry = fhp->fh_dentry;
+ 	inode = dentry->d_inode;
 
 
