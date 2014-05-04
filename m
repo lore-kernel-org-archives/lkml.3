@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929AbaEDQzk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:55:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35944 "EHLO
+	id S1753357AbaEDPlT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:41:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753380AbaEDPlV (ORCPT
+	with ESMTP id S1752681AbaEDPlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:21 -0400
+	Sun, 4 May 2014 11:41:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 022/158] ALSA: hda/realtek - Restore default value for ALC283
-Date: Sun,  4 May 2014 11:38:51 -0400
-Message-Id: <20140504154033.048613352@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 012/158] ARM: dts: am33xx: correcting dt node unit address for usb
+Date: Sun,  4 May 2014 11:38:41 -0400
+Message-Id: <20140504154031.690140742@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,123 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-commit 6bd55b04fe05cb26094b0fe494c7a207e6c0c36e upstream.
+commit 8abcdd680d543fb582371e146e62ba9f2af8a816 upstream.
 
-Restore the registers to prevent the abnormal digital power supply
-rising ratio/sequence to the codec and causing the incorrect default
-codec register restoration during initialization.
+DT node's unit address should be its own register offset address to make it a
+unique across the system. This patch corrects the incorrect USB entries with
+correct register offset for unit address.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=71861
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   85 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 85 insertions(+)
+ arch/arm/boot/dts/am33xx.dtsi |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2786,6 +2786,89 @@ static void alc269_shutup(struct hda_cod
- 	snd_hda_shutup_pins(codec);
- }
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -448,7 +448,7 @@
+ 			ti,hwmods = "usb_otg_hs";
+ 			status = "disabled";
  
-+static void alc283_restore_default_value(struct hda_codec *codec)
-+{
-+	int val;
-+
-+	/* Power Down Control */
-+	alc_write_coef_idx(codec, 0x03, 0x0002);
-+	/* FIFO and filter clock */
-+	alc_write_coef_idx(codec, 0x05, 0x0700);
-+	/* DMIC control */
-+	alc_write_coef_idx(codec, 0x07, 0x0200);
-+	/* Analog clock */
-+	val = alc_read_coef_idx(codec, 0x06);
-+	alc_write_coef_idx(codec, 0x06, (val & ~0x00f0) | 0x0);
-+	/* JD */
-+	val = alc_read_coef_idx(codec, 0x08);
-+	alc_write_coef_idx(codec, 0x08, (val & ~0xfffc) | 0x0c2c);
-+	/* JD offset1 */
-+	alc_write_coef_idx(codec, 0x0a, 0xcccc);
-+	/* JD offset2 */
-+	alc_write_coef_idx(codec, 0x0b, 0xcccc);
-+	/* LDO1/2/3, DAC/ADC */
-+	alc_write_coef_idx(codec, 0x0e, 0x6fc0);
-+	/* JD */
-+	val = alc_read_coef_idx(codec, 0x0f);
-+	alc_write_coef_idx(codec, 0x0f, (val & ~0xf800) | 0x1000);
-+	/* Capless */
-+	val = alc_read_coef_idx(codec, 0x10);
-+	alc_write_coef_idx(codec, 0x10, (val & ~0xfc00) | 0x0c00);
-+	/* Class D test 4 */
-+	alc_write_coef_idx(codec, 0x3a, 0x0);
-+	/* IO power down directly */
-+	val = alc_read_coef_idx(codec, 0x0c);
-+	alc_write_coef_idx(codec, 0x0c, (val & ~0xfe00) | 0x0);
-+	/* ANC */
-+	alc_write_coef_idx(codec, 0x22, 0xa0c0);
-+	/* AGC MUX */
-+	val = alc_read_coefex_idx(codec, 0x53, 0x01);
-+	alc_write_coefex_idx(codec, 0x53, 0x01, (val & ~0x000f) | 0x0008);
-+	/* DAC simple content protection */
-+	val = alc_read_coef_idx(codec, 0x1d);
-+	alc_write_coef_idx(codec, 0x1d, (val & ~0x00e0) | 0x0);
-+	/* ADC simple content protection */
-+	val = alc_read_coef_idx(codec, 0x1f);
-+	alc_write_coef_idx(codec, 0x1f, (val & ~0x00e0) | 0x0);
-+	/* DAC ADC Zero Detection */
-+	alc_write_coef_idx(codec, 0x21, 0x8804);
-+	/* PLL */
-+	alc_write_coef_idx(codec, 0x2e, 0x2902);
-+	/* capless control 2 */
-+	alc_write_coef_idx(codec, 0x33, 0xa080);
-+	/* capless control 3 */
-+	alc_write_coef_idx(codec, 0x34, 0x3400);
-+	/* capless control 4 */
-+	alc_write_coef_idx(codec, 0x35, 0x2f3e);
-+	/* capless control 5 */
-+	alc_write_coef_idx(codec, 0x36, 0x0);
-+	/* class D test 2 */
-+	val = alc_read_coef_idx(codec, 0x38);
-+	alc_write_coef_idx(codec, 0x38, (val & ~0x0fff) | 0x0900);
-+	/* class D test 3 */
-+	alc_write_coef_idx(codec, 0x39, 0x110a);
-+	/* class D test 5 */
-+	val = alc_read_coef_idx(codec, 0x3b);
-+	alc_write_coef_idx(codec, 0x3b, (val & ~0x00f8) | 0x00d8);
-+	/* class D test 6 */
-+	alc_write_coef_idx(codec, 0x3c, 0x0014);
-+	/* classD OCP */
-+	alc_write_coef_idx(codec, 0x3d, 0xc2ba);
-+	/* classD pure DC test */
-+	val = alc_read_coef_idx(codec, 0x42);
-+	alc_write_coef_idx(codec, 0x42, (val & ~0x0f80) | 0x0);
-+	/* test mode */
-+	alc_write_coef_idx(codec, 0x49, 0x0);
-+	/* Class D DC enable */
-+	val = alc_read_coef_idx(codec, 0x40);
-+	alc_write_coef_idx(codec, 0x40, (val & ~0xf800) | 0x9800);
-+	/* DC offset */
-+	val = alc_read_coef_idx(codec, 0x42);
-+	alc_write_coef_idx(codec, 0x42, (val & ~0xf000) | 0x2000);
-+	/* Class D amp control */
-+	alc_write_coef_idx(codec, 0x37, 0xfc06);
-+}
-+
- static void alc283_init(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
-@@ -2793,6 +2876,8 @@ static void alc283_init(struct hda_codec
- 	bool hp_pin_sense;
- 	int val;
+-			usb_ctrl_mod: control@44e10000 {
++			usb_ctrl_mod: control@44e10620 {
+ 				compatible = "ti,am335x-usb-ctrl-module";
+ 				reg = <0x44e10620 0x10
+ 					0x44e10648 0x4>;
+@@ -551,7 +551,7 @@
+ 					"tx14", "tx15";
+ 			};
  
-+	alc283_restore_default_value(codec);
-+
- 	if (!hp_pin)
- 		return;
- 	hp_pin_sense = snd_hda_jack_detect(codec, hp_pin);
+-			cppi41dma: dma-controller@07402000 {
++			cppi41dma: dma-controller@47402000 {
+ 				compatible = "ti,am3359-cppi41";
+ 				reg =  <0x47400000 0x1000
+ 					0x47402000 0x1000
 
 
