@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaEDQHa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:07:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36565 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaEDPmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754705AbaEDPmb (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36495 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754620AbaEDPmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH 3.10 37/86] USB: fix crash during hotplug of PCI USB controller card
-Date: Sun,  4 May 2014 11:41:12 -0400
-Message-Id: <20140504154145.429407446@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 29/86] mfd: max8997: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:41:04 -0400
+Message-Id: <20140504154144.358319450@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -27,46 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit a2ff864b53eac9a0e9b05bfe9d1781ccd6c2af71 upstream.
+commit 97dc4ed3fa377ec91bb60ba98b70d645c2099384 upstream.
 
-The code in hcd-pci.c that matches up EHCI controllers with their
-companion UHCI or OHCI controllers assumes that the private drvdata
-fields don't get set too early.  However, it turns out that this field
-gets set by usb_create_hcd(), before hcd-pci expects it, and this can
-result in a crash when two controllers are probed in parallel (as can
-happen when a new controller card is hotplugged).
+During probe the driver allocates dummy I2C devices for RTC, haptic and
+MUIC with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-The companions_rwsem lock was supposed to prevent this sort of thing,
-but usb_create_hcd() is called outside the scope of the rwsem.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-A simple solution is to check that the root-hub pointer has been
-initialized as well as the drvdata field.  This doesn't happen until
-usb_add_hcd() is called; that call and the check are both protected by
-the rwsem.
+If i2c_new_dummy() fails for RTC, haptic or MUIC devices, fail also the
+probe for main MFD driver.
 
-This patch should be applied to stable kernels from 3.10 onward.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Stefani Seibold <stefani@seibold.net>
-Tested-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hcd-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/max8997.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -75,7 +75,7 @@ static void for_each_companion(struct pc
- 				PCI_SLOT(companion->devfn) != slot)
- 			continue;
- 		companion_hcd = pci_get_drvdata(companion);
--		if (!companion_hcd)
-+		if (!companion_hcd || !companion_hcd->self.root_hub)
- 			continue;
- 		fn(pdev, hcd, companion, companion_hcd);
- 	}
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -218,10 +218,26 @@ static int max8997_i2c_probe(struct i2c_
+ 	mutex_init(&max8997->iolock);
+ 
+ 	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max8997->rtc) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8997->rtc, max8997);
++
+ 	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max8997->haptic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max8997->haptic, max8997);
++
+ 	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max8997->muic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
++		ret = -ENODEV;
++		goto err_i2c_muic;
++	}
+ 	i2c_set_clientdata(max8997->muic, max8997);
+ 
+ 	pm_runtime_set_active(max8997->dev);
+@@ -248,7 +264,9 @@ static int max8997_i2c_probe(struct i2c_
+ err_mfd:
+ 	mfd_remove_devices(max8997->dev);
+ 	i2c_unregister_device(max8997->muic);
++err_i2c_muic:
+ 	i2c_unregister_device(max8997->haptic);
++err_i2c_haptic:
+ 	i2c_unregister_device(max8997->rtc);
+ err:
+ 	kfree(max8997);
 
 
