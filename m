@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745AbaEDLpB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 07:45:01 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39354 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359AbaEDLpA (ORCPT
+	id S1753715AbaEDLuc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 07:50:32 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52689 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753276AbaEDLub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 07:45:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <53633B81.1080403@redhat.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	<1399011219.5233.55.camel@marge.simpson.net>
-	<53633B81.1080403@redhat.com>
-Date: Sun, 4 May 2014 17:14:59 +0530
-Message-ID: <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-From: Preeti Murthy <preeti.lkml@gmail.com>
-To: Rik van Riel <riel@redhat.com>, umgwanakikbuti@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        george.mccollister@gmail.com, ktkhai@parallels.com,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 4 May 2014 07:50:31 -0400
+Message-ID: <1399204229.8729.15.camel@x220>
+Subject: [PATCH] libata-sff: remove dead code
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Alan Cox <alan@linux.intel.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 04 May 2014 13:50:29 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 May 2014 11:50:29.0839 (UTC) FILETIME=[0C1F35F0:01CF678F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rik, Mike
+Ever since v2.6.19 the code contains a check for CONFIG_NO_ATA_LEGACY.
+But that macro has never been defined. Apparently no one ran into
+problems on platforms that do not support compatibility mode. So remove
+this code that has been dead for over seven years.
 
-On Fri, May 2, 2014 at 12:00 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 05/02/2014 02:13 AM, Mike Galbraith wrote:
->> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
->>
->>> Whether or not this is the right thing to do remains to be seen,
->>> but it does allow us to verify whether or not the wake_affine
->>> strategy of always doing affine wakeups and only disabling them
->>> in a specific circumstance is sound, or needs rethinking...
->>
->> Yes, it needs rethinking.
->>
->> I know why you want to try this, yes, select_idle_sibling() is very much
->> a two faced little bitch.
->
-> My biggest problem with select_idle_sibling and wake_affine in
-> general is that it will override NUMA placement, even when
-> processes only wake each other up infrequently...
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested!
 
-As far as my understanding goes, the logic in select_task_rq_fair()
-does wake_affine() or calls select_idle_sibling() only at those
-levels of sched domains where the flag SD_WAKE_AFFINE is set.
-This flag is not set at the numa domain and hence they will not be
-balancing across numa nodes. So I don't understand how
-*these functions* are affecting NUMA placements.
+Perhaps the test should have been
+    #if !defined(CONFIG_PATA_LEGACY)
 
-The wake_affine() and select_idle_sibling() will shuttle tasks
-within a NUMA node as far as I can see.i.e. if the cpu that the task
-previously ran on and the waker cpu belong to the same node.
-Else they are not called.
+I wouldn't know if that's correct. But after seven years it doesn't
+matter anyhow, so I did not bother to research that.
 
-If the prev_cpu and the waker cpu are on different NUMA nodes
-then naturally the tasks will get shuttled across NUMA nodes but
-the culprits are the find_idlest* functions.
-   They do a top-down search for the idlest group and cpu, starting
-at the NUMA domain *attached to the waker and not the prev_cpu*.
-This means that the task will end up on a different NUMA node.
-Looks to me that the problem lies here and not in the wake_affine()
-and select_idle_siblings().
+ drivers/ata/libata-sff.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-Regards
-Preeti U Murthy
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index b603720b877d..1121153f1ecd 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -2433,15 +2433,6 @@ int ata_pci_sff_activate_host(struct ata_host *host,
+ 		mask = (1 << 2) | (1 << 0);
+ 		if ((tmp8 & mask) != mask)
+ 			legacy_mode = 1;
+-#if defined(CONFIG_NO_ATA_LEGACY)
+-		/* Some platforms with PCI limits cannot address compat
+-		   port space. In that case we punt if their firmware has
+-		   left a device in compatibility mode */
+-		if (legacy_mode) {
+-			printk(KERN_ERR "ata: Compatibility mode ATA is not supported on this platform, skipping.\n");
+-			return -EOPNOTSUPP;
+-		}
+-#endif
+ 	}
+ 
+ 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
+-- 
+1.9.0
 
->
-> --
-> All rights reversed
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
