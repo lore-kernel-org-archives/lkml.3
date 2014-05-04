@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872AbaEDQNw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:13:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36503 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437AbaEDPmV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754585AbaEDPmV (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36375 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754437AbaEDPmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.10 22/86] mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-Date: Sun,  4 May 2014 11:40:57 -0400
-Message-Id: <20140504154143.394570764@linuxfoundation.org>
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.14 145/158] clk: s2mps11: Fix possible NULL pointer dereference
+Date: Sun,  4 May 2014 11:40:54 -0400
+Message-Id: <20140504154049.737859516@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
-References: <20140504154140.444932005@linuxfoundation.org>
+In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
+References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 65aba1e04916d72b30c028730a1e31860c225412 upstream.
+commit 238e14055da87d0d012257788e39fe0df3a82226 upstream.
 
-During probe the sec-core driver allocates dummy I2C device for RTC with
-i2c_new_dummy() but return value is not checked. In case of error
-(i2c_new_device(): memory allocation failure or I2C address cannot be
-used) this function returns NULL which is later used by
-devm_regmap_init_i2c() or i2c_unregister_device().
-
-If i2c_new_dummy() fails for RTC device, fail also the probe for main
-MFD driver.
+If parent device does not have of_node set the s2mps11_clk_parse_dt()
+returned NULL. This NULL was later passed to of_clk_add_provider() which
+dereferenced it in pr_debug() call.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/sec-core.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/clk/clk-s2mps11.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -199,6 +199,10 @@ static int sec_pmic_probe(struct i2c_cli
- 	}
+--- a/drivers/clk/clk-s2mps11.c
++++ b/drivers/clk/clk-s2mps11.c
+@@ -130,7 +130,7 @@ static struct device_node *s2mps11_clk_p
+ 	int i;
  
- 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!sec_pmic->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+ 	if (!iodev->dev->of_node)
+-		return NULL;
++		return ERR_PTR(-EINVAL);
  
- 	if (pdata && pdata->cfg_pmic_irq)
+ 	clk_np = of_find_node_by_name(iodev->dev->of_node, "clocks");
+ 	if (!clk_np) {
 
 
