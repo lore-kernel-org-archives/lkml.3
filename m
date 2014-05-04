@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477AbaEDPmM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:42:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36337 "EHLO
+	id S1756218AbaEDQVo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:21:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36382 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754220AbaEDPmF (ORCPT
+	with ESMTP id S1754459AbaEDPmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:05 -0400
+	Sun, 4 May 2014 11:42:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sam Bradshaw <sbradshaw@micron.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 132/158] mtip32xx: mtip_async_complete() bug fixes
-Date: Sun,  4 May 2014 11:40:41 -0400
-Message-Id: <20140504154047.956578865@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [PATCH 3.14 150/158] ext4: fix jbd2 warning under heavy xattr load
+Date: Sun,  4 May 2014 11:40:59 -0400
+Message-Id: <20140504154050.405989378@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,178 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sam Bradshaw <sbradshaw@micron.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 5eb9291c36c7d71d7c6c832d5a4f551eb8ac015d upstream.
+commit ec4cb1aa2b7bae18dd8164f2e9c7c51abcf61280 upstream.
 
-This patch fixes 2 issues in the fast completion path:
-1) Possible double completions / double dma_unmap_sg() calls due to lack
-of atomicity in the check and subsequent dereference of the upper layer
-callback function. Fixed with cmpxchg before unmap and callback.
-2) Regression in unaligned IO constraining workaround for p420m devices.
-Fixed by checking if IO is unaligned and using proper semaphore if so.
+When heavily exercising xattr code the assertion that
+jbd2_journal_dirty_metadata() shouldn't return error was triggered:
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+WARNING: at /srv/autobuild-ceph/gitbuilder.git/build/fs/jbd2/transaction.c:1237
+jbd2_journal_dirty_metadata+0x1ba/0x260()
+
+CPU: 0 PID: 8877 Comm: ceph-osd Tainted: G    W 3.10.0-ceph-00049-g68d04c9 #1
+Hardware name: Dell Inc. PowerEdge R410/01V648, BIOS 1.6.3 02/07/2011
+ ffffffff81a1d3c8 ffff880214469928 ffffffff816311b0 ffff880214469968
+ ffffffff8103fae0 ffff880214469958 ffff880170a9dc30 ffff8802240fbe80
+ 0000000000000000 ffff88020b366000 ffff8802256e7510 ffff880214469978
+Call Trace:
+ [<ffffffff816311b0>] dump_stack+0x19/0x1b
+ [<ffffffff8103fae0>] warn_slowpath_common+0x70/0xa0
+ [<ffffffff8103fb2a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81267c2a>] jbd2_journal_dirty_metadata+0x1ba/0x260
+ [<ffffffff81245093>] __ext4_handle_dirty_metadata+0xa3/0x140
+ [<ffffffff812561f3>] ext4_xattr_release_block+0x103/0x1f0
+ [<ffffffff81256680>] ext4_xattr_block_set+0x1e0/0x910
+ [<ffffffff8125795b>] ext4_xattr_set_handle+0x38b/0x4a0
+ [<ffffffff810a319d>] ? trace_hardirqs_on+0xd/0x10
+ [<ffffffff81257b32>] ext4_xattr_set+0xc2/0x140
+ [<ffffffff81258547>] ext4_xattr_user_set+0x47/0x50
+ [<ffffffff811935ce>] generic_setxattr+0x6e/0x90
+ [<ffffffff81193ecb>] __vfs_setxattr_noperm+0x7b/0x1c0
+ [<ffffffff811940d4>] vfs_setxattr+0xc4/0xd0
+ [<ffffffff8119421e>] setxattr+0x13e/0x1e0
+ [<ffffffff811719c7>] ? __sb_start_write+0xe7/0x1b0
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118c65c>] ? fget_light+0x3c/0x130
+ [<ffffffff8118f2e8>] ? mnt_want_write_file+0x28/0x60
+ [<ffffffff8118f1f8>] ? __mnt_want_write+0x58/0x70
+ [<ffffffff811946be>] SyS_fsetxattr+0xbe/0x100
+ [<ffffffff816407c2>] system_call_fastpath+0x16/0x1b
+
+The reason for the warning is that buffer_head passed into
+jbd2_journal_dirty_metadata() didn't have journal_head attached. This is
+caused by the following race of two ext4_xattr_release_block() calls:
+
+CPU1                                CPU2
+ext4_xattr_release_block()          ext4_xattr_release_block()
+lock_buffer(bh);
+/* False */
+if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+} else {
+  le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+  unlock_buffer(bh);
+                                    lock_buffer(bh);
+                                    /* True */
+                                    if (BHDR(bh)->h_refcount == cpu_to_le32(1))
+                                      get_bh(bh);
+                                      ext4_free_blocks()
+                                        ...
+                                        jbd2_journal_forget()
+                                          jbd2_journal_unfile_buffer()
+                                          -> JH is gone
+  error = ext4_handle_dirty_xattr_block(handle, inode, bh);
+  -> triggers the warning
+
+We fix the problem by moving ext4_handle_dirty_xattr_block() under the
+buffer lock. Sadly this cannot be done in nojournal mode as that
+function can call sync_dirty_buffer() which would deadlock. Luckily in
+nojournal mode the race is harmless (we only dirty already freed buffer)
+and thus for nojournal mode we leave the dirtying outside of the buffer
+lock.
+
+Reported-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/mtip32xx/mtip32xx.c |   93 +++++++++++++++++++++-----------------
- drivers/block/mtip32xx/mtip32xx.h |    2 
- 2 files changed, 53 insertions(+), 42 deletions(-)
+ fs/ext4/xattr.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -252,38 +252,45 @@ static void mtip_async_complete(struct m
- 				void *data,
- 				int status)
- {
--	struct mtip_cmd *command;
-+	struct mtip_cmd *cmd;
- 	struct driver_data *dd = data;
--	int cb_status = status ? -EIO : 0;
-+	int unaligned, cb_status = status ? -EIO : 0;
-+	void (*func)(void *, int);
- 
- 	if (unlikely(!dd) || unlikely(!port))
- 		return;
- 
--	command = &port->commands[tag];
-+	cmd = &port->commands[tag];
- 
- 	if (unlikely(status == PORT_IRQ_TF_ERR)) {
- 		dev_warn(&port->dd->pdev->dev,
- 			"Command tag %d failed due to TFE\n", tag);
- 	}
- 
--	/* Unmap the DMA scatter list entries */
--	dma_unmap_sg(&dd->pdev->dev,
--		command->sg,
--		command->scatter_ents,
--		command->direction);
-+	/* Clear the active flag */
-+	atomic_set(&port->commands[tag].active, 0);
- 
- 	/* Upper layer callback */
--	if (likely(command->async_callback))
--		command->async_callback(command->async_data, cb_status);
--
--	command->async_callback = NULL;
--	command->comp_func = NULL;
-+	func = cmd->async_callback;
-+	if (likely(func && cmpxchg(&cmd->async_callback, func, 0) == func)) {
- 
--	/* Clear the allocated and active bits for the command */
--	atomic_set(&port->commands[tag].active, 0);
--	release_slot(port, tag);
--
--	up(&port->cmd_slot);
-+		/* Unmap the DMA scatter list entries */
-+		dma_unmap_sg(&dd->pdev->dev,
-+			cmd->sg,
-+			cmd->scatter_ents,
-+			cmd->direction);
-+
-+		func(cmd->async_data, cb_status);
-+		unaligned = cmd->unaligned;
-+
-+		/* Clear the allocated bit for the command */
-+		release_slot(port, tag);
-+
-+		if (unlikely(unaligned))
-+			up(&port->cmd_slot_unal);
-+		else
-+			up(&port->cmd_slot);
-+	}
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -517,8 +517,8 @@ static void ext4_xattr_update_super_bloc
  }
  
  /*
-@@ -660,11 +667,12 @@ static void mtip_timeout_function(unsign
- {
- 	struct mtip_port *port = (struct mtip_port *) data;
- 	struct host_to_dev_fis *fis;
--	struct mtip_cmd *command;
--	int tag, cmdto_cnt = 0;
-+	struct mtip_cmd *cmd;
-+	int unaligned, tag, cmdto_cnt = 0;
- 	unsigned int bit, group;
- 	unsigned int num_command_slots;
- 	unsigned long to, tagaccum[SLOTBITS_IN_LONGS];
-+	void (*func)(void *, int);
- 
- 	if (unlikely(!port))
- 		return;
-@@ -694,8 +702,8 @@ static void mtip_timeout_function(unsign
- 			group = tag >> 5;
- 			bit = tag & 0x1F;
- 
--			command = &port->commands[tag];
--			fis = (struct host_to_dev_fis *) command->command;
-+			cmd = &port->commands[tag];
-+			fis = (struct host_to_dev_fis *) cmd->command;
- 
- 			set_bit(tag, tagaccum);
- 			cmdto_cnt++;
-@@ -709,27 +717,30 @@ static void mtip_timeout_function(unsign
- 			 */
- 			writel(1 << bit, port->completed[group]);
- 
--			/* Unmap the DMA scatter list entries */
--			dma_unmap_sg(&port->dd->pdev->dev,
--					command->sg,
--					command->scatter_ents,
--					command->direction);
--
--			/* Call the async completion callback. */
--			if (likely(command->async_callback))
--				command->async_callback(command->async_data,
--							 -EIO);
--			command->async_callback = NULL;
--			command->comp_func = NULL;
--
--			/*
--			 * Clear the allocated bit and active tag for the
--			 * command.
--			 */
-+			/* Clear the active flag for the command */
- 			atomic_set(&port->commands[tag].active, 0);
--			release_slot(port, tag);
- 
--			up(&port->cmd_slot);
-+			func = cmd->async_callback;
-+			if (func &&
-+			    cmpxchg(&cmd->async_callback, func, 0) == func) {
-+
-+				/* Unmap the DMA scatter list entries */
-+				dma_unmap_sg(&port->dd->pdev->dev,
-+						cmd->sg,
-+						cmd->scatter_ents,
-+						cmd->direction);
-+
-+				func(cmd->async_data, -EIO);
-+				unaligned = cmd->unaligned;
-+
-+				/* Clear the allocated bit for the command. */
-+				release_slot(port, tag);
-+
-+				if (unaligned)
-+					up(&port->cmd_slot_unal);
-+				else
-+					up(&port->cmd_slot);
-+			}
- 		}
- 	}
- 
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -92,7 +92,7 @@
- 
- /* Driver name and version strings */
- #define MTIP_DRV_NAME		"mtip32xx"
--#define MTIP_DRV_VERSION	"1.3.0"
-+#define MTIP_DRV_VERSION	"1.3.1"
- 
- /* Maximum number of minor device numbers per device. */
- #define MTIP_MAX_MINORS		16
+- * Release the xattr block BH: If the reference count is > 1, decrement
+- * it; otherwise free the block.
++ * Release the xattr block BH: If the reference count is > 1, decrement it;
++ * otherwise free the block.
+  */
+ static void
+ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+@@ -538,16 +538,31 @@ ext4_xattr_release_block(handle_t *handl
+ 		if (ce)
+ 			mb_cache_entry_free(ce);
+ 		get_bh(bh);
++		unlock_buffer(bh);
+ 		ext4_free_blocks(handle, inode, bh, 0, 1,
+ 				 EXT4_FREE_BLOCKS_METADATA |
+ 				 EXT4_FREE_BLOCKS_FORGET);
+-		unlock_buffer(bh);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+ 		if (ce)
+ 			mb_cache_entry_release(ce);
++		/*
++		 * Beware of this ugliness: Releasing of xattr block references
++		 * from different inodes can race and so we have to protect
++		 * from a race where someone else frees the block (and releases
++		 * its journal_head) before we are done dirtying the buffer. In
++		 * nojournal mode this race is harmless and we actually cannot
++		 * call ext4_handle_dirty_xattr_block() with locked buffer as
++		 * that function can call sync_dirty_buffer() so for that case
++		 * we handle the dirtying after unlocking the buffer.
++		 */
++		if (ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		unlock_buffer(bh);
+-		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
++		if (!ext4_handle_valid(handle))
++			error = ext4_handle_dirty_xattr_block(handle, inode,
++							      bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, EXT4_C2B(EXT4_SB(inode->i_sb), 1));
 
 
