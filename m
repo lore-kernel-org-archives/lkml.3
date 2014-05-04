@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005AbaEDQMA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:12:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36533 "EHLO
+	id S1756032AbaEDQMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:12:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36479 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631AbaEDPm0 (ORCPT
+	with ESMTP id S1754606AbaEDPmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:26 -0400
+	Sun, 4 May 2014 11:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.10 34/86] xfs: fix directory hash ordering bug
-Date: Sun,  4 May 2014 11:41:09 -0400
-Message-Id: <20140504154145.027406957@linuxfoundation.org>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 3.10 23/86] mfd: 88pm860x: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:40:58 -0400
+Message-Id: <20140504154143.531336423@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -28,55 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Tinguely <tinguely@sgi.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit c88547a8119e3b581318ab65e9b72f27f23e641d upstream.
+commit 159ce52a6b777fc82fa0b51c7440e25f9e4c6feb upstream.
 
-Commit f5ea1100 ("xfs: add CRCs to dir2/da node blocks") introduced
-in 3.10 incorrectly converted the btree hash index array pointer in
-xfs_da3_fixhashpath(). It resulted in the the current hash always
-being compared against the first entry in the btree rather than the
-current block index into the btree block's hash entry array. As a
-result, it was comparing the wrong hashes, and so could misorder the
-entries in the btree.
+During probe the driver allocates dummy I2C device for companion chip
+with i2c_new_dummy() but it does not check the return value of this call.
 
-For most cases, this doesn't cause any problems as it requires hash
-collisions to expose the ordering problem. However, when there are
-hash collisions within a directory there is a very good probability
-that the entries will be ordered incorrectly and that actually
-matters when duplicate hashes are placed into or removed from the
-btree block hash entry array.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by regmap_init_i2c().
 
-This bug results in an on-disk directory corruption and that results
-in directory verifier functions throwing corruption warnings into
-the logs. While no data or directory entries are lost, access to
-them may be compromised, and attempts to remove entries from a
-directory that has suffered from this corruption may result in a
-filesystem shutdown.  xfs_repair will fix the directory hash
-ordering without data loss occuring.
+If i2c_new_dummy() fails for companion device, fail also the probe for
+main MFD driver.
 
-[dchinner: wrote useful a commit message]
-
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Mark Tinguely <tinguely@sgi.com>
-Reviewed-by: Ben Myers <bpm@sgi.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_da_btree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/88pm860x-core.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/fs/xfs/xfs_da_btree.c
-+++ b/fs/xfs/xfs_da_btree.c
-@@ -1334,7 +1334,7 @@ xfs_da3_fixhashpath(
- 		node = blk->bp->b_addr;
- 		xfs_da3_node_hdr_from_disk(&nodehdr, node);
- 		btree = xfs_da3_node_tree_p(node);
--		if (be32_to_cpu(btree->hashval) == lasthash)
-+		if (be32_to_cpu(btree[blk->index].hashval) == lasthash)
- 			break;
- 		blk->hashval = lasthash;
- 		btree[blk->index].hashval = cpu_to_be32(lasthash);
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_clien
+ 		chip->companion_addr = pdata->companion_addr;
+ 		chip->companion = i2c_new_dummy(chip->client->adapter,
+ 						chip->companion_addr);
++		if (!chip->companion) {
++			dev_err(&client->dev,
++				"Failed to allocate I2C companion device\n");
++			return -ENODEV;
++		}
+ 		chip->regmap_companion = regmap_init_i2c(chip->companion,
+ 							&pm860x_regmap_config);
+ 		if (IS_ERR(chip->regmap_companion)) {
 
 
