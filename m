@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaEDQWW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:22:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36352 "EHLO
+	id S1756238AbaEDQWo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:22:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36368 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453AbaEDPmL (ORCPT
+	with ESMTP id S1754430AbaEDPmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:11 -0400
+	Sun, 4 May 2014 11:42:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 149/158] ext4: note the error in ext4_end_bio()
-Date: Sun,  4 May 2014 11:40:58 -0400
-Message-Id: <20140504154050.265455525@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Tariq Saeed <tariq.x.saeed@oracle.com>,
+        Srinivas Eeda <srinivas.eeda@oracle.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 144/158] ocfs2: fix panic on kfree(xattr->name)
+Date: Sun,  4 May 2014 11:40:53 -0400
+Message-Id: <20140504154049.598108902@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,42 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Wilcox <willy@linux.intel.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 9503c67c93ed0b95ba62d12d1fd09da6245dbdd6 upstream.
+commit f81c20158f8d5f7938d5eb86ecc42ecc09273ce6 upstream.
 
-ext4_end_bio() currently throws away the error that it receives.  Chances
-are this is part of a spate of errors, one of which will end up getting
-the error returned to userspace somehow, but we shouldn't take that risk.
-Also print out the errno to aid in debug.
+Commit 9548906b2bb7 ('xattr: Constify ->name member of "struct xattr"')
+missed that ocfs2 is calling kfree(xattr->name).  As a result, kernel
+panic occurs upon calling kfree(xattr->name) because xattr->name refers
+static constant names.  This patch removes kfree(xattr->name) from
+ocfs2_mknod() and ocfs2_symlink().
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Reported-by: Tariq Saeed <tariq.x.saeed@oracle.com>
+Tested-by: Tariq Saeed <tariq.x.saeed@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/page-io.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/ocfs2/namei.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -308,13 +308,14 @@ static void ext4_end_bio(struct bio *bio
- 	if (error) {
- 		struct inode *inode = io_end->inode;
+--- a/fs/ocfs2/namei.c
++++ b/fs/ocfs2/namei.c
+@@ -450,7 +450,6 @@ leave:
  
--		ext4_warning(inode->i_sb, "I/O error writing to inode %lu "
-+		ext4_warning(inode->i_sb, "I/O error %d writing to inode %lu "
- 			     "(offset %llu size %ld starting block %llu)",
--			     inode->i_ino,
-+			     error, inode->i_ino,
- 			     (unsigned long long) io_end->offset,
- 			     (long) io_end->size,
- 			     (unsigned long long)
- 			     bi_sector >> (inode->i_blkbits - 9));
-+		mapping_set_error(inode->i_mapping, error);
- 	}
+ 	brelse(new_fe_bh);
+ 	brelse(parent_fe_bh);
+-	kfree(si.name);
+ 	kfree(si.value);
  
- 	if (io_end->flag & EXT4_IO_END_UNWRITTEN) {
+ 	ocfs2_free_dir_lookup_result(&lookup);
+@@ -1855,7 +1854,6 @@ bail:
+ 
+ 	brelse(new_fe_bh);
+ 	brelse(parent_fe_bh);
+-	kfree(si.name);
+ 	kfree(si.value);
+ 	ocfs2_free_dir_lookup_result(&lookup);
+ 	if (inode_ac)
 
 
