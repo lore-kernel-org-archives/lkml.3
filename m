@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715AbaEDLuc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 07:50:32 -0400
-Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52689 "EHLO
-	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753276AbaEDLub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 07:50:31 -0400
-Message-ID: <1399204229.8729.15.camel@x220>
-Subject: [PATCH] libata-sff: remove dead code
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alan Cox <alan@linux.intel.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 04 May 2014 13:50:29 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 May 2014 11:50:29.0839 (UTC) FILETIME=[0C1F35F0:01CF678F]
-X-RcptDomain: vger.kernel.org
+	id S1753682AbaEDMBM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 08:01:12 -0400
+Received: from fieldses.org ([174.143.236.118]:37134 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372AbaEDMBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 08:01:10 -0400
+Date: Sun, 4 May 2014 08:01:08 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] lockd: avoid warning when CONFIG_SYSCTL undefined
+Message-ID: <20140504120108.GB21635@fieldses.org>
+References: <20140501211502.GA31844@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140501211502.GA31844@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ever since v2.6.19 the code contains a check for CONFIG_NO_ATA_LEGACY.
-But that macro has never been defined. Apparently no one ran into
-problems on platforms that do not support compatibility mode. So remove
-this code that has been dead for over seven years.
+On Thu, May 01, 2014 at 02:15:02PM -0700, Kees Cook wrote:
+> When building without CONFIG_SYSCTL, the compiler saw an unused
+> label. This moves the label into the #ifdef it is used under.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested!
+Thanks, applying.
 
-Perhaps the test should have been
-    #if !defined(CONFIG_PATA_LEGACY)
+--b.
 
-I wouldn't know if that's correct. But after seven years it doesn't
-matter anyhow, so I did not bother to research that.
-
- drivers/ata/libata-sff.c | 9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index b603720b877d..1121153f1ecd 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2433,15 +2433,6 @@ int ata_pci_sff_activate_host(struct ata_host *host,
- 		mask = (1 << 2) | (1 << 0);
- 		if ((tmp8 & mask) != mask)
- 			legacy_mode = 1;
--#if defined(CONFIG_NO_ATA_LEGACY)
--		/* Some platforms with PCI limits cannot address compat
--		   port space. In that case we punt if their firmware has
--		   left a device in compatibility mode */
--		if (legacy_mode) {
--			printk(KERN_ERR "ata: Compatibility mode ATA is not supported on this platform, skipping.\n");
--			return -EOPNOTSUPP;
--		}
--#endif
- 	}
- 
- 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
--- 
-1.9.0
-
+> 
+> fs/lockd/svc.c: In function ‘init_nlm’:
+> fs/lockd/svc.c:626:1: warning: label ‘err_sysctl’ defined but not used [-Wunused-label]
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  fs/lockd/svc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+> index 6bf06a07f3e0..2b431f7266c3 100644
+> --- a/fs/lockd/svc.c
+> +++ b/fs/lockd/svc.c
+> @@ -622,8 +622,8 @@ static int __init init_nlm(void)
+>  err_pernet:
+>  #ifdef CONFIG_SYSCTL
+>  	unregister_sysctl_table(nlm_sysctl_table);
+> -#endif
+>  err_sysctl:
+> +#endif
+>  	return err;
+>  }
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
