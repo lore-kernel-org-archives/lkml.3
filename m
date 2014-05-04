@@ -1,64 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429AbaEDOq5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 10:46:57 -0400
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:33045 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904AbaEDOqz (ORCPT
+	id S1751837AbaEDO6D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 10:58:03 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54993 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009AbaEDO6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 10:46:55 -0400
-From: Dominique van den Broeck <domdevlin@free.fr>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Levente Kurusa <levex@linux.com>, linux-kernel@vger.kernel.org,
-        Dominique van den Broeck <domdevlin@free.fr>
-Subject: [PATCH v2 2/2] staging/rtl8192e: userspace ptr deref + incorrect declarations
-Date: Sun,  4 May 2014 16:46:27 +0200
-Message-Id: <1399214787-15675-1-git-send-email-domdevlin@free.fr>
-X-Mailer: git-send-email 1.9.0
+	Sun, 4 May 2014 10:58:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>
+References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
+	<53636B1D.8030405@redhat.com>
+	<CAHqbYQsTnJifwQMnhzaBEBYNpN9aHaZ4Vr0GhNkQZuN+o2vNtA@mail.gmail.com>
+	<5363BF42.9020505@redhat.com>
+	<CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>
+	<jpgzjj0xbxl.fsf@nelium.bos.redhat.com>
+	<CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>
+Date: Sun, 4 May 2014 17:57:58 +0300
+Message-ID: <CAESbUUzDm0REihDHinZ+fmQL8MWqn4kYCY8mQaVEnmVr4hh7NA@mail.gmail.com>
+Subject: Re: KVM Nested L2 guest startup problems
+From: Abel Gordon <abel@stratoscale.com>
+To: Hu Yaohui <loki2441@gmail.com>
+Cc: Bandan Das <bsd@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        kvm <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Muli Ben-Yehuda <muli@stratoscale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. userspace pointer dereference ;
+On Fri, May 2, 2014 at 11:11 PM, Hu Yaohui <loki2441@gmail.com> wrote:
+>
+> On Fri, May 2, 2014 at 2:39 PM, Bandan Das <bsd@redhat.com> wrote:
+> > Hu Yaohui <loki2441@gmail.com> writes:
+> >
+> >> On Fri, May 2, 2014 at 11:52 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+> >>> Il 02/05/2014 17:17, Hu Yaohui ha scritto:
+> >>>
+> >>>> Hi Paolo,
+> >>>> I have tried L0 with linux kernel 3.14.2 and L1 with linux kernel 3.14.2
+> >>>> L1 QEMU qemu-1.7.0
+> >>>> L2 QEMU qemu-1.7.0.
+> >>>
+> >>>
+> >>> Do you mean L0 and L1?
+> >> Yes.
+> >>>
+> >>> What is your QEMU command line, and what is the processor?  Also, what guest
+> >>> you are running?
+> >>>
+> >> L0 host
+> >> - Debian 7 with linux kernel 3.14.2
+> >> - 24 pCPU, 120G pMEM
+> >> - cpu mode: Intel(R) Xeon(R) CPU E5-2620 v2 @ 2.10GHz
+> >
+> > Ivy Bridge-EP ? Looks similar to
+> > https://bugzilla.kernel.org/show_bug.cgi?id=73331
+> >
+> > Just out of curiosity, any difference if you run with ept=0 ?
+> I have tried it. The same error with L0 kvm ept=1 and L1 kvm ept=0
+> Do you have any idea how the Ivy Bridge-EP problem is solved?
 
-These issues have been fixed by a concurrent patch:
-. missing inclusions of needed header files (fixed by concurrent patch);
-. unrequired static function declaration (confusing another *.c file).
+I experienced a similar problem that was related to nested code
+having some bugs related to apicv and other new vmx features.
 
-Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
----
-v1 : I submit this patch as a result for Task #16 of the Eudyptula Challenge.
-v2 : Resubmitted because of a conflit with commit 5169af2309f42bb4cb0ebfefe6bf8bc888d4ce33 .
-     Successfully tested against commit b5c8d48bf8f4273a9fe680bd834f991005c8ab59 .
-     I resubmit only the 2/2 one, since the 1/2 as already been accepted.
+For example, the code enabled posted interrupts to run L2 even when the
+feature was not exposed to L1 and L1 didn't use it.
 
-     Levente, still agree with you about numeric values that should be changed into symbols.
-     This will form another future patch.
+Try changing prepare_vmcs02  to force disabling posted_interrupts,
+code should looks like:
 
-diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-index 498995d..d87cdfa 100644
---- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-+++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
-@@ -1131,11 +1131,18 @@ static int r8192_wx_set_PromiscuousMode(struct net_device *dev,
- 	struct r8192_priv *priv = rtllib_priv(dev);
- 	struct rtllib_device *ieee = priv->rtllib;
- 
--	u32 *info_buf = (u32 *)(wrqu->data.pointer);
-+	u32 info_buf[3];
- 
--	u32 oid = info_buf[0];
--	u32 bPromiscuousOn = info_buf[1];
--	u32 bFilterSourceStationFrame = info_buf[2];
-+	u32 oid;
-+	u32 bPromiscuousOn;
-+	u32 bFilterSourceStationFrame;
-+
-+	if (copy_from_user(info_buf, wrqu->data.pointer, sizeof(info_buf)))
-+		return -EFAULT;
-+
-+	oid = info_buf[0];
-+	bPromiscuousOn = info_buf[1];
-+	bFilterSourceStationFrame = info_buf[2];
- 
- 	if (OID_RT_INTEL_PROMISCUOUS_MODE == oid) {
- 		ieee->IntelPromiscuousModeInfo.bPromiscuousOn =
+....
+....
+exec_control = vmcs12->pin_based_vm_exec_control;
+exec_control |= vmcs_config.pin_based_exec_ctrl;
+exec_control &= ~(PIN_BASED_VMX_PREEMPTION_TIMER|PIN_BASED_POSTED_INTR);
+vmcs_write32(PIN_BASED_VM_EXEC_CONTROL, exec_control);
+....
+...
+
+and also
+
+...
+...
+exec_control &= ~(SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
+     SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
+     SECONDARY_EXEC_APIC_REGISTER_VIRT |
+     SECONDARY_EXEC_PAUSE_LOOP_EXITING);
+...
+...
+
+
+We also experienced issues using apicv for L1 while running a L2 guest
+with no apicv, so also load kvm_intel with enable_apicv=0
+
+
+Hope this solves your problem...
+You are welcome to upstream the changes if it does :)
+
+> >
+> >> - QEMU command line of L1
+> >> $ sudo qemu-system-x86_64 -machine accel=kvm -drive
+> >> file=vdisk.img,if=virtio -m 4096 -smp 10 -net
+> >> nic,model=virtio,macaddr=52:54:00:12:34:80 -cpu kvm64,+vmx -net
+> >> tap,ifname=qtap0,script=no,downscript=no -vnc :2
+> >>
+> >> L1 guest
+> >> - Ubuntu 10.04 with linux kernel 3.14.2
+> >> - QEMU command line of L2
+> >> $qemu-system-x86_64  -machine accel=kvm -smp 2 -boot c -drive
+> >> file=/home/nested/vmdisks/vdisk1-virtnet.img,if=virtio -m 2048 -vnc :4
+> >> -net nic,model=virtio,macaddr=52:54:00:12:34:90 -net
+> >> tap,ifname=qtap0,script=no,downscript=no
+> >>
+> >> L2 guest
+> >> - Ubuntu 10.04 with linux kernel 2.6.32
+> >>> Paolo
+> >>>
+> >>>
+> >>>> I still get the same error when running qemu in L1 guest.
+> >>>
+> >>>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
