@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaEDO6D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 10:58:03 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:54993 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaEDO6A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 10:58:00 -0400
+	id S1752214AbaEDO6v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 10:58:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531AbaEDO6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 10:58:50 -0400
+Date: Sun, 4 May 2014 16:58:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/4] printk: Re-add irqsave/restore in printk_sched
+Message-ID: <20140504145847.GA7433@quack.suse.cz>
+References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
+ <1399068558-2373-2-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>
-References: <CAHqbYQv+ZekSRQBbdEdfo+pXrM4ErjVDcj1T4oxHSP8Tc+322A@mail.gmail.com>
-	<53636B1D.8030405@redhat.com>
-	<CAHqbYQsTnJifwQMnhzaBEBYNpN9aHaZ4Vr0GhNkQZuN+o2vNtA@mail.gmail.com>
-	<5363BF42.9020505@redhat.com>
-	<CAHqbYQvjBmeu2_WzrSesGA=PH+8-ZfYxdmKxvsPfHRYNEcObAg@mail.gmail.com>
-	<jpgzjj0xbxl.fsf@nelium.bos.redhat.com>
-	<CAHqbYQuaaUaGTahryghh0nX99msMgeNQr=yv34mbgDJbFeSCbw@mail.gmail.com>
-Date: Sun, 4 May 2014 17:57:58 +0300
-Message-ID: <CAESbUUzDm0REihDHinZ+fmQL8MWqn4kYCY8mQaVEnmVr4hh7NA@mail.gmail.com>
-Subject: Re: KVM Nested L2 guest startup problems
-From: Abel Gordon <abel@stratoscale.com>
-To: Hu Yaohui <loki2441@gmail.com>
-Cc: Bandan Das <bsd@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        kvm <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Muli Ben-Yehuda <muli@stratoscale.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399068558-2373-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 11:11 PM, Hu Yaohui <loki2441@gmail.com> wrote:
->
-> On Fri, May 2, 2014 at 2:39 PM, Bandan Das <bsd@redhat.com> wrote:
-> > Hu Yaohui <loki2441@gmail.com> writes:
-> >
-> >> On Fri, May 2, 2014 at 11:52 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> >>> Il 02/05/2014 17:17, Hu Yaohui ha scritto:
-> >>>
-> >>>> Hi Paolo,
-> >>>> I have tried L0 with linux kernel 3.14.2 and L1 with linux kernel 3.14.2
-> >>>> L1 QEMU qemu-1.7.0
-> >>>> L2 QEMU qemu-1.7.0.
-> >>>
-> >>>
-> >>> Do you mean L0 and L1?
-> >> Yes.
-> >>>
-> >>> What is your QEMU command line, and what is the processor?  Also, what guest
-> >>> you are running?
-> >>>
-> >> L0 host
-> >> - Debian 7 with linux kernel 3.14.2
-> >> - 24 pCPU, 120G pMEM
-> >> - cpu mode: Intel(R) Xeon(R) CPU E5-2620 v2 @ 2.10GHz
-> >
-> > Ivy Bridge-EP ? Looks similar to
-> > https://bugzilla.kernel.org/show_bug.cgi?id=73331
-> >
-> > Just out of curiosity, any difference if you run with ept=0 ?
-> I have tried it. The same error with L0 kvm ept=1 and L1 kvm ept=0
-> Do you have any idea how the Ivy Bridge-EP problem is solved?
+On Fri 02-05-14 15:09:15, John Stultz wrote:
+> A commit in akpm's tree (printk: remove separate printk_sched
+> buffers...), removed the printk_sched irqsave/restore lines
+> since it was safe for current users. Since we may be expanding
+> usage of printk_sched(), re-add the irqsave/restore logic
+> to make the functionality more generally safe.
+  So I'm just wondering: Do you have anything particular for which you need
+interrupts disabled? Won't e.g. disabling preemption be enough?
 
-I experienced a similar problem that was related to nested code
-having some bugs related to apicv and other new vmx features.
+								Honza
 
-For example, the code enabled posted interrupts to run L2 even when the
-feature was not exposed to L1 and L1 didn't use it.
-
-Try changing prepare_vmcs02  to force disabling posted_interrupts,
-code should looks like:
-
-....
-....
-exec_control = vmcs12->pin_based_vm_exec_control;
-exec_control |= vmcs_config.pin_based_exec_ctrl;
-exec_control &= ~(PIN_BASED_VMX_PREEMPTION_TIMER|PIN_BASED_POSTED_INTR);
-vmcs_write32(PIN_BASED_VM_EXEC_CONTROL, exec_control);
-....
-...
-
-and also
-
-...
-...
-exec_control &= ~(SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
-     SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY |
-     SECONDARY_EXEC_APIC_REGISTER_VIRT |
-     SECONDARY_EXEC_PAUSE_LOOP_EXITING);
-...
-...
-
-
-We also experienced issues using apicv for L1 while running a L2 guest
-with no apicv, so also load kvm_intel with enable_apicv=0
-
-
-Hope this solves your problem...
-You are welcome to upstream the changes if it does :)
-
-> >
-> >> - QEMU command line of L1
-> >> $ sudo qemu-system-x86_64 -machine accel=kvm -drive
-> >> file=vdisk.img,if=virtio -m 4096 -smp 10 -net
-> >> nic,model=virtio,macaddr=52:54:00:12:34:80 -cpu kvm64,+vmx -net
-> >> tap,ifname=qtap0,script=no,downscript=no -vnc :2
-> >>
-> >> L1 guest
-> >> - Ubuntu 10.04 with linux kernel 3.14.2
-> >> - QEMU command line of L2
-> >> $qemu-system-x86_64  -machine accel=kvm -smp 2 -boot c -drive
-> >> file=/home/nested/vmdisks/vdisk1-virtnet.img,if=virtio -m 2048 -vnc :4
-> >> -net nic,model=virtio,macaddr=52:54:00:12:34:90 -net
-> >> tap,ifname=qtap0,script=no,downscript=no
-> >>
-> >> L2 guest
-> >> - Ubuntu 10.04 with linux kernel 2.6.32
-> >>> Paolo
-> >>>
-> >>>
-> >>>> I still get the same error when running qemu in L1 guest.
-> >>>
-> >>>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Jiri Bohac <jbohac@suse.cz>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/printk/printk.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index 82d19e6..bf62f2b 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -2586,15 +2586,18 @@ void wake_up_klogd(void)
+>  
+>  int printk_sched(const char *fmt, ...)
+>  {
+> +	unsigned long flags;
+>  	va_list args;
+>  	int r;
+>  
+> +	local_irq_save(flags);
+>  	va_start(args, fmt);
+>  	r = vprintk_emit(0, SCHED_MESSAGE_LOGLEVEL, NULL, 0, fmt, args);
+>  	va_end(args);
+>  
+>  	__this_cpu_or(printk_pending, PRINTK_PENDING_OUTPUT);
+>  	irq_work_queue(&__get_cpu_var(wake_up_klogd_work));
+> +	local_irq_restore(flags);
+>  
+>  	return r;
+>  }
+> -- 
+> 1.9.1
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
