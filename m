@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355AbaEDQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:26:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36337 "EHLO
+	id S1754364AbaEDPmE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaEDPmG (ORCPT
+	with ESMTP id S1754220AbaEDPmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:06 -0400
+	Sun, 4 May 2014 11:42:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Theodore Tso" <tytso@mit.edu>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.14 151/158] ext4: move ext4_update_i_disksize() into mpage_map_and_submit_extent()
-Date: Sun,  4 May 2014 11:41:00 -0400
-Message-Id: <20140504154050.535983501@linuxfoundation.org>
+        Liu Hua <sdu.liu@huawei.com>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 139/158] hung_task: check the value of "sysctl_hung_task_timeout_sec"
+Date: Sun,  4 May 2014 11:40:48 -0400
+Message-Id: <20140504154048.903336677@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,90 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit 622cad1325e404598fe3b148c3fa640dbaabc235 upstream.
+commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
 
-The function ext4_update_i_disksize() is used in only one place, in
-the function mpage_map_and_submit_extent().  Move its code to simplify
-the code paths, and also move the call to ext4_mark_inode_dirty() into
-the i_data_sem's critical region, to be consistent with all of the
-other places where we update i_disksize.  That way, we also keep the
-raw_inode's i_disksize protected, to avoid the following race:
+As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+watchdog will return immediately without sleep and with print :
 
-      CPU #1                                 CPU #2
+  schedule_timeout: wrong timeout value ffffffffffffff83
 
-   down_write(&i_data_sem)
-   Modify i_disk_size
-   up_write(&i_data_sem)
-                                        down_write(&i_data_sem)
-                                        Modify i_disk_size
-                                        Copy i_disk_size to on-disk inode
-                                        up_write(&i_data_sem)
-   Copy i_disk_size to on-disk inode
+and then the funtion watchdog will call schedule_timeout_interruptible
+again and again.  The screen will be filled with
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Jan Kara <jack@suse.cz>
+	"schedule_timeout: wrong timeout value ffffffffffffff83"
+
+This patch does some check and correction in sysctl, to let the function
+schedule_timeout_interruptible allways get the valid parameter.
+
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h  |   17 -----------------
- fs/ext4/inode.c |   14 ++++++++++++--
- 2 files changed, 12 insertions(+), 19 deletions(-)
+ Documentation/sysctl/kernel.txt |    1 +
+ kernel/sysctl.c                 |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2462,23 +2462,6 @@ static inline void ext4_update_i_disksiz
- 	up_write(&EXT4_I(inode)->i_data_sem);
- }
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -317,6 +317,7 @@ for more than this value report a warnin
+ This file shows up if CONFIG_DETECT_HUNG_TASK is enabled.
  
--/*
-- * Update i_disksize after writeback has been started. Races with truncate
-- * are avoided by checking i_size under i_data_sem.
-- */
--static inline void ext4_wb_update_i_disksize(struct inode *inode, loff_t newsize)
--{
--	loff_t i_size;
--
--	down_write(&EXT4_I(inode)->i_data_sem);
--	i_size = i_size_read(inode);
--	if (newsize > i_size)
--		newsize = i_size;
--	if (newsize > EXT4_I(inode)->i_disksize)
--		EXT4_I(inode)->i_disksize = newsize;
--	up_write(&EXT4_I(inode)->i_data_sem);
--}
--
- struct ext4_group_info {
- 	unsigned long   bb_state;
- 	struct rb_root  bb_free_root;
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2236,13 +2236,23 @@ static int mpage_map_and_submit_extent(h
- 			return err;
- 	} while (map->m_len);
+ 0: means infinite timeout - no checking done.
++Possible values to set are in range {0..LONG_MAX/HZ}.
  
--	/* Update on-disk size after IO is submitted */
-+	/*
-+	 * Update on-disk size after IO is submitted.  Races with
-+	 * truncate are avoided by checking i_size under i_data_sem.
-+	 */
- 	disksize = ((loff_t)mpd->first_page) << PAGE_CACHE_SHIFT;
- 	if (disksize > EXT4_I(inode)->i_disksize) {
- 		int err2;
-+		loff_t i_size;
+ ==============================================================
  
--		ext4_wb_update_i_disksize(inode, disksize);
-+		down_write(&EXT4_I(inode)->i_data_sem);
-+		i_size = i_size_read(inode);
-+		if (disksize > i_size)
-+			disksize = i_size;
-+		if (disksize > EXT4_I(inode)->i_disksize)
-+			EXT4_I(inode)->i_disksize = disksize;
- 		err2 = ext4_mark_inode_dirty(handle, inode);
-+		up_write(&EXT4_I(inode)->i_data_sem);
- 		if (err2)
- 			ext4_error(inode->i_sb,
- 				   "Failed to mark inode %lu dirty",
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+ 
++/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
++#ifdef CONFIG_DETECT_HUNG_TASK
++static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
++#endif
++
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+ #endif
+@@ -995,6 +1000,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dohung_task_timeout_secs,
++		.extra2		= &hung_task_timeout_max,
+ 	},
+ 	{
+ 		.procname	= "hung_task_warnings",
 
 
