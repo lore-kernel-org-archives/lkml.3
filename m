@@ -1,170 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaEDPta (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:49:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36838 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755048AbaEDPm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755055AbaEDPm4 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36704 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881AbaEDPmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Golde <nico@ngolde.de>, Fabian Yamaguchi <fabs@goesec.de>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 21/43] IB/ipath: Fix potential buffer overrun in sending diag packet routine
-Date: Sun,  4 May 2014 11:42:15 -0400
-Message-Id: <20140504154227.143880834@linuxfoundation.org>
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.10 62/86] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
+Date: Sun,  4 May 2014 11:41:37 -0400
+Message-Id: <20140504154148.872363998@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
-References: <20140504154224.211508175@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: David Cohen <david.a.cohen@linux.intel.com>
 
-commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
+commit 01bb59ebffdec314da8da66266edf29529372f9b upstream.
 
-Guard against a potential buffer overrun.  The size to read from the
-user is passed in, and due to the padding that needs to be taken into
-account, as well as the place holder for the ICRC it is possible to
-overflow the 32bit value which would cause more data to be copied from
-user space than is allocated in the buffer.
+When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
+warning:
+drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
+but not used [-Wunused-function]
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Instead of creating nested #ifdefs, this patch fixes it by defining the
+xHCI PCI stubs as inline.
+
+This warning has been in since 3.2 kernel and was
+caused by commit 421aa841a134f6a743111cf44d0c6d3b45e3cf8c
+"usb/xhci: hide MSI code behind PCI bars", but wasn't noticed
+until 3.13 when a configuration with these options was tried
+
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c |   66 +++++++++++--------------------
- 1 file changed, 25 insertions(+), 41 deletions(-)
+ drivers/usb/host/xhci.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struc
- 				   size_t count, loff_t *off)
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -394,16 +394,16 @@ static int xhci_try_enable_msi(struct us
+ 
+ #else
+ 
+-static int xhci_try_enable_msi(struct usb_hcd *hcd)
++static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
  {
- 	u32 __iomem *piobuf;
--	u32 plen, clen, pbufn;
-+	u32 plen, pbufn, maxlen_reserve;
- 	struct ipath_diag_pkt odp;
- 	struct ipath_diag_xpkt dp;
- 	u32 *tmpbuf = NULL;
-@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struc
- 	u64 val;
- 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
+ 	return 0;
+ }
  
--	if (count < sizeof(odp)) {
--		ret = -EINVAL;
--		goto bail;
--	}
+-static void xhci_cleanup_msix(struct xhci_hcd *xhci)
++static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
+ {
+ }
  
- 	if (count == sizeof(dp)) {
- 		if (copy_from_user(&dp, data, sizeof(dp))) {
- 			ret = -EFAULT;
- 			goto bail;
- 		}
--	} else if (copy_from_user(&odp, data, sizeof(odp))) {
--		ret = -EFAULT;
-+	} else if (count == sizeof(odp)) {
-+		if (copy_from_user(&odp, data, sizeof(odp))) {
-+			ret = -EFAULT;
-+			goto bail;
-+		}
-+	} else {
-+		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	/*
--	 * Due to padding/alignment issues (lessened with new struct)
--	 * the old and new structs are the same length. We need to
--	 * disambiguate them, which we can do because odp.len has never
--	 * been less than the total of LRH+BTH+DETH so far, while
--	 * dp.unit (same offset) unit is unlikely to get that high.
--	 * Similarly, dp.data, the pointer to user at the same offset
--	 * as odp.unit, is almost certainly at least one (512byte)page
--	 * "above" NULL. The if-block below can be omitted if compatibility
--	 * between a new driver and older diagnostic code is unimportant.
--	 * compatibility the other direction (new diags, old driver) is
--	 * handled in the diagnostic code, with a warning.
--	 */
--	if (dp.unit >= 20 && dp.data < 512) {
--		/* very probable version mismatch. Fix it up */
--		memcpy(&odp, &dp, sizeof(odp));
--		/* We got a legacy dp, copy elements to dp */
--		dp.unit = odp.unit;
--		dp.data = odp.data;
--		dp.len = odp.len;
--		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
--	}
--
- 	/* send count must be an exact number of dwords */
- 	if (dp.len & 3) {
- 		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	clen = dp.len >> 2;
-+	plen = dp.len >> 2;
- 
- 	dd = ipath_lookup(dp.unit);
- 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
-@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struc
- 		goto bail;
- 	}
- 
--	/* need total length before first word written */
--	/* +1 word is for the qword padding */
--	plen = sizeof(u32) + dp.len;
--
--	if ((plen + 4) > dd->ipath_ibmaxlen) {
-+	/*
-+	 * need total length before first word written, plus 2 Dwords. One Dword
-+	 * is for padding so we get the full user data when not aligned on
-+	 * a word boundary. The other Dword is to make sure we have room for the
-+	 * ICRC which gets tacked on later.
-+	 */
-+	maxlen_reserve = 2 * sizeof(u32);
-+	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
- 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
--			  plen - 4, dd->ipath_ibmaxlen);
-+			  dp.len, dd->ipath_ibmaxlen);
- 		ret = -EINVAL;
--		goto bail;	/* before writing pbc */
-+		goto bail;
- 	}
-+
-+	plen = sizeof(u32) + dp.len;
-+
- 	tmpbuf = vmalloc(plen);
- 	if (!tmpbuf) {
- 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
-@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struc
- 	 */
- 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
- 		ipath_flush_wc();
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
- 		ipath_flush_wc();
--		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
-+		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
- 	} else
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
- 
- 	ipath_flush_wc();
+-static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
++static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
+ {
+ }
  
 
 
