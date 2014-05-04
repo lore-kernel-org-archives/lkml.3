@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670AbaEDQWj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:22:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36387 "EHLO
+	id S1754438AbaEDPmJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446AbaEDPmK (ORCPT
+	with ESMTP id S1754373AbaEDPmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:10 -0400
+	Sun, 4 May 2014 11:42:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kazuya Mio <k-mio@sx.jp.nec.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.14 148/158] ext4: FIBMAP ioctl causes BUG_ON due to handle EXT_MAX_BLOCKS
-Date: Sun,  4 May 2014 11:40:57 -0400
-Message-Id: <20140504154050.134260742@linuxfoundation.org>
+        Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 130/158] mtip32xx: Set queue bounce limit
+Date: Sun,  4 May 2014 11:40:39 -0400
+Message-Id: <20140504154047.685125973@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,41 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kazuya Mio <k-mio@sx.jp.nec.com>
+From: Felipe Franciosi <felipe@paradoxo.org>
 
-commit 4adb6ab3e0fa71363a5ef229544b2d17de6600d7 upstream.
+commit 1044b1bb9278f2e656a1a7b63dc24a59506540aa upstream.
 
-When we try to get 2^32-1 block of the file which has the extent
-(ee_block=2^32-2, ee_len=1) with FIBMAP ioctl, it causes BUG_ON
-in ext4_ext_put_gap_in_cache().
+We need to set the queue bounce limit during the device initialization to
+prevent excessive bouncing on 32 bit architectures.
 
-To avoid the problem, ext4_map_blocks() needs to check the file logical block
-number. ext4_ext_put_gap_in_cache() called via ext4_map_blocks() cannot
-handle 2^32-1 because the maximum file logical block number is 2^32-2.
-
-Note that ext4_ind_map_blocks() returns -EIO when the block number is invalid.
-So ext4_map_blocks() should also return the same errno.
-
-Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/block/mtip32xx/mtip32xx.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -515,6 +515,10 @@ int ext4_map_blocks(handle_t *handle, st
- 		  "logical block %lu\n", inode->i_ino, flags, map->m_len,
- 		  (unsigned long) map->m_lblk);
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4213,6 +4213,7 @@ skip_create_disk:
+ 	blk_queue_max_hw_sectors(dd->queue, 0xffff);
+ 	blk_queue_max_segment_size(dd->queue, 0x400000);
+ 	blk_queue_io_min(dd->queue, 4096);
++	blk_queue_bounce_limit(dd->queue, dd->pdev->dma_mask);
  
-+	/* We can handle the block number less than EXT_MAX_BLOCKS */
-+	if (unlikely(map->m_lblk >= EXT_MAX_BLOCKS))
-+		return -EIO;
-+
- 	/* Lookup extent status tree firstly */
- 	if (ext4_es_lookup_extent(inode, map->m_lblk, &es)) {
- 		ext4_es_lru_add(inode);
+ 	/*
+ 	 * write back cache is not supported in the device. FUA depends on
 
 
