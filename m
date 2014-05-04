@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815AbaEDQtd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:49:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35967 "EHLO
+	id S1756341AbaEDQtu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:49:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36001 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaEDPl3 (ORCPT
+	with ESMTP id S1753867AbaEDPl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 042/158] mfd: 88pm800: Fix I2C device resource leak if probe fails
-Date: Sun,  4 May 2014 11:39:11 -0400
-Message-Id: <20140504154035.714707215@linuxfoundation.org>
+        David Fries <David@Fries.net>, Evgeniy Polyakov <zbr@ioremap.net>
+Subject: [PATCH 3.14 051/158] w1: fix w1_send_slave dropping a slave id
+Date: Sun,  4 May 2014 11:39:20 -0400
+Message-Id: <20140504154036.889265027@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,44 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: David Fries <David@Fries.net>
 
-commit 141050cf3d84fc303df58796d68dc1376b0e8f67 upstream.
+commit 6b355b33a64fd6d8ead2b838ec16fb9b551f71e8 upstream.
 
-During probe the driver allocates two dummy I2C devices for subchips in
-function pm800_pages_init(). Additionally this function allocates
-regmaps for these subchips. If any of these steps fail then these dummy
-I2C devices are not freed and resources leak.
+Previous logic,
+if (avail > 8) {
+	store slave;
+	return;
+}
+send data; clear;
 
-On pm800_pages_init() fail the driver must call pm800_pages_exit() to
-unregister dummy I2C devices.
+The logic error is, if there isn't space send the buffer and clear,
+but the slave wasn't added to the now empty buffer loosing that slave
+id.  It also should have been "if (avail >= 8)" because when it is 8,
+there is space.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Instead, if there isn't space send and clear the buffer, then there is
+always space for the slave id.
+
+Signed-off-by: David Fries <David@Fries.net>
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/88pm800.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/w1/w1_netlink.c |   27 ++++++++++++++-------------
+ 1 file changed, 14 insertions(+), 13 deletions(-)
 
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -571,7 +571,7 @@ static int pm800_probe(struct i2c_client
- 	ret = pm800_pages_init(chip);
- 	if (ret) {
- 		dev_err(&client->dev, "pm800_pages_init failed!\n");
--		goto err_page_init;
-+		goto err_device_init;
+--- a/drivers/w1/w1_netlink.c
++++ b/drivers/w1/w1_netlink.c
+@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_mast
+ 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
+ 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
+ 	int avail;
++	u64 *data;
+ 
+ 	/* update kernel slave list */
+ 	w1_slave_found(dev, rn);
+ 
+ 	avail = dev->priv_size - cmd->len;
+ 
+-	if (avail > 8) {
+-		u64 *data = (void *)(cmd + 1) + cmd->len;
+-
+-		*data = rn;
+-		cmd->len += 8;
+-		hdr->len += 8;
+-		msg->len += 8;
+-		return;
++	if (avail < 8) {
++		msg->ack++;
++		cn_netlink_send(msg, 0, GFP_KERNEL);
++
++		msg->len = sizeof(struct w1_netlink_msg) +
++			sizeof(struct w1_netlink_cmd);
++		hdr->len = sizeof(struct w1_netlink_cmd);
++		cmd->len = 0;
  	}
  
- 	ret = device_800_init(chip, pdata);
-@@ -587,7 +587,6 @@ static int pm800_probe(struct i2c_client
+-	msg->ack++;
+-	cn_netlink_send(msg, 0, GFP_KERNEL);
++	data = (void *)(cmd + 1) + cmd->len;
  
- err_device_init:
- 	pm800_pages_exit(chip);
--err_page_init:
- err_subchip_alloc:
- 	pm80x_deinit();
- out_init:
+-	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
+-	hdr->len = sizeof(struct w1_netlink_cmd);
+-	cmd->len = 0;
++	*data = rn;
++	cmd->len += 8;
++	hdr->len += 8;
++	msg->len += 8;
+ }
+ 
+ static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
 
 
