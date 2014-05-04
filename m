@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaEDQvA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:51:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35993 "EHLO
+	id S1756841AbaEDQv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:51:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35986 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846AbaEDPl1 (ORCPT
+	with ESMTP id S1753838AbaEDPl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:27 -0400
+	Sun, 4 May 2014 11:41:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3.14 048/158] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
-Date: Sun,  4 May 2014 11:39:17 -0400
-Message-Id: <20140504154036.520950454@linuxfoundation.org>
+Subject: [PATCH 3.14 045/158] mfd: max8925: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Sun,  4 May 2014 11:39:14 -0400
+Message-Id: <20140504154036.116026867@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -29,42 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
+commit 96cf3dedc491d2f1f66cc26217f2b06b0c7b6797 upstream.
 
-Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
+During probe the driver allocates dummy I2C devices for RTC and ADC
+with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-tps65910_irq_init() sets 'tps65910->chip_irq' before calling
-regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
-memory allocation of regmap_irq_chip_data members then:
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-1. The 'tps65910->chip_irq' will still hold some value
-2. 'tps65910->irq_data' will be pointing to already freed memory
-   (because regmap_add_irq_chip() will free it on error)
-
-This results in invalid memory access during driver remove because the
-tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
+If i2c_new_dummy() fails for RTC or ADC devices, fail also the probe
+for main MFD driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mfd/tps65910.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/mfd/max8925-i2c.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -255,8 +255,10 @@ static int tps65910_irq_init(struct tps6
- 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
- 		IRQF_ONESHOT, pdata->irq_base,
- 		tps6591x_irqs_chip, &tps65910->irq_data);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
-+		tps65910->chip_irq = 0;
-+	}
- 	return ret;
- }
+--- a/drivers/mfd/max8925-i2c.c
++++ b/drivers/mfd/max8925-i2c.c
+@@ -181,9 +181,18 @@ static int max8925_probe(struct i2c_clie
+ 	mutex_init(&chip->io_lock);
  
+ 	chip->rtc = i2c_new_dummy(chip->i2c->adapter, RTC_I2C_ADDR);
++	if (!chip->rtc) {
++		dev_err(chip->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(chip->rtc, chip);
+ 
+ 	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
++	if (!chip->adc) {
++		dev_err(chip->dev, "Failed to allocate I2C device for ADC\n");
++		i2c_unregister_device(chip->rtc);
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(chip->adc, chip);
+ 
+ 	device_init_wakeup(&client->dev, 1);
 
 
