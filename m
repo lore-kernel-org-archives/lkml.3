@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaEDU1k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 16:27:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38488 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751362AbaEDU1j (ORCPT
+	id S1753347AbaEDUjD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 16:39:03 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:60218 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaEDUjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 16:27:39 -0400
-Date: Sun, 4 May 2014 16:27:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 000/158] 3.14.3-stable review
-Message-ID: <20140504202738.GA25318@kroah.com>
-References: <20140504154029.975081050@linuxfoundation.org>
- <5366769D.2010104@roeck-us.net>
+	Sun, 4 May 2014 16:39:02 -0400
+Date: Sun, 4 May 2014 13:37:47 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Richard Weinberger <richard.weinberger@gmail.com>
+cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [3.15rc1] BUG at mm/filemap.c:202!
+In-Reply-To: <CAFLxGvxPV9+BgP=CVEp4kLbedOYBEui9uYddNTDix=ENrrusoQ@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1405041311130.3230@eggly.anvils>
+References: <20140415190936.GA24654@redhat.com> <alpine.LSU.2.11.1404161239320.6778@eggly.anvils> <CAFLxGvxZxWf6nzJ5cXM--b02axz9u8UL_MTUyo3WgLPvbpCFAg@mail.gmail.com> <CAFLxGvxPV9+BgP=CVEp4kLbedOYBEui9uYddNTDix=ENrrusoQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5366769D.2010104@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 04, 2014 at 10:19:25AM -0700, Guenter Roeck wrote:
-> On 05/04/2014 08:38 AM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.14.3 release.
-> > There are 158 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
+On Sat, 3 May 2014, Richard Weinberger wrote:
+> On Thu, May 1, 2014 at 6:20 PM, Richard Weinberger
+> <richard.weinberger@gmail.com> wrote:
+> > On Wed, Apr 16, 2014 at 10:40 PM, Hugh Dickins <hughd@google.com> wrote:
+> >>
+> >> Help!
 > >
-> > Responses should be made by Tue May  6 15:38:47 UTC 2014.
-> > Anything received after that time might be too late.
+> > Using a trinity as of today I'm able to trigger this bug on UML within seconds.
+> > If you want me to test patch, I can help.
 > >
+> > I'm also observing one strange fact, I can trigger this on any kernel version.
+> > So far I've managed UML to crash on 3.0 to 3.15-rc...
 > 
-> Build results:
-> 	total: 127 pass: 121 skipped: 4 fail: 2
+> After digging deeper into UML's mmu and tlb code I've found issues and
+> fixed them.
 > 
-> Qemu tests all passed.
-> 
-> Additional failure is from new build target unicore32:defconfig, which fails
-> in all releases. The second failure is powerpc:allmodconfig which, together
-> with powerpc:allyesconfig, fails to build in 3.14 and later kernels.
-> Results are therefore as expected.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
-> 
+> But I'm still facing this issue. Although triggering the BUG_ON() is
+> not so easy as before
+> I can trigger "BUG: Bad rss-counter ..." very easily.
+> Now the interesting fact, with my UML mmu and flb fixes applied it
+> happens only on kernels >= 3.14.
+> If it helps I can try to bisect it.
 
-If unicore32 doesn't build on any kernel version, should we just drop
-the whole arch?
+Thanks a lot for trying, but from other mail it looks like your
+bisection got blown off course ;(
 
-I'd suggest the same for powerpc, but odds are, there are still users :)
+I expect for the moment you'll want to concentrate on getting UML's
+TLB flushing back on track with 3.15-rc.
 
-thanks,
+Once you have that sorted out, I wouldn't be surprised if the same
+changes turn out to fix your "Bad rss-counter"s on 3.14 also.
 
-greg k-h
+If not, and if you do still have time to bisect back between 3.13 and
+3.14 to find where things went wrong, it will be a bit tedious in that
+you would probably have to apply
+
+887843961c4b "mm: fix bad rss-counter if remap_file_pages raced migration"
+7e09e738afd2 "mm: fix swapops.h:131 bug if remap_file_pages raced migration"
+
+at each stage, to avoid those now-known bugs which trinity became rather
+good at triggering.  Perhaps other fixes needed, those the two I remember.
+
+Please don't worry if you don't have time for this, that's understandable.
+
+Or is UML so contrary that one of those commits actually brings on the
+problem for you?
+
+As to the BUG_ON(page_mapped(page)), I still have nothing to suggest.
+
+Hugh
