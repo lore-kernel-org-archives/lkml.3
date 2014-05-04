@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaEDCP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 May 2014 22:15:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35458 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753390AbaEDCPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 May 2014 22:15:25 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrXZyJx_5nMvW273gLJX+PROZpY3L5Wy_cwj=mK=6fSCJQ@mail.gmail.com>
-References: <6cfe29821979c42cd812878e05577f69f99fafaf.1399074748.git.luto@amacapital.net> <53646A7E.8010400@zytor.com> <20140503072428.54f89688@gandalf.local.home> <53656B7A.8050606@zytor.com> <CALCETrVVRN3gEhhtg=r3eZK-zH0qV3qFXuiLD8guCEAiOBP__A@mail.gmail.com> <CALCETrXZyJx_5nMvW273gLJX+PROZpY3L5Wy_cwj=mK=6fSCJQ@mail.gmail.com>
+	id S1753563AbaEDCcz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 May 2014 22:32:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59517 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753468AbaEDCcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 May 2014 22:32:54 -0400
+Date: Sat, 3 May 2014 22:32:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Rohit Seth <rohitseth@google.com>
+Subject: Re: [PATCH] sysctl: Fix division by zero in percpu_pagelist_fraction
+ handler
+Message-ID: <20140504023248.GA30871@kroah.com>
+References: <1399166883-514-1-git-send-email-green@linuxhacker.ru>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v2] x86: Return to kernel without IRET
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 03 May 2014 19:15:02 -0700
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Message-ID: <94c51c14-d50b-44b7-a11f-5865c5486cb4@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399166883-514-1-git-send-email-green@linuxhacker.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have to do that anyway to deal with 16- and 32-bit userspace return.
+On Sat, May 03, 2014 at 09:28:03PM -0400, Oleg Drokin wrote:
+> percpu_pagelist_fraction_sysctl_handler calls proc_dointvec_minmax
+> and blindly assumes that return value of 0 means success.
+> In fact the other valid case is when it got a zero length input.
+> 
+> After that it proceeds to a division by percpu_pagelist_fraction
+> value which is conveniently set to a default of zero, resulting in
+> division by zero.
+> 
+> Other than checking the bytecount to be more than zero, perhaps
+> a better default value for percpu_pagelist_fraction would help too.
+> 
+> [  661.985469] divide error: 0000 [#1] SMP DEBUG_PAGEALLOC
+> [  661.985868] Modules linked in: binfmt_misc cfg80211 rfkill rpcsec_gss_krb5 ttm drm_kms_helper drm i2c_piix4 microcode i2c_core joydev serio_raw pcspkr virtio_blk nfsd
+> [  661.986008] CPU: 1 PID: 9142 Comm: badarea_io Not tainted 3.15.0-rc2-vm-nfs+ #19
+> [  661.986008] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [  661.986008] task: ffff8800d5aeb6e0 ti: ffff8800d87a2000 task.ti: ffff8800d87a2000
+> [  661.986008] RIP: 0010:[<ffffffff81152664>]  [<ffffffff81152664>] percpu_pagelist_fraction_sysctl_handler+0x84/0x120
+> [  661.988031] RSP: 0018:ffff8800d87a3e78  EFLAGS: 00010246
+> [  661.988031] RAX: 0000000000000f89 RBX: ffff88011f7fd000 RCX: 0000000000000000
+> [  661.988031] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000010
+> [  661.988031] RBP: ffff8800d87a3e98 R08: ffffffff81d002c8 R09: ffff8800d87a3f50
+> [  661.988031] R10: 000000000000000b R11: 0000000000000246 R12: 0000000000000060
+> [  661.988031] R13: ffffffff81c3c3e0 R14: ffffffff81cfddf8 R15: ffff8801193b0800
+> [  661.988031] FS:  00007f614f1e9740(0000) GS:ffff88011f440000(0000) knlGS:0000000000000000
+> [  661.988031] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  661.988031] CR2: 00007f614f1fa000 CR3: 00000000d9291000 CR4: 00000000000006e0
+> [  661.988031] Stack:
+> [  661.988031]  0000000000000001 ffffffffffffffea ffffffff81c3c3e0 0000000000000000
+> [  661.988031]  ffff8800d87a3ee8 ffffffff8122b163 ffff8800d87a3f50 00007fff1564969c
+> [  661.988031]  0000000000000000 ffff8800d8098f00 00007fff1564969c ffff8800d87a3f50
+> [  661.988031] Call Trace:
+> [  661.988031]  [<ffffffff8122b163>] proc_sys_call_handler+0xb3/0xc0
+> [  661.988031]  [<ffffffff8122b184>] proc_sys_write+0x14/0x20
+> [  661.988031]  [<ffffffff811ba93a>] vfs_write+0xba/0x1e0
+> [  661.988031]  [<ffffffff811bb486>] SyS_write+0x46/0xb0
+> [  661.988031]  [<ffffffff816db7ff>] tracesys+0xe1/0xe6
+> [  661.988031] Code: 1f 84 00 00 00 00 00 48 83 bb b0 06 00 00 00 0f 84 7c 00 00 00 48 63 0d 93 6a e1 00 48 8b 83 b8 06 00 00 31 d2 41 bc 60 00 00 00 <48> f7 f1 ba 01 00 00 00 49 89 c5 48 c1 e8 02 48 85 c0 48 0f 44
+> 
+> Signed-off-by: Oleg Drokin <green@linuxhacker.ru>
+> CC: Rohit Seth <rohitseth@google.com>
 
-On May 3, 2014 5:31:41 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->On Sat, May 3, 2014 at 4:51 PM, Andy Lutomirski <luto@amacapital.net>
->wrote:
->> On Sat, May 3, 2014 at 3:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 05/03/2014 04:24 AM, Steven Rostedt wrote:
->>>> On Fri, 02 May 2014 21:03:10 -0700
->>>> "H. Peter Anvin" <hpa@zytor.com> wrote:
->>>>
->>>>>
->>>>> I'd really like to see a workload which would genuinely benefit
->before
->>>>> adding more complexity.  Now... if we can determine that it
->doesn't harm
->>>>> anything and would solve the NMI nesting problem cleaner than the
->>>>> current solution, that would justify things, too...
->>>>>
->>>>
->>>> As I stated before. It doesn't solve the NMI nesting problem. It
->only
->>>> handles page faults. We would have to implement this for breakpoint
->>>> return paths too. Is that a plan as well?
->>>>
->>>
->>> I would assume we would do it for *ALL* the IRETs.  There are only
->three
->>> IRETs in the kernel last I checked...
->>
->> I think we should carefully avoid doing it for returns from NMI,
->though :)
->>
->> If you want a realistic benchmark that will speed up, packet
->> forwarding might be a good place to look.
->
->Hmm.  I think my patch will blow up with EFI mixed mode if any EFI
->functions are called with interrupts enabled.  It may also blow up
->with when suspending or doing other BIOS things like that.  It should
->probably check the actual value of CS as opposed to just the CPL.
->
->I'm not sure what's happening with the alternate GDT in the EFI stuff.
->
->--Andy
+Why are you sending this to me?  Please use scripts/get_maintainer.pl to
+find the people, and mailing lists, that this patch should be sent to.
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+thanks,
+
+greg k-h
