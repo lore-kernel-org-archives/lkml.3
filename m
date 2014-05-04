@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaEDPlY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
+	id S1755682AbaEDQxx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:53:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359AbaEDPlT (ORCPT
+	with ESMTP id S1753757AbaEDPlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:19 -0400
+	Sun, 4 May 2014 11:41:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 029/158] ACPICA: Restore code that repairs NULL package elements in return values.
-Date: Sun,  4 May 2014 11:38:58 -0400
-Message-Id: <20140504154033.987693333@linuxfoundation.org>
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [PATCH 3.14 038/158] mei: ignore client writing state during cb completion
+Date: Sun,  4 May 2014 11:39:07 -0400
+Message-Id: <20140504154035.149415790@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,71 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 61db45ca21630f5ab7f678d54c5d969c21647854 upstream.
+commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
 
-The original code was lost accidently, it was not generated along with the
-following commit of mechanism improvements and thus not get merged:
+Ignore client writing state during cb completion to fix a memory
+leak.
 
-  Commit: d5a36100f62fa6db5541344e08b361b34e9114c5
-  Subject: ACPICA: Add mechanism for early object repairs on a per-name basis
+When moving cbs to the completion list we should not look at
+writing_state as this state can be already overwritten by next
+write, the fact that a cb is on the write waiting list means
+that it was already written to the HW and we can safely complete it.
 
-  Adds the framework to allow object repairs very early in the
-  return object analysis. Enables repairs like string->unicode,
-  etc.
+Same pays for wait in poll handler, we do not have to check the state
+wake is done after completion list processing.
 
-This patch restores the implementation of the NULL element repair code for
-ACPI_RTYPE_NONE.  In the original design, ACPI_RTYPE_NONE is defined to
-collect simple NULL object repairs.
-Lv Zheng.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=67901
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpica/nsrepair.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/misc/mei/interrupt.c |    3 +--
+ drivers/misc/mei/main.c      |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/acpi/acpica/nsrepair.c
-+++ b/drivers/acpi/acpica/nsrepair.c
-@@ -207,13 +207,30 @@ acpi_ns_simple_repair(struct acpi_evalua
- 	 * this predefined name. Either one return value is expected, or none,
- 	 * for both methods and other objects.
- 	 *
--	 * Exit now if there is no return object. Warning if one was expected.
-+	 * Try to fix if there was no return object. Warning if failed to fix.
- 	 */
- 	if (!return_object) {
- 		if (expected_btypes && (!(expected_btypes & ACPI_RTYPE_NONE))) {
--			ACPI_WARN_PREDEFINED((AE_INFO, info->full_pathname,
--					      ACPI_WARN_ALWAYS,
--					      "Missing expected return value"));
-+			if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Found unexpected NULL package element"));
-+
-+				status =
-+				    acpi_ns_repair_null_element(info,
-+								expected_btypes,
-+								package_index,
-+								return_object_ptr);
-+				if (ACPI_SUCCESS(status)) {
-+					return (AE_OK);	/* Repair was successful */
-+				}
-+			} else {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Missing expected return value"));
-+			}
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -428,8 +428,7 @@ int mei_irq_write_handler(struct mei_dev
  
- 			return (AE_AML_NO_RETURN_VALUE);
- 		}
+ 		cl->status = 0;
+ 		list_del(&cb->list);
+-		if (MEI_WRITING == cl->writing_state &&
+-		    cb->fop_type == MEI_FOP_WRITE &&
++		if (cb->fop_type == MEI_FOP_WRITE &&
+ 		    cl != &dev->iamthif_cl) {
+ 			cl_dbg(dev, cl, "MEI WRITE COMPLETE\n");
+ 			cl->writing_state = MEI_WRITE_COMPLETE;
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -653,8 +653,7 @@ static unsigned int mei_poll(struct file
+ 		goto out;
+ 	}
+ 
+-	if (MEI_WRITE_COMPLETE == cl->writing_state)
+-		mask |= (POLLIN | POLLRDNORM);
++	mask |= (POLLIN | POLLRDNORM);
+ 
+ out:
+ 	mutex_unlock(&dev->device_lock);
 
 
