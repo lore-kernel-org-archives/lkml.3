@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaEDPlS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35840 "EHLO
+	id S1756569AbaEDQ5g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:57:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35866 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaEDPlJ (ORCPT
+	with ESMTP id S1752884AbaEDPlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:09 -0400
+	Sun, 4 May 2014 11:41:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 003/158] ASoC: pcm: Drop incorrect double/extra frees
-Date: Sun,  4 May 2014 11:38:32 -0400
-Message-Id: <20140504154030.472366571@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 023/158] ALSA: hda - add headset mic detect quirks for three Dell laptops
+Date: Sun,  4 May 2014 11:38:52 -0400
+Message-Id: <20140504154033.182174535@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,50 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit 017d9491ce203c620ad1377f46a3ce78d554b2de upstream.
+commit a870593bab179ca402ead455f45af6e4404a2a7f upstream.
 
-The changes in "ASoC: pcm: free path list before exiting from error
-conditions" actually introduced both double frees (in case where the
-path list was allocated but empty) and frees of unallocated memory (in
-cases where the error being handled was -ENOMEM.  Drop the commit for
-now.
+When we plug a 3-ring headset on the Dell machines (VID: 0x10ec0255,
+SID: 0x10280632; VID: 0x10ec0293, SID: 0x1028062c; VID: 0x10ec0293,
+SID: 0x1028062e), the headset mic can't be detected, after apply this
+patch, the headset mic can work well.
 
-Fixes: e4ad1accb (ASoC: pcm: free path list before exiting from error conditions)
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+BugLink: https://bugs.launchpad.net/bugs/1297581
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-pcm.c |    3 ---
- 1 file changed, 3 deletions(-)
+ sound/pci/hda/patch_realtek.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/soc-pcm.c
-+++ b/sound/soc/soc-pcm.c
-@@ -1989,7 +1989,6 @@ int soc_dpcm_runtime_update(struct snd_s
- 
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_PLAYBACK, &list);
- 		if (paths < 0) {
--			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "playback");
- 			mutex_unlock(&card->mutex);
-@@ -2019,7 +2018,6 @@ capture:
- 
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_CAPTURE, &list);
- 		if (paths < 0) {
--			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "capture");
- 			mutex_unlock(&card->mutex);
-@@ -2084,7 +2082,6 @@ static int dpcm_fe_dai_open(struct snd_p
- 	fe->dpcm[stream].runtime = fe_substream->runtime;
- 
- 	if (dpcm_path_get(fe, stream, &list) <= 0) {
--		dpcm_path_put(&list);
- 		dev_dbg(fe->dev, "ASoC: %s no valid %s route\n",
- 			fe->dai_link->name, stream ? "capture" : "playback");
- 	}
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4404,6 +4404,9 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x1028, 0x0616, "Dell Vostro 5470", ALC290_FIXUP_SUBWOOFER_HSJACK),
+ 	SND_PCI_QUIRK(0x1028, 0x061f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0629, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x062c, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x062e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0632, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS_HSJACK),
+ 	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x063f, "Dell", ALC255_FIXUP_DELL1_MIC_NO_PRESENCE),
 
 
