@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaEDPur (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:50:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36835 "EHLO
+	id S1755030AbaEDPmy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754878AbaEDPmz (ORCPT
+	with ESMTP id S1754878AbaEDPmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:55 -0400
+	Sun, 4 May 2014 11:42:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.4 18/43] nfsd4: fix test_stateid error reply encoding
-Date: Sun,  4 May 2014 11:42:12 -0400
-Message-Id: <20140504154226.711442728@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.10 71/86] usb: dwc3: fix wrong bit mask in dwc3_event_devt
+Date: Sun,  4 May 2014 11:41:46 -0400
+Message-Id: <20140504154150.118496884@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
-References: <20140504154224.211508175@linuxfoundation.org>
+In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
+References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit a11fcce1544df08c723d950ff0edef3adac40405 upstream.
+commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
 
-If the entire operation fails then there's nothing to encode.
+Around DWC USB3 2.30a release another bit has been added to the
+Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Because of that, what used to be 8 bits long, has become 9 bits long.
+
+Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
+Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
+not 8 bits. And the following reserved field uses [31:25] bits not
+[31:24] bits, and it has 7 bits.
+
+So in dwc3_event_devt, the bit mask should be:
+event_info	[24:16]		9 bits
+reserved31_25	[31:25]		7 bits
+
+This patch makes sure that newer core releases will work fine with
+Linux and that we will decode the event information properly on new
+core releases.
+
+[ balbi@ti.com : improve commit log a bit ]
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/dwc3/core.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -3408,6 +3408,9 @@ nfsd4_encode_test_stateid(struct nfsd4_c
- 	struct nfsd4_test_stateid_id *stateid, *next;
- 	__be32 *p;
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -836,15 +836,15 @@ struct dwc3_event_depevt {
+  *	12	- VndrDevTstRcved
+  * @reserved15_12: Reserved, not used
+  * @event_info: Information about this event
+- * @reserved31_24: Reserved, not used
++ * @reserved31_25: Reserved, not used
+  */
+ struct dwc3_event_devt {
+ 	u32	one_bit:1;
+ 	u32	device_event:7;
+ 	u32	type:4;
+ 	u32	reserved15_12:4;
+-	u32	event_info:8;
+-	u32	reserved31_24:8;
++	u32	event_info:9;
++	u32	reserved31_25:7;
+ } __packed;
  
-+	if (nfserr)
-+		return nfserr;
-+
- 	RESERVE_SPACE(4 + (4 * test_stateid->ts_num_ids));
- 	*p++ = htonl(test_stateid->ts_num_ids);
- 
+ /**
 
 
