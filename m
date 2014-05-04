@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574AbaEDQdW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:33:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
+	id S1755889AbaEDQdU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:33:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaEDPlw (ORCPT
+	with ESMTP id S1754132AbaEDPlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 119/158] media: saa7134: fix WARN_ON during resume
-Date: Sun,  4 May 2014 11:40:28 -0400
-Message-Id: <20140504154046.166056195@linuxfoundation.org>
+Subject: [PATCH 3.14 120/158] media: omap3isp: preview: Fix the crop margins
+Date: Sun,  4 May 2014 11:40:29 -0400
+Message-Id: <20140504154046.304613623@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,38 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Florian Vaussard <florian.vaussard@epfl.ch>
 
-commit 30d652823de5fd7907d40e969a2d8e23938d8d03 upstream.
+commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
 
-Do not attempt to reload the tuner modules when resuming after a suspend.
-This triggers a WARN_ON in kernel/kmod.c:148 __request_module.
+Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
+accidentally changed the previewer's cropping, causing the previewer
+to miss four pixels on each line, thus corrupting the final image.
+Restored the removed setting.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=69581.
-
-This has always been wrong, but it was never noticed until the WARN_ON
-was added in 3.9.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/saa7134/saa7134-cards.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/media/platform/omap3isp/isppreview.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/media/pci/saa7134/saa7134-cards.c
-+++ b/drivers/media/pci/saa7134/saa7134-cards.c
-@@ -8045,8 +8045,8 @@ int saa7134_board_init2(struct saa7134_d
- 		break;
- 	} /* switch() */
+--- a/drivers/media/platform/omap3isp/isppreview.c
++++ b/drivers/media/platform/omap3isp/isppreview.c
+@@ -1079,6 +1079,7 @@ static void preview_config_input_format(
+  */
+ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
+ {
++	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
+ 	struct isp_device *isp = to_isp_device(prev);
+ 	unsigned int sph = prev->crop.left;
+ 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
+@@ -1086,6 +1087,14 @@ static void preview_config_input_size(st
+ 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
+ 	u32 features;
  
--	/* initialize tuner */
--	if (TUNER_ABSENT != dev->tuner_type) {
-+	/* initialize tuner (don't do this when resuming) */
-+	if (!dev->insuspend && TUNER_ABSENT != dev->tuner_type) {
- 		int has_demod = (dev->tda9887_conf & TDA9887_PRESENT);
++	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
++	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
++		sph -= 2;
++		eph += 2;
++		slv -= 2;
++		elv += 2;
++	}
++
+ 	features = (prev->params.params[0].features & active)
+ 		 | (prev->params.params[1].features & ~active);
  
- 		/* Note: radio tuner address is always filled in,
 
 
