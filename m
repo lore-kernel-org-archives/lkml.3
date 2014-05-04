@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479AbaEDQam (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:30:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36259 "EHLO
+	id S1756507AbaEDQa7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:30:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267AbaEDPl5 (ORCPT
+	with ESMTP id S1754028AbaEDPl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 109/158] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
-Date: Sun,  4 May 2014 11:40:18 -0400
-Message-Id: <20140504154044.795593889@linuxfoundation.org>
+        =?UTF-8?q?Janne=20Kujanp=C3=A4=C3=A4?= <jikuja@iki.fi>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 118/158] media: em28xx: fix PCTV 290e LNA oops
+Date: Sun,  4 May 2014 11:40:27 -0400
+Message-Id: <20140504154046.034065363@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -30,52 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Cohen <david.a.cohen@linux.intel.com>
+From: Antti Palosaari <crope@iki.fi>
 
-commit 01bb59ebffdec314da8da66266edf29529372f9b upstream.
+commit 3ec40dcfb413214b2874aec858870502b61c2202 upstream.
 
-When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
-warning:
-drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
-but not used [-Wunused-function]
+Pointer to device state has been moved to different location during
+some change. PCTV 290e LNA function still uses old pointer, carried
+over FE priv, and it crash.
 
-Instead of creating nested #ifdefs, this patch fixes it by defining the
-xHCI PCI stubs as inline.
-
-This warning has been in since 3.2 kernel and was
-caused by commit 421aa841a134f6a743111cf44d0c6d3b45e3cf8c
-"usb/xhci: hide MSI code behind PCI bars", but wasn't noticed
-until 3.13 when a configuration with these options was tried
-
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Janne Kujanpää <jikuja@iki.fi>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/media/usb/em28xx/em28xx-dvb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -404,16 +404,16 @@ static int xhci_try_enable_msi(struct us
- 
- #else
- 
--static int xhci_try_enable_msi(struct usb_hcd *hcd)
-+static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
+--- a/drivers/media/usb/em28xx/em28xx-dvb.c
++++ b/drivers/media/usb/em28xx/em28xx-dvb.c
+@@ -693,7 +693,8 @@ static void pctv_520e_init(struct em28xx
+ static int em28xx_pctv_290e_set_lna(struct dvb_frontend *fe)
  {
- 	return 0;
- }
- 
--static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-+static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
- {
- }
- 
--static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-+static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- {
- }
- 
+ 	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
+-	struct em28xx *dev = fe->dvb->priv;
++	struct em28xx_i2c_bus *i2c_bus = fe->dvb->priv;
++	struct em28xx *dev = i2c_bus->dev;
+ #ifdef CONFIG_GPIOLIB
+ 	struct em28xx_dvb *dvb = dev->dvb;
+ 	int ret;
 
 
