@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaEDP5B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:57:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36756 "EHLO
+	id S1754869AbaEDPmo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:42:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887AbaEDPmr (ORCPT
+	with ESMTP id S1754611AbaEDPml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:42:47 -0400
+	Sun, 4 May 2014 11:42:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Sanders <aaron.sanders@hp.com>, Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 3.10 86/86] USB: pl2303: add ids for Hewlett-Packard HP POS pole displays
-Date: Sun,  4 May 2014 11:42:01 -0400
-Message-Id: <20140504154152.131718774@linuxfoundation.org>
+        Liu Hua <sdu.liu@huawei.com>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 80/86] hung_task: check the value of "sysctl_hung_task_timeout_sec"
+Date: Sun,  4 May 2014 11:41:55 -0400
+Message-Id: <20140504154151.313097047@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
@@ -26,53 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Sanders <aaron.sanders@hp.com>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit b16c02fbfb963fa2941b7517ebf1f8a21946775e upstream.
+commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
 
-Add device ids to pl2303 for the Hewlett-Packard HP POS pole displays:
+As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+watchdog will return immediately without sleep and with print :
 
-LD960: 03f0:0B39
-LCM220: 03f0:3139
-LCM960: 03f0:3239
+  schedule_timeout: wrong timeout value ffffffffffffff83
 
-[ Johan: fix indentation and sort PIDs numerically ]
+and then the funtion watchdog will call schedule_timeout_interruptible
+again and again.  The screen will be filled with
 
-Signed-off-by: Aaron Sanders <aaron.sanders@hp.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+	"schedule_timeout: wrong timeout value ffffffffffffff83"
+
+This patch does some check and correction in sysctl, to let the function
+schedule_timeout_interruptible allways get the valid parameter.
+
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |    3 +++
- drivers/usb/serial/pl2303.h |    5 ++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ kernel/sysctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -82,6 +82,9 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(YCCABLE_VENDOR_ID, YCCABLE_PRODUCT_ID) },
- 	{ USB_DEVICE(SUPERIAL_VENDOR_ID, SUPERIAL_PRODUCT_ID) },
- 	{ USB_DEVICE(HP_VENDOR_ID, HP_LD220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LD960_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM220_PRODUCT_ID) },
-+	{ USB_DEVICE(HP_VENDOR_ID, HP_LCM960_PRODUCT_ID) },
- 	{ USB_DEVICE(CRESSI_VENDOR_ID, CRESSI_EDY_PRODUCT_ID) },
- 	{ USB_DEVICE(ZEAGLE_VENDOR_ID, ZEAGLE_N2ITION3_PRODUCT_ID) },
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -121,8 +121,11 @@
- #define SUPERIAL_VENDOR_ID	0x5372
- #define SUPERIAL_PRODUCT_ID	0x2303
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
  
--/* Hewlett-Packard LD220-HP POS Pole Display */
-+/* Hewlett-Packard POS Pole Displays */
- #define HP_VENDOR_ID		0x03f0
-+#define HP_LD960_PRODUCT_ID	0x0b39
-+#define HP_LCM220_PRODUCT_ID	0x3139
-+#define HP_LCM960_PRODUCT_ID	0x3239
- #define HP_LD220_PRODUCT_ID	0x3524
- 
- /* Cressi Edy (diving computer) PC interface */
++/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
++#ifdef CONFIG_DETECT_HUNG_TASK
++static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
++#endif
++
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+ #endif
+@@ -966,6 +971,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dohung_task_timeout_secs,
++		.extra2		= &hung_task_timeout_max,
+ 	},
+ 	{
+ 		.procname	= "hung_task_warnings",
 
 
