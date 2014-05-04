@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553AbaEDQcm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:32:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36227 "EHLO
+	id S1756574AbaEDQdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:33:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaEDPlx (ORCPT
+	with ESMTP id S1754198AbaEDPlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:53 -0400
+	Sun, 4 May 2014 11:41:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 122/158] usb: dwc3: fix wrong bit mask in dwc3_event_devt
-Date: Sun,  4 May 2014 11:40:31 -0400
-Message-Id: <20140504154046.575164586@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 119/158] media: saa7134: fix WARN_ON during resume
+Date: Sun,  4 May 2014 11:40:28 -0400
+Message-Id: <20140504154046.166056195@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,58 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
+commit 30d652823de5fd7907d40e969a2d8e23938d8d03 upstream.
 
-Around DWC USB3 2.30a release another bit has been added to the
-Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
+Do not attempt to reload the tuner modules when resuming after a suspend.
+This triggers a WARN_ON in kernel/kmod.c:148 __request_module.
 
-Because of that, what used to be 8 bits long, has become 9 bits long.
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=69581.
 
-Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
-Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
-not 8 bits. And the following reserved field uses [31:25] bits not
-[31:24] bits, and it has 7 bits.
+This has always been wrong, but it was never noticed until the WARN_ON
+was added in 3.9.
 
-So in dwc3_event_devt, the bit mask should be:
-event_info	[24:16]		9 bits
-reserved31_25	[31:25]		7 bits
-
-This patch makes sure that newer core releases will work fine with
-Linux and that we will decode the event information properly on new
-core releases.
-
-[ balbi@ti.com : improve commit log a bit ]
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/core.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/media/pci/saa7134/saa7134-cards.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -815,15 +815,15 @@ struct dwc3_event_depevt {
-  *	12	- VndrDevTstRcved
-  * @reserved15_12: Reserved, not used
-  * @event_info: Information about this event
-- * @reserved31_24: Reserved, not used
-+ * @reserved31_25: Reserved, not used
-  */
- struct dwc3_event_devt {
- 	u32	one_bit:1;
- 	u32	device_event:7;
- 	u32	type:4;
- 	u32	reserved15_12:4;
--	u32	event_info:8;
--	u32	reserved31_24:8;
-+	u32	event_info:9;
-+	u32	reserved31_25:7;
- } __packed;
+--- a/drivers/media/pci/saa7134/saa7134-cards.c
++++ b/drivers/media/pci/saa7134/saa7134-cards.c
+@@ -8045,8 +8045,8 @@ int saa7134_board_init2(struct saa7134_d
+ 		break;
+ 	} /* switch() */
  
- /**
+-	/* initialize tuner */
+-	if (TUNER_ABSENT != dev->tuner_type) {
++	/* initialize tuner (don't do this when resuming) */
++	if (!dev->insuspend && TUNER_ABSENT != dev->tuner_type) {
+ 		int has_demod = (dev->tda9887_conf & TDA9887_PRESENT);
+ 
+ 		/* Note: radio tuner address is always filled in,
 
 
