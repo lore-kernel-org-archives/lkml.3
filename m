@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529AbaEDQbm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:31:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36240 "EHLO
+	id S1756533AbaEDQb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:31:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248AbaEDPl4 (ORCPT
+	with ESMTP id S1754241AbaEDPl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Frank=20Sch=C3=A4fer?= <fschaefer.oss@googlemail.com>,
+        Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 116/158] media: em28xx-audio: fix user counting in snd_em28xx_capture_open()
-Date: Sun,  4 May 2014 11:40:25 -0400
-Message-Id: <20140504154045.770910920@linuxfoundation.org>
+Subject: [PATCH 3.14 115/158] media: m88rs2000: prevent frontend crash on continuous transponder scans
+Date: Sun,  4 May 2014 11:40:24 -0400
+Message-Id: <20140504154045.636835677@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,69 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frank Schaefer <fschaefer.oss@googlemail.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 01ae3b51af7144ea29eb28ba718b65ad59ab9493 upstream.
+commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
 
-dev->adev.users always needs to be increased when snd_em28xx_capture_open() is
-called and succeeds.
+Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
+rate more than 3000000 and delay of 3000ms less than this.
 
-Signed-off-by: Frank Schäfer <fschaefer.oss@googlemail.com>
+Adding min delay prevents crashing the frontend on continuous
+transponder scans. Other dvb_frontend_tune_settings remain as default.
+
+This makes very little time difference to good channel scans, but slows down
+the set frontend where lock can never be achieved i.e. DVB-S2.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/em28xx/em28xx-audio.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/media/dvb-frontends/m88rs2000.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/drivers/media/usb/em28xx/em28xx-audio.c
-+++ b/drivers/media/usb/em28xx/em28xx-audio.c
-@@ -252,7 +252,7 @@ static int snd_em28xx_capture_open(struc
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -715,6 +715,22 @@ static int m88rs2000_get_frontend(struct
+ 	return 0;
+ }
+ 
++static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
++	struct dvb_frontend_tune_settings *tune)
++{
++	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
++
++	if (c->symbol_rate > 3000000)
++		tune->min_delay_ms = 2000;
++	else
++		tune->min_delay_ms = 3000;
++
++	tune->step_size = c->symbol_rate / 16000;
++	tune->max_drift = c->symbol_rate / 2000;
++
++	return 0;
++}
++
+ static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
  {
- 	struct em28xx *dev = snd_pcm_substream_chip(substream);
- 	struct snd_pcm_runtime *runtime = substream->runtime;
--	int ret = 0;
-+	int nonblock, ret = 0;
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -766,6 +782,7 @@ static struct dvb_frontend_ops m88rs2000
  
- 	if (!dev) {
- 		em28xx_err("BUG: em28xx can't find device struct."
-@@ -265,15 +265,15 @@ static int snd_em28xx_capture_open(struc
+ 	.set_frontend = m88rs2000_set_frontend,
+ 	.get_frontend = m88rs2000_get_frontend,
++	.get_tune_settings = m88rs2000_get_tune_settings,
+ };
  
- 	dprintk("opening device and trying to acquire exclusive lock\n");
- 
-+	nonblock = !!(substream->f_flags & O_NONBLOCK);
-+	if (nonblock) {
-+		if (!mutex_trylock(&dev->lock))
-+		return -EAGAIN;
-+	} else
-+		mutex_lock(&dev->lock);
-+
- 	runtime->hw = snd_em28xx_hw_capture;
- 	if ((dev->alt == 0 || dev->is_audio_only) && dev->adev.users == 0) {
--		int nonblock = !!(substream->f_flags & O_NONBLOCK);
--
--		if (nonblock) {
--			if (!mutex_trylock(&dev->lock))
--				return -EAGAIN;
--		} else
--			mutex_lock(&dev->lock);
- 		if (dev->is_audio_only)
- 			/* vendor audio is on a separate interface */
- 			dev->alt = 1;
-@@ -299,11 +299,11 @@ static int snd_em28xx_capture_open(struc
- 		ret = em28xx_audio_analog_set(dev);
- 		if (ret < 0)
- 			goto err;
--
--		dev->adev.users++;
--		mutex_unlock(&dev->lock);
- 	}
- 
-+	dev->adev.users++;
-+	mutex_unlock(&dev->lock);
-+
- 	/* Dynamically adjust the period size */
- 	snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
- 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_PERIOD_BYTES,
+ struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 
 
