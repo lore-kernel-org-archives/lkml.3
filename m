@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142AbaEDRBh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 13:01:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35865 "EHLO
+	id S932106AbaEDRBg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 13:01:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35869 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbaEDPlM (ORCPT
+	with ESMTP id S1751523AbaEDPlM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Brian Austin <brian.austin@cirrus.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 006/158] ASoC: cs42l73: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Sun,  4 May 2014 11:38:35 -0400
-Message-Id: <20140504154030.886859658@linuxfoundation.org>
+        Nishanth Menon <nm@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Roger Quadros <rogerq@ti.com>,
+        Keshava Munegowda <keshava_mgowda@ti.com>,
+        Partha Basak <parthab@india.ti.com>
+Subject: [PATCH 3.14 011/158] ARM: OMAP3: hwmod data: Correct clock domains for USB modules
+Date: Sun,  4 May 2014 11:38:40 -0400
+Message-Id: <20140504154031.572116863@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -27,49 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit 1555b652970e541fa1cb80c61ffc696bbfb92bb7 upstream.
+commit c6c56697ae4bf1226263c19e8353343d7083f40e upstream.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the mono mix controls.
+OMAP3 doesn't contain "l3_init_clkdm" clock domain. Use the
+proper clock domains for USB Host and USB TLL modules.
 
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Gets rid of the following warnings during boot
+ omap_hwmod: usb_host_hs: could not associate to clkdm l3_init_clkdm
+ omap_hwmod: usb_tll_hs: could not associate to clkdm l3_init_clkdm
+
+Reported-by: Nishanth Menon <nm@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Fixes: de231388cb80a8ef3e779bbfa0564ba0157b7377 ("ARM: OMAP: USB: EHCI and OHCI hwmod structures for OMAP3")
+Cc: Keshava Munegowda <keshava_mgowda@ti.com>
+Cc: Partha Basak <parthab@india.ti.com>
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/cs42l73.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/cs42l73.c
-+++ b/sound/soc/codecs/cs42l73.c
-@@ -319,7 +319,7 @@ static const char * const cs42l73_mono_m
- static const unsigned int cs42l73_mono_mix_values[] = { 0, 1, 2 };
- 
- static const struct soc_enum spk_asp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 6, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
-@@ -337,7 +337,7 @@ static const struct snd_kcontrol_new spk
- 	SOC_DAPM_ENUM("Route", spk_xsp_enum);
- 
- static const struct soc_enum esl_asp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 5,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 2, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
-@@ -346,7 +346,7 @@ static const struct snd_kcontrol_new esl
- 	SOC_DAPM_ENUM("Route", esl_asp_enum);
- 
- static const struct soc_enum esl_xsp_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 7,
-+	SOC_VALUE_ENUM_SINGLE(CS42L73_MMIXCTL, 0, 3,
- 			      ARRAY_SIZE(cs42l73_mono_mix_texts),
- 			      cs42l73_mono_mix_texts,
- 			      cs42l73_mono_mix_values);
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -1968,7 +1968,7 @@ static struct omap_hwmod_irq_info omap3x
+ static struct omap_hwmod omap3xxx_usb_host_hs_hwmod = {
+ 	.name		= "usb_host_hs",
+ 	.class		= &omap3xxx_usb_host_hs_hwmod_class,
+-	.clkdm_name	= "l3_init_clkdm",
++	.clkdm_name	= "usbhost_clkdm",
+ 	.mpu_irqs	= omap3xxx_usb_host_hs_irqs,
+ 	.main_clk	= "usbhost_48m_fck",
+ 	.prcm = {
+@@ -2053,7 +2053,7 @@ static struct omap_hwmod_irq_info omap3x
+ static struct omap_hwmod omap3xxx_usb_tll_hs_hwmod = {
+ 	.name		= "usb_tll_hs",
+ 	.class		= &omap3xxx_usb_tll_hs_hwmod_class,
+-	.clkdm_name	= "l3_init_clkdm",
++	.clkdm_name	= "core_l4_clkdm",
+ 	.mpu_irqs	= omap3xxx_usb_tll_hs_irqs,
+ 	.main_clk	= "usbtll_fck",
+ 	.prcm = {
 
 
