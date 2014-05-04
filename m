@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaEDQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:42:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36110 "EHLO
+	id S1756671AbaEDQmh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:42:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933AbaEDPlk (ORCPT
+	with ESMTP id S1754014AbaEDPlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:41:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bart Van Assche <bvanassche@acm.org>,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Vinod Kumar <vinod.kumar@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.14 088/158] ib_srpt: Use correct ib_sg_dma primitives
-Date: Sun,  4 May 2014 11:39:57 -0400
-Message-Id: <20140504154041.841432514@linuxfoundation.org>
+        Steve Dickson <SteveD@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 069/158] NFSv4: Fix a use-after-free problem in open()
+Date: Sun,  4 May 2014 11:39:38 -0400
+Message-Id: <20140504154039.300909793@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -30,81 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
+commit e911b8158ee1def8153849b1641b736026b036e0 upstream.
 
-The code was incorrectly using sg_dma_address() and
-sg_dma_len() instead of ib_sg_dma_address() and
-ib_sg_dma_len().
+If we interrupt the nfs4_wait_for_completion_rpc_task() call in
+nfs4_run_open_task(), then we don't prevent the RPC call from
+completing. So freeing up the opendata->f_attr.mdsthreshold
+in the error path in _nfs4_do_open() leads to a use-after-free
+when the XDR decoder tries to decode the mdsthreshold information
+from the server.
 
-This prevents srpt from functioning with the
-Intel HCA and indeed will corrupt memory
-badly.
-
-Cc: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Tested-by: Vinod Kumar <vinod.kumar@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: 82be417aa37c0 (NFSv4.1 cache mdsthreshold values on OPEN)
+Tested-by: Steve Dickson <SteveD@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/srpt/ib_srpt.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(stru
- static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 				 struct srpt_send_ioctx *ioctx)
- {
-+	struct ib_device *dev = ch->sport->sdev->device;
- 	struct se_cmd *cmd;
- 	struct scatterlist *sg, *sg_orig;
- 	int sg_cnt;
-@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1068,6 +1068,7 @@ static void nfs4_opendata_free(struct kr
+ 	dput(p->dentry);
+ 	nfs_sb_deactive(sb);
+ 	nfs_fattr_free_names(&p->f_attr);
++	kfree(p->f_attr.mdsthreshold);
+ 	kfree(p);
+ }
  
- 	db = ioctx->rbufs;
- 	tsize = cmd->data_length;
--	dma_len = sg_dma_len(&sg[0]);
-+	dma_len = ib_sg_dma_len(dev, &sg[0]);
- 	riu = ioctx->rdma_ius;
+@@ -2244,10 +2245,12 @@ static int _nfs4_do_open(struct inode *d
+ 		}
+ 	}
  
- 	/*
-@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct
- 					++j;
- 					if (j < count) {
- 						sg = sg_next(sg);
--						dma_len = sg_dma_len(sg);
-+						dma_len = ib_sg_dma_len(
-+								dev, sg);
- 					}
- 				}
- 			} else {
-@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct
- 	tsize = cmd->data_length;
- 	riu = ioctx->rdma_ius;
- 	sg = sg_orig;
--	dma_len = sg_dma_len(&sg[0]);
--	dma_addr = sg_dma_address(&sg[0]);
-+	dma_len = ib_sg_dma_len(dev, &sg[0]);
-+	dma_addr = ib_sg_dma_address(dev, &sg[0]);
+-	if (ctx_th && server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
+-		opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
+-		if (!opendata->f_attr.mdsthreshold)
+-			goto err_free_label;
++	if (server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
++		if (!opendata->f_attr.mdsthreshold) {
++			opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
++			if (!opendata->f_attr.mdsthreshold)
++				goto err_free_label;
++		}
+ 		opendata->o_arg.open_bitmap = &nfs4_pnfs_open_bitmap[0];
+ 	}
+ 	if (dentry->d_inode != NULL)
+@@ -2275,11 +2278,10 @@ static int _nfs4_do_open(struct inode *d
+ 	if (opendata->file_created)
+ 		*opened |= FILE_CREATED;
  
- 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
- 	for (i = 0, j = 0;
-@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct
- 					++j;
- 					if (j < count) {
- 						sg = sg_next(sg);
--						dma_len = sg_dma_len(sg);
--						dma_addr = sg_dma_address(sg);
-+						dma_len = ib_sg_dma_len(
-+								dev, sg);
-+						dma_addr = ib_sg_dma_address(
-+								dev, sg);
- 					}
- 				}
- 			} else {
+-	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server))
++	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server)) {
+ 		*ctx_th = opendata->f_attr.mdsthreshold;
+-	else
+-		kfree(opendata->f_attr.mdsthreshold);
+-	opendata->f_attr.mdsthreshold = NULL;
++		opendata->f_attr.mdsthreshold = NULL;
++	}
+ 
+ 	nfs4_label_free(olabel);
+ 
+@@ -2289,7 +2291,6 @@ static int _nfs4_do_open(struct inode *d
+ err_free_label:
+ 	nfs4_label_free(olabel);
+ err_opendata_put:
+-	kfree(opendata->f_attr.mdsthreshold);
+ 	nfs4_opendata_put(opendata);
+ err_put_state_owner:
+ 	nfs4_put_state_owner(sp);
 
 
