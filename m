@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596AbaEDVTK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 17:19:10 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:48362 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaEDVTJ (ORCPT
+	id S1753855AbaEDVTf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 17:19:35 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:44711 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810AbaEDVTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 17:19:09 -0400
+	Sun, 4 May 2014 17:19:34 -0400
+Date: Sun, 4 May 2014 23:19:28 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Darek Marcinkiewicz <reksio@newterm.pl>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/1] Driver for Beckhoff CX5020 EtherCAT master module.
+Message-ID: <20140504211928.GB4471@electric-eye.fr.zoreil.com>
+References: <20140502175242.GB1156@newterm.pl>
+ <20140503114029.GA19315@electric-eye.fr.zoreil.com>
+ <20140504110413.GE1156@newterm.pl>
+ <20140504184351.GA4471@electric-eye.fr.zoreil.com>
+ <20140504194624.GG1156@newterm.pl>
 MIME-Version: 1.0
-In-Reply-To: <5366A63F.9030401@nod.at>
-References: <alpine.LSU.2.11.1404161239320.6778@eggly.anvils>
-	<1399160247-32093-1-git-send-email-richard@nod.at>
-	<CA+55aFzbSUPGWyO42KM7geAy8WrP8e=q+KoqdOBY68zay0jrZA@mail.gmail.com>
-	<5365FB8A.8080303@nod.at>
-	<CA+55aFw9SLeE1fv1-nKMeB7o0YAFZ85mskYy_izCb7Nh3AiicQ@mail.gmail.com>
-	<5366A63F.9030401@nod.at>
-Date: Sun, 4 May 2014 14:19:08 -0700
-X-Google-Sender-Auth: VkRVcmXRH9jxOVTfZNXxCcRCq0E
-Message-ID: <CA+55aFwcKfyuyMNV37c_JT00039P_VgmOXU_u3gm_RnUR=LGdQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: Fix force_flush behavior in zap_pte_range()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140504194624.GG1156@newterm.pl>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 4, 2014 at 1:42 PM, Richard Weinberger <richard@nod.at> wrote:
->
-> I cannot tell why UML has it's own tlb gather logic, I suspect nobody
-> cared so far to clean up the code.
-> That said, I've converted it today to the generic gather logic and it works.
-> Sadly I'm still facing the same issues (sigh!).
+Darek Marcinkiewicz <reksio@newterm.pl> :
+> On Sun, May 04, 2014 at 08:43:51PM +0200, Francois Romieu wrote:
+[...]
+> > Regarding tx_dnext updates, you may add a short notice in ec_bhf_start_xmit
+> > and ec_bhf_process_tx explaining that the periodic poller will somehow end
+> > working with the right value, whence no (smp_)barrier at all.
+> > 
+> Hmm, good point. I am not really sure that it is not a race. So, I've added
+> memory barriers for the case when the tx ring becomes full.
 
-Ok, so it's not the gathering.
+Without memory barrier, the hrtimer poller may be wrong but 1) it will
+always be pessimistic and 2) it won't last. It would be sloppy though.
 
-I'm guessing it's because the tlb flush patterns change (we now flush
-partial areas for shared mappings with dirty pages - it used to be
-that you'd only ever see full ranges before), and that shows some
-issue with the whole "fix_range()" thing. So then the kill(9) results
-in stopping the page table zapping in the middle, and then you end up
-with that "Bad rss-counter" for the file mapping.
+Did you have some time to test the latest version ?
 
-Can you try to debug it to see where that "ret" gets set in
-fix_range_common() (well, likely deeper, I presume it comes from
-update_pte_range() or whatever), to see exactly _what_ it is that
-starts failing?
-
-           Linus
+-- 
+Ueimor
