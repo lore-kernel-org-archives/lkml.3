@@ -1,94 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaEDJ3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 05:29:18 -0400
-Received: from mail.siteground.com ([67.19.240.234]:45769 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282AbaEDJ3R (ORCPT
+	id S1753521AbaEDJkT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 05:40:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48005 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbaEDJkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 05:29:17 -0400
-Message-ID: <53660864.2070908@1h.com>
-Date: Sun, 04 May 2014 12:29:08 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 4 May 2014 05:40:16 -0400
+Message-ID: <53660ADC.8000306@oracle.com>
+Date: Sun, 04 May 2014 17:39:40 +0800
+From: Bob Liu <bob.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
-        Greg KH <gregkh@linuxfoundation.org>, manfred@colorfullife.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
- not the default
-References: <5365723D.7030303@1h.com>	 <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net>	 <536589B5.8060900@1h.com> <1399166450.2573.15.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1399166450.2573.15.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Dan Streetman <ddstreet@ieee.org>
+CC: Weijie Yang <weijie.yang.kh@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        xen-devel@lists.xenproject.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to list_head
+References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils> <1397336454-13855-1-git-send-email-ddstreet@ieee.org> <1397336454-13855-2-git-send-email-ddstreet@ieee.org> <20140423103400.GH23991@suse.de> <CALZtONCa3jLrYkPSFPNnV84zePxFtdkWJBu092ScgUe2AugMxQ@mail.gmail.com> <CAL1ERfP16T68OzHwhuN9S=QiqzuuVAyq5Wu=-pDEkiHrNNiH1g@mail.gmail.com> <CALZtONBDdo7KGKPZHuH-gHUS8ntBW+mYGPKKnh5GcQAsL5Zrfw@mail.gmail.com>
+In-Reply-To: <CALZtONBDdo7KGKPZHuH-gHUS8ntBW+mYGPKKnh5GcQAsL5Zrfw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 04:20 AM, Davidlohr Bueso wrote:
-> On Sun, 2014-05-04 at 03:28 +0300, Marian Marinov wrote:
->> On 05/04/2014 02:53 AM, Davidlohr Bueso wrote:
->>> On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
->>>> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the
->>>> values of the current shmmax and shmall to the new namespace.
->>>
->>> Why is this a good idea?
->>>
->>> This would break userspace that relies on the current behavior.
->>> Furthermore we've recently changed the default value of both these
->>> limits to be as large as you can get, thus deprecating them. I don't
->>> like the idea of this being replaced by namespaces.
->>>
->>> Thanks,
->>> Davidlohr
->>>
->>
->> The current behavior is create_ipc_ns()->shm_init_ns()
->>
->> void shm_init_ns(struct ipc_namespace *ns)
->> {
->>       ns->shm_ctlmax = SHMMAX;
->>       ns->shm_ctlall = SHMALL;
->>       ns->shm_ctlmni = SHMMNI;
->>       ns->shm_rmid_forced = 0;
->>       ns->shm_tot = 0;
->>       ipc_init_ids(&shm_ids(ns));
->> }
->>
->> This means that whenever you are creating an IPC namespace it gets its SHMMAX and SHMALL values from the defaults for
->> the kernel.
->
-> This is exactly what I meant by 'current behavior'.
->
->> If for some reason you want to have smaller(or bigger, for older kernels) limit. This means changing the values in
->> /proc/sys/kernel/shmmax and /proc/sys/kernel/shmall. However the program that is started with the new IPC namespace may
->> lack privileges to write to these files and so it can not modify them.
->
-> I see no reason why namespaces should behave any different than the rest
-> of the system, wrt this. And this changes how *and* when these limits
-> are set, which impacts at a userspace level with no justification.
->
->> What I'm proposing is simply to copy the current values of the host machine, as set by a privileged process before the
->> namespace creation.
->>
->> Maybe a better approach would be to allow the changes to be done by processes having CAP_SYS_RESOURCE inside the new
->> namespace?
->
-> Why do you need this? Is there any real impact/issue you're seeing?
->
-I'm using Linux Containers and I need to be able to either start containers with different SHMMAX or set different 
-SHMMAX to already running containers without giving them full root access.
 
--Marian
+On 05/03/2014 04:00 AM, Dan Streetman wrote:
+> On Fri, Apr 25, 2014 at 12:15 AM, Weijie Yang <weijie.yang.kh@gmail.com> wrote:
+>> On Fri, Apr 25, 2014 at 2:48 AM, Dan Streetman <ddstreet@ieee.org> wrote:
+>>> On Wed, Apr 23, 2014 at 6:34 AM, Mel Gorman <mgorman@suse.de> wrote:
+>>>> On Sat, Apr 12, 2014 at 05:00:53PM -0400, Dan Streetman wrote:
+> <SNIP>
+>>>>> diff --git a/mm/frontswap.c b/mm/frontswap.c
+>>>>> index 1b24bdc..fae1160 100644
+>>>>> --- a/mm/frontswap.c
+>>>>> +++ b/mm/frontswap.c
+>>>>> @@ -327,15 +327,12 @@ EXPORT_SYMBOL(__frontswap_invalidate_area);
+>>>>>
+>>>>>  static unsigned long __frontswap_curr_pages(void)
+>>>>>  {
+>>>>> -     int type;
+>>>>>       unsigned long totalpages = 0;
+>>>>>       struct swap_info_struct *si = NULL;
+>>>>>
+>>>>>       assert_spin_locked(&swap_lock);
+>>>>> -     for (type = swap_list.head; type >= 0; type = si->next) {
+>>>>> -             si = swap_info[type];
+>>>>> +     list_for_each_entry(si, &swap_list_head, list)
+>>>>>               totalpages += atomic_read(&si->frontswap_pages);
+>>>>> -     }
+>>>>>       return totalpages;
+>>>>>  }
+>>>>>
+>>>>> @@ -347,11 +344,9 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+>>>>>       int si_frontswap_pages;
+>>>>>       unsigned long total_pages_to_unuse = total;
+>>>>>       unsigned long pages = 0, pages_to_unuse = 0;
+>>>>> -     int type;
+>>>>>
+>>>>>       assert_spin_locked(&swap_lock);
+>>>>> -     for (type = swap_list.head; type >= 0; type = si->next) {
+>>>>> -             si = swap_info[type];
+>>>>> +     list_for_each_entry(si, &swap_list_head, list) {
+>>>>>               si_frontswap_pages = atomic_read(&si->frontswap_pages);
+>>>>>               if (total_pages_to_unuse < si_frontswap_pages) {
+>>>>>                       pages = pages_to_unuse = total_pages_to_unuse;
+>>>>
+>>>> The frontswap shrink code looks suspicious. If the target is smaller than
+>>>> the total number of frontswap pages then it does nothing. The callers
+
+__frontswap_unuse_pages() is called only to get the correct value of
+pages_to_unuse which will pass to try_to_unuse(), perhaps we should
+rename it to __frontswap_unuse_pages_nr()..
+
+------
+ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
+	->  __frontswap_unuse_pages(total_pages_to_unuse, pages_to_unuse, type);
+
+try_to_unuse(type, true, pages_to_unuse);
+------
+
+>>>> appear to get this right at least. Similarly, if the first swapfile has
+>>>> fewer frontswap pages than the target then it does not unuse the target
+>>>> number of pages because it only handles one swap file. It's outside the
+>>>> scope of your patch to address this or wonder if xen balloon driver is
+>>>> really using it the way it's expected.
+>>>
+>>> I didn't look into the frontswap shrinking code, but I agree the
+>>> existing logic there doesn't look right.  I'll review frontswap in
+>>> more detail to see if it needs changing here, unless anyone else gets
+>>> it to first :-)
+>>>
+>>
+>> FYI, I drop the frontswap_shrink code in a patch
+>> see: https://lkml.org/lkml/2014/1/27/98
+> 
+> frontswap_shrink() is actually used (only) by drivers/xen/xen-selfballoon.c.
+> 
+> However, I completely agree with you that the backend should be doing
+> the shrinking, not from a frontswap api.  Forcing frontswap to shrink
+> is backwards - xen-selfballoon appears to be assuming that xem/tmem is
+> the only possible frontswap backend.  It certainly doensn't make any
+> sense for xen-selfballoon to force zswap to shrink itself, does it?
+> 
+> If xen-selfballoon wants to shrink its frontswap backend tmem, it
+> should do that by telling tmem directly to shrink itself (which it
+> looks like tmem would have to implement, just like zswap sends its LRU
+> pages back to swapcache when it becomes full).
+> 
+
+Yes, it's possible in theory, but tmem is located in xen(host) which
+can't put back pages to swap cache(in guest os) directly. Use
+frontswap_shrink() can make things simple and easier.
+
+And I think frontswap shrink isn't a blocker of this patch set, so
+please keep it.
+
+-- 
+Regards,
+-Bob
