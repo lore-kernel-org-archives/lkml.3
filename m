@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342AbaEDPqe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:46:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36893 "EHLO
+	id S1755366AbaEDPqu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:46:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122AbaEDPnB (ORCPT
+	with ESMTP id S1755116AbaEDPnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:43:01 -0400
+	Sun, 4 May 2014 11:43:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.4 24/43] IB/ehca: Returns an error on ib_copy_to_udata() failure
-Date: Sun,  4 May 2014 11:42:18 -0400
-Message-Id: <20140504154227.550557913@linuxfoundation.org>
+        Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.4 33/43] usb: dwc3: fix wrong bit mask in dwc3_event_devt
+Date: Sun,  4 May 2014 11:42:27 -0400
+Message-Id: <20140504154228.769571068@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -27,38 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Huang Rui <ray.huang@amd.com>
 
-commit 5bdb0f02add5994b0bc17494f4726925ca5d6ba1 upstream.
+commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
 
-In case of error when writing to userspace, function ehca_create_cq()
-does not set an error code before following its error path.
+Around DWC USB3 2.30a release another bit has been added to the
+Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
 
-This patch sets the error code to -EFAULT when ib_copy_to_udata()
-fails.
+Because of that, what used to be 8 bits long, has become 9 bits long.
 
-This was caught when using spatch (aka. coccinelle)
-to rewrite call to ib_copy_{from,to}_udata().
+Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
+Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
+not 8 bits. And the following reserved field uses [31:25] bits not
+[31:24] bits, and it has 7 bits.
 
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+So in dwc3_event_devt, the bit mask should be:
+event_info	[24:16]		9 bits
+reserved31_25	[31:25]		7 bits
+
+This patch makes sure that newer core releases will work fine with
+Linux and that we will decode the event information properly on new
+core releases.
+
+[ balbi@ti.com : improve commit log a bit ]
+
+Signed-off-by: Huang Rui <ray.huang@amd.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/ehca/ehca_cq.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/dwc3/core.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/hw/ehca/ehca_cq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_cq.c
-@@ -296,6 +296,7 @@ struct ib_cq *ehca_create_cq(struct ib_d
- 			(my_cq->galpas.user.fw_handle & (PAGE_SIZE - 1));
- 		if (ib_copy_to_udata(udata, &resp, sizeof(resp))) {
- 			ehca_err(device, "Copy to udata failed.");
-+			cq = ERR_PTR(-EFAULT);
- 			goto create_cq_exit4;
- 		}
- 	}
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -719,15 +719,15 @@ struct dwc3_event_depevt {
+  *	12	- VndrDevTstRcved
+  * @reserved15_12: Reserved, not used
+  * @event_info: Information about this event
+- * @reserved31_24: Reserved, not used
++ * @reserved31_25: Reserved, not used
+  */
+ struct dwc3_event_devt {
+ 	u32	one_bit:1;
+ 	u32	device_event:7;
+ 	u32	type:4;
+ 	u32	reserved15_12:4;
+-	u32	event_info:8;
+-	u32	reserved31_24:8;
++	u32	event_info:9;
++	u32	reserved31_25:7;
+ } __packed;
+ 
+ /**
 
 
