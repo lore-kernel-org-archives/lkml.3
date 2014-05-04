@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaEDPly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:41:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36160 "EHLO
+	id S1754573AbaEDQco (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 12:32:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36225 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028AbaEDPlt (ORCPT
+	with ESMTP id S1754210AbaEDPlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 11:41:49 -0400
+	Sun, 4 May 2014 11:41:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.14 096/158] Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
-Date: Sun,  4 May 2014 11:40:05 -0400
-Message-Id: <20140504154042.987742762@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>, Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 121/158] media: media: gspca: sn9c20x: add ID for Genius Look 1320 V2
+Date: Sun,  4 May 2014 11:40:30 -0400
+Message-Id: <20140504154046.442087799@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154029.975081050@linuxfoundation.org>
 References: <20140504154029.975081050@linuxfoundation.org>
@@ -26,63 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Wolfram Sang <wsa@the-dreams.de>
 
-commit 03367ef5ea811475187a0732aada068919e14d61 upstream.
+commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
 
-Only ws2012r2 hosts support the ability to reconnect to the host on VMBUS. This functionality
-is needed by kexec in Linux. To use this functionality we need to negotiate version 3.0 of the
-VMBUS protocol.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/connection.c |    5 ++++-
- include/linux/hyperv.h  |    4 +++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ Documentation/video4linux/gspca.txt |    1 +
+ drivers/media/usb/gspca/sn9c20x.c   |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -55,6 +55,9 @@ static __u32 vmbus_get_next_version(__u3
- 	case (VERSION_WIN8):
- 		return VERSION_WIN7;
- 
-+	case (VERSION_WIN8_1):
-+		return VERSION_WIN8;
-+
- 	case (VERSION_WS2008):
- 	default:
- 		return VERSION_INVAL;
-@@ -77,7 +80,7 @@ static int vmbus_negotiate_version(struc
- 	msg->interrupt_page = virt_to_phys(vmbus_connection.int_page);
- 	msg->monitor_page1 = virt_to_phys(vmbus_connection.monitor_pages[0]);
- 	msg->monitor_page2 = virt_to_phys(vmbus_connection.monitor_pages[1]);
--	if (version == VERSION_WIN8)
-+	if (version == VERSION_WIN8_1)
- 		msg->target_vcpu = hv_context.vp_index[smp_processor_id()];
- 
- 	/*
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -464,15 +464,17 @@ hv_get_ringbuffer_availbytes(struct hv_r
-  * 0 . 13 (Windows Server 2008)
-  * 1 . 1  (Windows 7)
-  * 2 . 4  (Windows 8)
-+ * 3 . 0  (Windows 8 R2)
-  */
- 
- #define VERSION_WS2008  ((0 << 16) | (13))
- #define VERSION_WIN7    ((1 << 16) | (1))
- #define VERSION_WIN8    ((2 << 16) | (4))
-+#define VERSION_WIN8_1    ((3 << 16) | (0))
- 
- #define VERSION_INVAL -1
- 
--#define VERSION_CURRENT VERSION_WIN8
-+#define VERSION_CURRENT VERSION_WIN8_1
- 
- /* Make maximum size of pipe payload of 16K */
- #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
+--- a/Documentation/video4linux/gspca.txt
++++ b/Documentation/video4linux/gspca.txt
+@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
+ sonixj		0458:7025	Genius Eye 311Q
+ sn9c20x		0458:7029	Genius Look 320s
+ sonixj		0458:702e	Genius Slim 310 NB
++sn9c20x		0458:7045	Genius Look 1320 V2
+ sn9c20x		0458:704a	Genius Slim 1320
+ sn9c20x		0458:704c	Genius i-Look 1321
+ sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
+--- a/drivers/media/usb/gspca/sn9c20x.c
++++ b/drivers/media/usb/gspca/sn9c20x.c
+@@ -2359,6 +2359,7 @@ static const struct usb_device_id device
+ 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
+ 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
+ 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
++	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
+ 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
+ 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
 
 
