@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaEDMEh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 08:04:37 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:32913 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbaEDMEg (ORCPT
+	id S1753719AbaEDMNG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 08:13:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47666 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752635AbaEDMNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 08:04:36 -0400
-Message-ID: <1399205073.5180.42.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        george.mccollister@gmail.com, ktkhai@parallels.com,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Sun, 04 May 2014 14:04:33 +0200
-In-Reply-To: <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
-References: <20140502004237.79dd3de6@annuminas.surriel.com>
-	 <1399011219.5233.55.camel@marge.simpson.net> <53633B81.1080403@redhat.com>
-	 <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 4 May 2014 08:13:04 -0400
+Date: Sun, 4 May 2014 14:13:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [RFC] rtmutex: Do not boost fair tasks each other
+In-Reply-To: <20140504071758.GK17778@laptop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1405041412490.6261@ionos.tec.linutronix.de>
+References: <5362122B.8060305@yandex.ru> <alpine.DEB.2.02.1405032041460.6261@ionos.tec.linutronix.de> <20140504071758.GK17778@laptop.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-05-04 at 17:14 +0530, Preeti Murthy wrote: 
-> Hi Rik, Mike
+On Sun, 4 May 2014, Peter Zijlstra wrote:
+> On Sat, May 03, 2014 at 08:54:08PM +0200, Thomas Gleixner wrote:
+> > On Thu, 1 May 2014, Kirill Tkhai wrote:
+> > > Higher priority does not provide exclusive privilege
+> > > of one fair task over the other. In this case priority
+> > > boosting looks excess.
+> > > 
+> > > On RT patch with enabled PREEMPT_RT_FULL I see a lot of
+> > > rt_mutex_setprio() actions like
+> > > 
+> > > 	120 -> 118
+> > > 	118 -> 120
+> > > 
+> > > They harm RT tasks.
+> > 
+> > That's not the main problem. The point is that it is useless and
+> > therefor harming performace and throughput as well.
+> >  
+> > > RT patch has lazy preemtion feature, so if idea is we care
+> > > about excess preemption inside fair class, we should care
+> > > about excess priority inheritance too.
+> > > 
+> > > In case of vanila kernel the problem is the same, but there
+> > > are no so many rt mutexes. Do I skip anything?
+> > 
+> > Almost a decade ago we decided to do the boosting for everything
+> > including SCHED_OTHER due to the very simple reason that exercising
+> > that code path more is likely to trigger more bugs.
+> >  
+> > But yes in a production environment, it's pointless for SCHED_OTHER
+> > tasks.
+> > 
+> > Though exercising that code path as much as we can is not a bad thing
+> > either. So I'd like to see that made compile time conditional on one
+> > of the lock testing CONFIG items.
+> > 
+> > And the patch should be made against mainline, where we have the same
+> > issue (reduced to PI-futexes).
 > 
-> On Fri, May 2, 2014 at 12:00 PM, Rik van Riel <riel@redhat.com> wrote:
-> > On 05/02/2014 02:13 AM, Mike Galbraith wrote:
-> >> On Fri, 2014-05-02 at 00:42 -0400, Rik van Riel wrote:
-> >>
-> >>> Whether or not this is the right thing to do remains to be seen,
-> >>> but it does allow us to verify whether or not the wake_affine
-> >>> strategy of always doing affine wakeups and only disabling them
-> >>> in a specific circumstance is sound, or needs rethinking...
-> >>
-> >> Yes, it needs rethinking.
-> >>
-> >> I know why you want to try this, yes, select_idle_sibling() is very much
-> >> a two faced little bitch.
-> >
-> > My biggest problem with select_idle_sibling and wake_affine in
-> > general is that it will override NUMA placement, even when
-> > processes only wake each other up infrequently...
-> 
-> As far as my understanding goes, the logic in select_task_rq_fair()
-> does wake_affine() or calls select_idle_sibling() only at those
-> levels of sched domains where the flag SD_WAKE_AFFINE is set.
-> This flag is not set at the numa domain and hence they will not be
-> balancing across numa nodes. So I don't understand how
-> *these functions* are affecting NUMA placements.
+> And of course, if we ever get to PEP, we very much want all the classes
+> to participate :)
 
-Depends on how far away node yonder is I suppose.
-
-static inline int sd_local_flags(int level)
-{
-        if (sched_domains_numa_distance[level] > RECLAIM_DISTANCE)
-                return 0;
-
-        return SD_BALANCE_EXEC | SD_BALANCE_FORK | SD_WAKE_AFFINE;
-}
-
-
+That's true. We deal with it when it arrives :)
+ 
