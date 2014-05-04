@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaEDPsn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 11:48:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36840 "EHLO
+	id S1755464AbaEDPsm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 11:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaEDPm4 (ORCPT
+	with ESMTP id S1755060AbaEDPm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 May 2014 11:42:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.4 20/43] nfsd4: fix setclientid encode size
-Date: Sun,  4 May 2014 11:42:14 -0400
-Message-Id: <20140504154226.983719763@linuxfoundation.org>
+        Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.4 22/43] IB/nes: Return an error on ib_copy_from_udata() failure instead of NULL
+Date: Sun,  4 May 2014 11:42:16 -0400
+Message-Id: <20140504154227.281389080@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154224.211508175@linuxfoundation.org>
 References: <20140504154224.211508175@linuxfoundation.org>
@@ -26,28 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 480efaee085235bb848f1063f959bf144103c342 upstream.
+commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+In case of error while accessing to userspace memory, function
+nes_create_qp() returns NULL instead of an error code wrapped through
+ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
+check for error with IS_ERR().
+
+As page 0 is likely not mapped, it is going to trigger an Oops when
+the kernel will try to dereference NULL pointer to access to struct
+ib_qp's fields.
+
+In some rare cases, page 0 could be mapped by userspace, which could
+turn this bug to a vulnerability that could be exploited: the function
+pointers in struct ib_device will be under userspace total control.
+
+This was caught when using spatch (aka. coccinelle)
+to rewrite calls to ib_copy_{from,to}_udata().
+
+Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4proc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/nes/nes_verbs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -1418,7 +1418,8 @@ static inline u32 nfsd4_setattr_rsize(st
- 
- static inline u32 nfsd4_setclientid_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
- {
--	return (op_encode_hdr_size + 2 + 1024) * sizeof(__be32);
-+	return (op_encode_hdr_size + 2 + XDR_QUADLEN(NFS4_VERIFIER_SIZE)) *
-+								sizeof(__be32);
- }
- 
- static inline u32 nfsd4_write_rsize(struct svc_rqst *rqstp, struct nfsd4_op *op)
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -1183,7 +1183,7 @@ static struct ib_qp *nes_create_qp(struc
+ 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
+ 					kfree(nesqp->allocated_buffer);
+ 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
+-					return NULL;
++					return ERR_PTR(-EFAULT);
+ 				}
+ 				if (req.user_wqe_buffers) {
+ 					virt_wqs = 1;
 
 
