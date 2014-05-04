@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaEDQC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 12:02:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775AbaEDPmg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754771AbaEDPmg (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 4 May 2014 11:42:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36518 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618AbaEDPmX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 11:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Thomas=20B=C3=A4chler?= <thomas@archlinux.org>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3.10 56/86] x86/efi: Correct EFI boot stub use of code32_start
-Date: Sun,  4 May 2014 11:41:31 -0400
-Message-Id: <20140504154148.053325584@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 17/86] ALSA: ice1712: Fix boundary checks in PCM pointer ops
+Date: Sun,  4 May 2014 11:40:52 -0400
+Message-Id: <20140504154142.749440880@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140504154140.444932005@linuxfoundation.org>
 References: <20140504154140.444932005@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,104 +26,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt@console-pimps.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7e8213c1f3acc064aef37813a39f13cbfe7c3ce7 upstream.
+commit 4f8e940095536bc002a81666a4107a581c84e9b9 upstream.
 
-code32_start should point at the start of the protected mode code, and
-*not* at the beginning of the bzImage. This is much easier to do in
-assembly so document that callers of make_boot_params() need to fill out
-code32_start.
+PCM pointer callbacks in ice1712 driver check the buffer size boundary
+wrongly between bytes and frames.  This leads to PCM core warnings
+like:
+   snd_pcm_update_hw_ptr0: 105 callbacks suppressed
+   ALSA pcm_lib.c:352 BUG: pcmC3D0c:0, pos = 5461, buffer size = 5461, period size = 2730
 
-The fallout from this bug is that we would end up relocating the image
-but copying the image at some offset, resulting in what appeared to be
-memory corruption.
+This patch fixes these checks to be placed after the proper unit
+conversions.
 
-Reported-by: Thomas Bächler <thomas@archlinux.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/eboot.c   |    5 +++--
- arch/x86/boot/compressed/head_32.S |   14 ++++++++------
- arch/x86/boot/compressed/head_64.S |    9 +++------
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ sound/pci/ice1712/ice1712.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -865,6 +865,9 @@ fail:
-  * Because the x86 boot code expects to be passed a boot_params we
-  * need to create one ourselves (usually the bootloader would create
-  * one for us).
-+ *
-+ * The caller is responsible for filling out ->code32_start in the
-+ * returned boot_params.
-  */
- struct boot_params *make_boot_params(void *handle, efi_system_table_t *_table)
- {
-@@ -921,8 +924,6 @@ struct boot_params *make_boot_params(voi
- 	hdr->vid_mode = 0xffff;
- 	hdr->boot_flag = 0xAA55;
+--- a/sound/pci/ice1712/ice1712.c
++++ b/sound/pci/ice1712/ice1712.c
+@@ -685,9 +685,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 	if (!(snd_ice1712_read(ice, ICE1712_IREG_PBK_CTRL) & 1))
+ 		return 0;
+ 	ptr = runtime->buffer_size - inw(ice->ddma_port + 4);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
  
--	hdr->code32_start = (__u64)(unsigned long)image->image_base;
--
- 	hdr->type_of_loader = 0x21;
+ static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substream *substream)
+@@ -704,9 +705,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 		addr = ICE1712_DSC_ADDR0;
+ 	ptr = snd_ice1712_ds_read(ice, substream->number * 2, addr) -
+ 		ice->playback_con_virt_addr[substream->number];
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
  
- 	/* Convert unicode cmdline to ascii */
---- a/arch/x86/boot/compressed/head_32.S
-+++ b/arch/x86/boot/compressed/head_32.S
-@@ -50,6 +50,13 @@ ENTRY(efi_pe_entry)
- 	pushl	%eax
- 	pushl	%esi
- 	pushl	%ecx
-+
-+	call	reloc
-+reloc:
-+	popl	%ecx
-+	subl	reloc, %ecx
-+	movl	%ecx, BP_code32_start(%eax)
-+
- 	sub	$0x4, %esp
+ static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *substream)
+@@ -717,9 +719,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
+ 	if (!(snd_ice1712_read(ice, ICE1712_IREG_CAP_CTRL) & 1))
+ 		return 0;
+ 	ptr = inl(ICEREG(ice, CONCAP_ADDR)) - ice->capture_con_virt_addr;
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
  
- ENTRY(efi_stub_entry)
-@@ -63,12 +70,7 @@ ENTRY(efi_stub_entry)
- 	hlt
- 	jmp	1b
- 2:
--	call	3f
--3:
--	popl	%eax
--	subl	$3b, %eax
--	subl	BP_pref_address(%esi), %eax
--	add	BP_code32_start(%esi), %eax
-+	movl	BP_code32_start(%esi), %eax
- 	leal	preferred_addr(%eax), %eax
- 	jmp	*%eax
+ static const struct snd_pcm_hardware snd_ice1712_playback = {
+@@ -1113,9 +1116,10 @@ static snd_pcm_uframes_t snd_ice1712_pla
+ 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_PLAYBACK_START))
+ 		return 0;
+ 	ptr = ice->playback_pro_size - (inw(ICEMT(ice, PLAYBACK_SIZE)) << 2);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
  
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -217,6 +217,8 @@ ENTRY(efi_pe_entry)
- 	cmpq	$0,%rax
- 	je	1f
- 	mov	%rax, %rdx
-+	leaq	startup_32(%rip), %rax
-+	movl	%eax, BP_code32_start(%rdx)
- 	popq	%rsi
- 	popq	%rdi
+ static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substream *substream)
+@@ -1126,9 +1130,10 @@ static snd_pcm_uframes_t snd_ice1712_cap
+ 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_CAPTURE_START_SHADOW))
+ 		return 0;
+ 	ptr = ice->capture_pro_size - (inw(ICEMT(ice, CAPTURE_SIZE)) << 2);
++	ptr = bytes_to_frames(substream->runtime, ptr);
+ 	if (ptr == substream->runtime->buffer_size)
+ 		ptr = 0;
+-	return bytes_to_frames(substream->runtime, ptr);
++	return ptr;
+ }
  
-@@ -230,12 +232,7 @@ ENTRY(efi_stub_entry)
- 	hlt
- 	jmp	1b
- 2:
--	call	3f
--3:
--	popq	%rax
--	subq	$3b, %rax
--	subq	BP_pref_address(%rsi), %rax
--	add	BP_code32_start(%esi), %eax
-+	movl	BP_code32_start(%esi), %eax
- 	leaq	preferred_addr(%rax), %rax
- 	jmp	*%rax
- 
+ static const struct snd_pcm_hardware snd_ice1712_playback_pro = {
 
 
