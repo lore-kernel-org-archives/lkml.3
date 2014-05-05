@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262AbaEEX36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:29:58 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:46416 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932866AbaEEX35 (ORCPT
+	id S933282AbaEEXbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:31:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53627 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771AbaEEXbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:29:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
-References: <CAPz6YkXsig6XornqoMyn5DtRd9NECyc+qgQo39RQK0sDeat34Q@mail.gmail.com>
-From: Sonny Rao <sonnyrao@chromium.org>
-Date: Mon, 5 May 2014 16:29:36 -0700
-X-Google-Sender-Auth: WXS-Wanvm3nGFOhqlh2lQBNdJA0
-Message-ID: <CAPz6YkV2E2NBY9E8x4JJh2S-3oqdtk2yD=aNSOopYakcc2noLQ@mail.gmail.com>
-Subject: Re: CPU performance counters not working on big.LITTLE switcher
-To: linux-arm-kernel@lists.infradead.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Douglas Anderson <dianders@chromium.org>, Olof <olofj@chromium.org>,
-        Stephane Eranian <eranian@google.com>,
-        Bhaskar Janakiraman <bjanakiraman@chromium.org>,
-        nicolas.pitre@linaro.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 May 2014 19:31:24 -0400
+Date: Mon, 5 May 2014 16:31:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        torvalds@linux-foundation.org, mgorman@suse.de, hpa@zytor.com,
+        mingo@kernel.org, steven@uplinklabs.net, riel@redhat.com,
+        david.vrabel@citrix.com, peterz@infradead.org, xemul@parallels.com
+Subject: Re: [patch 2/2] mm: pgtable -- Require X86_64 for soft-dirty
+ tracker
+Message-Id: <20140505163123.65e6f8853cdf0646f26bd5b4@linux-foundation.org>
+In-Reply-To: <20140425082042.848656782@openvz.org>
+References: <20140425081030.185969086@openvz.org>
+	<20140425082042.848656782@openvz.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[sorry for HTML spam, resending]
+On Fri, 25 Apr 2014 12:10:32 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-Hi, we have the problem today that cpu based performance counters don't work
-when we're using the big.LITTLE switcher on Exynos 5420, and it doesn't look
-like code exists to deal with this in the switcher.
+> Tracking dirty status on 2 level pages requires very ugly macros
+> and taking into account how old the machines who can operate
+> without PAE mode only are, lets drop soft dirty tracker from
+> them for code simplicity (note I can't drop all the macros
+> from 2 level pages by now since _PAGE_BIT_PROTNONE and
+> _PAGE_BIT_FILE are still used even without tracker).
+> 
+> Linus proposed to completely rip off softdirty support on
+> x86-32 (even with PAE) and since for CRIU we're not planning
+> to support native x86-32 mode, lets do that.
+> 
+> (Softdirty tracker is relatively new feature which mostly used
+>  by CRIU so I don't expect if such API change would cause problems
+>  on userspace).
 
-As it stands right now, if you put an A-15 or A-7 PMU node into your
-device-tree on an bl_switcher system it's very broken.  At the minimum, I
-think it should disable performance counters until there's some kind of
-proper implementation.
+i386 allnoconfig:
 
-I looked into trying to make this work, but it turned out to not be as
-simple as just context switching counters from A-15 to A-7.  The biggest
-problem is that the PMUs are not architecturally compatible.  There are
-different events and differing numbers of counters on these two cores.
-There's also the tangential issue of representing this in the device tree,
-but that's far less important.
+In file included from /usr/src/25/arch/x86/include/asm/pgtable.h:886,
+                 from include/linux/mm.h:51,
+                 from include/linux/suspend.h:8,
+                 from arch/x86/kernel/asm-offsets.c:12:
+include/asm-generic/pgtable.h:414: error: redefinition of 'pte_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:300: note: previous definition of 'pte_soft_dirty' was here
+include/asm-generic/pgtable.h:419: error: redefinition of 'pmd_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:305: note: previous definition of 'pmd_soft_dirty' was here
+include/asm-generic/pgtable.h:424: error: redefinition of 'pte_mksoft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:310: note: previous definition of 'pte_mksoft_dirty' was here
+include/asm-generic/pgtable.h:429: error: redefinition of 'pmd_mksoft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:315: note: previous definition of 'pmd_mksoft_dirty' was here
+include/asm-generic/pgtable.h:434: error: redefinition of 'pte_swp_mksoft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:868: note: previous definition of 'pte_swp_mksoft_dirty' was here
+include/asm-generic/pgtable.h:439: error: redefinition of 'pte_swp_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:874: note: previous definition of 'pte_swp_soft_dirty' was here
+include/asm-generic/pgtable.h:444: error: redefinition of 'pte_swp_clear_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:880: note: previous definition of 'pte_swp_clear_soft_dirty' was here
+include/asm-generic/pgtable.h:449: error: redefinition of 'pte_file_clear_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:320: note: previous definition of 'pte_file_clear_soft_dirty' was here
+include/asm-generic/pgtable.h:454: error: redefinition of 'pte_file_mksoft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:325: note: previous definition of 'pte_file_mksoft_dirty' was here
+include/asm-generic/pgtable.h:459: error: redefinition of 'pte_file_soft_dirty'
+/usr/src/25/arch/x86/include/asm/pgtable.h:330: note: previous definition of 'pte_file_soft_dirty' was here
 
-My guess as to how to fix this is to create an "architectural" PMU which
-contains the intersection of the two performance monitor units with the
-minimum number of counters supported by either core (which in this case
-looks to be 4 on the A7).  However, I don't really have the bandwidth to
-work on this at  the moment.  I was mostly wondering, have other people run
-into this limitation and is there any sort of plan to work on it?
