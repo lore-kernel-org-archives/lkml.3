@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaEEFyR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 01:54:17 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:49163 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaEEFyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 01:54:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-Date: Mon, 5 May 2014 11:24:15 +0530
-Message-ID: <CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754623AbaEEGAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:00:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49143 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754412AbaEEGAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 02:00:36 -0400
+Subject: Re: [PATCH] uprobes: fix scratch register selection for
+ rip-relative fixups
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <5363B3E8.6020606@redhat.com>
+References: <1398964141-25097-1-git-send-email-dvlasenk@redhat.com>
+	 <1398991682.4908.22.camel@oc7886638347.ibm.com.usor.ibm.com>
+	 <5363B3E8.6020606@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 04 May 2014 23:00:24 -0700
+Message-ID: <1399269624.5603.3.camel@oc7886638347.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050506-5806-0000-0000-000024CA9651
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 May 2014 05:46, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
-> Hi. Viresh Kumar
-> Your reply is so fast like Usain Bolt.
+On Fri, 2014-05-02 at 17:04 +0200, Denys Vlasenko wrote:
+> On 05/02/2014 02:48 AM, Jim Keniston wrote:
+> > On Thu, 2014-05-01 at 19:09 +0200, Denys Vlasenko wrote:
+> >> +#define VEX2_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[1])
+> >> +#define VEX3_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[2])
+> > 
+> > I disclaim any knowledge about VEX* stuff.
+> ...
+> > skipped this next part...
+> > 
+> >> +	/* Similar treatment for VEX3 prefix */
+> >> +	/* TODO: add XOP/EVEX treatment when insn decoder supports them */
+> >> +	if (insn->vex_prefix.nbytes == 3) {
+> >> +		/*
+> >> +		 * vex2:     c5    rvvvvLpp   (has no b bit)
+> >> +		 * vex3/xop: c4/8f rxbmmmmm wvvvvLpp
+> >> +		 * evex:     62    rxbR00mm.wvvvv1pp.zllBVaaa
+> >> +		 *   (evex will need setting of both b and x since
+> >> +		 *   in non-sib encoding evex.x is 4th bit of MODRM.rm)
+> >> +		 * Setting VEX3.b (setting because it has inverted meaning):
+> >> +		 */
+> >> +		cursor = auprobe->insn + insn_offset_vex_prefix(insn) + 1;
+> >> +		*cursor |= 0x20;
+> >>  	}
+> > 
+> > ... resumed reviewing here.
+> 
+> I do realize that most people reading this code won't be
+> aficionados of memorizing x86 insn encoding quirks.
+> 
+> To help them, I added the comment which spells out bit layout
+> of vex/evex/xop prefixes (see above). Does it help?
+> 
+...
 
-Heh, that's not true.. See how slow I was this time :)
+Well, yes.  I read your comments in conjunction with the "VEX Prefix"
+wikipedia page and figured out what you're doing, and it looks right.  I
+would definitely leave the comments in; otherwise there's a chance that
+even you won't remember all this stuff 6 months from now.
 
->> So, create three flags:
->> OPP_TABLE_ORDER_ASCENDING              0
->> OPP_TABLE_ORDER_DESCENDING            1
->> OPP_TABLE_ORDER_ORIGINAL                  2 (And use this for your case.)
->
-> -> Actually, I want to use OPP_TABLE_ORDER_DESCENDING.(Not
-> OPP_TABLE_ORDER_ORIGINAL.)
-> I think that it is enough to support both descending and ascending ordering
-> only.
-> The meaning of "ORIGIANL" Amit, said, when he(and I) writes a frequency in
-> dts file with ordering(Ascending or Descending). He(and I) want the
-> frequency to be register according to ordering.(Ascending or Descending).
+Jim
 
-But what if somebody doesn't have a ascending or descending list there? And
-want to preserve the original list? That's why I recommended it.
-
-> I concerned that if we use ORIGINAL ordering, opp_find_freq_ceil/foor can be
-> broken.
-
-I completely missed that earlier :) ..
-It would be broken with descending one as well..
-
-To skip the complexity of finding right freq associated with
-"ORIGINAL" ordering,
-lets concentrate on Ascending/Descending ordering for now.
-
-So, this is what I would recommend now:
-- Create two macros: OPP_TABLE_ORDER_ASCENDING and
-  OPP_TABLE_ORDER_DESCENDING
-- create of_init_opp_table_ordered(**, int order), order would be one of the
-above two macros
-- rename dev_pm_opp_add to __dev_pm_opp_add() and create a wrapper
-over it: dev_pm_opp_add(), which would pass
-OPP_TABLE_ORDER_ASCENDING to it by default and call it from
-of_init_opp_table_ordered() like this: __dev_pm_opp_add(***, order)..
-
-- Fix ceil/floor routines for these two cases.
-
---
-viresh
