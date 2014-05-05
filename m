@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349AbaEEKqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:46:10 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:48887 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190AbaEEKqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:46:08 -0400
+	id S1752675AbaEEKu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:50:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38684 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751085AbaEEKu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 06:50:56 -0400
+Date: Mon, 5 May 2014 12:50:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 17/17] mm: filemap: Avoid unnecessary barries and
+ waitqueue lookup in unlock_page fastpath
+Message-ID: <20140505105054.GC23927@quack.suse.cz>
+References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
+ <1398933888-4940-18-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20140505202628.7f406c1b77e05d0ad56db54c@canb.auug.org.au>
-References: <20140505171459.3ce28e8e0c4d6b107a66eb97@canb.auug.org.au>
- <CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com>
- <20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
- <CAKgNAkj4hsTBqfD72ZhoCrHdV4S_68tJEQ_AaE0KWO_cySqeHw@mail.gmail.com> <20140505202628.7f406c1b77e05d0ad56db54c@canb.auug.org.au>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 5 May 2014 12:45:46 +0200
-Message-ID: <CAKgNAkg3X3osNCdWYs4abru9kWGakF2pFuN5jje5HdNV=pK2-g@mail.gmail.com>
-Subject: Re: linux-next: Tree for May 5
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrey Vagin <avagin@openvz.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398933888-4940-18-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 12:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Michael,
->
-> On Mon, 5 May 2014 12:06:27 +0200 "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
->>
->> Okay, must be my problem then. Sorry for the noise. Somehow, I'm not
->> syncing my linux-next correctly then. (Is the proper way of doing this
->> documented somewhere?)
->
-> Yeah, in the stuff you quoted :-)
+On Thu 01-05-14 09:44:48, Mel Gorman wrote:
+> From: Nick Piggin <npiggin@suse.de>
+> 
+> This patch introduces a new page flag for 64-bit capable machines,
+> PG_waiters, to signal there are processes waiting on PG_lock and uses it to
+> avoid memory barriers and waitqueue hash lookup in the unlock_page fastpath.
+> 
+> This adds a few branches to the fast path but avoids bouncing a dirty
+> cache line between CPUs. 32-bit machines always take the slow path but the
+> primary motivation for this patch is large machines so I do not think that
+> is a concern.
+...
+>  /* 
+> diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+> index 7d50f79..fb83fe0 100644
+> --- a/kernel/sched/wait.c
+> +++ b/kernel/sched/wait.c
+> @@ -304,8 +304,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *arg)
+>  		= container_of(wait, struct wait_bit_queue, wait);
+>  
+>  	if (wait_bit->key.flags != key->flags ||
+> -			wait_bit->key.bit_nr != key->bit_nr ||
+> -			test_bit(key->bit_nr, key->flags))
+> +			wait_bit->key.bit_nr != key->bit_nr)
+>  		return 0;
+>  	else
+>  		return autoremove_wake_function(wait, mode, sync, key);
+  This change seems to be really unrelated? And it would deserve a comment
+on its own I'd think so maybe split that in a separate patch?
 
-:-}
-> "If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-> (see below)."
->
-> then later
->
-> "There is a wiki covering stuff to do with linux-next at
-> http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel."
->
-> Unfortunately, that site seems to have vanished :-(  Seems like I need to
-> update my daily release note.
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index c60ed0f..93e4385 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> +int  __wait_on_page_locked_killable(struct page *page)
+> +{
+> +	int ret = 0;
+> +	wait_queue_head_t *wq = page_waitqueue(page);
+> +	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
+> +
+> +	if (!test_bit(PG_locked, &page->flags))
+> +		return 0;
+> +	do {
+> +		prepare_to_wait(wq, &wait.wait, TASK_KILLABLE);
+> +		if (!PageWaiters(page))
+> +			SetPageWaiters(page);
+> +		if (likely(PageLocked(page)))
+> +			ret = sleep_on_page_killable(page);
+> +		finish_wait(wq, &wait.wait);
+> +	} while (PageLocked(page) && !ret);
+  So I'm somewhat wondering why this is the only page waiting variant that
+does finish_wait() inside the loop. Everyone else does it outside the while
+loop which seems sufficient to me even in this case...
 
-It was those instructions that I thought I'd been following (from
-memory), and then when I went to google for the site I recalled
-finding them on, I didn't get a match. Now I know why ;-).
-
-> Since linux-next is rebased and remoerged every day, you need to "git
-> fetch" the tree and then "git reset" to the new tree, not "git pull".
-> The latter will try to merge the new linux-next into the previous one  -
-> which should normally make a read mess :-)
-
-Okay -- thanks.
-
-Cheers,
-
-Michael
-
-
+								Honza
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
