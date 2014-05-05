@@ -1,61 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025AbaEEOq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:46:57 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:63674 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932770AbaEEOqz (ORCPT
+	id S933054AbaEEOrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:47:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:26573 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933028AbaEEOrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:46:55 -0400
+	Mon, 5 May 2014 10:47:14 -0400
+Date: Mon, 5 May 2014 10:47:12 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: tracing: NULL ptr deref in ring_buffer_wait
+Message-ID: <20140505104712.11c63a5d@gandalf.local.home>
+In-Reply-To: <5366DFBF.6090204@oracle.com>
+References: <5366DFBF.6090204@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-	<CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-Date: Mon, 5 May 2014 09:46:54 -0500
-X-Google-Sender-Auth: Y_chQqAXgaY7krSRvhzTyfdTXSs
-Message-ID: <CAGo_u6p1xLe7cPnCNKe3WixhAY6tmX=-a7CQes9nsV81SpTEvw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Nishanth Menon <nm@ti.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 9:38 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 5 May 2014 19:53, Nishanth Menon <nm@ti.com> wrote:
->> ceil and floor allows us to walk down the opp entries the direction we
->> want it to.
->> one can convert that data any way one wants it - especially when custom
->> mapping such as this is desired.
->
-> Yeah, but doing that for every frequency transition is not right.
-> Otherwise they already have a solution, where they reverse order
-> of frequencies for their driver. exynos_sort_descend_freq_table().
->
-> Probably that's a better solution then :)
-Such a map should probably be done at probe, unless we have strong
-reasons why not to.
+On Sun, 04 May 2014 20:47:59 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
->
-> But, Jonghwan was probably trying to get this solved in the framework
-> only, in case anybody else needs it.
->
-Lets keep things simple for the time being. ideally users of a
-framework should not depend on internal organization of data.
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running latest -next
+> kernel I've stumbled on the following:
 
-Regards,
-Nishanth Menon
+Do you have any idea what was going on? CPU hotplug maybe?
+
+
+> 
+> 
+> [ 3589.386869] BUG: unable to handle kernel NULL pointer dereference at 00000000000001f0
+> [ 3589.389326] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+
+Could you tell me what that line is? From what I see with next/master:
+
+3069:	if (!prove_locking || lock->key == &__lockdep_no_validate__)
+3070:		check = 0;
+
+
+I wonder if somehow the ring buffer wait queue lock didn't get
+initialized properly for lockdep. That is, the lock->key is bad? But
+the bad offset is 0x1f0 which is 496 but lock->key is the first thing
+in that structure, which would mean the lock pointer itself is 0x1f0.
+
+
+> [ 3589.390099] PGD 44bf8067 PUD 392d1067 PMD ac4c2067 PTE 0
+> [ 3589.390099] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 3589.390099] Dumping ftrace buffer:
+> [ 3589.390099]    (ftrace buffer empty)
+> [ 3589.390099] Modules linked in:
+> [ 3589.395496] CPU: 37 PID: 28180 Comm: trinity-c168 Not tainted 3.15.0-rc3-next-20140502-sasha-00020-g3183c20 #432
+> [ 3589.396585] task: ffff8802c77d3000 ti: ffff88005c9d0000 task.ti: ffff88005c9d0000
+> [ 3589.396585] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> [ 3589.396585] RSP: 0018:ffff88005c9d1c18  EFLAGS: 00010002
+> [ 3589.396585] RAX: 0000000000000086 RBX: ffff8802c77d3000 RCX: 0000000000000000
+> [ 3589.396585] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 00000000000001f0
+> [ 3589.396585] RBP: ffff88005c9d1d08 R08: 0000000000000001 R09: 0000000000000001
+> [ 3589.396585] R10: ffff8802c77d3000 R11: 0000000000000001 R12: 0000000000000000
+> [ 3589.396585] R13: 00000000000001f0 R14: 0000000000000000 R15: 0000000000000000
+> [ 3589.396585] FS:  00007f1cfe809700(0000) GS:ffff88017ce00000(0000) knlGS:0000000000000000
+> [ 3589.407670] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 3589.407670] CR2: 00000000000001f0 CR3: 000000005cba3000 CR4: 00000000000006a0
+> [ 3589.407670] DR0: 00000000006de000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 3589.407670] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 3589.407670] Stack:
+> [ 3589.407670]  0000000000000025 ffff88017cfd8380 00000000001d8380 0000000000000025
+> [ 3589.407670]  ffff88005c9d1c68 ffffffffa81a5df8 0002fa098d2fe980 0000000000000000
+> [ 3589.407670]  0002fa098d2fe980 0000000000000001 ffffffffaf415f20 0000000000015ee0
+> [ 3589.407670] Call Trace:
+> [ 3589.407670] ? sched_clock_cpu (kernel/sched/clock.c:311)
+> [ 3589.407670] ? __lock_acquire (kernel/locking/lockdep.c:3189)
+> [ 3589.407670] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+> [ 3589.407670] ? prepare_to_wait (kernel/sched/wait.c:177)
+
+This is the q->lock, which is the first item in the queue_head. The
+dep_map is a bit further but not 496 bytes.
+
+> [ 3589.407670] ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
+> [ 3589.407670] _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+> [ 3589.407670] ? prepare_to_wait (kernel/sched/wait.c:177)
+> [ 3589.407670] ? get_parent_ip (kernel/sched/core.c:2485)
+> [ 3589.407670] ? mutex_unlock (kernel/locking/mutex.c:220)
+> [ 3589.407670] prepare_to_wait (kernel/sched/wait.c:177)
+> [ 3589.407670] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
+> [ 3589.407670] ring_buffer_wait (kernel/trace/ring_buffer.c:587)
+
+Now, perhaps buffer was NULL when passed in. This code is mostly
+dealing with offsets and if buffer is NULL it wont bug till it did that
+q->lock grab.
+
+> [ 3589.407670] ? bit_waitqueue (kernel/sched/wait.c:291)
+> [ 3589.407670] wait_on_pipe (kernel/trace/trace.c:1095)
+
+this passes in iter->trace_buffer->buffer.
+
+> [ 3589.407670] tracing_buffers_read (kernel/trace/trace.c:5162)
+
+The iter->trace_buffer is set up in tracing_buffers_open() with:
+
+	info->iter.trace_buffer = &tr->trace_buffer;
+
+I have no idea how trace_buffer->buffer could have been NULL here?
+
+Although, with cpu hotplug, a cpu_buffer may not be allocated until
+that cpu is booted up. But it shouldn't allow you to trace that buffer
+before hand.
+
+Hmm, if a cpu is not up yet, perhaps you can read it. But if this was
+the case, the ring_buffer_read_page() would have failed.
+
+> [ 3589.407670] vfs_read (fs/read_write.c:430)
+> [ 3589.407670] SyS_read (fs/read_write.c:568 fs/read_write.c:560)
+> [ 3589.407670] tracesys (arch/x86/kernel/entry_64.S:746)
+> [ 3589.407670] Code: 85 cd 0c 00 00 48 c7 c1 5c e1 6d ac 48 c7 c2 af 89 6d ac 31 c0 be fa 0b 00 00 48 c7 c7 16 e1 6d ac e8 3c 68 f9 ff e9 a7 0c 00 00 <49> 81 7d 00 80 81 76 ae b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
+> [ 3589.407670] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+> [ 3589.407670]  RSP <ffff88005c9d1c18>
+> [ 3589.407670] CR2: 00000000000001f0
+
+Is this easily reproducible?
+
+Thanks,
+
+-- Steve
