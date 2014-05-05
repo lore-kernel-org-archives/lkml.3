@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaEEPeU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:34:20 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:63811 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603AbaEEPeR (ORCPT
+	id S1754121AbaEEPei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:34:38 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:50808 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753880AbaEEPeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:34:17 -0400
-Date: Mon, 5 May 2014 17:34:08 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
-Message-ID: <20140505153405.GD2099@localhost.localdomain>
-References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
- <20140505123706.GP17778@laptop.programming.kicks-ass.net>
- <20140505133113.GD1429@laptop.programming.kicks-ass.net>
- <20140505150356.GB2099@localhost.localdomain>
- <20140505151228.GR26782@laptop.programming.kicks-ass.net>
+	Mon, 5 May 2014 11:34:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505151228.GR26782@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <13946837.RfnRDPQdge@wuerfel>
+References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
+	<13946837.RfnRDPQdge@wuerfel>
+Date: Mon, 5 May 2014 10:34:02 -0500
+Message-ID: <CAL_JsqJXE4uXKA6XU1=3zFjdcEXHyUat2dL6wDKiZBx8S-p+Xg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Introducing Exynos ChipId driver
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 05:12:28PM +0200, Peter Zijlstra wrote:
-> > Note the current ordering:
-> > 
-> >     cmpxchg(&qsd->pending, 0, 1)       get ipi
-> >     csd_lock(qsd->csd)                 xchg(&qsd->pending, 1)
-> >     send ipi                           csd_unlock(qsd->csd)
-> > 
-> > 
-> > So there shouldn't be racing updaters. Also ipi sender shouldn't
-> > race with ipi receiver, the update shouldn't always eventually see
-> > the unlock happening.
-> 
-> Yeah, I've not spotted how this particular train wreck happens either.
-> 
-> The problem is reproduction, it took me 9 hours to confirm I could
-> reproduce the problem on my machine. So how long to I run it with this
-> patch reverted to show its gone..
+On Sat, May 3, 2014 at 10:02 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 03 May 2014 15:11:36 Pankaj Dubey wrote:
+>> This patch series attempts to get rid of soc_is_exynosXXXX macros
+>> and eventually with the help of this series we can probably get
+>> rid of CONFIG_SOC_EXYNOSXXXX in near future.
+>> Each Exynos SoC has ChipID block which can give information about
+>> SoC's product Id and revision number. Currently we have single
+>> DT binding information for this as "samsung,exynos4210-chipid".
+>> But Exynos4 and Exynos5 SoC series have one small difference in
+>> chip Id, with resepect to product id bit-masks. So it means we
+>> should have separate compatible string for these different series
+>> of SoCs. So I have created new binding information for handling
+>> this difference. Also currently I can think of putting this driver
+>> code under "drivers/misc/" but suggestions are welcome.
+>> Also current form of driver is missing platfrom driver and needs
+>> init function to be called from machine file (either exynos.c or
+>> platsmp.c). I hope lot of suggestions and comments to improve this
+>> further.
+>>
+>> This patch series is based on Kukjin Kim's for-next (3.14_rc1 tag)
+>> and prepared on top of following patch series and it's dependent
+>> patch series.
+>
+> I think putting it into drivers/soc would be most appropriate.
+> We already have a few drivers lined up that we want in there,
+> although the directory currently doesn't exist.
+>
+> However, I would ask that you use the infrastructure provided by
+> drivers/base/soc.c when you add this driver, to also make the
+> information available to user space using a standard API.
 
-Maybe it could be favoured cpu hotplug. Anyway converting to irq_work should
-fix it.
+Agreed.
+
+> Ideally this should be done by slightly restructuring the DT
+> source to make all on-chip devices appear below the soc node.
+> We'd have to think a bit about how to best do this while
+> preserving compatibility with existing dts files.
+
+I don't agree. How is a block with chip ID info the parent of all the
+other devices?
+
+In doing some work to move default of_platform_populate out of
+platforms, I noticed that most platforms using the soc device are
+making it the parent of platform devices. I think this is either wrong
+or all platforms should have a default soc device. It makes little
+sense for some platforms to have a devices under a soc sysfs directory
+while others do not. Or the location changes when a platform latter
+adds the soc device.
+
+Rob
