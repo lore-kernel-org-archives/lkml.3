@@ -1,265 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933387AbaEEWdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:33:13 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51997 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076AbaEEWdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:33:08 -0400
-Subject: Re: [PATCH 1/2] uprobes: add comment with insn opcodes, mnemonics
- and why we dont support them
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com>
-References: <1399314247-7368-1-git-send-email-dvlasenk@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 15:32:04 -0700
-Message-ID: <1399329124.4602.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050522-7164-0000-0000-000001893EE3
+	id S933321AbaEEWdj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:33:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58941 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933059AbaEEW0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:26:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
+   d="scan'208";a="535113716"
+From: Andi Kleen <andi@firstfloor.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 18/24] net, diet: Make raw sockets optional
+Date: Mon,  5 May 2014 15:26:07 -0700
+Message-Id: <1399328773-6531-19-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-05 at 20:24 +0200, Denys Vlasenko wrote:
-> After adding these, it's clear we have some awkward choices there.
-> Some valid instructions are prohibited from uprobing while
-> several invalid ones are allowed.
-> 
-> Hopefully future edits to the good-opcode tables will fix wrong bits
-> or explain why those bits are not wrong.
-> 
-> No actual code changes.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Jim Keniston <jkenisto@us.ibm.com>
-> CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> CC: Ingo Molnar <mingo@kernel.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
+From: Andi Kleen <ak@linux.intel.com>
 
-All of the following is FYI.
+Not really needed on small embedded systems.  Saves about 5k text,
+more with IPv6.
 
-The good-instruction tables date back 2006-2007.  Back then, the
-philosophy was to disallow any questionable opcodes, and add them back
-into the "good" tables only when a need was demonstrated (i.e., somebody
-needed to probe that particular instruction) and we could verify that
-probing that instruction worked.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/net/ip.h        |  5 +++++
+ include/net/ipv6.h      |  5 +++++
+ include/net/raw.h       | 15 +++++++++------
+ include/net/rawv6.h     |  8 ++++++++
+ include/net/transp_v6.h |  5 +++++
+ net/ipv4/Kconfig        |  5 +++++
+ net/ipv4/Makefile       |  3 ++-
+ net/ipv4/af_inet.c      |  8 ++++++++
+ net/ipv4/ip_input.c     |  2 ++
+ net/ipv4/proc.c         |  2 ++
+ net/ipv6/Kconfig        |  1 +
+ net/ipv6/Makefile       |  3 ++-
+ net/ipv6/af_inet6.c     |  4 ++++
+ net/ipv6/ip6_output.c   |  4 ++++
+ net/ipv6/proc.c         |  2 ++
+ 15 files changed, 64 insertions(+), 8 deletions(-)
 
-This was before the instruction decoder, so we tended to allow/disallow
-prefixes as if they were opcodes.  The fs, gs, and (I think) repz and
-repnz prefixes were initially marked "bad," but were later changed and
-verified as good when the need arose to probe instructions with those
-prefixes.
-
-And lacking the instruction decoder, a two-byte opcode was allowed if
-any form of it was legitimate.
-
-So (1) I acknowledge that the good/bad-opcode decisions could be much
-more precise, and welcome any improvements in that regard; and (2) once
-again I think somebody should erect a statue of Masami for the
-painstaking work he did on the instruction decoder.  Maybe add Masami
-AND Denys to Mt. Rushmore. :-)
-
-Jim
-
-> ---
->  arch/x86/kernel/uprobes.c | 153 ++++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 134 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index dbbf6cd..4c66a7c 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -63,6 +63,49 @@
->   * Good-instruction tables for 32-bit apps.  This is non-const and volatile
->   * to keep gcc from statically optimizing it out, as variable_test_bit makes
->   * some versions of gcc to think only *(unsigned long*) is used.
-> + *
-> + * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
-> + * won't report *prefixes* as OPCODE1(insn).
-> + * 0f - 2-byte opcode prefix
-> + * 26,2e,36,3e - es:/cs:/ss:/ds:
-> + * 64 - fs: (marked as "good", why?)
-> + * 65 - gs: (marked as "good", why?)
-> + * 66 - operand-size prefix
-> + * 67 - address-size prefix
-> + * f0 - lock prefix
-> + * f2 - repnz    (marked as "good", why?)
-> + * f3 - rep/repz (marked as "good", why?)
-> + *
-> + * Opcodes we'll probably never support:
-> + * 6c-6f - ins,outs. SEGVs if used in userspace
-> + * e4-e7 - in,out imm. SEGVs if used in userspace
-> + * ec-ef - in,out acc. SEGVs if used in userspace
-> + * cc - int3. SIGTRAP if used in userspace
-> + * ce - into. Not used in userspace - no kernel support to make it useful. SEGVs
-> + *	(why we support bound (62) then? it's similar, and similarly unused...)
-> + * f1 - int1. SIGTRAP if used in userspace
-> + * f4 - hlt. SEGVs if used in userspace
-> + * fa - cli. SEGVs if used in userspace
-> + * fb - sti. SEGVs if used in userspace
-> + *
-> + * Opcodes which need some work to be supported:
-> + * 07,17,1f - pop es/ss/ds
-> + *	Normally not used in userspace, but would execute if used.
-> + *	Can cause GP or stack exception if tries to load wrong segment descriptor.
-> + *	We hesitate to run them under single step since kernel's handling
-> + *	of userspace single-stepping (TF flag) is fragile.
-> + *	We can easily refuse to support push es/cs/ss/ds (06/0e/16/1e)
-> + *	on the same grounds that they are never used.
-> + * cd - int N.
-> + *	Used by userspace for "int 80" syscall entry. (Other "int N"
-> + *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
-> + *	Not supported since kernel's handling of userspace single-stepping
-> + *	(TF flag) is fragile.
-> + * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
-> + *
-> + * Opcodes which can be enabled right away:
-> + * 63 - arpl. This insn has no unusual exceptions (it's basically an arith op).
-> + * d6 - salc. Undocumented "sign-extend carry flag to AL" insn
->   */
->  #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
->  static volatile u32 good_insns_32[256 / 32] = {
-> @@ -91,7 +134,55 @@ static volatile u32 good_insns_32[256 / 32] = {
->  #define good_insns_32	NULL
->  #endif
-> 
-> -/* Good-instruction tables for 64-bit apps */
-> +/* Good-instruction tables for 64-bit apps.
-> + *
-> + * Prefixes. Most marked as "bad", but it doesn't matter, since insn decoder
-> + * won't report *prefixes* as OPCODE1(insn).
-> + * 0f - 2-byte opcode prefix
-> + * 26,2e,36,3e - es:/cs:/ss:/ds:
-> + * 40-4f - rex prefixes
-> + * 64 - fs: (marked as "good", why?)
-> + * 65 - gs: (marked as "good", why?)
-> + * 66 - operand-size prefix
-> + * 67 - address-size prefix
-> + * f0 - lock prefix
-> + * f2 - repnz    (marked as "good", why?)
-> + * f3 - rep/repz (marked as "good", why?)
-> + *
-> + * Genuinely invalid opcodes:
-> + * 06,07 - formerly push/pop es
-> + * 0e - formerly push cs
-> + * 16,17 - formerly push/pop ss
-> + * 1e,1f - formerly push/pop ds
-> + * 27,2f,37,3f - formerly daa/das/aaa/aas
-> + * 60,61 - formerly pusha/popa
-> + * 62 - formerly bound. EVEX prefix for AVX512
-> + * 82 - formerly redundant encoding of Group1
-> + * 9a - formerly call seg:ofs (marked as "supported"???)
-> + * c4,c5 - formerly les/lds. VEX prefixes for AVX
-> + * ce - formerly into
-> + * d4,d5 - formerly aam/aad
-> + * d6 - formerly undocumented salc
-> + * ea - formerly jmp seg:ofs (marked as "supported"???)
-> + *
-> + * Opcodes we'll probably never support:
-> + * 6c-6f - ins,outs. SEGVs if used in userspace
-> + * e4-e7 - in,out imm. SEGVs if used in userspace
-> + * ec-ef - in,out acc. SEGVs if used in userspace
-> + * cc - int3. SIGTRAP if used in userspace
-> + * f1 - int1. SIGTRAP if used in userspace
-> + * f4 - hlt. SEGVs if used in userspace
-> + * fa - cli. SEGVs if used in userspace
-> + * fb - sti. SEGVs if used in userspace
-> + *
-> + * Opcodes which need some work to be supported:
-> + * cd - int N.
-> + *	Used by userspace for "int 80" syscall entry. (Other "int N"
-> + *	cause GP -> SEGV since their IDT gates don't allow calls from CPL 3).
-> + *	Not supported since kernel's handling of userspace single-stepping
-> + *	(TF flag) is fragile.
-> + * cf - iret. Normally not used in userspace. Doesn't SEGV unless arguments are bad
-> + */
->  #if defined(CONFIG_X86_64)
->  static volatile u32 good_insns_64[256 / 32] = {
->  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-> @@ -119,7 +210,48 @@ static volatile u32 good_insns_64[256 / 32] = {
->  #define good_insns_64	NULL
->  #endif
-> 
-> -/* Using this for both 64-bit and 32-bit apps */
-> +/* Using this for both 64-bit and 32-bit apps.
-> + * Opcodes we don't support:
-> + * 0f 00 - SLDT/STR/LLDT/LTR/VERR/VERW/-/- group. System insns
-> + * 0f 01 - SGDT/SIDT/LGDT/LIDT/SMSW/-/LMSW/INVLPG group.
-> + *	Also encodes tons of other system insns if mod=11.
-> + *	Some are in fact non-system: xend, xtest, rdtscp, maybe more
-> + * 0f 02 - lar (why? should be safe, it throws no exceptipons)
-> + * 0f 03 - lsl (why? should be safe, it throws no exceptipons)
-> + * 0f 04 - undefined
-> + * 0f 05 - syscall
-> + * 0f 06 - clts (CPL0 insn)
-> + * 0f 07 - sysret
-> + * 0f 08 - invd (CPL0 insn)
-> + * 0f 09 - wbinvd (CPL0 insn)
-> + * 0f 0a - undefined
-> + * 0f 0b - ud1
-> + * 0f 0c - undefined
-> + * 0f 0d - prefetchFOO (amd prefetch insns)
-> + * 0f 18 - prefetchBAR (intel prefetch insns)
-> + * 0f 24 - mov from test regs (perhaps entire 20-27 area can be disabled (special reg ops))
-> + * 0f 25 - undefined
-> + * 0f 26 - mov to test regs
-> + * 0f 27 - undefined
-> + * 0f 30 - wrmsr (CPL0 insn)
-> + * 0f 34 - sysenter
-> + * 0f 35 - sysexit
-> + * 0f 36 - undefined
-> + * 0f 37 - getsec
-> + * 0f 38-3f - 3-byte opcodes (why?? all look safe)
-> + * 0f 78 - vmread
-> + * 0f 79 - vmwrite
-> + * 0f 7a - undefined
-> + * 0f 7b - undefined
-> + * 0f 7c - undefined
-> + * 0f 7d - undefined
-> + * 0f a6 - undefined
-> + * 0f a7 - undefined
-> + * 0f b8 - popcnt (why?? it's an ordinary ALU op)
-> + * 0f d0 - undefined
-> + * 0f f0 - lddqu (why?? it's an ordinary vector load op)
-> + * 0f ff - undefined
-> + */
->  static volatile u32 good_2byte_insns[256 / 32] = {
->  	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
->  	/*      ----------------------------------------------         */
-> @@ -145,23 +277,6 @@ static volatile u32 good_2byte_insns[256 / 32] = {
->  #undef W
-> 
->  /*
-> - * opcodes we'll probably never support:
-> - *
-> - *  6c-6d, e4-e5, ec-ed - in
-> - *  6e-6f, e6-e7, ee-ef - out
-> - *  cc, cd - int3, int
-> - *  cf - iret
-> - *  d6 - illegal instruction
-> - *  f1 - int1/icebp
-> - *  f4 - hlt
-> - *  fa, fb - cli, sti
-> - *  0f - lar, lsl, syscall, clts, sysret, sysenter, sysexit, invd, wbinvd, ud2
-> - *
-> - * invalid opcodes in 64-bit mode:
-> - *
-> - *  06, 0e, 16, 1e, 27, 2f, 37, 3f, 60-62, 82, c4-c5, d4-d5
-> - *  63 - we support this opcode in x86_64 but not in i386.
-> - *
->   * opcodes we may need to refine support for:
->   *
->   *  0f - 2-byte instructions: For many of these instructions, the validity
-
+diff --git a/include/net/ip.h b/include/net/ip.h
+index 6764e30..bc878f3 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -445,7 +445,12 @@ static inline int sk_mc_loop(struct sock *sk)
+ 	return 1;
+ }
+ 
++#ifdef CONFIG_INET_RAW
+ bool ip_call_ra_chain(struct sk_buff *skb);
++#else
++static inline bool ip_call_ra_chain(struct sk_buff *skb)
++{ return false; }
++#endif
+ 
+ /*
+  *	Functions provided by ip_fragment.c
+diff --git a/include/net/ipv6.h b/include/net/ipv6.h
+index 3c4c041..f4dae3a 100644
+--- a/include/net/ipv6.h
++++ b/include/net/ipv6.h
+@@ -822,8 +822,13 @@ int ip6_mc_msfget(struct sock *sk, struct group_filter *gsf,
+ #ifdef CONFIG_PROC_FS
+ int ac6_proc_init(struct net *net);
+ void ac6_proc_exit(struct net *net);
++#ifdef CONFIG_INET_RAW
+ int raw6_proc_init(void);
+ void raw6_proc_exit(void);
++#else
++static inline int raw6_proc_init(void) { return 0; }
++static inline void raw6_proc_exit(void) {}
++#endif
+ int tcp6_proc_init(struct net *net);
+ void tcp6_proc_exit(struct net *net);
+ int udp6_proc_init(struct net *net);
+diff --git a/include/net/raw.h b/include/net/raw.h
+index 6a40c65..5ece765 100644
+--- a/include/net/raw.h
++++ b/include/net/raw.h
+@@ -23,8 +23,17 @@
+ 
+ extern struct proto raw_prot;
+ 
++#ifdef CONFIG_INET_RAW
+ void raw_icmp_error(struct sk_buff *, int, u32);
+ int raw_local_deliver(struct sk_buff *, int);
++int raw_proc_init(void);
++void raw_proc_exit(void);
++#else
++static inline void raw_icmp_error(struct sk_buff *skb, int a, u32 b) {}
++static inline int raw_local_deliver(struct sk_buff *skb, int s) { return 0; }
++static inline int raw_proc_init(void) { return 0; }
++static inline void raw_proc_exit(void) {}
++#endif
+ 
+ int raw_rcv(struct sock *, struct sk_buff *);
+ 
+@@ -35,10 +44,6 @@ struct raw_hashinfo {
+ 	struct hlist_head ht[RAW_HTABLE_SIZE];
+ };
+ 
+-#ifdef CONFIG_PROC_FS
+-int raw_proc_init(void);
+-void raw_proc_exit(void);
+-
+ struct raw_iter_state {
+ 	struct seq_net_private p;
+ 	int bucket;
+@@ -55,8 +60,6 @@ void raw_seq_stop(struct seq_file *seq, void *v);
+ int raw_seq_open(struct inode *ino, struct file *file,
+ 		 struct raw_hashinfo *h, const struct seq_operations *ops);
+ 
+-#endif
+-
+ void raw_hash_sk(struct sock *sk);
+ void raw_unhash_sk(struct sock *sk);
+ 
+diff --git a/include/net/rawv6.h b/include/net/rawv6.h
+index 87783de..acb81dc 100644
+--- a/include/net/rawv6.h
++++ b/include/net/rawv6.h
+@@ -3,9 +3,17 @@
+ 
+ #include <net/protocol.h>
+ 
++
++#ifdef CONFIG_INET_RAW
+ void raw6_icmp_error(struct sk_buff *, int nexthdr,
+ 		u8 type, u8 code, int inner_offset, __be32);
+ bool raw6_local_deliver(struct sk_buff *, int);
++#else
++static inline void raw6_icmp_error(struct sk_buff *skb, int nexthdr,
++		u8 type, u8 code, int inner_offset, __be32 x) {}
++static inline bool raw6_local_deliver(struct sk_buff *skb, int x)
++{ return false; }
++#endif
+ 
+ int rawv6_rcv(struct sock *sk, struct sk_buff *skb);
+ 
+diff --git a/include/net/transp_v6.h b/include/net/transp_v6.h
+index 7a0e229..801267c 100644
+--- a/include/net/transp_v6.h
++++ b/include/net/transp_v6.h
+@@ -19,8 +19,13 @@ int ipv6_frag_init(void);
+ void ipv6_frag_exit(void);
+ 
+ /* transport protocols */
++#ifdef CONFIG_INET_RAW
+ int rawv6_init(void);
+ void rawv6_exit(void);
++#else
++static inline int rawv6_init(void) { return 0; }
++static inline void rawv6_exit(void) {}
++#endif
+ int udpv6_init(void);
+ void udpv6_exit(void);
+ int udplitev6_init(void);
+diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
+index df5c569..cdb4f57 100644
+--- a/net/ipv4/Kconfig
++++ b/net/ipv4/Kconfig
+@@ -62,6 +62,10 @@ config IP_FIB_TRIE_STATS
+ 	  Keep track of statistics on structure of FIB TRIE table.
+ 	  Useful for testing and measuring TRIE performance.
+ 
++config INET_RAW
++       bool "IP: Support raw sockets"
++       default y
++
+ config IP_MULTIPLE_TABLES
+ 	bool "IP: policy routing"
+ 	depends on IP_ADVANCED_ROUTER
+@@ -218,6 +222,7 @@ config NET_IPGRE_BROADCAST
+ config IP_MROUTE
+ 	bool "IP: multicast routing"
+ 	depends on IP_MULTICAST
++	select INET_RAW
+ 	help
+ 	  This is used if you want your machine to act as a router for IP
+ 	  packets that have several destination addresses. It is needed on the
+diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+index addecef..9353beb 100644
+--- a/net/ipv4/Makefile
++++ b/net/ipv4/Makefile
+@@ -8,7 +8,7 @@ obj-y     := route.o inetpeer.o protocol.o \
+ 	     inet_timewait_sock.o inet_connection_sock.o \
+ 	     tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
+ 	     tcp_minisocks.o tcp_cong.o \
+-	     datagram.o raw.o udp.o udplite.o \
++	     datagram.o udp.o udplite.o \
+ 	     arp.o icmp.o devinet.o af_inet.o \
+ 	     fib_frontend.o fib_semantics.o fib_trie.o \
+ 	     inet_fragment.o ip_tunnel_core.o gre_offload.o
+@@ -58,6 +58,7 @@ obj-$(CONFIG_TCP_CONG_ILLINOIS) += tcp_illinois.o
+ obj-$(CONFIG_TCP_FASTOPEN) += tcp_fastopen.o
+ obj-$(CONFIG_MEMCG_KMEM) += tcp_memcontrol.o
+ obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
++obj-$(CONFIG_INET_RAW) += raw.o
+ 
+ obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+ 		      xfrm4_output.o xfrm4_protocol.o
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 46b1815..cdcf1e8 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -956,6 +956,7 @@ const struct proto_ops inet_dgram_ops = {
+ };
+ EXPORT_SYMBOL(inet_dgram_ops);
+ 
++#ifdef CONFIG_INET_RAW
+ /*
+  * For SOCK_RAW sockets; should be the same as inet_dgram_ops but without
+  * udp_poll
+@@ -985,6 +986,7 @@ static const struct proto_ops inet_sockraw_ops = {
+ 	.compat_ioctl	   = inet_compat_ioctl,
+ #endif
+ };
++#endif
+ 
+ static const struct net_proto_family inet_family_ops = {
+ 	.family = PF_INET,
+@@ -1026,6 +1028,7 @@ static struct inet_protosw inetsw_array[] =
+        },
+ #endif
+ 
++#ifdef CONFIG_INET_RAW
+        {
+ 	       .type =       SOCK_RAW,
+ 	       .protocol =   IPPROTO_IP,	/* wild card */
+@@ -1034,6 +1037,7 @@ static struct inet_protosw inetsw_array[] =
+ 	       .no_check =   UDP_CSUM_DEFAULT,
+ 	       .flags =      INET_PROTOSW_REUSE,
+        }
++#endif
+ };
+ 
+ #define INETSW_ARRAY_LEN ARRAY_SIZE(inetsw_array)
+@@ -1737,9 +1741,11 @@ static int __init inet_init(void)
+ 	if (rc)
+ 		goto out_unregister_tcp_proto;
+ 
++#ifdef CONFIG_INET_RAW
+ 	rc = proto_register(&raw_prot, 1);
+ 	if (rc)
+ 		goto out_unregister_udp_proto;
++#endif
+ 
+ #ifdef CONFIG_IP_PING
+ 	rc = proto_register(&ping_prot, 1);
+@@ -1835,8 +1841,10 @@ static int __init inet_init(void)
+ out:
+ 	return rc;
+ out_unregister_raw_proto:
++#ifdef CONFIG_INET_RAW
+ 	proto_unregister(&raw_prot);
+ out_unregister_udp_proto:
++#endif
+ 	proto_unregister(&udp_prot);
+ out_unregister_tcp_proto:
+ 	proto_unregister(&tcp_prot);
+diff --git a/net/ipv4/ip_input.c b/net/ipv4/ip_input.c
+index 3d4da2c..8497bc1 100644
+--- a/net/ipv4/ip_input.c
++++ b/net/ipv4/ip_input.c
+@@ -147,6 +147,7 @@
+ #include <linux/mroute.h>
+ #include <linux/netlink.h>
+ 
++#ifdef CONFIG_INET_RAW
+ /*
+  *	Process Router Attention IP option (RFC 2113)
+  */
+@@ -186,6 +187,7 @@ bool ip_call_ra_chain(struct sk_buff *skb)
+ 	}
+ 	return false;
+ }
++#endif
+ 
+ static int ip_local_deliver_finish(struct sk_buff *skb)
+ {
+diff --git a/net/ipv4/proc.c b/net/ipv4/proc.c
+index ad737fa..5f040eb 100644
+--- a/net/ipv4/proc.c
++++ b/net/ipv4/proc.c
+@@ -69,8 +69,10 @@ static int sockstat_seq_show(struct seq_file *seq, void *v)
+ 		   proto_memory_allocated(&udp_prot));
+ 	seq_printf(seq, "UDPLITE: inuse %d\n",
+ 		   sock_prot_inuse_get(net, &udplite_prot));
++#ifdef CONFIG_INET_RAW
+ 	seq_printf(seq, "RAW: inuse %d\n",
+ 		   sock_prot_inuse_get(net, &raw_prot));
++#endif
+ 	seq_printf(seq,  "FRAG: inuse %d memory %d\n",
+ 			ip_frag_nqueues(net), ip_frag_mem(net));
+ 	return 0;
+diff --git a/net/ipv6/Kconfig b/net/ipv6/Kconfig
+index 438a73a..bb3ffec 100644
+--- a/net/ipv6/Kconfig
++++ b/net/ipv6/Kconfig
+@@ -88,6 +88,7 @@ config INET6_IPCOMP
+ config IPV6_MIP6
+ 	tristate "IPv6: Mobility"
+ 	select XFRM
++	select INET_RAW
+ 	---help---
+ 	  Support for IPv6 Mobility described in RFC 3775.
+ 
+diff --git a/net/ipv6/Makefile b/net/ipv6/Makefile
+index 7ce7aa0..19f0e00 100644
+--- a/net/ipv6/Makefile
++++ b/net/ipv6/Makefile
+@@ -7,13 +7,14 @@ obj-$(CONFIG_IPV6) += ipv6.o
+ ipv6-objs :=	af_inet6.o anycast.o ip6_output.o ip6_input.o addrconf.o \
+ 		addrlabel.o \
+ 		route.o ip6_fib.o ipv6_sockglue.o ndisc.o udp.o udplite.o \
+-		raw.o icmp.o mcast.o reassembly.o tcp_ipv6.o \
++		icmp.o mcast.o reassembly.o tcp_ipv6.o \
+ 		exthdrs.o datagram.o ip6_flowlabel.o inet6_connection_sock.o
+ 
+ ipv6-offload-$(CONFIG_IP_OFFLOAD) := ip6_offload.o tcpv6_offload.o \
+ 		udp_offload.o exthdrs_offload.o
+ 
+ ipv6-$(CONFIG_SYSCTL) = sysctl_net_ipv6.o
++ipv6-$(CONFIG_INET_RAW) += raw.o
+ ipv6-$(CONFIG_IPV6_MROUTE) += ip6mr.o
+ ipv6-$(CONFIG_IP_PING) += ping.o
+ 
+diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
+index 327042a..fc36df6 100644
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -865,9 +865,11 @@ static int __init inet6_init(void)
+ 	if (err)
+ 		goto out_unregister_udp_proto;
+ 
++#ifdef CONFIG_INET_RAW
+ 	err = proto_register(&rawv6_prot, 1);
+ 	if (err)
+ 		goto out_unregister_udplite_proto;
++#endif
+ 
+ #ifdef CONFIG_IP_PING
+ 	err = proto_register(&pingv6_prot, 1);
+@@ -1036,8 +1038,10 @@ out_unregister_ping_proto:
+ 	proto_unregister(&pingv6_prot);
+ out_unregister_raw_proto:
+ #endif
++#ifdef CONFIG_INET_RAW
+ 	proto_unregister(&rawv6_prot);
+ out_unregister_udplite_proto:
++#endif
+ 	proto_unregister(&udplitev6_prot);
+ out_unregister_udp_proto:
+ 	proto_unregister(&udpv6_prot);
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 40e7581..fb21dde 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -235,6 +235,7 @@ int ip6_xmit(struct sock *sk, struct sk_buff *skb, struct flowi6 *fl6,
+ 
+ EXPORT_SYMBOL(ip6_xmit);
+ 
++#ifdef CONFIG_INET_RAW
+ static int ip6_call_ra_chain(struct sk_buff *skb, int sel)
+ {
+ 	struct ip6_ra_chain *ra;
+@@ -263,6 +264,7 @@ static int ip6_call_ra_chain(struct sk_buff *skb, int sel)
+ 	read_unlock(&ip6_ra_lock);
+ 	return 0;
+ }
++#endif
+ 
+ static int ip6_forward_proxy_check(struct sk_buff *skb)
+ {
+@@ -394,10 +396,12 @@ int ip6_forward(struct sk_buff *skb)
+ 	 *	cannot be fragmented, because there is no warranty
+ 	 *	that different fragments will go along one path. --ANK
+ 	 */
++#ifdef CONFIG_INET_RAW
+ 	if (unlikely(opt->flags & IP6SKB_ROUTERALERT)) {
+ 		if (ip6_call_ra_chain(skb, ntohs(opt->ra)))
+ 			return 0;
+ 	}
++#endif
+ 
+ 	/*
+ 	 *	check and decrement ttl
+diff --git a/net/ipv6/proc.c b/net/ipv6/proc.c
+index 091d066..af0d18a 100644
+--- a/net/ipv6/proc.c
++++ b/net/ipv6/proc.c
+@@ -40,8 +40,10 @@ static int sockstat6_seq_show(struct seq_file *seq, void *v)
+ 		       sock_prot_inuse_get(net, &udpv6_prot));
+ 	seq_printf(seq, "UDPLITE6: inuse %d\n",
+ 			sock_prot_inuse_get(net, &udplitev6_prot));
++#ifdef CONFIG_INET_RAW
+ 	seq_printf(seq, "RAW6: inuse %d\n",
+ 		       sock_prot_inuse_get(net, &rawv6_prot));
++#endif
+ 	seq_printf(seq, "FRAG6: inuse %d memory %d\n",
+ 		       ip6_frag_nqueues(net), ip6_frag_mem(net));
+ 	return 0;
+-- 
+1.9.0
 
