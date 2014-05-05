@@ -1,168 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaEEQhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 12:37:36 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:58037 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819AbaEEQhe (ORCPT
+	id S1754413AbaEEQhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 12:37:39 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19222 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819AbaEEQhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 12:37:34 -0400
-Date: Mon, 5 May 2014 12:37:30 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: axboe@kernel.dk, Li Zefan <lizefan@huawei.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        cgroups@vger.kernel.org
-Subject: [PATCH cgroup/for-3.15-fixes] blkcg: use trylock on blkcg_pol_mutex
- in blkcg_reset_stats()
-Message-ID: <20140505163730.GL11231@htj.dyndns.org>
-References: <5363C04B.4010400@oracle.com>
+	Mon, 5 May 2014 12:37:37 -0400
+Message-ID: <5367BE30.3030301@oracle.com>
+Date: Mon, 05 May 2014 12:37:04 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5363C04B.4010400@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 2/2] mm/page_alloc: DEBUG_VM checks for free_list placement
+ of CMA and RESERVE pages
+References: <533D8015.1000106@suse.cz> <1396539618-31362-1-git-send-email-vbabka@suse.cz> <1396539618-31362-2-git-send-email-vbabka@suse.cz> <53616F39.2070001@oracle.com> <53638ADA.5040200@suse.cz> <5367A1E5.2020903@oracle.com> <5367B356.1030403@suse.cz>
+In-Reply-To: <5367B356.1030403@suse.cz>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the recent conversion of cgroup to kernfs, cgroup_tree_mutex
-which nests above both the kernfs s_active protection and cgroup_mutex
-is added to synchronize cgroup file type operations as cgroup_mutex
-needed to be grabbed from some file operations and thus can't be put
-above s_active protection.
+On 05/05/2014 11:50 AM, Vlastimil Babka wrote:
+> On 05/05/2014 04:36 PM, Sasha Levin wrote:
+>> On 05/02/2014 08:08 AM, Vlastimil Babka wrote:
+>>> On 04/30/2014 11:46 PM, Sasha Levin wrote:
+>>>>> On 04/03/2014 11:40 AM, Vlastimil Babka wrote:
+>>>>>>> For the MIGRATE_RESERVE pages, it is important they do not get misplaced
+>>>>>>> on free_list of other migratetype, otherwise the whole MIGRATE_RESERVE
+>>>>>>> pageblock might be changed to other migratetype in try_to_steal_freepages().
+>>>>>>> For MIGRATE_CMA, the pages also must not go to a different free_list, otherwise
+>>>>>>> they could get allocated as unmovable and result in CMA failure.
+>>>>>>>
+>>>>>>> This is ensured by setting the freepage_migratetype appropriately when placing
+>>>>>>> pages on pcp lists, and using the information when releasing them back to
+>>>>>>> free_list. It is also assumed that CMA and RESERVE pageblocks are created only
+>>>>>>> in the init phase. This patch adds DEBUG_VM checks to catch any regressions
+>>>>>>> introduced for this invariant.
+>>>>>>>
+>>>>>>> Cc: Yong-Taek Lee <ytk.lee@samsung.com>
+>>>>>>> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>>>>>>> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>>>>>> Cc: Mel Gorman <mgorman@suse.de>
+>>>>>>> Cc: Minchan Kim <minchan@kernel.org>
+>>>>>>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>>>>>>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>>>> Cc: Hugh Dickins <hughd@google.com>
+>>>>>>> Cc: Rik van Riel <riel@redhat.com>
+>>>>>>> Cc: Michal Nazarewicz <mina86@mina86.com>
+>>>>>>> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+>>>>>
+>>>>> Two issues with this patch.
+>>>>>
+>>>>> First:
+>>>>>
+>>>>> [ 3446.320082] kernel BUG at mm/page_alloc.c:1197!
+>>>>> [ 3446.320082] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+>>>>> [ 3446.320082] Dumping ftrace buffer:
+>>>>> [ 3446.320082]    (ftrace buffer empty)
+>>>>> [ 3446.320082] Modules linked in:
+>>>>> [ 3446.320082] CPU: 1 PID: 8923 Comm: trinity-c42 Not tainted 3.15.0-rc3-next-20140429-sasha-00015-g7c7e0a7-dirty #427
+>>>>> [ 3446.320082] task: ffff88053e208000 ti: ffff88053e246000 task.ti: ffff88053e246000
+>>>>> [ 3446.320082] RIP: get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
+>>>>> [ 3446.320082] RSP: 0018:ffff88053e247778  EFLAGS: 00010002
+>>>>> [ 3446.320082] RAX: 0000000000000003 RBX: ffffea0000f40000 RCX: 0000000000000008
+>>>>> [ 3446.320082] RDX: 0000000000000002 RSI: 0000000000000003 RDI: 00000000000000a0
+>>>>> [ 3446.320082] RBP: ffff88053e247868 R08: 0000000000000007 R09: 0000000000000000
+>>>>> [ 3446.320082] R10: ffff88006ffcef00 R11: 0000000000000000 R12: 0000000000000014
+>>>>> [ 3446.335888] R13: ffffea000115ffe0 R14: ffffea000115ffe0 R15: 0000000000000000
+>>>>> [ 3446.335888] FS:  00007f8c9f059700(0000) GS:ffff88006ec00000(0000) knlGS:0000000000000000
+>>>>> [ 3446.335888] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>>>>> [ 3446.335888] CR2: 0000000002cbc048 CR3: 000000054cdb4000 CR4: 00000000000006a0
+>>>>> [ 3446.335888] DR0: 00000000006de000 DR1: 00000000006de000 DR2: 0000000000000000
+>>>>> [ 3446.335888] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000602
+>>>>> [ 3446.335888] Stack:
+>>>>> [ 3446.335888]  ffff88053e247798 ffff88006eddc0b8 0000000000000016 0000000000000000
+>>>>> [ 3446.335888]  ffff88006ffd2068 ffff88006ffdb008 0000000100000000 0000000000000000
+>>>>> [ 3446.335888]  ffff88006ffdb000 0000000000000000 0000000000000003 0000000000000001
+>>>>> [ 3446.335888] Call Trace:
+>>>>> [ 3446.335888] __alloc_pages_nodemask (mm/page_alloc.c:2731)
+>>>>> [ 3446.335888] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+>>>>> [ 3446.335888] alloc_pages_vma (include/linux/mempolicy.h:76 mm/mempolicy.c:1998)
+>>>>> [ 3446.335888] ? shmem_alloc_page (mm/shmem.c:881)
+>>>>> [ 3446.335888] ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+>>>>> [ 3446.335888] shmem_alloc_page (mm/shmem.c:881)
+>>>>> [ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
+>>>>> [ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+>>>>> [ 3446.335888] ? find_get_entry (mm/filemap.c:979)
+>>>>> [ 3446.335888] ? find_get_entry (mm/filemap.c:940)
+>>>>> [ 3446.335888] ? find_lock_entry (mm/filemap.c:1024)
+>>>>> [ 3446.335888] shmem_getpage_gfp (mm/shmem.c:1130)
+>>>>> [ 3446.335888] ? sched_clock_local (kernel/sched/clock.c:214)
+>>>>> [ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
+>>>>> [ 3446.335888] shmem_fault (mm/shmem.c:1237)
+>>>>> [ 3446.335888] ? do_read_fault.isra.42 (mm/memory.c:3523)
+>>>>> [ 3446.335888] __do_fault (mm/memory.c:3344)
+>>>>> [ 3446.335888] ? _raw_spin_unlock (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+>>>>> [ 3446.335888] do_read_fault.isra.42 (mm/memory.c:3524)
+>>>>> [ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
+>>>>> [ 3446.335888] ? get_parent_ip (kernel/sched/core.c:2485)
+>>>>> [ 3446.335888] __handle_mm_fault (mm/memory.c:3662 mm/memory.c:3823 mm/memory.c:3950)
+>>>>> [ 3446.335888] ? __const_udelay (arch/x86/lib/delay.c:126)
+>>>>> [ 3446.335888] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+>>>>> [ 3446.335888] handle_mm_fault (mm/memory.c:3973)
+>>>>> [ 3446.335888] __get_user_pages (mm/memory.c:1863)
+>>>>> [ 3446.335888] ? preempt_count_sub (kernel/sched/core.c:2541)
+>>>>> [ 3446.335888] __mlock_vma_pages_range (mm/mlock.c:255)
+>>>>> [ 3446.335888] __mm_populate (mm/mlock.c:711)
+>>>>> [ 3446.335888] vm_mmap_pgoff (include/linux/mm.h:1841 mm/util.c:402)
+>>>>> [ 3446.335888] SyS_mmap_pgoff (mm/mmap.c:1378)
+>>>>> [ 3446.335888] ? syscall_trace_enter (include/linux/context_tracking.h:27 arch/x86/kernel/ptrace.c:1461)
+>>>>> [ 3446.335888] ia32_do_call (arch/x86/ia32/ia32entry.S:430)
+>>>>> [ 3446.335888] Code: 00 66 0f 1f 44 00 00 ba 02 00 00 00 31 f6 48 89 c7 e8 c1 c3 ff ff 48 8b 53 10 83 f8 03 74 08 83 f8 04 75 13 0f 1f 00 39 d0 74 0c <0f> 0b 66 2e 0f 1f 84 00 00 00 00 00 45 85 ff 75 15 49 8b 55 00
+>>>>> [ 3446.335888] RIP get_page_from_freelist (mm/page_alloc.c:1197 mm/page_alloc.c:1548 mm/page_alloc.c:2036)
+>>>>> [ 3446.335888]  RSP <ffff88053e247778>
+>>> Hey, that's not an issue, that means the patch works as intended :) And
+>>> I believe it's not a bug introduced by PATCH 1/2.
+>>>
+>>> So, according to my decodecode reading, RAX is the results of
+>>> get_pageblock_migratetype() and it's MIGRATE_RESERVE. RDX is the result
+>>> of get_freepage_migratetype() and it's MIGRATE_UNMOVABLE. The
+>>> freepage_migratetype has just been set either by __rmqueue_smallest() or
+>>> __rmqueue_fallback(), according to the free_list the page has been taken
+>>> from. So this looks like a page from MIGRATE_RESERVE pageblock found on
+>>> the !MIGRATE_RESERVE free_list, which is exactly what the patch intends
+>>> to catch.
+>>>
+>>> I think there are two possible explanations.
+>>>
+>>> 1) the pageblock is genuinely MIGRATE_RESERVE and it was misplaced by
+>>> mistake. I think it wasn't in free_pcppages_bulk() as there's the same
+>>> VM_BUG_ON which would supposedly trigger at the moment of displacing. In
+>>> theory it's possible that there's a race through __free_pages_ok() ->
+>>> free_one_page() where the get_pageblock_migratetype() in
+>>> __free_pages_ok() would race with set_pageblock_migratetype() and result
+>>> in bogus value. But nobody should be calling set_pageblock_migratetype()
+>>> on a MIGRATE_RESERVE pageblock.
+>>>
+>>> 2) the pageblock was marked as MIGRATE_RESERVE due to a race between
+>>> set_pageblock_migratetype() and set_pageblock_skip(). The latter is
+>>> currently not serialized by zone->lock, nor it uses atomic bit set. So
+>>> it may result in lost updates in a racing set_pageblock_migratetype(). I
+>>> think a well-placed race when changing pageblock from MIGRATE_MOVABLE to
+>>> MIGRATE_RECLAIMABLE could result in MIGRATE_RESERVE value. Similar races
+>>> have been already observed to be a problem where frequent changing
+>>> to/from MIGRATE_ISOLATE is involved, and I did a patch series to address
+>>> this, but it was not complete and I postponed it after Mel's changes
+>>> that remove the racy for-cycles completely. So it might be that his
+>>> "[PATCH 08/17] mm: page_alloc: Use word-based accesses for get/set
+>>> pageblock bitmaps" already solves this bug (but maybe only on certain
+>>> architectures where you don't need atomic operations). You might try
+>>> that patch if you can reproduce this bug frequently enough?
+>>
+>> I've tried that patch, but still see the same BUG_ON.
+> 
+> Oh damn, I've realized that my assumptions about MIGRATE_RESERVE pageblocks being created only on zone init time were wrong. setup_zone_migrate_reserve() is called also from the handler of min_free_kbytes sysctl... does trinity try to change that while running?
 
-While this arrangement mostly worked for cgroup, this triggered the
-following lockdep warning.
+There's nothing that will prevent it from changing that.
 
-  ======================================================
-  [ INFO: possible circular locking dependency detected ]
-  3.15.0-rc3-next-20140430-sasha-00016-g4e281fa-dirty #429 Tainted: G        W
-  -------------------------------------------------------
-  trinity-c173/9024 is trying to acquire lock:
-  (blkcg_pol_mutex){+.+.+.}, at: blkcg_reset_stats (include/linux/spinlock.h:328 block/blk-cgroup.c:455)
-
-  but task is already holding lock:
-  (s_active#89){++++.+}, at: kernfs_fop_write (fs/kernfs/file.c:283)
-
-  which lock already depends on the new lock.
-
-
-  the existing dependency chain (in reverse order) is:
-
-  -> #2 (s_active#89){++++.+}:
-  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-  __kernfs_remove (arch/x86/include/asm/atomic.h:27 fs/kernfs/dir.c:352 fs/kernfs/dir.c:1024)
-  kernfs_remove_by_name_ns (fs/kernfs/dir.c:1219)
-  cgroup_addrm_files (include/linux/kernfs.h:427 kernel/cgroup.c:1074 kernel/cgroup.c:2899)
-  cgroup_clear_dir (kernel/cgroup.c:1092 (discriminator 2))
-  rebind_subsystems (kernel/cgroup.c:1144)
-  cgroup_setup_root (kernel/cgroup.c:1568)
-  cgroup_mount (kernel/cgroup.c:1716)
-  mount_fs (fs/super.c:1094)
-  vfs_kern_mount (fs/namespace.c:899)
-  do_mount (fs/namespace.c:2238 fs/namespace.c:2561)
-  SyS_mount (fs/namespace.c:2758 fs/namespace.c:2729)
-  tracesys (arch/x86/kernel/entry_64.S:746)
-
-  -> #1 (cgroup_tree_mutex){+.+.+.}:
-  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-  mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
-  cgroup_add_cftypes (include/linux/list.h:76 kernel/cgroup.c:3040)
-  blkcg_policy_register (block/blk-cgroup.c:1106)
-  throtl_init (block/blk-throttle.c:1694)
-  do_one_initcall (init/main.c:789)
-  kernel_init_freeable (init/main.c:854 init/main.c:863 init/main.c:882 init/main.c:1003)
-  kernel_init (init/main.c:935)
-  ret_from_fork (arch/x86/kernel/entry_64.S:552)
-
-  -> #0 (blkcg_pol_mutex){+.+.+.}:
-  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-  mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
-  blkcg_reset_stats (include/linux/spinlock.h:328 block/blk-cgroup.c:455)
-  cgroup_file_write (kernel/cgroup.c:2714)
-  kernfs_fop_write (fs/kernfs/file.c:295)
-  vfs_write (fs/read_write.c:532)
-  SyS_write (fs/read_write.c:584 fs/read_write.c:576)
-  tracesys (arch/x86/kernel/entry_64.S:746)
-
-  other info that might help us debug this:
-
-  Chain exists of:
-  blkcg_pol_mutex --> cgroup_tree_mutex --> s_active#89
-
-   Possible unsafe locking scenario:
-
-	 CPU0                    CPU1
-	 ----                    ----
-    lock(s_active#89);
-				 lock(cgroup_tree_mutex);
-				 lock(s_active#89);
-    lock(blkcg_pol_mutex);
-
-   *** DEADLOCK ***
-
-  4 locks held by trinity-c173/9024:
-  #0: (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:714)
-  #1: (sb_writers#18){.+.+.+}, at: vfs_write (include/linux/fs.h:2255 fs/read_write.c:530)
-  #2: (&of->mutex){+.+.+.}, at: kernfs_fop_write (fs/kernfs/file.c:283)
-  #3: (s_active#89){++++.+}, at: kernfs_fop_write (fs/kernfs/file.c:283)
-
-  stack backtrace:
-  CPU: 3 PID: 9024 Comm: trinity-c173 Tainted: G        W     3.15.0-rc3-next-20140430-sasha-00016-g4e281fa-dirty #429
-   ffffffff919687b0 ffff8805f6373bb8 ffffffff8e52cdbb 0000000000000002
-   ffffffff919d8400 ffff8805f6373c08 ffffffff8e51fb88 0000000000000004
-   ffff8805f6373c98 ffff8805f6373c08 ffff88061be70d98 ffff88061be70dd0
-  Call Trace:
-  dump_stack (lib/dump_stack.c:52)
-  print_circular_bug (kernel/locking/lockdep.c:1216)
-  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-  mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
-  blkcg_reset_stats (include/linux/spinlock.h:328 block/blk-cgroup.c:455)
-  cgroup_file_write (kernel/cgroup.c:2714)
-  kernfs_fop_write (fs/kernfs/file.c:295)
-  vfs_write (fs/read_write.c:532)
-  SyS_write (fs/read_write.c:584 fs/read_write.c:576)
-
-This is a highly unlikely but valid circular dependency between "echo
-1 > blkcg.reset_stats" and cfq module [un]loading.  cgroup is going
-through further locking update which will remove this complication but
-for now let's use trylock on blkcg_pol_mutex and retry the file
-operation if the trylock fails.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Li Zefan <lizefan@huawei.com>
-References: http://lkml.kernel.org/g/5363C04B.4010400@oracle.com
----
- block/blk-cgroup.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index e4a4145..1039fb9 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -451,7 +451,20 @@ static int blkcg_reset_stats(struct cgroup_subsys_state *css,
- 	struct blkcg_gq *blkg;
- 	int i;
- 
--	mutex_lock(&blkcg_pol_mutex);
-+	/*
-+	 * XXX: We invoke cgroup_add/rm_cftypes() under blkcg_pol_mutex
-+	 * which ends up putting cgroup's internal cgroup_tree_mutex under
-+	 * it; however, cgroup_tree_mutex is nested above cgroup file
-+	 * active protection and grabbing blkcg_pol_mutex from a cgroup
-+	 * file operation creates a possible circular dependency.  cgroup
-+	 * internal locking is planned to go through further simplification
-+	 * and this issue should go away soon.  For now, let's trylock
-+	 * blkcg_pol_mutex and restart the write on failure.
-+	 *
-+	 * http://lkml.kernel.org/g/5363C04B.4010400@oracle.com
-+	 */
-+	if (!mutex_trylock(&blkcg_pol_mutex))
-+		return restart_syscall();
- 	spin_lock_irq(&blkcg->lock);
- 
- 	/*
+Thanks,
+Sasha
