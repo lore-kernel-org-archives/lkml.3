@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756834AbaEEV6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:58:01 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55039 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756316AbaEEV56 (ORCPT
+	id S1756870AbaEEWAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:00:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51864 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756316AbaEEWAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:57:58 -0400
-Date: Mon, 5 May 2014 16:54:22 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Suman Anna <s-anna@ti.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robherring2@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv5 RFC 12/15] hwspinlock/core: add OF helper to parse
- reserved locks
-Message-ID: <20140505215422.GD5546@joshc.qualcomm.com>
-References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
- <1398904476-26200-13-git-send-email-s-anna@ti.com>
- <53680639.1080405@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53680639.1080405@ti.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 5 May 2014 18:00:18 -0400
+Date: Mon, 5 May 2014 15:00:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Aaron Tomlin <atomlin@redhat.com>, Li Zefan <lizefan@huawei.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Ryan Mallon <rmallon@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Dario Faggioli <raistlin@linux.it>, Jens Axboe <axboe@fb.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michael Ellerman <michael@ellerman.id.au>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] sysctl: fix incorrect write position handling
+Message-Id: <20140505150016.6dd7159e6a02b047fe40c56d@linux-foundation.org>
+In-Reply-To: <1398979597-3589-1-git-send-email-keescook@chromium.org>
+References: <1398979597-3589-1-git-send-email-keescook@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 04:44:25PM -0500, Suman Anna wrote:
-> Hi Rob,
+On Thu,  1 May 2014 14:26:33 -0700 Kees Cook <keescook@chromium.org> wrote:
+
+> When writing to a sysctl string, each write, regardless of VFS position,
+> began writing the string from the start. This meant the contents of
+> the last write to the sysctl controlled the string contents instead of
+> the first.
 > 
-> On 04/30/2014 07:34 PM, Suman Anna wrote:
-> > The property 'hwlock-reserved-locks' will be used to represent
-> > the number of locks to be reserved for clients that would need
-> > to request/operate on specific locks. A new OF helper function,
-> > of_hwspin_lock_get_num_reserved_locks(), is added to minimize
-> > duplication in different platform implementations.
-> > 
-> > The function will return a value of 0 if the property is not
-> > defined, so as to support a default behavior of marking all
-> > locks as unused and open for anonymous allocations.
-> > 
-> > Signed-off-by: Suman Anna <s-anna@ti.com>
-> > ---
-> >  .../devicetree/bindings/hwlock/hwlock.txt          |  3 +++
-> >  drivers/hwspinlock/hwspinlock_core.c               | 25 ++++++++++++++++++++++
-> >  include/linux/hwspinlock.h                         |  1 +
-> >  3 files changed, 29 insertions(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> > index d538a9b..88d16d2 100644
-> > --- a/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> > +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> > @@ -18,6 +18,9 @@ Common properties:
-> >  			property is needed on hwlock devices, where the number
-> >  			of supported locks within a hwlock device cannot be
-> >  			read from a register.
-> > +- hwlock-reserved-locks: Number of locks to reserve for clients requiring
-> > +			specific locks. This value cannot exceed the value of
-> > +			hwlock-num-locks.
+> This misbehavior was featured in an exploit against Chrome OS. While it's
+> not in itself a vulnerability, it's a weirdness that isn't on the mind
+> of most auditors: "This filter looks correct, the first line written
+> would not be meaningful to sysctl" doesn't apply here, since the size
+> of the write and the contents of the final write are what matter when
+> writing to sysctls.
 > 
-> Any suggestions here on the approach? This property falls into a gray
-> area as well, as the current approach is somewhat limiting (it doesn't
-> support sparse reserved locks, and expects them at the beginning of the
-> lock range).
+> This adds the sysctl kernel.sysctl_writes_strict to control the write
+> behavior. The default (0) reports when VFS position is non-0 on a write,
+> but retains legacy behavior, -1 disables the warning, and 1 enables the
+> position-respecting behavior.
+> 
 
-Is it possible to implement a pinctrl-like hogging approach, whereby the
-specific locks that need to be reserved are consumed by the controller
-itself?
+OK, let's try that.  I added this paragraph to the patchset's overall
+changelog:
 
-  Josh
+: The long-term plan here is to wait for userspace to be fixed in response
+: to the new warning and to then switch the default kernel behavior to the
+: new position-respecting behavior.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+I'm thinking we should use pr_warn_once() in warn_sysctl_write()?  Otherwise
+people will go and shut the thing up permanently and we'll lose the benefits.
