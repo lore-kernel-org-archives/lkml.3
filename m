@@ -1,138 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106AbaEEWYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:24:25 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56361 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755631AbaEEWYX (ORCPT
+	id S932550AbaEEWY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:24:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57336 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932152AbaEEWYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:24:23 -0400
-Message-ID: <1399328661.2164.54.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
-        ebiederm@xmission.com
-Date: Mon, 05 May 2014 15:24:21 -0700
-In-Reply-To: <20140505221148.GD6867@madcap2.tricolour.ca>
-References: <cover.1398176489.git.rgb@redhat.com>
-	 <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
-	 <20140505034814.GA27548@mail.hallyn.com>
-	 <20140505214818.GC6867@madcap2.tricolour.ca>
-	 <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
-	 <20140505221148.GD6867@madcap2.tricolour.ca>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 18:24:55 -0400
+Date: Mon, 5 May 2014 15:24:43 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-3d7ee969bffcc984c8aeaffc6ac6816fd929ace1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <87913de56bdcbae3d93917938302fc369b05caee.1399317206.git.luto@amacapital.net>
+References: <87913de56bdcbae3d93917938302fc369b05caee.1399317206.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Clean up 32-bit vs 64-bit vdso params
+Git-Commit-ID: 3d7ee969bffcc984c8aeaffc6ac6816fd929ace1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-05 at 18:11 -0400, Richard Guy Briggs wrote:
-> On 14/05/05, James Bottomley wrote:
-> > On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
-> > > On 14/05/05, Serge E. Hallyn wrote:
-> > > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> > > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
-> > > > > > Questions:
-> > > > > > Is there a way to link serial numbers of namespaces involved in migration of a
-> > > > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-> > > > > > identifier for each running instance of a kernel?  Or at least some identifier
-> > > > > > within the container migration realm?
-> > > > > 
-> > > > > Are you asking for a way of distinguishing an migrated container from an
-> > > > > unmigrated one?  The answer is pretty much "no" because the job of
-> > > > > migration is to restore to the same state as much as possible.
-> > > > > 
-> > > > > Reading between the lines, I think your goal is to correlate audit
-> > > > > information across a container migration, right?  Ideally the management
-> > > > > system should be able to cough up an audit trail for a container
-> > > > > wherever it's running and however many times it's been migrated?
-> > > > > 
-> > > > > In that case, I think your idea of a numeric serial number in a dense
-> > > > > range is wrong.  Because the range is dense you're obviously never going
-> > > > > to be able to use the same serial number across a migration.  However,
-> > > > 
-> > > > Ah, but I was being silly before, we can actually address this pretty
-> > > > simply.  If we just (for instance) add
-> > > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the serial number
-> > > > for the relevant ns for the task, then criu can dump this info at
-> > > > checkpoint.  Then at restart it can dump an audit message per task and
-> > > > ns saying old_serial=%x,new_serial=%x.  That way the audit log reader
-> > > > can if it cares keep track.
-> > > 
-> > > This is the sort of idea I had in mind...
-> > 
-> > OK, but I don't understand then why you need a serial number.  There are
-> > plenty of things we preserve across a migration, like namespace name for
-> > instance.  Could you explain what function it performs because I think I
-> > might be missing something.
-> 
-> If a container was defined as an entity with 6 namespaces to itself,
-> this would make sense.  As Eric P. put it, containers/namespaces seem to
-> be a bucket of semi-related nuts and bolts, with any namespace being
-> optional depending on the application.
+Commit-ID:  3d7ee969bffcc984c8aeaffc6ac6816fd929ace1
+Gitweb:     http://git.kernel.org/tip/3d7ee969bffcc984c8aeaffc6ac6816fd929ace1
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 5 May 2014 12:19:32 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 5 May 2014 13:18:40 -0700
 
-That's right.  An IaaS container has a well defined composition, since
-it has to contain a full OS, but an application container is variable.
+x86, vdso: Clean up 32-bit vs 64-bit vdso params
 
-It's the usual procedure with container management systems to have one
-name for the container and give this name to all the namespaces, but I
-agree, it doesn't have to.
+Rather than using 'vdso_enabled' and an awful #define, just call the
+parameters vdso32_enabled and vdso64_enabled.
 
->   My understanding is a
-> container could be migrated to another host requiring the creation of
-> (none,) some or all of its namespaces, potentially leaving behind some
-> of its shared namespaces and/or clashing names of namespaces on the
-> destination host.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87913de56bdcbae3d93917938302fc369b05caee.1399317206.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/elf.h   | 20 +++++++++++++-------
+ arch/x86/um/vdso/vma.c       |  2 +-
+ arch/x86/vdso/vdso32-setup.c | 19 ++++++++-----------
+ arch/x86/vdso/vma.c          |  6 +++---
+ kernel/sysctl.c              |  5 +++++
+ 5 files changed, 30 insertions(+), 22 deletions(-)
 
-Well, no, the environment gets migrated as well so when the migration is
-over, the namespaces the migrated entity is in will look the same as
-before the migration ... if they didn't exist on the recipient, they'll
-be created.  If a namespace already exists the restore fails ... this is
-because we support the usual container case where you're migrating to a
-disjoint set of namespaces.
-
-Even if there were some reason for supporting shared namespaces, the
-fundamental invariant is still the namespace names (i.e. the namespaces
-have the same names before and after migration), so how does a serial
-number help?
-
-James
-
-> > James
-> > 
-> > > > -serge
-> > > > 
-> > > > (Another, more heavyweight approach would be to track all ns hierarchies
-> > > > and make the serial numbers per-namespace-instance.  So my container's
-> > > > pidns serial might be 0x2, and if it clones a new pidns that would be
-> > > > "(0x2,0x1)" on the host, or just 0x1 inside the container.  But we don't
-> > > > need that if the simple userspace approach suffices)
-> > > 
-> > > This sounds manageable...
-> > > 
-> > > - RGB
-> > > 
-> > > --
-> > > Richard Guy Briggs <rbriggs@redhat.com>
-> > > Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> > > Remote, Ottawa, Canada
-> > > Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-> > 
-> > 
-> > 
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
-
-
-
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 2c71182..e96df2c 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -75,7 +75,12 @@ typedef struct user_fxsr_struct elf_fpxregset_t;
+ 
+ #include <asm/vdso.h>
+ 
+-extern unsigned int vdso_enabled;
++#ifdef CONFIG_X86_64
++extern unsigned int vdso64_enabled;
++#endif
++#if defined(CONFIG_X86_32) || defined(CONFIG_COMPAT)
++extern unsigned int vdso32_enabled;
++#endif
+ 
+ /*
+  * This is used to ensure we don't load something for the wrong architecture.
+@@ -269,9 +274,9 @@ extern int force_personality32;
+ 
+ struct task_struct;
+ 
+-#define	ARCH_DLINFO_IA32(vdso_enabled)					\
++#define	ARCH_DLINFO_IA32						\
+ do {									\
+-	if (vdso_enabled) {						\
++	if (vdso32_enabled) {						\
+ 		NEW_AUX_ENT(AT_SYSINFO,	VDSO_ENTRY);			\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR, VDSO_CURRENT_BASE);	\
+ 	}								\
+@@ -281,7 +286,7 @@ do {									\
+ 
+ #define STACK_RND_MASK (0x7ff)
+ 
+-#define ARCH_DLINFO		ARCH_DLINFO_IA32(vdso_enabled)
++#define ARCH_DLINFO		ARCH_DLINFO_IA32
+ 
+ /* update AT_VECTOR_SIZE_ARCH if the number of NEW_AUX_ENT entries changes */
+ 
+@@ -292,14 +297,15 @@ do {									\
+ 
+ #define ARCH_DLINFO							\
+ do {									\
+-	if (vdso_enabled)						\
++	if (vdso64_enabled)						\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR,				\
+ 			    (unsigned long)current->mm->context.vdso);	\
+ } while (0)
+ 
++/* As a historical oddity, the x32 and x86_64 vDSOs are controlled together. */
+ #define ARCH_DLINFO_X32							\
+ do {									\
+-	if (vdso_enabled)						\
++	if (vdso64_enabled)						\
+ 		NEW_AUX_ENT(AT_SYSINFO_EHDR,				\
+ 			    (unsigned long)current->mm->context.vdso);	\
+ } while (0)
+@@ -310,7 +316,7 @@ do {									\
+ if (test_thread_flag(TIF_X32))						\
+ 	ARCH_DLINFO_X32;						\
+ else									\
+-	ARCH_DLINFO_IA32(sysctl_vsyscall32)
++	ARCH_DLINFO_IA32
+ 
+ #define COMPAT_ELF_ET_DYN_BASE	(TASK_UNMAPPED_BASE + 0x1000000)
+ 
+diff --git a/arch/x86/um/vdso/vma.c b/arch/x86/um/vdso/vma.c
+index af91901..916cda4 100644
+--- a/arch/x86/um/vdso/vma.c
++++ b/arch/x86/um/vdso/vma.c
+@@ -12,7 +12,7 @@
+ #include <asm/page.h>
+ #include <linux/init.h>
+ 
+-unsigned int __read_mostly vdso_enabled = 1;
++static unsigned int __read_mostly vdso_enabled = 1;
+ unsigned long um_vdso_addr;
+ 
+ extern unsigned long task_size;
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 0034898..5a657d9 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -37,7 +37,6 @@
+ #endif
+ 
+ #ifdef CONFIG_X86_64
+-#define vdso_enabled			sysctl_vsyscall32
+ #define arch_setup_additional_pages	syscall32_setup_pages
+ #endif
+ 
+@@ -45,13 +44,13 @@
+  * Should the kernel map a VDSO page into processes and pass its
+  * address down to glibc upon exec()?
+  */
+-unsigned int __read_mostly vdso_enabled = VDSO_DEFAULT;
++unsigned int __read_mostly vdso32_enabled = VDSO_DEFAULT;
+ 
+-static int __init vdso_setup(char *s)
++static int __init vdso32_setup(char *s)
+ {
+-	vdso_enabled = simple_strtoul(s, NULL, 0);
++	vdso32_enabled = simple_strtoul(s, NULL, 0);
+ 
+-	if (vdso_enabled > 1)
++	if (vdso32_enabled > 1)
+ 		pr_warn("vdso32 values other than 0 and 1 are no longer allowed; vdso disabled\n");
+ 
+ 	return 1;
+@@ -62,12 +61,10 @@ static int __init vdso_setup(char *s)
+  * behavior on both 64-bit and 32-bit kernels.
+  * On 32-bit kernels, vdso=[012] means the same thing.
+  */
+-__setup("vdso32=", vdso_setup);
++__setup("vdso32=", vdso32_setup);
+ 
+ #ifdef CONFIG_X86_32
+-__setup_param("vdso=", vdso32_setup, vdso_setup, 0);
+-
+-EXPORT_SYMBOL_GPL(vdso_enabled);
++__setup_param("vdso=", vdso_setup, vdso32_setup, 0);
+ #endif
+ 
+ static struct page **vdso32_pages;
+@@ -160,7 +157,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 		return x32_setup_additional_pages(bprm, uses_interp);
+ #endif
+ 
+-	if (vdso_enabled != 1)  /* Other values all mean "disabled" */
++	if (vdso32_enabled != 1)  /* Other values all mean "disabled" */
+ 		return 0;
+ 
+ 	down_write(&mm->mmap_sem);
+@@ -244,7 +241,7 @@ subsys_initcall(sysenter_setup);
+ static struct ctl_table abi_table2[] = {
+ 	{
+ 		.procname	= "vsyscall32",
+-		.data		= &sysctl_vsyscall32,
++		.data		= &vdso32_enabled,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 1ad1026..8b79039 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -17,7 +17,7 @@
+ #include <asm/page.h>
+ 
+ #if defined(CONFIG_X86_64)
+-unsigned int __read_mostly vdso_enabled = 1;
++unsigned int __read_mostly vdso64_enabled = 1;
+ 
+ DECLARE_VDSO_IMAGE(vdso);
+ extern unsigned short vdso_sync_cpuid;
+@@ -160,7 +160,7 @@ static int setup_additional_pages(struct linux_binprm *bprm,
+ 	unsigned long addr;
+ 	int ret;
+ 
+-	if (!vdso_enabled)
++	if (!vdso64_enabled)
+ 		return 0;
+ 
+ 	down_write(&mm->mmap_sem);
+@@ -203,7 +203,7 @@ int x32_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 
+ static __init int vdso_setup(char *s)
+ {
+-	vdso_enabled = simple_strtoul(s, NULL, 0);
++	vdso64_enabled = simple_strtoul(s, NULL, 0);
+ 	return 0;
+ }
+ __setup("vdso=", vdso_setup);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 74f5b58..420d77a 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1418,8 +1418,13 @@ static struct ctl_table vm_table[] = {
+    (defined(CONFIG_SUPERH) && defined(CONFIG_VSYSCALL))
+ 	{
+ 		.procname	= "vdso_enabled",
++#ifdef CONFIG_X86_32
++		.data		= &vdso32_enabled,
++		.maxlen		= sizeof(vdso32_enabled),
++#else
+ 		.data		= &vdso_enabled,
+ 		.maxlen		= sizeof(vdso_enabled),
++#endif
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 		.extra1		= &zero,
