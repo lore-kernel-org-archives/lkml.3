@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214AbaEETmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:42:10 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:21153 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512AbaEETmI (ORCPT
+	id S1754474AbaEETmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:42:37 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:64412 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422AbaEETmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:42:08 -0400
-X-AuditID: cbfec37b-b7fc26d0000070ab-a2-5367e98eee9c
-Message-id: <5367E98B.8070103@samsung.com>
-Date: Mon, 05 May 2014 13:42:03 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.5.0
-MIME-version: 1.0
-To: Tejun Heo <tj@kernel.org>, Devin Heitmueller <dheitmueller@kernellabs.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>, olebowle@gmx.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 1/4] drivers/base: add managed token devres interfaces
-References: <cover.1398797954.git.shuah.kh@samsung.com>
- <6cb20ce23f540c883e60e6ce71302042b034c4aa.1398797955.git.shuah.kh@samsung.com>
- <20140501145337.GC31611@htj.dyndns.org> <5367E39E.7090401@samsung.com>
- <20140505192633.GQ11231@htj.dyndns.org>
- <CAGoCfiwoFipx79tx6Jkgx5nfU_K9qXdfGe25kzrNb6Jwka0H7A@mail.gmail.com>
- <20140505193616.GR11231@htj.dyndns.org>
-In-reply-to: <20140505193616.GR11231@htj.dyndns.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.11]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t9hP92+l+nBBs+XWFvc2r2axaJ58Xo2
-	i8u75rBZ9GzYymox8W69xa/lRxkd2Dzu3l/I5LFpVSebx9xjvYwe++euYff4vEkugDWKyyYl
-	NSezLLVI3y6BK+Pb8b+sBf/YK87Nm8PWwLiWrYuRk0NCwETiWvcaZghbTOLCvfVAcS4OIYFl
-	jBJrn99mhHB6mSQO7uxiAqkSEtjEKPFxvTeIzSugJXH26HZGEJtFQFXi0ZNfrCA2m4C6xOfX
-	O9gh6uUkmpasBtrAwSEqECHx+IIQRKugxI/J91hAbBEBP4kdbw+xgOxiFmhmkvjW2sUKUi8s
-	4CXx/1swxJg3TBIz2y1AbE6go09/2gp2DrOAtcTKSdsYIWx5ic1r3jJD1CtL/Ll8iglkjISA
-	osSv/+4TGEVmIdk8C0n3LCTdCxiZVzGKlRYnFxQnpadWGOkVJ+YWl+al6yXn525ihERO9Q7G
-	u19tDjEKcDAq8fAqrEkPFmJNLCuuzD3EKMHBrCTC2/gYKMSbklhZlVqUH19UmpNafIiRiYNT
-	qoExfLPxT8X7c1/lx2seEH/4bfnlJavM1c5JK9bk6bJpTzmRejtBa01Oefb62rVH34eXS5/i
-	3Pqspu2maexG7Vm5Huav+FRu2p2Yk9Y6z+VFIePpvE0ifFd+3vKqlFj4oUfw6qvz81Y/PXns
-	XvxCqWWhhsIv89etKL066/VLvv6FOW6fDa69PCSlpcRSnJFoqMVcVJwIAM567uZ6AgAA
+	Mon, 5 May 2014 15:42:35 -0400
+From: Peter Korsgaard <peter@korsgaard.com>
+To: monstr@monstr.eu
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, arnd@arndb.de,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] tty: serial: uartlite: Specify time for sending chars
+References: <4c1854686987185d547d1d548f89248cb27ba40c.1399301297.git.michal.simek@xilinx.com>
+	<874n14i7yn.fsf@dell.be.48ers.dk> <5367D76A.2040206@monstr.eu>
+Date: Mon, 05 May 2014 21:42:31 +0200
+In-Reply-To: <5367D76A.2040206@monstr.eu> (Michal Simek's message of "Mon, 05
+	May 2014 20:24:42 +0200")
+Message-ID: <87wqe0gggo.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 01:36 PM, Tejun Heo wrote:
-> On Mon, May 05, 2014 at 03:30:34PM -0400, Devin Heitmueller wrote:
->> On Mon, May 5, 2014 at 3:26 PM, Tejun Heo <tj@kernel.org> wrote:
->>> As such, please consider the patches nacked and try to find someone
->>> who can shepherd the code.  Mauro, can you help out here?
->>
->> We actually discussed this proposal at length at the media summit last
->> week.  The patches are being pulled pending further internal review
->
-> "being pulled into a tree" or "being pulled for more work"?
->
->> and after Shuah has exercised some other use cases.
+>>>>> "Michal" == Michal Simek <monstr@monstr.eu> writes:
 
-As I said in my response:
+Hi,
 
-"This new device I am testing with now presents all the use-cases that
-need addressing. So I am hoping to refine the approach and make course
-corrections as needed with this device."
+ >> > diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
+ >> > index 5f90ef24d475..723a6b79cd14 100644
+ >> > --- a/drivers/tty/serial/uartlite.c
+ >> > +++ b/drivers/tty/serial/uartlite.c
+ >> > @@ -418,14 +418,20 @@ static struct uart_ops ulite_ops = {
+ >> >  #ifdef CONFIG_SERIAL_UARTLITE_CONSOLE
+ >> >  static void ulite_console_wait_tx(struct uart_port *port)
+ >> >  {
+ >> > -	int i;
+ >> >  	u8 val;
+ >> > +	unsigned long timeout;
+ >> 
+ >> >  	/* Spin waiting for TX fifo to have space available */
+ >> > -	for (i = 0; i < 100000; i++) {
+ >> 
+ >> It would be good to add a note about the slow jtag variant here.
 
-More work is needed to address the use-cases.
+ > What exactly you would like to see here?
+ > Just that this 1s is here because of mdm uart.
 
--- Shuah
+Something like:
+
+ /*
+  * Spin waiting for TX fifo to have space available.
+  * When using the Microblaze Debug Module this can take up to 1s
+  */
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Bye, Peter Korsgaard
