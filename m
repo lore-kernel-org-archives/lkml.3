@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbaEEPNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:13:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57365 "EHLO mx1.redhat.com"
+	id S1753476AbaEEPNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:13:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51227 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962AbaEEPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:13:43 -0400
-Date: Mon, 5 May 2014 17:12:52 +0200
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: John Fastabend <john.r.fastabend@intel.com>
-Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, davem@davemloft.net,
-        steffen.klassert@secunet.com, fan.du@windriver.com,
-        dborkman@redhat.com, minipli@googlemail.com, tgraf@suug.ch,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhouyi Zhou <yizhouzhou@ict.ac.cn>, brouer@redhat.com
-Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
-Message-ID: <20140505171252.49773a5a@redhat.com>
-In-Reply-To: <5363A4E0.2000403@intel.com>
-References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
-	<20140502151921.014fbeec@redhat.com>
-	<5363A4E0.2000403@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750882AbaEEPNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:13:51 -0400
+Date: Mon, 5 May 2014 17:13:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        David Long <dave.long@linaro.org>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] uprobes: Add mem_cgroup_charge_anon() into
+	uprobe_write_opcode()
+Message-ID: <20140505151320.GA25611@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 May 2014 07:00:00 -0700
-John Fastabend <john.r.fastabend@intel.com> wrote:
+Hugh says:
 
-> On 5/2/2014 6:19 AM, Jesper Dangaard Brouer wrote:
-> > On Fri,  2 May 2014 15:18:12 +0800
-> > Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
-> >
-> >> As http://www.spinics.net/lists/netdev/msg165015.html
-> >> pktgen generates shared packet through vlan interface will cause
-> >> oops because of duplicate entering tc queue.
-> >>
-> >> Try to solve this problem by means of packet clone instead of sharing.
-> >
-> > I really don't like adding this stuff to the fast path of pktgen.
-> >
-> > Why would you use pktgen on a VLAN?
-> 
-> Its a good way to test qdiscs. When you run pktgen over the VLAN
-> you exercise the lower devices qdisc.
+    The one I noticed was that it forgets all about memcg (because
+    it was copied from KSM, and there the replacement page has already
+    been charged to a memcg). See how mm/memory.c do_anonymous_page()
+    does a mem_cgroup_charge_anon().
 
-I do (personally) need a faster way/tool to exercise the qdisc path.
-I'm currently using trafgen, but it is not fast enough for my 10G
-testing.
+Hopefully not a big problem, uprobes is a system-wide thing and only
+root can insert the probes. But I agree, should be fixed anyway.
 
-Perhaps we could add a pktgen option, that explicitly enable
-transmitting on qdisc path.  And when adding a VLAN device, auto enable
-that mode?
+Add mem_cgroup_{un,}charge_anon() into uprobe_write_opcode(). To simplify
+the error handling (and avoid the new "uncharge" label) the patch also
+moves anon_vma_prepare() up before we alloc/charge the new page.
 
+While at it fix the comment about ->mmap_sem, it is held for write.
 
-> Although I never submitted a patch like this because I figured it
-> was a corner case and we would want to keep the hotpath clean.
+Suggested-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
-I'm worried about the overhead of skb_clone() on for every pktgen
-pkt_dev->clone_skb counter... does it "invalidate" using the pktgen
-CLONE_SKB counter (kind-of confusing pktgen uses "clone_skb" for its
-counter).
-
-
-> > Why don't you use the "vlan_id" feature available in pktgen, and send
-> > in the lower real device?
-
-Guess, we can use it for testing/stressing the qdisc code path.
-
-
-> >> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
-> >> ---
-> >>   net/core/pktgen.c |   20 +++++++++++++++++---
-> >>   1 files changed, 17 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-[...]
-> >> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
-> >>   		pkt_dev->last_ok = 0;
-> >>   		goto unlock;
-> >>   	}
-> >> -	atomic_inc(&(pkt_dev->skb->users));
-> >> -	ret = (*xmit)(pkt_dev->skb, odev);
-> >> +
-> >> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
-> >> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
-> >> +		ret = -ENOMEM;
-> >> +		if (nskb)
-> >> +			ret = (*xmit)(nskb, odev);
-> >> +		else
-> >> +			nskb = ERR_PTR(ret);
-> >> +	} else {
-> >> +		atomic_inc(&(pkt_dev->skb->users));
-> >> +		ret = (*xmit)(pkt_dev->skb, odev);
-> >> +	}
-
-
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 7716c40..a13251e 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -279,18 +279,13 @@ static int verify_opcode(struct page *page, unsigned long vaddr, uprobe_opcode_t
+  * supported by that architecture then we need to modify is_trap_at_addr and
+  * uprobe_write_opcode accordingly. This would never be a problem for archs
+  * that have fixed length instructions.
+- */
+-
+-/*
++ *
+  * uprobe_write_opcode - write the opcode at a given virtual address.
+  * @mm: the probed process address space.
+  * @vaddr: the virtual address to store the opcode.
+  * @opcode: opcode to be written at @vaddr.
+  *
+- * Called with mm->mmap_sem held (for read and with a reference to
+- * mm).
+- *
+- * For mm @mm, write the opcode at @vaddr.
++ * Called with mm->mmap_sem held for write.
+  * Return 0 (success) or a negative errno.
+  */
+ int uprobe_write_opcode(struct mm_struct *mm, unsigned long vaddr,
+@@ -310,21 +305,25 @@ retry:
+ 	if (ret <= 0)
+ 		goto put_old;
+ 
++	ret = anon_vma_prepare(vma);
++	if (ret)
++		goto put_old;
++
+ 	ret = -ENOMEM;
+ 	new_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, vaddr);
+ 	if (!new_page)
+ 		goto put_old;
+ 
+-	__SetPageUptodate(new_page);
++	if (mem_cgroup_charge_anon(new_page, mm, GFP_KERNEL))
++		goto put_new;
+ 
++	__SetPageUptodate(new_page);
+ 	copy_highpage(new_page, old_page);
+ 	copy_to_page(new_page, vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+ 
+-	ret = anon_vma_prepare(vma);
+-	if (ret)
+-		goto put_new;
+-
+ 	ret = __replace_page(vma, vaddr, old_page, new_page);
++	if (ret)
++		mem_cgroup_uncharge_page(new_page);
+ 
+ put_new:
+ 	page_cache_release(new_page);
 -- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+1.5.5.1
+
+
