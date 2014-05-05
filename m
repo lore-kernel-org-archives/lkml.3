@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaEEKu6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:50:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38684 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085AbaEEKu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:50:56 -0400
-Date: Mon, 5 May 2014 12:50:54 +0200
-From: Jan Kara <jack@suse.cz>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.cz>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 17/17] mm: filemap: Avoid unnecessary barries and
- waitqueue lookup in unlock_page fastpath
-Message-ID: <20140505105054.GC23927@quack.suse.cz>
-References: <1398933888-4940-1-git-send-email-mgorman@suse.de>
- <1398933888-4940-18-git-send-email-mgorman@suse.de>
+	id S1753326AbaEEKvW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:51:22 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:46393 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900AbaEEKvU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 06:51:20 -0400
+Date: Mon, 5 May 2014 06:51:16 -0400
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Steve French <sfrench@samba.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>
+Subject: Re: [PATCH 1/1] FS/CIFS: remove obsolete __constant
+Message-ID: <20140505065116.24d94535@tlielax.poochiereds.net>
+In-Reply-To: <20140505065301.bbb1fe3e579d27dacd3292c9@skynet.be>
+References: <20140503221539.e4857ef93d6c875bbded5938@skynet.be>
+	<CAOhYWNJ5JRt9KH-Z3K_zBW2axs5c5KJQYXb8_vYLQTEdr=ZeEg@mail.gmail.com>
+	<20140505065301.bbb1fe3e579d27dacd3292c9@skynet.be>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398933888-4940-18-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-05-14 09:44:48, Mel Gorman wrote:
-> From: Nick Piggin <npiggin@suse.de>
-> 
-> This patch introduces a new page flag for 64-bit capable machines,
-> PG_waiters, to signal there are processes waiting on PG_lock and uses it to
-> avoid memory barriers and waitqueue hash lookup in the unlock_page fastpath.
-> 
-> This adds a few branches to the fast path but avoids bouncing a dirty
-> cache line between CPUs. 32-bit machines always take the slow path but the
-> primary motivation for this patch is large machines so I do not think that
-> is a concern.
-...
->  /* 
-> diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-> index 7d50f79..fb83fe0 100644
-> --- a/kernel/sched/wait.c
-> +++ b/kernel/sched/wait.c
-> @@ -304,8 +304,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *arg)
->  		= container_of(wait, struct wait_bit_queue, wait);
->  
->  	if (wait_bit->key.flags != key->flags ||
-> -			wait_bit->key.bit_nr != key->bit_nr ||
-> -			test_bit(key->bit_nr, key->flags))
-> +			wait_bit->key.bit_nr != key->bit_nr)
->  		return 0;
->  	else
->  		return autoremove_wake_function(wait, mode, sync, key);
-  This change seems to be really unrelated? And it would deserve a comment
-on its own I'd think so maybe split that in a separate patch?
+On Mon, 5 May 2014 06:53:01 +0200
+Fabian Frederick <fabf@skynet.be> wrote:
 
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index c60ed0f..93e4385 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> +int  __wait_on_page_locked_killable(struct page *page)
-> +{
-> +	int ret = 0;
-> +	wait_queue_head_t *wq = page_waitqueue(page);
-> +	DEFINE_WAIT_BIT(wait, &page->flags, PG_locked);
-> +
-> +	if (!test_bit(PG_locked, &page->flags))
-> +		return 0;
-> +	do {
-> +		prepare_to_wait(wq, &wait.wait, TASK_KILLABLE);
-> +		if (!PageWaiters(page))
-> +			SetPageWaiters(page);
-> +		if (likely(PageLocked(page)))
-> +			ret = sleep_on_page_killable(page);
-> +		finish_wait(wq, &wait.wait);
-> +	} while (PageLocked(page) && !ret);
-  So I'm somewhat wondering why this is the only page waiting variant that
-does finish_wait() inside the loop. Everyone else does it outside the while
-loop which seems sufficient to me even in this case...
+> On Sun, 4 May 2014 18:52:43 -0400
+> Jeff Layton <jlayton@poochiereds.net> wrote:
+> 
+> > On Sat, May 3, 2014 at 4:15 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> > > Replacing all __constant_foo to foo()
+> > > except in smb2status.h (1700 lines to update).
+> > >
+> > > Cc: linux-cifs@vger.kernel.org
+> > > Cc: Steve French <sfrench@samba.org>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > > ---
+> > >  fs/cifs/cifsacl.c  |  2 +-
+> > >  fs/cifs/cifssmb.c  | 20 ++++++++++----------
+> > >  fs/cifs/sess.c     |  2 +-
+> > >  fs/cifs/smb2misc.c | 38 +++++++++++++++++++-------------------
+> > >  fs/cifs/smb2ops.c  |  2 +-
+> > >  fs/cifs/smb2pdu.c  |  2 +-
+> > >  fs/cifs/smb2pdu.h  | 28 ++++++++++++++--------------
+> > >  7 files changed, 47 insertions(+), 47 deletions(-)
+> > >
+> > > diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+> > > index 7ff866d..54ac0e8 100644
+> > > --- a/fs/cifs/cifsacl.c
+> > > +++ b/fs/cifs/cifsacl.c
+> > > @@ -38,7 +38,7 @@ static const struct cifs_sid sid_everyone = {
+> > >         1, 1, {0, 0, 0, 0, 0, 1}, {0} };
+> > >  /* security id for Authenticated Users system group */
+> > >  static const struct cifs_sid sid_authusers = {
+> > > -       1, 1, {0, 0, 0, 0, 0, 5}, {__constant_cpu_to_le32(11)} };
+> > > +       1, 1, {0, 0, 0, 0, 0, 5}, {cpu_to_le32(11)} };
+> > 
+> > 
+> > Does the build still work on BE arches with this? I know at one point
+> > the above wouldn't compile on those
+> > arches. See commit 536abdb0802f, for an explanation.
+> 
+> Untested on BE but it would mean checkpatch 
+> "don't use __constant<foo> functions outside of include/uapi/" stuff is wrong ?
 
-								Honza
+I'm not sure. Maybe the macros have been fixed so that it's no longer a
+problem? I think it would be good to test build this on a BE arch
+before it's merged to be certain though.
+
+IIRC, I originally saw the problem on s390 builds.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jeff Layton <jlayton@poochiereds.net>
