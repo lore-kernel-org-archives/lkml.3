@@ -1,241 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079AbaEEJbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:31:46 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58664 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827AbaEEJbo convert rfc822-to-8bit (ORCPT
+	id S1756087AbaEEJcS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:32:18 -0400
+Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:44792 "EHLO
+	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755578AbaEEJcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:31:44 -0400
-Date: Mon, 5 May 2014 11:31:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-Message-ID: <20140505093124.GN17778@laptop.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1405021218350.22556@vincent-weaver-1.umelst.maine.edu>
- <20140502162234.GX11096@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405021230130.22556@vincent-weaver-1.umelst.maine.edu>
- <20140502172731.GK30445@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
+	Mon, 5 May 2014 05:32:17 -0400
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 May 2014 05:32:16 EDT
+X-Yandex-Uniq: 230e22a2-f0b5-4d0b-a4c9-d5c87b94dcc8
+Authentication-Results: smtpcorp1o.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Date: Mon, 5 May 2014 13:26:55 +0400
+From: Stanislav Fomichev <stfomichev@yandex-team.ru>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] hrtimers: calculate expires_next after all timers are
+ executed
+Message-ID: <20140505092655.GA18207@stfomichev-desktop.yandex.net>
+References: <1395067037-20060-1-git-send-email-stfomichev@yandex-team.ru>
+ <alpine.DEB.2.02.1403191149460.18573@ionos.tec.linutronix.de>
+ <20140319141615.GB11081@stfomichev-desktop.yandex.net>
+ <20140324084234.GA9910@stfomichev-desktop.yandex.net>
+ <4634d0375405114b95ee02e4e1d7f314@www.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <4634d0375405114b95ee02e4e1d7f314@www.linutronix.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 11:02:25PM -0400, Vince Weaver wrote:
-> On Fri, 2 May 2014, Vince Weaver wrote:
+> >Any comment on the v2?
 > 
-> > I've been fuzzing without your additional patch for 6 hours and all looks
-> > (almost) good.  I can add in your patch and let it fuzz overnight.
-> 
-> and I applied the additional patch, installed the kernel, hit reboot, and 
-> the following happened (this was caused by rebooting while fuzzing
-> was ongoing) :(
+> I'm traveling and it's in my todo list
+Ping? It's been a while since you added it to your todo list :-)
 
-Does this one work better? Making sure all __perf_remove_from_context()
-callers pass the right structure seems to improve things no end. My
-machine is now happy to reboot again.
-
----
-Subject: perf: Fix race in removing an event
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri May 2 16:56:01 CEST 2014
-
-When removing a (sibling) event we do:
-
-	raw_spin_lock_irq(&ctx->lock);
-	perf_group_detach(event);
-	raw_spin_unlock_irq(&ctx->lock);
-
-	<hole>
-
-	perf_remove_from_context(event);
-		raw_spin_lock_irq(&ctx->lock);
-		...
-		raw_spin_unlock_irq(&ctx->lock);
-
-Now, assuming the event is a sibling, it will be 'unreachable' for
-things like ctx_sched_out() because that iterates the
-groups->siblings, and we just unhooked the sibling.
-
-So, if during <hole> we get ctx_sched_out(), it will miss the event
-and not call event_sched_out() on it, leaving it programmed on the
-PMU.
-
-The subsequent perf_remove_from_context() call will find the ctx is
-inactive and only call list_del_event() to remove the event from all
-other lists.
-
-Hereafter we can proceed to free the event; while still programmed!
-
-Close this hole by moving perf_group_detach() inside the same
-ctx->lock region(s) perf_remove_from_context() has.
-
-The condition on inherited events only in __perf_event_exit_task() is
-likely complete crap because non-inherited events are part of groups
-too and we're tearing down just the same. But leave that for another
-patch.
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Vince Weaver <vincent.weaver@maine.edu>
-Much-staring-at-traces-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/events/core.c |   47 ++++++++++++++++++++++++++---------------------
- 1 file changed, 26 insertions(+), 21 deletions(-)
-
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1444,6 +1444,11 @@ group_sched_out(struct perf_event *group
- 		cpuctx->exclusive = 0;
- }
- 
-+struct remove_event {
-+	struct perf_event *event;
-+	bool detach_group;
-+};
-+
- /*
-  * Cross CPU call to remove a performance event
-  *
-@@ -1452,12 +1457,15 @@ group_sched_out(struct perf_event *group
-  */
- static int __perf_remove_from_context(void *info)
- {
--	struct perf_event *event = info;
-+	struct remove_event *re = info;
-+	struct perf_event *event = re->event;
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 
- 	raw_spin_lock(&ctx->lock);
- 	event_sched_out(event, cpuctx, ctx);
-+	if (re->detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	if (!ctx->nr_events && cpuctx->task_ctx == ctx) {
- 		ctx->is_active = 0;
-@@ -1482,10 +1490,14 @@ static int __perf_remove_from_context(vo
-  * When called from perf_event_exit_task, it's OK because the
-  * context has been detached from its task.
-  */
--static void perf_remove_from_context(struct perf_event *event)
-+static void perf_remove_from_context(struct perf_event *event, bool detach_group)
- {
- 	struct perf_event_context *ctx = event->ctx;
- 	struct task_struct *task = ctx->task;
-+	struct remove_event re = {
-+		.event = event,
-+		.detach_group = detach_group,
-+	};
- 
- 	lockdep_assert_held(&ctx->mutex);
- 
-@@ -1494,12 +1506,12 @@ static void perf_remove_from_context(str
- 		 * Per cpu events are removed via an smp call and
- 		 * the removal is always successful.
- 		 */
--		cpu_function_call(event->cpu, __perf_remove_from_context, event);
-+		cpu_function_call(event->cpu, __perf_remove_from_context, &re);
- 		return;
- 	}
- 
- retry:
--	if (!task_function_call(task, __perf_remove_from_context, event))
-+	if (!task_function_call(task, __perf_remove_from_context, &re))
- 		return;
- 
- 	raw_spin_lock_irq(&ctx->lock);
-@@ -1516,6 +1528,8 @@ static void perf_remove_from_context(str
- 	 * Since the task isn't running, its safe to remove the event, us
- 	 * holding the ctx->lock ensures the task won't get scheduled in.
- 	 */
-+	if (detach_group)
-+		perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- }
-@@ -3285,10 +3299,7 @@ int perf_event_release_kernel(struct per
- 	 *     to trigger the AB-BA case.
- 	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
--	raw_spin_lock_irq(&ctx->lock);
--	perf_group_detach(event);
--	raw_spin_unlock_irq(&ctx->lock);
--	perf_remove_from_context(event);
-+	perf_remove_from_context(event, true);
- 	mutex_unlock(&ctx->mutex);
- 
- 	free_event(event);
-@@ -7180,7 +7191,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		struct perf_event_context *gctx = group_leader->ctx;
- 
- 		mutex_lock(&gctx->mutex);
--		perf_remove_from_context(group_leader);
-+		perf_remove_from_context(group_leader, false);
- 
- 		/*
- 		 * Removing from the context ends up with disabled
-@@ -7190,7 +7201,7 @@ SYSCALL_DEFINE5(perf_event_open,
- 		perf_event__state_init(group_leader);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_remove_from_context(sibling);
-+			perf_remove_from_context(sibling, false);
- 			perf_event__state_init(sibling);
- 			put_ctx(gctx);
- 		}
-@@ -7320,7 +7331,7 @@ void perf_pmu_migrate_context(struct pmu
- 	mutex_lock(&src_ctx->mutex);
- 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
- 				 event_entry) {
--		perf_remove_from_context(event);
-+		perf_remove_from_context(event, false);
- 		unaccount_event_cpu(event, src_cpu);
- 		put_ctx(src_ctx);
- 		list_add(&event->migrate_entry, &events);
-@@ -7382,13 +7393,7 @@ __perf_event_exit_task(struct perf_event
- 			 struct perf_event_context *child_ctx,
- 			 struct task_struct *child)
- {
--	if (child_event->parent) {
--		raw_spin_lock_irq(&child_ctx->lock);
--		perf_group_detach(child_event);
--		raw_spin_unlock_irq(&child_ctx->lock);
--	}
--
--	perf_remove_from_context(child_event);
-+	perf_remove_from_context(child_event, !!child_event->parent);
- 
- 	/*
- 	 * It can happen that the parent exits first, and has events
-@@ -7872,14 +7877,14 @@ static void perf_pmu_rotate_stop(struct
- 
- static void __perf_event_exit_context(void *__info)
- {
-+	struct remove_event re = { .detach_group = false };
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event;
- 
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
- 	rcu_read_lock();
--	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
--		__perf_remove_from_context(event);
-+	list_for_each_entry_rcu(re.event, &ctx->event_list, event_entry)
-+		__perf_remove_from_context(&re);
- 	rcu_read_unlock();
- }
- 
+Btw, I have a couple of machines that have been working without any
+issues with this patch applied...
