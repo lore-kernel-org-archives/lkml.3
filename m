@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604AbaEEUdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:33:25 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:35875 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaEEUdY (ORCPT
+	id S1755686AbaEEUfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:35:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50762 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715AbaEEUfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:33:24 -0400
-Date: Mon, 5 May 2014 13:33:23 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linuxfoundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc5
-Message-ID: <alpine.DEB.2.00.1405050656030.28288@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 May 2014 16:35:19 -0400
+Date: Mon, 5 May 2014 13:35:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Fabian Frederick <fabf@skynet.be>
+Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
+Message-Id: <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+In-Reply-To: <1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+	<1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon,  5 May 2014 10:43:05 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
 
-Please pull the following Ceph fixes from
+> Replace pr_debug() in lib/plist.c test function plist_test() with
+> printk(KERN_DEBUG ...).
+> 
+> Without DEBUG defined, pr_debug() is complied out, but the entire
+> plist_test() function is already inside CONFIG_DEBUG_PI_LIST, so
+> printk should just be used directly.
+>
+> --- a/lib/plist.c
+> +++ b/lib/plist.c
+> @@ -175,7 +175,7 @@ static int  __init plist_test(void)
+>  	int nr_expect = 0, i, loop;
+>  	unsigned int r = local_clock();
+>  
+> -	pr_debug("start plist test\n");
+> +	printk(KERN_DEBUG "start plist test\n");
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+Now someone will come along and helpfully switch it back to pr_debug()
+again :(
 
-First, there is a critical fix for the new primary-affinity function that 
-went into -rc1.  The second batch of patches from Zheng fix a range of 
-problems with directory fragmentation, readdir, and a few odds and ends 
-for cephfs.
-
-Thanks!
-sage
+What about adding a #define DEBUG?
 
 
-----------------------------------------------------------------
-Ilya Dryomov (1):
-      libceph: fix non-default values check in apply_primary_affinity()
 
-Yan, Zheng (5):
-      ceph: check directory's completeness before emitting directory entry
-      ceph: use fpos_cmp() to compare dentry positions
-      ceph: clear directory's completeness when creating file
-      ceph: avoid releasing caps that are being used
-      ceph: reserve caps for file layout/lock MDS requests
+This aspect of pr_debug() is rather surprising and unfortunate and I
+guess we screwed it up.  pr_debug() should unconditionally do the
+printk, just like pr_warn, pr_emerg, etc.  And there should be a
+separate pr_debug_cond() which honours the DEBUG setting.
 
- fs/ceph/caps.c    |    2 +-
- fs/ceph/dir.c     |   33 ++++++++++++++-----------
- fs/ceph/inode.c   |   71 ++++++++++++-----------------------------------------
- fs/ceph/ioctl.c   |    3 +++
- fs/ceph/locks.c   |    1 +
- fs/ceph/super.h   |    1 -
- net/ceph/osdmap.c |    9 ++++---
- 7 files changed, 44 insertions(+), 76 deletions(-)
+akpm3:/usr/src/linux-3.15-rc4> grep -r pr_debug . | wc -l
+10286
+
+Boy, that's going to be a big patch ;)
