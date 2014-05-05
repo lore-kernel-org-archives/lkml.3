@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaEEUAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:00:06 -0400
-Received: from mail.siteground.com ([67.19.240.234]:52295 "EHLO
-	mail.siteground.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbaEEUAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:00:05 -0400
-Message-ID: <5367EDB6.3010408@1h.com>
-Date: Mon, 05 May 2014 22:59:50 +0300
-From: Marian Marinov <mm@1h.com>
-Organization: 1H Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752511AbaEEUDq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:03:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48252 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055AbaEEUDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:03:44 -0400
+Date: Mon, 5 May 2014 15:03:22 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL #1/2] bus: omap_l3_noc: driver fixes and DRA7/AM437x
+ support
+Message-ID: <20140505200322.GA9863@kahuna>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1398698101-25513-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>
-CC: akpm@linux-foundation.org, n-horiguchi@ah.jp.nec.com,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: Re: [PATCH] IPC initialize shmmax and shmall from the current value
- not the default
-References: <5365723D.7030303@1h.com> <1399161216.2573.9.camel@buesod1.americas.hpqcorp.net> <536621D4.60002@colorfullife.com>
-In-Reply-To: <536621D4.60002@colorfullife.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - mail.siteground.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - 1h.com
-X-Get-Message-Sender-Via: mail.siteground.com: none
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1398698101-25513-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/2014 02:17 PM, Manfred Spraul wrote:
-> Hi Marian,
->
-> Note: The limits will soon be increased to (nearly) ULONG_MAX.
-> I.e.: If you propose the patch because you are running into issues with a too small SEMMAX after an
-> unshare(CLONE_NEWIPC), then this will be fixed soon.
->
->
-> On 05/04/2014 01:53 AM, Davidlohr Bueso wrote:
->> On Sun, 2014-05-04 at 01:48 +0300, Marian Marinov wrote:
->>> When we are creating new IPC namespace that should be cloned from the current namespace it is a good idea to copy the
->>> values of the current shmmax and shmall to the new namespace.
-> The idea sounds reasonable:
-> If an admin has reduced the limits, then the reduction should also apply after a unshare(CLONE_NEWIPC).
->
-> But:
-> Your patch doesn't use the current shmmax, it uses the shmmax from init_ipc_ns.
-> Would it be possible to use the current values?
+Hi Tony,
 
-In my tests it worked exactly as expected.
-Here is an example:
+   Please pull the following driver fixes based on V3 of l3noc fixes and
+   support for DRA7 and AM437x for upcoming 3.16 window.
+   http://marc.info/?l=linux-omap&m=139869922030493&w=2
 
-[root@sp2 ~]# sysctl -a|grep shmmax
-kernel.shmmax = 68719476736
-[root@sp2 ~]# lxc-attach -n cent_plain
-[root@localhost ~]# sysctl -a|grep shmmax
-kernel.shmmax = 68719476736
-[root@localhost ~]# halt
-[root@sp2 ~]# sysctl -a|grep shmmax
-kernel.shmmax = 68719476736
-[root@sp2 ~]# sysctl kernel.shmmax=34359738368
-kernel.shmmax = 34359738368
-[root@sp2 ~]# lxc-start -n cent_plain -d
-[root@sp2 ~]# lxc-attach -n cent_plain
-[root@localhost ~]# sysctl -a|grep shmmax
-kernel.shmmax = 34359738368
-[root@localhost ~]#
+   This is part 1 of the pull request containing purely the driver
+   updates.
 
-So it seams to work as expected :)
+The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
 
-It works because wen you setup a new shmmax limit it is actually the limit in the init_ipc_ns.
-So when we are creating a new ipc_ns its ok to copy the values from init_ipc_ns.
+  Linux 3.14 (2014-03-30 20:40:15 -0700)
 
--Marian
+are available in the git repository at:
 
->
->> Why is this a good idea?
->>
->> This would break userspace that relies on the current behavior.
->> Furthermore we've recently changed the default value of both these
->> limits to be as large as you can get, thus deprecating them. I don't
->> like the idea of this being replaced by namespaces.
-> Davidlohr: We are not deprecating them, we make the default huge.
-> The limits should stay as usable as they were.
->
-> With regards to breaking user space, I must think about it a bit more.
-> Right now, each new namespace starts with SEMMAX=32MB, i.e. an often unusable default.
->
-> --
->      Manfred
->
+  https://github.com/nmenon/linux-2.6-playground.git pull/l3noc/driver-fixes
 
+for you to fetch changes up to 27b7d5f3cc49f2e5cd6c005d73696058b7140c5c:
 
+  bus: omap_l3_noc: Add AM4372 interconnect error data (2014-05-05 14:34:37 -0500)
+
+----------------------------------------------------------------
+Afzal Mohammed (2):
+      bus: omap_l3_noc: ignore masked out unclearable targets
+      bus: omap_l3_noc: Add AM4372 interconnect error data
+
+Nishanth Menon (14):
+      bus: omap_l3_noc: Fix copyright information
+      bus: omap_l3_noc: remove iclk from omap_l3 struct
+      bus: omap_l3_noc: populate l3->dev and use it
+      bus: omap_l3_noc: switch over to relaxed variants of readl/writel
+      bus: omap_l3_noc: un-obfuscate l3_targ address computation
+      bus: omap_l3_noc: move L3 master data structure out
+      bus: omap_l3_noc: convert target information into a structure
+      bus: omap_l3_noc: convert flagmux information into a structure
+      bus: omap_l3_noc: fix masterid detection
+      bus: omap_l3_noc: make error reporting and handling common
+      bus: omap_l3_noc: improve readability by using helper for slave event parsing
+      bus: omap_l3_noc: add information about the type of operation
+      bus: omap_l3_noc: Add information about the context of operation
+      bus: omap_l3_noc: introduce concept of submodule
+
+Peter Ujfalusi (5):
+      drivers: bus: omap_l3: Convert to use devm_kzalloc
+      drivers: bus: omap_l3: Convert to use devm_ioremap_resource()
+      drivers: bus: omap_l3: Convert to use devm_request_irq()
+      drivers: bus: omap_l3: Remove the platform driver's remove function
+      drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request fails
+
+Rajendra Nayak (2):
+      bus: omap_l3_noc: Add support for discountinous flag mux input numbers
+      bus: omap_l3_noc: Add DRA7 interconnect error data
+
+Sricharan R (2):
+      bus: omap_l3_noc: rename functions and data to omap_l3
+      bus: omap_l3_noc: use of_match_data to pick up SoC information
+
+ .../devicetree/bindings/arm/omap/l3-noc.txt        |    2 +
+ drivers/bus/omap_l3_noc.c                          |  406 ++++++++-------
+ drivers/bus/omap_l3_noc.h                          |  545 +++++++++++++++-----
+ 3 files changed, 653 insertions(+), 300 deletions(-)
 -- 
-Marian Marinov
-Founder & CEO of 1H Ltd.
-Jabber/GTalk: hackman@jabber.org
-ICQ: 7556201
-Mobile: +359 886 660 270
+Regards,
+Nishanth Menon
