@@ -1,130 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316AbaEEU4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:56:24 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:50753 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221AbaEEU4W (ORCPT
+	id S1756588AbaEEU4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:56:39 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:53016 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756430AbaEEU4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:56:22 -0400
-Date: Mon, 5 May 2014 13:56:17 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        bigeasy@linutronix.de, tglx@linutronix.de
-Subject: Re: [PATCH] signal: Simplify __lock_task_sighand()
-Message-ID: <20140505205616.GN8754@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140503161133.GA8838@redhat.com>
- <20140504180145.GC8754@linux.vnet.ibm.com>
- <20140504191757.GA11319@redhat.com>
- <20140504223804.GF8754@linux.vnet.ibm.com>
- <20140505132659.GA17996@redhat.com>
- <20140505152610.GK8754@linux.vnet.ibm.com>
- <20140505164719.GA31758@redhat.com>
- <20140505185308.GA17507@redhat.com>
+	Mon, 5 May 2014 16:56:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH v3 4/7] of: configure the platform device dma parameters
+Date: Mon, 05 May 2014 22:55:49 +0200
+Message-ID: <5575019.Hr92MUuDnc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAErSpo5-FXmVs8BWRYKz9Ln1g1Ls7_uo3oiPd32fUegf3d8hXQ@mail.gmail.com>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <20923376.buVzFR52Qe@wuerfel> <CAErSpo5-FXmVs8BWRYKz9Ln1g1Ls7_uo3oiPd32fUegf3d8hXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505185308.GA17507@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050520-1542-0000-0000-00000195056F
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y/wAyF2rFtaEyabFGFPN91zyCXwe7ek/hzCuGtp3jR7
+ 4JwIUVy7sStUvlbqxaPQ8obtdTP2a04vrDWCPHX7W+rVlsLYV+
+ FWsgBGtH3W634wRU6hbU6La6A2r8E7rFg8D7mCFaB/GN0QqjQX
+ Fvos2z/PF8zeHcHuHMixGU2U/4ooxfiJhnUDSvUYY5VeejUKZb
+ r+QMLE4DwrJpntVcQINvppB4xoi1JxMWbDoDppck/+bRkx6puS
+ d/ipKuC9bsDWchSUQOyTFbzOG0m3uoR8gSc9VGiAl2f6zPsDmD
+ tQYc4i7K51eJo+55PDaZJSpiYN7v8FUHS9pDVjLhBa7gSSEu7r
+ c5d+4+vuxSZuTRdEdxGs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 08:53:08PM +0200, Oleg Nesterov wrote:
-> On 05/05, Oleg Nesterov wrote:
+On Monday 05 May 2014 14:45:21 Bjorn Helgaas wrote:
+> [+cc Ben, Chris]
+> 
+> On Fri, May 2, 2014 at 12:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 02 May 2014 10:54:59 Bjorn Helgaas wrote:
+> >> > +static void of_dma_configure(struct device *dev)
+> >> > +{
+> >> > +     u64 dma_addr, paddr, size;
+> >> > +     int ret;
+> >> > +
+> >> > +     dev->coherent_dma_mask = DMA_BIT_MASK(32);
+> >> > +     if (!dev->dma_mask)
+> >> > +             dev->dma_mask = &dev->coherent_dma_mask;
+> >> > +
+> >> > +     /*
+> >> > +      * if dma-coherent property exist, call arch hook to setup
+> >> > +      * dma coherent operations.
+> >> > +      */
+> >> > +     if (of_dma_is_coherent(dev->of_node)) {
+> >> > +             set_arch_dma_coherent_ops(dev);
+> >> > +             dev_dbg(dev, "device is dma coherent\n");
+> >> > +     }
+> >> > +
+> >> > +     /*
+> >> > +      * if dma-ranges property doesn't exist - just return else
+> >> > +      * setup the dma offset
+> >> > +      */
+> >> > +     ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+> >> > +     if ((ret == -ENODEV) || (ret < 0)) {
+> >> > +             dev_dbg(dev, "no dma range information to setup\n");
+> >> > +             return;
+> >> > +     }
+> >> > +
+> >> > +     /* DMA ranges found. Calculate and set dma_pfn_offset */
+> >> > +     dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
+> >> > +     dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
+> >>
+> >> Is this effectively the same as an IOMMU that applies a constant offset
+> >> to the bus address?  Could or should this be done by adding a simple IOMMU
+> >> driver instead of adding dma_pfn_offset to struct device?
 > >
-> > On 05/05, Paul E. McKenney wrote:
-> > >
-> > > Does the patch below cover it?
+> > We currently have two dma_map_ops variants on ARM (plus another set for
+> > coherent/noncoherent differences, but we can ignore that for the sake
+> > of this discussion): one that handles linear mappings and one that
+> > handles IOMMUs by calling into the linux/iommu.h APIs.
 > >
-> > Yes, thanks.
-> >
-> > Acked-by: Oleg Nesterov <oleg@redhat.com>
+> > I guess what you mean by 'a simple IOMMU driver' would be another
+> > dma_map_ops implementation that is separate from real IOMMUs, right?
 > 
-> Yes, but please consider the cleanup below, on top of your change.
+> I suppose so; it seems like the offset could be managed inside
+> arm_dma_ops.  My idea of an IOMMU is something that maps bus addresses
+> to physical memory addresses.  That's what we're doing here; it's just
+> that the mapping function is very simple.  So why add something new in
+> struct device for it?
 > 
-> This is subjective of course, but imho the code looks better without
-> the extra unlock/restore inside the loop.
+> I think powerpc and tile do something similar in dma_direct_map_page()
+> and tile_pci_dma_map_page() (they store the offset in struct
+> dev_archdata).
 
-My only concern is that this might degrade real-time latency, but that
-mmight just be my paranoia speaking.  Adding Steven, Sebastian, and
-Thomas on CC for their thoughts.
+Ah, so the only question is whether to store it in dev_archdata or
+in device. I think the argument for using struct device directly
+was that it lets us access this field from architecture independent
+code. It's not important to the overall design though: we could easily
+put it in dev_archdata and call an architecture specific function to
+set it, if there are good reasons for keeping it out of the generic
+device structure.
 
-Other than that possible issue, I do agree that your change makes the
-code simpler.
-
-							Thanx, Paul
-
-> -------------------------------------------------------------------------------
-> Subject: [PATCH] signal: Simplify __lock_task_sighand()
-> 
-> __lock_task_sighand() does local_irq_save() to prevent the potential
-> deadlock, we can use preempt_disable() with the same effect. And in
-> this case we can do preempt_disable/enable + rcu_read_lock/unlock only
-> once outside of the main loop and simplify the code. Also shaves 112
-> bytes from signal.o.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/signal.c |   31 +++++++++++++------------------
->  1 files changed, 13 insertions(+), 18 deletions(-)
-> 
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 4368370..03a0fd4 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -1260,30 +1260,25 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
->  					   unsigned long *flags)
->  {
->  	struct sighand_struct *sighand;
-> -
-> +	/*
-> +	 * We are going to do rcu_read_unlock() under spin_lock_irqsave().
-> +	 * Make sure we can not be preempted after rcu_read_unlock(), see
-> +	 * rcu_read_unlock comment header for details.
-> +	 */
-> +	preempt_disable();
-> +	rcu_read_lock();
->  	for (;;) {
-> -		/*
-> -		 * Disable interrupts early to avoid deadlocks.
-> -		 * See rcu_read_unlock comment header for details.
-> -		 */
-> -		local_irq_save(*flags);
-> -		rcu_read_lock();
->  		sighand = rcu_dereference(tsk->sighand);
-> -		if (unlikely(sighand == NULL)) {
-> -			rcu_read_unlock();
-> -			local_irq_restore(*flags);
-> +		if (unlikely(sighand == NULL))
->  			break;
-> -		}
-> 
-> -		spin_lock(&sighand->siglock);
-> -		if (likely(sighand == tsk->sighand)) {
-> -			rcu_read_unlock();
-> +		spin_lock_irqsave(&sighand->siglock, *flags);
-> +		if (likely(sighand == tsk->sighand))
->  			break;
-> -		}
-> -		spin_unlock(&sighand->siglock);
-> -		rcu_read_unlock();
-> -		local_irq_restore(*flags);
-> +		spin_unlock_irqrestore(&sighand->siglock, *flags);
->  	}
-> +	rcu_read_unlock();
-> +	preempt_enable();
-> 
->  	return sighand;
->  }
-> -- 
-> 1.5.5.1
-> 
-> 
-
+	Arnd
