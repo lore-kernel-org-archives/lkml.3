@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933174AbaEEXwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:52:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871AbaEEXww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:52:52 -0400
-Date: Tue, 6 May 2014 01:52:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Lang <david@lang.hm>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
-Message-ID: <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz>
-References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933374AbaEEXzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:55:17 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:65460 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755309AbaEEXzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 19:55:16 -0400
+Date: Mon, 5 May 2014 19:55:13 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, pmladek@suse.cz,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] printk: Remove separate printk_sched buffers and use
+ printk buf instead
+Message-ID: <20140505195513.6fcfe505@gandalf.local.home>
+In-Reply-To: <1399332831.27516.6.camel@joe-AO725>
+References: <20140505191846.35aa6f9b@gandalf.local.home>
+	<1399332831.27516.6.camel@joe-AO725>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 May 2014, David Lang wrote:
+On Mon, 05 May 2014 16:33:51 -0700
+Joe Perches <joe@perches.com> wrote:
 
-> how would you know that all instances of the datastructure in memory 
-> have= been touched? just because all tasks have run and are outside the 
-> function in question doesn't tell you data structures have been 
-> converted. You have n= o way of knowing when (or if) the next call to 
-> the modified function will take place on any potential in-memory 
-> structure.
+> On Mon, 2014-05-05 at 19:18 -0400, Steven Rostedt wrote:
+> > To prevent deadlocks with doing a printk inside the scheduler,
+> > printk_sched() was created. The issue is that printk has a console_sem
+> > that it can grab and release. The release does a wake up if there's a
+> > task pending on the sem, and this wake up grabs the rq locks that is
+> > held in the scheduler. This leads to a possible deadlock if the wake up
+> > uses the same rq as the one with the rq lock held already.
+> []
+> >  kernel/printk/printk.c |   87 +++++++++++++++++++++++++++++++------------------
+> []
+> > @@ -2440,18 +2470,20 @@
+> >  #define PRINTK_BUF_SIZE		512
+> 
+> Wouldn't this define be unused and shouldn't it be deleted too?
+> 
 
-The problem you are trying to avoid here is functions expecting to read 
-"v2" format of the data from memory, while there are still tasks that are 
-unpredictably writing "v1" format of the data to the memory.
+I guess it would.
 
-There are several ways to attack this problem:
-
-- stop the whole system, convert all the existing data structures to new 
-  format (which might potentially be non-trivial, mostly because you 
-  have to *know* where all the data structures have been allocated), apply 
-  patch, resume operation [ksplice, probably kpatch in future]
-- restrict the data format to be backwards compatible [to be done 
-  manually during patch creation, currently what kGraft needs to do in 
-  such case]
-- have a proxy code which can read both "v1" and "v2" formats, and writes 
-  back in the same format it has seen the data structure on input
-- once all the *code* has been converted, it still has to understand "v1" 
-  and "v2", but it can now start writing out "v2" format only [possible 
-  with kGraft, not implemented in automated fashion]
-
-Ideas are of course more than welcome.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+-- Steve
