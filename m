@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459AbaEEWfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:35:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:57942 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932916AbaEEW0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:26:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="533979294"
-From: Andi Kleen <andi@firstfloor.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
-Subject: RFC: A reduced Linux network stack for small systems
-Date: Mon,  5 May 2014 15:25:49 -0700
-Message-Id: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.0
+	id S1756915AbaEEWfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:35:50 -0400
+Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:57223 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756645AbaEEWfr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:35:47 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3874:4321:5007:7652:10004:10400:10848:10967:11026:11232:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: robin37_324c7b145c02a
+X-Filterd-Recvd-Size: 2454
+Message-ID: <1399329343.27516.2.camel@joe-AO725>
+Subject: Re: [PATCH] checkpatch: Improve missing blank line after
+ declarations test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        Seunghun Lee <waydi1@gmail.com>, linux-kernel@vger.kernel.org
+Date: Mon, 05 May 2014 15:35:43 -0700
+In-Reply-To: <20140505151531.af8e82be3a0c4800f0051de2@linux-foundation.org>
+References: <1398790752-8067-1-git-send-email-waydi1@gmail.com>
+	 <20140429173221.GE26890@mwanda> <20140503234326.GA30117@kroah.com>
+	 <20140505095935.GO26890@mwanda> <1399319468.26330.2.camel@joe-AO725>
+	 <1399320736.26330.8.camel@joe-AO725>
+	 <20140505151531.af8e82be3a0c4800f0051de2@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There has been a lot of interest recently to run Linux on very small systems,
-like Quark systems. These may have only 2-4MB memory. They are also limited
-by flash space.
+On Mon, 2014-05-05 at 15:15 -0700, Andrew Morton wrote:
+> On Mon, 05 May 2014 13:12:16 -0700 Joe Perches <joe@perches.com> wrote:
+> 
+> > A couple more modifications to the declarations tests.
+> > 
+> > o Declarations can also be bitfields so exclude things with a colon
+> > o Make sure the current and previous lines are indented the same
+> >   to avoid matching some macro where a struct type is passed on
+> >   the previous line like:
+> > 
+> > 		next = list_entry(buffer->entry.next,
+> > 				  struct binder_buffer, entry);
+> > 		if (buffer_start_page(next) == buffer_end_page(buffer)) 
+> 
+> So checkpatch-always-warn-on-missing-blank-line-after-variable-declaration-block.patch
+> is stuck in -mm while I evaluate its effects.  Thus far that evaluation
+> has been "super non-intrusive", because the patch doesn't actually
+> do anything.
+[]
+> @@ -67,6 +68,7 @@ long vfs_truncate(struct path *path, lof
+>  {
+>  	struct inode *inode;
+>  	long error;
+> +	wobble();
+>  
+>  	inode = path->dentry->d_inode;
 
-One problem on these small system is the size of the network stack.
-Currently enabling IPv4 costs about 400k in text, which is prohibitive on
-a 2MB system, and very expensive with 4MB.
+Patch content can be a bit odd when lines are
+both added and deleted so checkpatch bleats
+only when both lines are added.
 
-There were proposals to instead use LWIP in user space. LWIP with 
-its socket interface comes in at a bit over 100k overhead per application.
++	int foo;
++	wibble();
 
-I maintain that the Linux network stack is actually not that bloated,
-it just has a lot of features :-)  The goal of this project was to
-subset it in a sensible way so that the native kernel stack becomes
-competitive with LWIP.
+generates a complaint.
 
-It turns out that the standard stack has a couple of features that
-are not really needed on client systems. Luckily it is also 
-relatively well modularized, so it becomes possible to stub
-out these features at the edge.
+ 	int foo;
++	wibble_wobble();
 
-With removing these features we still have a powerful TCP/IP stack,
-but one that fits better into small systems.
+does not.
 
-It would have been prohibitive to ifdef every optional feature.
-This patchkit relies heavily on LTO to effectively remove unused
-code. This allows to disable features only at the module boundaries,
-and rely on the compiler to drop unreferenced code and data.
-
-A few features have been also reimplemented in a simpler way.
-And I shrank a number of data structures based on CONFIG_BASE_SMALL.
-
-With these changes I can get a fully featured network stack down
-to about 170k with LTO. Without LTO there are also benefits,
-but somewhat less.
-
-There are essentially three sensible configurations:
-- Full featured like today.
-- Client only subset, but still works with standard distribution userland.
-Remove some obscure features like fastopen, make all tables smaller, 
-packet socket mmap code, use a simpler routing table, remove
-high speed networking features like RPX, XPS, GRO offload. 
-Disable SNMP, TCP metrics
-- Minimal subset for deeply embedded systems that can use special userland.
-Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
-
-Right now I'm using own Kconfigs for every removed features. I realize
-this somewhat increases the compile test matrix. It would be possible
-to hide some of the options and select them using higher level
-configurations like the ones listed above. I haven't done this
-in this version.
-
-At this point I'm mainly interested in review and comments.
-
-Git trees:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
-Main tree
-
-git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
-3.14 based tree.
-
-Thanks to Tom Zanussi for contributions and testing.
-
-Andi Kleen
