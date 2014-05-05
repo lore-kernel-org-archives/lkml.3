@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932799AbaEEOPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:15:34 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:51681 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538AbaEEOPc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:15:32 -0400
-Date: Mon, 5 May 2014 10:15:30 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-cc: linux@arm.linux.org.uk, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: put_user: fix possible data corruption in
- put_user
-In-Reply-To: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
-Message-ID: <alpine.LFD.2.11.1405050950410.980@knanqh.ubzr>
-References: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932746AbaEEOUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:20:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43497 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932538AbaEEOUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:20:08 -0400
+From: Takashi Iwai <tiwai@suse.de>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] [media] ivtv: Fix Oops when no firmware is loaded
+Date: Mon,  5 May 2014 16:20:05 +0200
+Message-Id: <1399299605-20409-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 May 2014, Andrey Ryabinin wrote:
+When ivtv PCM device is accessed at the state where no firmware is
+loaded, it oopses like:
 
-> According to arm procedure call standart r2 register is call-cloberred.
-> So after the result of x expression was put into r2 any following
-> function call in p may overwrite r2. To fix this, the result of p
-> expression must be saved to the temporary variable before the
-> assigment x expression to __r2.
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000050
+  IP: [<ffffffffa049a881>] try_mailbox.isra.0+0x11/0x50 [ivtv]
+  Call Trace:
+    [<ffffffffa049aa20>] ivtv_api_call+0x160/0x6b0 [ivtv]
+    [<ffffffffa049af86>] ivtv_api+0x16/0x40 [ivtv]
+    [<ffffffffa049b10c>] ivtv_vapi+0xac/0xc0 [ivtv]
+    [<ffffffffa049d40d>] ivtv_start_v4l2_encode_stream+0x19d/0x630 [ivtv]
+    [<ffffffffa0530653>] snd_ivtv_pcm_capture_open+0x173/0x1c0 [ivtv_alsa]
+    [<ffffffffa04526f1>] snd_pcm_open_substream+0x51/0x100 [snd_pcm]
+    [<ffffffffa0452853>] snd_pcm_open+0xb3/0x260 [snd_pcm]
+    [<ffffffffa0452a37>] snd_pcm_capture_open+0x37/0x50 [snd_pcm]
+    [<ffffffffa033f557>] snd_open+0xa7/0x1e0 [snd]
+    [<ffffffff8118a628>] chrdev_open+0x88/0x1d0
+    [<ffffffff811840be>] do_dentry_open+0x1de/0x270
+    [<ffffffff81193a73>] do_last+0x1c3/0xec0
+    [<ffffffff81194826>] path_openat+0xb6/0x670
+    [<ffffffff81195b65>] do_filp_open+0x35/0x80
+    [<ffffffff81185449>] do_sys_open+0x129/0x210
+    [<ffffffff815b782d>] system_call_fastpath+0x1a/0x1f
 
-As subtle as it is, this appears to be exact.
+This patch adds the check of firmware at PCM open callback like other
+open callbacks of this driver.
 
-However ...
+Bugzilla: https://apibugzilla.novell.com/show_bug.cgi?id=875440
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/media/pci/ivtv/ivtv-alsa-pcm.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
-> ---
->  arch/arm/include/asm/uaccess.h | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
-> index 12c3a5d..4b584ac 100644
-> --- a/arch/arm/include/asm/uaccess.h
-> +++ b/arch/arm/include/asm/uaccess.h
-> @@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned long long);
->  #define __put_user_check(x,p)							\
->  	({								\
->  		unsigned long __limit = current_thread_info()->addr_limit - 1; \
-> +		const typeof(*(p)) __user *tmp_p = (p);			\
+diff --git a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+index e1863dbf4edc..7a9b98bc208b 100644
+--- a/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
++++ b/drivers/media/pci/ivtv/ivtv-alsa-pcm.c
+@@ -159,6 +159,12 @@ static int snd_ivtv_pcm_capture_open(struct snd_pcm_substream *substream)
+ 
+ 	/* Instruct the CX2341[56] to start sending packets */
+ 	snd_ivtv_lock(itvsc);
++
++	if (ivtv_init_on_first_open(itv)) {
++		snd_ivtv_unlock(itvsc);
++		return -ENXIO;
++	}
++
+ 	s = &itv->streams[IVTV_ENC_STREAM_TYPE_PCM];
+ 
+ 	v4l2_fh_init(&item.fh, s->vdev);
+-- 
+1.9.2
 
-Please use __tmp_p here rather than tmp_p as this could conflict with a 
-variable of the same name in the calling context.  After that change you 
-may add:
-
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-
-... and add "Cc: stable@vger.kernel.org" as well.
-
-I confirm that, with this patch, the generated assembly from the test 
-case is identical except for the added initialization of r2 which is 
-optimized away otherwise.
-
-Looking at all the other occurrences of register specified variables, 
-they appear safe. We already encountered this issue as illustrated by 
-commit 98d4ded60b but apparently failed to see the possibility for the 
-same problem to occur elsewhere at the time.
-
->  		register const typeof(*(p)) __r2 asm("r2") = (x);	\
-> -		register const typeof(*(p)) __user *__p asm("r0") = (p);\
-> +		register const typeof(*(p)) __user *__p asm("r0") = tmp_p; \
->  		register unsigned long __l asm("r1") = __limit;		\
->  		register int __e asm("r0");				\
->  		switch (sizeof(*(__p))) {				\
-> -- 
-> 1.8.3.2
-> 
