@@ -1,60 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509AbaEENbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:31:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46342 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaEENbi (ORCPT
+	id S932550AbaEENdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:33:37 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:38902 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaEENdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:31:38 -0400
-Date: Mon, 5 May 2014 06:31:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH] drivercore: fix a corner case for deferred probe
-Message-ID: <20140505133137.GA4572@kroah.com>
-References: <1398045202-5714-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20140505022805.GA15162@richard>
- <20140505030432.GA11957@kroah.com>
- <20140505084717.GA5712@richard>
+	Mon, 5 May 2014 09:33:35 -0400
+Message-ID: <53679329.1060202@redhat.com>
+Date: Mon, 05 May 2014 15:33:29 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505084717.GA5712@richard>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, linux-s390 <linux-s390@vger.kernel.org>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Subject: Re: [PATCH 09/11] perf kvm: use defines of kvm events
+References: <1398417153-57347-1-git-send-email-borntraeger@de.ibm.com> <1398417153-57347-10-git-send-email-borntraeger@de.ibm.com>
+In-Reply-To: <1398417153-57347-10-git-send-email-borntraeger@de.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 04:47:17PM +0800, Wei Yang wrote:
-> On Sun, May 04, 2014 at 08:04:32PM -0700, Greg KH wrote:
-> >On Mon, May 05, 2014 at 10:28:05AM +0800, Wei Yang wrote:
-> >> Hi, all
-> >> 
-> >> Anyone has some comment on this?
-> >
-> >Did you miss the patch from Grant that is now in Linus's tree that
-> >should resolve this issue?
-> 
-> Hi, Greg,
-> 
-> Nice to hear from you.
-> 
-> Would you mind telling me the exact tree and commit? I searched in the
-> git.kernel.org, and see several Linus's tree, including Linus Torvalds and
-> Linus Walleij. So, not sure which you are pointing to. With the exact commit
-> and tree, I could take a more deep look into it :-)
+Il 25/04/2014 11:12, Christian Borntraeger ha scritto:
+> From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+>
+> Currently perf-kvm uses string literals for kvm event names,
+> but it works only for x86, because other architectures may have
+> other names for those events.
+>
+> This patch introduces defines for kvm_entry and kvm_exit events
+> and lets perf-kvm replace literals.
+>
+> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> ---
+>  arch/x86/include/uapi/asm/kvm.h |  8 ++++++++
+>  tools/perf/builtin-kvm.c        | 10 ++++------
+>  2 files changed, 12 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/x86/include/uapi/asm/kvm.h b/arch/x86/include/uapi/asm/kvm.h
+> index d3a8778..88c0099 100644
+> --- a/arch/x86/include/uapi/asm/kvm.h
+> +++ b/arch/x86/include/uapi/asm/kvm.h
+> @@ -8,6 +8,8 @@
+>
+>  #include <linux/types.h>
+>  #include <linux/ioctl.h>
+> +#include <asm/svm.h>
+> +#include <asm/vmx.h>
+>
+>  #define DE_VECTOR 0
+>  #define DB_VECTOR 1
+> @@ -342,4 +344,10 @@ struct kvm_xcrs {
+>  struct kvm_sync_regs {
+>  };
+>
+> +#define VCPU_ID "vcpu_id"
+> +
+> +#define KVM_ENTRY "kvm:kvm_entry"
+> +#define KVM_EXIT "kvm:kvm_exit"
+> +#define KVM_EXIT_REASON "exit_reason"
+> +
+>  #endif /* _ASM_X86_KVM_H */
 
-Use Linus Torvalds's tree, and look at commit
-58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 "drivercore: deferral race
-condition fix"
+What about adding a new asm/kvm-perf.h header instead?
 
-> BTW, I am using this tree:
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> based on commit "455c6fd Linux 3.14".
+1) I don't like very much the namespace pollution that the first hunk 
+causes (and the second one isn't really pretty either).
 
-That is the right tree, but a very old commit, please update your tree.
+2) perf doesn't need most of uapi/asm/kvm.h, in fact it only needs a 
+couple of #defines because it is a dependency of uapi/asm/svm.h.  So it 
+is uapi/asm/svm.h that should include uapi/asm/kvm.h, not perf.
 
-thanks,
+Paolo
 
-greg k-h
+> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+> index 806c0e4..9a162ae 100644
+> --- a/tools/perf/builtin-kvm.c
+> +++ b/tools/perf/builtin-kvm.c
+> @@ -30,8 +30,6 @@
+>  #include <math.h>
+>
+>  #ifdef HAVE_KVM_STAT_SUPPORT
+> -#include <asm/svm.h>
+> -#include <asm/vmx.h>
+>  #include <asm/kvm.h>
+>
+>  struct event_key {
+> @@ -130,12 +128,12 @@ static void exit_event_get_key(struct perf_evsel *evsel,
+>  			       struct event_key *key)
+>  {
+>  	key->info = 0;
+> -	key->key = perf_evsel__intval(evsel, sample, "exit_reason");
+> +	key->key = perf_evsel__intval(evsel, sample, KVM_EXIT_REASON);
+>  }
+>
+>  static bool kvm_exit_event(struct perf_evsel *evsel)
+>  {
+> -	return !strcmp(evsel->name, "kvm:kvm_exit");
+> +	return !strcmp(evsel->name, KVM_EXIT);
+>  }
+>
+>  static bool exit_event_begin(struct perf_evsel *evsel,
+> @@ -151,7 +149,7 @@ static bool exit_event_begin(struct perf_evsel *evsel,
+>
+>  static bool kvm_entry_event(struct perf_evsel *evsel)
+>  {
+> -	return !strcmp(evsel->name, "kvm:kvm_entry");
+> +	return !strcmp(evsel->name, KVM_ENTRY);
+>  }
+>
+>  static bool exit_event_end(struct perf_evsel *evsel,
+> @@ -557,7 +555,7 @@ struct vcpu_event_record *per_vcpu_record(struct thread *thread,
+>  			return NULL;
+>  		}
+>
+> -		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, "vcpu_id");
+> +		vcpu_record->vcpu_id = perf_evsel__intval(evsel, sample, VCPU_ID);
+>  		thread->priv = vcpu_record;
+>  	}
+>
+>
+
