@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaEEUHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:07:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40298 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981AbaEEUG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:06:58 -0400
-Date: Mon, 5 May 2014 15:06:35 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL #2/2] ARM: dts: DRA7/AM437x l3noc dts updates
-Message-ID: <20140505200635.GB9863@kahuna>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1398698101-25513-1-git-send-email-nm@ti.com>
- <20140505200322.GA9863@kahuna>
+	id S1754754AbaEEUMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:12:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:40691 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405AbaEEUMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:12:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19+rafnoCwayP/RH6v3J7aQ
+Date: Mon, 5 May 2014 13:12:02 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Sebastian Reichel <sre@kernel.org>, Sebastian Reichel <sre@ring0.de>,
+        linux-input@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 1/5] Input: add common DT binding for touchscreens
+Message-ID: <20140505201202.GH25949@atomide.com>
+References: <1398470179-20880-1-git-send-email-sre@kernel.org>
+ <1398470179-20880-2-git-send-email-sre@kernel.org>
+ <20140505194125.GD25949@atomide.com>
+ <20140505195139.GA26978@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140505200322.GA9863@kahuna>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140505195139.GA26978@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+* Dmitry Torokhov <dmitry.torokhov@gmail.com> [140505 12:52]:
+> On Mon, May 05, 2014 at 12:41:26PM -0700, Tony Lindgren wrote:
+> > * Sebastian Reichel <sre@kernel.org> [140425 16:56]:
+> > > Add common DT binding documentation for touchscreen devices and
+> > > implement input_parse_touchscreen_of_params, which parses the common
+> > > properties and configures the input device accordingly.
+> > > 
+> > > The method currently does not interpret the axis inversion properties,
+> > > since there is no matching flag in the generic linux input device.
+> > > 
+> > > Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> > > ---
+> > >  .../bindings/input/touchscreen/touchscreen.txt     | 27 +++++++++++++++++
+> > >  drivers/input/input.c                              | 34 ++++++++++++++++++++++
+> > >  include/linux/input.h                              |  8 +++++
+> > >  3 files changed, 69 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt b/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
+> > > new file mode 100644
+> > > index 0000000..d8e0616
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
+> > > @@ -0,0 +1,27 @@
+> > > +General Touchscreen Properties:
+> > > +
+> > > +Optional properties for Touchscreens:
+> > > + - touchscreen-size-x		: horizontal resolution of touchscreen
+> > > +				  (in pixels)
+> > > + - touchscreen-size-y		: vertical resolution of touchscreen
+> > > +				  (in pixels)
+> > > + - touchscreen-max-pressure	: maximum reported pressure (arbitrary range
+> > > +				  dependent on the controller)
+> > > + - touchscreen-fuzz-x		: horizontal noise value of the absolute input
+> > > +				  device (in pixels)
+> > > + - touchscreen-fuzz-y		: vertical noise value of the absolute input
+> > > +				  device (in pixels)
+> > > + - touchscreen-fuzz-pressure	: pressure noise value of the absolute input
+> > > +				  device (arbitrary range dependent on the
+> > > +				  controller)
+> 
+> Fuzz seems like linux-specific property, not generic one.
+> 
+> 
+> > > + - touchscreen-inverted-x	: X axis is inverted (boolean)
+> > > + - touchscreen-inverted-y	: Y axis is inverted (boolean)
+> > 
+> > We probably also need something to swap x and y depending on the
+> > display orientation in addition to the touchscreen-inverted-x and y.
+> > Just swapping x and y is not enough depending if we rotate by 270
+> > degrees instead of 90 degrees.
+> > 
+> > Naturally that part can be added later.
+> 
+> So far we've been relying on upper layers (such as tslib) to perform
+> such transformations rather than re-implementing it in every driver. Are
+> we saying that we need to implement this in input core?
 
-   Please pull the following to the dts support of AM437x and DRA7
-   support for l3_noc for the upcoming 3.16 window. This series was posted
-   http://marc.info/?l=linux-omap&m=139750288003978&w=2 and the
-   functionality enabled by the first pull request for driver.
+We seem to have that already partially implemented at least with
+ti,swap-xy in Documentation/devicetree/bindings/input/ads7846.txt.
 
-The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
+But that only works for the 90 degree rotation case as it's missing
+something similar to touchscreen-inverted-x I just noticed few days
+ago while trying to make some legacy code disappear :)
 
-  Linux 3.14 (2014-03-30 20:40:15 -0700)
+No idea where rotation should be specified. But if the panel is
+rotated based on the DT property or kernel cmdline, probably the
+touchscreen should be too? In most cases touchscreens are integrated
+together with the LCD panel, and they are not separate like other
+input devices.
 
-are available in the git repository at:
-
-  https://github.com/nmenon/linux-2.6-playground.git pull/l3noc/dts-fixes
-
-for you to fetch changes up to 2eeddb8a5356e088021a8dd84de870de89bf793d:
-
-  ARM: dts: AM4372: add l3-noc information (2014-05-05 14:35:29 -0500)
-
-----------------------------------------------------------------
-Afzal Mohammed (1):
-      ARM: dts: AM4372: add l3-noc information
-
-Rajendra Nayak (1):
-      ARM: dts: DRA7: Use dra7-l3-noc instead of omap4-l3-noc
-
- arch/arm/boot/dts/am4372.dtsi |    6 +++++-
- arch/arm/boot/dts/dra7.dtsi   |    6 +++---
- 2 files changed, 8 insertions(+), 4 deletions(-)
--- 
 Regards,
-Nishanth Menon
+
+Tony
