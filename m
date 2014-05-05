@@ -1,48 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724AbaEEOOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:14:50 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:41319 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932538AbaEEOOs (ORCPT
+	id S932765AbaEEOPV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:15:21 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:9343 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932538AbaEEOPS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:14:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <5367946F.1030407@ti.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-Date: Mon, 5 May 2014 19:44:48 +0530
-Message-ID: <CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 5 May 2014 10:15:18 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-55-53679cf3162e
+Message-id: <53679CE7.3070202@samsung.com>
+Date: Mon, 05 May 2014 16:15:03 +0200
+From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-doc@vger.kernel.org, t.figa@samsung.com,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
+        robh+dt@kernel.org, arnd@arndb.de, grant.likely@linaro.org,
+        kgene.kim@samsung.com, rdunlap@infradead.org, ben-linux@fluff.org
+Subject: Re: [PATCH 0/2] Add support for sii9234 chip
+References: <1397216910-15904-1-git-send-email-t.stanislaws@samsung.com>
+ <20140503231726.GA20212@kroah.com>
+In-reply-to: <20140503231726.GA20212@kroah.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42I5/e/4Vd3Pc9KDDZqfSVj8nXSM3WLSugNM
+	FvOPnGO1uPL1PZvFgT87GC2aF69ns+hdcJXN4mzTG3aLTY+vsVosbFvCYnF51xw2i54NW1kt
+	Zpzfx2Sx9shddou3d6azWLTuPcJusX7GaxYHQY/fvyYxevxd9YLZY/MKLY9NqzrZPO5c28Pm
+	sX/uGnaP+93HmTw2L6n36NuyitHj8ya5AK4oLpuU1JzMstQifbsErozuU+cYC7YJVPRt38jc
+	wPiPp4uRk0NCwETi0bTtbBC2mMSFe+uBbC4OIYGljBJru7czQTifGSU+f1vBDlLFK6Al8WDv
+	a0YQm0VAVeLc/pVgcTagSceWfAaLiwpESMyduJkNol5Q4sfkeywgtoiAhsTLo7dYQIYyC2xi
+	lpjcuRosISxgKnHt11+wBiGBXIne9+uYQWxOAX2JZY3zmEBsZgEdif2t09ggbHmJzWveMk9g
+	FJiFZMcsJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESe193MC49ZnWIUYCD
+	UYmH18M7JViINbGsuDL3EKMEB7OSCO/cWenBQrwpiZVVqUX58UWlOanFhxiZODilGhgrnws+
+	OOTG7rZw22R7uxUzJz97msLfmjbpAWftq/rvx6pVv1ovvR9p0pqaL/VBwNbvjbt97uOazK86
+	GjvvTsi6kfVxtULR8YBctatb1K8se64pqmpdNcX8YvWmB7Pdnlg6J+xV1m5x5Th+tkNSYXOd
+	tchpo7KZex823V99vv7zGVFlxkfpIXpKLMUZiYZazEXFiQBimhYImwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 May 2014 19:08, Nishanth Menon <nm@ti.com> wrote:
-> With the brief history of the patch in linux-pm, I am unable to
-> understand why not just use ceil/floor routines to pick up data the
-> way you need it. It should not matter if we use an ordered list, or
-> some other weird organization inside the storage. There are already
-> accessors functions meant to precisely help with the case that is
-> being tried here.
+On 05/04/2014 01:17 AM, Greg KH wrote:
+> On Fri, Apr 11, 2014 at 01:48:28PM +0200, Tomasz Stanislawski wrote:
+>> Hi everyone,
+>> This patchset adds support for sii9234 HD Mobile Link Bridge.  The chip is used
+>> to convert HDMI signal into MHL.  The driver enables HDMI output on Trats and
+>> Trats2 boards.
+>>
+>> The code is based on the driver [1] developed by:
+>>        Adam Hampson <ahampson@sta.samsung.com>
+>>        Erik Gilling <konkers@android.com>
+>> with additional contributions from:
+>>        Shankar Bandal <shankar.b@samsung.com>
+>>        Dharam Kumar <dharam.kr@samsung.com>
+>>
+>> The drivers architecture was greatly simplified and transformed into a form
+>> accepted (hopefully) by opensource community.  The main differences from
+>> original code are:
+>> * using single I2C client instead of 4 subclients
+>> * remove all logic non-related to establishing HDMI link
+>> * simplify error handling
+>> * rewrite state machine in interrupt handler
+>> * wakeup and discovery triggered by an extcon event
+>> * integrate with Device Tree
+>>
+>> For now, the driver is added to drivers/misc/ directory because it has neigher
+>> userspace nor kernel interface.  The chip is capable of receiving and
+>> processing CEC events, so the driver may export an input device in /dev/ in the
+>> future.  However CEC could be also handled by HDMI driver.
+>>
+>> I kindly ask for suggestions about the best location for this driver.
+> 
+> It really is an extcon driver, so why not put it in drivers/extcon?  And
+> that might solve any build issues you have if you don't select extcon in
+> your .config file and try to build this code :)
+> 
+> thanks,
 
-To be precise, for exynos they need the position of a frequency when
-it is arranged in descending order. And they will simply write this position
-in their clock controller later. For example, if frequencies are:
-100 MHz, 200, 300, 400, 500, 600
+Hi Greg,
+Thank you for your comments.
 
-Then they need to write 1 for 600, 2 for 500, 3 for 400, and so on..
-I am not able to imaging how ceil/floor would help here.
+As I understand, drivers/extcon contains only extcon providers.
+This driver is an extcon client, so mentioned location may not be adequate.
+
+I am surprised that there are no comments about this driver.
+Sii9234 chip is present on many exynos based boards/phones
+and HDMI subsystem will not work without this code.
+
+Regards,
+Tomasz Stanislawski
+
+> 
+> greg k-h
+> 
+
