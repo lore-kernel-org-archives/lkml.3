@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428AbaEEEt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 00:49:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882AbaEEEt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 00:49:56 -0400
-From: Baoquan He <bhe@redhat.com>
-To: rjw@rjwysocki.net, linux-acpi@vger.kernel.org, linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dyoung@redhat.com,
-        Baoquan He <bhe@redhat.com>
-Subject: [Patch v3 2/2] lapic need be checked if available when initialize acpi processor id
-Date: Mon,  5 May 2014 12:48:26 +0800
-Message-Id: <1399265306-8553-2-git-send-email-bhe@redhat.com>
-In-Reply-To: <1399265306-8553-1-git-send-email-bhe@redhat.com>
-References: <1399265306-8553-1-git-send-email-bhe@redhat.com>
+	id S1754496AbaEEExL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 00:53:11 -0400
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:62294 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750882AbaEEExJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 00:53:09 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At8WAHsYZ1NXQyvn/2dsb2JhbABZgwarTQEBAQEBAQUBmgYCAoEWF3SCJQEBBAE6HCMFCwgDDgouOR4GE4g5DAHKOheFVoh8B4Q/AQOPGooZAYp+h3aDNjs
+Date: Mon, 5 May 2014 06:53:01 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Jeff Layton <jlayton@poochiereds.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Steve French <sfrench@samba.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>
+Subject: Re: [PATCH 1/1] FS/CIFS: remove obsolete __constant
+Message-Id: <20140505065301.bbb1fe3e579d27dacd3292c9@skynet.be>
+In-Reply-To: <CAOhYWNJ5JRt9KH-Z3K_zBW2axs5c5KJQYXb8_vYLQTEdr=ZeEg@mail.gmail.com>
+References: <20140503221539.e4857ef93d6c875bbded5938@skynet.be>
+	<CAOhYWNJ5JRt9KH-Z3K_zBW2axs5c5KJQYXb8_vYLQTEdr=ZeEg@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In acpi_processor_get_info(), acpi processor info is initialized including
-id, namely cpu index. Currently, if on UP system running SMP kerenl with
-no LAPIC in MADT, cpu0_initialized is checked if acpi processor id is
-initialized.
+On Sun, 4 May 2014 18:52:43 -0400
+Jeff Layton <jlayton@poochiereds.net> wrote:
 
-However this check maybe is not sufficient for kdump kernel. Most of time
-only 1 CPU is supported because of known problems in kdump kernel. So in
-1st kernel multiple CPUs are present, then crash happened in one specific
-CPU, say 2nd CPU. Then it jumped into kdump kernel with "nr_cpus=1" specified
-in cmdline. In this situation, since kdump kernel is warm reset, it will
-reuse the ACPI resource passed from crashed kernel directly, namely 1st
-kernel. It means in MADT all LAPIC is enabled while only 1 CPU is
-present in running system. The kdump kernel usually is the same as the
-crashed 1st kernel. So now in kdump kernel, x86_cpu_to_apicid stored the
-apicid and its related cpu id. If only check cpu0_initialized, it will
-assign 0 to the acpi processor id of 1st CPU, it's not correct.
+> On Sat, May 3, 2014 at 4:15 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> > Replacing all __constant_foo to foo()
+> > except in smb2status.h (1700 lines to update).
+> >
+> > Cc: linux-cifs@vger.kernel.org
+> > Cc: Steve French <sfrench@samba.org>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >  fs/cifs/cifsacl.c  |  2 +-
+> >  fs/cifs/cifssmb.c  | 20 ++++++++++----------
+> >  fs/cifs/sess.c     |  2 +-
+> >  fs/cifs/smb2misc.c | 38 +++++++++++++++++++-------------------
+> >  fs/cifs/smb2ops.c  |  2 +-
+> >  fs/cifs/smb2pdu.c  |  2 +-
+> >  fs/cifs/smb2pdu.h  | 28 ++++++++++++++--------------
+> >  7 files changed, 47 insertions(+), 47 deletions(-)
+> >
+> > diff --git a/fs/cifs/cifsacl.c b/fs/cifs/cifsacl.c
+> > index 7ff866d..54ac0e8 100644
+> > --- a/fs/cifs/cifsacl.c
+> > +++ b/fs/cifs/cifsacl.c
+> > @@ -38,7 +38,7 @@ static const struct cifs_sid sid_everyone = {
+> >         1, 1, {0, 0, 0, 0, 0, 1}, {0} };
+> >  /* security id for Authenticated Users system group */
+> >  static const struct cifs_sid sid_authusers = {
+> > -       1, 1, {0, 0, 0, 0, 0, 5}, {__constant_cpu_to_le32(11)} };
+> > +       1, 1, {0, 0, 0, 0, 0, 5}, {cpu_to_le32(11)} };
+> 
+> 
+> Does the build still work on BE arches with this? I know at one point
+> the above wouldn't compile on those
+> arches. See commit 536abdb0802f, for an explanation.
 
-So in this patch, check acpi_lapic too. If acpi_lapic is 0, then LAPIC in
-MADT is not available, assigne 0 to the handling acpi processor id. If
-acpi_lapic is 1, then LAPIC in MADT is available, let's get apic processor
-id from x86_cpu_to_apicid.
-
-Signed-off-by: Baoquan He <bhe@redhat.com>
----
- drivers/acpi/acpi_processor.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index b06f5f5..bf0cce9 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -268,7 +268,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
- 	pr->apic_id = apic_id;
- 
- 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
--	if (!cpu0_initialized) {
-+	if (!cpu0_initialized && !acpi_lapic) {
- 		cpu0_initialized = 1;
- 		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
- 		if ((cpu_index == -1) && (num_online_cpus() == 1))
--- 
-1.8.5.3
-
+Untested on BE but it would mean checkpatch 
+"don't use __constant<foo> functions outside of include/uapi/" stuff is wrong ?
