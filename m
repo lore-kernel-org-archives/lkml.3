@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaEEUkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:40:19 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46088 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629AbaEEUkR (ORCPT
+	id S1755819AbaEEUkj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:40:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50852 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbaEEUki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:40:17 -0400
-Date: Mon, 5 May 2014 13:40:22 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Boris BREZILLON <brezillonboris@gmail.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: Re: [PATCH] net: macb: set interface name based on DT aliases
-Message-ID: <20140505204022.GA27961@quad.lixom.net>
-References: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
+	Mon, 5 May 2014 16:40:38 -0400
+Date: Mon, 5 May 2014 13:43:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/86] 3.10.39-stable review
+Message-ID: <20140505204343.GA18222@kroah.com>
+References: <20140504154140.444932005@linuxfoundation.org>
+ <536683D0.5000708@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <536683D0.5000708@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 11:29:56AM +0100, Boris BREZILLON wrote:
-> Use aliases to set the interface name (ethX) instead of automatic
-> assignement.
+On Sun, May 04, 2014 at 11:15:44AM -0700, Guenter Roeck wrote:
+> On 05/04/2014 08:40 AM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.10.39 release.
+> >There are 86 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Tue May  6 15:41:13 UTC 2014.
+> >Anything received after that time might be too late.
+> >
 > 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
+> I am still seeing build failures, even with x86_64 (both allmodconfig and
+> allyesconfig fail).
+> 	total: 127 pass: 113 skipped: 4 fail: 10
 > 
-> Hello Nicolas, Jean-Christophe,
+> drivers/usb/musb/musb_core.c: In function 'musb_stage0_irq':
+> drivers/usb/musb/musb_core.c:673:26: error: 'struct musb' has no member named 'hcd'
 > 
-> This is an example on how we could set the ethernet interface id based on DT
-> aliases.
-> As you can see this patch is not properly separated.
-> 
-> I'm still not happy with this approach for several reasons:
-> 1) If another ethernet iface has already been registered with the same id the
->    net dev registration will fail.
-> 2) We bypass the ethernet macros/functions and directly use the net device
->    functions which IMHO is not future proof.
+> Problem is due to 'usb: musb: avoid NULL pointer dereference'.
+> A brief glance into the code suggests that the patch will require an explicit
+> back-port to 3.10.
 
-[Sorry for the late reply, going through old backlog of unread email]
+Thanks, I've now dropped that one.
 
-Looks like this should live in networking core instead of in the driver, it's
-how we handle it in other subsystems.
+> Greg, I suspect you might not have USB_MUSB_HDRC enabled in your builds.
 
-I don't know what DaveM's opinions on that is though.
+I don't :(
 
+I'm running with a distro kernel config in the builds to let me build
+the kernel, which doesn't pick up a lot of the embedded options, like
+musb.
 
--Olof
+thanks,
 
+greg k-h
