@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465AbaEEMop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:44:45 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:42250 "EHLO posteo.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932189AbaEEMon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:44:43 -0400
-Message-ID: <536787B7.80200@posteo.de>
-Date: Mon, 05 May 2014 14:44:39 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.4.0
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: gregkh@linuxfoundation.org, driverdev-devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, lidza.louina@gmail.com
-Subject: Re: [RESEND PATCH] staging: dgnc: use dev_err() instead of printk()
-References: <1398765250-16064-1-git-send-email-martink@posteo.de> <1399285779-7040-1-git-send-email-martink@posteo.de> <20140505113507.GP26890@mwanda> <53677D1D.5000204@posteo.de> <20140505123603.GQ26890@mwanda>
-In-Reply-To: <20140505123603.GQ26890@mwanda>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932357AbaEEMnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:43:37 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40969 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932155AbaEEMne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 08:43:34 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 10/50] __dentry_path() fixes
+Date: Mon,  5 May 2014 14:42:52 +0200
+Message-Id: <aeaf64c5a760c88e7af7b316536980d41bf312cf.1399292849.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
+References: <cover.1399292849.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-05-05 14:36, schrieb Dan Carpenter:
-> On Mon, May 05, 2014 at 01:59:25PM +0200, Martin Kepplinger wrote:
->> Am 2014-05-05 13:35, schrieb Dan Carpenter:
->>> On Mon, May 05, 2014 at 12:29:39PM +0200, Martin Kepplinger wrote:
->>>> Use dev_err() instead of printk() and remove "dgnc:" from the message.
->>>> This should provide userspace with more useful information and use
->>>> the common kernel coding style.
->>>>
->>>
->>> Whenever I see a "RESEND" in a subject and no explanation then it means
->>> our development process has broken down.  Meanwhile this is the first
->>> time I have seen this patch so the problem is not on our side.
->>>
->>> regards,
->>> dan carpenter
->>>
->>
->> I just resent https://lkml.org/lkml/2014/4/29/164 after waiting a week
->> or so. I don't see any breakdown.
-> 
-> What I'm saying is just put an explanation after the --- cut off so we
-> know what you did wrong the first time.
-> 
-> Signed-off-by ...
-> ---
-> Resending because I sent it to the wrong email list the first time.
-> Oops!  Next time I will use get_maintainer.pl, I promise!
-> 
-> 
-> Just a simple explanation like that is ok.
-> 
-> regards,
-> dan carpenter
-> 
-sure, thanks.
+From: Al Viro <viro@zeniv.linux.org.uk>
+
+3.12-stable review patch.  If anyone has any objections, please let me know.
+
+===============
+
+commit f6500801522c61782d4990fa1ad96154cb397cd4 upstream.
+
+* we need to save the starting point for restarts
+* reject pathologically short buffers outright
+
+Spotted-by: Denys Vlasenko <dvlasenk@redhat.com>
+Spotted-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/dcache.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 008f524e195a..8ef74f3d8fe5 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3122,19 +3122,22 @@ char *simple_dname(struct dentry *dentry, char *buffer, int buflen)
+ /*
+  * Write full pathname from the root of the filesystem into the buffer.
+  */
+-static char *__dentry_path(struct dentry *dentry, char *buf, int buflen)
++static char *__dentry_path(struct dentry *d, char *buf, int buflen)
+ {
++	struct dentry *dentry;
+ 	char *end, *retval;
+ 	int len, seq = 0;
+ 	int error = 0;
+ 
++	if (buflen < 2)
++		goto Elong;
++
+ 	rcu_read_lock();
+ restart:
++	dentry = d;
+ 	end = buf + buflen;
+ 	len = buflen;
+ 	prepend(&end, &len, "\0", 1);
+-	if (buflen < 1)
+-		goto Elong;
+ 	/* Get '/' right */
+ 	retval = end-1;
+ 	*retval = '/';
+-- 
+1.9.2
+
