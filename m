@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952AbaEEWaH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:30:07 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56396 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756766AbaEEWaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:30:04 -0400
-Message-ID: <1399329001.2164.56.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, eparis@redhat.com,
-        sgrubb@redhat.com, ebiederm@xmission.com
-Date: Mon, 05 May 2014 15:30:01 -0700
-In-Reply-To: <20140505222758.GA6508@ubuntumail>
-References: <cover.1398176489.git.rgb@redhat.com>
-	 <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
-	 <20140505034814.GA27548@mail.hallyn.com>
-	 <20140505214818.GC6867@madcap2.tricolour.ca>
-	 <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
-	 <20140505222758.GA6508@ubuntumail>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.12.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933329AbaEEW3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:29:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58945 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933155AbaEEW0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:26:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
+   d="scan'208";a="506357939"
+From: Andi Kleen <andi@firstfloor.org>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
+        Andi Kleen <ak@linux.intel.com>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>
+Subject: [PATCH 23/24] net, diet: Add coccinelle script to convert drivers to ETHTOOL_OPS
+Date: Mon,  5 May 2014 15:26:12 -0700
+Message-Id: <1399328773-6531-24-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-05 at 22:27 +0000, Serge Hallyn wrote:
-> Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> > On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
-> > > On 14/05/05, Serge E. Hallyn wrote:
-> > > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
-> > > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
-> > > > > > Questions:
-> > > > > > Is there a way to link serial numbers of namespaces involved in migration of a
-> > > > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-> > > > > > identifier for each running instance of a kernel?  Or at least some identifier
-> > > > > > within the container migration realm?
-> > > > > 
-> > > > > Are you asking for a way of distinguishing an migrated container from an
-> > > > > unmigrated one?  The answer is pretty much "no" because the job of
-> > > > > migration is to restore to the same state as much as possible.
-> > > > > 
-> > > > > Reading between the lines, I think your goal is to correlate audit
-> > > > > information across a container migration, right?  Ideally the management
-> > > > > system should be able to cough up an audit trail for a container
-> > > > > wherever it's running and however many times it's been migrated?
-> > > > > 
-> > > > > In that case, I think your idea of a numeric serial number in a dense
-> > > > > range is wrong.  Because the range is dense you're obviously never going
-> > > > > to be able to use the same serial number across a migration.  However,
-> > > > 
-> > > > Ah, but I was being silly before, we can actually address this pretty
-> > > > simply.  If we just (for instance) add
-> > > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the serial number
-> > > > for the relevant ns for the task, then criu can dump this info at
-> > > > checkpoint.  Then at restart it can dump an audit message per task and
-> > > > ns saying old_serial=%x,new_serial=%x.  That way the audit log reader
-> > > > can if it cares keep track.
-> > > 
-> > > This is the sort of idea I had in mind...
-> > 
-> > OK, but I don't understand then why you need a serial number.  There are
-> > plenty of things we preserve across a migration, like namespace name for
-> > instance.  Could you explain what function it performs because I think I
-> > might be missing something.
-> 
-> We're looking ahead to a time when audit is namespaced, and a container
-> can keep its own audit logs (without limiting what the host audits of
-> course).  So if a container is auditing suspicious activity by some
-> task in a sub-namesapce, then the whole parent container gets migrated,
-> after migration we want to continue being able to correlate the namespaces.
-> 
-> We're also looking at audit trails on a host that is up for years.  We
-> would like every namespace to be uniquely logged there.  That is why
-> inode #s on /proc/self/ns/* are not sufficient, unless we add a generation
-> # (which would end more complicated, not less, than a serial #).
+From: Andi Kleen <ak@linux.intel.com>
 
-Right, but when the contaner has an audit namespace, that namespace has
-a name, which CRIU would migrate, so why not use that name for the
-log .. no need for numbers (unless you make the name a number, of
-course)?
+Useful to remove unneeded driver code when ethtool is disabled.
 
-James
+The patches doing this are submitted too, but let's add
+the script too so people can re-use it.
 
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Gilles Muller <Gilles.Muller@lip6.fr>
+Cc: Nicolas Palix <nicolas.palix@imag.fr>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ scripts/coccinelle/api/ethtool_ops.cocci | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+ create mode 100644 scripts/coccinelle/api/ethtool_ops.cocci
+
+diff --git a/scripts/coccinelle/api/ethtool_ops.cocci b/scripts/coccinelle/api/ethtool_ops.cocci
+new file mode 100644
+index 0000000..a7ee6ed
+--- /dev/null
++++ b/scripts/coccinelle/api/ethtool_ops.cocci
+@@ -0,0 +1,9 @@
++// Convert network drivers to use the SET_ETHTOOL_OPS macro
++// This allows to compile out the ethtool code when not needed.
++//
++@@
++struct ethtool_ops *ops;
++struct net_device *dev;
++@@
++-	dev->ethtool_ops = ops;
+++	SET_ETHTOOL_OPS(dev, ops);
+-- 
+1.9.0
 
