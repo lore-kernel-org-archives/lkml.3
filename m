@@ -1,854 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaEERgF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:36:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24655 "EHLO mx1.redhat.com"
+	id S1755491AbaEERgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:36:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020AbaEERgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:36:02 -0400
+	id S1751336AbaEERgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 13:36:09 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 02/12] tools: Consolidate types.h
-Date: Mon,  5 May 2014 19:35:38 +0200
-Message-Id: <1399311348-28152-3-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
-References: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Michael S . Tsirkin" <mst@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Sasha Levin <sasha.levin@oracle.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org
+Subject: [GIT PULL 01/12] perf/core improvements and fixes
+Date: Mon,  5 May 2014 19:35:36 +0200
+Message-Id: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
 
-Combine all definitions into a common tools/include/linux/types.h and
-kill the wild growth elsewhere. Move DECLARE_BITMAP to its proper
-bitmap.h header.
+hi Ingo,
+please consider pulling
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Link: http://lkml.kernel.org/n/tip-azczs7qcv6h9xek9od10hiv2@git.kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/include/linux/types.h               | 75 +++++++++++++++++++++++++++++++
- tools/lib/lockdep/uinclude/linux/types.h  | 58 ------------------------
- tools/perf/MANIFEST                       |  1 +
- tools/perf/Makefile.perf                  |  3 +-
- tools/perf/arch/x86/include/perf_regs.h   |  2 +-
- tools/perf/arch/x86/util/tsc.c            |  2 +-
- tools/perf/arch/x86/util/tsc.h            |  2 +-
- tools/perf/perf.h                         |  4 +-
- tools/perf/tests/attr.c                   |  7 ---
- tools/perf/tests/code-reading.c           |  3 +-
- tools/perf/tests/dso-data.c               |  2 +-
- tools/perf/tests/dwarf-unwind.c           |  2 +-
- tools/perf/tests/keep-tracking.c          |  2 +-
- tools/perf/tests/parse-no-sample-id-all.c |  2 +-
- tools/perf/tests/perf-time-to-tsc.c       |  3 +-
- tools/perf/tests/rdpmc.c                  |  2 +-
- tools/perf/tests/sample-parsing.c         |  2 +-
- tools/perf/ui/browser.h                   |  4 +-
- tools/perf/ui/progress.h                  |  2 +-
- tools/perf/util/annotate.h                |  2 +-
- tools/perf/util/build-id.h                |  2 +-
- tools/perf/util/dso.h                     |  2 +-
- tools/perf/util/evsel.h                   |  4 +-
- tools/perf/util/header.h                  |  4 +-
- tools/perf/util/include/linux/bitmap.h    |  3 ++
- tools/perf/util/include/linux/list.h      |  1 +
- tools/perf/util/include/linux/types.h     | 29 ------------
- tools/perf/util/map.h                     |  2 +-
- tools/perf/util/parse-events.h            |  3 +-
- tools/perf/util/parse-events.y            |  2 +-
- tools/perf/util/perf_regs.h               |  2 +-
- tools/perf/util/pmu.h                     |  2 +-
- tools/perf/util/stat.h                    |  2 +-
- tools/perf/util/svghelper.c               |  2 +-
- tools/perf/util/svghelper.h               |  2 +-
- tools/perf/util/top.h                     |  2 +-
- tools/perf/util/types.h                   | 19 --------
- tools/perf/util/unwind-libdw.c            |  2 +-
- tools/perf/util/unwind.h                  |  2 +-
- tools/perf/util/util.h                    |  2 +-
- tools/perf/util/values.h                  |  2 +-
- tools/virtio/linux/kernel.h               |  7 ---
- tools/virtio/linux/types.h                | 28 ------------
- 43 files changed, 115 insertions(+), 191 deletions(-)
- create mode 100644 tools/include/linux/types.h
- delete mode 100644 tools/lib/lockdep/uinclude/linux/types.h
+thanks,
+jirka
+
+
+The following changes since commit 3617660e4e1618a888a2e3a4067224534302cb33:
+
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-05-01 08:24:59 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+
+for you to fetch changes up to 73a31b7c6a85e2f033524058bad5bce900e4f2ed:
+
+  perf tools: Move ACCESS_ONCE from perf.h header (2014-05-05 17:49:07 +0200)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+. Cleanups for perf.h header (Jiri Olsa)
+
+. Consolidate types.h and export.h within tools (Borislav Petkov)
+
+----------------------------------------------------------------
+Borislav Petkov (2):
+      tools: Unify export.h
+      tools: Consolidate types.h
+
+Jiri Olsa (10):
+      perf tools: Remove MAX_COUNTERS define from perf.h
+      perf tools: Remove unlikely define from perf.h
+      perf tools: Remove min define from perf.h
+      perf tools: Remove asmlinkage define from perf.h
+      perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
+      perf tools: Move sample data structures from perf.h
+      perf tools: Move perf_call_graph_mode enum from perf.h
+      perf tools: Move syscall and arch specific defines from perf.h
+      perf tools: Move sys_perf_event_open function from perf.h
+      perf tools: Move ACCESS_ONCE from perf.h header
+
+ tools/include/linux/compiler.h                     |   2 +
+ tools/{virtio => include}/linux/export.h           |   5 +
+ .../lockdep/uinclude => include}/linux/types.h     |  29 ++-
+ tools/lib/lockdep/Makefile                         |   2 +-
+ tools/lib/lockdep/uinclude/linux/export.h          |   7 -
+ tools/perf/MANIFEST                                |   2 +
+ tools/perf/Makefile.perf                           |   5 +-
+ tools/perf/arch/x86/include/perf_regs.h            |   2 +-
+ tools/perf/arch/x86/util/tsc.c                     |   2 +-
+ tools/perf/arch/x86/util/tsc.h                     |   2 +-
+ tools/perf/perf-sys.h                              | 190 +++++++++++++++
+ tools/perf/perf.h                                  | 254 +--------------------
+ tools/perf/tests/attr.c                            |   7 -
+ tools/perf/tests/code-reading.c                    |   3 +-
+ tools/perf/tests/dso-data.c                        |   2 +-
+ tools/perf/tests/dwarf-unwind.c                    |   2 +-
+ tools/perf/tests/keep-tracking.c                   |   2 +-
+ tools/perf/tests/parse-no-sample-id-all.c          |   2 +-
+ tools/perf/tests/perf-time-to-tsc.c                |   3 +-
+ tools/perf/tests/rdpmc.c                           |   2 +-
+ tools/perf/tests/sample-parsing.c                  |   2 +-
+ tools/perf/ui/browser.h                            |   4 +-
+ tools/perf/ui/progress.h                           |   2 +-
+ tools/perf/util/annotate.h                         |   2 +-
+ tools/perf/util/build-id.h                         |   2 +-
+ tools/perf/util/callchain.h                        |   7 +
+ tools/perf/util/dso.h                              |   2 +-
+ tools/perf/util/event.h                            |  24 ++
+ tools/perf/util/evsel.h                            |   4 +-
+ tools/perf/util/header.h                           |   4 +-
+ tools/perf/util/include/linux/bitmap.h             |   3 +
+ tools/perf/util/include/linux/export.h             |   6 -
+ tools/perf/util/include/linux/list.h               |   1 +
+ tools/perf/util/include/linux/types.h              |  29 ---
+ tools/perf/util/map.h                              |   2 +-
+ tools/perf/util/parse-events.h                     |   3 +-
+ tools/perf/util/parse-events.y                     |   2 +-
+ tools/perf/util/perf_regs.h                        |   2 +-
+ tools/perf/util/pmu.h                              |   2 +-
+ tools/perf/util/stat.h                             |   2 +-
+ tools/perf/util/svghelper.c                        |   2 +-
+ tools/perf/util/svghelper.h                        |   2 +-
+ tools/perf/util/symbol.h                           |   1 +
+ tools/perf/util/top.h                              |   2 +-
+ tools/perf/util/types.h                            |  19 --
+ tools/perf/util/unwind-libdw.c                     |   2 +-
+ tools/perf/util/unwind.h                           |   2 +-
+ tools/perf/util/util.h                             |   2 +-
+ tools/perf/util/values.h                           |   2 +-
+ tools/virtio/Makefile                              |   2 +-
+ tools/virtio/linux/kernel.h                        |   7 -
+ tools/virtio/linux/types.h                         |  28 ---
+ 52 files changed, 304 insertions(+), 397 deletions(-)
+ rename tools/{virtio => include}/linux/export.h (70%)
+ rename tools/{lib/lockdep/uinclude => include}/linux/types.h (63%)
+ delete mode 100644 tools/lib/lockdep/uinclude/linux/export.h
+ create mode 100644 tools/perf/perf-sys.h
+ delete mode 100644 tools/perf/util/include/linux/export.h
  delete mode 100644 tools/perf/util/include/linux/types.h
  delete mode 100644 tools/perf/util/types.h
  delete mode 100644 tools/virtio/linux/types.h
-
-diff --git a/tools/include/linux/types.h b/tools/include/linux/types.h
-new file mode 100644
-index 0000000..b5cf25e
---- /dev/null
-+++ b/tools/include/linux/types.h
-@@ -0,0 +1,75 @@
-+#ifndef _TOOLS_LINUX_TYPES_H_
-+#define _TOOLS_LINUX_TYPES_H_
-+
-+#include <stdbool.h>
-+#include <stddef.h>
-+#include <stdint.h>
-+
-+#define __SANE_USERSPACE_TYPES__	/* For PPC64, to get LL64 types */
-+#include <asm/types.h>
-+
-+struct page;
-+struct kmem_cache;
-+
-+typedef enum {
-+	GFP_KERNEL,
-+	GFP_ATOMIC,
-+	__GFP_HIGHMEM,
-+	__GFP_HIGH
-+} gfp_t;
-+
-+/*
-+ * We define u64 as uint64_t for every architecture
-+ * so that we can print it with "%"PRIx64 without getting warnings.
-+ *
-+ * typedef __u64 u64;
-+ * typedef __s64 s64;
-+ */
-+typedef uint64_t u64;
-+typedef int64_t s64;
-+
-+typedef __u32 u32;
-+typedef __s32 s32;
-+
-+typedef __u16 u16;
-+typedef __s16 s16;
-+
-+typedef __u8  u8;
-+typedef __s8  s8;
-+
-+#ifdef __CHECKER__
-+#define __bitwise__ __attribute__((bitwise))
-+#else
-+#define __bitwise__
-+#endif
-+#ifdef __CHECK_ENDIAN__
-+#define __bitwise __bitwise__
-+#else
-+#define __bitwise
-+#endif
-+
-+#define __force
-+#define __user
-+#define __must_check
-+#define __cold
-+
-+typedef __u16 __bitwise __le16;
-+typedef __u16 __bitwise __be16;
-+typedef __u32 __bitwise __le32;
-+typedef __u32 __bitwise __be32;
-+typedef __u64 __bitwise __le64;
-+typedef __u64 __bitwise __be64;
-+
-+struct list_head {
-+	struct list_head *next, *prev;
-+};
-+
-+struct hlist_head {
-+	struct hlist_node *first;
-+};
-+
-+struct hlist_node {
-+	struct hlist_node *next, **pprev;
-+};
-+
-+#endif /* _TOOLS_LINUX_TYPES_H_ */
-diff --git a/tools/lib/lockdep/uinclude/linux/types.h b/tools/lib/lockdep/uinclude/linux/types.h
-deleted file mode 100644
-index 929938f..0000000
---- a/tools/lib/lockdep/uinclude/linux/types.h
-+++ /dev/null
-@@ -1,58 +0,0 @@
--#ifndef _LIBLOCKDEP_LINUX_TYPES_H_
--#define _LIBLOCKDEP_LINUX_TYPES_H_
--
--#include <stdbool.h>
--#include <stddef.h>
--
--#define __SANE_USERSPACE_TYPES__	/* For PPC64, to get LL64 types */
--#include <asm/types.h>
--
--struct page;
--struct kmem_cache;
--
--typedef unsigned gfp_t;
--
--typedef __u64 u64;
--typedef __s64 s64;
--
--typedef __u32 u32;
--typedef __s32 s32;
--
--typedef __u16 u16;
--typedef __s16 s16;
--
--typedef __u8  u8;
--typedef __s8  s8;
--
--#ifdef __CHECKER__
--#define __bitwise__ __attribute__((bitwise))
--#else
--#define __bitwise__
--#endif
--#ifdef __CHECK_ENDIAN__
--#define __bitwise __bitwise__
--#else
--#define __bitwise
--#endif
--
--
--typedef __u16 __bitwise __le16;
--typedef __u16 __bitwise __be16;
--typedef __u32 __bitwise __le32;
--typedef __u32 __bitwise __be32;
--typedef __u64 __bitwise __le64;
--typedef __u64 __bitwise __be64;
--
--struct list_head {
--	struct list_head *next, *prev;
--};
--
--struct hlist_head {
--	struct hlist_node *first;
--};
--
--struct hlist_node {
--	struct hlist_node *next, **pprev;
--};
--
--#endif
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 81783c2..45da209 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -8,6 +8,7 @@ tools/include/asm/bug.h
- tools/include/linux/compiler.h
- tools/include/linux/hash.h
- tools/include/linux/export.h
-+tools/include/linux/types.h
- include/linux/const.h
- include/linux/perf_event.h
- include/linux/rbtree.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index bd11e8a..2baf61c 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -227,7 +227,7 @@ LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/rbtree.h
- LIB_H += util/include/linux/rbtree_augmented.h
- LIB_H += util/include/linux/string.h
--LIB_H += util/include/linux/types.h
-+LIB_H += ../include/linux/types.h
- LIB_H += util/include/linux/linkage.h
- LIB_H += util/include/asm/asm-offsets.h
- LIB_H += ../include/asm/bug.h
-@@ -252,7 +252,6 @@ LIB_H += util/event.h
- LIB_H += util/evsel.h
- LIB_H += util/evlist.h
- LIB_H += util/exec_cmd.h
--LIB_H += util/types.h
- LIB_H += util/levenshtein.h
- LIB_H += util/machine.h
- LIB_H += util/map.h
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-index fc819ca..7df517a 100644
---- a/tools/perf/arch/x86/include/perf_regs.h
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -2,7 +2,7 @@
- #define ARCH_PERF_REGS_H
- 
- #include <stdlib.h>
--#include "../../util/types.h"
-+#include <linux/types.h>
- #include <asm/perf_regs.h>
- 
- void perf_regs_load(u64 *regs);
-diff --git a/tools/perf/arch/x86/util/tsc.c b/tools/perf/arch/x86/util/tsc.c
-index b2519e4..40021fa 100644
---- a/tools/perf/arch/x86/util/tsc.c
-+++ b/tools/perf/arch/x86/util/tsc.c
-@@ -4,7 +4,7 @@
- #include <linux/perf_event.h>
- 
- #include "../../perf.h"
--#include "../../util/types.h"
-+#include <linux/types.h>
- #include "../../util/debug.h"
- #include "tsc.h"
- 
-diff --git a/tools/perf/arch/x86/util/tsc.h b/tools/perf/arch/x86/util/tsc.h
-index a24dec8..2affe03 100644
---- a/tools/perf/arch/x86/util/tsc.h
-+++ b/tools/perf/arch/x86/util/tsc.h
-@@ -1,7 +1,7 @@
- #ifndef TOOLS_PERF_ARCH_X86_UTIL_TSC_H__
- #define TOOLS_PERF_ARCH_X86_UTIL_TSC_H__
- 
--#include "../../util/types.h"
-+#include <linux/types.h>
- 
- struct perf_tsc_conversion {
- 	u16 time_shift;
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index ebdad33..5aa8ac4 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -173,9 +173,8 @@
- #include <sys/types.h>
- #include <sys/syscall.h>
- 
-+#include <linux/types.h>
- #include <linux/perf_event.h>
--#include "util/types.h"
--#include <stdbool.h>
- 
- /*
-  * prctl(PR_TASK_PERF_EVENTS_DISABLE) will (cheaply) disable all
-@@ -202,7 +201,6 @@ static inline unsigned long long rdclock(void)
- /*
-  * Pick up some kernel type conventions:
-  */
--#define __user
- #define asmlinkage
- 
- #define unlikely(x)	__builtin_expect(!!(x), 0)
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 00218f5..2dfc9ad 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -1,4 +1,3 @@
--
- /*
-  * The struct perf_event_attr test support.
-  *
-@@ -19,14 +18,8 @@
-  * permissions. All the event text files are stored there.
-  */
- 
--/*
-- * Powerpc needs __SANE_USERSPACE_TYPES__ before <linux/types.h> to select
-- * 'int-ll64.h' and avoid compile warnings when printing __u64 with %llu.
-- */
--#define __SANE_USERSPACE_TYPES__
- #include <stdlib.h>
- #include <stdio.h>
--#include <inttypes.h>
- #include <linux/types.h>
- #include <linux/kernel.h>
- #include "../perf.h"
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index bfb1869..adf3de3 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -1,8 +1,7 @@
--#include <sys/types.h>
-+#include <linux/types.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <stdio.h>
--#include <inttypes.h>
- #include <ctype.h>
- #include <string.h>
- 
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 9cc81a3..3e6cb17 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -1,7 +1,7 @@
- #include "util.h"
- 
- #include <stdlib.h>
--#include <sys/types.h>
-+#include <linux/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
- #include <string.h>
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index c059ee8..108f0cd 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -1,5 +1,5 @@
- #include <linux/compiler.h>
--#include <sys/types.h>
-+#include <linux/types.h>
- #include <unistd.h>
- #include "tests.h"
- #include "debug.h"
-diff --git a/tools/perf/tests/keep-tracking.c b/tools/perf/tests/keep-tracking.c
-index 497957f..7a5ab7b 100644
---- a/tools/perf/tests/keep-tracking.c
-+++ b/tools/perf/tests/keep-tracking.c
-@@ -1,4 +1,4 @@
--#include <sys/types.h>
-+#include <linux/types.h>
- #include <unistd.h>
- #include <sys/prctl.h>
- 
-diff --git a/tools/perf/tests/parse-no-sample-id-all.c b/tools/perf/tests/parse-no-sample-id-all.c
-index e117b6c..905019f 100644
---- a/tools/perf/tests/parse-no-sample-id-all.c
-+++ b/tools/perf/tests/parse-no-sample-id-all.c
-@@ -1,4 +1,4 @@
--#include <sys/types.h>
-+#include <linux/types.h>
- #include <stddef.h>
- 
- #include "tests.h"
-diff --git a/tools/perf/tests/perf-time-to-tsc.c b/tools/perf/tests/perf-time-to-tsc.c
-index 47146d3..3b7cd4d 100644
---- a/tools/perf/tests/perf-time-to-tsc.c
-+++ b/tools/perf/tests/perf-time-to-tsc.c
-@@ -1,7 +1,6 @@
- #include <stdio.h>
--#include <sys/types.h>
- #include <unistd.h>
--#include <inttypes.h>
-+#include <linux/types.h>
- #include <sys/prctl.h>
- 
- #include "parse-events.h"
-diff --git a/tools/perf/tests/rdpmc.c b/tools/perf/tests/rdpmc.c
-index 46649c2..e59143f 100644
---- a/tools/perf/tests/rdpmc.c
-+++ b/tools/perf/tests/rdpmc.c
-@@ -2,7 +2,7 @@
- #include <stdlib.h>
- #include <signal.h>
- #include <sys/mman.h>
--#include "types.h"
-+#include <linux/types.h>
- #include "perf.h"
- #include "debug.h"
- #include "tests.h"
-diff --git a/tools/perf/tests/sample-parsing.c b/tools/perf/tests/sample-parsing.c
-index 0014d3c..7ae8d17 100644
---- a/tools/perf/tests/sample-parsing.c
-+++ b/tools/perf/tests/sample-parsing.c
-@@ -1,5 +1,5 @@
- #include <stdbool.h>
--#include <inttypes.h>
-+#include <linux/types.h>
- 
- #include "util.h"
- #include "event.h"
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index 118cca2..03d4d62 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -1,9 +1,7 @@
- #ifndef _PERF_UI_BROWSER_H_
- #define _PERF_UI_BROWSER_H_ 1
- 
--#include <stdbool.h>
--#include <sys/types.h>
--#include "../types.h"
-+#include <linux/types.h>
- 
- #define HE_COLORSET_TOP		50
- #define HE_COLORSET_MEDIUM	51
-diff --git a/tools/perf/ui/progress.h b/tools/perf/ui/progress.h
-index 29ec8ef..f34f89e 100644
---- a/tools/perf/ui/progress.h
-+++ b/tools/perf/ui/progress.h
-@@ -1,7 +1,7 @@
- #ifndef _PERF_UI_PROGRESS_H_
- #define _PERF_UI_PROGRESS_H_ 1
- 
--#include <../types.h>
-+#include <linux/types.h>
- 
- void ui_progress__finish(void);
-  
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 56ad4f5..112d6e2 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -3,7 +3,7 @@
- 
- #include <stdbool.h>
- #include <stdint.h>
--#include "types.h"
-+#include <linux/types.h>
- #include "symbol.h"
- #include "hist.h"
- #include "sort.h"
-diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
-index 845ef86..ae39256 100644
---- a/tools/perf/util/build-id.h
-+++ b/tools/perf/util/build-id.h
-@@ -4,7 +4,7 @@
- #define BUILD_ID_SIZE 20
- 
- #include "tool.h"
--#include "types.h"
-+#include <linux/types.h>
- 
- extern struct perf_tool build_id__mark_dso_hit_ops;
- struct dso;
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index ab06f1c..38efe95 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -4,7 +4,7 @@
- #include <linux/types.h>
- #include <linux/rbtree.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <linux/types.h>
- #include "map.h"
- #include "build-id.h"
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 0c581d0..a52e9a5 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -5,12 +5,12 @@
- #include <stdbool.h>
- #include <stddef.h>
- #include <linux/perf_event.h>
--#include "types.h"
-+#include <linux/types.h>
- #include "xyarray.h"
- #include "cgroup.h"
- #include "hist.h"
- #include "symbol.h"
-- 
-+
- struct perf_counts_values {
- 	union {
- 		struct {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index a2d047b..d08cfe4 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -4,10 +4,10 @@
- #include <linux/perf_event.h>
- #include <sys/types.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <linux/bitmap.h>
-+#include <linux/types.h>
- #include "event.h"
- 
--#include <linux/bitmap.h>
- 
- enum {
- 	HEADER_RESERVED		= 0,	/* always cleared */
-diff --git a/tools/perf/util/include/linux/bitmap.h b/tools/perf/util/include/linux/bitmap.h
-index bb162e4..01ffd12 100644
---- a/tools/perf/util/include/linux/bitmap.h
-+++ b/tools/perf/util/include/linux/bitmap.h
-@@ -4,6 +4,9 @@
- #include <string.h>
- #include <linux/bitops.h>
- 
-+#define DECLARE_BITMAP(name,bits) \
-+	unsigned long name[BITS_TO_LONGS(bits)]
-+
- int __bitmap_weight(const unsigned long *bitmap, int bits);
- void __bitmap_or(unsigned long *dst, const unsigned long *bitmap1,
- 		 const unsigned long *bitmap2, int bits);
-diff --git a/tools/perf/util/include/linux/list.h b/tools/perf/util/include/linux/list.h
-index bfe0a2a..76ddbc7 100644
---- a/tools/perf/util/include/linux/list.h
-+++ b/tools/perf/util/include/linux/list.h
-@@ -1,4 +1,5 @@
- #include <linux/kernel.h>
-+#include <linux/types.h>
- 
- #include "../../../../include/linux/list.h"
- 
-diff --git a/tools/perf/util/include/linux/types.h b/tools/perf/util/include/linux/types.h
-deleted file mode 100644
-index eb46478..0000000
---- a/tools/perf/util/include/linux/types.h
-+++ /dev/null
-@@ -1,29 +0,0 @@
--#ifndef _PERF_LINUX_TYPES_H_
--#define _PERF_LINUX_TYPES_H_
--
--#include <asm/types.h>
--
--#ifndef __bitwise
--#define __bitwise
--#endif
--
--#ifndef __le32
--typedef __u32 __bitwise __le32;
--#endif
--
--#define DECLARE_BITMAP(name,bits) \
--	unsigned long name[BITS_TO_LONGS(bits)]
--
--struct list_head {
--	struct list_head *next, *prev;
--};
--
--struct hlist_head {
--	struct hlist_node *first;
--};
--
--struct hlist_node {
--	struct hlist_node *next, **pprev;
--};
--
--#endif
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index d6445b2..ae2d451 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -6,7 +6,7 @@
- #include <linux/rbtree.h>
- #include <stdio.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <linux/types.h>
- 
- enum map_type {
- 	MAP__FUNCTION = 0,
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index f1cb4c4..df094b4 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -6,9 +6,8 @@
- 
- #include <linux/list.h>
- #include <stdbool.h>
--#include "types.h"
-+#include <linux/types.h>
- #include <linux/perf_event.h>
--#include "types.h"
- 
- struct list_head;
- struct perf_evsel;
-diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
-index ac9db9f..0bc87ba 100644
---- a/tools/perf/util/parse-events.y
-+++ b/tools/perf/util/parse-events.y
-@@ -9,7 +9,7 @@
- 
- #include <linux/compiler.h>
- #include <linux/list.h>
--#include "types.h"
-+#include <linux/types.h>
- #include "util.h"
- #include "parse-events.h"
- #include "parse-events-bison.h"
-diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
-index d6e8b6a..79c78f7 100644
---- a/tools/perf/util/perf_regs.h
-+++ b/tools/perf/util/perf_regs.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_REGS_H
- #define __PERF_REGS_H
- 
--#include "types.h"
-+#include <linux/types.h>
- #include "event.h"
- 
- #ifdef HAVE_PERF_REGS_SUPPORT
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 8b64125..c14a543 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -1,7 +1,7 @@
- #ifndef __PMU_H
- #define __PMU_H
- 
--#include <linux/bitops.h>
-+#include <linux/bitmap.h>
- #include <linux/perf_event.h>
- #include <stdbool.h>
- 
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index ae8ccd7..5667fc3 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_STATS_H
- #define __PERF_STATS_H
- 
--#include "types.h"
-+#include <linux/types.h>
- 
- struct stats
- {
-diff --git a/tools/perf/util/svghelper.c b/tools/perf/util/svghelper.c
-index 43262b8..6a0a13d 100644
---- a/tools/perf/util/svghelper.c
-+++ b/tools/perf/util/svghelper.c
-@@ -17,7 +17,7 @@
- #include <stdlib.h>
- #include <unistd.h>
- #include <string.h>
--#include <linux/bitops.h>
-+#include <linux/bitmap.h>
- 
- #include "perf.h"
- #include "svghelper.h"
-diff --git a/tools/perf/util/svghelper.h b/tools/perf/util/svghelper.h
-index f7b4d6e..e3aff53 100644
---- a/tools/perf/util/svghelper.h
-+++ b/tools/perf/util/svghelper.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_SVGHELPER_H
- #define __PERF_SVGHELPER_H
- 
--#include "types.h"
-+#include <linux/types.h>
- 
- extern void open_svg(const char *filename, int cpus, int rows, u64 start, u64 end);
- extern void svg_box(int Yslot, u64 start, u64 end, const char *type);
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index dab14d0..f92c37a 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -2,7 +2,7 @@
- #define __PERF_TOP_H 1
- 
- #include "tool.h"
--#include "types.h"
-+#include <linux/types.h>
- #include <stddef.h>
- #include <stdbool.h>
- #include <termios.h>
-diff --git a/tools/perf/util/types.h b/tools/perf/util/types.h
-deleted file mode 100644
-index 5f3689a..0000000
---- a/tools/perf/util/types.h
-+++ /dev/null
-@@ -1,19 +0,0 @@
--#ifndef __PERF_TYPES_H
--#define __PERF_TYPES_H
--
--#include <stdint.h>
--
--/*
-- * We define u64 as uint64_t for every architecture
-- * so that we can print it with "%"PRIx64 without getting warnings.
-- */
--typedef uint64_t	   u64;
--typedef int64_t		   s64;
--typedef unsigned int	   u32;
--typedef signed int	   s32;
--typedef unsigned short	   u16;
--typedef signed short	   s16;
--typedef unsigned char	   u8;
--typedef signed char	   s8;
--
--#endif /* __PERF_TYPES_H */
-diff --git a/tools/perf/util/unwind-libdw.c b/tools/perf/util/unwind-libdw.c
-index 67db73e..5ec80a5 100644
---- a/tools/perf/util/unwind-libdw.c
-+++ b/tools/perf/util/unwind-libdw.c
-@@ -7,7 +7,7 @@
- #include "unwind-libdw.h"
- #include "machine.h"
- #include "thread.h"
--#include "types.h"
-+#include <linux/types.h>
- #include "event.h"
- #include "perf_regs.h"
- 
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index b031316..f030612 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -1,7 +1,7 @@
- #ifndef __UNWIND_H
- #define __UNWIND_H
- 
--#include "types.h"
-+#include <linux/types.h>
- #include "event.h"
- #include "symbol.h"
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 6995d66..b03da44 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -69,7 +69,7 @@
- #include <sys/ioctl.h>
- #include <inttypes.h>
- #include <linux/magic.h>
--#include "types.h"
-+#include <linux/types.h>
- #include <sys/ttydefaults.h>
- #include <api/fs/debugfs.h>
- #include <termios.h>
-diff --git a/tools/perf/util/values.h b/tools/perf/util/values.h
-index 2fa967e..b21a80c 100644
---- a/tools/perf/util/values.h
-+++ b/tools/perf/util/values.h
-@@ -1,7 +1,7 @@
- #ifndef __PERF_VALUES_H
- #define __PERF_VALUES_H
- 
--#include "types.h"
-+#include <linux/types.h>
- 
- struct perf_read_values {
- 	int threads;
-diff --git a/tools/virtio/linux/kernel.h b/tools/virtio/linux/kernel.h
-index fba7059..1e8ce69 100644
---- a/tools/virtio/linux/kernel.h
-+++ b/tools/virtio/linux/kernel.h
-@@ -38,13 +38,6 @@ struct page {
- 
- #define __printf(a,b) __attribute__((format(printf,a,b)))
- 
--typedef enum {
--	GFP_KERNEL,
--	GFP_ATOMIC,
--	__GFP_HIGHMEM,
--	__GFP_HIGH
--} gfp_t;
--
- #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
- 
- extern void *__kmalloc_fake, *__kfree_ignore_start, *__kfree_ignore_end;
-diff --git a/tools/virtio/linux/types.h b/tools/virtio/linux/types.h
-deleted file mode 100644
-index f8ebb9a..0000000
---- a/tools/virtio/linux/types.h
-+++ /dev/null
-@@ -1,28 +0,0 @@
--#ifndef TYPES_H
--#define TYPES_H
--#include <stdint.h>
--
--#define __force
--#define __user
--#define __must_check
--#define __cold
--
--typedef uint64_t u64;
--typedef int64_t s64;
--typedef uint32_t u32;
--typedef int32_t s32;
--typedef uint16_t u16;
--typedef int16_t s16;
--typedef uint8_t u8;
--typedef int8_t s8;
--
--typedef uint64_t __u64;
--typedef int64_t __s64;
--typedef uint32_t __u32;
--typedef int32_t __s32;
--typedef uint16_t __u16;
--typedef int16_t __s16;
--typedef uint8_t __u8;
--typedef int8_t __s8;
--
--#endif /* TYPES_H */
--- 
-1.8.3.1
-
