@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210AbaEEPvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:51:39 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41538 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673AbaEEPvY (ORCPT
+	id S1754837AbaEEPzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:55:06 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:42929 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753572AbaEEPy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:51:24 -0400
-Date: Mon, 5 May 2014 08:51:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 0/6] ARM: sunxi: Machine code cleanup
-Message-ID: <20140505155113.GB25199@roeck-us.net>
-References: <1399259284-6282-1-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399259284-6282-1-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 May 2014 11:54:59 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 8/9] ARM: STi: DT: STiH415: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
+Date: Mon,  5 May 2014 17:53:42 +0200
+Message-Id: <1399305223-18703-9-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1399305223-18703-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-05_02:2014-05-05,2014-05-05,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 04, 2014 at 10:07:58PM -0500, Maxime Ripard wrote:
-> Hi,
-> 
-> This serie moves the restart code out of the mach-sunxi directory to
-> either the watchdog driver or to a new driver in drivers/power/reset.
-> 
-> Since the reset code was pretty much all the code left in the
-> mach-sunxi directory for all the SoCs but the A31, the only thing left
-> into mach-sunxi are empty machine definition.
-> 
-Hi Maxime,
+CLK_S_GMAC0_PHY &  CLK_S_ETH1_PH clocks are no longer used.
 
-what changed in this version of the series compared to the previous
-version ? Is it just the different directory for the reset driver ?
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ arch/arm/boot/dts/stih415-clock.dtsi | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-Thanks,
-Guenter
+diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
+index 5bdba06..24a7508 100644
+--- a/arch/arm/boot/dts/stih415-clock.dtsi
++++ b/arch/arm/boot/dts/stih415-clock.dtsi
+@@ -32,20 +32,6 @@
+ 			clock-frequency = <500000000>;
+ 		};
+ 
+-		CLKS_GMAC0_PHY: clockgenA1@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLKS_GMAC0_PHY";
+-		};
+-
+-		CLKS_ETH1_PHY: clockgenA0@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLKS_ETH1_PHY";
+-		};
+-
+ 		/*
+ 		 * ClockGenAs on SASG1
+ 		 */
+-- 
+1.9.1
+
