@@ -1,125 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592AbaEFAlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 20:41:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36670 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933507AbaEFAlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 20:41:16 -0400
-From: Bandan Das <bsd@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 3/3] KVM: x86: cache userspace address for faster fetches
-Date: Mon,  5 May 2014 20:40:59 -0400
-Message-Id: <1399336859-7227-4-git-send-email-bsd@redhat.com>
-In-Reply-To: <1399336859-7227-1-git-send-email-bsd@redhat.com>
-References: <1399336859-7227-1-git-send-email-bsd@redhat.com>
+	id S933435AbaEFA5a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 20:57:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57975 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933119AbaEFA53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 20:57:29 -0400
+Date: Mon, 5 May 2014 12:23:44 -0700
+From: Mark Brown <broonie@kernel.org>
+To: Qipan Li <swingboard@gmail.com>
+Cc: baohua@kernel.org, linux-spi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Qipan Li <Qipan.Li@csr.com>,
+        Barry Song <Baohua.Song@csr.com>
+Message-ID: <20140505192344.GL22111@sirena.org.uk>
+References: <1399185156-521-1-git-send-email-swingboard@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iK/wEI4vkfDmI6Zw"
+Content-Disposition: inline
+In-Reply-To: <1399185156-521-1-git-send-email-swingboard@gmail.com>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 216.9.110.15
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 2/2] spi: sirf: decrease the interrupt count and
+ latency of PIO mode
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On every instruction fetch, kvm_read_guest_virt_helper
-does the gva to gpa translation followed by searching for the
-memslot. Store the gva hva mapping so that if there's a match
-we can directly call __copy_from_user()
 
-Suggested-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Bandan Das <bsd@redhat.com>
----
- arch/x86/include/asm/kvm_emulate.h |  7 ++++++-
- arch/x86/kvm/x86.c                 | 33 +++++++++++++++++++++++----------
- 2 files changed, 29 insertions(+), 11 deletions(-)
+--iK/wEI4vkfDmI6Zw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index 085d688..20ccde4 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -323,10 +323,11 @@ struct x86_emulate_ctxt {
- 	int (*execute)(struct x86_emulate_ctxt *ctxt);
- 	int (*check_perm)(struct x86_emulate_ctxt *ctxt);
- 	/*
--	 * The following five fields are cleared together,
-+	 * The following six fields are cleared together,
- 	 * the rest are initialized unconditionally in x86_decode_insn
- 	 * or elsewhere
- 	 */
-+	bool addr_cache_valid;
- 	u8 rex_prefix;
- 	u8 lock_prefix;
- 	u8 rep_prefix;
-@@ -348,6 +349,10 @@ struct x86_emulate_ctxt {
- 	struct fetch_cache fetch;
- 	struct read_cache io_read;
- 	struct read_cache mem_read;
-+	struct {
-+		gfn_t gfn;
-+		unsigned long uaddr;
-+	} addr_cache;
- };
- 
- /* Repeat String Operation Prefix */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index cf69e3b..7afcfc7 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4072,26 +4072,38 @@ static int kvm_read_guest_virt_helper(gva_t addr, void *val, unsigned int bytes,
- 		unsigned toread = min(bytes, (unsigned)PAGE_SIZE - offset);
- 		int ret;
- 		unsigned long uaddr;
-+		gfn_t gfn = addr >> PAGE_SHIFT;
- 
--		ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
--						exception, false,
--						NULL, &uaddr);
--		if (ret != X86EMUL_CONTINUE)
--			return ret;
-+		if (ctxt->addr_cache_valid &&
-+		    (ctxt->addr_cache.gfn == gfn))
-+			uaddr = (ctxt->addr_cache.uaddr << PAGE_SHIFT) +
-+				offset_in_page(addr);
-+		else {
-+			ret = ctxt->ops->memory_prepare(ctxt, addr, toread,
-+							exception, false,
-+							NULL, &uaddr);
-+			if (ret != X86EMUL_CONTINUE)
-+				return ret;
-+
-+			if (unlikely(kvm_is_error_hva(uaddr))) {
-+				r = X86EMUL_PROPAGATE_FAULT;
-+				return r;
-+			}
- 
--		if (unlikely(kvm_is_error_hva(uaddr))) {
--			r = X86EMUL_PROPAGATE_FAULT;
--			return r;
-+			/* Cache gfn and hva */
-+			ctxt->addr_cache.gfn = addr >> PAGE_SHIFT;
-+			ctxt->addr_cache.uaddr = uaddr >> PAGE_SHIFT;
-+			ctxt->addr_cache_valid = true;
- 		}
- 
- 		ret = __copy_from_user(data, (void __user *)uaddr, toread);
- 		if (ret < 0) {
- 			r = X86EMUL_IO_NEEDED;
-+			/* Where else should we invalidate cache ? */
-+			ctxt->ops->memory_finish(ctxt, NULL, uaddr);
- 			return r;
- 		}
- 
--		ctxt->ops->memory_finish(ctxt, NULL, uaddr);
--
- 		bytes -= toread;
- 		data += toread;
- 		addr += toread;
-@@ -4339,6 +4351,7 @@ static void emulator_memory_finish(struct x86_emulate_ctxt *ctxt,
- 	struct kvm_memory_slot *memslot;
- 	gfn_t gfn;
- 
-+	ctxt->addr_cache_valid = false;
- 	if (!opaque)
- 		return;
- 
--- 
-1.8.3.1
+On Sun, May 04, 2014 at 02:32:36PM +0800, Qipan Li wrote:
+> From: Qipan Li <Qipan.Li@csr.com>
+>=20
+> current PIO tranfer method be described as follows:
 
+I'm missing patch 1 here.
+
+--iK/wEI4vkfDmI6Zw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTZ+U9AAoJELSic+t+oim97AsP/RCjZlhIFhZ/s1WGTwl3XBre
+kRbay8CBVbeXd1Y3u0CIekE3vVobxtp7QoXxOqVeqKNl3xgsGBiJN0jmOwhd3Ptd
+Y2VGno+D4jOwMOEWRm+O6s0bCrln97C/c6Wn7ffYTFNiRtttjmlOUGMj0dE8Hjuu
+++5nSyFtZ8qdWcdF02NSN5NezWhGveQFnkrjVVEtH097iT1ENaNO8b5xjIsS89EV
+BIk/yhfMJm9+U+Wth/NS50XCJm/cpeC1pYND3b2zJjHAxfSy6mYE38W8vrtGwuvK
+N0nfcNQMAkRcd3b7GvK1GU3j8M+SZrRunsfB+JdPOwSv5Idvo/dyie5ISCFvl+51
+5or8HHcLEg7uKhzl8Nbsx85gMAdHDa9HkdFit7zMK0VdXJ0nCGayGdQGdUep5YoQ
+MWfY522+/ZvjOuj4YO8zuEORiIcUo+TdWmOvtNq/73SpdY6bsUXKa0BtS/mYWlAR
+LGS2N4AcGPzQ4x5fQB0xMGvf3C9DXzMdbOzmWEIC2Rzrn/wiutdEfV5vk+GbJEzH
+mX/t3DPkoIvNvQ1HWvU9gsRZ5hA+4zxT7FTVvPmdErDYMKQHxLSrR4byFrZycIuG
+ZdgJBjQQEbCcPPdnLRY60xiTBwJ+Xn6aH3tJTL7HW65vVwxv4Rt0ZvgXIyhgBucv
+RvcyhBxlNHhRDw/tuGg4
+=imqF
+-----END PGP SIGNATURE-----
+
+--iK/wEI4vkfDmI6Zw--
