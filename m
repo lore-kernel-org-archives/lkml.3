@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815AbaEEVod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:44:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38876 "EHLO mx1.redhat.com"
+	id S1756835AbaEEVoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:44:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60905 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756517AbaEEVoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:44:32 -0400
-Date: Mon, 5 May 2014 17:44:24 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, serge.hallyn@ubuntu.com,
-        eparis@redhat.com, sgrubb@redhat.com, ebiederm@xmission.com
-Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
-Message-ID: <20140505214424.GB6867@madcap2.tricolour.ca>
-References: <cover.1398176489.git.rgb@redhat.com>
- <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+	id S1755936AbaEEVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 17:44:53 -0400
+Message-ID: <53680639.1080405@ti.com>
+Date: Mon, 5 May 2014 16:44:25 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, Rob Herring <robherring2@gmail.com>
+CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv5 RFC 12/15] hwspinlock/core: add OF helper to parse reserved
+ locks
+References: <1398904476-26200-1-git-send-email-s-anna@ti.com> <1398904476-26200-13-git-send-email-s-anna@ti.com>
+In-Reply-To: <1398904476-26200-13-git-send-email-s-anna@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/05/03, James Bottomley wrote:
-> On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
-> > Questions:
-> > Is there a way to link serial numbers of namespaces involved in migration of a
-> > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-> > identifier for each running instance of a kernel?  Or at least some identifier
-> > within the container migration realm?
+Hi Rob,
+
+On 04/30/2014 07:34 PM, Suman Anna wrote:
+> The property 'hwlock-reserved-locks' will be used to represent
+> the number of locks to be reserved for clients that would need
+> to request/operate on specific locks. A new OF helper function,
+> of_hwspin_lock_get_num_reserved_locks(), is added to minimize
+> duplication in different platform implementations.
 > 
-> Are you asking for a way of distinguishing an migrated container from an
-> unmigrated one?  The answer is pretty much "no" because the job of
-> migration is to restore to the same state as much as possible.
+> The function will return a value of 0 if the property is not
+> defined, so as to support a default behavior of marking all
+> locks as unused and open for anonymous allocations.
+> 
+> Signed-off-by: Suman Anna <s-anna@ti.com>
+> ---
+>  .../devicetree/bindings/hwlock/hwlock.txt          |  3 +++
+>  drivers/hwspinlock/hwspinlock_core.c               | 25 ++++++++++++++++++++++
+>  include/linux/hwspinlock.h                         |  1 +
+>  3 files changed, 29 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> index d538a9b..88d16d2 100644
+> --- a/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+> @@ -18,6 +18,9 @@ Common properties:
+>  			property is needed on hwlock devices, where the number
+>  			of supported locks within a hwlock device cannot be
+>  			read from a register.
+> +- hwlock-reserved-locks: Number of locks to reserve for clients requiring
+> +			specific locks. This value cannot exceed the value of
+> +			hwlock-num-locks.
 
-I hadn't thought to distinguish a migrated container from an unmigrated
-one, but rather I'm more interested in the underlying namespaces.  The
-use of a generation number to identify a migrated namespace may be
-useful along with the logging to tie them together.
+Any suggestions here on the approach? This property falls into a gray
+area as well, as the current approach is somewhat limiting (it doesn't
+support sparse reserved locks, and expects them at the beginning of the
+lock range).
 
-> Reading between the lines, I think your goal is to correlate audit
-> information across a container migration, right?  Ideally the management
-> system should be able to cough up an audit trail for a container
-> wherever it's running and however many times it's been migrated?
+regards
+Suman
 
-The original intent was to track the underlying namespaces themselves.
-This sounds like another layer on top of that which sounds useful but
-that I had not yet considered.
+>  - hwlock-base-id:	An unique base Id for the locks for a particular hwlock
+>  			device. This property is mandatory ONLY if a SoC has
+>  			several hwlock devices.
+> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
+> index e05cea8..e74b55b 100644
+> --- a/drivers/hwspinlock/hwspinlock_core.c
+> +++ b/drivers/hwspinlock/hwspinlock_core.c
+> @@ -286,6 +286,31 @@ int of_hwspin_lock_get_base_id(struct device_node *dn)
+>  EXPORT_SYMBOL_GPL(of_hwspin_lock_get_base_id);
+>  
+>  /**
+> + * of_hwspin_lock_get_num_reserved_locks() - retrieve number of reserved locks
+> + * @dn: device node pointer
+> + *
+> + * This is an OF helper function that can be called by the underlying platform
+> + * specific implementations, to retrieve the number of locks to reserve from
+> + * the hwspinlock device instance's base id. The hwlock-reserved-locks DT
+> + * property needs to be defined for requesting any DT-based locks.
+> + *
+> + * Returns a positive number of locks on success, a default value of 0 if the
+> + * property is missing or an appropriate error code as returned by the OF layer
+> + */
+> +int of_hwspin_lock_get_num_reserved_locks(struct device_node *dn)
+> +{
+> +	unsigned int val = 0;
+> +	int ret;
+> +
+> +	ret = of_property_read_u32(dn, "hwlock-reserved-locks", &val);
+> +	if (!ret || ret == -EINVAL)
+> +		ret = val;
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_reserved_locks);
+> +
+> +/**
+>   * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
+>   * @dn: device node pointer
+>   *
+> diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
+> index d120035..d18431f 100644
+> --- a/include/linux/hwspinlock.h
+> +++ b/include/linux/hwspinlock.h
+> @@ -69,6 +69,7 @@ int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
+>  				const struct of_phandle_args *hwlock_spec);
+>  int of_hwspin_lock_get_base_id(struct device_node *dn);
+>  int of_hwspin_lock_get_num_locks(struct device_node *dn);
+> +int of_hwspin_lock_get_num_reserved_locks(struct device_node *dn);
+>  int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
+>  		const struct hwspinlock_ops *ops, int base_id, int num_locks,
+>  		int num_reserved_locks);
+> 
 
-But yes, that sounds like a good eventual goal.
-
-> In that case, I think your idea of a numeric serial number in a dense
-> range is wrong.  Because the range is dense you're obviously never going
-> to be able to use the same serial number across a migration.  However,
-> if you look at all the management systems for containers, they all have
-> a concept of some unique ID per container, be it name, UUID or even
-> GUID.  I suspect it's that you should be using to tag the audit trail
-> with.
-
-That does sound potentially useful but for the fact that several
-containers could share one or more types of namespaces.
-
-Would logging just a container ID be sufficient for audit purposes?  I'm
-going to have to dig a bit to understand that one because I was unaware
-each container had a unique ID.
-
-I did originally consider a UUID/GUID for namespaces.
-
-> James
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
