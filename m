@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220AbaEEMbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:31:18 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:45218 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128AbaEEMbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:31:13 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        arunkk.samsung@gmail.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH 2/2] ARM: dts: Enable USB 3503 hub on exynos5420-peach-pit
-Date: Mon,  5 May 2014 18:00:56 +0530
-Message-Id: <1399293056-17143-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
-References: <1399293056-17143-1-git-send-email-gautam.vivek@samsung.com>
+	id S932227AbaEEMdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:33:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932128AbaEEMdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 08:33:53 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 00/10] perf tools: perf.h cleanups
+Date: Mon,  5 May 2014 14:33:29 +0200
+Message-Id: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The exynos5420-peach-pit has a SMSC USB3503 connected in
-hardware only mode like a PHY. Enable support for it,
-and add necessary 'reset-gpio' for it.
+hi,
+moving syscall function and arch related defines into
+new header 'perf-sys.h' as requested by Peter in:
+  http://lkml.kernel.org/r/20140502115201.GI30445@twins.programming.kicks-ass.net
 
-This is in correspondance to similar patch by Mark Brown
-7c1b0ec ARM: dts: Enable USB hub on Arndale
+While at it I did some clean ups in perf.h header.
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Hopefully I did not brake anyone's usage of
+perf.h .. let me know ;-)
+
+Also available in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/header_1
+
+thanks,
+jirka
 ---
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 
-Based on 'for-next' branch of kgene's linux-samsung tree with
-following patch:
-[PATCH v4 2/2] ARM: dts: Add peach-pit board support
-http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg29950.html
+Jiri Olsa (10):
+      perf tools: Remove MAX_COUNTERS define from perf.h
+      perf tools: Remove unlikely define from perf.h
+      perf tools: Remove min define from perf.h
+      perf tools: Remove asmlinkage define from perf.h
+      perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
+      perf tools: Move sample data structures from perf.h
+      perf tools: Move perf_call_graph_mode enum from perf.h
+      perf tools: Move syscall and arch specific defines from perf.h
+      perf tools: Move sys_perf_event_open function from perf.h
+      perf tools: Move ACCESS_ONCE from perf.h header
 
- arch/arm/boot/dts/exynos5420-peach-pit.dts |   14 ++++++++++++++
- arch/arm/boot/dts/exynos5420-pinctrl.dtsi  |    7 +++++++
- 2 files changed, 21 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-index fae33dd..24c1e87 100644
---- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
-+++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
-@@ -58,6 +58,20 @@
- 		pinctrl-0 = <&pwm0_out>;
- 		pinctrl-names = "default";
- 	};
-+
-+	usb_hub_bus {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		// SMSC USB3503 connected in hardware only mode as a PHY
-+		usb_hub {
-+			compatible = "smsc,usb3503a";
-+			reset-gpios = <&gpx2 4 1>;
-+			pinctrl-0 = <&usb_hub_reset>;
-+			pinctrl-names = "default";
-+		};
-+	};
- };
- 
- &pinctrl_0 {
-diff --git a/arch/arm/boot/dts/exynos5420-pinctrl.dtsi b/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
-index e62c8eb..8add143 100644
---- a/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/exynos5420-pinctrl.dtsi
-@@ -66,6 +66,13 @@
- 			samsung,pin-pud = <0>;
- 			samsung,pin-drv = <0>;
- 		};
-+
-+		usb_hub_reset: usb-hub-reset {
-+			samsung,pins = "gpx2-4";
-+			samsung,pin-function = <1>;
-+			samsung,pin-pud = <0>;
-+			samsung,pin-drv = <0>;
-+		};
- 	};
- 
- 	pinctrl@13410000 {
--- 
-1.7.10.4
-
+ tools/perf/perf-sys.h       | 190 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/perf.h           | 250 ++++---------------------------------------------------------------------------------------------------
+ tools/perf/util/callchain.h |   7 +++
+ tools/perf/util/event.h     |  24 ++++++++++
+ tools/perf/util/evlist.h    |   2 +
+ tools/perf/util/symbol.h    |   1 +
+ 6 files changed, 232 insertions(+), 242 deletions(-)
+ create mode 100644 tools/perf/perf-sys.h
