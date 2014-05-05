@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764AbaEEQqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 12:46:21 -0400
-Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:34309
-	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753938AbaEEQqU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 12:46:20 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/4] staging: comedi: addi_apci_1564: Further cleanups
-Thread-Topic: [PATCH 0/4] staging: comedi: addi_apci_1564: Further cleanups
-Thread-Index: AQHPZqTs6HD2Dx4tqUyzKK9Q2N2H+JsyNMUw
-Date: Mon, 5 May 2014 16:46:18 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E388BE@P3PWEX4MB008.ex4.secureserver.net>
-References: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754873AbaEEQr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 12:47:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938AbaEEQr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 12:47:56 -0400
+Date: Mon, 5 May 2014 18:47:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: lock_task_sighand() && rcu_boost()
+Message-ID: <20140505164719.GA31758@redhat.com>
+References: <20140503161133.GA8838@redhat.com> <20140504180145.GC8754@linux.vnet.ibm.com> <20140504191757.GA11319@redhat.com> <20140504223804.GF8754@linux.vnet.ibm.com> <20140505132659.GA17996@redhat.com> <20140505152610.GK8754@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505152610.GK8754@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, May 03, 2014 12:54 AM, Chase Southwood wrote:
-> Latest patchset in a continuing cleanup of addi_apci_1564.c.  Main focus
-> is on the auto_attach() function, but also cleaning up some of the old addi
-> common code wrappers.
+On 05/05, Paul E. McKenney wrote:
 >
-> To be applied on top of my prior patchset to this file (the one beginning
-> with [PATCH 1/6] staging: comedi: addi_apci_1564: remove eeprom support code)
->
-> Chase Southwood (4):
->   staging: comedi: addi_apci_1564: board has 32 digital outputs
->   staging: comedi: addi_apci_1564: don't allocate unused subdevices
->   staging: comedi: addi_apci_1564: absorb apci1564_reset()
->   staging: comedi: addi_apci_1564: call apci1564_interrupt() directly
->
->  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 32 -------
->  drivers/staging/comedi/drivers/addi_apci_1564.c    | 98 ++++++++++------------
->  2 files changed, 45 insertions(+), 85 deletions(-)
+> Does the patch below cover it?
 
-Looks good.
+Yes, thanks.
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+> signal: Explain local_irq_save() call
+> 
+> The explicit local_irq_save() in __lock_task_sighand() is needed to avoid
+> a potential deadlock condition, as noted in a841796f11c90d53 (signal:
+> align __lock_task_sighand() irq disabling and RCU).  However, someone
+> reading the code might be forgiven for concluding that this separate
+> local_irq_save() was completely unnecessary.  This commit therefore adds
+> a comment referencing the shiny new block comment on rcu_read_unlock().
+> 
+> Reported-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/signal.c b/kernel/signal.c
+> index 6ea13c09ae56..513e8c252aa4 100644
+> --- a/kernel/signal.c
+> +++ b/kernel/signal.c
+> @@ -1288,6 +1288,10 @@ struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+>  	struct sighand_struct *sighand;
+>  
+>  	for (;;) {
+> +		/*
+> +		 * Disable interrupts early to avoid deadlocks.
+> +		 * See rcu_read_unlock comment header for details.
+> +		 */
+>  		local_irq_save(*flags);
+>  		rcu_read_lock();
+>  		sighand = rcu_dereference(tsk->sighand);
+> 
 
