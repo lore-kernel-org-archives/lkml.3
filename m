@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546AbaEELSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 07:18:06 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37780 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518AbaEELSE (ORCPT
+	id S932141AbaEELSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 07:18:41 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:54885 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaEELSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 07:18:04 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-fe-5367736a7c83
+	Mon, 5 May 2014 07:18:39 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-27-5367738d207e
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -17,202 +17,292 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 03/10] thermal: exynos: remove dead code for HW_MODE calibration
-Date: Mon, 05 May 2014 13:15:32 +0200
-Message-id: <1399288539-1793-4-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 04/10] thermal: exynos: remove dead code for
+ TYPE_TWO_POINT_TRIMMING calibration
+Date: Mon, 05 May 2014 13:15:33 +0200
+Message-id: <1399288539-1793-5-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd2s4vRgg+a1NhYNV0MsNs5Yz2qx
-	Zv9PJouzTW/YLS7vmsNm8bn3CKPFjPP7mCzOnL7EavHkYR+bxfoZr1kcuDwW73nJ5LHlajuL
-	R9+WVYwex29sZ/L4vEkugDWKyyYlNSezLLVI3y6BK+P5m80sBUtMKpp3nmFsYDym3cXIySEh
-	YCLx8MI2VghbTOLCvfVsXYxcHEICixglrh59xQrhdDFJvP7SwQ5SxSZgJTGxfRUjiC0ioCdx
-	48UTJpAiZoHjTBI/f59nA0kICwRI3F04C6yIRUBVYvXf40wgNq+Au8SR5p0sEOsUJbqfTQCr
-	5xTwkNj/8jEziC0EVHPw8WTmCYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB90z
-	6R2MqxosDjEKcDAq8fAmMKcHC7EmlhVX5h5ilOBgVhLhzU4ECvGmJFZWpRblxxeV5qQWH2KU
-	5mBREuc92GodKCSQnliSmp2aWpBaBJNl4uCUamBk7jF5ZX33JeOrdpV1J+csmr7r/yVj1fVN
-	B5ZEb2mviItpEIrUbt0ZbHFAy72xXXbnRoV/HiVX4t9IrJH0MBWcZdG9d6fubZUrfmVvJG+5
-	W8Qa7dpV8GzBp0m3/rrdFL+fseGF7vrdrRks6/3aCt30jt09MCukl03hYA3fLVWJ16z2JR/D
-	FscpsRRnJBpqMRcVJwIAI9idvDYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jAd3e4vRggz1nTC0aroZYbJyxntVi
+	zf6fTBZnm96wW1zeNYfN4nPvEUaLGef3MVmcOX2J1eLJwz42i/UzXrM4cHks3vOSyWPL1XYW
+	j74tqxg9jt/YzuTxeZNcAGsUl01Kak5mWWqRvl0CV8ak5deYC275VmyftZipgfGiQxcjJ4eE
+	gInE381T2CFsMYkL99azdTFycQgJLGKUmL1nHzuE08Uk0fWxnRmkik3ASmJi+ypGEFtEQE/i
+	xosnTCBFzALHmSR+/j7PBpIQFkiSOLH0JZjNIqAq8XjRfLAGXgF3id5NL9gg1ilKdD+bAGZz
+	CnhI7H/5GGyBEFDNwceTmScw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJERx0z6R3
+	MK5qsDjEKMDBqMTDm8CcHizEmlhWXJl7iFGCg1lJhDc7ESjEm5JYWZValB9fVJqTWnyIUZqD
+	RUmc92CrdaCQQHpiSWp2ampBahFMlomDU6qBsWzmv9WWh59N2GXsYJR0x1zyIWdL411nvbOx
+	d54s15kd15u31eGrQ9oCVdlJZw0e9tfWm4qyaOTrlqcq7s648OLNt8T8bVk5dxu/PzVbuE/W
+	u4NV9wjry+3+PEdq/F4L/b4o+GHty4Trt8Q2iKY4sM37pnUnSP/n9bS+ez5visR8F60Syij/
+	qMRSnJFoqMVcVJwIANA+aKM2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Only TYPE_ONE_POINT_TRIMMING calibration is used so remove
+the dead code for TYPE_TWO_POINT_TRIMMING calibration.
 
 There should be no functional changes caused by this patch.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 ---
- drivers/thermal/samsung/exynos_tmu.c      | 33 +------------------------------
- drivers/thermal/samsung/exynos_tmu.h      | 13 ------------
- drivers/thermal/samsung/exynos_tmu_data.c |  3 ---
+ drivers/thermal/samsung/exynos_tmu.c      | 55 ++++++-------------------------
+ drivers/thermal/samsung/exynos_tmu.h      | 20 +----------
+ drivers/thermal/samsung/exynos_tmu_data.c | 17 +---------
  drivers/thermal/samsung/exynos_tmu_data.h |  2 --
- 4 files changed, 1 insertion(+), 50 deletions(-)
+ 4 files changed, 12 insertions(+), 82 deletions(-)
 
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 0d96a51..9f2a5ee 100644
+index 9f2a5ee..903566f 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -76,9 +76,6 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp_code;
- 
--	if (pdata->cal_mode == HW_MODE)
--		return temp;
--
- 	if (data->soc == SOC_ARCH_EXYNOS4210)
- 		/* temp should range between 25 and 125 */
- 		if (temp < 25 || temp > 125) {
-@@ -113,9 +110,6 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	int temp;
- 
--	if (pdata->cal_mode == HW_MODE)
--		return temp_code;
--
- 	if (data->soc == SOC_ARCH_EXYNOS4210)
- 		/* temp_code should range between 75 and 175 */
- 		if (temp_code < 75 || temp_code > 175) {
-@@ -164,9 +158,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	if (TMU_SUPPORTS(pdata, TRIM_RELOAD))
- 		__raw_writel(1, data->base + reg->triminfo_ctrl);
- 
--	if (pdata->cal_mode == HW_MODE)
--		goto skip_calib_data;
--
- 	/* Save trimming info in order to perform calibration */
- 	if (data->soc == SOC_ARCH_EXYNOS5440) {
- 		/*
-@@ -202,7 +193,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 			(pdata->efuse_value >> reg->triminfo_85_shift) &
- 			EXYNOS_TMU_TEMP_MASK;
- 
--skip_calib_data:
- 	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
- 		dev_err(&pdev->dev, "Invalid max trigger level\n");
- 		ret = -EINVAL;
-@@ -311,7 +301,7 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
- 	struct exynos_tmu_platform_data *pdata = data->pdata;
- 	const struct exynos_tmu_registers *reg = pdata->registers;
--	unsigned int con, interrupt_en, cal_val;
-+	unsigned int con, interrupt_en;
- 
- 	mutex_lock(&data->lock);
- 	clk_enable(data->clk);
-@@ -337,27 +327,6 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
- 		con |= (pdata->noise_cancel_mode << reg->therm_trip_mode_shift);
- 	}
- 
--	if (pdata->cal_mode == HW_MODE) {
--		con &= ~(reg->calib_mode_mask << reg->calib_mode_shift);
--		cal_val = 0;
--		switch (pdata->cal_type) {
--		case TYPE_TWO_POINT_TRIMMING:
--			cal_val = 3;
--			break;
--		case TYPE_ONE_POINT_TRIMMING_85:
--			cal_val = 2;
--			break;
--		case TYPE_ONE_POINT_TRIMMING_25:
--			cal_val = 1;
--			break;
--		case TYPE_NONE:
--			break;
--		default:
--			dev_err(&pdev->dev, "Invalid calibration type, using none\n");
--		}
--		con |= cal_val << reg->calib_mode_shift;
--	}
--
- 	if (on) {
- 		con |= (1 << reg->core_en_shift);
- 		interrupt_en =
-diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
-index 80dc899..e417af8 100644
---- a/drivers/thermal/samsung/exynos_tmu.h
-+++ b/drivers/thermal/samsung/exynos_tmu.h
-@@ -34,11 +34,6 @@ enum calibration_type {
- 	TYPE_NONE,
+@@ -47,8 +47,7 @@
+  * @irq_work: pointer to the irq work structure.
+  * @lock: lock to implement synchronization.
+  * @clk: pointer to the clock structure.
+- * @temp_error1: fused value of the first point trim.
+- * @temp_error2: fused value of the second point trim.
++ * @temp_error: fused value of the first point trim.
+  * @regulator: pointer to the TMU regulator structure.
+  * @reg_conf: pointer to structure to register with core thermal.
+  */
+@@ -62,14 +61,13 @@ struct exynos_tmu_data {
+ 	struct work_struct irq_work;
+ 	struct mutex lock;
+ 	struct clk *clk;
+-	u8 temp_error1, temp_error2;
++	u8 temp_error;
+ 	struct regulator *regulator;
+ 	struct thermal_sensor_conf *reg_conf;
  };
  
--enum calibration_mode {
--	SW_MODE,
--	HW_MODE,
+ /*
+  * TMU treats temperature as a mapped temperature code.
+- * The temperature is converted differently depending on the calibration type.
+  */
+ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
+ {
+@@ -83,20 +81,7 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
+ 			goto out;
+ 		}
+ 
+-	switch (pdata->cal_type) {
+-	case TYPE_TWO_POINT_TRIMMING:
+-		temp_code = (temp - pdata->first_point_trim) *
+-			(data->temp_error2 - data->temp_error1) /
+-			(pdata->second_point_trim - pdata->first_point_trim) +
+-			data->temp_error1;
+-		break;
+-	case TYPE_ONE_POINT_TRIMMING:
+-		temp_code = temp + data->temp_error1 - pdata->first_point_trim;
+-		break;
+-	default:
+-		temp_code = temp + pdata->default_temp_offset;
+-		break;
+-	}
++	temp_code = temp + data->temp_error - pdata->first_point_trim;
+ out:
+ 	return temp_code;
+ }
+@@ -117,20 +102,7 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code)
+ 			goto out;
+ 		}
+ 
+-	switch (pdata->cal_type) {
+-	case TYPE_TWO_POINT_TRIMMING:
+-		temp = (temp_code - data->temp_error1) *
+-			(pdata->second_point_trim - pdata->first_point_trim) /
+-			(data->temp_error2 - data->temp_error1) +
+-			pdata->first_point_trim;
+-		break;
+-	case TYPE_ONE_POINT_TRIMMING:
+-		temp = temp_code - data->temp_error1 + pdata->first_point_trim;
+-		break;
+-	default:
+-		temp = temp_code - pdata->default_temp_offset;
+-		break;
+-	}
++	temp = temp_code - data->temp_error + pdata->first_point_trim;
+ out:
+ 	return temp;
+ }
+@@ -179,19 +151,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	} else {
+ 		trim_info = readl(data->base + reg->triminfo_data);
+ 	}
+-	data->temp_error1 = trim_info & EXYNOS_TMU_TEMP_MASK;
+-	data->temp_error2 = ((trim_info >> reg->triminfo_85_shift) &
+-				EXYNOS_TMU_TEMP_MASK);
+-
+-	if (!data->temp_error1 ||
+-		(pdata->min_efuse_value > data->temp_error1) ||
+-		(data->temp_error1 > pdata->max_efuse_value))
+-		data->temp_error1 = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+-
+-	if (!data->temp_error2)
+-		data->temp_error2 =
+-			(pdata->efuse_value >> reg->triminfo_85_shift) &
+-			EXYNOS_TMU_TEMP_MASK;
++	data->temp_error = trim_info & EXYNOS_TMU_TEMP_MASK;
++
++	if (!data->temp_error ||
++	    pdata->min_efuse_value > data->temp_error ||
++	    data->temp_error > pdata->max_efuse_value)
++		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
+ 
+ 	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
+ 		dev_err(&pdev->dev, "Invalid max trigger level\n");
+diff --git a/drivers/thermal/samsung/exynos_tmu.h b/drivers/thermal/samsung/exynos_tmu.h
+index e417af8..186e39e 100644
+--- a/drivers/thermal/samsung/exynos_tmu.h
++++ b/drivers/thermal/samsung/exynos_tmu.h
+@@ -26,14 +26,6 @@
+ 
+ #include "exynos_thermal_common.h"
+ 
+-enum calibration_type {
+-	TYPE_ONE_POINT_TRIMMING,
+-	TYPE_ONE_POINT_TRIMMING_25,
+-	TYPE_ONE_POINT_TRIMMING_85,
+-	TYPE_TWO_POINT_TRIMMING,
+-	TYPE_NONE,
 -};
 -
  enum soc_type {
  	SOC_ARCH_EXYNOS4210 = 1,
  	SOC_ARCH_EXYNOS4412,
-@@ -92,10 +87,6 @@ enum soc_type {
-  * @buf_slope_sel_shift: shift bits of amplifier gain value in tmu_ctrl
- 	register.
-  * @buf_slope_sel_mask: mask bits of amplifier gain value in tmu_ctrl register.
-- * @calib_mode_shift: shift bits of calibration mode value in tmu_ctrl
--	register.
-- * @calib_mode_mask: mask bits of calibration mode value in tmu_ctrl
--	register.
-  * @core_en_shift: shift bits of TMU core enable bit in tmu_ctrl register.
-  * @tmu_status: register drescribing the TMU status.
-  * @tmu_cur_temp: register containing the current temperature of the TMU.
-@@ -139,8 +130,6 @@ struct exynos_tmu_registers {
- 	u32	therm_trip_en_shift;
- 	u32	buf_slope_sel_shift;
- 	u32	buf_slope_sel_mask;
--	u32	calib_mode_shift;
--	u32	calib_mode_mask;
- 	u32	core_en_shift;
+@@ -74,8 +66,6 @@ enum soc_type {
+  * bitfields. The register validity, offsets and bitfield values may vary
+  * slightly across different exynos SOC's.
+  * @triminfo_data: register containing 2 pont trimming data
+- * @triminfo_25_shift: shift bit of the 25 C trim value in triminfo_data reg.
+- * @triminfo_85_shift: shift bit of the 85 C trim value in triminfo_data reg.
+  * @triminfo_ctrl: trim info controller register.
+  * @tmu_ctrl: TMU main controller register.
+  * @test_mux_addr_shift: shift bits of test mux address.
+@@ -116,8 +106,6 @@ enum soc_type {
+  */
+ struct exynos_tmu_registers {
+ 	u32	triminfo_data;
+-	u32	triminfo_25_shift;
+-	u32	triminfo_85_shift;
  
- 	u32	tmu_status;
-@@ -222,7 +211,6 @@ struct exynos_tmu_registers {
-  * @default_temp_offset: default temperature offset in case of no trimming
+ 	u32	triminfo_ctrl;
+ 
+@@ -207,10 +195,7 @@ struct exynos_tmu_registers {
+  * @min_efuse_value: minimum valid trimming data
+  * @max_efuse_value: maximum valid trimming data
+  * @first_point_trim: temp value of the first point trimming
+- * @second_point_trim: temp value of the second point trimming
+- * @default_temp_offset: default temperature offset in case of no trimming
   * @test_mux; information if SoC supports test MUX
-  * @cal_type: calibration type for temperature
-- * @cal_mode: calibration mode for temperature
+- * @cal_type: calibration type for temperature
   * @freq_clip_table: Table representing frequency reduction percentage.
   * @freq_tab_count: Count of the above table as frequency reduction may
   *	applicable to only some of the trigger levels.
-@@ -253,7 +241,6 @@ struct exynos_tmu_platform_data {
+@@ -232,15 +217,12 @@ struct exynos_tmu_platform_data {
+ 	u8 reference_voltage;
+ 	u8 noise_cancel_mode;
+ 
+-	u32 efuse_value;
++	u8 efuse_value;
+ 	u32 min_efuse_value;
+ 	u32 max_efuse_value;
+ 	u8 first_point_trim;
+-	u8 second_point_trim;
+-	u8 default_temp_offset;
  	u8 test_mux;
  
- 	enum calibration_type cal_type;
--	enum calibration_mode cal_mode;
+-	enum calibration_type cal_type;
  	enum soc_type type;
  	struct freq_clip_table freq_tab[4];
  	unsigned int freq_tab_count;
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.c b/drivers/thermal/samsung/exynos_tmu_data.c
-index 36d64d6..4b992d9 100644
+index 4b992d9..c32d186 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.c
 +++ b/drivers/thermal/samsung/exynos_tmu_data.c
-@@ -205,8 +205,6 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
- 	.therm_trip_en_shift = EXYNOS_TMU_THERM_TRIP_EN_SHIFT,
- 	.buf_slope_sel_shift = EXYNOS_TMU_BUF_SLOPE_SEL_SHIFT,
- 	.buf_slope_sel_mask = EXYNOS_TMU_BUF_SLOPE_SEL_MASK,
--	.calib_mode_shift = EXYNOS_TMU_CALIB_MODE_SHIFT,
--	.calib_mode_mask = EXYNOS_TMU_CALIB_MODE_MASK,
- 	.core_en_shift = EXYNOS_TMU_CORE_EN_SHIFT,
- 	.tmu_status = EXYNOS5440_TMU_S0_7_STATUS,
- 	.tmu_cur_temp = EXYNOS5440_TMU_S0_7_TEMP,
-@@ -243,7 +241,6 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+@@ -27,8 +27,6 @@
+ #if defined(CONFIG_CPU_EXYNOS4210)
+ static const struct exynos_tmu_registers exynos4210_tmu_registers = {
+ 	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+-	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+-	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+ 	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+ 	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+ 	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+@@ -66,12 +64,9 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ 		.max_trigger_level = 4,
+ 		.gain = 15,
+ 		.reference_voltage = 7,
+-		.cal_type = TYPE_ONE_POINT_TRIMMING,
+ 		.min_efuse_value = 40,
+ 		.max_efuse_value = 100,
+ 		.first_point_trim = 25,
+-		.second_point_trim = 85,
+-		.default_temp_offset = 50,
+ 		.freq_tab[0] = {
+ 			.freq_clip_max = 800 * 1000,
+ 			.temp_level = 85,
+@@ -93,8 +88,6 @@ struct exynos_tmu_init_data const exynos4210_default_tmu_data = {
+ #if defined(CONFIG_SOC_EXYNOS4412) || defined(CONFIG_SOC_EXYNOS5250)
+ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.triminfo_data = EXYNOS_TMU_REG_TRIMINFO,
+-	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+-	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+ 	.triminfo_ctrl = EXYNOS_TMU_TRIMINFO_CON,
+ 	.tmu_ctrl = EXYNOS_TMU_REG_CONTROL,
+ 	.test_mux_addr_shift = EXYNOS4412_MUX_ADDR_SHIFT,
+@@ -145,13 +138,10 @@ static const struct exynos_tmu_registers exynos4412_tmu_registers = {
+ 	.gain = 8, \
  	.reference_voltage = 16, \
  	.noise_cancel_mode = 4, \
- 	.cal_type = TYPE_ONE_POINT_TRIMMING, \
--	.cal_mode = 0, \
- 	.efuse_value = 0x5b2d, \
+-	.cal_type = TYPE_ONE_POINT_TRIMMING, \
+ 	.efuse_value = 55, \
+ 	.min_efuse_value = 40, \
+ 	.max_efuse_value = 100, \
+ 	.first_point_trim = 25, \
+-	.second_point_trim = 85, \
+-	.default_temp_offset = 50, \
+ 	.freq_tab[0] = { \
+ 		.freq_clip_max = 1400 * 1000, \
+ 		.temp_level = 70, \
+@@ -195,8 +185,6 @@ struct exynos_tmu_init_data const exynos5250_default_tmu_data = {
+ #if defined(CONFIG_SOC_EXYNOS5440)
+ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.triminfo_data = EXYNOS5440_TMU_S0_7_TRIM,
+-	.triminfo_25_shift = EXYNOS_TRIMINFO_25_SHIFT,
+-	.triminfo_85_shift = EXYNOS_TRIMINFO_85_SHIFT,
+ 	.tmu_ctrl = EXYNOS5440_TMU_S0_7_CTRL,
+ 	.buf_vref_sel_shift = EXYNOS_TMU_REF_VOLTAGE_SHIFT,
+ 	.buf_vref_sel_mask = EXYNOS_TMU_REF_VOLTAGE_MASK,
+@@ -240,13 +228,10 @@ static const struct exynos_tmu_registers exynos5440_tmu_registers = {
+ 	.gain = 5, \
+ 	.reference_voltage = 16, \
+ 	.noise_cancel_mode = 4, \
+-	.cal_type = TYPE_ONE_POINT_TRIMMING, \
+-	.efuse_value = 0x5b2d, \
++	.efuse_value = 45, \
  	.min_efuse_value = 16, \
  	.max_efuse_value = 76, \
+ 	.first_point_trim = 25, \
+-	.second_point_trim = 70, \
+-	.default_temp_offset = 25, \
+ 	.type = SOC_ARCH_EXYNOS5440, \
+ 	.registers = &exynos5440_tmu_registers, \
+ 	.features = (TMU_SUPPORT_EMULATION | TMU_SUPPORT_FALLING_TRIP | \
 diff --git a/drivers/thermal/samsung/exynos_tmu_data.h b/drivers/thermal/samsung/exynos_tmu_data.h
-index d4eeddb..1fed00d 100644
+index 1fed00d..734d1f9 100644
 --- a/drivers/thermal/samsung/exynos_tmu_data.h
 +++ b/drivers/thermal/samsung/exynos_tmu_data.h
-@@ -60,8 +60,6 @@
- #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
- #define EXYNOS_TMU_TRIP_MODE_MASK	0x7
- #define EXYNOS_TMU_THERM_TRIP_EN_SHIFT	12
--#define EXYNOS_TMU_CALIB_MODE_SHIFT	4
--#define EXYNOS_TMU_CALIB_MODE_MASK	0x3
+@@ -51,8 +51,6 @@
+ #define EXYNOS_THD_TEMP_FALL		0x54
+ #define EXYNOS_EMUL_CON		0x80
  
- #define EXYNOS_TMU_INTEN_RISE0_SHIFT	0
- #define EXYNOS_TMU_INTEN_RISE1_SHIFT	4
+-#define EXYNOS_TRIMINFO_25_SHIFT	0
+-#define EXYNOS_TRIMINFO_85_SHIFT	8
+ #define EXYNOS_TMU_RISE_INT_MASK	0x111
+ #define EXYNOS_TMU_RISE_INT_SHIFT	0
+ #define EXYNOS_TMU_FALL_INT_MASK	0x111
 -- 
 1.8.2.3
 
