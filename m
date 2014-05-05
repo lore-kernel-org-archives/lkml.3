@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545AbaEEMq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:46:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36784 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932334AbaEEMqY (ORCPT
+	id S932510AbaEEMqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:46:18 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41068 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932338AbaEEMnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:46:24 -0400
-Date: Mon, 5 May 2014 14:46:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 00/10] perf tools: perf.h cleanups
-Message-ID: <20140505124620.GO26782@laptop.programming.kicks-ass.net>
-References: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 5 May 2014 08:43:35 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 46/50] sparc32: fix build failure for arch_jump_label_transform
+Date: Mon,  5 May 2014 14:43:28 +0200
+Message-Id: <50aa539f0ea40ff117cc7ff263ed71bb9f2c4d86.1399292849.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
+In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
+References: <cover.1399292849.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 02:33:29PM +0200, Jiri Olsa wrote:
-> hi,
-> moving syscall function and arch related defines into
-> new header 'perf-sys.h' as requested by Peter in:
->   http://lkml.kernel.org/r/20140502115201.GI30445@twins.programming.kicks-ass.net
-> 
-> While at it I did some clean ups in perf.h header.
-> 
-> Hopefully I did not brake anyone's usage of
-> perf.h .. let me know ;-)
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-break, brake is to slow down, also possibly appropriate ;-)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks!
+===============
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+[ Upstream commit 4f6500fff5f7644a03c46728fd7ef0f62fa6940b ]
+
+In arch/sparc/Kernel/Makefile, we see:
+
+   obj-$(CONFIG_SPARC64)   += jump_label.o
+
+However, the Kconfig selects HAVE_ARCH_JUMP_LABEL unconditionally
+for all SPARC.  This in turn leads to the following failure when
+doing allmodconfig coverage builds:
+
+kernel/built-in.o: In function `__jump_label_update':
+jump_label.c:(.text+0x8560c): undefined reference to `arch_jump_label_transform'
+kernel/built-in.o: In function `arch_jump_label_transform_static':
+(.text+0x85cf4): undefined reference to `arch_jump_label_transform'
+make: *** [vmlinux] Error 1
+
+Change HAVE_ARCH_JUMP_LABEL to be conditional on SPARC64 so that it
+matches the Makefile.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ arch/sparc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 78c4fdb91bc5..4e5683877b93 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -25,7 +25,7 @@ config SPARC
+ 	select RTC_DRV_M48T59
+ 	select HAVE_DMA_ATTRS
+ 	select HAVE_DMA_API_DEBUG
+-	select HAVE_ARCH_JUMP_LABEL
++	select HAVE_ARCH_JUMP_LABEL if SPARC64
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+-- 
+1.9.2
+
