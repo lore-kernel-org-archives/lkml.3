@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933401AbaEEWeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:34:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58945 "EHLO mga02.intel.com"
+	id S933459AbaEEWfj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:35:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:57942 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057AbaEEW0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:26:21 -0400
+	id S932916AbaEEW0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:26:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="506357927"
+   d="scan'208";a="533979294"
 From: Andi Kleen <andi@firstfloor.org>
 To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/24] net, diet: Decrease ip defrag hash tables and max length with BASE_SMALL
-Date: Mon,  5 May 2014 15:25:52 -0700
-Message-Id: <1399328773-6531-4-git-send-email-andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com
+Subject: RFC: A reduced Linux network stack for small systems
+Date: Mon,  5 May 2014 15:25:49 -0700
+Message-Id: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
-References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+There has been a lot of interest recently to run Linux on very small systems,
+like Quark systems. These may have only 2-4MB memory. They are also limited
+by flash space.
 
-When CONFIG_BASE_SMALL is set only use 16 entries in the IP defrag
-hash table. Also limit the max length of chains to 32 packets.
+One problem on these small system is the size of the network stack.
+Currently enabling IPv4 costs about 400k in text, which is prohibitive on
+a 2MB system, and very expensive with 4MB.
 
-The sizes are somewhat arbitary and could be changed.
+There were proposals to instead use LWIP in user space. LWIP with 
+its socket interface comes in at a bit over 100k overhead per application.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- include/net/inet_frag.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+I maintain that the Linux network stack is actually not that bloated,
+it just has a lot of features :-)  The goal of this project was to
+subset it in a sensible way so that the native kernel stack becomes
+competitive with LWIP.
 
-diff --git a/include/net/inet_frag.h b/include/net/inet_frag.h
-index 6f59de9..a8c5948 100644
---- a/include/net/inet_frag.h
-+++ b/include/net/inet_frag.h
-@@ -41,6 +41,10 @@ struct inet_frag_queue {
- 	struct netns_frags	*net;
- };
- 
-+#ifdef CONFIG_BASE_SMALL
-+#define INETFRAGS_HASHSZ	16
-+#define INETFRAGS_MAXDEPTH	32
-+#else
- #define INETFRAGS_HASHSZ	1024
- 
- /* averaged:
-@@ -50,6 +54,8 @@ struct inet_frag_queue {
-  */
- #define INETFRAGS_MAXDEPTH		128
- 
-+#endif
-+
- struct inet_frag_bucket {
- 	struct hlist_head	chain;
- 	spinlock_t		chain_lock;
--- 
-1.9.0
+It turns out that the standard stack has a couple of features that
+are not really needed on client systems. Luckily it is also 
+relatively well modularized, so it becomes possible to stub
+out these features at the edge.
 
+With removing these features we still have a powerful TCP/IP stack,
+but one that fits better into small systems.
+
+It would have been prohibitive to ifdef every optional feature.
+This patchkit relies heavily on LTO to effectively remove unused
+code. This allows to disable features only at the module boundaries,
+and rely on the compiler to drop unreferenced code and data.
+
+A few features have been also reimplemented in a simpler way.
+And I shrank a number of data structures based on CONFIG_BASE_SMALL.
+
+With these changes I can get a fully featured network stack down
+to about 170k with LTO. Without LTO there are also benefits,
+but somewhat less.
+
+There are essentially three sensible configurations:
+- Full featured like today.
+- Client only subset, but still works with standard distribution userland.
+Remove some obscure features like fastopen, make all tables smaller, 
+packet socket mmap code, use a simpler routing table, remove
+high speed networking features like RPX, XPS, GRO offload. 
+Disable SNMP, TCP metrics
+- Minimal subset for deeply embedded systems that can use special userland.
+Remove rtnetlink (ioctl only), remove ethtool, raw sockets.
+
+Right now I'm using own Kconfigs for every removed features. I realize
+this somewhat increases the compile test matrix. It would be possible
+to hide some of the options and select them using higher level
+configurations like the ones listed above. I haven't done this
+in this version.
+
+At this point I'm mainly interested in review and comments.
+
+Git trees:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat
+Main tree
+
+git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc net/debloat-3.14
+3.14 based tree.
+
+Thanks to Tom Zanussi for contributions and testing.
+
+Andi Kleen
