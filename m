@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaEENtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:49:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55532 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932429AbaEENtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:49:45 -0400
-Date: Mon, 5 May 2014 10:49:34 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/10] perf tools: perf.h cleanups
-Message-ID: <20140505134934.GA3006@kernel.org>
-References: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
+	id S932597AbaEENzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:55:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42878 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932395AbaEENzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 09:55:10 -0400
+Date: Mon, 5 May 2014 15:55:09 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matthias Bayer <thematthiasbayer@gmail.com>
+Subject: Re: [PATCH] HID: core: fix computation of the report size
+In-Reply-To: <1398894520-30407-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1405051554530.3969@pobox.suse.cz>
+References: <1398894520-30407-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399293219-8732-1-git-send-email-jolsa@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 05, 2014 at 02:33:29PM +0200, Jiri Olsa escreveu:
-> hi,
-> moving syscall function and arch related defines into
-> new header 'perf-sys.h' as requested by Peter in:
->   http://lkml.kernel.org/r/20140502115201.GI30445@twins.programming.kicks-ass.net
-> 
-> While at it I did some clean ups in perf.h header.
-> 
-> Hopefully I did not brake anyone's usage of
-> perf.h .. let me know ;-)
-> 
-> Also available in here:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/header_1
+On Wed, 30 Apr 2014, Benjamin Tissoires wrote:
 
-With that ACCESS_ONCE comments made addressed:
+> The extra seven bits are only required when allocating the report buffer.
+> We can not use those extra bytes for the length of the report in the
+> generic implementation of .request because the device might (will) refuse
+> the set_report command.
+> This has been verified on the Atmel touchpad found on the Samsung Ativ 9
+> plus, which uses hid-multitouch and HID over I2C. Without this fix, the
+> device refuses to switch to the multitouch mode, and it becomes unresponsive
+> from the user point of view.
+> 
+> Actually, this has been discussed during the initial submission of the
+> commit 4fa5a7f76cc7b6ac87f57741edd2b124851d119f, see
+> https://patchwork.kernel.org/patch/3621751/
+> 
+> Unfortunately, I completely forgot about it later.
+> 
+> Reported-by: Matthias Bayer <thematthiasbayer@gmail.com>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+> 
+> Hi Jiri,
+> 
+> can you schedule this fix for 3.15?
+> 
+> Fortunately, the device required some ACPI changes, so it was not seen at all
+> in 3.13 and before. I am not sure of the status of 3.14, but it is definitively
+> not working in 3.15.
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Gah, indeed, a nasty bug.
 
-- Arnaldo
+Queuing for 3.15 now, thanks!
+
+-- 
+Jiri Kosina
+SUSE Labs
