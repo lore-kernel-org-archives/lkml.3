@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaEERtk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:49:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53109 "EHLO
+	id S1755904AbaEERts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:49:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53121 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761AbaEERti (ORCPT
+	with ESMTP id S1751599AbaEERtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:49:38 -0400
-Date: Mon, 5 May 2014 10:48:35 -0700
+	Mon, 5 May 2014 13:49:45 -0400
+Date: Mon, 5 May 2014 10:48:47 -0700
 From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-273a0a734cd780f9ab3c3aac1851b2d15bb9638d@git.kernel.org>
+Message-ID: <tip-36446f4bfe613ad1da00f06081d410d62c07d334@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
         hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         a.p.zijlstra@chello.nl, peterz@infradead.org, acme@kernel.org,
@@ -20,11 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, acme@kernel.org, namhyung@kernel.org,
         fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de, bp@suse.de,
         cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1399293219-8732-5-git-send-email-jolsa@kernel.org>
-References: <1399293219-8732-5-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1399293219-8732-6-git-send-email-jolsa@kernel.org>
+References: <1399293219-8732-6-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Remove asmlinkage define from perf.h
-Git-Commit-ID: 273a0a734cd780f9ab3c3aac1851b2d15bb9638d
+Subject: [tip:perf/core] perf tools:
+  Remove PR_TASK_PERF_EVENTS_* from perf.h
+Git-Commit-ID: 36446f4bfe613ad1da00f06081d410d62c07d334
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,16 +38,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  273a0a734cd780f9ab3c3aac1851b2d15bb9638d
-Gitweb:     http://git.kernel.org/tip/273a0a734cd780f9ab3c3aac1851b2d15bb9638d
+Commit-ID:  36446f4bfe613ad1da00f06081d410d62c07d334
+Gitweb:     http://git.kernel.org/tip/36446f4bfe613ad1da00f06081d410d62c07d334
 Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 5 May 2014 12:36:38 +0200
+AuthorDate: Mon, 5 May 2014 12:37:05 +0200
 Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 5 May 2014 17:47:06 +0200
+CommitDate: Mon, 5 May 2014 17:47:25 +0200
 
-perf tools: Remove asmlinkage define from perf.h
+perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
 
-As it's no longer used.
+It's defined in include/uapi/linux/prctl.h header.
+Also it was never used in perf tool.
 
 Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Acked-by: Peter Zijlstra <peterz@infradead.org>
@@ -59,25 +61,27 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1399293219-8732-5-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1399293219-8732-6-git-send-email-jolsa@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/perf.h | 5 -----
- 1 file changed, 5 deletions(-)
+ tools/perf/perf.h | 7 -------
+ 1 file changed, 7 deletions(-)
 
 diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 50aa88d..622949d 100644
+index 622949d..1bf9537 100644
 --- a/tools/perf/perf.h
 +++ b/tools/perf/perf.h
-@@ -198,11 +198,6 @@ static inline unsigned long long rdclock(void)
- 	return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
- }
+@@ -176,13 +176,6 @@
+ #include <linux/types.h>
+ #include <linux/perf_event.h>
  
 -/*
-- * Pick up some kernel type conventions:
+- * prctl(PR_TASK_PERF_EVENTS_DISABLE) will (cheaply) disable all
+- * counters in the current task.
 - */
--#define asmlinkage
+-#define PR_TASK_PERF_EVENTS_DISABLE   31
+-#define PR_TASK_PERF_EVENTS_ENABLE    32
 -
- extern bool test_attr__enabled;
- void test_attr__init(void);
- void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
+ #ifndef NSEC_PER_SEC
+ # define NSEC_PER_SEC			1000000000ULL
+ #endif
