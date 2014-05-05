@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaEEAFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 20:05:25 -0400
-Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:56078 "EHLO
+	id S1754355AbaEEAH7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 20:07:59 -0400
+Received: from smtprelay0056.hostedemail.com ([216.40.44.56]:48636 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753965AbaEEAFT (ORCPT
+	by vger.kernel.org with ESMTP id S1754018AbaEEAFZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 20:05:19 -0400
+	Sun, 4 May 2014 20:05:25 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1539:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3351:3865:3866:3870:3871:3872:4250:4321:5007:6261:9592:10004:10026:10848:11026:11658:11914:12043:12438:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: error98_2e3c564cdea10
-X-Filterd-Recvd-Size: 1519
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1539:1567:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3872:3876:5007:6261:10004:10026:10848:11026:11473:11658:11914:12295:12296:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: floor69_2f10544f89b19
+X-Filterd-Recvd-Size: 1432
 From: Joe Perches <joe@perches.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 02/12] cdrom: Remove unused CHECKAUDIO macro
-Date: Sun,  4 May 2014 17:05:03 -0700
-Message-Id: <24c14c6e8a8887465eae806fcb35816752992eb7.1399247745.git.joe@perches.com>
+Subject: [PATCH 06/12] cdrom: Remove unnecessary sanitize_format prototype
+Date: Sun,  4 May 2014 17:05:07 -0700
+Message-Id: <5fd375364e87147e8065e12fc993a931ad4ebbcf.1399247745.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <51EDAD79.3050707@kernel.dk>
 References: <51EDAD79.3050707@kernel.dk>
@@ -26,27 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unused, make it disappear.
+It's defined below without being called.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/cdrom/cdrom.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/cdrom/cdrom.c | 2 --
+ 1 file changed, 2 deletions(-)
 
 diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 3828c92..8eaba53 100644
+index a570e5f..08abbae 100644
 --- a/drivers/cdrom/cdrom.c
 +++ b/drivers/cdrom/cdrom.c
-@@ -339,9 +339,6 @@ do {							\
-    a lot of places. This macro makes the code more clear. */
- #define CDROM_CAN(type) (cdi->ops->capability & ~cdi->mask & (type))
+@@ -337,8 +337,6 @@ do {							\
+ #define CDROM_DEF_TIMEOUT	(7 * HZ)
  
--/* used in the audio ioctls */
--#define CHECKAUDIO if ((ret=check_for_audio_disc(cdi, cdo))) return ret
--
- /*
-  * Another popular OS uses 7 seconds as the hard timeout for default
-  * commands, so it is a good choice for us as well.
+ /* Not-exported routines. */
+-static void sanitize_format(union cdrom_addr *addr, 
+-		u_char * curr, u_char requested);
+ static int mmc_ioctl(struct cdrom_device_info *cdi, unsigned int cmd,
+ 		     unsigned long arg);
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
