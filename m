@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaEESny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:43:54 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:34475 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753AbaEESnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:43:52 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 5 May 2014 14:47:32 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140505171428.GU26782@laptop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1405051443260.31072@vincent-weaver-1.umelst.maine.edu>
-References: <20140502172731.GK30445@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1405021337390.22556@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.02.1405022111540.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405021611540.23984@vincent-weaver-1.umelst.maine.edu>
- <alpine.DEB.2.02.1405022243550.6261@ionos.tec.linutronix.de> <alpine.DEB.2.10.1405022227420.25174@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405022253530.25174@vincent-weaver-1.umelst.maine.edu> <20140505093124.GN17778@laptop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1405051200010.31049@vincent-weaver-1.umelst.maine.edu> <alpine.DEB.2.10.1405051309160.31072@vincent-weaver-1.umelst.maine.edu> <20140505171428.GU26782@laptop.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1751969AbaEESn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:43:59 -0400
+Received: from mail-by2lp0237.outbound.protection.outlook.com ([207.46.163.237]:26092
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751753AbaEESn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:43:56 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "patrik.r.jakobsson@gmail.com" <patrik.r.jakobsson@gmail.com>
+CC: "hdegoede@redhat.com" <hdegoede@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
+Thread-Topic: [PATCH v2] mba6x_bl: Backlight driver for mid 2013 MacBook Air
+Thread-Index: AQHPY7ZlKonnJSr2kkWANaJkxe8S4ZsyGv4AgAA9LYA=
+Date: Mon, 5 May 2014 18:28:24 +0000
+Message-ID: <1399314503.17557.0.camel@x230.lan>
+References: <1398781312-3607-1-git-send-email-patrik.r.jakobsson@gmail.com>
+	 <CAMeQTsYA0tGQ1SfhNhMctPW6H_y1NGjGXsM5ZcMSwOqE-bApyg@mail.gmail.com>
+In-Reply-To: <CAMeQTsYA0tGQ1SfhNhMctPW6H_y1NGjGXsM5ZcMSwOqE-bApyg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:470:1f07:1371:6267:20ff:fec3:2318]
+x-forefront-prvs: 0202D21D2F
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(377424004)(24454002)(189002)(199002)(74502001)(81542001)(31966008)(99396002)(81342001)(74662001)(80022001)(46102001)(101416001)(4396001)(76482001)(20776003)(36756003)(33646001)(79102001)(77982001)(83072002)(99286001)(86362001)(76176999)(50986999)(54356999)(19580395003)(92566001)(2656002)(87936001)(83322001)(19580405001)(85852003)(92726001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB422;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:48AB6B6B.EF05CFA9.63E3B1BA.C4E8DE60.200E4;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <54BB4096199C4146AB881DD6EA09B48C@namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s45Ii99O004756
 
-On Mon, 5 May 2014, Peter Zijlstra wrote:
-
-> Cute.. does the below cure?
+On Mon, 2014-05-05 at 16:49 +0200, Patrik Jakobsson wrote:
+> Hi Matthew,
 > 
-> 
-> ---
-> Subject: perf: Fix perf_event_init_context()
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Mon May  5 19:12:20 CEST 2014
-> 
-> perf_pin_task_context() can return NULL but perf_event_init_context()
-> assumes it will not, correct this.
+> This seems to be in good shape. Do you have anything to add?
+> If not, can you pick this patch up through platform-drivers-x86?
 
-It makes the oops go away, but it does make the fuzzer become unkillable 
-while using 100% CPU.
+I'm a bit reluctant. Do we have any evidence that this is the way OS X
+behaves? What's the actual difference in state before and after suspend?
 
-It looks like it is stuck repeating this forever:
-	perf_fuzzer-5256  [000]   275.943049: kmalloc:              (T.1262+0xe) call_site=ffffffff810d022f ptr=0xffff8800cb028400 bytes_req=216 bytes_alloc=256 gfp_flags=GFP_KERNEL|GFP_ZERO
-	perf_fuzzer-5256  [000]   275.943057: function:             perf_lock_task_context
-	perf_fuzzer-5256  [000]   275.943057: function:             alloc_perf_context
-and memory is slowly leaking away.
-
-
-Meanwhile the haswell and AMD machines have been fuzzing away without 
-issue, I don't know why the core2 machine is always the trouble maker.
-
-Vince
-
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
