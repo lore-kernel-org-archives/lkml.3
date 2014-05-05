@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaEEOfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:35:23 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:59145 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932723AbaEEOfW (ORCPT
+	id S933015AbaEEOfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:35:48 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:59449 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932909AbaEEOfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:35:22 -0400
+	Mon, 5 May 2014 10:35:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140502164148.44c0674b@gandalf.local.home>
-References: <1399062223-18928-1-git-send-email-ddstreet@ieee.org> <20140502164148.44c0674b@gandalf.local.home>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Mon, 5 May 2014 10:35:01 -0400
-X-Google-Sender-Auth: qebw4WeNWhhBtFNyLU1hYnVpjv4
-Message-ID: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
-Subject: Re: [PATCH] plist: include -DDEBUG if CONFIG_DEBUG_PI_LIST
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1399296830-13056-3-git-send-email-nm@ti.com>
+References: <1399296830-13056-1-git-send-email-nm@ti.com>
+	<1399296830-13056-3-git-send-email-nm@ti.com>
+Date: Mon, 5 May 2014 20:05:44 +0530
+Message-ID: <CAKohpom0nq_v0wzaLtU4NxRxJwLgrUB1K8+9QtkanibeznEi4g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PM / OPP: Move cpufreq specific OPP functions out of
+ generic OPP library
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 2, 2014 at 4:41 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri,  2 May 2014 16:23:43 -0400
-> Dan Streetman <ddstreet@ieee.org> wrote:
+On 5 May 2014 19:03, Nishanth Menon <nm@ti.com> wrote:
+> CPUFreq specific helper functions for OPP (Operating Performance Points)
+> now use generic OPP functions that allow CPUFreq to be be moved back
+> into CPUFreq framework. This allows for independent modifications
+> or future enhancements as needed isolated to just CPUFreq framework
+> alone.
 >
->> lib/plist.c uses pr_debug() in its test function, which is compiled
->> and run only when CONFIG_DEBUG_PI_LIST in set; however pr_debug()
->> is compiled out unless -DDEBUG is set for the file.
->>
->> Update lib/Makefile to add -DDEBUG to CFLAGS_plist.o if
->> CONFIG_DEBUG_PI_LIST is set, so that the pr_debug() output from
->> plist_test() is shown.
+> Here, we just move relevant code and documentation to make this part of
+> CPUFreq infrastructure.
 >
-> Why not just use printk(KERN_DEBUG ...) then if we always want to print
-> it?
->
-> You could just place
->
-> #define DEBUG
->
-> in plist.c as well. Although I think just switching to printk() is
-> better.
+> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: Kevin Hilman <khilman@deeprootsystems.com>
+> Cc: cpufreq@vger.kernel.org
+> Cc: linux-samsung-soc@vger.kernel.org
+> Cc: linux-omap@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
 
-Agreed - since the entire function is already inside
-CONFIG_DEBUG_PI_LIST, there's no need to additionally require DEBUG so
-we should just use printk.  New patch to follow.
-
-Thanks!
-
->
-> -- Steve
->
->>
->> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->> ---
->>  lib/Makefile | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/lib/Makefile b/lib/Makefile
->> index 0cd7b68..fd1f4c8 100644
->> --- a/lib/Makefile
->> +++ b/lib/Makefile
->> @@ -39,6 +39,10 @@ CFLAGS_kobject.o += -DDEBUG
->>  CFLAGS_kobject_uevent.o += -DDEBUG
->>  endif
->>
->> +ifeq ($(CONFIG_DEBUG_PI_LIST),y)
->> +CFLAGS_plist.o += -DDEBUG
->> +endif
->> +
->>  obj-$(CONFIG_GENERIC_IOMAP) += iomap.o
->>  obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_iomap.o
->>  obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
->
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
