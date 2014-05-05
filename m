@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144AbaEEJxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:53:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59637 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827AbaEEJx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:53:28 -0400
-Message-ID: <53675F8F.3030107@gmail.com>
-Date: Mon, 05 May 2014 11:53:19 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        linux-man@vger.kernel.org
-Subject: Re: sched_{set,get}attr() manpage
-References: <53020C9D.1050208@gmail.com> <20140428081858.GX13658@twins.programming.kicks-ass.net> <535FA467.2070403@gmail.com> <20140429160441.GU11096@twins.programming.kicks-ass.net> <5360D9E5.9080206@gmail.com> <20140430130937.GH30445@twins.programming.kicks-ass.net> <20140503124355.5d927080518051ca507bc381@gmail.com> <536735E0.7020204@gmail.com> <20140505072114.GY11096@twins.programming.kicks-ass.net> <53674094.2020307@gmail.com> <20140505074736.GZ11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140505074736.GZ11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756156AbaEEJ5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:57:21 -0400
+Received: from ozlabs.org ([103.22.144.67]:39336 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755689AbaEEJ5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 05:57:20 -0400
+Date: Mon, 5 May 2014 19:57:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-next@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: linux-next: Tree for May 5
+Message-Id: <20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
+In-Reply-To: <CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com>
+References: <20140505171459.3ce28e8e0c4d6b107a66eb97@canb.auug.org.au>
+	<CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_May_2014_19_57_11_+1000_9tbL7Qe41NhvTWJP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 09:47 AM, Peter Zijlstra wrote:
-> On Mon, May 05, 2014 at 09:41:08AM +0200, Michael Kerrisk (man-pages) wrote:
->>>> But, in that case, I need to know the
->>>> copyright and license you want to use. Please see
->>>> https://www.kernel.org/doc/man-pages/licenses.html
->>>
->>> GPLv2 + DOC (not v2+) sounds good.
->>
->> I'm a little unclear here. Do you or don't you mean
->> https://www.kernel.org/doc/man-pages/licenses.html#gpl
->> ?
-> 
-> A variant with out the +, just like I do my kernel code, no greater gpl
-> versions. However, 
-> 
->> (Note, I'd really prefer to stick to one of those licenses
->> (without variants). (My personal preference is the "verbatim"
->> license, which is the most widely used one.) There's already
->> do many licenses in in man-pages...
-> 
-> Verbatim is OK with me I suppose. 
+--Signature=_Mon__5_May_2014_19_57_11_+1000_9tbL7Qe41NhvTWJP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And don't neglect to mention who the copyright is to please.
+Hi Michael,
 
-> Its only text after all, who cares
-> about that :-)
-> /me runs for the hills.
+On Mon, 5 May 2014 10:42:23 +0200 Michael Kerrisk <mtk.manpages@gmail.com> =
+wrote:
+>
+> I don't know what the process is for clearing cruft out of linux-next
+> is, but there's at least one piece of cruft that probably should go:
 
-Well, apparently you care, so thanks ;-)
+I usually depend on maintainers to clean up their trees.
 
- 
+> commit d30c01a0611d54926ac860721c933edafcc91905
+> commit 8c013e265a8eca0ada9f1aaa6cd7590698dc7231
+> commit e86263c9d00efb091a5215b9e4063378828d815c
 
+I can't find any of these commits in linux-next or any commits by Andrey
+Vagin <avagin@openvz.org> ...
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+[P.S. Please trim replies to relevant bits ...]
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__5_May_2014_19_57_11_+1000_9tbL7Qe41NhvTWJP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTZ2B9AAoJEMDTa8Ir7ZwVkEUQAIBb4HKJMli5U447Z0pOhmEP
+XZvyQq6LuQS6ue9rFJyLImxJ/Qmaz1Ge9DVJtKGn0fKxHYEXy3Cw2b2ipySVm/nI
+SqTPvcBYOyV+utoBT5uT1hgw3pMvhxULHFYdY/o8OFog0NQLA+eRHskFPt8kuLu4
+pm1+5k4JsrswkboE09j0hBHMTKT8SM4lVygzcZq7outrnXTOmmfZcL/UpEznTCLt
+srjElZx6e19MXjY2TxdjIWNxYPsskjbga3+zWrUstrr9ZnLo0UvjaT8iFeNwB1j7
+ovLiqVB59SKmWlYHl7xkSPUtOVsBMMissDVMvFYsSmKgaW9okCC3KnMJRTqn82/5
+CI9IH0zbpPYZQ9ZPwJx1BKOvso5soUYejKXeWrQHhn1AU6zq3jRgj1KSGFkvZx+V
+e3BjSEgWW1JxZORDKasvFucPYJbRNi8x++/kIKwjKXM7aQIDEB7mfH6UfEFVa6sP
+FtIWqrytfgNNgAZ7S47B5fELZJ3boBIf9/VyO7BiWcaFAMIwgs47QsNQ5qDmYQu/
+H4ZG2m/z8o5drlf6fFRxiNlKzWm7R73utHqkkMn8Pb1Npylexnv2AlV9IS8l2Ekk
+qDRNPTk3OcYsolI3eMb4LhdKxOsf2EKDec/lclboT1O6XZ9IvjWCNEib7HMIdBDq
+mt/1PaMMMQkWNtC23kad
+=pS5k
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_May_2014_19_57_11_+1000_9tbL7Qe41NhvTWJP--
