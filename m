@@ -1,118 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582AbaEEKzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:55:18 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:59569 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaEEKzP (ORCPT
+	id S1753698AbaEEK6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:58:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36381 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaEEK6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:55:15 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-65-53676e11bfe6
-Message-id: <53676D12.9040300@samsung.com>
-Date: Mon, 05 May 2014 14:50:58 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: nicolas.pitre@linaro.org, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: put_user: fix possible data corruption in put_user
-References: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
- <20140505090126.GD3693@n2100.arm.linux.org.uk>
-In-reply-to: <20140505090126.GD3693@n2100.arm.linux.org.uk>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrALMWRmVeSWpSXmKPExsVy+t/xK7qCeenBBgsniFtsenyN1eLyrjls
-	Frcv81p8evaP3eLlxxMsDqwea+atYfRoae5h87hzbQ+bx+Yl9R6fN8kFsEZx2aSk5mSWpRbp
-	2yVwZXy7+JilYIlwxcNj95kaGDfxdzFyckgImEj0HHjCCGGLSVy4t54NxBYSWMoosXK/XBcj
-	F5DdyCRx7PxlsCJeAS2J1a13mUBsFgFVia9zz7CD2GwCehL/Zm0HaxYViJC413iYFaJeUOLH
-	5HssILaIgKnEtUfPmEFsZoFyiQOznoPFhQV8JP68XwpUzwG0rFzi208XkDCngLXEnw8rWSDK
-	dST2t05jg7DlJTavecs8gVFgFpINs5CUzUJStoCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+
-	7iZGSCh/2cG4+JjVIUYBDkYlHt7AoJRgIdbEsuLK3EOMEhzMSiK82YnpwUK8KYmVValF+fFF
-	pTmpxYcYmTg4pRoY6wsdr8UKZ+/pkDjw0PG5fMSbzGMd+cJ9PV3fq1ZuWxneVXwhlqVu8c35
-	AcmTLRa/bW0S/Pxr41eBLQv+bHaovW5u2ZNRKbNlWdirkwsWz59g0fi5W/+a87s18QEaXl4d
-	5dyTL21rdvSR3bP769ZDXHMmvXzaw7trgsmjo/ebvJuv3y//FaX2T4mlOCPRUIu5qDgRALIq
-	ISJDAgAA
+	Mon, 5 May 2014 06:58:39 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-93-53676ede14e1
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        b.zolnierkie@samsung.com
+Subject: [PATCH 0/7] ARM: EXYNOS: cpuidle: fix AFTR mode on boards with secure
+ firmware enabled
+Date: Mon, 05 May 2014 12:57:12 +0200
+Message-id: <1399287439-31376-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t9jAd17eenBBq1nxS02zljPajHvs6xF
+	74KrbBZnm96wW7w/9IzZYtPja6wWl3fNYbP43HuE0WLG+X1MFmdOX2K1OPmnl9Fi/YzXLBYb
+	v3o48HrcubaHzWPzknqP2/8eM3tsudrO4tG3ZRWjx+dNcgFsUVw2Kak5mWWpRfp2CVwZj47n
+	FVzgrjg1/RZLA+Nuzi5GTg4JAROJNW0/2CFsMYkL99azdTFycQgJLGKU6D7whhEkISTQxSTR
+	skMExGYTsJKY2L4KLC4ioCbRs3grI0gDs8BeZoml3ZvAJgkLJErc/rAbzGYRUJVYe3c5E4jN
+	K+AhcXHDV6htihLdzyawTWDkXsDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOMieSe1g
+	XNlgcYhRgINRiYc3gTk9WIg1say4MvcQowQHs5IIb3YiUIg3JbGyKrUoP76oNCe1+BCjNAeL
+	kjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAPjyrP5kjyRi47N2MuXdjjl677A57GdK+3XZIsw
+	XHHfk2u1XO98zj1T/h6lT1+V7m0/te+F2yaFJzcXysTKR8is2f2kZ9eNOs+MvoRplTsVjebc
+	UjaxDHzWfsgipOjCUoEDE67dsXp7purCcT/h7qV5M/4/4djc+Ud2fvs104/P59nZblhgXPLw
+	qxJLcUaioRZzUXEiAN7s3g0uAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/14 13:01, Russell King - ARM Linux wrote:
-> On Mon, May 05, 2014 at 10:13:58AM +0400, Andrey Ryabinin wrote:
->> According to arm procedure call standart r2 register is call-cloberred.
->> So after the result of x expression was put into r2 any following
->> function call in p may overwrite r2. To fix this, the result of p
->> expression must be saved to the temporary variable before the
->> assigment x expression to __r2.
-> 
-> This and the patch make no sense.  You talk about r2, but you're doing
-> nothing with r2 in the patch.
-> 
+Hi,
 
-No, you didn't get it. I'll try to explain better.
+This patch series fixes support for AFTR idle mode on boards with
+secure firmware enabled (it also includes fix for register setup on
+EXYNOS4x12 SoCs).  It has been tested on Trats2 target but should
+also work on (EXYNOS4412 based) Insignal Origen board.
 
-Lets consider following example:
+This patchset depends on "[PATCH V5 00/20] ARM: exynos: cpuidle:
+Move the driver to drivers/cpuidle" patch series from Daniel Lezcano
+("http://www.spinics.net/lists/linux-samsung-soc/msg28494.html").
 
-unsigned int __user *get_address(void);
-...
-	put_user(1, get_address());
-...
-
-Pay attention that in get_address function register r2  may be used.
-In above example, without my patch, put_user macro will be expanded to the following code:
-
-...
-	register const unsigned int __r2 asm("r2") = (1);
-	register const unsigned int __user *__p asm("r0") = (get_address());
-...
-
-At first we put value 1 into r2 register. After that get_address is called, and clobbers r2 register.
-This means that after assignment to variable __p, register r2 may no longer contain a valid value - 1.
-
-My patch put get_address calls befor the assignment of (x) to __r2.
-With my patch, put_user macro will be expanded to the following code:
-
-...
-	const unsigned int __user *tmp_p = (get_address());
-	register const unsigned int __r2 asm("r2") = (1);
-	register const unsigned int __user *__p asm("r0") = tmp_p;
-...
-
-In this time get_address() call happens before loading 1 to r2, so it won't be corrupted.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
 
-Here is the full code of test, so anyone could check.
+Bartlomiej Zolnierkiewicz (5):
+  ARM: EXYNOS: add AFTR mode support to firmware do_idle method
+  ARM: EXYNOS: PM: replace EXYNOS_BOOT_VECTOR_* macros by static inlines
+  ARM: EXYNOS: PM: use c15resume firmware method if secure firmware is
+    enabled
+  ARM: EXYNOS: PM: fix register setup on EXYNOS4x12 for AFTR mode code
+  ARM: EXYNOS: cpuidle: add secure firmware support to AFTR mode code
 
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/uaccess.h>
+Kyungmin Park (1):
+  arm: firmware: Check firmware is running or not
 
-unsigned int x = 0;
-unsigned int y = 0;
+Tomasz Figa (1):
+  ARM: EXYNOS: add support for firmware-assisted c15resume
 
-/* get_address returns address of x, and clobbers r2 register */
-unsigned int __user *get_address(void)
-{
-	mm_segment_t oldfs;
-	oldfs = get_fs();
-	set_fs(get_ds());
-	put_user(2, &y); /* this put_user call will put value 2 in register r2 */
-	set_fs(oldfs);
-	return &x;
-}
+ arch/arm/common/firmware.c       |  5 +++++
+ arch/arm/include/asm/firmware.h  | 14 +++++++++++++-
+ arch/arm/mach-exynos/firmware.c  | 18 ++++++++++++++++--
+ arch/arm/mach-exynos/pm.c        | 40 ++++++++++++++++++++++++++++++++--------
+ drivers/cpuidle/cpuidle-exynos.c |  7 ++++++-
+ 5 files changed, 72 insertions(+), 12 deletions(-)
 
-static __init int test_init(void)
-{
-	mm_segment_t oldfs;
-	oldfs = get_fs();
-	set_fs(get_ds());
-	put_user(1, get_address()); /* put 1 to x */
-	set_fs(oldfs);
-
-	printk("\nput_user_test: value %x\n\n", *get_address()); /* this will print "put_user_test: value 2" instead of "put_user_test: value 1"
-	return 0;
-}
-
-module_init(test_init);
+-- 
+1.8.2.3
 
