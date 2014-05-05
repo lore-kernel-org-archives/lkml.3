@@ -1,73 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaEEWWe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:22:34 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:27104 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647AbaEEWWd (ORCPT
+	id S932106AbaEEWYZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:24:25 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56361 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755631AbaEEWYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:22:33 -0400
-Message-ID: <1399328550.2646.5.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjennings@variantweb.net>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>,
-        "'Dan Streetman'" <ddstreet@ieee.org>, weijie.yang.kh@gmail.com,
-        heesub.shin@samsung.com,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>
-Date: Mon, 05 May 2014 15:22:30 -0700
-In-Reply-To: <20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
-References: <000001cf6816$d538c370$7faa4a50$%yang@samsung.com>
-	 <20140505152014.GA8551@cerebellum.variantweb.net>
-	 <1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
-	 <20140505134615.04cb627bb2784cabcb844655@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 5 May 2014 18:24:23 -0400
+Message-ID: <1399328661.2164.54.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH 0/2] namespaces: log namespaces per task
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        serge.hallyn@ubuntu.com, eparis@redhat.com, sgrubb@redhat.com,
+        ebiederm@xmission.com
+Date: Mon, 05 May 2014 15:24:21 -0700
+In-Reply-To: <20140505221148.GD6867@madcap2.tricolour.ca>
+References: <cover.1398176489.git.rgb@redhat.com>
+	 <1399154328.2505.29.camel@dabdike.int.hansenpartnership.com>
+	 <20140505034814.GA27548@mail.hallyn.com>
+	 <20140505214818.GC6867@madcap2.tricolour.ca>
+	 <1399326698.2164.47.camel@dabdike.int.hansenpartnership.com>
+	 <20140505221148.GD6867@madcap2.tricolour.ca>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.12.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-05-05 at 13:46 -0700, Andrew Morton wrote:
-> On Mon, 05 May 2014 11:00:44 -0700 Davidlohr Bueso <davidlohr@hp.com> wrote:
-> 
-> > > > @@ -339,12 +338,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
-> > > >  	unsigned long handle;
-> > > >  	u16 size;
-> > > >  
-> > > > -	read_lock(&meta->tb_lock);
-> > > > +	while(atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) != IDLE)
-> > > > +		cpu_relax();
-> > > > +
+On Mon, 2014-05-05 at 18:11 -0400, Richard Guy Briggs wrote:
+> On 14/05/05, James Bottomley wrote:
+> > On Mon, 2014-05-05 at 17:48 -0400, Richard Guy Briggs wrote:
+> > > On 14/05/05, Serge E. Hallyn wrote:
+> > > > Quoting James Bottomley (James.Bottomley@HansenPartnership.com):
+> > > > > On Tue, 2014-04-22 at 14:12 -0400, Richard Guy Briggs wrote:
+> > > > > > Questions:
+> > > > > > Is there a way to link serial numbers of namespaces involved in migration of a
+> > > > > > container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
+> > > > > > identifier for each running instance of a kernel?  Or at least some identifier
+> > > > > > within the container migration realm?
+> > > > > 
+> > > > > Are you asking for a way of distinguishing an migrated container from an
+> > > > > unmigrated one?  The answer is pretty much "no" because the job of
+> > > > > migration is to restore to the same state as much as possible.
+> > > > > 
+> > > > > Reading between the lines, I think your goal is to correlate audit
+> > > > > information across a container migration, right?  Ideally the management
+> > > > > system should be able to cough up an audit trail for a container
+> > > > > wherever it's running and however many times it's been migrated?
+> > > > > 
+> > > > > In that case, I think your idea of a numeric serial number in a dense
+> > > > > range is wrong.  Because the range is dense you're obviously never going
+> > > > > to be able to use the same serial number across a migration.  However,
+> > > > 
+> > > > Ah, but I was being silly before, we can actually address this pretty
+> > > > simply.  If we just (for instance) add
+> > > > /proc/self/ns/{ic,mnt,net,pid,user,uts}_seq containing the serial number
+> > > > for the relevant ns for the task, then criu can dump this info at
+> > > > checkpoint.  Then at restart it can dump an audit message per task and
+> > > > ns saying old_serial=%x,new_serial=%x.  That way the audit log reader
+> > > > can if it cares keep track.
 > > > 
-> > > So... this might be dumb question, but this looks like a spinlock
-> > > implementation.
-> > > 
-> > > What advantage does this have over a standard spinlock?
+> > > This is the sort of idea I had in mind...
 > > 
-> > I was wondering the same thing. Furthermore by doing this you'll loose
-> > the benefits of sharing the lock... your numbers do indicate that it is
-> > for the better. Also, note that hopefully rwlock_t will soon be updated
-> > to be fair and perform up to par with spinlocks, something which is long
-> > overdue. So you could reduce the critical region by implementing the
-> > same granularity, just don't implement your own locking schemes, like
-> > this.
+> > OK, but I don't understand then why you need a serial number.  There are
+> > plenty of things we preserve across a migration, like namespace name for
+> > instance.  Could you explain what function it performs because I think I
+> > might be missing something.
 > 
-> It sounds like seqlocks will match this access pattern pretty well?
+> If a container was defined as an entity with 6 namespaces to itself,
+> this would make sense.  As Eric P. put it, containers/namespaces seem to
+> be a bucket of semi-related nuts and bolts, with any namespace being
+> optional depending on the application.
 
-Indeed. And after a closer look, except for zram_slot_free_notify(),
-that lock is always shared. So, unless fine graining it implies taking
-the lock exclusively like in this patch (if so, that needs to be
-explicitly documented in the changelog), we would ideally continue to
-share it. That _should_ provide nicer performance numbers when using the
-correct lock.
+That's right.  An IaaS container has a well defined composition, since
+it has to contain a full OS, but an application container is variable.
+
+It's the usual procedure with container management systems to have one
+name for the container and give this name to all the namespaces, but I
+agree, it doesn't have to.
+
+>   My understanding is a
+> container could be migrated to another host requiring the creation of
+> (none,) some or all of its namespaces, potentially leaving behind some
+> of its shared namespaces and/or clashing names of namespaces on the
+> destination host.
+
+Well, no, the environment gets migrated as well so when the migration is
+over, the namespaces the migrated entity is in will look the same as
+before the migration ... if they didn't exist on the recipient, they'll
+be created.  If a namespace already exists the restore fails ... this is
+because we support the usual container case where you're migrating to a
+disjoint set of namespaces.
+
+Even if there were some reason for supporting shared namespaces, the
+fundamental invariant is still the namespace names (i.e. the namespaces
+have the same names before and after migration), so how does a serial
+number help?
+
+James
+
+> > James
+> > 
+> > > > -serge
+> > > > 
+> > > > (Another, more heavyweight approach would be to track all ns hierarchies
+> > > > and make the serial numbers per-namespace-instance.  So my container's
+> > > > pidns serial might be 0x2, and if it clones a new pidns that would be
+> > > > "(0x2,0x1)" on the host, or just 0x1 inside the container.  But we don't
+> > > > need that if the simple userspace approach suffices)
+> > > 
+> > > This sounds manageable...
+> > > 
+> > > - RGB
+> > > 
+> > > --
+> > > Richard Guy Briggs <rbriggs@redhat.com>
+> > > Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+> > > Remote, Ottawa, Canada
+> > > Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> > 
+> > 
+> > 
+> 
+> - RGB
+> 
+> --
+> Richard Guy Briggs <rbriggs@redhat.com>
+> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+> Remote, Ottawa, Canada
+> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
 
 
 
