@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216AbaEEEMR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 00:12:17 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:57387 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaEEEMO (ORCPT
+	id S1751491AbaEEEUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 00:20:09 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35406 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751087AbaEEEUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 00:12:14 -0400
-Message-ID: <53670F35.6010502@linux.vnet.ibm.com>
-Date: Mon, 05 May 2014 09:40:29 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 5 May 2014 00:20:07 -0400
+Date: Sun, 4 May 2014 23:17:21 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+Message-ID: <20140505041721.GD11606@lukather>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140429183758.GH15125@sirena.org.uk>
+ <20140430180609.GC3000@lukather>
+ <20140501011811.GF3245@sirena.org.uk>
+ <20140501223629.GJ3000@lukather>
+ <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
 MIME-Version: 1.0
-To: Pedro Alves <palves@redhat.com>
-CC: linux-kernel@vger.kernel.org, hpa@zytor.com, suresh.b.siddha@intel.com
-Subject: Re: [PATCH] ptrace: Fix PTRACE_GETREGSET/PTRACE_SETREGSET in code
- documentation
-References: <1398682853-7541-1-git-send-email-khandual@linux.vnet.ibm.com> <53625681.8010905@redhat.com>
-In-Reply-To: <53625681.8010905@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050504-5816-0000-0000-00000DD668CD
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ylS2wUBXLOxYXZFQ"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 07:43 PM, Pedro Alves wrote:
-> On 04/28/2014 12:00 PM, Anshuman Khandual wrote:
->> The current documentation is bit misleading and does not explicitly
->> specify that iov.len need to be initialized failing which kernel
->> may just ignore the ptrace request and never read from/write into
->> the user specified buffer. This patch fixes the documentation.
-> 
-> Well, it kind of does, here:
-> 
-> *      struct iovec iov = { buf, len};
 
-:) Thats not explicit enough.
+--ylS2wUBXLOxYXZFQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
->> @@ -43,8 +43,12 @@
->>   *
->>   *	ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->>   *
->> - * On the successful completion, iov.len will be updated by the kernel,
->> - * specifying how much the kernel has written/read to/from the user's iov.buf.
->> + * A non-zero value upto the max size of data expected to be written/read by the
->> + * kernel in response to any NT_XXX_TYPE request type must be assigned to iov.len
->> + * before initiating the ptrace call. If iov.len is 0, then kernel will neither
->> + * read from or write into the user buffer specified. On successful completion,
->> + * iov.len will be updated by the kernel, specifying how much the kernel has
->> + * written/read to/from the user's iov.buf.
-> 
-> I really appreciate that you're trying to make this clearer, but I
-> find the new sentence very hard to read/reason.  :-/
-> 
-> I suggest:
-> 
->  * This interface usage is as follows:
-> - *      struct iovec iov = { buf, len};
-> + *      struct iovec iov = { buf, len };
->  *
->  *      ret = ptrace(PTRACE_GETREGSET/PTRACE_SETREGSET, pid, NT_XXX_TYPE, &iov);
->  *
-> - * On the successful completion, iov.len will be updated by the kernel,
-> - * specifying how much the kernel has written/read to/from the user's iov.buf.
-> + * On entry, iov describes the buffer's address and length.  The buffer's
-> + * length must be equal to or shorter than the size of the NT_XXX_TYPE regset.
-> + * On successful completion, iov.len is updated by the kernel, specifying how
-> + * much the kernel has written/read to/from the user's iov.buf.
-> 
+Hi Geert
 
-Yeah, sounds better. I may add "If the length is zero, the kernel will neither read
-from or write into the buffer"
+On Fri, May 02, 2014 at 01:28:26AM +0200, Geert Uytterhoeven wrote:
+> Hi Maxime,
+>=20
+> On Fri, May 2, 2014 at 12:36 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > But it actually doesn't work in a case where you can't really predict
+> > what is on the other side of the bus. Either because, on the board
+> > you're using the pins are exposed and it's pretty much up to the user
+> > to know what to put on it. That could be handled by DT overlays
+> > though.
+> >
+> > What never works is where the device on the other side is so generic
+> > that you really can't tell what it does. Think of a microcontroller
+> > that would behave as a SPI slave. It's behaviour and what it does is
+> > pretty much dependant of what we flashed on it, and suddenly the
+> > compatible string is not the proper reprensentation anymore.
+>=20
+> So you will (hopefully soon) use overlay DT to change the DTS to match wh=
+at's
+> connected?
 
-> I'm not sure I understood what you're saying correctly, though.  Specifically,
-> I don't know whether the buffer's length must really be shorter than the
-> size of the NT_XXX_TYPE regset.
+Not really, because you can't declare a spidev device in the DT.
 
-No, it does not have to. From the code snippet below (ptrace_regset function)
-the buffer length has to be multiple of regset->size for the given NT_XXX_TYPE
-upto the max regset size for the user to see any valid data. The problem what I
-faced was when you use any iovec structure with the length parameter uninitialized,
-the kernel simply ignores and does not return anything.
+> And then you want spidev to bind to it. Would it help if DT offered a fea=
+ture
+> to add a compatible entry to a driver at runtime, cfr.
+> /sys/bus/pci/drivers/.../new_id on PCI?
 
-        if (!regset || (kiov->iov_len % regset->size) != 0)
-                return -EINVAL;
- 
-> 
->> The current documentation is bit misleading and does not explicitly
->> specify that iov.len need to be initialized failing which kernel
->> may just ignore the ptrace request and never read from/write into
->> the user specified buffer.
-> 
-> You're saying that if iov.len is larger than the NT_XXX_TYPE regset,
-> then the kernel returns _success_, but actually doesn't fill the
-> buffer?  That sounds like a bug to me.
+The thing is, in the core SPI bus, devices are only instiated (in the
+DT case), by parsing the DT. So, to bind a device to a new driver, it
+has to exist in the first place, and it won't exist, because there
+won't be any node in the DT for this device. But since DT is
+unsuitable for such a device, you go back to where we were initially.
 
-No, I am not saying that. The kernel takes care of that situation by capping
-the length to regset size of the NT_XXX_TYPE.
+Maxime
 
- kiov->iov_len = min(kiov->iov_len,
-                            (__kernel_size_t) (regset->n * regset->size));
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--ylS2wUBXLOxYXZFQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Shall I resend the patch with the your proposed changes and your "Signed-off-by" and
-moving myself as "Reported-by" ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTZxDRAAoJEBx+YmzsjxAgsgcQAJmYNBp6yVydJWtoXy3haoEs
+GXBtHDoUsFy742n+/+7p2mL/Cop6lWoNbSLxNQYRSUysJFWBPenI6nIAjUvJKzT1
+iyhCBqTUGVrdDswllZ/GDfdj9vYqGLEaWDmBxcsfVXf6vk6vaXYPCk4L8+u623Rb
+X5SopLZ8Hgsq+ViKykc/f4EYyRZZPtjsgv/vOyRpr0Ys9JfMwmSUptPg3YUo5C2k
+7U0SmNE/tAXTWtLRmfy88ZwsW6ASjhlywSjTS3i+eXxSUnzYEO0f2Y8vCoQx6VOw
+t2A224eoBoNPkkSMs0GGCOL6eucX6ViwN4+TTDuxyFbdbYTJOvrlOHRZmIwvN+Dp
+t57gJuLPNXF8FYjLidt+wqSeLm0t20kK2Tfw6kjNnzQmZoEkRRrCbOpgifI02fzf
+OUENW1oLJnS0VNDY1EvxJ7wf1tbb428hMuZrKw5CqfEoigBGRN1CcXbF0TjIOtRi
+cTbiM8pUBLbvZS4w+UjNR2JbGfwTOfpRoSukrOAuv4m0AS0ujtrUBQgktkEOotMD
+2dnpgH+kBpYajDrAF2zcLq81lSzEB4NrPJY9JsO7Ng+JVG9LA1nFzFNQu3R/we6B
++p8n8D4qg45kw9Lr4JwKL99Li5G262SyB6PbTFjoPE6u/qdtDx38JxrwoL1PImKN
+hz96hVQ3jRzeRFhV7ZNS
+=+HCa
+-----END PGP SIGNATURE-----
 
-
-
-
+--ylS2wUBXLOxYXZFQ--
