@@ -1,99 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747AbaEEHV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:21:59 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:60287 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660AbaEEHV5 (ORCPT
+	id S1754799AbaEEHXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:23:43 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46444 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754637AbaEEHXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:21:57 -0400
-Date: Mon, 5 May 2014 09:21:14 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        linux-man@vger.kernel.org
-Subject: Re: sched_{set,get}attr() manpage
-Message-ID: <20140505072114.GY11096@twins.programming.kicks-ass.net>
-References: <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>
- <20140214161929.GL27965@twins.programming.kicks-ass.net>
- <53020C9D.1050208@gmail.com>
- <20140428081858.GX13658@twins.programming.kicks-ass.net>
- <535FA467.2070403@gmail.com>
- <20140429160441.GU11096@twins.programming.kicks-ass.net>
- <5360D9E5.9080206@gmail.com>
- <20140430130937.GH30445@twins.programming.kicks-ass.net>
- <20140503124355.5d927080518051ca507bc381@gmail.com>
- <536735E0.7020204@gmail.com>
+	Mon, 5 May 2014 03:23:41 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v3] cpufreq: Catch double invocations of
+ cpufreq_freq_transition_begin/end
+To: rjw@rjwysocki.net, mroos@linux.ee, viresh.kumar@linaro.org
+Cc: ego@linux.vnet.ibm.com, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com
+Date: Mon, 05 May 2014 12:52:39 +0530
+Message-ID: <20140505072129.14454.25747.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8bBEDOJVaa9YlTAt"
-Content-Disposition: inline
-In-Reply-To: <536735E0.7020204@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050507-8878-0000-0000-00000C421980
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some cpufreq drivers were redundantly invoking the _begin() and _end()
+APIs around frequency transitions, and this double invocation (one from
+the cpufreq core and the other from the cpufreq driver) used to result
+in a self-deadlock, leading to system hangs during boot. (The _begin()
+API makes contending callers wait until the previous invocation is
+complete. Hence, the cpufreq driver would end up waiting on itself!).
 
---8bBEDOJVaa9YlTAt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Now all such drivers have been fixed, but debugging this issue was not
+very straight-forward (even lockdep didn't catch this). So let us add a
+debug infrastructure to the cpufreq core to catch such issues more easily
+in the future.
 
-On Mon, May 05, 2014 at 08:55:28AM +0200, Michael Kerrisk (man-pages) wrote:
-> Hi Peter,
->=20
-> Looks like a good set of comments from Juri. Could you revise and=20
-> resubmit?
+We add a new field called 'transition_task' to the policy structure, to keep
+track of the task which is performing the frequency transition. Using this
+field, we make note of this task during _begin() and print a warning if we
+find a case where the same task is calling _begin() again, before completing
+the previous frequency transition using the corresponding _end().
 
-Yeah, I'll try and get it done today, but there's a few icky bugs
-waiting for my attention as well, I'll do me bestest :-)
+We have left out ASYNC_NOTIFICATION drivers from this debug infrastructure
+for 2 reasons:
 
-> By the way, I assume you are just writing this page as raw text.
-> While I'd prefer to get proper man markup source, I'll add that
-> if you if you don't :-/.=20
+1. At the moment, we have no way to avoid a particular scenario where this
+   debug infrastructure can emit false-positive warnings for such drivers.
+   The scenario is depicted below:
 
-Well, learning *roff will likely take me more time than writing this
-text + all revisions so far :/ But yeah, I appreciate the grief.
 
-Is there a TeX variant one could use to generate the *roff muck? While
-my TeX isn't entirely fresh its at least something I've done lots of.
+         Task A						Task B
 
-> But, in that case, I need to know the
-> copyright and license you want to use. Please see
-> https://www.kernel.org/doc/man-pages/licenses.html
+    /* 1st freq transition */
+    Invoke _begin() {
+            ...
+            ...
+    }
 
-GPLv2 + DOC (not v2+) sounds good.
+    Change the frequency
 
---8bBEDOJVaa9YlTAt
-Content-Type: application/pgp-signature
+    /* 2nd freq transition */
+    Invoke _begin() {
+	    ...	//waiting for B to
+            ... //finish _end() for
+	    ... //the 1st transition
+	    ...	      |				Got interrupt for successful
+	    ...	      |				change of frequency (1st one).
+	    ...       |
+	    ...	      |				/* 1st freq transition */
+	    ...	      |				Invoke _end() {
+	    ...	      |					...
+	    ...	      V				}
+	    ...
+	    ...
+    }
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+   This scenario is actually deadlock-free because, once Task A changes the
+   frequency, it is Task B's responsibility to invoke the corresponding
+   _end() for the 1st frequency transition. Hence it is perfectly legal for
+   Task A to go ahead and attempt another frequency transition in the meantime.
+   (Of course it won't be able to proceed until Task B finishes the 1st _end(),
+   but this doesn't cause a deadlock or a hang).
 
-iQIcBAEBAgAGBQJTZzvkAAoJEHZH4aRLwOS6dioP/3vnUKo7cZ4mjrphiaN1YzqV
-a/YdxCb3LJ1XbNFr/eTW/XB1MGaXm8lWEI5CwKIM+2QnYJd2NNUa69DY3H1wAWBZ
-YDr5Tg9CH2LN7+bvPLE2UD+TS+MOOvMfS3A3bWZ3HByru99eOouarQwLYA8FXsPf
-wnql/6FcULcpuBen1xeZVusoljMoA8UbhbsrQ8InNYiFSBeoUDThDoNv9vIhSGov
-UksHZeRckZBNOFxTVJVCPf73o5/mXDYoJTZ3D+8WWO99pCeEsDfpo+VTquCxsNo4
-BXi5xCbH0YuAEyQBgkPwcwUWE1sjK35RPQpWXC303FcpM0iNJ4yKycyMEFtcaj2z
-ZMBlHnTNXTnLZFN2qPfXUEqqfeCbV04seJgeDHWUgqTiDDRZABa1e8Y2OamhFnJC
-rCA1SmE1/ejZwh+hj5CFLZlwLiLjN0sxRhMSuOgGTQmoME+SNJBlsG6iLPHDtSlM
-EC7AFKGe9PdGiCfwO3loLQXmE4MfTCp0YPCkrpT/XL+f4WRzm+6G0IQt+X4pGnyR
-s9IpSFujEdvFVVkUy1hwLSkc8dxos7EnRgTOeI/fuJknFIHQZHsdgdum591bgJ+P
-tnTppxET6rZaLwm54LhwM08ZzfhkajVbVwkgidNN3j0aRTJ1zFwYS9lPrXogeVCR
-ijKIGCvoaxkQ8SdqWwem
-=9Rws
------END PGP SIGNATURE-----
+   The debug infrastructure cannot handle this scenario and will treat it as
+   a deadlock and print a warning. To avoid this, we exclude such drivers
+   from the purview of this code.
 
---8bBEDOJVaa9YlTAt--
+2. Luckily, we don't _need_ this infrastructure for ASYNC_NOTIFICATION drivers
+   at all! The cpufreq core does not automatically invoke the _begin() and
+   _end() APIs during frequency transitions in such drivers. Thus, the driver
+   alone is responsible for invoking _begin()/_end() and hence there shouldn't
+   be any conflicts which lead to double invocations. So, we can skip these
+   drivers, since the probability that such drivers will hit this problem is
+   extremely low, as outlined above.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+
+Changes in v3:
+Expanded the comment in the code to briefly mention why ASYNC_NOTIFICATION
+drivers are left out from the check, as suggested by Gautham R. Shenoy.
+No code changes in this version.
+
+v2: https://lkml.org/lkml/2014/4/29/283
+v1: https://lkml.org/lkml/2014/4/28/469
+
+ drivers/cpufreq/cpufreq.c |   14 ++++++++++++++
+ include/linux/cpufreq.h   |    1 +
+ 2 files changed, 15 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index abda660..a05c921 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -354,6 +354,18 @@ static void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+ void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+ 		struct cpufreq_freqs *freqs)
+ {
++
++	/*
++	 * Catch double invocations of _begin() which lead to self-deadlock.
++	 * ASYNC_NOTIFICATION drivers are left out because the cpufreq core
++	 * doesn't invoke _begin() on their behalf, and hence the chances of
++	 * double invocations are very low. Moreover, there are scenarios
++	 * where these checks can emit false-positive warnings in these
++	 * drivers; so we avoid that by skipping them altogether.
++	 */
++	WARN_ON(!(cpufreq_driver->flags & CPUFREQ_ASYNC_NOTIFICATION)
++				&& current == policy->transition_task);
++
+ wait:
+ 	wait_event(policy->transition_wait, !policy->transition_ongoing);
+ 
+@@ -365,6 +377,7 @@ wait:
+ 	}
+ 
+ 	policy->transition_ongoing = true;
++	policy->transition_task = current;
+ 
+ 	spin_unlock(&policy->transition_lock);
+ 
+@@ -381,6 +394,7 @@ void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+ 	cpufreq_notify_post_transition(policy, freqs, transition_failed);
+ 
+ 	policy->transition_ongoing = false;
++	policy->transition_task = NULL;
+ 
+ 	wake_up(&policy->transition_wait);
+ }
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5ae5100..8f44d79 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -110,6 +110,7 @@ struct cpufreq_policy {
+ 	bool			transition_ongoing; /* Tracks transition status */
+ 	spinlock_t		transition_lock;
+ 	wait_queue_head_t	transition_wait;
++	struct task_struct	*transition_task; /* Task which is doing the transition */
+ };
+ 
+ /* Only for ACPI */
+
