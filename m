@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaEEPaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:30:06 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:48889 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753619AbaEEPaE (ORCPT
+	id S1753836AbaEEPb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:31:57 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:34553 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773AbaEEPby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:30:04 -0400
-Date: Mon, 5 May 2014 11:30:02 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Jiri Bohac <jbohac@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 0/4] Convert timekeeping core to use printk_deferred
- (v2)
-Message-ID: <20140505113002.5f8f3671@gandalf.local.home>
-In-Reply-To: <20140502160536.892e6aff76df3398529d09ad@linux-foundation.org>
-References: <1399068558-2373-1-git-send-email-john.stultz@linaro.org>
-	<20140502160536.892e6aff76df3398529d09ad@linux-foundation.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Mon, 5 May 2014 11:31:54 -0400
+Message-ID: <5367AEF7.40804@linaro.org>
+Date: Mon, 05 May 2014 17:32:07 +0200
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>
+CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 1/7] apei, mce: Call MCE-specific code only for X86 architecture.
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org> <20140505114445.GB4373@pd.tnic> <5367A181.3060300@linaro.org> <20140505145331.GC4373@pd.tnic>
+In-Reply-To: <20140505145331.GC4373@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014 16:05:36 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On 05.05.2014 16:53, Borislav Petkov wrote:
+> On Mon, May 05, 2014 at 04:34:41PM +0200, Tomasz Nowicki wrote:
+>> acpi_disable_cmcff as global value can switch off/on MC entries
+>> analysing via kernel args.
+>
+> No, it switches off firmware first mode for correctable errors because
+> of buggy BIOSes - 9ad95879cd1b2 (what else...)
+>
+>> This glob value resides in x86 ACPI code and has meaning only for MCE
+>> related mechanism,
+>
+> Of course it doesn't!
+>
+>> that is why I have moved it under hest_parse_cmc.
+>
+> See APEI section in the ACPI spec "18.4 Firmware First Error Handling."
+>
+> Regardless of what your version of APEI does, you actually shouldn't
+> need to touch acpi_disable_cmcff at all as it not arch-specific.
+>
 
+You are right! I will fix that big misunderstanding from my side in next 
+patch version.
 
-> Would "printk_deferred_once" be more logical than
-> "printk_once_deferred"?  Think so.  It's (((printk(deferred(once))),
-> not (((printk(once(deferred))).
-
-Or printk_once_removed()? Or does that only deal with cousins?
-
--- Steve
+Thanks,
+Tomasz
