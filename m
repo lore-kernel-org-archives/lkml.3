@@ -1,123 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaEECLI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 22:11:08 -0400
-Received: from ozlabs.org ([103.22.144.67]:43904 "EHLO ozlabs.org"
+	id S1754223AbaEECUG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 22:20:06 -0400
+Received: from ozlabs.org ([103.22.144.67]:39676 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756AbaEECLG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 22:11:06 -0400
-Date: Mon, 5 May 2014 12:10:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        =?UTF-8?B?IlN0w6lwaGFuZSBH?= =?UTF-8?B?cmFiZXIi?= 
-	<stgraber@ubuntu.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140505121059.3bfeee816db3c39945734897@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_May_2014_12_10_59_+1000_e/250.re52uThTYt"
+	id S1754018AbaEECUC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 22:20:02 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mateusz Guzik <mguzik@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
+In-Reply-To: <20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
+References: <20140402144219.4cafbe37@gandalf.local.home> <20140402221212.GD16570@mguzik.redhat.com> <CA+55aFyZSr4G2a1X5+EeSgKGtZvzBfBg0D0L39g-DB9TLi+ZEw@mail.gmail.com> <87wqf1oi22.fsf@rustcorp.com.au> <20140502153409.329d3b5b426275e8197251a2@linux-foundation.org>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 05 May 2014 11:47:22 +0930
+Message-ID: <871tw9c6kt.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_May_2014_12_10_59_+1000_e/250.re52uThTYt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew Morton <akpm@linux-foundation.org> writes:
+> On Mon, 07 Apr 2014 14:24:45 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>> Subject: param: hand arguments after -- straight to init
+>> 
+>> The kernel passes any args it doesn't need through to init, except it
+>> assumes anything containing '.' belongs to the kernel (for a module).
+>> This change means all users can clearly distinguish which arguments
+>> are for init.
+>> 
+>> For example, the kernel uses debug ("dee-bug") to mean log everything to
+>> the console, where systemd uses the debug from the Scandinavian "day-boog"
+>> meaning "fail to boot".  If a future versions uses argv[] instead of
+>> reading /proc/cmdline, this confusion will be avoided.
+>> 
+>> eg: test 'FOO="this is --foo"' -- 'systemd.debug="true true true"'
+>> 
+>> Gives:
+>> argv[0] = '/debug-init'
+>> argv[1] = 'test'
+>> argv[2] = 'systemd.debug=true true true'
+>> envp[0] = 'HOME=/'
+>> envp[1] = 'TERM=linux'
+>> envp[2] = 'FOO=this is --foo'
+>
+> This (user-facing) feature doesn't seem to have been documented
+> anywhere.  Documentation/kernel-parameters.txt, I guess.
 
-Hi all,
+That document does need some love.  How's this?
 
-Today's linux-next merge of the net-next tree got conflicts in
-net/sched/sch_api.c and net/sched/cls_api.c between commit 90f62cf30a78
-("net: Use netlink_ns_capable to verify the permisions of netlink
-messages") from the net tree and commit 4e8bbb819d15 ("net: Allow tc
-changes in user namespaces") from the net-next tree.
+1) __setup() is messy, prefer module_param and core_param.
+2) Document --
+3) Document modprobe scraping /proc/cmdline.
+4) Document handing of leftover parameters to init.
+5) Document use of quotes to protect whitespace.
 
-I fixed it up (hopefully, see below) and can carry the fix as necessary
-(no action is required).
-
---=20
-Cheers,
-Stephen Rothwell <sfr@canb.auug.org.au>
-
-diff --cc net/sched/cls_api.c
-index bdbdb1a7920a,1a4a20267787..000000000000
---- a/net/sched/cls_api.c
-+++ b/net/sched/cls_api.c
-@@@ -134,7 -134,8 +134,8 @@@ static int tc_ctl_tfilter(struct sk_buf
-  	int err;
-  	int tp_created =3D 0;
- =20
-- 	if ((n->nlmsg_type !=3D RTM_GETTFILTER) && !netlink_capable(skb, CAP_NET=
-_ADMIN))
-+ 	if ((n->nlmsg_type !=3D RTM_GETTFILTER) &&
- -	    !ns_capable(net->user_ns, CAP_NET_ADMIN))
-++	    !netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN))
-  		return -EPERM;
- =20
-  replay:
-diff --cc net/sched/sch_api.c
-index 400769014bbd,86f8edfd6b8a..000000000000
---- a/net/sched/sch_api.c
-+++ b/net/sched/sch_api.c
-@@@ -1084,7 -1084,8 +1084,8 @@@ static int tc_get_qdisc(struct sk_buff=20
-  	struct Qdisc *p =3D NULL;
-  	int err;
- =20
-- 	if ((n->nlmsg_type !=3D RTM_GETQDISC) && !netlink_capable(skb, CAP_NET_A=
-DMIN))
-+ 	if ((n->nlmsg_type !=3D RTM_GETQDISC) &&
- -	    !ns_capable(net->user_ns, CAP_NET_ADMIN))
-++	    !netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN))
-  		return -EPERM;
- =20
-  	err =3D nlmsg_parse(n, sizeof(*tcm), tca, TCA_MAX, NULL);
-@@@ -1151,7 -1152,7 +1152,7 @@@ static int tc_modify_qdisc(struct sk_bu
-  	struct Qdisc *q, *p;
-  	int err;
- =20
-- 	if (!netlink_capable(skb, CAP_NET_ADMIN))
- -	if (!ns_capable(net->user_ns, CAP_NET_ADMIN))
-++	if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN))
-  		return -EPERM;
- =20
-  replay:
-@@@ -1490,7 -1491,8 +1491,8 @@@ static int tc_ctl_tclass(struct sk_buf
-  	u32 qid;
-  	int err;
- =20
-- 	if ((n->nlmsg_type !=3D RTM_GETTCLASS) && !netlink_capable(skb, CAP_NET_=
-ADMIN))
-+ 	if ((n->nlmsg_type !=3D RTM_GETTCLASS) &&
- -	    !ns_capable(net->user_ns, CAP_NET_ADMIN))
-++	    !netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN))
-  		return -EPERM;
- =20
-  	err =3D nlmsg_parse(n, sizeof(*tcm), tca, TCA_MAX, NULL);
-
---Signature=_Mon__5_May_2014_12_10_59_+1000_e/250.re52uThTYt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTZvM3AAoJEMDTa8Ir7ZwV8CAP/ArqZdNL62aJbSzEv3rAvPuT
-ttounYrLSki9wsiP405XfCYYeXoRnGvLe3wxsP430W71WN+j/5IxO0Bb0rNfNNgb
-MXvRyLP1ahOsqipoD9Tz6Og4H4FCpPXQXtXY8S19uGbg5h6MgbuC+PSwWeeazK70
-3nN4S8K7pAS1s5p1QHJp3E/R5q2fEaXIbEgNhD5KcOVU8dbYCoQfgp+PxHwBfaR+
-07c4sdR6T0S40obuOAh/FccpOHFNzkK9WrC8QPQlVpv4iKmPcgYCK00nAMGWa3zy
-ohwlDLUKFAK/jbpv3fw9anbMDymlBvpSA9H/MBTzs6U1m5lR4gs8TD5eAhydhJEN
-V5iUTQ7nafQABdpMqZ4/c4tPHA7mhdZtGoYIJot9osyOKVhDBrwfVpYzZIDWIePi
-4mhkJIj/zHSxt/UDuBkI2/0D2EfvREYSt32ZnrpdxiyXr0iEoXLM338XPp2T7YJ+
-uQ/YJzeXjCYricUMB0kmhn27+O2cZUwl09s2TYPpVG68QwzQwQPkSlAMDdra47Ev
-4N4hRbe8JCXnAl/iZguBvf08yUeTAgWrgrkBaZrAlKuc905JoSo2HmjAEXs1jb8n
-GR4N9pCzu+0IlhN4Jj7Xsxk1lte6w94+Bpt2vCChnsx3UBflwcJSt+c8yi++WL+e
-vinmpifQp7M0LyNld7jj
-=smVQ
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_May_2014_12_10_59_+1000_e/250.re52uThTYt--
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 43842177b771..56a4c2d0c741 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1,27 +1,37 @@
+                           Kernel Parameters
+                           ~~~~~~~~~~~~~~~~~
+ 
+-The following is a consolidated list of the kernel parameters as implemented
+-(mostly) by the __setup() macro and sorted into English Dictionary order
+-(defined as ignoring all punctuation and sorting digits before letters in a
+-case insensitive manner), and with descriptions where known.
+-
+-Module parameters for loadable modules are specified only as the
+-parameter name with optional '=' and value as appropriate, such as:
+-
+-	modprobe usbcore blinkenlights=1
+-
+-Module parameters for modules that are built into the kernel image
+-are specified on the kernel command line with the module name plus
+-'.' plus parameter name, with '=' and value if appropriate, such as:
+-
+-	usbcore.blinkenlights=1
++The following is a consolidated list of the kernel parameters as
++implemented by the __setup(), core_param() and module_param() macros
++and sorted into English Dictionary order (defined as ignoring all
++punctuation and sorting digits before letters in a case insensitive
++manner), and with descriptions where known.
++
++The kernel parses parameters from the kernel command line up to "--";
++if it doesn't recognize a parameter and it doesn't contain a '.', the
++parameter gets passed to init: parameters with '=' go into init's
++environment, others are passed as command line arguments to init.
++Everything after "--" is passed as an argument to init.
++
++Module parameters can be specified in two ways: via the kernel command
++line with a module name prefix, or via modprobe, eg:
++
++	(kernel command line) usbcore.blinkenlights=1
++	(modprobe command line) modprobe usbcore blinkenlights=1
++
++Parameters for modules which are built into the kernel need to be
++specified on the kernel command line.  modprobe looks through the
++kernel command line (/proc/cmdline) and collects module parameters
++when it loads a module, so the kernel command line can be used for
++loadable modules too.
+ 
+ Hyphens (dashes) and underscores are equivalent in parameter names, so
+ 	log_buf_len=1M print-fatal-signals=1
+ can also be entered as
+ 	log-buf-len=1M print_fatal_signals=1
+ 
++Double-quotes can be used to protect spaces in values, eg:
++	param="spaces in here"
+ 
+ This document may not be entirely up to date and comprehensive. The command
+ "modinfo -p ${modulename}" shows a current list of all parameters of a loadable
