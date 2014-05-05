@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900AbaEEUhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:37:25 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:56665 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755819AbaEEUhV (ORCPT
+	id S1755370AbaEEUkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:40:19 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46088 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629AbaEEUkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:37:21 -0400
+	Mon, 5 May 2014 16:40:17 -0400
+Date: Mon, 5 May 2014 13:40:22 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Boris BREZILLON <brezillonboris@gmail.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: Re: [PATCH] net: macb: set interface name based on DT aliases
+Message-ID: <20140505204022.GA27961@quad.lixom.net>
+References: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1398904476-26200-9-git-send-email-s-anna@ti.com>
-References: <1398904476-26200-1-git-send-email-s-anna@ti.com>
-	<1398904476-26200-9-git-send-email-s-anna@ti.com>
-Date: Mon, 5 May 2014 15:37:20 -0500
-Message-ID: <CAL_JsqJW1pqUjQ3DQrppO5n=MmpFOhCyU2zkSzA9s9TpYbq3CA@mail.gmail.com>
-Subject: Re: [PATCHv5 RFC 08/15] hwspinlock/core: add support for base id in DT
-From: Rob Herring <robherring2@gmail.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394620196-6295-1-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 30, 2014 at 7:34 PM, Suman Anna <s-anna@ti.com> wrote:
-> The HwSpinlock core requires a base id for registering a bank
-> of hwspinlocks. This base id needs to be unique across multiple
-> IP instances of a hwspinlock device, so that each hwlock can be
-> represented uniquely in a system.
->
-> Support has been added to represent this in DT through a common
-> property 'hwlock-base-id', and retrieve the value through a core
-> OF helper function, of_hwspin_lock_get_base_id(). The representation
-> in DT provides a uniform way of assigning a fixed base value for a
-> hwspinlock device across different SoCs.
->
-> Signed-off-by: Suman Anna <s-anna@ti.com>
+On Wed, Mar 12, 2014 at 11:29:56AM +0100, Boris BREZILLON wrote:
+> Use aliases to set the interface name (ethX) instead of automatic
+> assignement.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
 > ---
->  Documentation/devicetree/bindings/hwlock/hwlock.txt |  6 ++++++
->  drivers/hwspinlock/hwspinlock_core.c                | 21 +++++++++++++++++++++
->  include/linux/hwspinlock.h                          |  1 +
->  3 files changed, 28 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> index 32381cc..d538a9b 100644
-> --- a/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> @@ -18,6 +18,12 @@ Common properties:
->                         property is needed on hwlock devices, where the number
->                         of supported locks within a hwlock device cannot be
->                         read from a register.
-> +- hwlock-base-id:      An unique base Id for the locks for a particular hwlock
-> +                       device. This property is mandatory ONLY if a SoC has
-> +                       several hwlock devices.
-> +
-> +                       See documentation on struct hwspinlock_pdata in
-> +                       include/linux/hwspinlock.h for more details.
+> 
+> Hello Nicolas, Jean-Christophe,
+> 
+> This is an example on how we could set the ethernet interface id based on DT
+> aliases.
+> As you can see this patch is not properly separated.
+> 
+> I'm still not happy with this approach for several reasons:
+> 1) If another ethernet iface has already been registered with the same id the
+>    net dev registration will fail.
+> 2) We bypass the ethernet macros/functions and directly use the net device
+>    functions which IMHO is not future proof.
 
-The documentation cannot refer to kernel files. Generally, creating a
-global number space like this would not be accepted, but I don't
-really have any better idea here.
+[Sorry for the late reply, going through old backlog of unread email]
 
-Please put all binding docs in 1 patch and copy all the DT binding maintainers.
+Looks like this should live in networking core instead of in the driver, it's
+how we handle it in other subsystems.
 
-Rob
+I don't know what DaveM's opinions on that is though.
+
+
+-Olof
+
