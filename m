@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072AbaEEOsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:48:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44184 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932448AbaEEOsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:48:31 -0400
-Message-ID: <5367A4BD.2010209@suse.cz>
-Date: Mon, 05 May 2014 16:48:29 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch v2 4/4] mm, thp: do not perform sync compaction on pagefault
-References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011435210.23898@chino.kir.corp.google.com> <20140502102231.GQ23991@suse.de> <alpine.DEB.2.02.1405020402500.19297@chino.kir.corp.google.com> <20140502115834.GR23991@suse.de> <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1405021319350.24195@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933088AbaEEOsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:48:46 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:61194 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932448AbaEEOsn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:48:43 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, arnd@arndb.de,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] tty: serial: uartlite: Specify time for sending chars
+Date: Mon,  5 May 2014 16:48:26 +0200
+Message-Id: <4c1854686987185d547d1d548f89248cb27ba40c.1399301297.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-4835-1399301306-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 10:29 PM, David Rientjes wrote:
-> On Fri, 2 May 2014, Mel Gorman wrote:
->
->>> The page locks I'm referring to is the lock_page() in __unmap_and_move()
->>> that gets called for sync compaction after the migrate_pages() iteration
->>> makes a few passes and unsuccessfully grabs it.  This becomes a forced
->>> migration since __unmap_and_move() returns -EAGAIN when the trylock fails.
->>>
->>
->> Can that be fixed then instead of disabling it entirely?
->>
->
-> We could return -EAGAIN when the trylock_page() fails for
-> MIGRATE_SYNC_LIGHT.  It would become a forced migration but we ignore that
-> currently for MIGRATE_ASYNC, and I could extend it to be ignored for
-> MIGRATE_SYNC_LIGHT as well.
->
->>> We have perf profiles from one workload in particular that shows
->>> contention on i_mmap_mutex (anon isn't interesting since the vast majority
->>> of memory on this workload [120GB on a 128GB machine] is has a gup pin and
->>> doesn't get isolated because of 119d6d59dcc0 ("mm, compaction: avoid
->>> isolating pinned pages")) between cpus all doing memory compaction trying
->>> to fault thp memory.
->>>
->>
->> Abort SYNC_LIGHT compaction if the mutex is contended.
->>
->
-> Yeah, I have patches for that as well but we're waiting to see if they are
-> actually needed when sync compaction is disabled for thp.  If we aren't
-> actually going to disable it entirely, then I can revive those patches if
-> the contention becomes such an issue.
->
->>> That's one example that we've seen, but the fact remains that at times
->>> sync compaction will iterate the entire 128GB machine and not allow an
->>> order-9 page to be allocated and there's nothing to preempt it like the
->>> need_resched() or lock contention checks that async compaction has.
->>
->> Make compact_control->sync the same enum field and check for contention
->> on the async/sync_light case but leave it for sync if compacting via the
->> proc interface?
->>
->
-> Ok, that certainly can be done, I wasn't sure you would be happy with such
-> a change.  I'm not sure there's so much of a difference between the new
-> compact_control->sync == MIGRATE_ASYNC and == MIGRATE_SYNC_LIGHT now,
-> though.  Would it make sense to remove MIGRATE_SYNC_LIGHT entirely from
-> the page allocator, i.e. remove sync_migration entirely, and just retry
-> with a second call to compaction before failing instead?
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Maybe we should step back and rethink the conditions for all sources of 
-compaction to better balance effort vs desired outcome, so distinguish 4 
-modes (just quick thoughts):
+--=_mimegpg-monstr-desktop-4835-1399301306-0001
 
-1) kswapd - we don't want to slow it down too much, thus async, uses 
-cached pfns, honors skip bits, but does not give up on order=X blocks of 
-pages just because some page was unable to be isolated/migrated (so 
-gradually it might clean up such block over time).
+Xilinx MDM (Microblaze Debug Module) also contains
+uart interface via JTAG which is compatible with
+uartlite driver. This interface is really slow
+that's why timeout is setup to 1s.
 
-2) hugepaged - it can afford to wait, so async + sync, use cached pfns, 
-ignore skip bits on sync, also do not give up on order=THP blocks (?)
+Make this time delay not to be cpu speed dependent.
 
-3) direct compaction on allocation of order X- we want to avoid 
-allocation latencies, so it should skip over order=X blocks of pages as 
-soon as it cannot isolate some page in such block (and put back 
-already-isolated pages instead of migrating them). As for other 
-parameters I'm not sure. Sync should still be possible thanks to the 
-deferred_compaction logic? Maybe somehow transform the yes/no answer of 
-deferred compaction to a number of how many pageblocks it should try 
-before giving up, so there are no latency spikes limited only by the 
-size of the zone?
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-4) compaction from proc interface - sync, reset cached pfn's, ignore 
-deferring, ignore skip bits...
+RFC sent here:
+https://lkml.org/lkml/2013/9/30/250
+I finally got HW design which is just slow to be able
+to test it.
 
-Vlastimil
+---
+ drivers/tty/serial/uartlite.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
+index 5f90ef24d475..723a6b79cd14 100644
+--- a/drivers/tty/serial/uartlite.c
++++ b/drivers/tty/serial/uartlite.c
+@@ -418,14 +418,20 @@ static struct uart_ops ulite_ops = {
+ #ifdef CONFIG_SERIAL_UARTLITE_CONSOLE
+ static void ulite_console_wait_tx(struct uart_port *port)
+ {
+-	int i;
+ 	u8 val;
++	unsigned long timeout;
+
+ 	/* Spin waiting for TX fifo to have space available */
+-	for (i = 0; i < 100000; i++) {
++	timeout = jiffies + msecs_to_jiffies(1000);
++	while (1) {
+ 		val = uart_in32(ULITE_STATUS, port);
+ 		if ((val & ULITE_STATUS_TXFULL) == 0)
+ 			break;
++		if (time_after(jiffies, timeout)) {
++			dev_warn(port->dev,
++				 "timeout waiting for TX buffer empty\n");
++			break;
++		}
+ 		cpu_relax();
+ 	}
+ }
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-4835-1399301306-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlNnpLoACgkQykllyylKDCH/5ACeILvWyFYbL5v0PW4/HC+WilTH
+So8An2C8Jlcq8hnO444Sy+PnngcabCjz
+=L/+W
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-4835-1399301306-0001--
