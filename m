@@ -1,290 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729AbaEEUwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:52:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755988AbaEEUvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:51:16 -0400
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        imammedo@redhat.com, bp@suse.de, paul.gortmaker@windriver.com,
-        JBeulich@suse.com, prarit@redhat.com, drjones@redhat.com,
-        toshi.kani@hp.com, riel@redhat.com, gong.chen@linux.intel.com,
-        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v5 4/4] x86: initialize secondary CPU only if master CPU will wait for it
-Date: Mon,  5 May 2014 22:49:51 +0200
-Message-Id: <1399322991-19329-5-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1399322991-19329-1-git-send-email-imammedo@redhat.com>
-References: <1399322991-19329-1-git-send-email-imammedo@redhat.com>
+	id S1756743AbaEEUw1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:52:27 -0400
+Received: from smtprelay0102.hostedemail.com ([216.40.44.102]:57825 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755358AbaEEUwX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:52:23 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2525:2553:2561:2564:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:7652:7903:7904:8531:8985:9025:9388:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12740:13069:13161:13229:13311:13357:13437:13548:14094,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,N
+X-HE-Tag: hall07_141d1e57cb019
+X-Filterd-Recvd-Size: 3155
+Message-ID: <1399323136.26330.22.camel@joe-AO725>
+Subject: Re: [PATCH] plist: replace pr_debug with printk in plist_test()
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Streetman <ddstreet@ieee.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, Fabian Frederick <fabf@skynet.be>
+Date: Mon, 05 May 2014 13:52:16 -0700
+In-Reply-To: <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+References: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+	 <1399300985-11137-1-git-send-email-ddstreet@ieee.org>
+	 <20140505133517.71b7dc7cf327cb304e8a9edc@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hang is observed on virtual machines during CPU hotplug,
-especially in big guests with many CPUs. (It reproducible
-more often if host is over-committed).
+On Mon, 2014-05-05 at 13:35 -0700, Andrew Morton wrote:
+> On Mon,  5 May 2014 10:43:05 -0400 Dan Streetman <ddstreet@ieee.org> wrote:
+> 
+> > Replace pr_debug() in lib/plist.c test function plist_test() with
+> > printk(KERN_DEBUG ...).
+> > 
+> > Without DEBUG defined, pr_debug() is complied out, but the entire
+> > plist_test() function is already inside CONFIG_DEBUG_PI_LIST, so
+> > printk should just be used directly.
+> >
+> > --- a/lib/plist.c
+> > +++ b/lib/plist.c
+> > @@ -175,7 +175,7 @@ static int  __init plist_test(void)
+> >  	int nr_expect = 0, i, loop;
+> >  	unsigned int r = local_clock();
+> >  
+> > -	pr_debug("start plist test\n");
+> > +	printk(KERN_DEBUG "start plist test\n");
+> 
+> Now someone will come along and helpfully switch it back to pr_debug()
+> again :(
+> 
+> What about adding a #define DEBUG?
 
-It happens because master CPU gives up waiting on
-secondary CPU and allows it to run wild. As result
-AP causes locking or crashing system. For example
-as described here: https://lkml.org/lkml/2014/3/6/257
+That can be unfortunate when there are other
 
-If master CPU have sent STARTUP IPI successfully,
-and AP signalled to master CPU that it's ready
-to start initialization, make master CPU wait
-indefinitely till AP is onlined.
-To ensure that AP won't ever run wild, make it
-wait at early startup till master CPU confirms its
-intention to wait for AP. If AP doesn't respond in 10
-seconds, the master CPU will timeout and cancel
-AP onlining.
+#if DEBUG
+	some noisy or unnecessary code...
+#endif
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
----
-v2:
- - ammend comment in cpu_init()
-v3:
- - leave timeouts in do_boot_cpu(), so that master CPU
-   won't hang if AP doesn't respond, use cpu_initialized_mask
-   as a way for AP to signal to master CPU that it's ready
-   to start initialzation.
-v4:
- - move commont code in cpu_init() for x32/x64 in shared
-   helper function wait_formaster_cpu()
- - add WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
-   to wait_formaster_cpu()
-v5:
- - add smp_mb() after clearing cpu_initialized_mask in do_boot_cpu()
- - add 10 sec timeout description into commit message.
----
- arch/x86/kernel/cpu/common.c |   27 +++++++-----
- arch/x86/kernel/smpboot.c    |   99 +++++++++++++-----------------------------
- 2 files changed, 47 insertions(+), 79 deletions(-)
+blocks in the same compilation unit.
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index a135239..a4bcbac 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1221,6 +1221,17 @@ static void dbg_restore_debug_regs(void)
- #define dbg_restore_debug_regs()
- #endif /* ! CONFIG_KGDB */
- 
-+static void wait_for_master_cpu(int cpu)
-+{
-+	/*
-+	 * wait for ACK from master CPU before continuing
-+	 * with AP initialization
-+	 */
-+	WARN_ON(cpumask_test_and_set_cpu(cpu, cpu_initialized_mask));
-+	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-+		cpu_relax();
-+}
-+
- /*
-  * cpu_init() initializes state that is per-CPU. Some data is already
-  * initialized (naturally) in the bootstrap process, such as the GDT
-@@ -1236,16 +1247,17 @@ void cpu_init(void)
- 	struct task_struct *me;
- 	struct tss_struct *t;
- 	unsigned long v;
--	int cpu;
-+	int cpu = stack_smp_processor_id();
- 	int i;
- 
-+	wait_for_master_cpu(cpu);
-+
- 	/*
- 	 * Load microcode on this cpu if a valid microcode is available.
- 	 * This is early microcode loading procedure.
- 	 */
- 	load_ucode_ap();
- 
--	cpu = stack_smp_processor_id();
- 	t = &per_cpu(init_tss, cpu);
- 	oist = &per_cpu(orig_ist, cpu);
- 
-@@ -1257,9 +1269,6 @@ void cpu_init(void)
- 
- 	me = current;
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
--		panic("CPU#%d already initialized!\n", cpu);
--
- 	pr_debug("Initializing CPU#%d\n", cpu);
- 
- 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
-@@ -1336,13 +1345,9 @@ void cpu_init(void)
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
- 	struct thread_struct *thread = &curr->thread;
- 
--	show_ucode_info_early();
-+	wait_for_master_cpu(cpu);
- 
--	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
--		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
--		for (;;)
--			local_irq_enable();
--	}
-+	show_ucode_info_early();
- 
- 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index ae2fd97..bc52fac 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -111,7 +111,6 @@ atomic_t init_deasserted;
- static void smp_callin(void)
- {
- 	int cpuid, phys_id;
--	unsigned long timeout;
- 
- 	/*
- 	 * If waken up by an INIT in an 82489DX configuration
-@@ -130,37 +129,6 @@ static void smp_callin(void)
- 	 * (This works even if the APIC is not enabled.)
- 	 */
- 	phys_id = read_apic_id();
--	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
--		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
--					phys_id, cpuid);
--	}
--	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
--
--	/*
--	 * STARTUP IPIs are fragile beasts as they might sometimes
--	 * trigger some glue motherboard logic. Complete APIC bus
--	 * silence for 1 second, this overestimates the time the
--	 * boot CPU is spending to send the up to 2 STARTUP IPIs
--	 * by a factor of two. This should be enough.
--	 */
--
--	/*
--	 * Waiting 2s total for startup (udelay is not yet working)
--	 */
--	timeout = jiffies + 2*HZ;
--	while (time_before(jiffies, timeout)) {
--		/*
--		 * Has the boot CPU finished it's STARTUP sequence?
--		 */
--		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
--			break;
--		cpu_relax();
--	}
--
--	if (!time_before(jiffies, timeout)) {
--		panic("%s: CPU%d started up but did not get a callout!\n",
--		      __func__, cpuid);
--	}
- 
- 	/*
- 	 * the boot CPU has finished the init stage and is spinning
-@@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	unsigned long start_ip = real_mode_header->trampoline_start;
- 
- 	unsigned long boot_error = 0;
--	int timeout;
- 	int cpu0_nmi_registered = 0;
-+	unsigned long timeout;
- 
- 	/* Just in case we booted with a single CPU. */
- 	alternatives_enable_smp();
-@@ -799,6 +767,15 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	}
- 
- 	/*
-+	 * AP might wait on cpu_callout_mask in cpu_init() with
-+	 * cpu_initialized_mask set if previous attempt to online
-+	 * it timed-out. Clear cpu_initialized_mask so that after
-+	 * INIT/SIPI it could start with a clean state.
-+	 */
-+	cpumask_clear_cpu(cpu, cpu_initialized_mask);
-+	smp_mb();
-+
-+	/*
- 	 * Wake up a CPU in difference cases:
- 	 * - Use the method in the APIC driver if it's defined
- 	 * Otherwise,
-@@ -810,55 +787,41 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
- 						     &cpu0_nmi_registered);
- 
-+
- 	if (!boot_error) {
- 		/*
--		 * allow APs to start initializing.
-+		 * Wait 10s total for a response from AP
- 		 */
--		pr_debug("Before Callout %d\n", cpu);
--		cpumask_set_cpu(cpu, cpu_callout_mask);
--		pr_debug("After Callout %d\n", cpu);
-+		boot_error = -1;
-+		timeout = jiffies + 10*HZ;
-+		while (time_before(jiffies, timeout)) {
-+			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
-+				/*
-+				 * Tell AP to proceed with initialization
-+				 */
-+				cpumask_set_cpu(cpu, cpu_callout_mask);
-+				boot_error = 0;
-+				break;
-+			}
-+			udelay(100);
-+			schedule();
-+		}
-+	}
- 
-+	if (!boot_error) {
- 		/*
--		 * Wait 5s total for a response
-+		 * Wait till AP completes initial initialization
- 		 */
--		for (timeout = 0; timeout < 50000; timeout++) {
--			if (cpumask_test_cpu(cpu, cpu_callin_mask))
--				break;	/* It has booted */
--			udelay(100);
-+		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
- 			/*
- 			 * Allow other tasks to run while we wait for the
- 			 * AP to come online. This also gives a chance
- 			 * for the MTRR work(triggered by the AP coming online)
- 			 * to be completed in the stop machine context.
- 			 */
-+			udelay(100);
- 			schedule();
- 		}
--
--		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
--			print_cpu_msr(&cpu_data(cpu));
--			pr_debug("CPU%d: has booted.\n", cpu);
--		} else {
--			boot_error = 1;
--			if (*trampoline_status == 0xA5A5A5A5)
--				/* trampoline started but...? */
--				pr_err("CPU%d: Stuck ??\n", cpu);
--			else
--				/* trampoline code not run */
--				pr_err("CPU%d: Not responding\n", cpu);
--			if (apic->inquire_remote_apic)
--				apic->inquire_remote_apic(apicid);
--		}
--	}
--
--	if (boot_error) {
--		/* Try to put things back the way they were before ... */
--		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
--
--		/* was set by do_boot_cpu() */
--		cpumask_clear_cpu(cpu, cpu_callout_mask);
--
--		/* was set by cpu_init() */
--		cpumask_clear_cpu(cpu, cpu_initialized_mask);
- 	}
- 
- 	/* mark "stuck" area as not stuck */
--- 
-1.7.1
+> This aspect of pr_debug() is rather surprising and unfortunate and I
+> guess we screwed it up.
+
+meh.
+
+It's been this way for quite awhile.
+
+I have over long periods suggested adding
+variants like pr_vdbg and pr_dbg_always.
+
+https://lkml.org/lkml/2009/10/13/634
+http://patchwork.ozlabs.org/patch/63513/
+
+Never had much success or visibility.
+
+> pr_debug() should unconditionally do the
+> printk, just like pr_warn, pr_emerg, etc.
+
+I think that would not be good.
+
+That would set an expectation for dev_dbg which
+has never been enabled unconditionally.
+
+> And there should be a
+> separate pr_debug_cond() which honours the DEBUG setting.
+
+I think that's suboptimal.
+
+> akpm3:/usr/src/linux-3.15-rc4> grep -r pr_debug . | wc -l
+> 10286
+> 
+> Boy, that's going to be a big patch ;)
+
+$ git grep -E "\bprintk\s*\(s*KERN_DEBUG\b" | wc -l
+4412
+
+Not to mention all the macros that use those and are
+then themselves used hundreds or thousands of times...
+
 
