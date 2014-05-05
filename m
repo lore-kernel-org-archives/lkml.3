@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756494AbaEEVTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:19:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51156 "EHLO
+	id S1756686AbaEEVUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:20:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51161 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaEEVTh (ORCPT
+	with ESMTP id S1755766AbaEEVUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:19:37 -0400
-Date: Mon, 5 May 2014 14:22:43 -0700
+	Mon, 5 May 2014 17:20:09 -0400
+Date: Mon, 5 May 2014 14:23:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PULL] Staging driver fixes for 3.15-rc5
-Message-ID: <20140505212243.GA3758@kroah.com>
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PULL] TTY/Serial fixes for 3.15-rc5
+Message-ID: <20140505212315.GA3885@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,39 +29,34 @@ The following changes since commit d1db0eea852497762cab43b905b879dfcd3b8987:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.15-rc4
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.15-rc4
 
-for you to fetch changes up to 86281966c7395aa9a13a20c52e26005f5e142451:
+for you to fetch changes up to 62a0d8d7c2b29f92850e4ee3c38e5dfd936e92b2:
 
-  Merge tag 'iio-fixes-for-3.15b' of git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio into staging-linus (2014-04-30 14:19:23 -0700)
+  tty: Fix lockless tty buffer race (2014-05-03 18:14:28 -0400)
 
 ----------------------------------------------------------------
+TTY/Serial fixes for 3.15-rc4
 
-Staging / IIO fixes for 3.15-rc4
-
-Here are some small IIO driver fixes for 3.15-rc4 that resolve some
-reported issues.
+Here are some tty and serial driver fixes for things reported recently.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Atilla Filiz (1):
-      iio:imu:mpu6050: Fixed segfault in Invensens MPU driver due to null dereference
+Michael Welling (1):
+      tty: serial: 8250_core.c Bug fix for Exar chips.
 
-Doug Anderson (1):
-      iio: adc: Nothing in ADC should be a bool CONFIG
+Peter Hurley (3):
+      n_tty: Fix n_tty_write crash when echoing in raw mode
+      Revert "tty: Fix race condition between __tty_buffer_request_room and flush_to_ldisc"
+      tty: Fix lockless tty buffer race
 
-Greg Kroah-Hartman (1):
-      Merge tag 'iio-fixes-for-3.15b' of git://git.kernel.org/.../jic23/iio into staging-linus
+Tomoki Sekiyama (1):
+      drivers/tty/hvc: don't free hvc_console_setup after init
 
-Jimmy Li (1):
-      staging:iio:ad2s1200 fix missing parenthesis in a for statment.
-
-Naveen Krishna Ch (1):
-      iio: exynos_adc: use indio_dev->dev structure to handle child nodes
-
- drivers/iio/adc/Kconfig                    | 4 ++--
- drivers/iio/adc/exynos_adc.c               | 6 +++---
- drivers/iio/imu/inv_mpu6050/inv_mpu_core.c | 7 +++++--
- drivers/staging/iio/resolver/ad2s1200.c    | 3 ++-
- 4 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/tty/hvc/hvc_console.c       |  2 +-
+ drivers/tty/n_tty.c                 |  4 ++++
+ drivers/tty/serial/8250/8250_core.c |  2 +-
+ drivers/tty/tty_buffer.c            | 29 ++++++++++++++---------------
+ include/linux/tty.h                 |  1 -
+ 5 files changed, 20 insertions(+), 18 deletions(-)
