@@ -1,142 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaEEHis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:38:48 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:43355 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635AbaEEHip (ORCPT
+	id S1754865AbaEEHlP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:41:15 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:62060 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635AbaEEHlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:38:45 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-b0-53674004fb14
-Message-id: <53674002.1030507@samsung.com>
-Date: Mon, 05 May 2014 09:38:42 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrzej Hajda <andrzej.hajda@wp.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        David Airlie <airlied@linux.ie>, Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Tomasz Stansislawski <t.stanislaws@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [RFC PATCH 0/4] drivers/base: Generic framework for tracking
- internal interfaces
-References: <1398866574-27001-1-git-send-email-a.hajda@samsung.com>
- <20140430154914.GA898@kroah.com> <53616E31.3050404@wp.pl>
- <20140430222839.GE26756@n2100.arm.linux.org.uk> <5361F1F3.7070005@wp.pl>
- <20140501091102.GF26756@n2100.arm.linux.org.uk>
-In-reply-to: <20140501091102.GF26756@n2100.arm.linux.org.uk>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupikeLIzCtJLcpLzFFi42I5/e/4VV0Wh/Rgg/evtS16z51kstg1PcDi
-	76Rj7BZXvr5ns2hevJ7NYtL9CSwWZ5vesFt0TlzCbrHp8TVWi8u75rBZ9GzYymox4/w+Jovb
-	l3kt1h65y26xfsZrFot57S9ZLX7umsfiIOjR0tzD5vH71yRGj52z7rJ7zO6Yyeqx/dsDVo/9
-	c9ewe9zvPs7ksXlJvUffllWMHp83yXkc7+tiDuCO4rJJSc3JLEst0rdL4Mr49Ju14JNExf1r
-	H5gaGL8KdzFyckgImEhMXzWVGcIWk7hwbz1bFyMXh5DAUkaJi/tfsIEkhAQ+MUq0foroYuTg
-	4BXQkph3nRskzCKgKvFq5V+wXjYBTYm/m2+ClYsKREjcazzMCmLzCghK/Jh8jwXEFhGIkTjd
-	s5QJZD6zwFZWiQPbe8ASwgLxEm3zJrBCLP7DKPH04yxGkASngI3EjD3nwWxmAR2J/a3T2CBs
-	eYnNa94yT2AUmIVkySwkZbOQlC1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERJ/X3cw
-	Lj1mdYhRgINRiYfXwzslWIg1say4MvcQowQHs5II7yzG9GAh3pTEyqrUovz4otKc1OJDjEwc
-	nFINjIX2vRJazduvL71rOeHmzH65qEmqRzhcTM64pXb99p/fz+l6VqpzM29gXuuqQOaSoFSF
-	dawGUrN3Z6byVdnkZCk1/p72UvStHeuuaXsXd06KXsbSO5VH4aPvfz3D2j+PJL8xuvwtuMMk
-	LmkdsyY/TvDTz/A9cWnMf2eYZIq9mrg2weF07kYPJZbijERDLeai4kQAwj3WUJ0CAAA=
+	Mon, 5 May 2014 03:41:13 -0400
+Message-ID: <53674094.2020307@gmail.com>
+Date: Mon, 05 May 2014 09:41:08 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        linux-man@vger.kernel.org
+Subject: Re: sched_{set,get}attr() manpage
+References: <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com> <20140214161929.GL27965@twins.programming.kicks-ass.net> <53020C9D.1050208@gmail.com> <20140428081858.GX13658@twins.programming.kicks-ass.net> <535FA467.2070403@gmail.com> <20140429160441.GU11096@twins.programming.kicks-ass.net> <5360D9E5.9080206@gmail.com> <20140430130937.GH30445@twins.programming.kicks-ass.net> <20140503124355.5d927080518051ca507bc381@gmail.com> <536735E0.7020204@gmail.com> <20140505072114.GY11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140505072114.GY11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/01/2014 11:11 AM, Russell King - ARM Linux wrote:
-> On Thu, May 01, 2014 at 09:04:19AM +0200, Andrzej Hajda wrote:
->> 2. You replace calls of component_add and component_del with calls
->> to interface_tracker_ifup(dev, INTERFACE_TRACKER_TYPE_COMPONENT,  
->> &specific_component_ops),
->> or interface_tracker_ifdown.
->> Thats all for components.
-> How does the master get to decide which components are for it?
+On 05/05/2014 09:21 AM, Peter Zijlstra wrote:
+> On Mon, May 05, 2014 at 08:55:28AM +0200, Michael Kerrisk (man-pages) wrote:
+>> Hi Peter,
+>>
+>> Looks like a good set of comments from Juri. Could you revise and 
+>> resubmit?
+> 
+> Yeah, I'll try and get it done today, but there's a few icky bugs
+> waiting for my attention as well, I'll do me bestest :-)
+> 
+>> By the way, I assume you are just writing this page as raw text.
+>> While I'd prefer to get proper man markup source, I'll add that
+>> if you if you don't :-/. 
+> 
+> Well, learning *roff will likely take me more time than writing this
+> text + all revisions so far :/ But yeah, I appreciate the grief.
+> 
+> Is there a TeX variant one could use to generate the *roff muck? While
+> my TeX isn't entirely fresh its at least something I've done lots of.
 
-This is not a part of the framework. The master can construct
-the list of its components anyhow. Some examples:
-1. List of device tree video interface port nodes pointed by
-master's remote-endpoint phandles.
-2. List of device nodes pointed by supernode phandles.
-3. Nodes pointed by other phandles in master's node.
-4. Devices compatible with the list of drivers.
+Don't worry -- just send me the plain text; I'll do it. I appreciate 
+you writing the text in the first place; I'll handle the rest--it won't
+take me too long, and probably I'll find things to fix/check on the way.
 
-This is for create list of objects. As interface type it should
-use the types of interface it expects at given nodes and is able to handle.
+>> But, in that case, I need to know the
+>> copyright and license you want to use. Please see
+>> https://www.kernel.org/doc/man-pages/licenses.html
+> 
+> GPLv2 + DOC (not v2+) sounds good.
 
-Small issue:
-If the master creates list of devices and for particular interface
-type expects DT node as the object, translation is easy: dev->of_node.
-But if the situation is reverse kernel does not provide generic helper
-for translating of_node to device, however kernel have everything to
-provide such function if necessary.
-Other solution is to use only DT nodes for object identification,
-it will narrow the framework usage to DT architectures, but seems to be
-more flexible anyway - we can have more than one interface of given type per
-device, we can distinguish them by port node.
+I'm a little unclear here. Do you or don't you mean
+https://www.kernel.org/doc/man-pages/licenses.html#gpl
+?
 
->   As
-> I see it, all masters see all components of a particular "type".
-> What if you have a system with two masters each of which are bound
-> to a set of unique components but some of the components are of a
-> the same type?
+(Note, I'd really prefer to stick to one of those licenses
+(without variants). (My personal preference is the "verbatim"
+license, which is the most widely used one.) There's already
+do many licenses in in man-pages...
 
-The master receives notifications only about interfaces he has
-registered callback for. For example:
-interface_tracker_register(node, INTERFACE_TRACKER_TYPE_DRM_PANEL, cb);
+Cheers,
 
-means that 'cb' callback will be called only if panel identifed by node
-is up or down.
-If the driver expect that at the 'node' there could be also component it
-can also
-listen for components:
-interface_tracker_register(node, INTERFACE_TRACKER_TYPE_COMPONENT, cb);
+Michael
 
-Now 'cb' will be called if component or panel appears/disappears at node
-'node'.
 
-so callback function can look like:
-
-void cb_func(struct interface_tracker_block *itb, const void *object,
-unsigned long type, bool on,
-                      void *data)
-{
-    struct priv_struct *priv = container_of(itb, struct priv_struct, itb);
-    switch(type) {
-    case INTERFACE_TRACKER_TYPE_DRM_PANEL:
-        handle_drm_panel(priv, data, on);
-        break;
-    case INTERFACE_TRACKER_TYPE_DRM_COMPONENT:
-        handle_drm_component(priv, data, object, on);
-        break;
-    }
-}
-
-where handlers can look like:
-
-void handle_drm_panel(struct priv_struct *priv, struct drm_panel *panel,
-bool on);
-void handle_drm_component(struct priv_struct *priv, struct component_ops
-*ops, struct device *dev, bool on);
-
->
-> How does the master know what "type" to use?
->
-
-It should use type which it expects at the given node.
-
-Regards
-Andrzej
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
