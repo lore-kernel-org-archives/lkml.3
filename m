@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaEEHzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:55:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24809 "EHLO mga09.intel.com"
+	id S1754890AbaEEH4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:56:13 -0400
+Received: from mout.gmx.net ([212.227.17.21]:64598 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045AbaEEHzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:55:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,986,1389772800"; 
-   d="scan'208";a="534721736"
-Message-ID: <1399276474.15290.18.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBIFS changes for 3.15-rc5
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 05 May 2014 10:54:34 +0300
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752045AbaEEH4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 03:56:12 -0400
+From: Marc Dietrich <marvin24@gmx.de>
+To: jaegeuk.kim@samsung.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: f2fs causes system stall
+Date: Mon, 05 May 2014 09:56:07 +0200
+Message-ID: <1654591.8eRFrlOYSj@fb07-iapwap2>
+User-Agent: KMail/4.12.4 (Linux/3.15.0-rc3-12.gfc9498b-desktop+; KDE/4.12.4; x86_64; ; )
+In-Reply-To: <20140425143900.b9a7fe8a31287b5bbd5dff20@gmx.de>
+References: <2601952.jk1l5iHOJT@ax5200p> <1398382436.4283.21.camel@kjgkr> <20140425143900.b9a7fe8a31287b5bbd5dff20@gmx.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="US-ASCII"
+X-Provags-ID: V03:K0:HlOM2b/Y+tGxkUUVfnGIsW3kj2PfoMpCgPvU0zOCktU7gh3EBJR
+ TmaoZR4icVXCseeqH4RODyUKoIKP+tnlqZYSqbODxI3LjZL7W5CXniTbE7HYbt9JrEo5y3m
+ I46kGiH1SBZxV9MqKwtn8fRH81p0P03gWpGRUGA6xKe7vj1SVg0M1o8Th00vqeHAdsotTx2
+ H6MSv30QxCEfegONkXZOw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Jaeguek,
 
-The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
+Am Freitag, 25. April 2014, 14:39:00 schrieb Marc Dietrich:
+> On Fri, 25 Apr 2014 08:33:56 +0900
+> 
+> Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+> > Thank you very much.
+> > 
+> > Could you test the following patch?
+> 
+> seems to be fixed now. Thanks!
 
-  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
+are you planing to submit this fix ("f2fs: submit bio at the reclaim path") to 
+3.15?
 
-are available in the git repository at:
+Thanks,
 
-  git://git.infradead.org/linux-ubifs.git tags/upstream-3.15-rc5
+Marc
 
-for you to fetch changes up to bebfef150e0b8fa68704cddacf05b8c26462d565:
-
-  UBI: avoid workqueue format string leak (2014-05-05 09:31:33 +0300)
-
-----------------------------------------------------------------
-This pull request includes the following fixes:
-
-* 2 real bug-fixes from Tanya for the still "experimental" UBI fastmap feature
-* a one-liner from Kees which hardens kernel security
-* a small error-path fix, where we forget to free various resources in case of
-  failure - spotted by the "smatch" tool
-
-----------------------------------------------------------------
-Artem Bityutskiy (1):
-      UBIFS: fix remount error path
-
-Kees Cook (1):
-      UBI: avoid workqueue format string leak
-
-Tanya Brokhman (2):
-      UBI: fix error path in __wl_get_peb
-      UBI: fix ubi free PEBs count calculation
-
- drivers/mtd/ubi/block.c | 2 +-
- drivers/mtd/ubi/wl.c    | 6 ++++++
- fs/ubifs/super.c        | 2 +-
- 3 files changed, 8 insertions(+), 2 deletions(-)
-
--- 
-Best Regards,
-Artem Bityutskiy
+> 
+> > ---
+> > 
+> >  fs/f2fs/data.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> > index 150c12a..0147de7 100644
+> > --- a/fs/f2fs/data.c
+> > +++ b/fs/f2fs/data.c
+> > 
+> > @@ -833,6 +833,8 @@ out:
+> >  	unlock_page(page);
+> >  	if (need_balance_fs)
+> >  	
+> >  		f2fs_balance_fs(sbi);
+> > 
+> > +	if (wbc->for_reclaim)
+> > +		f2fs_submit_merged_bio(sbi, DATA, WRITE);
+> > 
+> >  	return 0;
+> >  
+> >  redirty_out:
 
