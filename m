@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbaEELSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 07:18:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:47374 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144AbaEELSx (ORCPT
+	id S932178AbaEELTM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 07:19:12 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:59632 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144AbaEELTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 07:18:53 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-3b-5367739b0d67
+	Mon, 5 May 2014 07:19:10 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-52-536773acd50e
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Eduardo Valentin <eduardo.valentin@ti.com>
 Cc: Zhang Rui <rui.zhang@intel.com>,
@@ -17,81 +17,87 @@ Cc: Zhang Rui <rui.zhang@intel.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         linux-samsung-soc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, b.zolnierkie@samsung.com
-Subject: [PATCH 05/10] thermal: exynos: remove redundant pdata checks from
- exynos_tmu_initialize()
-Date: Mon, 05 May 2014 13:15:34 +0200
-Message-id: <1399288539-1793-6-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 06/10] thermal: exynos: remove redundant threshold_code checks
+ from exynos_tmu_initialize()
+Date: Mon, 05 May 2014 13:15:35 +0200
+Message-id: <1399288539-1793-7-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1399288539-1793-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t9jAd3ZxenBBlMbLSwaroZYbJyxntVi
-	zf6fTBZnm96wW1zeNYfN4nPvEUaLGef3MVmcOX2J1eLJwz42i/UzXrM4cHks3vOSyWPL1XYW
-	j74tqxg9jt/YzuTxeZNcAGsUl01Kak5mWWqRvl0CV0bDU5GCC/wVZ4+dYG1g7OHtYuTkkBAw
-	kdj05zUbhC0mceHeeiCbi0NIYBGjxIRpC5khnC4miUWP+1lBqtgErCQmtq9iBLFFBPQkbrx4
-	wgRSxCxwnEni5+/zYKOEBVIk7h77wt7FyMHBIqAqcWGbB0iYV8Bd4tesS4wQ2xQlup9NACvn
-	FPCQ2P/yMTOILQRUc/DxZOYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQH3DPp
-	HYyrGiwOMQpwMCrx8CYwpwcLsSaWFVfmHmKU4GBWEuHNTgQK8aYkVlalFuXHF5XmpBYfYpTm
-	YFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYEznPbSd+2HFowhO3VklydN/p++JeiRx7O19
-	KY68lMK/rzXvXXm7JE7tgiD/osbA3xP26riunt+v4f6C48Zjp9D/N0vMo3cfydz8Wn5dVd3F
-	oyHuV9q8lzV8vXenX8vtrMHdHw7sGawvlJi1F3rPj+q80HDiX2sAy/2tq3MvnyvV6z9RMXHy
-	yWYlluKMREMt5qLiRACfMonpNAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t9jAd01xenBBheW2lg0XA2x2DhjPavF
+	mv0/mSzONr1ht7i8aw6bxefeI4wWM87vY7I4c/oSq8WTh31sFutnvGZx4PJYvOclk8eWq+0s
+	Hn1bVjF6HL+xncnj8ya5ANYoLpuU1JzMstQifbsErozJrR4FfwUr9s5Xa2BcwtfFyMkhIWAi
+	cWHuQiYIW0ziwr31bF2MXBxCAosYJU5dbWSBcLqYJI5MesYMUsUmYCUxsX0VI4gtIqAncePF
+	EyaQImaB40wSP3+fB2rn4BAWyJVo+JUIUsMioCqx8UY3WD2vgLvExOYPLBDbFCW6n01gA7E5
+	BTwk9r98DDZfCKjm4OPJzBMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA63Z9I7
+	GFc1WBxiFOBgVOLhTWBODxZiTSwrrsw9xCjBwawkwpudCBTiTUmsrEotyo8vKs1JLT7EKM3B
+	oiTOe7DVOlBIID2xJDU7NbUgtQgmy8TBKdXAuCo7ZENXnV+G/dnMlg0XXT9cXl3yvUpOTvq5
+	9s7UhsO6R5mtvTunbc297xzm6nnq5v/U1tDmixo1PYISOun+/S+cV3xvqPv6ovhe1p/VNxX+
+	/L1U91Z7hvDTboZ3mgHPH+45IOsdZLHf5NrNTUnu036di/49h8vqWqT8lTQN4Zt2vy5azprv
+	pMRSnJFoqMVcVJwIABX1wbkzAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove runtime checks for pdata sanity from exynos_tmu_initialize().
-The current values hardcoded in pdata will never trigger the checks
-and for the new code potential mistakes should be caught during
-development/review phases.
+Remove runtime checks for negative return values of temp_to_code()
+from exynos_tmu_initialize().  The current level temperature data
+hardcoded in pdata will never cause a negative temp_to_code()
+return values and for the new code potential mistakes should be
+caught during development/review phases.
 
-There should be no functional changes caused by this patch.
+Theres should be no functional changes caused by this patch.
 
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 ---
- drivers/thermal/samsung/exynos_thermal_common.h |  1 -
- drivers/thermal/samsung/exynos_tmu.c            | 13 -------------
- 2 files changed, 14 deletions(-)
+ drivers/thermal/samsung/exynos_tmu.c | 16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/drivers/thermal/samsung/exynos_thermal_common.h b/drivers/thermal/samsung/exynos_thermal_common.h
-index 3eb2ed9..cd44719 100644
---- a/drivers/thermal/samsung/exynos_thermal_common.h
-+++ b/drivers/thermal/samsung/exynos_thermal_common.h
-@@ -27,7 +27,6 @@
- #define SENSOR_NAME_LEN	16
- #define MAX_TRIP_COUNT	8
- #define MAX_COOLING_DEVICE 4
--#define MAX_THRESHOLD_LEVS 5
- 
- #define ACTIVE_INTERVAL 500
- #define IDLE_INTERVAL 10000
 diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-index 903566f..789d745 100644
+index 789d745..a415829 100644
 --- a/drivers/thermal/samsung/exynos_tmu.c
 +++ b/drivers/thermal/samsung/exynos_tmu.c
-@@ -158,23 +158,10 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
- 	    data->temp_error > pdata->max_efuse_value)
- 		data->temp_error = pdata->efuse_value & EXYNOS_TMU_TEMP_MASK;
- 
--	if (pdata->max_trigger_level > MAX_THRESHOLD_LEVS) {
--		dev_err(&pdev->dev, "Invalid max trigger level\n");
--		ret = -EINVAL;
--		goto out;
--	}
--
- 	for (i = 0; i < pdata->max_trigger_level; i++) {
- 		if (!pdata->trigger_levels[i])
- 			continue;
- 
--		if ((pdata->trigger_type[i] == HW_TRIP) &&
--		(!pdata->trigger_levels[pdata->max_trigger_level - 1])) {
--			dev_err(&pdev->dev, "Invalid hw trigger level\n");
--			ret = -EINVAL;
+@@ -170,10 +170,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 	if (data->soc == SOC_ARCH_EXYNOS4210) {
+ 		/* Write temperature code for threshold */
+ 		threshold_code = temp_to_code(data, pdata->threshold);
+-		if (threshold_code < 0) {
+-			ret = threshold_code;
 -			goto out;
 -		}
--
- 		/* Count trigger levels except the HW trip*/
- 		if (!(pdata->trigger_type[i] == HW_TRIP))
- 			trigger_levs++;
+ 		writeb(threshold_code,
+ 			data->base + reg->threshold_temp);
+ 		for (i = 0; i < trigger_levs; i++)
+@@ -187,18 +183,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 		i < trigger_levs && i < EXYNOS_MAX_TRIGGER_PER_REG; i++) {
+ 			threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i]);
+-			if (threshold_code < 0) {
+-				ret = threshold_code;
+-				goto out;
+-			}
+ 			rising_threshold |= threshold_code << 8 * i;
+ 			if (pdata->threshold_falling) {
+ 				threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i] -
+ 						pdata->threshold_falling);
+-				if (threshold_code > 0)
+-					falling_threshold |=
+-						threshold_code << 8 * i;
++				falling_threshold |= threshold_code << 8 * i;
+ 			}
+ 		}
+ 
+@@ -217,10 +207,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
+ 				(pdata->trigger_type[i] == HW_TRIP)) {
+ 			threshold_code = temp_to_code(data,
+ 						pdata->trigger_levels[i]);
+-			if (threshold_code < 0) {
+-				ret = threshold_code;
+-				goto out;
+-			}
+ 			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
+ 				/* 1-4 level to be assigned in th0 reg */
+ 				rising_threshold |= threshold_code << 8 * i;
 -- 
 1.8.2.3
 
