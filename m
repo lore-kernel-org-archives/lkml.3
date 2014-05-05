@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaEEGWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 02:22:53 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:48381 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaEEGWw (ORCPT
+	id S1754663AbaEEG2g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:28:36 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:37090 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754473AbaEEG2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 02:22:52 -0400
-Date: Mon, 5 May 2014 02:22:33 -0400 (EDT)
-From: Jon Maxwell <jmaxwell@redhat.com>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Cc: Jon Maxwell <jmaxwell37@gmail.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        makita toshiaki <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com,
-        bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Jiri Pirko <jpirko@redhat.com>
-Message-ID: <2104584205.374814.1399270953940.JavaMail.zimbra@redhat.com>
-In-Reply-To: <CAADnVQL3OZwZ0q_utwE_JhYYGbKPHwwqwHsBZ9g+0XAS__BpWQ@mail.gmail.com>
-References: <1399238974-6210-1-git-send-email-jmaxwell@redhat.com> <20140504155331.13862a85@nehalam.linuxnetplumber.net> <CAADnVQL3OZwZ0q_utwE_JhYYGbKPHwwqwHsBZ9g+0XAS__BpWQ@mail.gmail.com>
-Subject: Re: [PATCH net] bridge: Add port flap detection
+	Mon, 5 May 2014 02:28:34 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Sudeep Holla <sudeep.holla@arm.com>, Will Deacon <Will.Deacon@arm.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Date: Sun, 4 May 2014 23:28:03 -0700
+Subject: RE: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Topic: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Index: Ac9keD1np1G9qntpQoC2LI657voXkgDliarQ
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE57AF37D469@SC-VEXCH4.marvell.com>
+References: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
+ <20140422103642.GF7484@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3B59B@SC-VEXCH4.marvell.com>
+ <20140423170821.GJ5649@arm.com>
+ <175CCF5F49938B4D99B2E3EF7F558EBE5507A3C1F1@SC-VEXCH4.marvell.com>
+ <5360FB07.5030407@arm.com>
+In-Reply-To: <5360FB07.5030407@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: bridge: Add port flap detection
-Thread-Index: lmqf1VpzgkM9YTKIMtNjdZKS1DGRwg==
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-05-04_03:2014-05-02,2014-05-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1405050105
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s456SgnQ000550
 
-I acknowledge that if a VM was moved or reconfigured with the MAC address of another machine it may generate one message. However in the cases we encountered the MAC address was toggling between the internal and external network constantly as the arp request was erroneously reflected back. We actually provided a kernel with this patch to trouble-shoot the issue. I propose that we change the patch to print the following message instead? That way a single message will be informational but multiple messages will indicate something is wrong.
+Sudeep,
 
- br_warn(br, "FDB port changed: source dev = %s mac = %pM, port_no = %d, existing dev = %s mac = %pM, port_no = %d\n",
+> -----Original Message-----
+> From: Sudeep Holla [mailto:sudeep.holla@arm.com]
+> Sent: 2014å¹´4æœˆ30æ—¥ 21:31
+> To: Neil Zhang; Will Deacon
+> Cc: Sudeep Holla; linux@arm.linux.org.uk;
+> linux-arm-kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> devicetree@vger.kernel.org
+> Subject: Re: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+> 
+> Hi Neil,
+> 
+> On 30/04/14 03:21, Neil Zhang wrote:
+> >
+> >> -----Original Message-----
+> >> From: Will Deacon [mailto:will.deacon@arm.com]
+> 
+> [...]
+> 
+> >>
+> >> I think we need some input from the device-tree guys to see whether
+> >> they would object to us solving this locally (in the PMU node) or not.
+> >> Personally, I'd much prefer a general way to describe the need for
+> >> pm-notifiers, but if that's not being looked at then we can cook
+> >> something specifically for our needs.
+> >>
+> >
+> > No input from device-tree guys :(
+> 
+> The device tree bindings for power domains is under discussion [1]
 
------ Original Message -----
-From: "Alexei Starovoitov" <alexei.starovoitov@gmail.com>
-To: "Stephen Hemminger" <stephen@networkplumber.org>
-Cc: "Jon Maxwell" <jmaxwell37@gmail.com>, netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>, "makita toshiaki" <makita.toshiaki@lab.ntt.co.jp>, vyasevic@redhat.com, bridge@lists.linux-foundation.org, linux-kernel@vger.kernel.org, pirko@redhat.com, jmaxwell@redhat.com
-Sent: Monday, May 5, 2014 2:06:37 PM
-Subject: Re: [PATCH net] bridge: Add port flap detection
+Thanks for the information.
+But it currently for device only, core related stuff are not supported.
+And is it really good to register power provider for core and let vfp / pmu etc to get it?
 
-On Sun, May 4, 2014 at 3:53 PM, Stephen Hemminger
-<stephen@networkplumber.org> wrote:
-> On Mon,  5 May 2014 07:29:34 +1000
-> Jon Maxwell <jmaxwell37@gmail.com> wrote:
->
->> There has been a number incidents recently where customers running KVM have reported that VM hosts on different Hypervisors are unreachable. Based on pcap traces we found that the bridge was broadcasting the ARP request out onto the network. However some NICs have an inbuilt switch which on occasions were broadcasting the VMs ARP request back through the physical NIC on the Hypervisor. This resulted in the bridge flapping ports and incorrectly learning that the VMs mac address was external. As a result the ARP reply was directed back onto the external network and VM never updated it's ARP cache. This patch will detect port flapping and log a message so that this condition can be detected earlier.
->>
->> Signed-off-by: Jon Maxwell <jmaxwell@redhat.com>
->> ---
->>  net/bridge/br_fdb.c | 7 +++++++
->>  1 file changed, 7 insertions(+)
->>
->> diff --git a/net/bridge/br_fdb.c b/net/bridge/br_fdb.c
->> index 9203d5a..c08607b 100644
->> --- a/net/bridge/br_fdb.c
->> +++ b/net/bridge/br_fdb.c
->> @@ -507,6 +507,13 @@ void br_fdb_update(struct net_bridge *br, struct net_bridge_port *source,
->>                                       source->dev->name);
->>               } else {
->>                       /* fastpath: update of existing entry */
->> +                     if (source->port_no != fdb->dst->port_no &&
->> +                             net_ratelimit())
->> +                             br_warn(br, "Port flapping detected source entry dev = %s mac = %pM, port_no = %d\n existing entry dev = %s mac = %pM, port_no = %d\n",
->> +                                     source->dev->name,
->> +                                     addr, source->port_no,
->> +                                     fdb->dst->dev->name, addr,
->> +                                     fdb->dst->port_no);
->>                       fdb->dst = source;
->>                       fdb->updated = jiffies;
->>                       if (unlikely(added_by_user))
->
-> Ok, but please shorten the message to a single line without excess wordage.
-> Plus flapping to mean means link going up and down. Maybe use same message
-> as BSD?
+> 
+> Regards,
+> Sudeep
+> 
+> [1] https://lkml.org/lkml/2014/4/23/755
 
-Isn't this normal mac move? Any message will be confusing.
-VMs can spoof their src macs and trigger this warning.
-I don't think it's worth adding it just to debug the learning on the
-external interface.
+
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
