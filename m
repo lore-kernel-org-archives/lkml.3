@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231AbaEEW0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:26:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58940 "EHLO mga02.intel.com"
+	id S933206AbaEEW03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:26:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58941 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933171AbaEEW01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 18:26:27 -0400
+	id S933051AbaEEW0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 18:26:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="506357936"
+   d="scan'208";a="535113719"
 From: Andi Kleen <andi@firstfloor.org>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 13/24] net, diet: Make GRO offload optional
-Date: Mon,  5 May 2014 15:26:02 -0700
-Message-Id: <1399328773-6531-14-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 21/24] net, diet: Make packet tpacket/mmap/fanout/rings optional
+Date: Mon,  5 May 2014 15:26:10 -0700
+Message-Id: <1399328773-6531-22-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
@@ -25,231 +25,279 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Make the GRO offload code optional.  It's not needed on small systems.
-Since it's not a single file there are a couple of ifdefs.
+Many DHCP clients need basic packet sockets, but they don't need
+the fancy zero copy packet capture code, like tpacket, mmap, rings,
+fanouts. This is quite substantial code, so it's worthwhile to
+make it optional
 
-Some code is still there (not ifdef'ed) but can be removed now with LTO.
+Worth nearly 10k code.
 
-Without LTO it gives about 3K.
-
-   text    data     bss     dec     hex filename
- 432712   18689   12616  464017   71491 net/built-in.o-with-offload
- 429737   17665   12616  460018   704f2 net/built-in.o-wo-offload
+   text	   data	    bss	    dec	    hex	filename
+ 952827	  71874	  25352	1050053	 1005c5	net/built-in.o-with-packet-mmap
+ 943211	  71810	  25352	1040373	  fdff5	net/built-in.o-wo-packet-mmap
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/net/protocol.h | 10 ++++++++++
- include/net/tcp.h      |  5 +++++
- net/ipv4/Kconfig       |  4 ++++
- net/ipv4/Makefile      |  5 +++--
- net/ipv4/af_inet.c     |  9 +++++++++
- net/ipv4/protocol.c    |  8 +++++++-
- net/ipv6/Makefile      |  5 +++--
- net/ipv6/protocol.c    |  2 ++
- 8 files changed, 43 insertions(+), 5 deletions(-)
+ net/packet/Kconfig     |  8 +++++
+ net/packet/af_packet.c | 82 +++++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 75 insertions(+), 15 deletions(-)
 
-diff --git a/include/net/protocol.h b/include/net/protocol.h
-index a7e986b..63f5b0c 100644
---- a/include/net/protocol.h
-+++ b/include/net/protocol.h
-@@ -103,8 +103,18 @@ extern const struct inet6_protocol __rcu *inet6_protos[MAX_INET_PROTOS];
- 
- int inet_add_protocol(const struct net_protocol *prot, unsigned char num);
- int inet_del_protocol(const struct net_protocol *prot, unsigned char num);
-+#ifdef CONFIG_IP_OFFLOAD
- int inet_add_offload(const struct net_offload *prot, unsigned char num);
- int inet_del_offload(const struct net_offload *prot, unsigned char num);
-+#else
-+static inline int
-+inet_add_offload(const struct net_offload *prot, unsigned char num)
-+{ return 0; }
-+static inline int
-+inet_del_offload(const struct net_offload *prot, unsigned char num)
-+{ return 0; }
-+#endif
+diff --git a/net/packet/Kconfig b/net/packet/Kconfig
+index cc55b35..c215d31 100644
+--- a/net/packet/Kconfig
++++ b/net/packet/Kconfig
+@@ -22,3 +22,11 @@ config PACKET_DIAG
+ 	---help---
+ 	  Support for PF_PACKET sockets monitoring interface used by the ss tool.
+ 	  If unsure, say Y.
 +
- void inet_register_protosw(struct inet_protosw *p);
- void inet_unregister_protosw(struct inet_protosw *p);
- 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index d741d2f..ac9f6bd 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1567,7 +1567,12 @@ void tcp_v4_destroy_sock(struct sock *sk);
- struct sk_buff *tcp_gso_segment(struct sk_buff *skb,
- 				netdev_features_t features);
- struct sk_buff **tcp_gro_receive(struct sk_buff **head, struct sk_buff *skb);
-+#ifdef CONFIG_IP_OFFLOAD
- int tcp_gro_complete(struct sk_buff *skb);
-+#else
-+/* For the benefit of one driver who really shouldn't be using this. */
-+static inline int tcp_gro_complete(struct sk_buff *skb) { return -EIO; }
-+#endif
- 
- void __tcp_v4_send_check(struct sk_buff *skb, __be32 saddr, __be32 daddr);
- 
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index db2dada..00a7f76 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -306,6 +306,10 @@ config SYN_COOKIES
- 
- 	  If unsure, say N.
- 
-+config IP_OFFLOAD
-+	bool "Support for IP GRO/offload"
++config PACKET_MMAP
++	bool "Enable packet mmap/ring support"
++	depends on PACKET
 +	default y
-+
- config NET_IPVTI
- 	tristate "Virtual (secure) IP: tunneling"
- 	select INET_TUNNEL
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index 8b17b83..784a782 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -8,8 +8,8 @@ obj-y     := route.o inetpeer.o protocol.o \
- 	     inet_timewait_sock.o inet_connection_sock.o \
- 	     tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
- 	     tcp_minisocks.o tcp_cong.o tcp_fastopen.o \
--	     tcp_offload.o datagram.o raw.o udp.o udplite.o \
--	     udp_offload.o arp.o icmp.o devinet.o af_inet.o igmp.o \
-+	     datagram.o raw.o udp.o udplite.o \
-+	     arp.o icmp.o devinet.o af_inet.o igmp.o \
- 	     fib_frontend.o fib_semantics.o fib_trie.o \
- 	     inet_fragment.o ip_tunnel_core.o gre_offload.o
++	---help---
++	  Enable support to mmap the packet data zero copy. This is useful for
++	  highspeed packet interceptors.
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index b85c67c..723f57f 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -158,6 +158,8 @@ struct packet_mreq_max {
+ 	unsigned char	mr_address[MAX_ADDR_LEN];
+ };
  
-@@ -26,6 +26,7 @@ obj-$(CONFIG_NET_IPGRE_DEMUX) += gre.o
- obj-$(CONFIG_NET_IPGRE) += ip_gre.o
- obj-$(CONFIG_NET_IPVTI) += ip_vti.o
- obj-$(CONFIG_SYN_COOKIES) += syncookies.o
-+obj-$(CONFIG_IP_OFFLOAD) += tcp_offload.o udp_offload.o
- obj-$(CONFIG_INET_AH) += ah4.o
- obj-$(CONFIG_INET_ESP) += esp4.o
- obj-$(CONFIG_INET_IPCOMP) += ipcomp.o
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index c275ce5..e65e750 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -1209,6 +1209,9 @@ int inet_sk_rebuild_header(struct sock *sk)
++#ifdef CONFIG_PACKET_MMAP
++
+ union tpacket_uhdr {
+ 	struct tpacket_hdr  *h1;
+ 	struct tpacket2_hdr *h2;
+@@ -165,8 +167,6 @@ union tpacket_uhdr {
+ 	void *raw;
+ };
+ 
+-static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
+-		int closing, int tx_ring);
+ 
+ #define V3_ALIGNMENT	(8)
+ 
+@@ -213,6 +213,9 @@ static void prb_clear_rxhash(struct tpacket_kbdq_core *,
+ 		struct tpacket3_hdr *);
+ static void prb_fill_vlan_info(struct tpacket_kbdq_core *,
+ 		struct tpacket3_hdr *);
++
++#endif
++
+ static void packet_flush_mclist(struct sock *sk);
+ 
+ struct packet_skb_cb {
+@@ -384,6 +387,8 @@ static void unregister_prot_hook(struct sock *sk, bool sync)
+ 		__unregister_prot_hook(sk, sync);
  }
- EXPORT_SYMBOL(inet_sk_rebuild_header);
  
-+#ifdef CONFIG_IP_OFFLOAD
-+/* Should move to a new file */
++#ifdef CONFIG_PACKET_MMAP
 +
- static int inet_gso_send_check(struct sk_buff *skb)
+ static inline __pure struct page *pgv_to_page(void *addr)
  {
- 	const struct net_offload *ops;
-@@ -1455,6 +1458,8 @@ out_unlock:
+ 	if (is_vmalloc_addr(addr))
+@@ -1210,6 +1215,8 @@ static unsigned int packet_read_pending(const struct packet_ring_buffer *rb)
+ 	return refcnt;
+ }
+ 
++#endif
++
+ static int packet_alloc_pending(struct packet_sock *po)
+ {
+ 	po->rx_ring.pending_refcnt = NULL;
+@@ -1226,6 +1233,7 @@ static void packet_free_pending(struct packet_sock *po)
+ 	free_percpu(po->tx_ring.pending_refcnt);
+ }
+ 
++#ifdef CONFIG_PACKET_MMAP
+ static bool packet_rcv_has_room(struct packet_sock *po, struct sk_buff *skb)
+ {
+ 	struct sock *sk = &po->sk;
+@@ -1249,6 +1257,8 @@ static bool packet_rcv_has_room(struct packet_sock *po, struct sk_buff *skb)
+ 	return has_room;
+ }
+ 
++#endif
++
+ static void packet_sock_destruct(struct sock *sk)
+ {
+ 	skb_queue_purge(&sk->sk_error_queue);
+@@ -1264,6 +1274,8 @@ static void packet_sock_destruct(struct sock *sk)
+ 	sk_refcnt_debug_dec(sk);
+ }
+ 
++#ifdef CONFIG_PACKET_MMAP
++
+ static int fanout_rr_next(struct packet_fanout *f, unsigned int num)
+ {
+ 	int x = atomic_read(&f->rr_cur) + 1;
+@@ -1530,6 +1542,12 @@ static void fanout_release(struct sock *sk)
+ 	mutex_unlock(&fanout_mutex);
+ }
+ 
++#else
++static void __fanout_unlink(struct sock *sk, struct packet_sock *po) {}
++static void __fanout_link(struct sock *sk, struct packet_sock *po) {}
++static void fanout_release(struct sock *sk) {}
++#endif
++
+ static const struct proto_ops packet_ops;
+ 
+ static const struct proto_ops packet_ops_spkt;
+@@ -1867,6 +1885,11 @@ drop:
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PACKET_MMAP
++
++static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
++		int closing, int tx_ring);
++
+ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
+ 		       struct packet_type *pt, struct net_device *orig_dev)
+ {
+@@ -2357,6 +2380,35 @@ out:
  	return err;
  }
  
++static inline bool use_tpacket(struct packet_sock *po)
++{
++	return po->tx_ring.pg_vec;
++}
++
++static void tpacket_release(struct sock *sk, struct packet_sock *po)
++{
++	union tpacket_req_u req_u;
++
++	if (po->rx_ring.pg_vec) {
++		memset(&req_u, 0, sizeof(req_u));
++		packet_set_ring(sk, &req_u, 1, 0);
++	}
++
++	if (po->tx_ring.pg_vec) {
++		memset(&req_u, 0, sizeof(req_u));
++		packet_set_ring(sk, &req_u, 1, 1);
++	}
++}
++
++#else
++static inline bool use_tpacket(struct packet_sock *po) { return false; }
++static inline void tpacket_release(struct sock *sk, struct packet_sock *po) {}
++static inline int tpacket_snd(struct packet_sock *po, struct msghdr *msg) { return 0; }
++static inline int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
++			      struct packet_type *pt, struct net_device *orig_dev)
++{ return 0; }
 +#endif
 +
- int inet_ctl_sock_create(struct sock **sk, unsigned short family,
- 			 unsigned short type, unsigned char protocol,
- 			 struct net *net)
-@@ -1653,6 +1658,9 @@ static int __init init_ipv4_mibs(void)
+ static struct sk_buff *packet_alloc_skb(struct sock *sk, size_t prepad,
+ 				        size_t reserve, size_t len,
+ 				        size_t linear, int noblock,
+@@ -2576,7 +2628,7 @@ static int packet_sendmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct sock *sk = sock->sk;
+ 	struct packet_sock *po = pkt_sk(sk);
  
- static int ipv4_proc_init(void);
+-	if (po->tx_ring.pg_vec)
++	if (use_tpacket(po))
+ 		return tpacket_snd(po, msg);
+ 	else
+ 		return packet_snd(sock, msg, len);
+@@ -2592,7 +2644,6 @@ static int packet_release(struct socket *sock)
+ 	struct sock *sk = sock->sk;
+ 	struct packet_sock *po;
+ 	struct net *net;
+-	union tpacket_req_u req_u;
  
-+#ifdef CONFIG_IP_OFFLOAD
-+/* Move elsewhere? */
-+
- /*
-  *	IP protocol layer initialiser
-  */
-@@ -1690,6 +1698,7 @@ static int __init ipv4_offload_init(void)
- }
+ 	if (!sk)
+ 		return 0;
+@@ -2620,15 +2671,7 @@ static int packet_release(struct socket *sock)
  
- fs_initcall(ipv4_offload_init);
-+#endif
+ 	packet_flush_mclist(sk);
  
- static struct packet_type ip_packet_type __read_mostly = {
- 	.type = cpu_to_be16(ETH_P_IP),
-diff --git a/net/ipv4/protocol.c b/net/ipv4/protocol.c
-index 46d6a1c..0a33a12 100644
---- a/net/ipv4/protocol.c
-+++ b/net/ipv4/protocol.c
-@@ -29,7 +29,6 @@
- #include <net/protocol.h>
+-	if (po->rx_ring.pg_vec) {
+-		memset(&req_u, 0, sizeof(req_u));
+-		packet_set_ring(sk, &req_u, 1, 0);
+-	}
+-
+-	if (po->tx_ring.pg_vec) {
+-		memset(&req_u, 0, sizeof(req_u));
+-		packet_set_ring(sk, &req_u, 1, 1);
+-	}
++	tpacket_release(sk, po);
  
- const struct net_protocol __rcu *inet_protos[MAX_INET_PROTOS] __read_mostly;
--const struct net_offload __rcu *inet_offloads[MAX_INET_PROTOS] __read_mostly;
+ 	fanout_release(sk);
  
- int inet_add_protocol(const struct net_protocol *prot, unsigned char protocol)
+@@ -3203,7 +3246,7 @@ static int
+ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optval, unsigned int optlen)
  {
-@@ -44,6 +43,9 @@ int inet_add_protocol(const struct net_protocol *prot, unsigned char protocol)
- }
- EXPORT_SYMBOL(inet_add_protocol);
- 
-+#ifdef CONFIG_IP_OFFLOAD
-+const struct net_offload __rcu *inet_offloads[MAX_INET_PROTOS] __read_mostly;
-+
- int inet_add_offload(const struct net_offload *prot, unsigned char protocol)
- {
- 	return !cmpxchg((const struct net_offload **)&inet_offloads[protocol],
-@@ -51,6 +53,8 @@ int inet_add_offload(const struct net_offload *prot, unsigned char protocol)
- }
- EXPORT_SYMBOL(inet_add_offload);
- 
-+#endif
-+
- int inet_del_protocol(const struct net_protocol *prot, unsigned char protocol)
- {
+ 	struct sock *sk = sock->sk;
+-	struct packet_sock *po = pkt_sk(sk);
++	struct packet_sock *po __maybe_unused = pkt_sk(sk);
  	int ret;
-@@ -64,6 +68,7 @@ int inet_del_protocol(const struct net_protocol *prot, unsigned char protocol)
- }
- EXPORT_SYMBOL(inet_del_protocol);
  
-+#ifdef CONFIG_IP_OFFLOAD
- int inet_del_offload(const struct net_offload *prot, unsigned char protocol)
+ 	if (level != SOL_PACKET)
+@@ -3231,6 +3274,7 @@ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optv
+ 		return ret;
+ 	}
+ 
++#ifdef CONFIG_PACKET_MMAP
+ 	case PACKET_RX_RING:
+ 	case PACKET_TX_RING:
+ 	{
+@@ -3314,6 +3358,7 @@ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optv
+ 		po->tp_loss = !!val;
+ 		return 0;
+ 	}
++#endif
+ 	case PACKET_AUXDATA:
+ 	{
+ 		int val;
+@@ -3366,6 +3411,7 @@ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optv
+ 		po->tp_tstamp = val;
+ 		return 0;
+ 	}
++#ifdef CONFIG_PACKET_MMAP
+ 	case PACKET_FANOUT:
+ 	{
+ 		int val;
+@@ -3390,6 +3436,7 @@ packet_setsockopt(struct socket *sock, int level, int optname, char __user *optv
+ 		po->tp_tx_has_off = !!val;
+ 		return 0;
+ 	}
++#endif
+ 	case PACKET_QDISC_BYPASS:
+ 	{
+ 		int val;
+@@ -3615,6 +3662,7 @@ static int packet_ioctl(struct socket *sock, unsigned int cmd,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PACKET_MMAP
+ static unsigned int packet_poll(struct file *file, struct socket *sock,
+ 				poll_table *wait)
  {
- 	int ret;
-@@ -76,3 +81,4 @@ int inet_del_offload(const struct net_offload *prot, unsigned char protocol)
- 	return ret;
+@@ -3855,7 +3903,7 @@ static int packet_set_ring(struct sock *sk, union tpacket_req_u *req_u,
+ 		swap(rb->pg_vec_len, req->tp_block_nr);
+ 
+ 		rb->pg_vec_pages = req->tp_block_size/PAGE_SIZE;
+-		po->prot_hook.func = (po->rx_ring.pg_vec) ?
++		po->prot_hook.func = use_tpacket(po) ?
+ 						tpacket_rcv : packet_rcv;
+ 		skb_queue_purge(rb_queue);
+ 		if (atomic_read(&po->mapped))
+@@ -3944,6 +3992,10 @@ out:
+ 	mutex_unlock(&po->pg_vec_lock);
+ 	return err;
  }
- EXPORT_SYMBOL(inet_del_offload);
++#else
++#define packet_mmap sock_no_mmap
++#define packet_poll datagram_poll
 +#endif
-diff --git a/net/ipv6/Makefile b/net/ipv6/Makefile
-index 6ff7cfd..7ce7aa0 100644
---- a/net/ipv6/Makefile
-+++ b/net/ipv6/Makefile
-@@ -10,7 +10,8 @@ ipv6-objs :=	af_inet6.o anycast.o ip6_output.o ip6_input.o addrconf.o \
- 		raw.o icmp.o mcast.o reassembly.o tcp_ipv6.o \
- 		exthdrs.o datagram.o ip6_flowlabel.o inet6_connection_sock.o
  
--ipv6-offload :=	ip6_offload.o tcpv6_offload.o udp_offload.o exthdrs_offload.o
-+ipv6-offload-$(CONFIG_IP_OFFLOAD) := ip6_offload.o tcpv6_offload.o \
-+		udp_offload.o exthdrs_offload.o
- 
- ipv6-$(CONFIG_SYSCTL) = sysctl_net_ipv6.o
- ipv6-$(CONFIG_IPV6_MROUTE) += ip6mr.o
-@@ -43,6 +44,6 @@ obj-$(CONFIG_IPV6_TUNNEL) += ip6_tunnel.o
- obj-$(CONFIG_IPV6_GRE) += ip6_gre.o
- 
- obj-y += addrconf_core.o exthdrs_core.o ip6_checksum.o ip6_icmp.o
--obj-$(CONFIG_INET) += output_core.o protocol.o $(ipv6-offload)
-+obj-$(CONFIG_INET) += output_core.o protocol.o $(ipv6-offload-y)
- 
- obj-$(subst m,y,$(CONFIG_IPV6)) += inet6_hashtables.o
-diff --git a/net/ipv6/protocol.c b/net/ipv6/protocol.c
-index e048cf1..bae02e1 100644
---- a/net/ipv6/protocol.c
-+++ b/net/ipv6/protocol.c
-@@ -50,6 +50,7 @@ int inet6_del_protocol(const struct inet6_protocol *prot, unsigned char protocol
- EXPORT_SYMBOL(inet6_del_protocol);
- #endif
- 
-+#ifdef CONFIG_IP_OFFLOAD
- const struct net_offload __rcu *inet6_offloads[MAX_INET_PROTOS] __read_mostly;
- 
- int inet6_add_offload(const struct net_offload *prot, unsigned char protocol)
-@@ -71,3 +72,4 @@ int inet6_del_offload(const struct net_offload *prot, unsigned char protocol)
- 	return ret;
- }
- EXPORT_SYMBOL(inet6_del_offload);
-+#endif
+ static const struct proto_ops packet_ops_spkt = {
+ 	.family =	PF_PACKET,
 -- 
 1.9.0
 
