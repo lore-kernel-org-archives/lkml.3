@@ -1,39 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528AbaEEJCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:02:45 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:34902 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755129AbaEEJCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:02:32 -0400
-Date: Mon, 5 May 2014 10:01:26 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: nicolas.pitre@linaro.org, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: put_user: fix possible data corruption in put_user
-Message-ID: <20140505090126.GD3693@n2100.arm.linux.org.uk>
-References: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
+	id S1755545AbaEEJEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:04:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55656 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755095AbaEEJEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 05:04:48 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
+        <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 0/7] Input: pixcir_i2c_ts: Add Type-B Multi-touch and DT support 
+Date: Mon, 5 May 2014 12:04:31 +0300
+Message-ID: <1399280678-23925-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 10:13:58AM +0400, Andrey Ryabinin wrote:
-> According to arm procedure call standart r2 register is call-cloberred.
-> So after the result of x expression was put into r2 any following
-> function call in p may overwrite r2. To fix this, the result of p
-> expression must be saved to the temporary variable before the
-> assigment x expression to __r2.
+Hi Dmitry,
 
-This and the patch make no sense.  You talk about r2, but you're doing
-nothing with r2 in the patch.
+This series does the following
+
+- use devres managed resource allocations
+- convert to Type-B multi touch protocol
+- support upto 5 fingers with hardware supplied tracking IDs
+- device tree support
+
+Please queue this for -next (3.16). Thanks.
+
+cheers,
+-roger
+
+Changelog:
+
+v4:
+- imporved pixcir_stop() as per Dmitry's suggestion.
+- removed unnecessary input_unregister_device() from .remove().
+
+v3:
+- Rebased to 3.15-rc3
+- Fixed suspend while touchscreen in use
+- Fixed module removal while touchscreen in use
+
+v2:
+- Addressed review comments and re-arranged patch order
+
+v1:
+- http://article.gmane.org/gmane.linux.kernel/1616417
+
+---
+Roger Quadros (7):
+  Input: pixcir_i2c_ts: Use devres managed resource allocations
+  Input: pixcir_i2c_ts: Initialize interrupt mode and power mode
+  Input: pixcir_i2c_ts: Get rid of pdata->attb_read_val()
+  Input: pixcir_i2c_ts: Use Type-B Multi-Touch protocol
+  Input: pixcir_i2c_ts: support upto 5 fingers and hardware provided
+    tracking IDs
+  Input: pixcir_i2c_ts: Implement wakeup from suspend
+  Input: pixcir_i2c_ts: Add device tree support
+
+ .../bindings/input/touchscreen/pixcir_i2c_ts.txt   |  26 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ drivers/input/touchscreen/pixcir_i2c_ts.c          | 524 ++++++++++++++++++---
+ include/linux/input/pixcir_ts.h                    |  56 ++-
+ 4 files changed, 546 insertions(+), 61 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/touchscreen/pixcir_i2c_ts.txt
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.8.3.2
+
