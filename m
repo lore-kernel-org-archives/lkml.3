@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaEETTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:19:52 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:59015 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752112AbaEETTt (ORCPT
+	id S1752277AbaEETUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:20:01 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:57901 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224AbaEETT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:19:49 -0400
+	Mon, 5 May 2014 15:19:58 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
 Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v5 3/7] x86: Move syscall and sysenter setup into kernel/cpu/common.c
-Date: Mon,  5 May 2014 12:19:33 -0700
-Message-Id: <4e466987204e232d7b55a53ff6b9739f12237461.1399317206.git.luto@amacapital.net>
+Subject: [PATCH v5 7/7] x86: Remove vestiges of VDSO_PRELINK and some outdated comments
+Date: Mon,  5 May 2014 12:19:37 -0700
+Message-Id: <946c104e40c47319f8ab406e54118799cb55bd99.1399317206.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <cover.1399317206.git.luto@amacapital.net>
 References: <cover.1399317206.git.luto@amacapital.net>
@@ -23,122 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code is used during CPU setup, and it isn't strictly speaking
-related to the 32-bit vdso.  It's easier to understand how this
-works when the code is closer to its callers.
-
-This also lets syscall32_cpu_init be static, which might save some
-trivial amount of kernel text.
+These definitions had no effect.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/proto.h |  2 --
- arch/x86/kernel/cpu/common.c | 32 ++++++++++++++++++++++++++++++++
- arch/x86/vdso/vdso32-setup.c | 30 ------------------------------
- 3 files changed, 32 insertions(+), 32 deletions(-)
+ arch/x86/vdso/vdso.lds.S          | 7 +------
+ arch/x86/vdso/vdso32/vdso32.lds.S | 5 +----
+ arch/x86/vdso/vdsox32.lds.S       | 7 +------
+ 3 files changed, 3 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/proto.h b/arch/x86/include/asm/proto.h
-index 6fd3fd7..a90f897 100644
---- a/arch/x86/include/asm/proto.h
-+++ b/arch/x86/include/asm/proto.h
-@@ -12,8 +12,6 @@ void ia32_syscall(void);
- void ia32_cstar_target(void);
- void ia32_sysenter_target(void);
+diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
+index b96b267..75e3404 100644
+--- a/arch/x86/vdso/vdso.lds.S
++++ b/arch/x86/vdso/vdso.lds.S
+@@ -1,14 +1,11 @@
+ /*
+  * Linker script for 64-bit vDSO.
+  * We #include the file to define the layout details.
+- * Here we only choose the prelinked virtual address.
+  *
+  * This file defines the version script giving the user-exported symbols in
+- * the DSO.  We can define local symbols here called VDSO* to make their
+- * values visible using the asm-x86/vdso.h macros from the kernel proper.
++ * the DSO.
+  */
  
--void syscall32_cpu_init(void);
--
- void x86_configure_nx(void);
- void x86_report_nx(void);
+-#define VDSO_PRELINK 0xffffffffff700000
+ #include "vdso-layout.lds.S"
  
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index a135239..7c65b46 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -953,6 +953,38 @@ static void vgetcpu_set_mode(void)
- 	else
- 		vgetcpu_mode = VGETCPU_LSL;
+ /*
+@@ -28,5 +25,3 @@ VERSION {
+ 	local: *;
+ 	};
  }
-+
-+/* May not be __init: called during resume */
-+static void syscall32_cpu_init(void)
-+{
-+	/* Load these always in case some future AMD CPU supports
-+	   SYSENTER from compat mode too. */
-+	wrmsrl_safe(MSR_IA32_SYSENTER_CS, (u64)__KERNEL_CS);
-+	wrmsrl_safe(MSR_IA32_SYSENTER_ESP, 0ULL);
-+	wrmsrl_safe(MSR_IA32_SYSENTER_EIP, (u64)ia32_sysenter_target);
-+
-+	wrmsrl(MSR_CSTAR, ia32_cstar_target);
-+}
-+#endif
-+
-+#ifdef CONFIG_X86_32
-+void enable_sep_cpu(void)
-+{
-+	int cpu = get_cpu();
-+	struct tss_struct *tss = &per_cpu(init_tss, cpu);
-+
-+	if (!boot_cpu_has(X86_FEATURE_SEP)) {
-+		put_cpu();
-+		return;
-+	}
-+
-+	tss->x86_tss.ss1 = __KERNEL_CS;
-+	tss->x86_tss.sp1 = sizeof(struct tss_struct) + (unsigned long) tss;
-+	wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
-+	wrmsr(MSR_IA32_SYSENTER_ESP, tss->x86_tss.sp1, 0);
-+	wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long) ia32_sysenter_target, 0);
-+	put_cpu();
-+}
- #endif
- 
- void __init identify_boot_cpu(void)
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 5a657d9..9c78d5b 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -75,41 +75,11 @@ static unsigned vdso32_size;
- #define	vdso32_sysenter()	(boot_cpu_has(X86_FEATURE_SYSENTER32))
- #define	vdso32_syscall()	(boot_cpu_has(X86_FEATURE_SYSCALL32))
- 
--/* May not be __init: called during resume */
--void syscall32_cpu_init(void)
--{
--	/* Load these always in case some future AMD CPU supports
--	   SYSENTER from compat mode too. */
--	wrmsrl_safe(MSR_IA32_SYSENTER_CS, (u64)__KERNEL_CS);
--	wrmsrl_safe(MSR_IA32_SYSENTER_ESP, 0ULL);
--	wrmsrl_safe(MSR_IA32_SYSENTER_EIP, (u64)ia32_sysenter_target);
 -
--	wrmsrl(MSR_CSTAR, ia32_cstar_target);
--}
--
- #else  /* CONFIG_X86_32 */
+-VDSO64_PRELINK = VDSO_PRELINK;
+diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S b/arch/x86/vdso/vdso32/vdso32.lds.S
+index f072095..31056cf 100644
+--- a/arch/x86/vdso/vdso32/vdso32.lds.S
++++ b/arch/x86/vdso/vdso32/vdso32.lds.S
+@@ -1,17 +1,14 @@
+ /*
+  * Linker script for 32-bit vDSO.
+  * We #include the file to define the layout details.
+- * Here we only choose the prelinked virtual address.
+  *
+  * This file defines the version script giving the user-exported symbols in
+- * the DSO.  We can define local symbols here called VDSO* to make their
+- * values visible using the asm-x86/vdso.h macros from the kernel proper.
++ * the DSO.
+  */
  
- #define vdso32_sysenter()	(boot_cpu_has(X86_FEATURE_SEP))
- #define vdso32_syscall()	(0)
+ #include <asm/page.h>
  
--void enable_sep_cpu(void)
--{
--	int cpu = get_cpu();
--	struct tss_struct *tss = &per_cpu(init_tss, cpu);
--
--	if (!boot_cpu_has(X86_FEATURE_SEP)) {
--		put_cpu();
--		return;
--	}
--
--	tss->x86_tss.ss1 = __KERNEL_CS;
--	tss->x86_tss.sp1 = sizeof(struct tss_struct) + (unsigned long) tss;
--	wrmsr(MSR_IA32_SYSENTER_CS, __KERNEL_CS, 0);
--	wrmsr(MSR_IA32_SYSENTER_ESP, tss->x86_tss.sp1, 0);
--	wrmsr(MSR_IA32_SYSENTER_EIP, (unsigned long) ia32_sysenter_target, 0);
--	put_cpu();	
--}
--
- #endif	/* CONFIG_X86_64 */
+ #define BUILD_VDSO32
+-#define VDSO_PRELINK 0
  
- int __init sysenter_setup(void)
+ #include "../vdso-layout.lds.S"
+ 
+diff --git a/arch/x86/vdso/vdsox32.lds.S b/arch/x86/vdso/vdsox32.lds.S
+index 62272aa..46b991b 100644
+--- a/arch/x86/vdso/vdsox32.lds.S
++++ b/arch/x86/vdso/vdsox32.lds.S
+@@ -1,14 +1,11 @@
+ /*
+  * Linker script for x32 vDSO.
+  * We #include the file to define the layout details.
+- * Here we only choose the prelinked virtual address.
+  *
+  * This file defines the version script giving the user-exported symbols in
+- * the DSO.  We can define local symbols here called VDSO* to make their
+- * values visible using the asm-x86/vdso.h macros from the kernel proper.
++ * the DSO.
+  */
+ 
+-#define VDSO_PRELINK 0
+ #include "vdso-layout.lds.S"
+ 
+ /*
+@@ -24,5 +21,3 @@ VERSION {
+ 	local: *;
+ 	};
+ }
+-
+-VDSOX32_PRELINK = VDSO_PRELINK;
 -- 
 1.9.0
 
