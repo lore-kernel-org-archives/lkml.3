@@ -1,58 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549AbaEESGy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:06:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51120 "EHLO mx1.redhat.com"
+	id S1751656AbaEESHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:07:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47612 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750896AbaEESGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:06:53 -0400
-Message-ID: <5367D30E.9020901@redhat.com>
-Date: Mon, 05 May 2014 20:06:06 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751585AbaEESHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:07:08 -0400
+Date: Mon, 5 May 2014 20:07:06 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>
+Subject: Re: fanotify man pages for review
+Message-ID: <20140505180706.GH23927@quack.suse.cz>
+References: <535FAE78.5050404@gmail.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 4/4] nohz: Fix iowait overcounting if iowait task migrates
-References: <1398365158-12568-1-git-send-email-dvlasenk@redhat.com> <1398365158-12568-4-git-send-email-dvlasenk@redhat.com> <20140429144727.GB6129@localhost.localdomain>
-In-Reply-To: <20140429144727.GB6129@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535FAE78.5050404@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 04:47 PM, Frederic Weisbecker wrote:
-> On Thu, Apr 24, 2014 at 08:45:58PM +0200, Denys Vlasenko wrote:
->> +void tick_nohz_iowait_to_idle(int cpu)
->> +{
->> +	struct tick_sched *ts = tick_get_tick_sched(cpu);
->> +	ktime_t now = ktime_get();
->> +
->> +	write_seqcount_begin(&ts->idle_sleeptime_seq);
->> +	ts->iowait_exittime = now;
->> +	write_seqcount_end(&ts->idle_sleeptime_seq);
-> 
-> So now you have two concurrent updaters using the seqcount, which is
-> very dangerous as the counters aren't updated atomically.
-> 
-> seqcount is only suitable when there is a single sequential updater.
-> Once you deal with concurrent updaters you need seqlock.
-> 
-> And once you add seqlock in the hot scheduler path, you're hitting
-> a big scalability issue.
+  Hello,
 
-What I need here is merely an atomic store.
-The complication is, of course, that, ktime_t is not atomic[64]_t.
+  below are some minor comments regarding the manpages.
 
-How do you think I can do an atomic store?
+> diff --git a/man2/fanotify_mark.2 b/man2/fanotify_mark.2
+> new file mode 100644
+> index 0000000..693eff8
+> --- /dev/null
+> +++ b/man2/fanotify_mark.2
+...
+> +.B FAN_MARK_IGNORED_SURV_MODIFY
+> +The ignore mask shall survive modify events.
+> +If this flag is not set, the ignore mask is cleared when a modify event occurs
+> +for the ignored file or directory.
+  This is correct but maybe we should explicitely stress that the modify
+event doesn't have to be delivered to the fanotify group? I.e. the
+clearing happens even if the mark doesn't have FAN_MODIFY set... But maybe
+it would just unecessarily complicate the explanation. Just a suggestion.
 
+> diff --git a/man7/fanotify.7 b/man7/fanotify.7
+> new file mode 100644
+> index 0000000..083244f
+> --- /dev/null
+> +++ b/man7/fanotify.7
+...
+> +A possible usage of the ignore mask is for a file cache.
+> +Events of interest for a file cache are modification of a file and closing
+> +of the same.
+> +Hence, the cached directory or mount point is to be marked to receive these
+> +events.
+> +After receiving the first event informing that a file has been modified, the
+> +corresponding cache entry will be invalidated.
+> +No further modification events for this file are of interest until the file is
+> +closed.
+> +Hence, the modify event can be added to the ignore mask.
+> +Upon receiving the closed event, the modify event can be removed from the
+                      ^^^^ close
 
+> +ignore mask and the file cache entry can be updated.
+> +.PP
+> +The entries in the fanotify notification groups refer to files and directories
+> +via their inode number and to mounts via their mount ID.
+> +If files or directories are renamed or moved, the respective entries survive.
+> +If files or directories are deleted or mounts are unmounted, the corresponding
+> +entries are deleted.
+> +.SS The event queue
+> +As events occur on the filesystem objects monitired by a notification group,
+                                             ^^^ monitored
+
+> +the fanotify system generates events that are collected in a queue.
+> +These events can then be read (using
+> +.BR read (2)
+> +or similar)
+> +from the fanotify file descriptor
+> +returned by
+> +.BR fanotify_init (2).
+> +
+> +Two types of events are generated:
+> +notification events and permission events.
+> +Notification events are merely informative
+> +and require no action to be taken by
+> +the receiving application except for closing the file descriptor passed in the
+> +event.
+> +Permission events are requests to the receiving application to decide whether
+> +permission for a file access shall be granted.
+> +For these events, the recipient must write a response which decides whether
+> +access is granted or not.
+> +
+> +Queue entries for notification events are removed when the event has been
+> +read.
+> +Queue entries for permission events are removed when the permission
+> +decision has been taken by writing to the fanotify file descriptor.
+  This is true however it may be slightly misleading - the permission
+events are removed from the queue as soon as they are read. But they are
+destroyed only after the permission response is received. So from
+userspace POV dequeued events are invisible...
+
+> +A program listening to fanotify events can compare this PID to the PID returned
+> +by
+> +.BR getpid (2),
+> +to determine whether the event is caused by the listener itself, or is due to a
+> +file access by another program.
+> +.PP
+> +The bit mask in
+> +.I mask
+> +signals which events have occurred for a single filesystem object.
+> +Multiple bits may be set in this mask,
+> +if more than one event occurred for the monitored filesystem obect.
+                                                                ^^ object
+
+> +.B ENOENT
+> +The file descriptor
+> +.I fd
+> +in the response structure is not valid.
+> +This might occur because the file was already deleted by another thread or
+> +process.
+  This isn't quite true. Another thread of the same process may have already
+closed the 'fd'. But it has nothing to do with a file being deleted.
+fanotify uses file descriptors exactly so that renames or deletes don't
+make the event invalid.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
