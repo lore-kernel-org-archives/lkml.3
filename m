@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933132AbaEEO50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:57:26 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:58185 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932887AbaEEO5Y (ORCPT
+	id S933197AbaEEO6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:58:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55849 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933011AbaEEO6U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:57:24 -0400
-Date: Mon, 5 May 2014 10:57:01 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 05/10] workqueue: separate iteration role from worker_idr
-Message-ID: <20140505145701.GF11231@htj.dyndns.org>
-References: <1398571754-12443-1-git-send-email-laijs@cn.fujitsu.com>
- <1398571754-12443-6-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 5 May 2014 10:58:20 -0400
+Date: Mon, 5 May 2014 16:58:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        khilman@linaro.org, tglx@linutronix.de, axboe@fb.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
+Message-ID: <20140505145815.GQ26782@laptop.programming.kicks-ass.net>
+References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
+ <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+ <20140505145256.GA2099@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398571754-12443-6-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140505145256.GA2099@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 27, 2014 at 12:09:00PM +0800, Lai Jiangshan wrote:
-> diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-> index 7e2204d..7bff111 100644
-> --- a/kernel/workqueue_internal.h
-> +++ b/kernel/workqueue_internal.h
-> @@ -37,6 +37,7 @@ struct worker {
->  	struct task_struct	*task;		/* I: worker task */
->  	struct worker_pool	*pool;		/* I: the associated pool */
->  						/* L: for rescuers */
-> +	struct list_head	bind_entry;	/* M: bound with the pool */
+On Mon, May 05, 2014 at 04:52:59PM +0200, Frederic Weisbecker wrote:
+> > Should we instead do irq_work_queue_on() ?
+> 
+> I would really much prefer that yeah. But if we do that, expect some added overhead on the local
+> irq_work_queue() path though. irq_work_raise can't use local cmpxchg ops anymore.
+> 
+> Or we can have a different pending raise system for remote irq work.
+> 
+> I can try something.
 
-This is just a wrong name.  Let's just call it "workers_node" and the
-head "workers".
-
-Thanks.
-
--- 
-tejun
+Loosing that local cmpxchg shouldn't be a problem, I don't  thnk this is
+a particularly hot path.
