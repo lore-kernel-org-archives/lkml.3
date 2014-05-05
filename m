@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328AbaEEXfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:35:00 -0400
-Received: from mail.lang.hm ([64.81.33.126]:36816 "EHLO bifrost.lang.hm"
+	id S933174AbaEEXwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:52:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53906 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246AbaEEXe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:34:58 -0400
-Date: Mon, 5 May 2014 16:34:45 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Jiri Kosina <jkosina@suse.cz>
+	id S1751871AbaEEXww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 19:52:52 -0400
+Date: Tue, 6 May 2014 01:52:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Lang <david@lang.hm>
 cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -17,61 +16,48 @@ cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
         Ingo Molnar <mingo@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
         linux-kernel@vger.kernel.org
 Subject: Re: [RFC PATCH 0/2] kpatch: dynamic kernel patching
-In-Reply-To: <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz>
-Message-ID: <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
-References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+In-Reply-To: <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
+Message-ID: <alpine.LNX.2.00.1405060147190.3969@pobox.suse.cz>
+References: <cover.1398958771.git.jpoimboe@redhat.com> <alpine.LRH.2.00.1405021504320.22053@twin.jikos.cz> <alpine.DEB.2.02.1405051633080.14881@nftneq.ynat.uz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 May 2014, Jiri Kosina wrote:
+On Mon, 5 May 2014, David Lang wrote:
 
-> On Thu, 1 May 2014, Josh Poimboeuf wrote:
->
->> kpatch vs kGraft
->> ----------------
->>
->> I think the biggest difference between kpatch and kGraft is how they
->> ensure that the patch is applied atomically and safely.
->>
->> kpatch checks the backtraces of all tasks in stop_machine() to ensure
->> that no instances of the old function are running when the new function
->> is applied.  I think the biggest downside of this approach is that
->> stop_machine() has to idle all other CPUs during the patching process,
->> so it inserts a small amount of latency (a few ms on an idle system).
->>
->> Instead, kGraft uses per-task consistency: each task either sees the old
->> version or the new version of the function.  This gives a consistent
->> view with respect to functions, but _not_ data, because the old and new
->> functions are allowed to run simultaneously and share data.  This could
->> be dangerous if a patch changes how a function uses a data structure.
->> The new function could make a data change that the old function wasn't
->> expecting.
->
-> Please correct me if I am wrong, but with kPatch, you are also unable to
-> do a "flip and forget" switch between functions that expect different
-> format of in-memory data without performing a non-trivial all-memory
-> lookup to find structures in question and perfoming corresponding
-> transformations.
->
-> What we can do with kGraft si to perform the patching in two steps
->
-> (1) redirect to a temporary band-aid function that can handle both
->    semantics of the data (persumably in highly sub-optimal way)
-> (2) patching in (1) succeeds completely (kGraft claims victory), start a
->    new round of patching with redirect to the final function which
->    expects only the new semantics
->
-> This basically implies that both aproaches need "human inspection" in this
-> respect anyway.
+> how would you know that all instances of the datastructure in memory 
+> have= been touched? just because all tasks have run and are outside the 
+> function in question doesn't tell you data structures have been 
+> converted. You have n= o way of knowing when (or if) the next call to 
+> the modified function will take place on any potential in-memory 
+> structure.
 
-how would you know that all instances of the datastructure in memory have been 
-touched? just because all tasks have run and are outside the function in 
-question doesn't tell you data structures have been converted. You have no way 
-of knowing when (or if) the next call to the modified function will take place 
-on any potential in-memory structure.
+The problem you are trying to avoid here is functions expecting to read 
+"v2" format of the data from memory, while there are still tasks that are 
+unpredictably writing "v1" format of the data to the memory.
 
-David Lang
+There are several ways to attack this problem:
+
+- stop the whole system, convert all the existing data structures to new 
+  format (which might potentially be non-trivial, mostly because you 
+  have to *know* where all the data structures have been allocated), apply 
+  patch, resume operation [ksplice, probably kpatch in future]
+- restrict the data format to be backwards compatible [to be done 
+  manually during patch creation, currently what kGraft needs to do in 
+  such case]
+- have a proxy code which can read both "v1" and "v2" formats, and writes 
+  back in the same format it has seen the data structure on input
+- once all the *code* has been converted, it still has to understand "v1" 
+  and "v2", but it can now start writing out "v2" format only [possible 
+  with kGraft, not implemented in automated fashion]
+
+Ideas are of course more than welcome.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
