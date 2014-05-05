@@ -1,80 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223AbaEERvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:51:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53092 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540AbaEERt0 (ORCPT
+	id S1751507AbaEESAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:00:48 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:44707 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaEESAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:49:26 -0400
-Date: Mon, 5 May 2014 10:47:54 -0700
-From: tip-bot for Jiri Olsa <tipbot@zytor.com>
-Message-ID: <tip-3dd422b4a5009e7654846534d535758d4cc985db@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-        hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, acme@kernel.org,
-        namhyung@kernel.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, jolsa@kernel.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, acme@kernel.org, namhyung@kernel.org,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de, bp@suse.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1399293219-8732-2-git-send-email-jolsa@kernel.org>
-References: <1399293219-8732-2-git-send-email-jolsa@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Remove MAX_COUNTERS define from perf.h
-Git-Commit-ID: 3dd422b4a5009e7654846534d535758d4cc985db
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Mon, 5 May 2014 14:00:47 -0400
+Message-ID: <1399312844.2570.28.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] zram: remove global tb_lock by using lock-free CAS
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        "'Minchan Kim'" <minchan@kernel.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>,
+        "'Dan Streetman'" <ddstreet@ieee.org>, weijie.yang.kh@gmail.com,
+        heesub.shin@samsung.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>
+Date: Mon, 05 May 2014 11:00:44 -0700
+In-Reply-To: <20140505152014.GA8551@cerebellum.variantweb.net>
+References: <000001cf6816$d538c370$7faa4a50$%yang@samsung.com>
+	 <20140505152014.GA8551@cerebellum.variantweb.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3dd422b4a5009e7654846534d535758d4cc985db
-Gitweb:     http://git.kernel.org/tip/3dd422b4a5009e7654846534d535758d4cc985db
-Author:     Jiri Olsa <jolsa@kernel.org>
-AuthorDate: Mon, 5 May 2014 12:26:14 +0200
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Mon, 5 May 2014 17:45:20 +0200
+On Mon, 2014-05-05 at 10:20 -0500, Seth Jennings wrote:
+> On Mon, May 05, 2014 at 12:01:21PM +0800, Weijie Yang wrote:
+> > Currently, we use a rwlock tb_lock to protect concurrent access to
+> > whole zram meta table. However, according to the actual access model,
+> > there is only a small chance for upper user access the same table[index],
+> > so the current lock granularity is too big.
+> > 
+> > This patch add a atomic state for every table[index] to record its access,
+> > by using CAS operation, protect concurrent access to the same table[index],
+> > meanwhile allow the maximum concurrency.
+> > 
+> > On 64-bit system, it will not increase the meta table memory overhead, and
+> > on 32-bit system with 4K page_size, it will increase about 1MB memory overhead
+> > for 1GB zram. So, it is cost-efficient.
+> > 
+> > Test result:
+> > (x86-64 Intel Core2 Q8400, system memory 4GB, Ubuntu 12.04,
+> > kernel v3.15.0-rc3, zram 1GB with 4 max_comp_streams LZO,
+> > take the average of 5 tests)
+> > 
+> > iozone -t 4 -R -r 16K -s 200M -I +Z
+> > 
+> >       Test          base	   lock-free	ratio
+> > ------------------------------------------------------
+> >  Initial write   1348017.60    1424141.62   +5.6%
+> >        Rewrite   1520189.16    1652504.81   +8.7%
+> >           Read   8294445.45   11404668.35   +37.5%
+> >        Re-read   8134448.83   11555483.75   +42.1%
+> >   Reverse Read   6748717.97    8394478.17   +24.4%
+> >    Stride read   7220276.66    9372229.95   +29.8%
+> >    Random read   7133010.06    9187221.90   +28.8%
+> > Mixed workload   4056980.71    5843370.85   +44.0%
+> >   Random write   1470106.17    1608947.04   +9.4%
+> >         Pwrite   1259493.72    1311055.32   +4.1%
+> >          Pread   4247583.17    4652056.11   +9.5%
+> > 
+> > Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> > ---
+> > 
+> > This patch is based on linux-next tree, commit b5c8d48bf8f42 
+> > 
+> >  drivers/block/zram/zram_drv.c |   41 ++++++++++++++++++++++++++---------------
+> >  drivers/block/zram/zram_drv.h |    5 ++++-
+> >  2 files changed, 30 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 48eccb3..8b70945
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -255,7 +255,6 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+> >  		goto free_table;
+> >  	}
+> >  
+> > -	rwlock_init(&meta->tb_lock);
+> >  	return meta;
+> >  
+> >  free_table:
+> > @@ -339,12 +338,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> >  	unsigned long handle;
+> >  	u16 size;
+> >  
+> > -	read_lock(&meta->tb_lock);
+> > +	while(atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) != IDLE)
+> > +		cpu_relax();
+> > +
+> 
+> So... this might be dumb question, but this looks like a spinlock
+> implementation.
+> 
+> What advantage does this have over a standard spinlock?
 
-perf tools: Remove MAX_COUNTERS define from perf.h
+I was wondering the same thing. Furthermore by doing this you'll loose
+the benefits of sharing the lock... your numbers do indicate that it is
+for the better. Also, note that hopefully rwlock_t will soon be updated
+to be fair and perform up to par with spinlocks, something which is long
+overdue. So you could reduce the critical region by implementing the
+same granularity, just don't implement your own locking schemes, like
+this.
 
-As it's no longer used.
+> Seth
+> 
+> >  	handle = meta->table[index].handle;
+> >  	size = meta->table[index].size;
+> >  
+> >  	if (!handle || zram_test_flag(meta, index, ZRAM_ZERO)) {
+> > -		read_unlock(&meta->tb_lock);
+> > +		atomic_set(&meta->table[index].state, IDLE);
+> >  		clear_page(mem);
+> >  		return 0;
+> >  	}
+> > @@ -355,7 +356,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+> >  	else
+> >  		ret = zcomp_decompress(zram->comp, cmem, size, mem);
+> >  	zs_unmap_object(meta->mem_pool, handle);
+> > -	read_unlock(&meta->tb_lock);
+> > +	atomic_set(&meta->table[index].state, IDLE);
+> >  
+> >  	/* Should NEVER happen. Return bio error if it does. */
+> >  	if (unlikely(ret)) {
+> > @@ -376,14 +377,16 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+> >  	struct zram_meta *meta = zram->meta;
+> >  	page = bvec->bv_page;
+> >  
+> > -	read_lock(&meta->tb_lock);
+> > +	while(atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) != IDLE)
+> > +		cpu_relax();
+> > +
 
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1399293219-8732-2-git-send-email-jolsa@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/perf.h | 1 -
- 1 file changed, 1 deletion(-)
+So here you could reduce the amount of atomic ops and cacheline boucing
+by doing a read before the CAS. It works well for our mutexes and
+rwsems. Something like:
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 5aa8ac4..3bea2e6 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -231,7 +231,6 @@ sys_perf_event_open(struct perf_event_attr *attr,
- 	return fd;
- }
- 
--#define MAX_COUNTERS			256
- #define MAX_NR_CPUS			256
- 
- struct ip_callchain {
+while (true) {
+	if (atomic_read(&meta->table[index].state) == IDLE &&
+	    atomic_cmpxchg(&meta->table[index].state, IDLE, ACCESS) == IDLE)
+		/* yay! lock acquired */
+}
+
+But then again, that's kind of implementing your own locking scheme...
+use a standard one instead ;)
+
+Also, instead of cpu_relax() you probably want arch_mutex_cpu_relax()
+for the sake of z systems.
+
+Thanks,
+Davidlohr
+
