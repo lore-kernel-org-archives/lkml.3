@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaEENkb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:40:31 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:35615 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382AbaEENka (ORCPT
+	id S932493AbaEENpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:45:24 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:61179 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420AbaEENpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:40:30 -0400
-Message-ID: <536794CB.8060903@linuxfoundation.org>
-Date: Mon, 05 May 2014 09:40:27 -0400
-From: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
-Organization: Linux Foundation
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 5 May 2014 09:45:22 -0400
+Date: Mon, 5 May 2014 09:45:19 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Andrey Ryabinin <a.ryabinin@samsung.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: put_user: fix possible data corruption in
+ put_user
+In-Reply-To: <53676D12.9040300@samsung.com>
+Message-ID: <alpine.LFD.2.11.1405050944001.980@knanqh.ubzr>
+References: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com> <20140505090126.GD3693@n2100.arm.linux.org.uk> <53676D12.9040300@samsung.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.15-rc4
-References: <CA+55aFz6Sxjy9jdai=TkeB2Rbpu0ydL4-YW4j-S-9oixDu5oZw@mail.gmail.com> <CA+5PVA4Wt19ByW5c__jJWFFz0_0uvnbQeRn13w6S43TMZJt8YA@mail.gmail.com>
-In-Reply-To: <CA+5PVA4Wt19ByW5c__jJWFFz0_0uvnbQeRn13w6S43TMZJt8YA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/14 08:38 AM, Josh Boyer wrote:
-> Did the patch-3.15-rc4.xz tarball not get uploaded/created on
-> kernel.org?  The frontpage doesn't seem to have been updated for -rc4,
-> and I can't find it here either:
+On Mon, 5 May 2014, Andrey Ryabinin wrote:
+
+> On 05/05/14 13:01, Russell King - ARM Linux wrote:
+> > On Mon, May 05, 2014 at 10:13:58AM +0400, Andrey Ryabinin wrote:
+> >> According to arm procedure call standart r2 register is call-cloberred.
+> >> So after the result of x expression was put into r2 any following
+> >> function call in p may overwrite r2. To fix this, the result of p
+> >> expression must be saved to the temporary variable before the
+> >> assigment x expression to __r2.
+> > 
+> > This and the patch make no sense.  You talk about r2, but you're doing
+> > nothing with r2 in the patch.
+> > 
 > 
-> https://www.kernel.org/pub/linux/kernel/v3.x/testing/
+> No, you didn't get it. I'll try to explain better.
+> 
+> Lets consider following example:
+[...]
 
-Looks like it got placed into /v3.x/ instead of /testing/. I'll move it
-into /testing/ shortly, which should kick off the site update (the
-script only looks for -rc kernels in /testing/).
+Thanks for the test code.  I do confirm there is indeed a problem.
 
--K
+I'm trying to make sure your patch is actually the best fix.
+
+
+Nicolas
