@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaEEPlA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:41:00 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:60918 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753711AbaEEPk4 (ORCPT
+	id S1753773AbaEEPnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:43:23 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:45149 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753441AbaEEPnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:40:56 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH 1/4] ARM: STi: DT: add keyscan for stih415
-Date: Mon,  5 May 2014 17:38:37 +0200
-Message-Id: <1399304320-18197-2-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1399304320-18197-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1399304320-18197-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-05-05_02:2014-05-05,2014-05-05,1970-01-01 signatures=0
+	Mon, 5 May 2014 11:43:22 -0400
+Date: Mon, 5 May 2014 17:43:18 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: Zhouyi Zhou <zhouzhouyi@gmail.com>
+Cc: davem@davemloft.net, steffen.klassert@secunet.com, fan.du@windriver.com,
+        dborkman@redhat.com, minipli@googlemail.com, tgraf@suug.ch,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
+Message-ID: <20140505154318.GC2944@minipsycho.brq.redhat.com>
+References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keyscan support for stih415.
-It is put disabled by default because it is not enabled on all boards
-Also there are PIOs conflict with already claimed lines.
+Fri, May 02, 2014 at 09:18:12AM CEST, zhouzhouyi@gmail.com wrote:
+>As http://www.spinics.net/lists/netdev/msg165015.html
+>pktgen generates shared packet through vlan interface will cause
+>oops because of duplicate entering tc queue.
+>
+>Try to solve this problem by means of packet clone instead of sharing.
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- arch/arm/boot/dts/stih415-pinctrl.dtsi | 16 ++++++++++++++++
- arch/arm/boot/dts/stih415.dtsi         | 12 ++++++++++++
- 2 files changed, 28 insertions(+)
+Isn't this prohibited by:
+dev->priv_flags         &= ~(IFF_TX_SKB_SHARING);
+?
 
-diff --git a/arch/arm/boot/dts/stih415-pinctrl.dtsi b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-index 81df870..8509a03 100644
---- a/arch/arm/boot/dts/stih415-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih415-pinctrl.dtsi
-@@ -102,6 +102,22 @@
- 				};
- 			};
- 
-+			keyscan {
-+				pinctrl_keyscan: keyscan {
-+					st,pins {
-+						keyin0 = <&PIO0 2 ALT2 IN>;
-+						keyin1 = <&PIO0 3 ALT2 IN>;
-+						keyin2 = <&PIO0 4 ALT2 IN>;
-+						keyin3 = <&PIO2 6 ALT2 IN>;
-+
-+						keyout0 = <&PIO1 6 ALT2 OUT>;
-+						keyout1 = <&PIO1 7 ALT2 OUT>;
-+						keyout2 = <&PIO0 6 ALT2 OUT>;
-+						keyout3 = <&PIO2 7 ALT2 OUT>;
-+					};
-+				};
-+			};
-+
- 			sbc_i2c0 {
- 				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
- 					st,pins {
-diff --git a/arch/arm/boot/dts/stih415.dtsi b/arch/arm/boot/dts/stih415.dtsi
-index d89064c..ba0905c 100644
---- a/arch/arm/boot/dts/stih415.dtsi
-+++ b/arch/arm/boot/dts/stih415.dtsi
-@@ -206,5 +206,17 @@
- 			pinctrl-0	= <&pinctrl_ir>;
- 			resets		= <&softreset STIH415_IRB_SOFTRESET>;
- 		};
-+
-+		keyscan: keyscan@fe4b0000 {
-+			compatible = "st,sti-keyscan";
-+			status = "disabled";
-+			reg = <0xfe4b0000 0x2000>;
-+			interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
-+			clocks = <&CLK_SYSIN>;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_keyscan>;
-+			resets	= <&powerdown STIH415_KEYSCAN_POWERDOWN>,
-+				  <&softreset STIH415_KEYSCAN_SOFTRESET>;
-+		};
- 	};
- };
--- 
-1.9.1
-
+>
+>Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+>---
+> net/core/pktgen.c |   20 +++++++++++++++++---
+> 1 files changed, 17 insertions(+), 3 deletions(-)
+>
+>diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+>index 0304f98..ced07fc 100644
+>--- a/net/core/pktgen.c
+>+++ b/net/core/pktgen.c
+>@@ -3297,6 +3297,7 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+> 	netdev_tx_t (*xmit)(struct sk_buff *, struct net_device *)
+> 		= odev->netdev_ops->ndo_start_xmit;
+> 	struct netdev_queue *txq;
+>+	struct sk_buff *nskb = NULL;
+> 	u16 queue_map;
+> 	int ret;
+> 
+>@@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+> 		pkt_dev->last_ok = 0;
+> 		goto unlock;
+> 	}
+>-	atomic_inc(&(pkt_dev->skb->users));
+>-	ret = (*xmit)(pkt_dev->skb, odev);
+>+
+>+	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
+>+		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
+>+		ret = -ENOMEM;
+>+		if (nskb)
+>+			ret = (*xmit)(nskb, odev);
+>+		else
+>+			nskb = ERR_PTR(ret);
+>+	} else {
+>+		atomic_inc(&(pkt_dev->skb->users));
+>+		ret = (*xmit)(pkt_dev->skb, odev);
+>+	}
+> 
+> 	switch (ret) {
+> 	case NETDEV_TX_OK:
+>@@ -3372,7 +3383,10 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+> 	case NETDEV_TX_LOCKED:
+> 	case NETDEV_TX_BUSY:
+> 		/* Retry it next time */
+>-		atomic_dec(&(pkt_dev->skb->users));
+>+		if (nskb && !IS_ERR(nskb))
+>+			kfree_skb(nskb);
+>+		else
+>+			atomic_dec(&(pkt_dev->skb->users));
+> 		pkt_dev->last_ok = 0;
+> 	}
+> unlock:
+>-- 
+>1.7.1
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
