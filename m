@@ -1,94 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050AbaEERjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:39:13 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:9814 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751529AbaEERjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:39:08 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoEJAArMZ1NbsEtU/2dsb2JhbABQCYMGq1EHAQIFAZoMgRcXdIJmHCMYgQIkE4hFAcwMhVaIIVuERgEDjxqKGQGKfod2gzY7
-Date: Mon, 5 May 2014 19:39:07 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] kernel/exec_domain.c: code clean-up
-Message-Id: <20140505193907.6d5f5e1b9438caac5a04403e@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756107AbaEERje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:39:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755108AbaEERgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 13:36:13 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 04/12] perf tools: Remove unlikely define from perf.h
+Date: Mon,  5 May 2014 19:35:40 +0200
+Message-Id: <1399311348-28152-5-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
+References: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing checkpatch warnings about EXPORT_SYMBOL and return()
+It's defined in tools/include/linux/compiler.h header.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1399293219-8732-3-git-send-email-jolsa@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- kernel/exec_domain.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ tools/perf/perf.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/kernel/exec_domain.c b/kernel/exec_domain.c
-index 0dbeae3..83d4382 100644
---- a/kernel/exec_domain.c
-+++ b/kernel/exec_domain.c
-@@ -37,7 +37,7 @@ static unsigned long ident_map[32] = {
- struct exec_domain default_exec_domain = {
- 	.name		= "Linux",		/* name */
- 	.handler	= default_handler,	/* lcall7 causes a seg fault. */
--	.pers_low	= 0, 			/* PER_LINUX personality. */
-+	.pers_low	= 0,			/* PER_LINUX personality. */
- 	.pers_high	= 0,			/* PER_LINUX personality. */
- 	.signal_map	= ident_map,		/* Identity map signals. */
- 	.signal_invmap	= ident_map,		/*  - both ways. */
-@@ -83,7 +83,7 @@ lookup_exec_domain(unsigned int personality)
- 	ep = &default_exec_domain;
- out:
- 	read_unlock(&exec_domains_lock);
--	return (ep);
-+	return ep;
- }
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 3bea2e6..a547f38 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -203,7 +203,6 @@ static inline unsigned long long rdclock(void)
+  */
+ #define asmlinkage
  
- int
-@@ -110,8 +110,9 @@ register_exec_domain(struct exec_domain *ep)
- 
- out:
- 	write_unlock(&exec_domains_lock);
--	return (err);
-+	return err;
- }
-+EXPORT_SYMBOL(register_exec_domain);
- 
- int
- unregister_exec_domain(struct exec_domain *ep)
-@@ -133,6 +134,7 @@ unregister:
- 	write_unlock(&exec_domains_lock);
- 	return 0;
- }
-+EXPORT_SYMBOL(unregister_exec_domain);
- 
- int __set_personality(unsigned int personality)
- {
-@@ -144,6 +146,7 @@ int __set_personality(unsigned int personality)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(__set_personality);
- 
- #ifdef CONFIG_PROC_FS
- static int execdomains_proc_show(struct seq_file *m, void *v)
-@@ -188,8 +191,3 @@ SYSCALL_DEFINE1(personality, unsigned int, personality)
- 
- 	return old;
- }
--
--
--EXPORT_SYMBOL(register_exec_domain);
--EXPORT_SYMBOL(unregister_exec_domain);
--EXPORT_SYMBOL(__set_personality);
+-#define unlikely(x)	__builtin_expect(!!(x), 0)
+ #define min(x, y) ({				\
+ 	typeof(x) _min1 = (x);			\
+ 	typeof(y) _min2 = (y);			\
 -- 
-1.9.1
+1.8.3.1
+
