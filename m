@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519AbaEEMx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:53:28 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41002 "EHLO
+	id S932628AbaEEMzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:55:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41003 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932296AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932275AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Ertman <davidx.m.ertman@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 12/50] e1000e: Fix no connectivity when driver loaded with cable out
-Date: Mon,  5 May 2014 14:42:54 +0200
-Message-Id: <ee16a58677a12cd4b17e76ba8565117e435f5e1f.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Tedd Ho-Jeong An <tedd.an@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 05/50] Bluetooth: Add support for Intel Bluetooth device [8087:0a2a]
+Date: Mon,  5 May 2014 14:42:47 +0200
+Message-Id: <d4527ea4815ea643d7d4341ac69efbd528f19c0f.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,75 +23,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ertman <davidx.m.ertman@intel.com>
+From: Tedd Ho-Jeong An <tedd.an@intel.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit b20a774495671f037e7160ea2ce8789af6b61533 upstream.
+commit ef4e5e4a756ff077dbdbdb8481d0e3788a07c005 upstream.
 
-In commit da1e2046e5, the flow for enabling/disabling an Si errata
-workaround (e1000_lv_jumbo_workaround_ich8lan) was changed to fix a problem
-with iAMT connections dropping on interface down with jumbo frames set.
-Part of this change was to move the function call disabling the workaround
-to e1000e_down() from the e1000_setup_rctl() function.  The mechanic for
-disabling of this workaround involves writing several MAC and PHY registers
-back to hardware defaults.
+This patch adds support for new Intel Bluetooth device.
 
-After this commit, when the driver is loaded with the cable out, the PHY
-registers are not programmed with the correct default values.  This causes
-the device to be capable of transmitting packets, but is unable to recieve
-them until this workaround is called.
+T:  Bus=02 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 2.01 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=8087 ProdID=0a2a Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=1ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-The flow of e1000e's open code relies upon calling the above workaround to
-expicitly program these registers either with jumbo frame appropriate settings
-or h/w defaults on 82579 and newer hardware.
-
-Fix this issue by adding logic to e1000_setup_rctl() that not only calls
-e1000_lv_jumbo_workaround_ich8lan() when jumbo frames are set, to enable the
-workaround, but also calls this function to explicitly disable the workaround
-in the case that jumbo frames are not set.
-
-Signed-off-by: Dave Ertman <davidx.m.ertman@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Tedd Ho-Jeong An <tedd.an@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/e1000e/netdev.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/bluetooth/btusb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 4ef786775acb..9cb400c4cbaa 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -2976,11 +2976,21 @@ static void e1000_setup_rctl(struct e1000_adapter *adapter)
- 	u32 rctl, rfctl;
- 	u32 pages = 0;
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index d593c99121c3..6e30356d3e42 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -223,6 +223,7 @@ static struct usb_device_id blacklist_table[] = {
  
--	/* Workaround Si errata on PCHx - configure jumbo frame flow */
--	if ((hw->mac.type >= e1000_pch2lan) &&
--	    (adapter->netdev->mtu > ETH_DATA_LEN) &&
--	    e1000_lv_jumbo_workaround_ich8lan(hw, true))
--		e_dbg("failed to enable jumbo frame workaround mode\n");
-+	/* Workaround Si errata on PCHx - configure jumbo frame flow.
-+	 * If jumbo frames not set, program related MAC/PHY registers
-+	 * to h/w defaults
-+	 */
-+	if (hw->mac.type >= e1000_pch2lan) {
-+		s32 ret_val;
-+
-+		if (adapter->netdev->mtu > ETH_DATA_LEN)
-+			ret_val = e1000_lv_jumbo_workaround_ich8lan(hw, true);
-+		else
-+			ret_val = e1000_lv_jumbo_workaround_ich8lan(hw, false);
-+
-+		if (ret_val)
-+			e_dbg("failed to enable|disable jumbo frame workaround mode\n");
-+	}
+ 	/* Intel Bluetooth device */
+ 	{ USB_DEVICE(0x8087, 0x07dc), .driver_info = BTUSB_INTEL },
++	{ USB_DEVICE(0x8087, 0x0a2a), .driver_info = BTUSB_INTEL },
  
- 	/* Program MC offset vector base */
- 	rctl = er32(RCTL);
+ 	{ }	/* Terminating entry */
+ };
 -- 
 1.9.2
 
