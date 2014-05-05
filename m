@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595AbaEEJE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:04:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48022 "EHLO arroyo.ext.ti.com"
+	id S932079AbaEEJFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:05:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48038 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555AbaEEJEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:04:52 -0400
+	id S1755602AbaEEJFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 05:05:03 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <dmitry.torokhov@gmail.com>
 CC: <rydberg@euromail.se>, <balbi@ti.com>, <dmurphy@ti.com>,
         <mugunthanvnm@ti.com>, <nsekhar@ti.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v4 2/7] Input: pixcir_i2c_ts: Initialize interrupt mode and power mode
-Date: Mon, 5 May 2014 12:04:33 +0300
-Message-ID: <1399280678-23925-3-git-send-email-rogerq@ti.com>
+Subject: [PATCH v4 6/7] Input: pixcir_i2c_ts: Implement wakeup from suspend
+Date: Mon, 5 May 2014 12:04:37 +0300
+Message-ID: <1399280678-23925-7-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1399280678-23925-1-git-send-email-rogerq@ti.com>
 References: <1399280678-23925-1-git-send-email-rogerq@ti.com>
@@ -24,281 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce helper functions to configure power and interrupt
-registers. Default to IDLE mode on probe as device supports
-auto wakeup to ACVIE mode on detecting finger touch.
-
-Configure interrupt mode and polarity on start up.
-Power down on device closure or module removal.
+Improve the suspend and resume handlers to allow the device
+to wakeup the system from suspend.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
 ---
- drivers/input/touchscreen/pixcir_i2c_ts.c | 176 +++++++++++++++++++++++++++++-
- include/linux/input/pixcir_ts.h           |  42 +++++++
- 2 files changed, 216 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/pixcir_i2c_ts.c | 53 ++++++++++++++++++++++++++++---
+ 1 file changed, 49 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/input/touchscreen/pixcir_i2c_ts.c b/drivers/input/touchscreen/pixcir_i2c_ts.c
-index 8a083bd..53d01d4 100644
+index 927aed1..5f6a27e 100644
 --- a/drivers/input/touchscreen/pixcir_i2c_ts.c
 +++ b/drivers/input/touchscreen/pixcir_i2c_ts.c
-@@ -100,6 +100,164 @@ static irqreturn_t pixcir_ts_isr(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
-+static int pixcir_set_power_mode(struct pixcir_i2c_ts_data *ts,
-+				 enum pixcir_power_mode mode)
-+{
-+	struct device *dev = &ts->client->dev;
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(ts->client, PIXCIR_REG_POWER_MODE);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't read reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_POWER_MODE, ret);
-+		return ret;
-+	}
-+
-+	ret &= ~PIXCIR_POWER_MODE_MASK;
-+	ret |= mode;
-+
-+	/* Always AUTO_IDLE */
-+	ret |= PIXCIR_POWER_ALLOW_IDLE;
-+
-+	ret = i2c_smbus_write_byte_data(ts->client, PIXCIR_REG_POWER_MODE, ret);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't write reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_POWER_MODE, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Set the interrupt mode for the device i.e. ATTB line behaviour
-+ *
-+ * @polarity : 1 for active high, 0 for active low.
-+ */
-+static int pixcir_set_int_mode(struct pixcir_i2c_ts_data *ts,
-+			       enum pixcir_int_mode mode,
-+					bool polarity)
-+{
-+	struct device *dev = &ts->client->dev;
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(ts->client, PIXCIR_REG_INT_MODE);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't read reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_INT_MODE, ret);
-+		return ret;
-+	}
-+
-+	ret &= ~PIXCIR_INT_MODE_MASK;
-+	ret |= mode;
-+
-+	if (polarity)
-+		ret |= PIXCIR_INT_POL_HIGH;
-+	else
-+		ret &= ~PIXCIR_INT_POL_HIGH;
-+
-+	ret = i2c_smbus_write_byte_data(ts->client, PIXCIR_REG_INT_MODE, ret);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't write reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_INT_MODE, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Enable/disable interrupt generation
-+ */
-+static int pixcir_int_enable(struct pixcir_i2c_ts_data *ts, bool enable)
-+{
-+	struct device *dev = &ts->client->dev;
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(ts->client, PIXCIR_REG_INT_MODE);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't read reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_INT_MODE, ret);
-+		return ret;
-+	}
-+
-+	if (enable)
-+		ret |= PIXCIR_INT_ENABLE;
-+	else
-+		ret &= ~PIXCIR_INT_ENABLE;
-+
-+	ret = i2c_smbus_write_byte_data(ts->client, PIXCIR_REG_INT_MODE, ret);
-+	if (ret < 0) {
-+		dev_err(dev, "%s: can't write reg 0x%x : %d\n",
-+			__func__, PIXCIR_REG_INT_MODE, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pixcir_start(struct pixcir_i2c_ts_data *ts)
-+{
-+	struct device *dev = &ts->client->dev;
-+	int ret;
-+
-+	/* LEVEL_TOUCH interrupt with active low polarity */
-+	ret = pixcir_set_int_mode(ts, PIXCIR_INT_LEVEL_TOUCH, 0);
-+	if (ret) {
-+		dev_err(dev, "Failed to set interrupt mode\n");
-+		return ret;
-+	}
-+
-+	ts->exiting = false;
-+	mb();	/* Update status before IRQ can fire */
-+
-+	/* enable interrupt generation */
-+	ret = pixcir_int_enable(ts, 1);
-+	if (ret) {
-+		dev_err(dev, "Failed to enable interrupt generation\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pixcir_stop(struct pixcir_i2c_ts_data *ts)
-+{
-+	struct device *dev = &ts->client->dev;
-+	int ret;
-+
-+	/* disable interrupt generation */
-+	ret = pixcir_int_enable(ts, 0);
-+	if (ret) {
-+		dev_err(dev, "Failed to disable interrupt generation\n");
-+		return ret;
-+	}
-+
-+	/* exit ISR if running, no more report parsing */
-+	ts->exiting = true;
-+	mb();	/* update status before we synchronize irq */
-+
-+	/* wait till running ISR complete */
-+	synchronize_irq(ts->client->irq);
-+
-+	return 0;
-+}
-+
-+static int pixcir_input_open(struct input_dev *dev)
-+{
-+	struct pixcir_i2c_ts_data *ts = input_get_drvdata(dev);
-+
-+	return pixcir_start(ts);
-+}
-+
-+static void pixcir_input_close(struct input_dev *dev)
-+{
-+	struct pixcir_i2c_ts_data *ts = input_get_drvdata(dev);
-+
-+	pixcir_stop(ts);
-+}
-+
-+
- #ifdef CONFIG_PM_SLEEP
+@@ -348,21 +348,66 @@ static void pixcir_input_close(struct input_dev *dev)
  static int pixcir_i2c_ts_suspend(struct device *dev)
  {
-@@ -157,6 +315,8 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 	input->name = client->name;
- 	input->id.bustype = BUS_I2C;
- 	input->dev.parent = &client->dev;
-+	input->open = pixcir_input_open;
-+	input->close = pixcir_input_close;
- 
- 	__set_bit(EV_KEY, input->evbit);
- 	__set_bit(EV_ABS, input->evbit);
-@@ -176,6 +336,18 @@ static int pixcir_i2c_ts_probe(struct i2c_client *client,
- 		return error;
- 	}
- 
-+	/* Always be in IDLE mode to save power, device supports auto wake */
-+	error = pixcir_set_power_mode(tsdata, PIXCIR_POWER_IDLE);
-+	if (error) {
-+		dev_err(dev, "Failed to set IDLE mode\n");
-+		return error;
+ 	struct i2c_client *client = to_i2c_client(dev);
++	struct pixcir_i2c_ts_data *ts = i2c_get_clientdata(client);
++	struct input_dev *input = ts->input;
++	int ret = 0;
++
++	mutex_lock(&input->mutex);
++
++	if (input->users) {
++		ret = pixcir_stop(ts);
++		if (ret)
++			goto unlock;
 +	}
 +
-+	/* Stop device till opened */
-+	error = pixcir_stop(tsdata);
-+	if (error)
-+		return error;
++	/*
++	 * If wakeup is enabled we need to enable interrupt generation
++	 * but don't need to process any reports i.e. ts->exiting must be true.
++	 */
++	if (device_may_wakeup(&client->dev)) {
++		/* enable wakeup interrupt generation */
++		ret = pixcir_int_enable(ts, 1);
++		if (ret) {
++			dev_err(dev, "Failed to enable interrupt generation\n");
++			goto unlock;
++		}
+ 
+-	if (device_may_wakeup(&client->dev))
+ 		enable_irq_wake(client->irq);
++	}
+ 
+-	return 0;
++unlock:
++	mutex_unlock(&input->mutex);
 +
- 	error = input_register_device(input);
- 	if (error)
- 		return error;
-@@ -192,8 +364,8 @@ static int pixcir_i2c_ts_remove(struct i2c_client *client)
- 
- 	device_init_wakeup(&client->dev, 0);
- 
--	tsdata->exiting = true;
--	mb();
-+	if (!tsdata->exiting)
-+		pixcir_stop(tsdata);
- 
- 	return 0;
++	return ret;
  }
-diff --git a/include/linux/input/pixcir_ts.h b/include/linux/input/pixcir_ts.h
-index 7163d91..7942804 100644
---- a/include/linux/input/pixcir_ts.h
-+++ b/include/linux/input/pixcir_ts.h
-@@ -1,6 +1,48 @@
- #ifndef	_PIXCIR_I2C_TS_H
- #define	_PIXCIR_I2C_TS_H
  
-+/*
-+ * Register map
-+ */
-+#define PIXCIR_REG_POWER_MODE	51
-+#define PIXCIR_REG_INT_MODE	52
+ static int pixcir_i2c_ts_resume(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
++	struct pixcir_i2c_ts_data *ts = i2c_get_clientdata(client);
++	struct input_dev *input = ts->input;
++	int ret = 0;
+ 
+-	if (device_may_wakeup(&client->dev))
++	mutex_lock(&input->mutex);
 +
-+/*
-+ * Power modes:
-+ * active: max scan speed
-+ * idle: lower scan speed with automatic transition to active on touch
-+ * halt: datasheet says sleep but this is more like halt as the chip
-+ *       clocks are cut and it can only be brought out of this mode
-+ *	 using the RESET pin.
-+ */
-+enum pixcir_power_mode {
-+	PIXCIR_POWER_ACTIVE,
-+	PIXCIR_POWER_IDLE,
-+	PIXCIR_POWER_HALT,
-+};
++	if (device_may_wakeup(&client->dev)) {
+ 		disable_irq_wake(client->irq);
+ 
+-	return 0;
++		/* disable wakeup interrupt generation */
++		ret = pixcir_int_enable(ts, 0);
++		if (ret) {
++			dev_err(dev, "Failed to disable interrupt generation\n");
++			goto unlock;
++		}
++	}
 +
-+#define PIXCIR_POWER_MODE_MASK	0x03
-+#define PIXCIR_POWER_ALLOW_IDLE (1UL << 2)
++	if (input->users)
++		ret = pixcir_start(ts);
 +
-+/*
-+ * Interrupt modes:
-+ * periodical: interrupt is asserted periodicaly
-+ * diff coordinates: interrupt is asserted when coordinates change
-+ * level on touch: interrupt level asserted during touch
-+ * pulse on touch: interrupt pulse asserted druing touch
-+ *
-+ */
-+enum pixcir_int_mode {
-+	PIXCIR_INT_PERIODICAL,
-+	PIXCIR_INT_DIFF_COORD,
-+	PIXCIR_INT_LEVEL_TOUCH,
-+	PIXCIR_INT_PULSE_TOUCH,
-+};
++unlock:
++	mutex_unlock(&input->mutex);
 +
-+#define PIXCIR_INT_MODE_MASK	0x03
-+#define PIXCIR_INT_ENABLE	(1UL << 3)
-+#define PIXCIR_INT_POL_HIGH	(1UL << 2)
-+
- struct pixcir_ts_platform_data {
- 	int (*attb_read_val)(void);
- 	int x_max;
++	return ret;
+ }
+ #endif
+ 
 -- 
 1.8.3.2
 
