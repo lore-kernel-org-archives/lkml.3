@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715AbaEETWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:22:31 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:37582 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbaEETWa convert rfc822-to-8bit (ORCPT
+	id S1752788AbaEETX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:23:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:55181 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751802AbaEETXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:22:30 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH] ftrace function-graph: print the function name on
- all } lines
-Thread-Topic: [RFC PATCH] ftrace function-graph: print the function name on
- all } lines
-Thread-Index: Ac9mODNtz2lzmTzpTXeVV8s0zTG8XgABRmyAAJYLinA=
-Date: Mon, 5 May 2014 19:21:03 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402956EEB76B@G9W0745.americas.hpqcorp.net>
-References: <94D0CD8314A33A4D9D801C0FE68B402956EE7D16@G9W0745.americas.hpqcorp.net>
- <20140502153249.1ee6aadd@gandalf.local.home>
-In-Reply-To: <20140502153249.1ee6aadd@gandalf.local.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 May 2014 15:23:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+crylY0sOFya6LuVwVqx6v
+Date: Mon, 5 May 2014 12:23:47 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: George Cherian <george.cherian@ti.com>
+Cc: balbi@ti.com, Benoit Cousson <bcousson@baylibre.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-omap@vger.kernel.org, rogerq@ti.com,
+        kishon@ti.com, rob@landley.net, galak@codeaurora.org,
+        ijc+devicetree@hellion.org.uk, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, anatol.pomozov@gmail.com,
+        bcousson@baylibre.com
+Subject: Re: [PATCH v5 0/5] Add USB nodes for am43xx epos and gp evm
+Message-ID: <20140505192346.GC15463@atomide.com>
+References: <1395223803-4714-1-git-send-email-george.cherian@ti.com>
+ <20140425161912.GY29632@saruman.home>
+ <536745F6.9080402@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <536745F6.9080402@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Steven Rostedt [mailto:rostedt@goodmis.org]
-> ...
-> Yes it is too cluttered. Please make this a tracing option that is
-> default off.
+* George Cherian <george.cherian@ti.com> [140505 01:04]:
+> Hi Benoit,
+> 
+> On 4/25/2014 9:49 PM, Felipe Balbi wrote:
+> >On Wed, Mar 19, 2014 at 03:39:58PM +0530, George Cherian wrote:
+> >>The patch series adds USB dt nodes for am43xx epos and gp evm
+> >>Boot tested with linux-next + Tony's omap-for-v3.15/dt
+> >>
+> >>Changes from v1 -> v2
+> >>	* Reorder "doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue"
+> >>	* Address v1 coments on "ARM: dts: AM4372: Add USB nodes"
+> >>
+> >>Changes from v2 -> v3
+> >>	* Removed unwanted dwc3_1 and dwc3_2 nodes from am437x-gp-evm.dts
+> >>	  and am43x-epos-evm.dts
+> >>
+> >>Changes from v3 -> v4
+> >>	* Refreshed on top of Tony's omap-for-v3.15/dt tree
+> >>	* Added usb_phy0_always_on_clk32k and usb_phy1_always_on_clk32k Patch 2
+> >>	* Used the above clocks in Patch 3
+> >>	* Patch 4 and 5 edited the unwanted portions of commit log
+> >>
+> >>Changes from v4 -> v5
+> >>	* Address Roger's comment for the clock data
+> >>
+> >>George Cherian (5):
+> >>   doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
+> >>   ARM: dts: am43xx clock data
+> >>   ARM: dts: AM4372: Add USB nodes
+> >>   ARM: dts: am437x-gp-evm: Enable USB
+> >>   ARM: dts: am43x-epos-evm: Enable USB
+> >>
+> >>  Documentation/devicetree/bindings/usb/omap-usb.txt |  4 +-
+> >>  arch/arm/boot/dts/am4372.dtsi                      | 94 ++++++++++++++++++++++
+> >>  arch/arm/boot/dts/am437x-gp-evm.dts                | 18 +++++
+> >>  arch/arm/boot/dts/am43x-epos-evm.dts               | 18 +++++
+> >>  arch/arm/boot/dts/am43xx-clocks.dtsi               | 32 ++++++++
+> >>  5 files changed, 165 insertions(+), 1 deletion(-)
+> >Is this applied anywhere yet ? Benoit, are you taking this for v3.16
+> >merge window ?
+> >
+> Ping on this series.
 
-The TRACE_GRAPH_PRINT_xx macros exist in two places:
-* trace.h has one set
-* trace_functions_graph.c has redefinitions of them and adds 
-  TRACE_GRAPH_PRINT_IRQS.  
+Applying these into omap-for-v3.16/dt as I'm applying patches today.
 
-The new macro will only be used inside trace_functions_graph.c. 
-That is true of some of the others like TRACE_GRAPH_PRINT_OVERRUN, 
-so doesn't seem to be the guiding principle for separate sets.
+Regards,
 
-Should the new one be added to both places, or should the 
-duplicate definitions in trace_functions_graph.c be removed?
-
-trace_functions_graph.c:
-#include "trace.h"
-...
-/* Flag options */
-#define TRACE_GRAPH_PRINT_OVERRUN       0x1
-#define TRACE_GRAPH_PRINT_CPU           0x2
-#define TRACE_GRAPH_PRINT_OVERHEAD      0x4
-#define TRACE_GRAPH_PRINT_PROC          0x8
-#define TRACE_GRAPH_PRINT_DURATION      0x10
-#define TRACE_GRAPH_PRINT_ABS_TIME      0x20
-#define TRACE_GRAPH_PRINT_IRQS          0x40
-#define TRACE_GRAPH_PRINT_TAIL          0x80 /* <-- new */
-
-trace.h:
-/* Flag options */
-#define TRACE_GRAPH_PRINT_OVERRUN       0x1
-#define TRACE_GRAPH_PRINT_CPU           0x2
-#define TRACE_GRAPH_PRINT_OVERHEAD      0x4
-#define TRACE_GRAPH_PRINT_PROC          0x8
-#define TRACE_GRAPH_PRINT_DURATION      0x10
-#define TRACE_GRAPH_PRINT_ABS_TIME      0x20
-#define TRACE_GRAPH_PRINT_FILL_SHIFT    28
-#define TRACE_GRAPH_PRINT_FILL_MASK     (0x3 << TRACE_GRAPH_PRINT_FILL_SHIFT)
-
----
-Rob Elliott    HP Server Storage
-
+Tony
