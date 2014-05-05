@@ -1,103 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854AbaEEShn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:37:43 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:52738 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaEEShl (ORCPT
+	id S1751560AbaEESlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:41:55 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:60265 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaEESlx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:37:41 -0400
-Date: Mon, 5 May 2014 20:37:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: jolsa@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] perf tools: Clarify the output of perf sched map.
-Message-ID: <20140505183736.GA15038@gmail.com>
-References: <cover.1399273302.git.yangds.fnst@cn.fujitsu.com>
- <a72ade72ecf55803471e42f80a3aa6547b1477e5.1399273302.git.yangds.fnst@cn.fujitsu.com>
+	Mon, 5 May 2014 14:41:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a72ade72ecf55803471e42f80a3aa6547b1477e5.1399273302.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 5 May 2014 11:41:32 -0700
+Message-ID: <CALCETrX+J643i-YPjATo-u6O+_MgZm_v9x-VBp5WmFm-1g0Twg@mail.gmail.com>
+Subject: x86_64 allyesconfig has screwed up voffset and blows up KVM
+To: X86 ML <x86@kernel.org>, kvm list <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm testing 39bfe90706ab0f588db7cb4d1c0e6d1181e1d2f9.  I'm not sure
+what's going on here.
 
-* Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
+voffset.h contains:
 
-> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> 
-> In output of perf sched map, any shortname of thread will be explained
-> at the first time when it appear.
-> 
-> Example:
-> 	      *A0       228836.978985 secs A0 => perf:23032
->           *.   A0       228836.979016 secs B0 => swapper:0
->            .  *C0       228836.979099 secs C0 => migration/3:22
->   *A0      .   C0       228836.979115 secs
->    A0      .  *.        228836.979115 secs
-> 
-> But B0, which is explained as swapper:0 did not appear in the
-> left part of output. Instead, we use '.' as the shortname of
-> swapper:0. So the comment of "B0 => swapper:0" is not easy to
-> understand.
-> 
-> This patch clarify the output of perf sched map with not allocating
-> one letter-number shortname for swapper:0 and print ". => swapper:0"
-> as the explaination for swapper:0.
-> 
-> Example:
->               *A0       228836.978985 secs A0 => perf:23032
->           * .  A0       228836.979016 secs . => swapper:0
->             . *B0       228836.979099 secs B0 => migration/3:22
->   *A0       .  B0       228836.979115 secs
->    A0       . * .       228836.979115 secs
->    A0     *C0   .       228836.979225 secs C0 => ksoftirqd/2:18
->    A0     *D0   .       228836.979236 secs D0 => rcu_sched:7
+#define VO__end 0xffffffff8111c7a0
+#define VO__end 0xffffffff8db9a000
+#define VO__text 0xffffffff81000000
 
-Sounds good!
+because
 
-I only have some minor nits about the code:
+$ nm vmlinux|grep ' _end'
+ffffffff8111c7a0 t _end
+ffffffff8db9a000 B _end
 
->  tools/perf/builtin-sched.c | 35 +++++++++++++++++++----------------
->  1 file changed, 19 insertions(+), 16 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-> index 4f0dd21..c2bf8f2 100644
-> --- a/tools/perf/builtin-sched.c
-> +++ b/tools/perf/builtin-sched.c
-> @@ -1300,17 +1300,23 @@ static int map_switch_event(struct perf_sched *sched, struct perf_evsel *evsel,
->  
->  	new_shortname = 0;
->  	if (!sched_in->shortname[0]) {
-> -		sched_in->shortname[0] = sched->next_shortname1;
-> -		sched_in->shortname[1] = sched->next_shortname2;
-> -
-> -		if (sched->next_shortname1 < 'Z') {
-> -			sched->next_shortname1++;
-> -		} else {
-> -			sched->next_shortname1='A';
-> -			if (sched->next_shortname2 < '9') {
-> -				sched->next_shortname2++;
-> +		if (!strcmp(thread__comm_str(sched_in), "swapper")) {
-> +			sched_in->shortname[0] = '.';
-> +			sched_in->shortname[1] = '\0';
-> +		}
-> +		else {
 
-Should be '} else {' as per kernel coding style.
+Booting the resulting image says:
 
-Also, a comment about handling the idle task in a special way would be 
-useful - for the far future when this discussion will be distant 
-memories or less!
+KVM internal error. Suberror: 1
+emulation failure
+EAX=80000001 EBX=00000000 ECX=c0000080 EDX=00000000
+ESI=00014630 EDI=0b08f000 EBP=00100000 ESP=038f14b8
+EIP=00100119 EFL=00010046 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0018 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+CS =0010 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
+SS =0018 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+DS =0018 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+FS =0018 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+GS =0018 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+LDT=0000 00000000 ffffffff 00c00000
+TR =0020 00000000 00000fff 00808b00 DPL=0 TSS64-busy
+GDT=     00000000038e5320 00000030
+IDT=     0000000000000000 00000000
+CR0=80000011 CR2=0000000000000000 CR3=000000000b089000 CR4=00000020
+DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
+DR3=0000000000000000
+DR6=00000000ffff0ff0 DR7=0000000000000400
+EFER=0000000000000500
+Code=?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? <??>
+?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
+?? ?? ?? ?? ?? ??
 
-With those nits addressed:
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-
-Thanks,
-
-	Ingo
+Linus's tree from today doesn't seem any better.
