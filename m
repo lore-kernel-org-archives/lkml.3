@@ -1,67 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaEERmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:42:01 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6075 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214AbaEERmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:42:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,990,1389772800"; 
-   d="scan'208";a="534986184"
-Message-ID: <5367CE6F.7010006@linux.intel.com>
-Date: Mon, 05 May 2014 10:46:23 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755407AbaEERmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:42:10 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:56848 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaEERmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 13:42:05 -0400
+Date: Mon, 5 May 2014 19:41:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Borislav Petkov <bp@suse.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Michael S . Tsirkin" <mst@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Sasha Levin <sasha.levin@oracle.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [GIT PULL 01/12] perf/core improvements and fixes
+Message-ID: <20140505174159.GA7324@gmail.com>
+References: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: coretemp.0 folder contents changed
-References: <5367C6A7.5020008@linux.intel.com> <20140505173231.GA25644@roeck-us.net>
-In-Reply-To: <20140505173231.GA25644@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1399311348-28152-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 10:32 AM, Guenter Roeck wrote:
-> On Mon, May 05, 2014 at 10:13:11AM -0700, Srinivas Pandruvada wrote:
->> Hi,
->>
->> for kernel : 3.15.rc3 .
->>
->> Is there any change in the coretemp? Previously we used to see,
->> tempx data (like temp2_input, temp2_max etc.)
->> /sys/devices/platform/coretemp.0/.
->>
-> That isn't where you are supposed to look for hwmon attributes.
->
->> Now We don't see them. Now we have to go
->> /sys/devices/platform/coretemp.0/hwmon/hwmon?/ to get these values.
->>
-> This is also not the correct location.
->
-> You should be looking in /sys/class/hwmon/hwmonX/.
->
-> There will be a name attribute either in /sys/class/hwmon/hwmonX/name
-> or in /sys/class/hwmon/hwmonX/device/name. For coretemp, the value
-> reported in the name attribute will be 'coretemp'. This defines the
-> directory where the actual sensor attributes will be located.
->
-> A better approach might be to use libsensors instead of directly
-> accessing attributes.
->
-> To give you the background, hwmon attributes are in the process of
-> being moved from the parent device to the hwmon device, or from
-> /sys/class/hwmon/hwmonX/device/ to /sys/class/hwmon/hwmonX/,
-> as part of an effort to streamline the code and make it more
-> consistent and maintainable.
->
-> Guenter
->
-Thanks for your quick reply.
 
--Srinivas
+* Jiri Olsa <jolsa@kernel.org> wrote:
+
+> 
+> hi Ingo,
+> please consider pulling
+> 
+> thanks,
+> jirka
+> 
+> 
+> The following changes since commit 3617660e4e1618a888a2e3a4067224534302cb33:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-05-01 08:24:59 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 73a31b7c6a85e2f033524058bad5bce900e4f2ed:
+> 
+>   perf tools: Move ACCESS_ONCE from perf.h header (2014-05-05 17:49:07 +0200)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> . Cleanups for perf.h header (Jiri Olsa)
+> 
+> . Consolidate types.h and export.h within tools (Borislav Petkov)
+> 
+> ----------------------------------------------------------------
+> Borislav Petkov (2):
+>       tools: Unify export.h
+>       tools: Consolidate types.h
+> 
+> Jiri Olsa (10):
+>       perf tools: Remove MAX_COUNTERS define from perf.h
+>       perf tools: Remove unlikely define from perf.h
+>       perf tools: Remove min define from perf.h
+>       perf tools: Remove asmlinkage define from perf.h
+>       perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
+>       perf tools: Move sample data structures from perf.h
+>       perf tools: Move perf_call_graph_mode enum from perf.h
+>       perf tools: Move syscall and arch specific defines from perf.h
+>       perf tools: Move sys_perf_event_open function from perf.h
+>       perf tools: Move ACCESS_ONCE from perf.h header
+> 
+>  tools/include/linux/compiler.h                     |   2 +
+>  tools/{virtio => include}/linux/export.h           |   5 +
+>  .../lockdep/uinclude => include}/linux/types.h     |  29 ++-
+>  tools/lib/lockdep/Makefile                         |   2 +-
+>  tools/lib/lockdep/uinclude/linux/export.h          |   7 -
+>  tools/perf/MANIFEST                                |   2 +
+>  tools/perf/Makefile.perf                           |   5 +-
+>  tools/perf/arch/x86/include/perf_regs.h            |   2 +-
+>  tools/perf/arch/x86/util/tsc.c                     |   2 +-
+>  tools/perf/arch/x86/util/tsc.h                     |   2 +-
+>  tools/perf/perf-sys.h                              | 190 +++++++++++++++
+>  tools/perf/perf.h                                  | 254 +--------------------
+>  tools/perf/tests/attr.c                            |   7 -
+>  tools/perf/tests/code-reading.c                    |   3 +-
+>  tools/perf/tests/dso-data.c                        |   2 +-
+>  tools/perf/tests/dwarf-unwind.c                    |   2 +-
+>  tools/perf/tests/keep-tracking.c                   |   2 +-
+>  tools/perf/tests/parse-no-sample-id-all.c          |   2 +-
+>  tools/perf/tests/perf-time-to-tsc.c                |   3 +-
+>  tools/perf/tests/rdpmc.c                           |   2 +-
+>  tools/perf/tests/sample-parsing.c                  |   2 +-
+>  tools/perf/ui/browser.h                            |   4 +-
+>  tools/perf/ui/progress.h                           |   2 +-
+>  tools/perf/util/annotate.h                         |   2 +-
+>  tools/perf/util/build-id.h                         |   2 +-
+>  tools/perf/util/callchain.h                        |   7 +
+>  tools/perf/util/dso.h                              |   2 +-
+>  tools/perf/util/event.h                            |  24 ++
+>  tools/perf/util/evsel.h                            |   4 +-
+>  tools/perf/util/header.h                           |   4 +-
+>  tools/perf/util/include/linux/bitmap.h             |   3 +
+>  tools/perf/util/include/linux/export.h             |   6 -
+>  tools/perf/util/include/linux/list.h               |   1 +
+>  tools/perf/util/include/linux/types.h              |  29 ---
+>  tools/perf/util/map.h                              |   2 +-
+>  tools/perf/util/parse-events.h                     |   3 +-
+>  tools/perf/util/parse-events.y                     |   2 +-
+>  tools/perf/util/perf_regs.h                        |   2 +-
+>  tools/perf/util/pmu.h                              |   2 +-
+>  tools/perf/util/stat.h                             |   2 +-
+>  tools/perf/util/svghelper.c                        |   2 +-
+>  tools/perf/util/svghelper.h                        |   2 +-
+>  tools/perf/util/symbol.h                           |   1 +
+>  tools/perf/util/top.h                              |   2 +-
+>  tools/perf/util/types.h                            |  19 --
+>  tools/perf/util/unwind-libdw.c                     |   2 +-
+>  tools/perf/util/unwind.h                           |   2 +-
+>  tools/perf/util/util.h                             |   2 +-
+>  tools/perf/util/values.h                           |   2 +-
+>  tools/virtio/Makefile                              |   2 +-
+>  tools/virtio/linux/kernel.h                        |   7 -
+>  tools/virtio/linux/types.h                         |  28 ---
+>  52 files changed, 304 insertions(+), 397 deletions(-)
+>  rename tools/{virtio => include}/linux/export.h (70%)
+>  rename tools/{lib/lockdep/uinclude => include}/linux/types.h (63%)
+>  delete mode 100644 tools/lib/lockdep/uinclude/linux/export.h
+>  create mode 100644 tools/perf/perf-sys.h
+>  delete mode 100644 tools/perf/util/include/linux/export.h
+>  delete mode 100644 tools/perf/util/include/linux/types.h
+>  delete mode 100644 tools/perf/util/types.h
+>  delete mode 100644 tools/virtio/linux/types.h
+
+Pulled, thanks a lot Jiri!
+
+	Ingo
