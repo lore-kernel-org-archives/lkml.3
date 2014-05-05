@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaEEUtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:49:03 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:45268 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551AbaEEUs7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:48:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org>
-References: <20140417081705.26341.96719.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<tip-376e242429bf8539ef39a080ac113c8799840b13@git.kernel.org>
-Date: Mon, 5 May 2014 13:48:58 -0700
-Message-ID: <CA+8MBb+wUR9ErQQmqCCYoKfUuPV92iLHMxRCBxrP0NW0-YmmGw@mail.gmail.com>
-Subject: Re: [tip:perf/kprobes] kprobes: Introduce NOKPROBE_SYMBOL() macro to
- maintain kprobes blacklist
-From: Tony Luck <tony.luck@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, rdunlap@infradead.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Arnd Bergmann <arnd@arndb.de>,
-        dl9pf@gmx.de, Andrew Morton <akpm@linux-foundation.org>,
-        sparse@chrisli.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        anil.s.keshavamurthy@intel.com,
-        "David S. Miller" <davem@davemloft.net>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        masami.hiramatsu.pt@hitachi.com, Chris Wright <chrisw@sous-sol.org>,
-        akataria@vmware.com
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1755615AbaEEUvL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:51:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7890 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608AbaEEUvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:51:09 -0400
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        imammedo@redhat.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, prarit@redhat.com, drjones@redhat.com,
+        toshi.kani@hp.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v5 0/4] x86: fix hang when AP bringup is too slow
+Date: Mon,  5 May 2014 22:49:47 +0200
+Message-Id: <1399322991-19329-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is in linux-next ("next-20140505") and I see a
-bunch of "Failed to find blacklist" messages when booting
-on ia64:
+changes since v4:
+ * merge "[PATCH v4 1/5] x86: fix list corruption on CPU hotplug"
+   and "[PATCH v4 2/5] x86: fix memory corruption in acpi_unmap_lsapic()"
+   together
+ * "x86: initialize secondary CPU only if master CPU will wait for it:
+    - add 10 seconds timeout description into commit message
+    - add smp_mb() after clearing cpu_initialized_mask
 
-Failed to find blacklist 0001013168300000
-Failed to find blacklist 0001013000f0a000
-Failed to find blacklist 000101315f70a000
-Failed to find blacklist 000101324c80a000
-Failed to find blacklist 0001013063f0a000
-Failed to find blacklist 000101327800a000
-Failed to find blacklist 0001013277f0a000
-Failed to find blacklist 000101315a70a000
-Failed to find blacklist 0001013277e0a000
-Failed to find blacklist 000101305a20a000
-Failed to find blacklist 0001013277d0a000
-Failed to find blacklist 00010130bdc0a000
-Failed to find blacklist 00010130dc20a000
-Failed to find blacklist 000101309a00a000
-Failed to find blacklist 0001013277c0a000
-Failed to find blacklist 0001013277b0a000
-Failed to find blacklist 0001013277a0a000
-Failed to find blacklist 000101327790a000
-Failed to find blacklist 000101303140a000
-Failed to find blacklist 0001013a3280a000
+changes since v3:
+ * put simple bugfixes first
+ * move common part of syncing with master CPU in cpu_init()
+   for x32/64 variant into helper function
+ * cpu_init(): WARN_ON if cpu_initialized_mask is set
+ * fix panic on CPU unplug, caused by erroneous removing
+   of "pr->dev = dev;" in drivers/acpi/acpi_processor.c
 
-What do these mean?
+--
+Hang is observed on virtual machines during CPU hotplug,
+especially in big guests with many CPUs. (It happens more
+often if host is over-committed).
 
--Tony
+Hang happens because master CPU timeouts on waiting till
+AP boots and 'cancels' CPU online operation assuming AP
+is not functional but AP may continue run wild later
+causing various hangs or panics in running kernel that
+is assuming that AP was offline.
+
+This is an alternative approach, that instead of canceling
+in-progress AP bringup (https://lkml.org/lkml/2014/3/6/257),
+removes timeouts so that AP bringup won't be affected by
+poor timing and syncs AP with master CPU at early startup
+making sure that AP won't run wild if master CPU doesn't
+expect AP to come online.
+
+Series also fixes 3 bugs found during testing CPU bringup
+failure case.
+
+--
+Below is the detailed description of a more often happening hang:
+---
+Master CPU may timeout before cpu_callin_mask is set and cancel
+booting CPU, but being onlined CPU still continues to boot, sets
+cpu_active_mask (CPU_STARTING notifiers) and spins in
+check_tsc_sync_target() for master cpu to arrive. Following attempt
+to online another cpu hangs in stop_machine, initiated from here:
+smp_callin ->
+  smp_store_cpu_info ->
+    identify_secondary_cpu ->
+      mtrr_ap_init -> set_mtrr_from_inactive_cpu
+
+stop_machine waits on completion of stop_work on all CPUs from
+cpu_active_mask including a failed CPU that spins in check_tsc_sync_target().
+
+Igor Mammedov (4):
+  x86: fix list/memory corruption on CPU hotplug
+  acpi_processor: do not mark present at boot but not onlined CPU as
+    onlined
+  x86: log error on secondary CPU wakeup failure at ERR level
+  x86: initialize secondary CPU only if master CPU will wait for it
+
+ arch/x86/kernel/cpu/common.c  |   27 ++++++----
+ arch/x86/kernel/smpboot.c     |  104 +++++++++++++----------------------------
+ drivers/acpi/acpi_processor.c |    1 -
+ 3 files changed, 48 insertions(+), 84 deletions(-)
+
