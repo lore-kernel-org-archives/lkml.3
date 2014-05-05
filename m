@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372AbaEEQor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 12:44:47 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:21875 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880AbaEEQop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 12:44:45 -0400
-Message-ID: <5367BFF2.50803@hp.com>
-Date: Mon, 05 May 2014 09:44:34 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754764AbaEEQqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 12:46:21 -0400
+Received: from p3plex2out02.prod.phx3.secureserver.net ([184.168.131.14]:34309
+	"EHLO p3plex2out02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753938AbaEEQqU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 12:46:20 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/4] staging: comedi: addi_apci_1564: Further cleanups
+Thread-Topic: [PATCH 0/4] staging: comedi: addi_apci_1564: Further cleanups
+Thread-Index: AQHPZqTs6HD2Dx4tqUyzKK9Q2N2H+JsyNMUw
+Date: Mon, 5 May 2014 16:46:18 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E388BE@P3PWEX4MB008.ex4.secureserver.net>
+References: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1399103661-14853-1-git-send-email-chase.southwood@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: V JobNickname <workofv@gmail.com>, linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org
-Subject: Re: network performance get regression from 2.6 to 3.10 by each version
-References: <CANHbGWu0SXtSSHDz=m6KCKOL7AESWB8GHbvqYJMUyvJpTZZDKA@mail.gmail.com>
-In-Reply-To: <CANHbGWu0SXtSSHDz=m6KCKOL7AESWB8GHbvqYJMUyvJpTZZDKA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/02/2014 12:40 PM, V JobNickname wrote:
-> I have an ARM platform which works with older 2.6.28 Linux Kernel and
-> the embedded NIC driver
-> I profile the TCP Tx using netperf 2.6 by command "./netperf -H
-> {serverip} -l 300".
+On Saturday, May 03, 2014 12:54 AM, Chase Southwood wrote:
+> Latest patchset in a continuing cleanup of addi_apci_1564.c.  Main focus
+> is on the auto_attach() function, but also cleaning up some of the old addi
+> common code wrappers.
+>
+> To be applied on top of my prior patchset to this file (the one beginning
+> with [PATCH 1/6] staging: comedi: addi_apci_1564: remove eeprom support code)
+>
+> Chase Southwood (4):
+>   staging: comedi: addi_apci_1564: board has 32 digital outputs
+>   staging: comedi: addi_apci_1564: don't allocate unused subdevices
+>   staging: comedi: addi_apci_1564: absorb apci1564_reset()
+>   staging: comedi: addi_apci_1564: call apci1564_interrupt() directly
+>
+>  .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 32 -------
+>  drivers/staging/comedi/drivers/addi_apci_1564.c    | 98 ++++++++++------------
+>  2 files changed, 45 insertions(+), 85 deletions(-)
 
-Is your ARM platform a multi-core one?  If so, you may need/want to look 
-into making certain the assignment of NIC interrupts and netperf have 
-remained constant through your tests.  You can bind netperf to a 
-specific CPU via either "taskset" or the global -T option.  You can 
-check the interrupt assignment(s) for the queue(s) from the NIC by 
-looking at /proc/interrupts and perhaps via other means.
+Looks good.
 
-It would also be good to know if the drops in throughput correspond to 
-an increase in service demand (CPU per unit of work).  To that end, 
-adding a global -c option to measure local (netperf side) CPU 
-utilization would be a good idea.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Still, even armed with that information, tracking down the regression or 
-regressions will be no small feat particularly since the timespan is so 
-long.  A very good reason to be trying the newer versions as they 
-appear, even if only briefly, rather than leaving it for so long.
-
-happy benchmarking,
-
-rick jones
