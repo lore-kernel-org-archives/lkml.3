@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaEEAoa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 May 2014 20:44:30 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:47102 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753891AbaEEAo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 May 2014 20:44:28 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        Kyle McMartin <kmcmarti@redhat.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH] x32: use compat shims for io_{setup,submit}
-Date: Sun,  4 May 2014 20:43:15 -0400
-Message-Id: <1399250595-5005-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.9.2
+	id S1754054AbaEEArL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 May 2014 20:47:11 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28323 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753891AbaEEArJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 May 2014 20:47:09 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+er64uopTQVpMqKivfCBbI62DgZbGnoRM=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 0C6C456B663
+Date: Sun, 4 May 2014 20:46:27 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/15] ARM: dts: kirkwood: fix mislocated
+ pcie-controller nodes
+Message-ID: <20140505004627.GC28159@titan.lakedaemon.net>
+References: <1398862602-29595-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1398862602-29595-2-git-send-email-sebastian.hesselbarth@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398862602-29595-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The io_setup takes a pointer to a context id of type aio_context_t.
-This in turn is typed to a __kernel_ulong_t.  We could tweak the
-exported headers to define this as a 64bit quantity for specific
-ABIs, but since we already have a 32bit compat shim for the x86 ABI,
-let's just re-use that logic.  The libaio package is also written to
-expect this as a pointer type, so a compat shim would simplify that.
+On Wed, Apr 30, 2014 at 02:56:28PM +0200, Sebastian Hesselbarth wrote:
+> Commit 54397d85349f
+>  ("ARM: kirkwood: Relocate PCIe device tree nodes")
+> 
+> moved the pcie-controller nodes for the Kirkwood SoCs to the mbus
+> bus node. For some reason, two boards were not properly converted
+> and have their pci-controller nodes still in the ocp bus node.
+> 
+> As the corresponding SoC pcie-controller does not exist anymore,
+> it is likely that pcie is broken on those boards since above commit.
+> Fix it by moving the pcie related nodes to the correct location.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts | 18 ++++++++++--------
+>  arch/arm/boot/dts/kirkwood-nsa3x0-common.dtsi  | 18 ++++++++++--------
+>  2 files changed, 20 insertions(+), 16 deletions(-)
 
-The io_submit func operates on an array of pointers to iocb structs.
-Padding out the array to be 64bit aligned is a huge pain, so convert
-it over to the existing compat shim too.
+Applied to mvebu/dt-fixes with Andrew's Ack and flagged for backporting
+to -stable v3.12+
 
-We don't convert io_getevents to the compat func as its only purpose
-is to handle the timespec struct, and the x32 ABI uses 64bit times.
+thx,
 
-With this change, the libaio package can now pass its testsuite when
-built for the x32 ABI.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- arch/x86/syscalls/syscall_64.tbl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 04376ac..ec255a1 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -212,10 +212,10 @@
- 203	common	sched_setaffinity	sys_sched_setaffinity
- 204	common	sched_getaffinity	sys_sched_getaffinity
- 205	64	set_thread_area
--206	common	io_setup		sys_io_setup
-+206	64	io_setup		sys_io_setup
- 207	common	io_destroy		sys_io_destroy
- 208	common	io_getevents		sys_io_getevents
--209	common	io_submit		sys_io_submit
-+209	64	io_submit		sys_io_submit
- 210	common	io_cancel		sys_io_cancel
- 211	64	get_thread_area
- 212	common	lookup_dcookie		sys_lookup_dcookie
-@@ -359,3 +359,5 @@
- 540	x32	process_vm_writev	compat_sys_process_vm_writev
- 541	x32	setsockopt		compat_sys_setsockopt
- 542	x32	getsockopt		compat_sys_getsockopt
-+543	x32	io_setup		compat_sys_io_setup
-+544	x32	io_submit		compat_sys_io_submit
--- 
-1.9.2
-
+Jason.
