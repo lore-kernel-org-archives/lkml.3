@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaEESO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:14:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22936 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaEESO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:14:56 -0400
-Message-ID: <5367D4FB.9010407@redhat.com>
-Date: Mon, 05 May 2014 20:14:19 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1751250AbaEESQU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:16:20 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:65498 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaEESQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 14:16:19 -0400
+Message-ID: <5367D566.7000601@gmail.com>
+Date: Mon, 05 May 2014 23:46:06 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 4/4] nohz: Fix iowait overcounting if iowait task migrates
-References: <1398365158-12568-1-git-send-email-dvlasenk@redhat.com> <1398365158-12568-4-git-send-email-dvlasenk@redhat.com> <20140429161959.GD6129@localhost.localdomain>
-In-Reply-To: <20140429161959.GD6129@localhost.localdomain>
+To: a.zummo@towertech.it, rtc-linux@googlegroups.com
+CC: linux-kernel@vger.kernel.org
+Subject: rtc: add support for maxim dallas rtc ds1343 and ds1344
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/29/2014 06:20 PM, Frederic Weisbecker wrote:
->> index 268a45e..ffea757 100644
->> --- a/kernel/sched/core.c
->> +++ b/kernel/sched/core.c
->> @@ -4218,7 +4218,14 @@ void __sched io_schedule(void)
->>  	current->in_iowait = 1;
->>  	schedule();
->>  	current->in_iowait = 0;
->> +#ifdef CONFIG_NO_HZ_COMMON
->> +	if (atomic_dec_and_test(&rq->nr_iowait)) {
->> +		if (raw_smp_processor_id() != cpu_of(rq))
->> +			tick_nohz_iowait_to_idle(cpu_of(rq));
-> 
-> Note that even using seqlock doesn't alone help to fix the preemption issue
-> when the above may overwrite the exittime of the next last iowait task from
-> the old rq.
+> On Wed, 30 Apr 2014 21:55:07 +0530
+> Raghavendra Ganiga <ravi23ganiga@gmail.com> wrote:
+>> +static int ds1343_proc(struct device *dev, struct seq_file *seq)
+>> +{
+>> +     struct ds1343_priv *priv = dev_get_drvdata(dev);
+>> +     unsigned int data;
+>> +     unsigned char alarm_mode = 0;
+>> +     const char *alarm_str, *diodes = "disabled", *resistors = " ";
+>> +
+>> +     regmap_read(priv->map, DS1343_CONTROL_REG, &data);
+>  is this thing really useful? what about having sysfs entries
+>  instead?
 
-Meaning: between atomic_dec_and_test(&rq->nr_iowait) going to zero
-and tick_nohz_iowait_to_idle(), CPU left idle, acquired a new task,
-this task submitted IO, IO completed, this second task also reached
-this place, its atomic_dec_and_test(&rq->nr_iowait) went to zero
-and now we race doing
 
-	ts->iowait_exittime = now;
 
-from two tasks?
+i am replacing the proc interface with the sysfs entries
+also removing the unnecessary parameters. i am adding the
+following parameters as sysfs entries
 
-This shouldn't be a problem anyway since the value of "now"
-in this situation will be nearly the same - provided that
-(a) store is atomic (no corruption due to the race) and
-(b) we are careful when we are using it (for example, we
-clamp it to be not earlier than idle start time).
+1. glitch filter read and write parameter
+2. alarm status read parameter
+3. alarm mode read parameter
+4. trickle charger read parameter
 
-Do you see a problem here which I miss?
+and i am removing the proc interface. 
+
+is the above implementation ok as per your last comment
+on the proc interface. please provide the feedback.
+
+Thanks and regards
+Raghavendra Chandra Ganiga
 
