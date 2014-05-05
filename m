@@ -1,91 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487AbaEEU1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:27:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25974 "EHLO mx1.redhat.com"
+	id S1754795AbaEEUal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:30:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41246 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752411AbaEEU1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:27:08 -0400
-Date: Mon, 5 May 2014 22:26:25 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, riel@redhat.com, gong.chen@linux.intel.com,
-        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v4 5/5] x86: initialize secondary CPU only if master CPU
- will wait for it
-Message-ID: <20140505222625.56d5751b@thinkpad>
-In-Reply-To: <1399042342.1789.87.camel@misato.fc.hp.com>
-References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
-	<1397488277-14865-6-git-send-email-imammedo@redhat.com>
-	<1398985916.1789.75.camel@misato.fc.hp.com>
-	<20140502102120.5415bf5b@nial.usersys.redhat.com>
-	<1399042342.1789.87.camel@misato.fc.hp.com>
+	id S1752161AbaEEUaj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:30:39 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Ding, Garrett" <g-ding@ti.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        "Kevin Hilman" <khilman@deeprootsystems.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Subject: RE: [PATCH] i2c: davinci: Add block read functionality for IPMI
+Thread-Topic: [PATCH] i2c: davinci: Add block read functionality for IPMI
+Thread-Index: AQHPZW4hWXzwPqzlrk2ZK9CHGja/FZsydsIg
+Date: Mon, 5 May 2014 20:30:34 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B70472F6AC@DFLE11.ent.ti.com>
+References: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1398970186-12204-1-git-send-email-m-karicheri2@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 02 May 2014 08:52:22 -0600
-Toshi Kani <toshi.kani@hp.com> wrote:
+>-----Original Message-----
+>From: Karicheri, Muralidharan
+>Sent: Thursday, May 01, 2014 2:50 PM
+>To: davinci-linux-open-source@linux.davincidsp.com; linux-i2c@vger.kernel.org; linux-
+>kernel@vger.kernel.org
+>Cc: Karicheri, Muralidharan; Ding, Garrett; Nori, Sekhar; Kevin Hilman; Wolfram Sang;
+>Shilimkar, Santosh
+>Subject: [PATCH] i2c: davinci: Add block read functionality for IPMI
+>
+>Intelligent Plaform Management Interface (IPMI) requires I2C driver to support block read,
+>where the first byte received from slave is the length of following data:-  Added length
+>check if the read type is block read (I2C_M_RECV_LEN)  Send NACK/STOP bits before last
+>byte is received
+>
+>Signed-off-by: Garrett Ding <g-ding@ti.com>
+>Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>Tested-by: Garrett Ding <g-ding@ti.com>
+>CC: Sekhar Nori <nsekhar@ti.com>
+>CC: Kevin Hilman <khilman@deeprootsystems.com>
+>CC: Wolfram Sang <wsa@the-dreams.de>
+>CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>---
+> Tested on a customer board based on K2HK SoC
+> drivers/i2c/busses/i2c-davinci.c |   42 +++++++++++++++++++++++++++++++++-
+>----
+> 1 file changed, 37 insertions(+), 5 deletions(-)
+>
+>diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+>index 389bc68..cd97920 100644
+>--- a/drivers/i2c/busses/i2c-davinci.c
+>+++ b/drivers/i2c/busses/i2c-davinci.c
+>@@ -97,6 +97,10 @@
+> #define DAVINCI_I2C_IMR_NACK	BIT(1)
+> #define DAVINCI_I2C_IMR_AL	BIT(0)
+>
+>+/* capabilities */
+>+#define I2C_CAPABILITIES	(I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | \
+>+				 I2C_FUNC_SMBUS_READ_BLOCK_DATA)
+>+
+> struct davinci_i2c_dev {
+> 	struct device           *dev;
+> 	void __iomem		*base;
+>@@ -318,7 +322,13 @@ i2c_davinci_xfer_msg(struct i2c_adapter *adap, struct i2c_msg
+>*msg, int stop)
+> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_SAR_REG, msg->addr);
+>
+> 	dev->buf = msg->buf;
+>-	dev->buf_len = msg->len;
+>+
+>+	 /* if first received byte is length, set buf_len = 0xffff as flag */
+>+	if (msg->flags & I2C_M_RECV_LEN)
+>+		dev->buf_len = 0xffff;
+>+	else
+>+		dev->buf_len = msg->len;
+>+
+> 	dev->stop = stop;
+>
+> 	davinci_i2c_write_reg(dev, DAVINCI_I2C_CNT_REG, dev->buf_len); @@ -456,7
+>+466,7 @@ i2c_davinci_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+>
+> static u32 i2c_davinci_func(struct i2c_adapter *adap)  {
+>-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+>+	return I2C_CAPABILITIES;
+> }
+>
+> static void terminate_read(struct davinci_i2c_dev *dev) @@ -528,10 +538,32 @@ static
+>irqreturn_t i2c_davinci_isr(int this_irq, void *dev_id)
+>
+> 		case DAVINCI_I2C_IVR_RDR:
+> 			if (dev->buf_len) {
+>-				*dev->buf++ =
+>-				    davinci_i2c_read_reg(dev,
+>-							 DAVINCI_I2C_DRR_REG);
+>+				*dev->buf++ = davinci_i2c_read_reg(dev,
+>+							DAVINCI_I2C_DRR_REG);
+>+				/*
+>+				 * check if the first received byte is message
+>+				 * length, i.e, I2C_M_RECV_LEN
+>+				 */
+>+				if (dev->buf_len == 0xffff)
+>+					dev->buf_len = *(dev->buf - 1) + 1;
+>+
+> 				dev->buf_len--;
+>+				/*
+>+				 * send NACK/STOP bits BEFORE last byte is
+>+				 * received
+>+				 */
+>+				if (dev->buf_len == 1) {
+>+					w = davinci_i2c_read_reg(dev,
+>+							DAVINCI_I2C_MDR_REG);
+>+					w |= DAVINCI_I2C_MDR_NACK;
+>+					davinci_i2c_write_reg(dev,
+>+							DAVINCI_I2C_MDR_REG, w);
+>+
+>+					w |= DAVINCI_I2C_MDR_STP;
+>+					davinci_i2c_write_reg(dev,
+>+							DAVINCI_I2C_MDR_REG, w);
+>+				}
+>+
+> 				if (dev->buf_len)
+> 					continue;
+>
+>--
+>1.7.9.5
+All,
 
-> On Fri, 2014-05-02 at 10:21 +0200, Igor Mammedov wrote:
-> > On Thu, 01 May 2014 17:11:56 -0600
-> > Toshi Kani <toshi.kani@hp.com> wrote:
->  :
-> > > When 10s passed, the master could set a new flag, ex.
-> > > cpu_callout_error_mask, which wait_for_master_cpu() checks and call
-> > > play_dead() when it is set.  This avoids AP to spin forever when 10s
-> > > becomes not long enough.  But it does not have to be part of this
-> > > patchset, though.
-> > I'm reluctant to add another to already too many cpu_*_mask,
-> > maybe we could reuse cpu_initialized_mask by clearing it on timeout.
-> > This way AP spinning on cpu_callout_mask could notice it and halt itself.
-> 
-> I agree that there are too many cpu_* masks.  IMHO, these cpu rendezvous
-> masks, initialized/callout/callin, should be combined into a per-cpu
-> flag.  There is not much point of being individual masks.
-> 
-> Anyway, I do not think cpu_initialized_mask can be reused here.
-I'll look if we could use percpu here when writing patch to halt timed-out AP.
+Please review this when you get a chance.
+Murali
 
-> 
-> > It would be better to make it separate patch on top of this series,
-> > to reduce delay of bugfixes in this series.
-> 
-> Agreed.
-> 
-> > > 
-> > > > +	if (!boot_error) {
-> > > >  		/*
-> > > > -		 * Wait 5s total for a response
-> > > > +		 * Wait till AP completes initial initialization
-> > > 
-> > > We should generally avoid such wait w/o a timeout condition, but since
-> > > native_cpu_up() waits till cpu_online(cpu) anyway after this point, this
-> > If we don't wait here and fall through into tight loop waiting on
-> > cpu_online(cpu) in native_cpu_up() or check_tsc_sync_source() then
-> > stop_task for syncing MTTRs initiated from AP won't have a chance
-> > to run on the master CPU.
-> > 
-> > > seems OK...  I wonder if we need touch_nmi_watchdog(), though.
-> > There wasn't any touch_nmi_watchdog() in the original code and I don't
-> > think we need it here since we are not just spinning on CPU but giving
-> > control back to kernel calling schedule(), which would allow watchdog_task
-> > to do the job if needed.
-> 
-> Agreed.
-> 
-> Thanks,
-> -Toshi
-> 
-
-
--- 
-Regards,
-  Igor
