@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986AbaEEOXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:23:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40155 "EHLO bear.ext.ti.com"
+	id S932995AbaEEOY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:24:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43595 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932636AbaEEOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:23:40 -0400
-Message-ID: <53679EA0.3050606@ti.com>
-Date: Mon, 5 May 2014 19:52:24 +0530
-From: Mugunthan V N <mugunthanvnm@ti.com>
+	id S932635AbaEEOYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:24:24 -0400
+Message-ID: <53679F16.8020007@suse.cz>
+Date: Mon, 05 May 2014 16:24:22 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>
-CC: <davem@davemloft.net>, <richardcochran@gmail.com>,
-        <jeffrey.t.kirsher@intel.com>, <dborkman@redhat.com>,
-        <ast@plumgrid.com>, <tklauser@distanz.ch>, <mpa@pengutronix.de>,
-        <bhutchings@solarflare.com>, <zonque@gmail.com>, <balbi@ti.com>,
-        <t-kristo@ti.com>, <mturquette@linaro.org>, <linux@arm.linux.org.uk>,
-        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
-        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
-        <tony@atomide.com>, <bcousson@baylibre.com>
-Subject: Re: [PATCH v2 0/6] Add CPTS support for AM437x
-References: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1399012324-20737-1-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: David Rientjes <rientjes@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch v2 3/4] mm, compaction: add per-zone migration pfn cache
+ for async compaction
+References: <alpine.DEB.2.02.1404301744110.8415@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011434140.23898@chino.kir.corp.google.com> <alpine.DEB.2.02.1405011435000.23898@chino.kir.corp.google.com> <53675B3A.5090607@suse.cz> <alpine.DEB.2.02.1405050243490.11071@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1405050243490.11071@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 May 2014 12:01 PM, George Cherian wrote:
-> The series adds CPTS support for AM4372.
+On 05/05/2014 11:51 AM, David Rientjes wrote:
+> On Mon, 5 May 2014, Vlastimil Babka wrote:
 >
-> Patch 1 - DT changes w.r.t clock changes for AM33xx.
-> Patch 2 - CPTS clock name harcoding in the driver is removed. 
-> 	  Easier to pass the clock name from dt rather than hardcoding in driver.
-> 	  Also in prepration for DRA7x CPTS support.
-> Patch 3 - Enable the CPTS support for both DRA7x and AM4372 in the driver.
-> Patch 4 - Enable the Annexe F for L2 PTP for AM437x and DRA7x.
-> Patch 5 - Change the default clocksource to dpll_core_m5 
-> Patch 6 - DT changes for AM4372.
+>> OK that's due to my commit 50b5b094e6 ("mm: compaction: do not mark unmovable
+>> pageblocks as skipped in async compaction") and the intention was to avoid
+>> marking pageblocks as to-be-skipped just because they were ignored by async
+>> compaction, which would make the following sync compaction ignore them as
+>> well. However it's true that update_pageblock_skip() also updates the cached
+>> pfn's and not updating them is a sideeffect of this change.
+>>
 >
->
-> v1 -> v2
-> 	Patch 1 and 2 Re-ordering.
-> 	Seperate TS_BITS define for Hw version V2 and V3
->
-> George Cherian (6):
->   ARM: dts: am33xx: Add clock names for cpsw and cpts
->   drivers: net: cpts: Remove hardcoded clock name for CPTS
->   drivers: net: cpsw: Enable CPTS for DRA7xx and AM4372
->   drivers: net: cpsw: Enable Annexe F Time sync
->   ARM: AM43xx: clk: Change the cpts ref clock source to dpll_core_m5 clk
->   ARM: dts: am4372: Add clock names for cpsw and cpts
->
->  arch/arm/boot/dts/am33xx.dtsi  |  2 ++
->  arch/arm/boot/dts/am4372.dtsi  |  2 ++
->  drivers/clk/ti/clk-43xx.c      | 16 ++++++++++++
->  drivers/net/ethernet/ti/cpsw.c | 56 +++++++++++++++++++++++++++++++-----------
->  drivers/net/ethernet/ti/cpts.c | 11 +++------
->  5 files changed, 66 insertions(+), 21 deletions(-)
->
+> It's not necessary just that commit, update_pageblock_skip() won't do
+> anything if cc->finished_update_migrate is true which still happens before
+> the commit.  This issue was noticed on a kernel without your commit.
 
-Acked-by: Mugunthan V N <mugunthanvnm@ti.com>
+OK.
 
-Regards
-Mugunthan V N
+>> I didn't think that would be a problem as skipping whole pageblocks due to
+>> being non-movable should be fast and without taking locks. But if your testing
+>> shows that this is a problem, then OK.
+>>
+>
+> Async compaction terminates early when lru_lock is contended or
+> need_resched() and on zones that are so large for a 128GB machine, this
+> happens often.  A thp allocation returns immediately because of
+> contended_compaction in the page allocator.  When the next thp is
+> allocated, async compaction starts from where the former iteration started
+> because we don't do any caching of the pfns and nothing called sync
+> compaction.  It's simply unnecessary overhead that can be prevented on the
+> next call and it leaves a potentially large part of the zone unscanned if
+> we continuously fail because of contention.  This patch fixes that.
+
+OK.
+
+>>> This patch adds a per-zone cached migration scanner pfn only for async
+>>> compaction.  It is updated everytime a pageblock has been scanned in its
+>>> entirety and when no pages from it were successfully isolated.  The cached
+>>> migration scanner pfn for sync compaction is updated only when called for
+>>> sync
+>>> compaction.
+>>
+>> I think this might be an overkill and maybe just decoupling the cached pfn
+>> update from the update_pageblock_skip() would be enough, i.e. restore
+>> pre-50b5b094e6 behavior for the cached pfn (but not for the skip bits)? I
+>> wonder if your new sync migration scanner would make any difference.
+>> Presumably when async compaction finishes without success by having the
+>> scanners meet, compact_finished() will reset the cached pfn's and the sync
+>> compaction will not have a chance to use any previously cached value anyway?
+>>
+>
+> When a zone has 32GB or 64GB to scan, as is in this case (and will become
+> larger in the future), async compaction will always terminate early.  It
+> may never cause a migration destination page to even be allocated, the
+> freeing scanner may never move and there's no guarantee they will ever
+> meet if we never call sync compaction.
+>
+> The logic presented in this patch will avoid rescanning the non-movable
+> pageblocks, for example, for async compaction until all other memory has
+> been scanned.
+
+I see, although I would still welcome some numbers to back such change.
+What I still don't like is the removal of the intent of commit 
+50b5b094e6. You now again call set_pageblock_skip() unconditionally, 
+thus also on pageblocks that async compaction skipped due to being 
+non-MOVABLE. The sync compaction will thus ignore them.
+
