@@ -1,41 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbaEELf2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 07:35:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:26444 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452AbaEELf0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 07:35:26 -0400
-Date: Mon, 5 May 2014 14:35:07 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: gregkh@linuxfoundation.org, lidza.louina@gmail.com,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] staging: dgnc: use dev_err() instead of printk()
-Message-ID: <20140505113507.GP26890@mwanda>
-References: <1398765250-16064-1-git-send-email-martink@posteo.de>
- <1399285779-7040-1-git-send-email-martink@posteo.de>
+	id S1756494AbaEELou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 07:44:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50029 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756180AbaEELos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 07:44:48 -0400
+Date: Mon, 5 May 2014 13:44:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 1/7] apei, mce: Call MCE-specific code only for X86
+ architecture.
+Message-ID: <20140505114445.GB4373@pd.tnic>
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1399285779-7040-1-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 12:29:39PM +0200, Martin Kepplinger wrote:
-> Use dev_err() instead of printk() and remove "dgnc:" from the message.
-> This should provide userspace with more useful information and use
-> the common kernel coding style.
+On Wed, Apr 09, 2014 at 05:14:29PM +0200, Tomasz Nowicki wrote:
+> This commit is dealing with MCE code in:
+> - hest.c
+> Move acpi_disable_cmcff flag to hest_parse_cmc() and makes
+> that depend on CONFIG_X86_MCE so that we do not have to maintain
+> acpi_disable_cmcff for architectures which do not support MCE.
+> Also, wrap architectural MCE header inside #ifdef CONFIG_X86_MCE.
 > 
+> - ghes.c
+> Wrap architectural MCE header inside #ifdef CONFIG_X86_MCE similar to rest
+> of the MCE code in this file.
+> 
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> ---
+>  drivers/acpi/apei/ghes.c |    2 ++
+>  drivers/acpi/apei/hest.c |    8 ++++++--
+>  2 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index dab7cb7..f7edffc 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -49,7 +49,9 @@
+>  #include <linux/aer.h>
+>  
+>  #include <acpi/ghes.h>
+> +#ifdef CONFIG_X86_MCE
+>  #include <asm/mce.h>
+> +#endif
+>  #include <asm/tlbflush.h>
+>  #include <asm/nmi.h>
+>  
+> diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
+> index f5e37f3..98db702 100644
+> --- a/drivers/acpi/apei/hest.c
+> +++ b/drivers/acpi/apei/hest.c
+> @@ -36,7 +36,9 @@
+>  #include <linux/io.h>
+>  #include <linux/platform_device.h>
+>  #include <acpi/apei.h>
+> +#ifdef CONFIG_X86_MCE
+>  #include <asm/mce.h>
+> +#endif
 
-Whenever I see a "RESEND" in a subject and no explanation then it means
-our development process has broken down.  Meanwhile this is the first
-time I have seen this patch so the problem is not on our side.
+Actually, I would prefer if you wrapped all the arch-specific calls into
+arch-specific functions, say, convert
 
-regards,
-dan carpenter
+apei_mce_report_mem_error -> apei_arch_report_mem_error
 
+and have default empty functions for arches which don't use that
+functionality.
+
+This way you can save yourself the ugly ifdeffery around the place.
+
+>  
+>  #include "apei-internal.h"
+>  
+> @@ -133,6 +135,9 @@ static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
+>  	struct acpi_hest_ia_corrected *cmc;
+>  	struct acpi_hest_ia_error_bank *mc_bank;
+>  
+> +	if (acpi_disable_cmcff)
+> +		return 1;
+
+This could be
+
+	if (arch_disable_cmcff())
+		return 1;
+
+with the default stub being
+
+static inline bool arch_disable_cmcff(void)
+{
+	return false;
+}
+
+and so on, like it is done in many other places in the kernel.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
