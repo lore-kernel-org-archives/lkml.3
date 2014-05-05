@@ -1,81 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaEETvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:51:52 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35842 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753249AbaEETvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:51:49 -0400
-Date: Mon, 5 May 2014 20:50:40 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 5/7] ARM: dma: Use dma_pfn_offset for dma address
-	translation
-Message-ID: <20140505195040.GE3693@n2100.arm.linux.org.uk>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com> <1398353407-2345-6-git-send-email-santosh.shilimkar@ti.com> <20140502145852.GC3693@n2100.arm.linux.org.uk> <5363B42C.4010404@ti.com>
+	id S1752176AbaEETzo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:55:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872AbaEETzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 15:55:43 -0400
+Message-ID: <5367EC98.6090409@redhat.com>
+Date: Mon, 05 May 2014 15:55:04 -0400
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5363B42C.4010404@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ding Tianhong <dingtianhong@huawei.com>, William Cohen <wcohen@nc.rr.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linuxarm@huawei.com, "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        Stephane Eranian <eranian@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>
+Subject: Re: [PATCH] arm64: add OProfile support
+References: <535B707F.7020802@huawei.com>	<58ED971B-CC04-4BE1-916C-386D219874A8@arm.com>	<535B88C9.6000908@huawei.com>	<535DBDA4.6070607@huawei.com> <535EBC96.3090008@nc.rr.com> <53674615.5000509@huawei.com>
+In-Reply-To: <53674615.5000509@huawei.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 02, 2014 at 11:05:16AM -0400, Santosh Shilimkar wrote:
-> On Friday 02 May 2014 10:58 AM, Russell King - ARM Linux wrote:
-> > On Thu, Apr 24, 2014 at 11:30:05AM -0400, Santosh Shilimkar wrote:
-> >>  static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
-> >>  {
-> >> -	return (void *)__bus_to_virt((unsigned long)addr);
-> >> +	if (!dev)
-> >> +		return (void *)__bus_to_virt((unsigned long)addr);
-> >> +	else
-> >> +		return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
-> > 
-> > This is quite horrendous.  There's easier ways to do this...  I assume
-> > you haven't looked at the assembler resulting from this at all with
-> > stuff like the p2v patching enabled?
-> > 
-> I haven't. Will check.
+On 05/05/2014 04:04 AM, Ding Tianhong wrote:
+> On 2014/4/29 4:39, William Cohen wrote:
+>> On 04/27/2014 10:32 PM, Ding Tianhong wrote:
+>>> On 2014/4/26 18:22, Ding Tianhong wrote:
+>>>> On 2014/4/26 17:23, Catalin Marinas wrote:
+>>>>> On 26 Apr 2014, at 09:38, Ding Tianhong <dingtianhong@huawei.com> wrote:
+>>>>>> Add OProfile support for arm64,  using the perf backend, and failing back
+>>>>>> to generic timer based sampling if PMU interrupt is not supported.
+>>>>>>
+>>>>>> I have test this patch on Cortex-A53 and Cortex-A57 motherboard, the OProfile
+>>>>>> could work well by PMU irq or arch timer irq.
+>>>>>
+>>>>> This came up before a few times and we also had an implementation but
+>>>>> decided not to merge it. We should rather get the user space oprofile to
+>>>>> use the perf kernel API.
+>>>>>
+>>>>> That’s an old thread, it may have even made it into mainline oprofile
+>>>>> but I haven’t followed the development:
+>>>>>
+>>>>> http://marc.info/?l=oprofile-list&m=133002515616302&w=2
+>>>>>
+>>>>> Catalin
+>>>>>
+>>>
+>>> Hi Cadtalin:
+>>>
+>>> Sorry I could not find the implementation that not to merge the orpfile support for aarch64 till now, and
+>>> I still have questions that the existing code only support oprofile by arch timer event, but not
+>>> PMU event, this patch only add HW PMU support for oprofile, it is more accurate and stable, can you
+>>> give me more advise and appreciate for your help.
+>>>
+>>> Regards
+>>> Ding
+>>
+>> Hi Ding,
+>>
+>> There is some basic support for arm64 in oprofile using the kernel's perf infrastructure for the Applied Micro X-Gene processor checked into the upstream oprofile git repository:
+>>
+>> http://sourceforge.net/p/oprofile/oprofile/ci/34d0065a1a790fc2be05a5ef1d8b0bbf28b814fe/
+>>
+>> It should be straight forward to adapt and extend this to work for A53 and A57 processors in libop/op_cpu_type.c.  At the time I didn't have access to the cortex a57/a53 documentation so this was implemented for the the base ARMv8 PMUv3 events. The processor identification for Cortex a53 and a57 will also need to be added. to /libop/op_cpu_type.c.  I don't currently have access to cortex a53 or a57 processors, so I don't know what the magic vendorid and cpuid values are. What is the output of "cat /proc/cpuinfo" for each of the aarch64 processors you are running oprofile on?
+>>
+>> -Will
+>>
+> 
+> Hi Will:
+> 
+> Sorry for feedback so late, too busy these days. :)
+> 
+> Thanks for your message, you can add the the A53 and A57 to support arm-v8 for oprofile.
+> 
+> 	A53	A57
+> Vendid	0x41	0x41
+> cpuid	0xD03	0xD07
+> 
+> -Ding
 
-	if (dev) {
-		unsigned long pfn = dma_to_pfn(dev, addr);
+Hi Ding,
 
-		return phys_to_virt(__pfn_to_phys(pfn));
-	}
+Thanks very much for the IDs for Cortex A53 and Cortex A57.
 
-	return (void *)__bus_to_virt((unsigned long)addr);
-
-> >>  static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
-> >>  {
-> >> -	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-> >> +	if (!dev)
-> >> +		return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-> >> +	else
-> >> +		return pfn_to_dma(dev,
-> >> +				__bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
-> > 
-> > Same here.
-> > 
-> ok.
-
-
-	if (dev)
-		return pfn_to_dma(dev, virt_to_pfn(addr));
-
-	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+-Will
