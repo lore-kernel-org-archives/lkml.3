@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaEEUUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 16:20:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33302 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbaEEUUJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 16:20:09 -0400
-Date: Mon, 05 May 2014 16:20:04 -0400 (EDT)
-Message-Id: <20140505.162004.1797345518474659123.davem@davemloft.net>
-To: linux-kernel@vger.kernel.org
-CC: iamjoonsoo.kim@lge.com, sparclinux@vger.kernel.org, hannes@cmpxchg.org,
-        cl@linux.com, penberg@kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH] slab: Fix off by one in object max number tests.
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755098AbaEEUUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 16:20:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64854 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752114AbaEEUUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 16:20:52 -0400
+Subject: [PATCH] PCI: Test for std config alias when testing extended config
+ space
+From: Alex Williamson <alex.williamson@redhat.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 05 May 2014 14:20:51 -0600
+Message-ID: <20140505201835.2466.46125.stgit@bling.home>
+User-Agent: StGit/0.17-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 13:20:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When a PCI-to-PCIe bridge is stacked on a PCIe-to-PCI bridge, we can
+have PCIe endpoints masked by a conventional PCI bus.  This makes the
+extended config space of the PCIe endpoing inaccessible.  The PCIe-to-
+PCI bridge is supposed to handle any type 1 configuration transactions
+where the extended config offset bits are non-zero as an Unsupported
+Request rather than forward it to the secondary interface.  As noted
+here, there are a couple known offenders to this rule.  These bridges
+drop the extended offset bits, resulting in the conventional config
+space being aliased many times across the extended config space.  For
+Intel NICs, this alias often seems to expose a bogus SR-IOV cap.
 
-If freelist_idx_t is a byte, SLAB_OBJ_MAX_NUM should be 255 not 256,
-and likewise if freelist_idx_t is a short, then it should be 65535 not
-65536.
+Stacking bridges may seem like an uncommon scenario, but note that the
+any conventional PCI slot in a modern PC is already the secondary
+interface of an onboard PCIe-to-PCI bridge.  The user need only add
+a PCI-to-PCIe adapter and PCIe device to encounter this problem.
 
-Fixes: a41adfa ("slab: introduce byte sized index for the freelist of a slab")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
+ drivers/pci/probe.c |   39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-This was leading to all kinds of random crashes on sparc64 where PAGE_SIZE
-is 8192.  One problem shown was that if spinlock debugging was enabled,
-we'd get deadlocks in copy_pte_range() or do_wp_page() with the same cpu
-already holding a lock it shouldn't hold, or the lock belonging to a
-completely unrelated process.
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index ef09f5f..fdb0182 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -984,6 +984,43 @@ void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+ 
+ 
+ /**
++ * pci_ext_cfg_is_aliased - is ext config space just an alias of std config?
++ * @dev: PCI device
++ *
++ * PCI Express to PCI/PCI-X Bridge Specification, rev 1.0, 4.1.4 says that
++ * when forwarding a type1 configuration request the bridge must check that
++ * the extended register address field is zero.  The bridge is not permitted
++ * to forward the transactions and must handle it as an Unsupported Request.
++ * Some bridges do not follow this rule and simply drop the extended register
++ * bits, resulting in the standard config space being aliased, every 256
++ * bytes across the entire configuration space.  Test for this condition by
++ * comparing the first dword of each potential alias to the vendor/device ID.
++ * Known offenders:
++ *   ASM1083/1085 PCIe-to-PCI Reversible Bridge (1b21:1080, rev 01 & 03)
++ *   AMD/ATI SBx00 PCI to PCI Bridge (1002:4384, rev 40)
++ */
++static bool pci_ext_cfg_is_aliased(struct pci_dev *dev)
++{
++#ifdef CONFIG_PCI_QUIRKS
++	int pos;
++	u32 header, tmp;
++
++	pci_read_config_dword(dev, PCI_VENDOR_ID, &header);
++
++	for (pos = PCI_CFG_SPACE_SIZE;
++	     pos < PCI_CFG_SPACE_EXP_SIZE; pos += PCI_CFG_SPACE_SIZE) {
++		if (pci_read_config_dword(dev, pos, &tmp) != PCIBIOS_SUCCESSFUL
++		    || header != tmp)
++			return false;
++	}
++
++	return true;
++#else
++	return false;
++#endif
++}
++
++/**
+  * pci_cfg_space_size - get the configuration space size of the PCI device.
+  * @dev: PCI device
+  *
+@@ -1001,7 +1038,7 @@ static int pci_cfg_space_size_ext(struct pci_dev *dev)
+ 
+ 	if (pci_read_config_dword(dev, pos, &status) != PCIBIOS_SUCCESSFUL)
+ 		goto fail;
+-	if (status == 0xffffffff)
++	if (status == 0xffffffff || pci_ext_cfg_is_aliased(dev))
+ 		goto fail;
+ 
+ 	return PCI_CFG_SPACE_EXP_SIZE;
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 388cb1a..37de3a7 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -166,7 +166,7 @@ typedef unsigned char freelist_idx_t;
- typedef unsigned short freelist_idx_t;
- #endif
- 
--#define SLAB_OBJ_MAX_NUM (1 << sizeof(freelist_idx_t) * BITS_PER_BYTE)
-+#define SLAB_OBJ_MAX_NUM ((1 << sizeof(freelist_idx_t) * BITS_PER_BYTE) - 1)
- 
- /*
-  * true if a page was allocated from pfmemalloc reserves for network-based
