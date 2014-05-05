@@ -1,81 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013AbaEEXSG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 19:18:06 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:55043
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756771AbaEEXSD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 19:18:03 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(z579ehz98dIc89bh936eI1432Izz1f42h2148h1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h27e2h906i2673i)
-Date: Mon, 5 May 2014 16:16:52 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: <tthayer@altera.com>
-CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>, <bp@alien8.de>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>
-Subject: Re: [PATCHv3 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-References: <1399330337-16748-1-git-send-email-tthayer@altera.com>
- <1399330337-16748-2-git-send-email-tthayer@altera.com>
+	id S1756995AbaEEXSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 19:18:47 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63893 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959AbaEEXSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 19:18:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1399330337-16748-2-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ba35254f-4ba5-4b2c-8056-cde5c693b0ff@CH1EHSMHS009.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+References: <1399328773-6531-1-git-send-email-andi@firstfloor.org> <1399328773-6531-9-git-send-email-andi@firstfloor.org>
+From: Yuchung Cheng <ycheng@google.com>
+Date: Mon, 5 May 2014 16:18:05 -0700
+Message-ID: <CAK6E8=cQ37-O=z6oxwhNZ+rog2VrLZQvjKW4sq+E97Yz-VNorQ@mail.gmail.com>
+Subject: Re: [PATCH 08/24] net, diet: Make TCP metrics optional
+To: Andi Kleen <andi@firstfloor.org>
+Cc: netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        tom.zanussi@linux.intel.com, Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thor,
-
-On Mon, 2014-05-05 at 05:52PM -0500, tthayer@altera.com wrote:
-> From: Thor Thayer <tthayer@altera.com>
-> 
-> Addition of the Altera SDRAM controller bindings and device
-> tree changes to the Altera SoC project. The "syscon" parameter
-> is included here because the SDRAM EDAC bits are shared with the SDRAM
-> configuration bits.
+On Mon, May 5, 2014 at 3:25 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+>
+> This is all the code that saves connection information
+> between different sockets. Not really essential for
+> small systems.
+>
+> Saves about 5.5k text
+>
+>    text    data     bss     dec     hex filename
+>  492952   19571   13480  526003   806b3 net/built-in.o-with-metrics
+>  487675   19275   13480  520430   7f0ee net/built-in.o-without-metrics
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
-> v2: Changes to SoC SDRAM EDAC code.
-> 
-> V3: Implement code suggestions for SDRAM EDAC code.
-> 
-> Signed-off-by: Thor Thayer <tthayer@altera.com>
-> ---
->  .../bindings/arm/altera/socfpga-sdram.txt          |   14 ++++++++++++++
->  arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
->  2 files changed, 19 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> new file mode 100644
-> index 0000000..525cb76
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram.txt
-> @@ -0,0 +1,14 @@
-> +Altera SOCFPGA SDRAM Controller
+>  include/net/tcp.h          | 25 +++++++++++++++++++++++++
+>  net/ipv4/Kconfig           |  6 ++++++
+>  net/ipv4/Makefile          |  3 ++-
+>  net/ipv4/sysctl_net_ipv4.c |  2 ++
+>  4 files changed, 35 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/net/tcp.h b/include/net/tcp.h
+> index 87d8774..d741d2f 100644
+> --- a/include/net/tcp.h
+> +++ b/include/net/tcp.h
+> @@ -419,14 +419,29 @@ int tcp_child_process(struct sock *parent, struct sock *child,
+>                       struct sk_buff *skb);
+>  void tcp_enter_loss(struct sock *sk, int how);
+>  void tcp_clear_retrans(struct tcp_sock *tp);
+> +#ifdef CONFIG_TCP_METRICS
+>  void tcp_update_metrics(struct sock *sk);
+>  void tcp_init_metrics(struct sock *sk);
+>  void tcp_metrics_init(void);
 > +
-> +Required properties:
-> +- compatible : "altr,sdr-ctl", "syscon";
-> +                Note that syscon is invoked for this device to support the FPGA
-> +		bridge driver, EDAC driver and other devices that share the
-> +		registers.
+>  bool tcp_peer_is_proven(struct request_sock *req, struct dst_entry *dst,
+>                         bool paws_check);
+>  bool tcp_remember_stamp(struct sock *sk);
+>  bool tcp_tw_remember_stamp(struct inet_timewait_sock *tw);
+>  void tcp_fetch_timewait_stamp(struct sock *sk, struct dst_entry *dst);
+> +#else
+> +static inline void tcp_update_metrics(struct sock *sk) {}
+> +static inline void tcp_init_metrics(struct sock *sk) {}
+> +static inline void tcp_metrics_init(void) {}
+> +static inline bool tcp_peer_is_proven(struct request_sock *req,
+> +                                     struct dst_entry *dst,
+> +                                     bool paws_check) { return false; }
+> +static inline bool tcp_remember_stamp(struct sock *sk) { return false; }
+> +static inline bool
+> +tcp_tw_remember_stamp(struct inet_timewait_sock *tw) { return false; }
+> +static inline void
+> +tcp_fetch_timewait_stamp(struct sock *sk, struct dst_entry *dst) {}
+> +#endif
+>  void tcp_disable_fack(struct tcp_sock *tp);
+>  void tcp_close(struct sock *sk, long timeout);
+>  void tcp_init_sock(struct sock *sk);
+> @@ -1296,11 +1311,21 @@ int tcp_md5_hash_key(struct tcp_md5sig_pool *hp,
+>                      const struct tcp_md5sig_key *key);
+>
+>  /* From tcp_fastopen.c */
+> +#ifdef CONFIG_TCP_METRICS
+>  void tcp_fastopen_cache_get(struct sock *sk, u16 *mss,
+>                             struct tcp_fastopen_cookie *cookie, int *syn_loss,
+>                             unsigned long *last_syn_loss);
+>  void tcp_fastopen_cache_set(struct sock *sk, u16 mss,
+>                             struct tcp_fastopen_cookie *cookie, bool syn_lost);
+> +#else
+> +static inline void
+> +tcp_fastopen_cache_get(struct sock *sk, u16 *mss,
+> +                      struct tcp_fastopen_cookie *cookie, int *syn_loss,
+> +                      unsigned long *last_syn_loss) {}
+> +static inline void
+> +tcp_fastopen_cache_set(struct sock *sk, u16 mss,
+> +                      struct tcp_fastopen_cookie *cookie, bool syn_lost) {}
+> +#endif
+>  struct tcp_fastopen_request {
+>         /* Fast Open cookie. Size 0 means a cookie request */
+>         struct tcp_fastopen_cookie      cookie;
+> diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
+> index 6146b1b..db2dada 100644
+> --- a/net/ipv4/Kconfig
+> +++ b/net/ipv4/Kconfig
+> @@ -264,6 +264,12 @@ config IP_PIMSM_V2
+>           gated-5). This routing protocol is not used widely, so say N unless
+>           you want to play with it.
+>
+> +config TCP_METRICS
+> +       bool "Report TCP metrics over netlink"
+> +       ---help---
+> +           Enable support in TCP to save host information between different
+> +          connections.
+Please add that "Certain TCP features such as active TCP Fast Open
+depends on this."
 
-This sounds like implementation specifics, which shouldn't be part of
-the bindings.
-
-	Sören
-
-
+> +
+>  config SYN_COOKIES
+>         bool "IP: TCP syncookie support"
+>         ---help---
+> diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+> index 756855c..8b17b83 100644
+> --- a/net/ipv4/Makefile
+> +++ b/net/ipv4/Makefile
+> @@ -7,7 +7,7 @@ obj-y     := route.o inetpeer.o protocol.o \
+>              ip_output.o ip_sockglue.o inet_hashtables.o \
+>              inet_timewait_sock.o inet_connection_sock.o \
+>              tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
+> -            tcp_minisocks.o tcp_cong.o tcp_metrics.o tcp_fastopen.o \
+> +            tcp_minisocks.o tcp_cong.o tcp_fastopen.o \
+>              tcp_offload.o datagram.o raw.o udp.o udplite.o \
+>              udp_offload.o arp.o icmp.o devinet.o af_inet.o igmp.o \
+>              fib_frontend.o fib_semantics.o fib_trie.o \
+> @@ -17,6 +17,7 @@ obj-$(CONFIG_NET_IP_TUNNEL) += ip_tunnel.o
+>  obj-$(CONFIG_IP_PING) += ping.o
+>  obj-$(CONFIG_SYSCTL) += sysctl_net_ipv4.o
+>  obj-$(CONFIG_PROC_FS) += proc.o
+> +obj-$(CONFIG_TCP_METRICS) += tcp_metrics.o
+>  obj-$(CONFIG_IP_MULTIPLE_TABLES) += fib_rules.o
+>  obj-$(CONFIG_IP_MROUTE) += ipmr.o
+>  obj-$(CONFIG_NET_IPIP) += ipip.o
+> diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+> index 44eba05..2110d2e 100644
+> --- a/net/ipv4/sysctl_net_ipv4.c
+> +++ b/net/ipv4/sysctl_net_ipv4.c
+> @@ -573,6 +573,7 @@ static struct ctl_table ipv4_table[] = {
+>                 .mode           = 0644,
+>                 .proc_handler   = proc_dointvec
+>         },
+> +#ifdef CONFIG_TCP_METRICS
+>         {
+>                 .procname       = "tcp_no_metrics_save",
+>                 .data           = &sysctl_tcp_nometrics_save,
+> @@ -580,6 +581,7 @@ static struct ctl_table ipv4_table[] = {
+>                 .mode           = 0644,
+>                 .proc_handler   = proc_dointvec,
+>         },
+> +#endif
+>         {
+>                 .procname       = "tcp_moderate_rcvbuf",
+>                 .data           = &sysctl_tcp_moderate_rcvbuf,
+> --
+> 1.9.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
