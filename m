@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602AbaEEJJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:09:07 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55238 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316AbaEEJJE (ORCPT
+	id S1755817AbaEEJJZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:09:25 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53448 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696AbaEEJJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:09:04 -0400
-Subject: [PATCH v1.1 4/16] arcmsr: limit max number of SCSI command request
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 17:08:56 +0800
-Message-ID: <1399280936.4398.6.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 05:09:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <536752FD.3040704@suse.de>
+References: <1398245154-18771-1-git-send-email-chander.kashyap@linaro.org>
+	<1399278444-8312-1-git-send-email-chander.kashyap@linaro.org>
+	<1399278444-8312-3-git-send-email-chander.kashyap@linaro.org>
+	<536752FD.3040704@suse.de>
+Date: Mon, 5 May 2014 14:39:19 +0530
+Message-ID: <CANuQgHE50Ogqaf7jJsfy6Wx40oCsUBSXz=877BaXdXswQ7e8tw@mail.gmail.com>
+Subject: Re: [Patch v3 2/5] cpuidle: config: Add ARCH_EXYNOS entry to select
+ cpuidle-big-little driver
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: =?UTF-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Chander Kashyap <k.chander@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+Hi Andreas,
 
-Have a limitation of max number of SCSI command request to prevent command overflow.
+On 5 May 2014 14:29, Andreas Färber <afaerber@suse.de> wrote:
+> Hi,
+>
+> Am 05.05.2014 10:27, schrieb Chander Kashyap:
+>> Exynos5420 is a big-little SoC from Samsung. It has 4 A15 and 4 A7 cores.
+>> In order to use generic cpuidle-big-little driver, this patch adds Exynos5420
+>> specific check to initialize generic cpuidle driver.
+>>
+>> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+>> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+>> ---
+>> Changes in v3: None
+>> Changes in v2:
+>>       1. Changed config macro from SOC_EXYNOS5420 to SOC_EXYNOS5420
+>
+> This is probably a copy&pasto? Anyway, the commit message needs an
+> update since no Exynos5420 specific check is done below afaics. That
+> went into 3/5.
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+Oops that's write,
+Copy paste mistake, and commit message change is required. I will fix it .
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 16:25:06.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-28 18:08:10.000000000 +0800
-@@ -45,11 +45,12 @@
- #include <linux/interrupt.h>
- struct device_attribute;
- /*The limit of outstanding scsi command that firmware can handle*/
--#define ARCMSR_MAX_OUTSTANDING_CMD						256
- #ifdef CONFIG_XEN
- 	#define ARCMSR_MAX_FREECCB_NUM	160
-+#define ARCMSR_MAX_OUTSTANDING_CMD	155
- #else
- 	#define ARCMSR_MAX_FREECCB_NUM	320
-+#define ARCMSR_MAX_OUTSTANDING_CMD	255
- #endif
- #define ARCMSR_DRIVER_VERSION		"v1.30.00.04-20140428"
- #define ARCMSR_SCSI_INITIATOR_ID						255
-@@ -598,6 +599,7 @@ struct AdapterControlBlock
- 				#define	FW_DEADLOCK	0x0010
- 	atomic_t 			rq_map_token;
- 	atomic_t			ante_token_value;
-+	uint32_t	maxOutstanding;
- };/* HW_DEVICE_EXTENSION */
- /*
- *******************************************************************************
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:28:56.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:30:08.000000000 +0800
-@@ -134,7 +134,7 @@ static struct scsi_host_template arcmsr_
- 	.eh_bus_reset_handler	= arcmsr_bus_reset,
- 	.bios_param		= arcmsr_bios_param,
- 	.change_queue_depth	= arcmsr_adjust_disk_queue_depth,
--	.can_queue		= ARCMSR_MAX_FREECCB_NUM,
-+	.can_queue		= ARCMSR_MAX_OUTSTANDING_CMD,
- 	.this_id			= ARCMSR_SCSI_INITIATOR_ID,
- 	.sg_tablesize	        	= ARCMSR_DEFAULT_SG_ENTRIES, 
- 	.max_sectors    	    	= ARCMSR_MAX_XFER_SECTORS_C, 
-@@ -716,7 +716,7 @@ static int arcmsr_probe(struct pci_dev *
- 	host->max_lun = ARCMSR_MAX_TARGETLUN;
- 	host->max_id = ARCMSR_MAX_TARGETID;		/*16:8*/
- 	host->max_cmd_len = 16;	 			/*this is issue of 64bit LBA ,over 2T byte*/
--	host->can_queue = ARCMSR_MAX_FREECCB_NUM;	/* max simultaneous cmds */		
-+	host->can_queue = ARCMSR_MAX_OUTSTANDING_CMD;	/* max simultaneous cmds */		
- 	host->cmd_per_lun = ARCMSR_MAX_CMD_PERLUN;	    
- 	host->this_id = ARCMSR_SCSI_INITIATOR_ID;
- 	host->unique_id = (bus << 8) | dev_fun;
-@@ -2248,8 +2248,7 @@ static int arcmsr_queue_command_lck(stru
- 		arcmsr_handle_virtual_command(acb, cmd);
- 		return 0;
- 	}
--	if (atomic_read(&acb->ccboutstandingcount) >=
--			ARCMSR_MAX_OUTSTANDING_CMD)
-+	if (atomic_read(&acb->ccboutstandingcount) >= acb->maxOutstanding)
- 		return SCSI_MLQUEUE_HOST_BUSY;
- 	ccb = arcmsr_get_freeccb(acb);
- 	if (!ccb)
-@@ -2460,12 +2459,26 @@ static bool arcmsr_get_hbc_config(struct
- }
- static bool arcmsr_get_firmware_spec(struct AdapterControlBlock *acb)
- {
--	if (acb->adapter_type == ACB_ADAPTER_TYPE_A)
--		return arcmsr_get_hba_config(acb);
--	else if (acb->adapter_type == ACB_ADAPTER_TYPE_B)
--		return arcmsr_get_hbb_config(acb);
-+	bool rtn = false;
-+
-+	switch (acb->adapter_type) {
-+	case ACB_ADAPTER_TYPE_A:
-+		rtn = arcmsr_get_hba_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_B:
-+		rtn = arcmsr_get_hbb_config(acb);
-+		break;
-+	case ACB_ADAPTER_TYPE_C:
-+		rtn = arcmsr_get_hbc_config(acb);
-+		break;
-+	default:
-+		break;
-+	}
-+	if(acb->firm_numbers_queue > ARCMSR_MAX_OUTSTANDING_CMD)
-+		acb->maxOutstanding = ARCMSR_MAX_OUTSTANDING_CMD;
- 	else
--		return arcmsr_get_hbc_config(acb);
-+		acb->maxOutstanding = acb->firm_numbers_queue - 1;
-+	return rtn;
- }
- 
- static int arcmsr_polling_hba_ccbdone(struct AdapterControlBlock *acb,
+Thanks
 
 
+>
+> Cheers,
+> Andreas
+>
+>>  drivers/cpuidle/Kconfig.arm |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
+>> index 97ccc31..d9596e7 100644
+>> --- a/drivers/cpuidle/Kconfig.arm
+>> +++ b/drivers/cpuidle/Kconfig.arm
+>> @@ -4,7 +4,7 @@
+>>
+>>  config ARM_BIG_LITTLE_CPUIDLE
+>>       bool "Support for ARM big.LITTLE processors"
+>> -     depends on ARCH_VEXPRESS_TC2_PM
+>> +     depends on ARCH_VEXPRESS_TC2_PM || ARCH_EXYNOS
+>>       select ARM_CPU_SUSPEND
+>>       select CPU_IDLE_MULTIPLE_DRIVERS
+>>       help
+>>
+>
+>
+> --
+> SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
+> GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+
+
+
+-- 
+with warm regards,
+Chander Kashyap
