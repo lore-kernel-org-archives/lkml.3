@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019AbaEEM5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:57:31 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40976 "EHLO
+	id S933005AbaEEM53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:57:29 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40974 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932214AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932205AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Kieran Clancy <clancy.kieran@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 13/50] ACPI / EC: Process rather than discard events in acpi_ec_clear
-Date: Mon,  5 May 2014 14:42:55 +0200
-Message-Id: <3da1d25c3849e8a02d4f70feeae16711ad458eaf.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org,
+        Claudio Takahasi <claudio.takahasi@openbossa.org>,
+        Johan Hedberg <johan.hedberg@intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 35/50] Bluetooth: Fix removing Long Term Key
+Date: Mon,  5 May 2014 14:43:17 +0200
+Message-Id: <626d6cde21ad38e531efeb37f3ae81920e8c9a2f.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,127 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: Claudio Takahasi <claudio.takahasi@openbossa.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3eba563e280101209bad27d40bfc83ddf1489234 upstream.
+commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
 
-Address a regression caused by commit ad332c8a4533:
-(ACPI / EC: Clear stale EC events on Samsung systems)
+This patch fixes authentication failure on LE link re-connection when
+BlueZ acts as slave (peripheral). LTK is removed from the internal list
+after its first use causing PIN or Key missing reply when re-connecting
+the link. The LE Long Term Key Request event indicates that the master
+is attempting to encrypt or re-encrypt the link.
 
-After the earlier patch, there was found to be a race condition on some
-earlier Samsung systems (N150/N210/N220). The function acpi_ec_clear was
-sometimes discarding a new EC event before its GPE was triggered by the
-system. In the case of these systems, this meant that the "lid open"
-event was not registered on resume if that was the cause of the wake,
-leading to problems when attempting to close the lid to suspend again.
+Pre-condition: BlueZ host paired and running as slave.
+How to reproduce(master):
 
-After testing on a number of Samsung systems, both those affected by the
-previous EC bug and those affected by the race condition, it seemed that
-the best course of action was to process rather than discard the events.
-On Samsung systems which accumulate stale EC events, there does not seem
-to be any adverse side-effects of running the associated _Q methods.
+  1) Establish an ACL LE encrypted link
+  2) Disconnect the link
+  3) Try to re-establish the ACL LE encrypted link (fails)
 
-This patch adds an argument to the static function acpi_ec_sync_query so
-that it may be used within the acpi_ec_clear loop in place of
-acpi_ec_query_unlocked which was used previously.
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
+        Handle: 64
+        Long term key: 2aa531db2fce9f00a0569c7d23d17409
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Encryption Change (0x08) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Encryption: Enabled with AES-CCM (0x01)
+...
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
+< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
+        Advertising: Enabled (0x01)
+> HCI Event: Command Complete (0x0e) plen 4
+      LE Set Advertise Enable (0x08|0x000a) ncmd 1
+        Status: Success (0x00)
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
+        Handle: 64
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Disconnect Complete (0x05) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Reason: Authentication Failure (0x05)
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
 
-With thanks to Stefan Biereigel for reporting the issue, and for all the
-people who helped test the new patch on affected systems.
-
-Fixes: ad332c8a4533 (ACPI / EC: Clear stale EC events on Samsung systems)
-References: https://lkml.kernel.org/r/532FE3B2.9060808@biereigel-wb.de
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161#c173
-Reported-by: Stefan Biereigel <stefan@biereigel.de>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Stefan Biereigel <stefan@biereigel.de>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Nicolas Porcel <nicolasporcel06@gmail.com>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Giannis Koutsou <giannis.koutsou@gmail.com>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Cc: 3.14+ <stable@vger.kernel.org> # 3.14+
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/acpi/ec.c | 21 ++++++++++++---------
- 1 file changed, 12 insertions(+), 9 deletions(-)
+ net/bluetooth/hci_event.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index 3cc0b92e3544..51b700838f64 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -213,13 +213,13 @@ unlock:
- 	spin_unlock_irqrestore(&ec->lock, flags);
- }
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 8db3e89fae35..a3af2b750e96 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3565,7 +3565,13 @@ static void hci_le_ltk_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
  
--static int acpi_ec_sync_query(struct acpi_ec *ec);
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data);
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
  
- static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
- {
- 	if (state & ACPI_EC_FLAG_SCI) {
- 		if (!test_and_set_bit(EC_FLAGS_QUERY_PENDING, &ec->flags))
--			return acpi_ec_sync_query(ec);
-+			return acpi_ec_sync_query(ec, NULL);
+-	if (ltk->type & HCI_SMP_STK) {
++	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
++	 * temporary key used to encrypt a connection following
++	 * pairing. It is used during the Encrypted Session Setup to
++	 * distribute the keys. Later, security can be re-established
++	 * using a distributed LTK.
++	 */
++	if (ltk->type == HCI_SMP_STK_SLAVE) {
+ 		list_del(&ltk->list);
+ 		kfree(ltk);
  	}
- 	return 0;
- }
-@@ -471,10 +471,8 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
--static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
--
- /*
-- * Clears stale _Q events that might have accumulated in the EC.
-+ * Process _Q events that might have accumulated in the EC.
-  * Run with locked ec mutex.
-  */
- static void acpi_ec_clear(struct acpi_ec *ec)
-@@ -483,7 +481,7 @@ static void acpi_ec_clear(struct acpi_ec *ec)
- 	u8 value = 0;
- 
- 	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
--		status = acpi_ec_query_unlocked(ec, &value);
-+		status = acpi_ec_sync_query(ec, &value);
- 		if (status || !value)
- 			break;
- 	}
-@@ -610,13 +608,18 @@ static void acpi_ec_run(void *cxt)
- 	kfree(handler);
- }
- 
--static int acpi_ec_sync_query(struct acpi_ec *ec)
-+static int acpi_ec_sync_query(struct acpi_ec *ec, u8 *data)
- {
- 	u8 value = 0;
- 	int status;
- 	struct acpi_ec_query_handler *handler, *copy;
--	if ((status = acpi_ec_query_unlocked(ec, &value)))
-+
-+	status = acpi_ec_query_unlocked(ec, &value);
-+	if (data)
-+		*data = value;
-+	if (status)
- 		return status;
-+
- 	list_for_each_entry(handler, &ec->list, node) {
- 		if (value == handler->query_bit) {
- 			/* have custom handler for this bit */
-@@ -639,7 +642,7 @@ static void acpi_ec_gpe_query(void *ec_cxt)
- 	if (!ec)
- 		return;
- 	mutex_lock(&ec->mutex);
--	acpi_ec_sync_query(ec);
-+	acpi_ec_sync_query(ec, NULL);
- 	mutex_unlock(&ec->mutex);
- }
- 
 -- 
 1.9.2
 
