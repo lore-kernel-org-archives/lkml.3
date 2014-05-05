@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaEEH5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:57:17 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:44546 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037AbaEEH5O (ORCPT
+	id S1755022AbaEEH5I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:57:08 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55376 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962AbaEEH5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:57:14 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-e5-5367445894bc
-Message-id: <1399276631.15737.1.camel@AMDC1943>
-Subject: Re: [PATCH 3/4] misc: exynos-chipid: Add Exynos Chipid driver support
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        linux@arm.linux.org.uk, Arnd Bergmann <arnd@arndb.de>,
-        t.figa@samsung.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Mon, 05 May 2014 09:57:11 +0200
-In-reply-to: <1399097500-4052-4-git-send-email-pankaj.dubey@samsung.com>
-References: <1399097500-4052-1-git-send-email-pankaj.dubey@samsung.com>
- <1399097500-4052-4-git-send-email-pankaj.dubey@samsung.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xq7oRLunBBnueyVn8nXSM3aJ58Xo2
-	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGuxaOsXdov1M16zOHB6tDT3sHn8/jWJ0WP/3DXs
-	HpuX1Hv0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxrUNM1gLFrFVbH49namBcQJrFyMHh4SA
-	icTy6wpdjJxAppjEhXvr2boYuTiEBJYySpxsussE4XxmlPh1fRE7SBWvgL7EkV3rmEBsYQE/
-	idOzJoPF2QSMJTYvX8IGYosIaEt0Xr7HCtLMLNDEJHHpzhawBhYBVYm9p1tYQWxOAQ+J088m
-	Q21oZZQ4u/kN2CRmAXWJSfMWMUPcpCwxb/8xJojNghI/Jt9jgaiRl9i85i3zBEaBWUhaZiEp
-	m4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkBj4soNx8TGrQ4wCHIxKPLyBQSnB
-	QqyJZcWVuYcYJTiYlUR4ZzGmBwvxpiRWVqUW5ccXleakFh9iZOLglGpgZDny8zbf7ymbdZiX
-	Cv9NWy8k8/HUgowGdYlHvuYfT7zcMy9h1gzHo1tPVQSeW+g56V3f8svPnN7Lp1mp8exZrNVc
-	foa/xPl5dR7HScO+a/v4zyfkGTul782MsL16vGyuYzD//m7VlNs+Sjl3KlI0dTabyUc9f7rU
-	vGrF76Mf5GNWuhjVTXv4SYmlOCPRUIu5qDgRAGQB0lRfAgAA
+	Mon, 5 May 2014 03:57:06 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, mikey@neuling.org, avagin@openvz.org,
+        oleg@redhat.com, roland@redhat.com, palves@redhat.com,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Subject: [PATCH V2 1/3] elf: Add some new PowerPC specifc note sections
+Date: Mon,  5 May 2014 13:24:27 +0530
+Message-Id: <1399276469-13541-2-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1399276469-13541-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050507-2674-0000-0000-00000E1DEA77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sob, 2014-05-03 at 15:11 +0900, Pankaj Dubey wrote:
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 7eb4b69..48c8fb5 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -55,3 +55,4 @@ obj-$(CONFIG_SRAM)		+= sram.o
->  obj-y				+= mic/
->  obj-$(CONFIG_GENWQE)		+= genwqe/
->  obj-$(CONFIG_ECHO)		+= echo/
-> +obj-$(CONFIG_EXYNOS_CHIPID)	+= exynos-chipid.o
-> diff --git a/drivers/misc/exynos-chipid.c b/drivers/misc/exynos-chipid.c
-> new file mode 100644
-> index 0000000..eb23339
-> --- /dev/null
-> +++ b/drivers/misc/exynos-chipid.c
-> @@ -0,0 +1,83 @@
-> +/*
-> + * Copyright (c) 2014-2015 Samsung Electronics Co., Ltd.
-> + *	      http://www.samsung.com/
+This patch adds four new note sections for transactional memory
+and one note section for some miscellaneous registers. This addition
+of new elf note sections extends the existing elf ABI without affecting
+it in any manner.
 
-I wonder why this is copyrighted in the future (2015)?
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ include/uapi/linux/elf.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-Best regards,
-Krzysztof
-
+diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
+index ef6103b..4040124 100644
+--- a/include/uapi/linux/elf.h
++++ b/include/uapi/linux/elf.h
+@@ -379,6 +379,11 @@ typedef struct elf64_shdr {
+ #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
+ #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
+ #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
++#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
++#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
++#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
++#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
++#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
+ #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
+ #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
+ #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+-- 
+1.7.11.7
 
