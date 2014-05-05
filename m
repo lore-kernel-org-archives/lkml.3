@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860AbaEEHv1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:51:27 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:43521 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777AbaEEHv0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:51:26 -0400
-MIME-Version: 1.0
-Date: Mon, 5 May 2014 09:51:25 +0200
-Message-ID: <CADDKRnCwxmJ8RonvZaizTT9R1jPU++tPPSQAH5OKD5=h9bQhMA@mail.gmail.com>
-Subject: [3.14.0-rc4] regression: drm FIFO underruns
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>
-Cc: David Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754878AbaEEHzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:55:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24809 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752045AbaEEHzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 03:55:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,986,1389772800"; 
+   d="scan'208";a="534721736"
+Message-ID: <1399276474.15290.18.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBIFS changes for 3.15-rc5
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 05 May 2014 10:54:34 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I still have FIFO underruns in drm:
-[drm:ivb_err_int_handler] *ERROR* Pipe B FIFO underrun
-[drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
-[drm:cpt_serr_int_handler] *ERROR* PCH transcoder B FIFO underrun
+Hi Linus,
 
-which I already reported here:
-https://lkml.org/lkml/2014/4/9/127
+The following changes since commit 89ca3b881987f5a4be4c5dbaa7f0df12bbdde2fd:
 
-and which is still unanswered!
+  Linux 3.15-rc4 (2014-05-04 18:14:42 -0700)
 
-I tried to bisect the thing, but I ran into compile errors. So I
-can only say it came in with
-e9f37d3 "Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux"
+are available in the git repository at:
 
-Jörg
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.15-rc5
+
+for you to fetch changes up to bebfef150e0b8fa68704cddacf05b8c26462d565:
+
+  UBI: avoid workqueue format string leak (2014-05-05 09:31:33 +0300)
+
+----------------------------------------------------------------
+This pull request includes the following fixes:
+
+* 2 real bug-fixes from Tanya for the still "experimental" UBI fastmap feature
+* a one-liner from Kees which hardens kernel security
+* a small error-path fix, where we forget to free various resources in case of
+  failure - spotted by the "smatch" tool
+
+----------------------------------------------------------------
+Artem Bityutskiy (1):
+      UBIFS: fix remount error path
+
+Kees Cook (1):
+      UBI: avoid workqueue format string leak
+
+Tanya Brokhman (2):
+      UBI: fix error path in __wl_get_peb
+      UBI: fix ubi free PEBs count calculation
+
+ drivers/mtd/ubi/block.c | 2 +-
+ drivers/mtd/ubi/wl.c    | 6 ++++++
+ fs/ubifs/super.c        | 2 +-
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+
+-- 
+Best Regards,
+Artem Bityutskiy
+
