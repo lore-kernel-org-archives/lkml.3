@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaEEPph (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:45:37 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:50566 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476AbaEEPpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:45:35 -0400
-Date: Mon, 5 May 2014 08:45:27 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: stable@vger.kernel.org, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 00/50] 3.12.19-stable review
-Message-ID: <20140505154527.GA25094@roeck-us.net>
-References: <cover.1399292849.git.jslaby@suse.cz>
+	id S1754438AbaEEPqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:46:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752546AbaEEPqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:46:21 -0400
+Date: Mon, 5 May 2014 17:45:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2] uprobes: fix scratch register selection for
+	rip-relative fixups
+Message-ID: <20140505154559.GA27072@redhat.com>
+References: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1399043040-28366-1-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 02:28:31PM +0200, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.19 release.
-> There are 50 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Wed May  7 12:27:29 2014
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 127 pass: 121 skipped: 5 fail: 1
+On 05/02, Denys Vlasenko wrote:
+>
+> v2: More robust checks of vex.vvvv (32-bit mode safe),
+>     simplified scratch reg selection code,
+>     moved comments around as requested by Oleg.
 
-qemu tests all passed.
+OK, thanks. Given that this patch was acked by Jim, I am going to
+apply it. I'll try to run a couple of systemtap scripts with this
+patch, but unfortunately the "full" testing is simply impossible.
 
-The build failure is for unicore32:defconfig, which fails to build
-on all releases I tried. Results are therefore as expected.
+Denys, I'll also include your test-case into the changelog.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+And,
 
-Guenter
+>  static inline unsigned long *
+>  scratch_reg(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  {
+> -	return (auprobe->def.fixups & UPROBE_FIX_RIP_AX) ? &regs->ax : &regs->cx;
+> +	/* Order is important - more than one bit can be set! */
+
+Really?
+
+Should I remove this comment or I misread the change in riprel_analyze?
+
+Oleg.
+
