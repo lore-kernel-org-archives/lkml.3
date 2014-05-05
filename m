@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634AbaEEMGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:06:06 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:50814 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756594AbaEEMGD (ORCPT
+	id S1756658AbaEEMIk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:08:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60280 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486AbaEEMIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:06:03 -0400
-Message-ID: <53677EA2.20004@linaro.org>
-Date: Mon, 05 May 2014 20:05:54 +0800
-From: "kefeng.wang" <kefeng.wang@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 5 May 2014 08:08:39 -0400
+Date: Mon, 5 May 2014 13:08:35 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "arc-linux-dev@synopsys.com" <arc-linux-dev@synopsys.com>
+Subject: Re: ARC patches for stable 3.10
+Message-ID: <20140505120835.GB5869@hercules>
+References: <C2D7FE5348E1B147BCA15975FBA230751B1242@IN01WEMBXA.internal.synopsys.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Kefeng Wang <kefeng.wang@linaro.org>, Hans de Goede <hdegoede@redhat.com>,
-        xuwei5@hisilicon.com
-Subject: Re: [PATCH v6 0/3] ahci: add support for hisilicon sata
-References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
-In-Reply-To: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <C2D7FE5348E1B147BCA15975FBA230751B1242@IN01WEMBXA.internal.synopsys.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun, ping...
+On Wed, Apr 30, 2014 at 09:53:05AM +0000, Vineet Gupta wrote:
+> Hi,
+> 
+> Please apply the following mainline commits to stable 3.10 as prerequisites for a
+> patch for 3.15/stable which will follow to Linus right after.
+> 
+> 147aece29b15051173eb1e767018135361cdba89  (went in 3.11-rc1)
+> "ARC: Entry Handler tweaks: Simplify branch for in-kernel preemption"
+> 
+> fce16bc35ae4a45634f3dc348d8d297a25c277cf  (went in 3.12-rc1)
+> "ARC: Entry Handler tweaks: Optimize away redundant IRQ_DISABLE_SAVE"
+> 
+> Thx,
+> -Vineet
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-On 2014-4-25 16:59, Kefeng Wang wrote:
-> change in v6:
-> 1) type of host_flags changed from unsigned int to unsigned long,
->    fix the building warning and error. 
-> 
-> channge in v5:
-> 1) drop AHCI_HFLAGS(...) from ahci_xgene.c and do use host_flags
->    in ahci_platform_init_host, it's my carelessness.
-> 
-> changes in v4:
-> 1) add a dynamic host_flags parameter in ahci_platform_init_host
->    to make it more flexible, modify some driver to use new
->    way to pass host flags, suggested by Hans
-> 
-> changes in v3:
-> 1) move NO_FBS chunk after YES_FBS, Tejun's suggestion
-> 2) use ata_port_info pointer to avoid struct ata_port_info
->    on the stack twice
-> 
-> changes in v2:
-> 1) make code more concise according to Hans's advice
-> 
-> Kefeng Wang (3):
->   ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
->   libahci_platform: add host_flags parameter in
->     ahci_platform_init_host()
->   ahci: add support for Hisilicon sata
-> 
->  .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
->  drivers/ata/ahci.h                                 |    1 +
->  drivers/ata/ahci_da850.c                           |    3 ++-
->  drivers/ata/ahci_imx.c                             |    3 ++-
->  drivers/ata/ahci_platform.c                        |    9 ++++++++-
->  drivers/ata/ahci_st.c                              |    2 +-
->  drivers/ata/ahci_sunxi.c                           |    9 ++++++---
->  drivers/ata/ahci_xgene.c                           |    7 +++++--
->  drivers/ata/libahci.c                              |    5 +++++
->  drivers/ata/libahci_platform.c                     |    5 ++++-
->  include/linux/ahci_platform.h                      |    1 +
->  11 files changed, 37 insertions(+), 11 deletions(-)
-> 
+Thank you, I'll queue the 2nd patch for the 3.11 kernel (the 1st one
+is already applied).
 
+Cheers,
+--
+Luís
