@@ -1,122 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835AbaEEVoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:44:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60905 "EHLO bear.ext.ti.com"
+	id S1756846AbaEEVq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:46:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52256 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755936AbaEEVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:44:53 -0400
-Message-ID: <53680639.1080405@ti.com>
-Date: Mon, 5 May 2014 16:44:25 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1755988AbaEEVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 17:46:26 -0400
+Message-ID: <5368068C.3090403@ti.com>
+Date: Mon, 5 May 2014 17:45:48 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
-        Kumar Gala <galak@codeaurora.org>, Rob Herring <robherring2@gmail.com>
-CC: Tony Lindgren <tony@atomide.com>, Josh Cartwright <joshc@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv5 RFC 12/15] hwspinlock/core: add OF helper to parse reserved
- locks
-References: <1398904476-26200-1-git-send-email-s-anna@ti.com> <1398904476-26200-13-git-send-email-s-anna@ti.com>
-In-Reply-To: <1398904476-26200-13-git-send-email-s-anna@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>	<1398353407-2345-4-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqKmf-OCf_-J06ztHWS0iRaMHAVxV0bOFGnY4Ci3fPgLow@mail.gmail.com>
+In-Reply-To: <CAL_JsqKmf-OCf_-J06ztHWS0iRaMHAVxV0bOFGnY4Ci3fPgLow@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On 04/30/2014 07:34 PM, Suman Anna wrote:
-> The property 'hwlock-reserved-locks' will be used to represent
-> the number of locks to be reserved for clients that would need
-> to request/operate on specific locks. A new OF helper function,
-> of_hwspin_lock_get_num_reserved_locks(), is added to minimize
-> duplication in different platform implementations.
+On Thursday 01 May 2014 08:56 PM, Rob Herring wrote:
+> On Thu, Apr 24, 2014 at 10:30 AM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+>> The of_dma_is_coherent() helper parses the given DT device
+>> node to see if the "dma-coherent" property is supported and
+>> returns true or false accordingly.
+>>
+>> If the arch is always coherent or always noncoherent, then the default
+>> DMA ops has to be specified accordingly.
+>>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Olof Johansson <olof@lixom.net>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>  drivers/of/platform.c       |   23 +++++++++++++++++++++++
+>>  include/linux/of_platform.h |    6 ++++++
 > 
-> The function will return a value of 0 if the property is not
-> defined, so as to support a default behavior of marking all
-> locks as unused and open for anonymous allocations.
+> I thought I said this already, but this does not belong in these files
+> as the function does not deal with platform devices. Probably
+> address.c/of_address.h would be the best place.
 > 
-> Signed-off-by: Suman Anna <s-anna@ti.com>
-> ---
->  .../devicetree/bindings/hwlock/hwlock.txt          |  3 +++
->  drivers/hwspinlock/hwspinlock_core.c               | 25 ++++++++++++++++++++++
->  include/linux/hwspinlock.h                         |  1 +
->  3 files changed, 29 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> index d538a9b..88d16d2 100644
-> --- a/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
-> @@ -18,6 +18,9 @@ Common properties:
->  			property is needed on hwlock devices, where the number
->  			of supported locks within a hwlock device cannot be
->  			read from a register.
-> +- hwlock-reserved-locks: Number of locks to reserve for clients requiring
-> +			specific locks. This value cannot exceed the value of
-> +			hwlock-num-locks.
+Updated patch with functions now moved to of_address.h/address.c
 
-Any suggestions here on the approach? This property falls into a gray
-area as well, as the current approach is somewhat limiting (it doesn't
-support sparse reserved locks, and expects them at the beginning of the
-lock range).
+>From 08fb70715afe4adf203d24f1737dba7123c6713b Mon Sep 17 00:00:00 2001
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Thu, 24 Apr 2014 11:30:03 -0400
+Subject: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
 
-regards
-Suman
+The of_dma_is_coherent() helper parses the given DT device
+node to see if the "dma-coherent" property is supported and
+returns true or false accordingly.
 
->  - hwlock-base-id:	An unique base Id for the locks for a particular hwlock
->  			device. This property is mandatory ONLY if a SoC has
->  			several hwlock devices.
-> diff --git a/drivers/hwspinlock/hwspinlock_core.c b/drivers/hwspinlock/hwspinlock_core.c
-> index e05cea8..e74b55b 100644
-> --- a/drivers/hwspinlock/hwspinlock_core.c
-> +++ b/drivers/hwspinlock/hwspinlock_core.c
-> @@ -286,6 +286,31 @@ int of_hwspin_lock_get_base_id(struct device_node *dn)
->  EXPORT_SYMBOL_GPL(of_hwspin_lock_get_base_id);
->  
->  /**
-> + * of_hwspin_lock_get_num_reserved_locks() - retrieve number of reserved locks
-> + * @dn: device node pointer
-> + *
-> + * This is an OF helper function that can be called by the underlying platform
-> + * specific implementations, to retrieve the number of locks to reserve from
-> + * the hwspinlock device instance's base id. The hwlock-reserved-locks DT
-> + * property needs to be defined for requesting any DT-based locks.
-> + *
-> + * Returns a positive number of locks on success, a default value of 0 if the
-> + * property is missing or an appropriate error code as returned by the OF layer
-> + */
-> +int of_hwspin_lock_get_num_reserved_locks(struct device_node *dn)
-> +{
-> +	unsigned int val = 0;
-> +	int ret;
-> +
-> +	ret = of_property_read_u32(dn, "hwlock-reserved-locks", &val);
-> +	if (!ret || ret == -EINVAL)
-> +		ret = val;
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(of_hwspin_lock_get_num_reserved_locks);
-> +
-> +/**
->   * of_hwspin_lock_get_num_locks() - OF helper to retrieve number of locks
->   * @dn: device node pointer
->   *
-> diff --git a/include/linux/hwspinlock.h b/include/linux/hwspinlock.h
-> index d120035..d18431f 100644
-> --- a/include/linux/hwspinlock.h
-> +++ b/include/linux/hwspinlock.h
-> @@ -69,6 +69,7 @@ int of_hwspin_lock_simple_xlate(struct hwspinlock_device *bank,
->  				const struct of_phandle_args *hwlock_spec);
->  int of_hwspin_lock_get_base_id(struct device_node *dn);
->  int of_hwspin_lock_get_num_locks(struct device_node *dn);
-> +int of_hwspin_lock_get_num_reserved_locks(struct device_node *dn);
->  int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
->  		const struct hwspinlock_ops *ops, int base_id, int num_locks,
->  		int num_reserved_locks);
-> 
+If the arch is always coherent or always noncoherent, then the default
+DMA ops has to be specified accordingly.
+
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/of/address.c       |   23 +++++++++++++++++++++++
+ include/linux/of_address.h |    6 ++++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index c54baee..d244b28 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -808,3 +808,26 @@ out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(of_dma_get_range);
++
++/**
++ * of_dma_is_coherent - Check if device is coherent
++ * @np:	device node
++ *
++ * It returns true if "dma-coherent" property was found
++ * for this device in DT.
++ */
++bool of_dma_is_coherent(struct device_node *np)
++{
++	struct device_node *node = of_node_get(np);
++
++	while (node) {
++		if (of_property_read_bool(node, "dma-coherent")) {
++			of_node_put(node);
++			return true;
++		}
++		node = of_get_next_parent(node);
++	}
++	of_node_put(node);
++	return false;
++}
++EXPORT_SYMBOL_GPL(of_dma_is_coherent);
+\ No newline at end of file
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 4d7b325..839a352 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -65,6 +65,7 @@ extern struct of_pci_range *of_pci_range_parser_one(
+ 					struct of_pci_range *range);
+ extern int of_dma_get_range(struct device_node *np, u64 *dma_addr,
+ 				u64 *paddr, u64 *size);
++extern bool of_dma_is_coherent(struct device_node *np);
+ #else /* CONFIG_OF_ADDRESS */
+ static inline struct device_node *of_find_matching_node_by_address(
+ 					struct device_node *from,
+@@ -98,6 +99,11 @@ static inline int of_dma_get_range(struct device_node *np, u64 *dma_addr,
+ {
+ 	return -ENODEV;
+ }
++
++static inline bool of_dma_is_coherent(struct device_node *np)
++{
++	return false;
++}
+ #endif /* CONFIG_OF_ADDRESS */
+ 
+ #ifdef CONFIG_OF
+-- 
+1.7.9.5
 
