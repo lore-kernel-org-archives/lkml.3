@@ -1,133 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaEEG4B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 02:56:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53640 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaEEGz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 02:55:59 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "angus.clark@st.com" <angus.clark@st.com>
-Subject: RE: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree support
-Thread-Topic: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree
- support
-Thread-Index: AQHPSAMgB9WSu3WEI0qVLuMmzpyAn5rzCprAgDbvtgCAB81FEA==
-Date: Mon, 5 May 2014 06:55:17 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
-References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
- <1395735604-26706-14-git-send-email-lee.jones@linaro.org>
- <20980858CB6D3A4BAE95CA194937D5E73EAB5C83@DBDE04.ent.ti.com>
- <20140430125406.GN29462@lee--X1>
-In-Reply-To: <20140430125406.GN29462@lee--X1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1754750AbaEEG7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:59:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754473AbaEEG66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 02:58:58 -0400
+Date: Mon, 5 May 2014 14:57:39 +0800
+From: Baoquan He <bhe@redhat.com>
+To: rjw@rjwysocki.net, linux-acpi@vger.kernel.org, linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dyoung@redhat.com
+Subject: Re: [Patch v3 1/2] introduce variable acpi_lapic into ia64
+Message-ID: <20140505065739.GB1702@dhcp-16-105.nay.redhat.com>
+References: <1399265306-8553-1-git-send-email-bhe@redhat.com>
+ <20140505051455.GA1702@dhcp-16-105.nay.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140505051455.GA1702@dhcp-16-105.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s456uDqk000602
 
-Hi Lee,
+On 05/05/14 at 01:14pm, Baoquan He wrote:
+> Hi Rafael,
+> 
+> Thanks for previous comments and suggestions.
+> 
+> 
+> I added the acpi_lapic in ia64. However I didn't find ia64 machine to
+> test it. Could you or anyone please help test this 2 patches?
+> 
+> I don't know how to test UP system running SMP kernel with no LAPIC in
+> MADT when it's ia64 arch. 
+> 
+> Test steps for ia64 kdump:
+> 
+> 1) get a multi-cpus ia64 machine, build a upstream kernel with SMP and
+> ACPI
+> 2)install kexec-tools, and edit /etc/sysconfig/kdump to make sure
+> "nr_cpus=1" is in KDUMP_COMMANDLINE_APPEND. Then load the kdump kernel
+> by below command:
+> 
+> "kdumpctl restart" or "systemctl restart kdump"
 
->From: Lee Jones [mailto:lee.jones@linaro.org]
->> >From: Lee Jones [mailto:lee.jones@linaro.org]
+Sorry, here I assume people use fedora distros. The kdump execution
+command is like below string which is taken from my fedora automation
+script.
 
-[...]
+/sbin/kexec -p
+'--command-line=BOOT_IMAGE=/vmlinuz-3.13.5-202.fc20.x86_64
+root=UUID=f170152e-de83-46ee-9546-8ccd53f9753b ro rd.md=0 rd.lvm=0
+rd.dm=0 vconsole.keymap=us rd.luks=0 vconsole.font=latarcyrheb-sun16
+console=tty0 rd.shell LANG=en_US.UTF-8 console=ttyS0,115200n8
+intel_iommu=on irqpoll nr_cpus=1 reset_devices cgroup_disable=memory
+mce=off numa=off udev.children-max=2 panic=10 rootflags=nofail
+disable_cpu_apicid=0'
+--initrd=/boot/initramfs-3.13.5-202.fc20.x86_64kdump.img
+/boot/vmlinuz-3.13.5-202.fc20.x86_64
 
->> >+	of_property_read_u32(np, "st,bch-bitflip-threshold",
->> >+			     &pdata->bch_bitflip_threshold);
->> >+
->> mtd->bitflip_threshold is by default set to ecc.strength (unless a driver initializes it).
->> And then can be re-configured for each MTD partition separately
->> 	/sys/class/mtd/mtdX/bitflip_threshold
->> 	Refer: $kernel/Documentation/ABI/testing/sysfs-class-mtd
->> So, I don't think this is a HW parameter, and so should not be passed from DT.
->
->I think the bit-flip threshold is/can be chip specific, and as we know
->which chip we're likely to be booting on, we can specify this via the
->hardware description.  Thus, I think it's perfectly viable for an
->option to pass through DT to exist.
->
-I don't think thatâ€™s the correct interpretation of bitflip_threshold.
+Thanks
+Baoquan
 
-(1) bitflip_threshold is dependent on ecc.strength (ECC scheme) of your driver.
-MTD layers uses bitflip_threshold to warn above layers that number of
-correctable bit-flips have reached a dangerous level beyond which driver's
-ECC scheme may not be able to correct them. So above layers should start
-taking additional corrective action like scrubbing.
-	@@drivers/mtd/mtdcore.c: mtd_read()
-		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
-
-(2) Also, user-space may control it based on how your device ages on field.
-A fresh silicon may not show too many bitflips. But as device ages the
-probability of simultaneous bitflips will increase. So user-space may lower
-the bitflip_threshold to avoid accumulation of bitflips in a single page.
- 
-Thus, bitflip_threshold should not be passed via DT.
-It's neither a hardware parameter, nor itâ€™s a static constant.
-
->
->> >+struct device_node *stm_of_get_partitions_node(struct device_node *np,
->> >+					       int bank_nr)
->> >+{
->> >+	struct device_node *banksnp, *banknp, *partsnp = NULL;
->> >+	char name[10];
->> >+
->> >+	banksnp = of_parse_phandle(np, "st,nand-banks", 0);
->> >+	if (!banksnp)
->> >+		return NULL;
->> >+
->> >+	sprintf(name, "bank%d", bank_nr);
->> >+	banknp = of_get_child_by_name(banksnp, name);
->> >+	if (banknp)
->> >+		return NULL;
->> >+
->> >+	partsnp = of_get_child_by_name(banknp, "partitions");
->> >+	of_node_put(banknp);
->> >+
->> Sorry, I'm bit confused here .. I think you don't need to find children of
->> Your bank node. This should already taken care in default parser
->> drivers/mtd/ofpart.c : parse_ofpart_partitions()
->> And all you need to pass is 'of_node' of bank (device).
->> Is my understanding correct ?
->
->We have 3 options here, you _can_ use parse_ofpart_partitions() if
->your partition information conforms to its schema, but said schema
->does not support banks and/or other information that we choose to
->place within the bank node.  The second option is to register a
->parser.  My personal view is that registering a parser is using the
->framework for 'using the framework's' sake i.e. doesn't actually
->achieve anything special.  We've chosen the third option, which is to
->parse and extract the information ourselves - which is actually fairly
->trivial, and pass the required partition data in through the
->mtd_device_parse_register() call - which is where the information
->would be parsed in the case of the first two options.
->
-Do you really want to have *custom* partition format ?
-If your previous code was non-DT (platform file based), then I think
-It's good point to move to unified generic partition format which others
-are following, as you make your driver DT compliant, and in mainline.
-
-I understand you primary objective would be to get ST driver work
-out of mainline asap, but if you upstream too many custom stuff you
-are only adding maintenance burden for your code. This is where
-most of my comments originate.
-However, I leave it to Brian to decide, if he is okay with these.
-
-
-with regards, pekon
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> 3) After kdump kernel loaded, execute below shell command. This can make
+> crash happen in 2nd cpu.
+> 
+> taskset -c 1 sh -c "echo c >/proc/sysrq-trigger"
+> 
+> 
+> 4) From console, below error message should not be printed any more. And
+> the cpu related to 2nd lapid is present, this can be checked by console
+> message and adding debugging code.
+> 
+> "acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor."
+> 
+> --------
+> For x86_64, the UP test is taken by adding "disableapic nr_cpus=1" into
+> cmdline of grub. The test for kdump is the same as above ia64.
+> 
+> Thanks
+> Baoquan
+> 
+> 
+> On 05/05/14 at 12:48pm, Baoquan He wrote:
+> > This variable was defined and assigned in x86, is used to indicate
+> > whether LAPIC exists in MADT. Now introduce it into ia64 to help
+> > make correct judgment when get information for acpi processor later.
+> > 
+> > Signed-off-by: Baoquan He <bhe@redhat.com>
+> > ---
+> >  arch/ia64/include/asm/acpi.h | 1 +
+> >  arch/ia64/kernel/acpi.c      | 3 +++
+> >  2 files changed, 4 insertions(+)
+> > 
+> > diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+> > index d651102..b478219 100644
+> > --- a/arch/ia64/include/asm/acpi.h
+> > +++ b/arch/ia64/include/asm/acpi.h
+> > @@ -85,6 +85,7 @@ ia64_acpi_release_global_lock (unsigned int *lock)
+> >  	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
+> >  
+> >  #ifdef	CONFIG_ACPI
+> > +extern int acpi_lapic;
+> >  #define acpi_disabled 0	/* ACPI always enabled on IA64 */
+> >  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
+> >  #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
+> > diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
+> > index 0d407b3..615ef81 100644
+> > --- a/arch/ia64/kernel/acpi.c
+> > +++ b/arch/ia64/kernel/acpi.c
+> > @@ -56,6 +56,7 @@
+> >  
+> >  #define PREFIX			"ACPI: "
+> >  
+> > +int acpi_lapic;
+> >  unsigned int acpi_cpei_override;
+> >  unsigned int acpi_cpei_phys_cpuid;
+> >  
+> > @@ -676,6 +677,8 @@ int __init early_acpi_boot_init(void)
+> >  	if (ret < 1)
+> >  		printk(KERN_ERR PREFIX
+> >  		       "Error parsing MADT - no LAPIC entries\n");
+> > +	else
+> > +		acpi_lapic = 1;
+> >  
+> >  #ifdef CONFIG_SMP
+> >  	if (available_cpus == 0) {
+> > -- 
+> > 1.8.5.3
+> > 
