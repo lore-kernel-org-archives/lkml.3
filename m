@@ -1,343 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaEEGzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 02:55:35 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:33061 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaEEGze (ORCPT
+	id S1754710AbaEEG4B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:56:01 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53640 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaEEGz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 02:55:34 -0400
-Message-ID: <536735E0.7020204@gmail.com>
-Date: Mon, 05 May 2014 08:55:28 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 5 May 2014 02:55:59 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "angus.clark@st.com" <angus.clark@st.com>
+Subject: RE: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree support
+Thread-Topic: [RFC 13/47] mtd: nand: stm_nand_bch: provide Device Tree
+ support
+Thread-Index: AQHPSAMgB9WSu3WEI0qVLuMmzpyAn5rzCprAgDbvtgCAB81FEA==
+Date: Mon, 5 May 2014 06:55:17 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EACA3F0@DBDE04.ent.ti.com>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <1395735604-26706-14-git-send-email-lee.jones@linaro.org>
+ <20980858CB6D3A4BAE95CA194937D5E73EAB5C83@DBDE04.ent.ti.com>
+ <20140430125406.GN29462@lee--X1>
+In-Reply-To: <20140430125406.GN29462@lee--X1>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Juri Lelli <juri.lelli@gmail.com>, mtk.manpages@gmail.com,
-        Dario Faggioli <raistlin@linux.it>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, Linux Kernel <linux-kernel@vger.kernel.org>,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, insop.song@gmail.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        linux-man@vger.kernel.org
-Subject: Re: sched_{set,get}attr() manpage
-References: <20131217123352.692059839@infradead.org>	<CAHO5Pa3=+Zhg72tVfddSUvgirUyObir6atJVo4_16bVWB2Osgw@mail.gmail.com>	<20140121153851.GZ31570@twins.programming.kicks-ass.net>	<CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com>	<20140214161929.GL27965@twins.programming.kicks-ass.net>	<53020C9D.1050208@gmail.com>	<20140428081858.GX13658@twins.programming.kicks-ass.net>	<535FA467.2070403@gmail.com>	<20140429160441.GU11096@twins.programming.kicks-ass.net>	<5360D9E5.9080206@gmail.com>	<20140430130937.GH30445@twins.programming.kicks-ass.net> <20140503124355.5d927080518051ca507bc381@gmail.com>
-In-Reply-To: <20140503124355.5d927080518051ca507bc381@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s456uDqk000602
 
-Hi Peter,
+Hi Lee,
 
-Looks like a good set of comments from Juri. Could you revise and 
-resubmit?
+>From: Lee Jones [mailto:lee.jones@linaro.org]
+>> >From: Lee Jones [mailto:lee.jones@linaro.org]
 
-By the way, I assume you are just writing this page as raw text.
-While I'd prefer to get proper man markup source, I'll add that
-if you if you don't :-/. But, in that case, I need to know the
-copyright and license you want to use. Please see
-https://www.kernel.org/doc/man-pages/licenses.html
+[...]
 
-Cheers,
+>> >+	of_property_read_u32(np, "st,bch-bitflip-threshold",
+>> >+			     &pdata->bch_bitflip_threshold);
+>> >+
+>> mtd->bitflip_threshold is by default set to ecc.strength (unless a driver initializes it).
+>> And then can be re-configured for each MTD partition separately
+>> 	/sys/class/mtd/mtdX/bitflip_threshold
+>> 	Refer: $kernel/Documentation/ABI/testing/sysfs-class-mtd
+>> So, I don't think this is a HW parameter, and so should not be passed from DT.
+>
+>I think the bit-flip threshold is/can be chip specific, and as we know
+>which chip we're likely to be booting on, we can specify this via the
+>hardware description.  Thus, I think it's perfectly viable for an
+>option to pass through DT to exist.
+>
+I don't think thatâ€™s the correct interpretation of bitflip_threshold.
 
-Michael
+(1) bitflip_threshold is dependent on ecc.strength (ECC scheme) of your driver.
+MTD layers uses bitflip_threshold to warn above layers that number of
+correctable bit-flips have reached a dangerous level beyond which driver's
+ECC scheme may not be able to correct them. So above layers should start
+taking additional corrective action like scrubbing.
+	@@drivers/mtd/mtdcore.c: mtd_read()
+		return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
 
+(2) Also, user-space may control it based on how your device ages on field.
+A fresh silicon may not show too many bitflips. But as device ages the
+probability of simultaneous bitflips will increase. So user-space may lower
+the bitflip_threshold to avoid accumulation of bitflips in a single page.
+ 
+Thus, bitflip_threshold should not be passed via DT.
+It's neither a hardware parameter, nor itâ€™s a static constant.
 
-On 05/03/2014 12:43 PM, Juri Lelli wrote:
-> Hi,
-> 
-> sorry for the late reply, but I was travelling for work.
-> 
-> On Wed, 30 Apr 2014 15:09:37 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
->> On Wed, Apr 30, 2014 at 01:09:25PM +0200, Michael Kerrisk (man-pages) wrote:
->>> Hi Peter,
->>>
->>> Thanks for the revision. More comments below. Could you revise in 
->>> the light of those comments, and hopefully also after feedback from 
->>> Juri and Dario?
->>
->> New text below; hopefully a little clearer. If not, do holler.
->>
->> ---
->>> [1] A page describing the sched_setattr() and sched_getattr() APIs
->>
->> NAME
->> 	sched_setattr, sched_getattr - set and get scheduling policy/attributes
->>
->> SYNOPSIS
->> 	#include <sched.h>
->>
->> 	struct sched_attr {
->> 		u32 size;
->> 		u32 sched_policy;
->> 		u64 sched_flags;
->>
->> 		/* SCHED_NORMAL, SCHED_BATCH */
->> 		s32 sched_nice;
->>
->> 		/* SCHED_FIFO, SCHED_RR */
->> 		u32 sched_priority;
->>
->> 		/* SCHED_DEADLINE */
->> 		u64 sched_runtime;
->> 		u64 sched_deadline;
->> 		u64 sched_period;
->> 	};
->>
->> 	int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
->>
->> 	int sched_getattr(pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags);
->>
->> DESCRIPTION
->> 	sched_setattr() sets both the scheduling policy and the
->> 	associated attributes for the process whose ID is specified in
->> 	pid.
->>
->> 	sched_setattr() replaces sched_setscheduler(), sched_setparam(),
->> 	nice() and some of setpriority().
->>
->> 	If pid equals zero, the scheduling policy and attributes
->> 	of the calling process will be set.  The interpretation of the
->> 	argument attr depends on the selected policy.  Currently, Linux
->> 	supports the following "normal" (i.e., non-real-time) scheduling
->> 	policies:
->>
->> 	SCHED_OTHER	the standard "fair" time-sharing policy;
->>
->> 	SCHED_BATCH	for "batch" style execution of processes; and
->>
->> 	SCHED_IDLE	for running very low priority background jobs.
->>
->> 	The following "real-time" policies are also supported, for
->> 	special time-critical applications that need precise control
->> 	over the way in which runnable processes are selected for
->> 	execution:
->>
->> 	SCHED_FIFO	a static priority first-in, first-out policy;
->>
->> 	SCHED_RR	a static priority round-robin policy; and
->>
->> 	SCHED_DEADLINE	a dynamic priority deadline policy.
->>
->> 	The semantics of each of these policies are detailed in
->> 	sched(7).
->>
->> 	sched_attr::size must be set to the size of the structure, as in
->> 	sizeof(struct sched_attr), if the provided structure is smaller
->> 	than the kernel structure, any additional fields are assumed
->> 	'0'. If the provided structure is larger than the kernel
->> 	structure, the kernel verifies all additional fields are '0' if
->> 	not the syscall will fail with -E2BIG.
->>
->> 	sched_attr::sched_policy the desired scheduling policy.
->>
->> 	sched_attr::sched_flags additional flags that can influence
->> 	scheduling behaviour. Currently as per Linux kernel 3.14:
->>
->> 		SCHED_FLAG_RESET_ON_FORK - resets the scheduling policy
->> 		to: (struct sched_attr){ .sched_policy = SCHED_OTHER, }
->> 		on fork().
->>
->> 	is the only supported flag.
->>
->> 	sched_attr::sched_nice should only be set for SCHED_OTHER,
->> 	SCHED_BATCH, the desired nice value [-20,19], see sched(7).
->>
->> 	sched_attr::sched_priority should only be set for SCHED_FIFO,
->> 	SCHED_RR, the desired static priority [1,99], see sched(7).
->>
->> 	sched_attr::sched_runtime in nanoseconds,
->> 	sched_attr::sched_deadline in nanoseconds,
->> 	sched_attr::sched_period in nanoseconds, should only be set for
->> 	SCHED_DEADLINE and are the traditional sporadic task model
->> 	parameters, see sched(7).
->>
->> 	The flags argument should be 0.
->>
->> 	sched_getattr() queries the scheduling policy currently applied
->> 	to the process identified by pid.
->>
->> 	Similar to sched_setattr(), sched_getattr() replaces
->> 	sched_getscheduler(), sched_getparam() and some of
->> 	getpriority().
->>
->> 	If pid equals zero, the policy of the calling process will be
->> 	retrieved.
->>
->> 	The size argument should reflect the size of struct sched_attr
->> 	as known to userspace. The kernel fills out sched_attr::size to
->> 	the size of its sched_attr structure. If the user provided
->> 	structure is larger, additional fields are not touched. If the
->> 	user provided structure is smaller, but the kernel needs to
->> 	return values outside the provided space, the syscall will fail
->> 	with -E2BIG.
->>
->> 	The flags argument should be 0.
->>
->> 	The other sched_attr fields are filled out as described in
->> 	sched_setattr().
->>
->> RETURN VALUE
->> 	On success, sched_setattr() and sched_getattr() return 0. On
->> 	error, -1 is returned, and errno is set appropriately.
->>
->> ERRORS
->>        EINVAL The scheduling policy is not one  of  the  recognized  policies,
->>               param is NULL, or param does not make sense for the selected
->> 	      policy.
->>
->>        EPERM  The calling process does not have appropriate privileges.
->>
->>        ESRCH  The process whose ID is pid could not be found.
->>
->>        E2BIG  The provided storage for struct sched_attr is either too
->>               big, see sched_setattr(), or too small, see sched_getattr().
->>
->>        EBUSY  SCHED_DEADLINE admission control failure, see sched(7).
->>
->> NOTES
->>        While the text above (and in sched_setscheduler(2)) talks about
->>        processes, in actual fact these system calls are thread specific.
->>
->>        While the SCHED_DEADLINE parameters are in nanoseconds, current
->>        kernels truncate the lower 10 bits and we get an effective
->>        microsecond resolution.
->>
->>> [2] A piece of text describing the SCHED_DEADLINE policy, which I can
->>> drop into sched(7).
->>
-> 
-> I'd tweak the following a bit, just to be sure that users understand
-> that one thing is the model of tasks behavior and another thing is what
-> you can set using SCHED_DEADLINE. Then the two things are obviously
-> closely related, but different settings can be in principle used to
-> schedule the same task set (with lot of literature about optimal
-> settings and so on).
-> 
->>     SCHED_DEADLINE: Sporadic task model deadline scheduling
->>        SCHED_DEADLINE is currently implemented using GEDF (Global
->>        Earliest Deadline First) with additional CBS (Constant Bandwidth
->>        Server).
->>
->>        A sporadic task is on that has a sequence of jobs, where each job
->>        is activated at most once per period [ns]. Each job will have an
->>        absolute deadline relative to its activation before which it must
->>        finish its execution, and it shall at no time run longer
->>        than runtime [ns] after its release.
->>
-> 
-> A sporadic task is one that has a sequence of jobs, where each job is
-> activated at most once per period. Each job has also a relative
-> deadline, before which it should finish execution, and a computation
-> time, that is the time necessary for executing the job without
-> interruption. The instant of time when a task wakes up, because a new
-> job has to be executed, is called arrival time (and it is also referred
-> to as request time or release time). Start time is instead the time at
-> which a task starts its execution. The absolute deadline is thus
-> obtained adding the relative deadline to the arrival time. The
-> following diagram clarifies these terms:
-> 
->>               activation/wakeup       absolute deadline
->>               |        release        |
->>               v        v              v
->>        -------x--------x--------------x--------x-------
->>                        |<- Runtime -->|
->>               |<---------- Deadline ->|
->>               |<---------- Period  ----------->|
->>
-> 
->                arrival/wakeup           absolute deadline
->                |        start time          |
->                v        v                   v
->         -------x--------xoooooooooooo-------x--------x-----
->                         |<- comp. ->|
->                |<---------- rel. deadline ->|
->                |<---------- period   --------------->|
-> 
-> SCHED_DEADLINE allows the user to specify three parameters (see
-> sched_setattr(2)): Runtime [ns], Deadline [ns] and Period [ns]. Such
-> parameters has not necessarily to correspond to the aforementioned
-> terms, while usual practise is to set Runtime to something bigger than
-> the average computation time (or worst-case execution time for hard
-> real-time tasks), Deadline to the relative deadline and Period to the
-> period of the task. With such a setting we would have:
-> 
->                arrival/wakeup           absolute deadline
->                |        start time          |
->                v        v                   v
->         -------x--------xoooooooooooo-------x--------x-----
->                         |<- Runtime  ->|
->                |<---------- Deadline ------>|
->                |<---------- Period   --------------->|
->  
-> 
-> 
->>        This gives: runtime <= (rel) deadline <= period.
->>
-> 
-> It is checked that: Runtime <= Deadline <= Period.
-> 
->>        The CBS guarantees non-interference between tasks, by throttling
->>        tasks that attempt to over-run their specified runtime.
->>
-> 
-> s/runtime/Runtime to be consistent.
-> 
->>        In general the set of all SCHED_DEADLINE tasks is not
->>        feasible/schedulable within the given constraints. Therefore we
->>        must do an admittance test on setting/changing SCHED_DEADLINE
->>        policy/attributes.
->>
-> 
-> To guarantee some degree of timeliness we must do an admission test on
-> setting/changing SCHED_DEADLINE policy/attributes.
-> 
-> 
->>        This admission test calculates that the task set is
->>        feasible/schedulable, failing this, sched_setattr() will return
->>        -EBUSY.
->>
->>        For example, it is required (but not necessarily sufficient) for
->>        the total utilization to be less or equal to the total amount of
->>        CPUs available, where, since each task can maximally run for
->>        runtime [us] per period [us], that task's utilization is its
->>        runtime/period.
->>
-> 
-> CPUs available, where, since each task can maximally run for Runtime
-> per Period, that task's utilization is its Runtime/Period.
-> 
->>        Because we must be able to calculate admittance SCHED_DEADLINE
->>        tasks are the highest priority (user controllable) tasks in the
->>        system, if any SCHED_DEADLINE task is runnable it will preempt
->>        any FIFO/RR/OTHER/BATCH/IDLE task.
->>
->>        SCHED_DEADLINE tasks will fail fork(2) with -EAGAIN, except when
->>        the forking task has SCHED_FLAG_RESET_ON_FORK set.
->>
->>        A SCHED_DEADLINE task calling sched_yield() will 'yield' the
->>        current job and wait for a new period to begin.
->>
-> 
-> Does it look any better?
-> 
-> Thanks,
-> 
-> - Juri
-> 
+>
+>> >+struct device_node *stm_of_get_partitions_node(struct device_node *np,
+>> >+					       int bank_nr)
+>> >+{
+>> >+	struct device_node *banksnp, *banknp, *partsnp = NULL;
+>> >+	char name[10];
+>> >+
+>> >+	banksnp = of_parse_phandle(np, "st,nand-banks", 0);
+>> >+	if (!banksnp)
+>> >+		return NULL;
+>> >+
+>> >+	sprintf(name, "bank%d", bank_nr);
+>> >+	banknp = of_get_child_by_name(banksnp, name);
+>> >+	if (banknp)
+>> >+		return NULL;
+>> >+
+>> >+	partsnp = of_get_child_by_name(banknp, "partitions");
+>> >+	of_node_put(banknp);
+>> >+
+>> Sorry, I'm bit confused here .. I think you don't need to find children of
+>> Your bank node. This should already taken care in default parser
+>> drivers/mtd/ofpart.c : parse_ofpart_partitions()
+>> And all you need to pass is 'of_node' of bank (device).
+>> Is my understanding correct ?
+>
+>We have 3 options here, you _can_ use parse_ofpart_partitions() if
+>your partition information conforms to its schema, but said schema
+>does not support banks and/or other information that we choose to
+>place within the bank node.  The second option is to register a
+>parser.  My personal view is that registering a parser is using the
+>framework for 'using the framework's' sake i.e. doesn't actually
+>achieve anything special.  We've chosen the third option, which is to
+>parse and extract the information ourselves - which is actually fairly
+>trivial, and pass the required partition data in through the
+>mtd_device_parse_register() call - which is where the information
+>would be parsed in the case of the first two options.
+>
+Do you really want to have *custom* partition format ?
+If your previous code was non-DT (platform file based), then I think
+It's good point to move to unified generic partition format which others
+are following, as you make your driver DT compliant, and in mainline.
+
+I understand you primary objective would be to get ST driver work
+out of mainline asap, but if you upstream too many custom stuff you
+are only adding maintenance burden for your code. This is where
+most of my comments originate.
+However, I leave it to Brian to decide, if he is okay with these.
 
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+with regards, pekon
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
