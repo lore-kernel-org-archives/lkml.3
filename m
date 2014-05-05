@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390AbaEEL3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 07:29:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505AbaEEL3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 07:29:18 -0400
-Message-ID: <536775ED.3070502@redhat.com>
-Date: Mon, 05 May 2014 07:28:45 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>, umgwanakikbuti@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, george.mccollister@gmail.com,
-        ktkhai@parallels.com
-Subject: Re: [PATCH RFC/TEST] sched: make sync affine wakeups work
-References: <20140502004237.79dd3de6@annuminas.surriel.com> <1399011219.5233.55.camel@marge.simpson.net>	<53633B81.1080403@redhat.com> <CAM4v1pPwe4B0K8MPpf183LqabRoRKRPi_R7n8-Y02aR43M8iQQ@mail.gmail.com> <53663565.9080306@redhat.com> <5367188C.1060702@linux.vnet.ibm.com>
-In-Reply-To: <5367188C.1060702@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756517AbaEELan (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 07:30:43 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:57093 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756464AbaEELal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 07:30:41 -0400
+Subject: [PATCH v1.1 15/16] arcmsr: modify some character string
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 19:30:35 +0800
+Message-ID: <1399289435.4389.4.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 12:50 AM, Preeti U Murthy wrote:
+From: Ching<ching2048@areca.com.tw>
 
-> Yeah now I see it. But I still feel wake_affine() and
-> select_idle_sibling() are not at fault primarily because when they were
-> introduced, I don't think it was foreseen that the cpu topology would
-> grow to the extent it is now.
+Revise comment and some character strings.
 
-It's not about "fault", it is about the fact that on current
-large NUMA systems they are broken, and could stand some
-improvement :)
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
 
-> select_idle_sibling() for instance scans the cpus within the purview of
-> the last level cache of a cpu and this was a small set. Hence there was
-> no overhead. Now with many cpus sharing the L3 cache, we see an
-> overhead. wake_affine() probably did not expect the NUMA nodes to come
-> under its governance as well and hence it sees no harm in waking up
-> tasks close to the waker because it still believes that it will be
-> within a node.
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:54:54.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:55:10.000000000 +0800
+@@ -2,11 +2,10 @@
+ *******************************************************************************
+ **        O.S   : Linux
+ **   FILE NAME  : arcmsr_hba.c
+-**        BY    : Nick Cheng
+-**   Description: SCSI RAID Device Driver for
+-**                ARECA RAID Host adapter
++**        BY    : Nick Cheng, C.L. Huang
++**   Description: SCSI RAID Device Driver for Areca RAID Controller
+ *******************************************************************************
+-** Copyright (C) 2002 - 2005, Areca Technology Corporation All rights reserved
++** Copyright (C) 2002 - 2014, Areca Technology Corporation All rights reserved
+ **
+ **     Web site: www.areca.com.tw
+ **       E-mail: support@areca.com.tw
+@@ -70,8 +69,8 @@
+ #include <scsi/scsi_transport.h>
+ #include <scsi/scsicam.h>
+ #include "arcmsr.h"
+-MODULE_AUTHOR("Nick Cheng <support@areca.com.tw>");
+-MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/16xx/1880) SATA/SAS RAID Host Bus Adapter");
++MODULE_AUTHOR("Nick Cheng, C.L. Huang <support@areca.com.tw>");
++MODULE_DESCRIPTION("Areca ARC11xx/12xx/16xx/188x SAS/SATA RAID Controller Driver");
+ MODULE_LICENSE("Dual BSD/GPL");
+ MODULE_VERSION(ARCMSR_DRIVER_VERSION);
+ 
+@@ -126,8 +125,7 @@ static int arcmsr_adjust_disk_queue_dept
+ 
+ static struct scsi_host_template arcmsr_scsi_host_template = {
+ 	.module			= THIS_MODULE,
+-	.name			= "ARCMSR ARECA SATA/SAS RAID Controller"
+-				ARCMSR_DRIVER_VERSION,
++	.name			= "Areca SAS/SATA RAID driver",
+ 	.info			= arcmsr_info,
+ 	.queuecommand		= arcmsr_queue_command,
+ 	.eh_abort_handler		= arcmsr_abort,
+@@ -3430,14 +3428,14 @@ static const char *arcmsr_info(struct Sc
+ 	case PCI_DEVICE_ID_ARECA_1680:
+ 	case PCI_DEVICE_ID_ARECA_1681:
+ 	case PCI_DEVICE_ID_ARECA_1880:
+-		type = "SAS";
++		type = "SAS/SATA";
+ 		break;
+ 	default:
+-		type = "X-TYPE";
++		type = "unknown";
++		raid6 =	0;
+ 		break;
+ 	}
+-	sprintf(buf, "Areca %s Host Adapter RAID Controller%s\n %s",
+-			type, raid6 ? "( RAID6 capable)" : "",
+-			ARCMSR_DRIVER_VERSION);
++	sprintf(buf, "Areca %s RAID Controller %s\narcmsr version %s\n",
++		type, raid6 ? "(RAID6 capable)" : "", ARCMSR_DRIVER_VERSION);
+ 	return buf;
+ }
 
-If two tasks truly are related to each other, I think we
-will want to have the wake_affine logic pull them towards
-each other, all the way across a giant NUMA system if
-needs be.
 
-The problem is that the current wake_affine logic starts
-in the ON position, and only switches off in a few very
-specific scenarios.
-
-I suspect we would be better off with the reverse, starting
-with wake_affine in the off position, and switching it on
-when we detect it makes sense to do so.
-
--- 
-All rights reversed
