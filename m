@@ -1,94 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586AbaEEMrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:47:24 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41062 "EHLO
+	id S932452AbaEEMtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:49:49 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41005 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932336AbaEEMnf (ORCPT
+	by vger.kernel.org with ESMTP id S932288AbaEEMne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:43:35 -0400
+	Mon, 5 May 2014 08:43:34 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 27/50] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-Date: Mon,  5 May 2014 14:43:09 +0200
-Message-Id: <6226a60b08a72290df15598d4355a42bcf4bb65d.1399292849.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alexei Starovoitov <ast@plumgrid.com>,
+        Jesse Gross <jesse@nicira.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 01/50] openvswitch: fix vport-netdev unregister
+Date: Mon,  5 May 2014 14:42:43 +0200
+Message-Id: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
-In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
-References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 In-Reply-To: <cover.1399292849.git.jslaby@suse.cz>
 References: <cover.1399292849.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
+commit b07c26511e94ab856f3700c56d582c0da36d5b4d upstream.
 
-Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
-remapping on 55XX chipsets) properly disables irq remapping on the
-5500/5520 chipsets that don't correctly perform that feature.
+The combination of two commits:
+commit 8e4e1713e4
+("openvswitch: Simplify datapath locking.")
+commit 2537b4dd0a
+("openvswitch:: link upper device for port devices")
 
-However, when I wrote it, I followed the errata sheet linked in that
-commit too closely, and explicitly tied the activation of the quirk to
-revision 0x13 of the chip, under the assumption that earlier revisions
-were not in the field.  Recently a system was reported to be suffering
-from this remap bug and the quirk hadn't triggered, because the
-revision id register read at a lower value that 0x13, so the quirk
-test failed improperly.  Given this, it seems only prudent to adjust
-this quirk so that any revision less than 0x13 has the quirk asserted.
+introduced a bug where upper_dev wasn't unlinked upon
+netdev_unregister notification
 
-[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
-    	by the <= 0x13 check already ]
+The following steps:
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+  modprobe openvswitch
+  ovs-dpctl add-dp test
+  ip tuntap add dev tap1 mode tap
+  ovs-dpctl add-if test tap1
+  ip tuntap del dev tap1 mode tap
+
+are causing multiple warnings:
+
+[   62.747557] gre: GRE over IPv4 demultiplexor driver
+[   62.749579] openvswitch: Open vSwitch switching datapath
+[   62.755087] device test entered promiscuous mode
+[   62.765911] device tap1 entered promiscuous mode
+[   62.766033] IPv6: ADDRCONF(NETDEV_UP): tap1: link is not ready
+[   62.769017] ------------[ cut here ]------------
+[   62.769022] WARNING: CPU: 1 PID: 3267 at net/core/dev.c:5501 rollback_registered_many+0x20f/0x240()
+[   62.769023] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
+[   62.769051] CPU: 1 PID: 3267 Comm: ip Not tainted 3.12.0-rc3+ #60
+[   62.769052] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
+[   62.769053]  0000000000000009 ffff8807f25cbd28 ffffffff8175e575 0000000000000006
+[   62.769055]  0000000000000000 ffff8807f25cbd68 ffffffff8105314c ffff8807f25cbd58
+[   62.769057]  ffff8807f2634000 ffff8807f25cbdc8 ffff8807f25cbd88 ffff8807f25cbdc8
+[   62.769059] Call Trace:
+[   62.769062]  [<ffffffff8175e575>] dump_stack+0x55/0x76
+[   62.769065]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
+[   62.769067]  [<ffffffff8105319a>] warn_slowpath_null+0x1a/0x20
+[   62.769069]  [<ffffffff8162a04f>] rollback_registered_many+0x20f/0x240
+[   62.769071]  [<ffffffff8162a101>] rollback_registered+0x31/0x40
+[   62.769073]  [<ffffffff8162a488>] unregister_netdevice_queue+0x58/0x90
+[   62.769075]  [<ffffffff8154f900>] __tun_detach+0x140/0x340
+[   62.769077]  [<ffffffff8154fb36>] tun_chr_close+0x36/0x60
+[   62.769080]  [<ffffffff811bddaf>] __fput+0xff/0x260
+[   62.769082]  [<ffffffff811bdf5e>] ____fput+0xe/0x10
+[   62.769084]  [<ffffffff8107b515>] task_work_run+0xb5/0xe0
+[   62.769087]  [<ffffffff810029b9>] do_notify_resume+0x59/0x80
+[   62.769089]  [<ffffffff813a41fe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[   62.769091]  [<ffffffff81770f5a>] int_signal+0x12/0x17
+[   62.769093] ---[ end trace 838756c62e156ffb ]---
+[   62.769481] ------------[ cut here ]------------
+[   62.769485] WARNING: CPU: 1 PID: 92 at fs/sysfs/inode.c:325 sysfs_hash_and_remove+0xa9/0xb0()
+[   62.769486] sysfs: can not remove 'master', no directory
+[   62.769486] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
+[   62.769514] CPU: 1 PID: 92 Comm: kworker/1:2 Tainted: G        W    3.12.0-rc3+ #60
+[   62.769515] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
+[   62.769518] Workqueue: events ovs_dp_notify_wq [openvswitch]
+[   62.769519]  0000000000000009 ffff880807ad3ac8 ffffffff8175e575 0000000000000006
+[   62.769521]  ffff880807ad3b18 ffff880807ad3b08 ffffffff8105314c ffff880807ad3b28
+[   62.769523]  0000000000000000 ffffffff81a87a1f ffff8807f2634000 ffff880037038500
+[   62.769525] Call Trace:
+[   62.769528]  [<ffffffff8175e575>] dump_stack+0x55/0x76
+[   62.769529]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
+[   62.769531]  [<ffffffff81053236>] warn_slowpath_fmt+0x46/0x50
+[   62.769533]  [<ffffffff8123e7e9>] sysfs_hash_and_remove+0xa9/0xb0
+[   62.769535]  [<ffffffff81240e96>] sysfs_remove_link+0x26/0x30
+[   62.769538]  [<ffffffff81631ef7>] __netdev_adjacent_dev_remove+0xf7/0x150
+[   62.769540]  [<ffffffff81632037>] __netdev_adjacent_dev_unlink_lists+0x27/0x50
+[   62.769542]  [<ffffffff8163213a>] __netdev_adjacent_dev_unlink_neighbour+0x3a/0x50
+[   62.769544]  [<ffffffff8163218d>] netdev_upper_dev_unlink+0x3d/0x140
+[   62.769548]  [<ffffffffa033c2db>] netdev_destroy+0x4b/0x80 [openvswitch]
+[   62.769550]  [<ffffffffa033b696>] ovs_vport_del+0x46/0x60 [openvswitch]
+[   62.769552]  [<ffffffffa0335314>] ovs_dp_detach_port+0x44/0x60 [openvswitch]
+[   62.769555]  [<ffffffffa0336574>] ovs_dp_notify_wq+0xb4/0x150 [openvswitch]
+[   62.769557]  [<ffffffff81075c28>] process_one_work+0x1d8/0x6a0
+[   62.769559]  [<ffffffff81075bc8>] ? process_one_work+0x178/0x6a0
+[   62.769562]  [<ffffffff8107659b>] worker_thread+0x11b/0x370
+[   62.769564]  [<ffffffff81076480>] ? rescuer_thread+0x350/0x350
+[   62.769566]  [<ffffffff8107f44a>] kthread+0xea/0xf0
+[   62.769568]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
+[   62.769570]  [<ffffffff81770bac>] ret_from_fork+0x7c/0xb0
+[   62.769572]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
+[   62.769573] ---[ end trace 838756c62e156ffc ]---
+[   62.769574] ------------[ cut here ]------------
+[   62.769576] WARNING: CPU: 1 PID: 92 at fs/sysfs/inode.c:325 sysfs_hash_and_remove+0xa9/0xb0()
+[   62.769577] sysfs: can not remove 'upper_test', no directory
+[   62.769577] Modules linked in: openvswitch gre vxlan ip_tunnel libcrc32c ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack xt_CHECKSUM iptable_mangle ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp llc vhost_net macvtap macvlan vhost kvm_intel kvm dm_crypt iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi hid_generic mxm_wmi eeepc_wmi asus_wmi sparse_keymap dm_multipath psmouse serio_raw usbhid hid parport_pc ppdev firewire_ohci lpc_ich firewire_core e1000e crc_itu_t binfmt_misc igb dca ptp pps_core mac_hid wmi lp parport i2o_config i2o_block video
+[   62.769603] CPU: 1 PID: 92 Comm: kworker/1:2 Tainted: G        W    3.12.0-rc3+ #60
+[   62.769604] Hardware name: System manufacturer System Product Name/P8Z77 WS, BIOS 3007 07/26/2012
+[   62.769606] Workqueue: events ovs_dp_notify_wq [openvswitch]
+[   62.769607]  0000000000000009 ffff880807ad3ac8 ffffffff8175e575 0000000000000006
+[   62.769609]  ffff880807ad3b18 ffff880807ad3b08 ffffffff8105314c ffff880807ad3b58
+[   62.769611]  0000000000000000 ffff880807ad3bd9 ffff8807f2634000 ffff880037038500
+[   62.769613] Call Trace:
+[   62.769615]  [<ffffffff8175e575>] dump_stack+0x55/0x76
+[   62.769617]  [<ffffffff8105314c>] warn_slowpath_common+0x8c/0xc0
+[   62.769619]  [<ffffffff81053236>] warn_slowpath_fmt+0x46/0x50
+[   62.769621]  [<ffffffff8123e7e9>] sysfs_hash_and_remove+0xa9/0xb0
+[   62.769622]  [<ffffffff81240e96>] sysfs_remove_link+0x26/0x30
+[   62.769624]  [<ffffffff81631f22>] __netdev_adjacent_dev_remove+0x122/0x150
+[   62.769627]  [<ffffffff81632037>] __netdev_adjacent_dev_unlink_lists+0x27/0x50
+[   62.769629]  [<ffffffff8163213a>] __netdev_adjacent_dev_unlink_neighbour+0x3a/0x50
+[   62.769631]  [<ffffffff8163218d>] netdev_upper_dev_unlink+0x3d/0x140
+[   62.769633]  [<ffffffffa033c2db>] netdev_destroy+0x4b/0x80 [openvswitch]
+[   62.769636]  [<ffffffffa033b696>] ovs_vport_del+0x46/0x60 [openvswitch]
+[   62.769638]  [<ffffffffa0335314>] ovs_dp_detach_port+0x44/0x60 [openvswitch]
+[   62.769640]  [<ffffffffa0336574>] ovs_dp_notify_wq+0xb4/0x150 [openvswitch]
+[   62.769642]  [<ffffffff81075c28>] process_one_work+0x1d8/0x6a0
+[   62.769644]  [<ffffffff81075bc8>] ? process_one_work+0x178/0x6a0
+[   62.769646]  [<ffffffff8107659b>] worker_thread+0x11b/0x370
+[   62.769648]  [<ffffffff81076480>] ? rescuer_thread+0x350/0x350
+[   62.769650]  [<ffffffff8107f44a>] kthread+0xea/0xf0
+[   62.769652]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
+[   62.769654]  [<ffffffff81770bac>] ret_from_fork+0x7c/0xb0
+[   62.769656]  [<ffffffff8107f360>] ? flush_kthread_worker+0x150/0x150
+[   62.769657] ---[ end trace 838756c62e156ffd ]---
+[   62.769724] device tap1 left promiscuous mode
+
+This patch also affects moving devices between net namespaces.
+
+OVS used to ignore netns move notifications which caused problems.
+Like:
+  ovs-dpctl add-if test tap1
+  ip link set tap1 netns 3512
+and then removing tap1 inside the namespace will cause hang on missing dev_put.
+
+With this patch OVS will detach dev upon receiving netns move event.
+
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Jesse Gross <jesse@nicira.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- arch/x86/kernel/early-quirks.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ net/openvswitch/dp_notify.c    |  7 +++++--
+ net/openvswitch/vport-netdev.c | 16 +++++++++++++---
+ net/openvswitch/vport-netdev.h |  1 +
+ 3 files changed, 19 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index b3cd3ebae077..7eb30af8c7a2 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -203,18 +203,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+diff --git a/net/openvswitch/dp_notify.c b/net/openvswitch/dp_notify.c
+index c3235675f359..5c2dab276109 100644
+--- a/net/openvswitch/dp_notify.c
++++ b/net/openvswitch/dp_notify.c
+@@ -65,8 +65,7 @@ void ovs_dp_notify_wq(struct work_struct *work)
+ 					continue;
  
- 	/*
-- 	 * Revision 13 of all triggering devices id in this quirk have
--	 * a problem draining interrupts when irq remapping is enabled,
--	 * and should be flagged as broken.  Additionally revisions 0x12
--	 * and 0x22 of device id 0x3405 has this problem.
-+	 * Revision <= 13 of all triggering devices id in this quirk
-+	 * have a problem draining interrupts when irq remapping is
-+	 * enabled, and should be flagged as broken. Additionally
-+	 * revision 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision <= 0x13)
- 		set_irq_remapping_broken();
--	else if ((device == 0x3405) &&
--	    ((revision == 0x12) ||
--	     (revision == 0x22)))
-+	else if (device == 0x3405 && revision == 0x22)
- 		set_irq_remapping_broken();
--
+ 				netdev_vport = netdev_vport_priv(vport);
+-				if (netdev_vport->dev->reg_state == NETREG_UNREGISTERED ||
+-				    netdev_vport->dev->reg_state == NETREG_UNREGISTERING)
++				if (!(netdev_vport->dev->priv_flags & IFF_OVS_DATAPATH))
+ 					dp_detach_port_notify(vport);
+ 			}
+ 		}
+@@ -88,6 +87,10 @@ static int dp_device_event(struct notifier_block *unused, unsigned long event,
+ 		return NOTIFY_DONE;
+ 
+ 	if (event == NETDEV_UNREGISTER) {
++		/* upper_dev_unlink and decrement promisc immediately */
++		ovs_netdev_detach_dev(vport);
++
++		/* schedule vport destroy, dev_put and genl notification */
+ 		ovs_net = net_generic(dev_net(dev), ovs_net_id);
+ 		queue_work(system_wq, &ovs_net->dp_notify_work);
+ 	}
+diff --git a/net/openvswitch/vport-netdev.c b/net/openvswitch/vport-netdev.c
+index 09d93c13cfd6..d21f77d875ba 100644
+--- a/net/openvswitch/vport-netdev.c
++++ b/net/openvswitch/vport-netdev.c
+@@ -150,15 +150,25 @@ static void free_port_rcu(struct rcu_head *rcu)
+ 	ovs_vport_free(vport_from_priv(netdev_vport));
  }
  
- /*
+-static void netdev_destroy(struct vport *vport)
++void ovs_netdev_detach_dev(struct vport *vport)
+ {
+ 	struct netdev_vport *netdev_vport = netdev_vport_priv(vport);
+ 
+-	rtnl_lock();
++	ASSERT_RTNL();
+ 	netdev_vport->dev->priv_flags &= ~IFF_OVS_DATAPATH;
+ 	netdev_rx_handler_unregister(netdev_vport->dev);
+-	netdev_upper_dev_unlink(netdev_vport->dev, get_dpdev(vport->dp));
++	netdev_upper_dev_unlink(netdev_vport->dev,
++				netdev_master_upper_dev_get(netdev_vport->dev));
+ 	dev_set_promiscuity(netdev_vport->dev, -1);
++}
++
++static void netdev_destroy(struct vport *vport)
++{
++	struct netdev_vport *netdev_vport = netdev_vport_priv(vport);
++
++	rtnl_lock();
++	if (netdev_vport->dev->priv_flags & IFF_OVS_DATAPATH)
++		ovs_netdev_detach_dev(vport);
+ 	rtnl_unlock();
+ 
+ 	call_rcu(&netdev_vport->rcu, free_port_rcu);
+diff --git a/net/openvswitch/vport-netdev.h b/net/openvswitch/vport-netdev.h
+index dd298b5c5cdb..8df01c1127e5 100644
+--- a/net/openvswitch/vport-netdev.h
++++ b/net/openvswitch/vport-netdev.h
+@@ -39,5 +39,6 @@ netdev_vport_priv(const struct vport *vport)
+ }
+ 
+ const char *ovs_netdev_get_name(const struct vport *);
++void ovs_netdev_detach_dev(struct vport *);
+ 
+ #endif /* vport_netdev.h */
 -- 
 1.9.2
 
