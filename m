@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996AbaEEWbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 18:31:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58941 "EHLO mga02.intel.com"
+	id S933225AbaEEWbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 18:31:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58940 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933132AbaEEW0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933111AbaEEW0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 May 2014 18:26:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,992,1389772800"; 
-   d="scan'208";a="506357938"
+   d="scan'208";a="506357933"
 From: Andi Kleen <andi@firstfloor.org>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, tom.zanussi@linux.intel.com,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 15/24] net, diet: Make igmp and mcast ioctls depend on IP_MULTICAST
-Date: Mon,  5 May 2014 15:26:04 -0700
-Message-Id: <1399328773-6531-16-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 11/24] net, diet: Move rtnl_lock to separate file
+Date: Mon,  5 May 2014 15:26:00 -0700
+Message-Id: <1399328773-6531-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
 References: <1399328773-6531-1-git-send-email-andi@firstfloor.org>
@@ -25,200 +25,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-There was already a CONFIG_IP_MULTICAST, but it didn't control
-the multicasting code (like igmp) in the IP stack, only some
-driver code.  Change this.
+rtnl_lock is used in a lot of places independently from rtnetlink.
+Move it to an own file.
 
-This disables some multi cast filters in TCP/UDP too, but
-that should be ok because we never joing multicast groups
-without this options, so the packets should never arrive up-stack.
-
-Worth ~20k when disabled
-
-   text	   data	    bss	    dec	    hex	filename
- 420363	  17509	  11624	 449496	  6dbd8	net/built-in.o-with-mcast
- 399649	  17381	  11624	 428654	  68a6e	net/built-in.o-wo-mcast
+Only ugly part is that the rtnetlink init still needs to access
+the mutex. do this through a private backdoor, to avoid putting
+it into the headers for everyone.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/igmp.h       | 31 +++++++++++++++++++++++--------
- net/ipv4/Kconfig           |  8 +++-----
- net/ipv4/Makefile          |  3 ++-
- net/ipv4/devinet.c         |  2 ++
- net/ipv4/ip_sockglue.c     |  4 ++++
- net/ipv4/sysctl_net_ipv4.c |  2 ++
- 6 files changed, 36 insertions(+), 14 deletions(-)
+ net/core/Makefile    |  3 ++-
+ net/core/rtnetlink.c | 42 ++----------------------------------------
+ net/core/rtnl_lock.c | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 41 deletions(-)
+ create mode 100644 net/core/rtnl_lock.c
 
-diff --git a/include/linux/igmp.h b/include/linux/igmp.h
-index f47550d..1a1a044 100644
---- a/include/linux/igmp.h
-+++ b/include/linux/igmp.h
-@@ -108,11 +108,7 @@ struct ip_mc_list {
- #define IGMPV3_QQIC(value) IGMPV3_EXP(0x80, 4, 3, value)
- #define IGMPV3_MRC(value) IGMPV3_EXP(0x80, 4, 3, value)
+diff --git a/net/core/Makefile b/net/core/Makefile
+index 7db2fff..e05bd9c 100644
+--- a/net/core/Makefile
++++ b/net/core/Makefile
+@@ -3,7 +3,8 @@
+ #
  
--extern int ip_check_mc_rcu(struct in_device *dev, __be32 mc_addr, __be32 src_addr, u16 proto);
- extern int igmp_rcv(struct sk_buff *);
--extern int ip_mc_join_group(struct sock *sk, struct ip_mreqn *imr);
--extern int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr);
--extern void ip_mc_drop_socket(struct sock *sk);
- extern int ip_mc_source(int add, int omode, struct sock *sk,
- 		struct ip_mreq_source *mreqs, int ifindex);
- extern int ip_mc_msfilter(struct sock *sk, struct ip_msfilter *msf,int ifindex);
-@@ -120,14 +116,33 @@ extern int ip_mc_msfget(struct sock *sk, struct ip_msfilter *msf,
- 		struct ip_msfilter __user *optval, int __user *optlen);
- extern int ip_mc_gsfget(struct sock *sk, struct group_filter *gsf,
- 		struct group_filter __user *optval, int __user *optlen);
--extern int ip_mc_sf_allow(struct sock *sk, __be32 local, __be32 rmt, int dif);
--extern void ip_mc_init_dev(struct in_device *);
--extern void ip_mc_destroy_dev(struct in_device *);
--extern void ip_mc_up(struct in_device *);
- extern void ip_mc_down(struct in_device *);
- extern void ip_mc_unmap(struct in_device *);
- extern void ip_mc_remap(struct in_device *);
- extern void ip_mc_dec_group(struct in_device *in_dev, __be32 addr);
- extern void ip_mc_inc_group(struct in_device *in_dev, __be32 addr);
+ obj-y := sock.o request_sock.o skbuff.o iovec.o datagram.o stream.o scm.o \
+-	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o flow_dissector.o
++	 gen_stats.o gen_estimator.o net_namespace.o secure_seq.o flow_dissector.o \
++	 rtnl_lock.o
  
-+#ifdef CONFIG_IP_MULTICAST
-+extern int ip_mc_sf_allow(struct sock *sk, __be32 local, __be32 rmt, int dif);
-+extern int ip_check_mc_rcu(struct in_device *dev, __be32 mc_addr, __be32 src_addr, u16 proto);
-+extern void ip_mc_up(struct in_device *);
-+extern void ip_mc_destroy_dev(struct in_device *);
-+extern void ip_mc_init_dev(struct in_device *);
-+extern void ip_mc_drop_socket(struct sock *sk);
-+extern int ip_mc_join_group(struct sock *sk, struct ip_mreqn *imr);
-+extern int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr);
-+#else
-+static inline int ip_mc_sf_allow(struct sock *sk, __be32 local, __be32 rmt, int dif)
-+{ return 0; }
-+static inline int ip_check_mc_rcu(struct in_device *dev, __be32 mc_addr, __be32 src_addr, u16 proto)
-+{ return 0; }
-+static inline void ip_mc_up(struct in_device *d) {}
-+static inline void ip_mc_destroy_dev(struct in_device *d) {}
-+static inline void ip_mc_init_dev(struct in_device *d) {}
-+static inline void ip_mc_drop_socket(struct sock *sk) {}
-+static inline int ip_mc_join_group(struct sock *sk, struct ip_mreqn *imr)
-+{ return -EINVAL; }
-+static inline int ip_mc_leave_group(struct sock *sk, struct ip_mreqn *imr)
-+{ return -EINVAL; }
-+#endif
- #endif
-diff --git a/net/ipv4/Kconfig b/net/ipv4/Kconfig
-index 00a7f76..c1f9899 100644
---- a/net/ipv4/Kconfig
-+++ b/net/ipv4/Kconfig
-@@ -5,11 +5,9 @@ config IP_MULTICAST
- 	bool "IP: multicasting"
- 	help
- 	  This is code for addressing several networked computers at once,
--	  enlarging your kernel by about 2 KB. You need multicasting if you
--	  intend to participate in the MBONE, a high bandwidth network on top
--	  of the Internet which carries audio and video broadcasts. More
--	  information about the MBONE is on the WWW at
--	  <http://www.savetz.com/mbone/>. For most people, it's safe to say N.
-+	  enlarging your kernel by about 20 KB. This is needed for many
-+	  modern networking services on the local network, so you should
-+	  probably say Y.
+ obj-$(CONFIG_SYSCTL) += sysctl_net_core.o
  
- config IP_ADVANCED_ROUTER
- 	bool "IP: advanced router"
-diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
-index 784a782..eb129a4 100644
---- a/net/ipv4/Makefile
-+++ b/net/ipv4/Makefile
-@@ -9,7 +9,7 @@ obj-y     := route.o inetpeer.o protocol.o \
- 	     tcp.o tcp_input.o tcp_output.o tcp_timer.o tcp_ipv4.o \
- 	     tcp_minisocks.o tcp_cong.o tcp_fastopen.o \
- 	     datagram.o raw.o udp.o udplite.o \
--	     arp.o icmp.o devinet.o af_inet.o igmp.o \
-+	     arp.o icmp.o devinet.o af_inet.o \
- 	     fib_frontend.o fib_semantics.o fib_trie.o \
- 	     inet_fragment.o ip_tunnel_core.o gre_offload.o
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index d4ff417..0e802f0 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -60,46 +60,6 @@ struct rtnl_link {
+ 	rtnl_calcit_func 	calcit;
+ };
  
-@@ -37,6 +37,7 @@ obj-$(CONFIG_INET_TUNNEL) += tunnel4.o
- obj-$(CONFIG_INET_XFRM_MODE_TRANSPORT) += xfrm4_mode_transport.o
- obj-$(CONFIG_INET_XFRM_MODE_TUNNEL) += xfrm4_mode_tunnel.o
- obj-$(CONFIG_IP_PNP) += ipconfig.o
-+obj-$(CONFIG_IP_MULTICAST) += igmp.o
- obj-$(CONFIG_NETFILTER)	+= netfilter.o netfilter/
- obj-$(CONFIG_INET_DIAG) += inet_diag.o 
- obj-$(CONFIG_INET_TCP_DIAG) += tcp_diag.o
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index bdbf68b..c19266d 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1402,6 +1402,7 @@ static int inetdev_event(struct notifier_block *this, unsigned long event,
- 		/* Send gratuitous ARP to notify of link change */
- 		inetdev_send_gratuitous_arp(dev, in_dev);
- 		break;
-+#ifdef CONFIG_IP_MULTICAST
- 	case NETDEV_DOWN:
- 		ip_mc_down(in_dev);
- 		break;
-@@ -1411,6 +1412,7 @@ static int inetdev_event(struct notifier_block *this, unsigned long event,
- 	case NETDEV_POST_TYPE_CHANGE:
- 		ip_mc_remap(in_dev);
- 		break;
-+#endif
- 	case NETDEV_CHANGEMTU:
- 		if (inetdev_valid_mtu(dev->mtu))
- 			break;
-diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
-index 64741b9..ed5c7bd 100644
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -652,6 +652,7 @@ static int do_ip_setsockopt(struct sock *sk, int level,
- 		if (!val)
- 			skb_queue_purge(&sk->sk_error_queue);
- 		break;
-+#ifdef CONFIG_IP_MULTICAST
- 	case IP_MULTICAST_TTL:
- 		if (sk->sk_type == SOCK_STREAM)
- 			goto e_inval;
-@@ -1010,6 +1011,7 @@ mc_msf_out:
- 			goto e_inval;
- 		inet->mc_all = val;
- 		break;
-+#endif
- 	case IP_ROUTER_ALERT:
- 		err = ip_ra_control(sk, val ? 1 : 0, NULL);
- 		break;
-@@ -1248,6 +1250,7 @@ static int do_ip_getsockopt(struct sock *sk, int level, int optname,
- 	case IP_RECVERR:
- 		val = inet->recverr;
- 		break;
-+#ifdef CONFIG_IP_MULTICAST
- 	case IP_MULTICAST_TTL:
- 		val = inet->mc_ttl;
- 		break;
-@@ -1310,6 +1313,7 @@ static int do_ip_getsockopt(struct sock *sk, int level, int optname,
- 	case IP_MULTICAST_ALL:
- 		val = inet->mc_all;
- 		break;
-+#endif
- 	case IP_PKTOPTIONS:
- 	{
- 		struct msghdr msg;
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 2110d2e..fe5823a 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -443,6 +443,7 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_do_large_bitmap,
- 	},
-+#ifdef CONFIG_IP_MULTICAST
- 	{
- 		.procname	= "igmp_max_memberships",
- 		.data		= &sysctl_igmp_max_memberships,
-@@ -457,6 +458,7 @@ static struct ctl_table ipv4_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec
- 	},
-+#endif
- 	{
- 		.procname	= "inet_peer_threshold",
- 		.data		= &inet_peer_threshold,
+-static DEFINE_MUTEX(rtnl_mutex);
+-
+-void rtnl_lock(void)
+-{
+-	mutex_lock(&rtnl_mutex);
+-}
+-EXPORT_SYMBOL(rtnl_lock);
+-
+-void __rtnl_unlock(void)
+-{
+-	mutex_unlock(&rtnl_mutex);
+-}
+-
+-void rtnl_unlock(void)
+-{
+-	/* This fellow will unlock it for us. */
+-	netdev_run_todo();
+-}
+-EXPORT_SYMBOL(rtnl_unlock);
+-
+-int rtnl_trylock(void)
+-{
+-	return mutex_trylock(&rtnl_mutex);
+-}
+-EXPORT_SYMBOL(rtnl_trylock);
+-
+-int rtnl_is_locked(void)
+-{
+-	return mutex_is_locked(&rtnl_mutex);
+-}
+-EXPORT_SYMBOL(rtnl_is_locked);
+-
+-#ifdef CONFIG_PROVE_LOCKING
+-int lockdep_rtnl_is_held(void)
+-{
+-	return lockdep_is_held(&rtnl_mutex);
+-}
+-EXPORT_SYMBOL(lockdep_rtnl_is_held);
+-#endif /* #ifdef CONFIG_PROVE_LOCKING */
+-
+ static struct rtnl_link *rtnl_msg_handlers[RTNL_FAMILY_MAX + 1];
+ 
+ static inline int rtm_msgindex(int msgtype)
+@@ -2845,6 +2805,8 @@ static struct notifier_block rtnetlink_dev_notifier = {
+ 	.notifier_call	= rtnetlink_event,
+ };
+ 
++/* Don't put this into the header, private backdoor. */
++extern struct mutex rtnl_mutex;
+ 
+ static int __net_init rtnetlink_net_init(struct net *net)
+ {
+diff --git a/net/core/rtnl_lock.c b/net/core/rtnl_lock.c
+new file mode 100644
+index 0000000..f0dfd19
+--- /dev/null
++++ b/net/core/rtnl_lock.c
+@@ -0,0 +1,44 @@
++#include <linux/rtnetlink.h>
++#include <linux/mutex.h>
++#include <linux/module.h>
++#include <linux/netdevice.h>
++
++DEFINE_MUTEX(rtnl_mutex);
++
++void rtnl_lock(void)
++{
++	mutex_lock(&rtnl_mutex);
++}
++EXPORT_SYMBOL(rtnl_lock);
++
++void __rtnl_unlock(void)
++{
++	mutex_unlock(&rtnl_mutex);
++}
++
++void rtnl_unlock(void)
++{
++	/* This fellow will unlock it for us. */
++	netdev_run_todo();
++}
++EXPORT_SYMBOL(rtnl_unlock);
++
++int rtnl_trylock(void)
++{
++	return mutex_trylock(&rtnl_mutex);
++}
++EXPORT_SYMBOL(rtnl_trylock);
++
++int rtnl_is_locked(void)
++{
++	return mutex_is_locked(&rtnl_mutex);
++}
++EXPORT_SYMBOL(rtnl_is_locked);
++
++#ifdef CONFIG_PROVE_LOCKING
++int lockdep_rtnl_is_held(void)
++{
++	return lockdep_is_held(&rtnl_mutex);
++}
++EXPORT_SYMBOL(lockdep_rtnl_is_held);
++#endif /* #ifdef CONFIG_PROVE_LOCKING */
 -- 
 1.9.0
 
