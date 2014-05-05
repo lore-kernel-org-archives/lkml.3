@@ -1,139 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaEEIsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:48:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47581 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaEEIsQ (ORCPT
+	id S1755315AbaEEIvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:51:19 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59709 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaEEIvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:48:16 -0400
-Date: Mon, 5 May 2014 01:46:25 -0700
-From: tip-bot for Tim Chen <tipbot@zytor.com>
-Message-ID: <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, jason.low2@hp.com,
-        peter@hurleysoftware.com, paulmck@linux.vnet.ibm.com,
-        alex.shi@linaro.org, riel@redhat.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, davidlohr@hp.com, walken@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        tim.c.chen@linux.intel.com, peter@hurleysoftware.com,
-        jason.low2@hp.com, riel@redhat.com, alex.shi@linaro.org,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        tglx@linutronix.de, walken@google.com, davidlohr@hp.com
-In-Reply-To: <1399060437.2970.146.camel@schen9-DESK>
-References: <1399060437.2970.146.camel@schen9-DESK>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] rwsem:
-  Add comments to explain the meaning of the rwsem's count field
-Git-Commit-ID: 3cf2f34e1a3d4d5ff209d087925cf950e52f4805
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Mon, 5 May 2014 04:51:17 -0400
+Subject: [PATCH v1.1 3/16] arcmsr: adding code to support system hibernation
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 16:51:10 +0800
+Message-ID: <1399279870.18695.31.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3cf2f34e1a3d4d5ff209d087925cf950e52f4805
-Gitweb:     http://git.kernel.org/tip/3cf2f34e1a3d4d5ff209d087925cf950e52f4805
-Author:     Tim Chen <tim.c.chen@linux.intel.com>
-AuthorDate: Fri, 2 May 2014 12:53:57 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 4 May 2014 20:34:26 +0200
+From: Ching<ching2048@areca.com.tw>
 
-rwsem: Add comments to explain the meaning of the rwsem's count field
+Adding code to support system hibernation.
 
-It took me quite a while to understand how rwsem's count field
-mainifested itself in different scenarios.
-
-Add comments to provide a quick reference to the the rwsem's count
-field for each scenario where readers and writers are contending
-for the lock.
-
-Hopefully it will be useful for future maintenance of the code and
-for people to get up to speed on how the logic in the code works.
-
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Alex Shi <alex.shi@linaro.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Paul E.McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Jason Low <jason.low2@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1399060437.2970.146.camel@schen9-DESK
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Ching<ching2048@areca.com.tw>
 ---
- kernel/locking/rwsem-xadd.c | 49 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
 
-diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
-index 1d66e08..b4219ff 100644
---- a/kernel/locking/rwsem-xadd.c
-+++ b/kernel/locking/rwsem-xadd.c
-@@ -12,6 +12,55 @@
- #include <linux/export.h>
- 
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:30:34.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:28:56.000000000 +0800
+@@ -89,11 +89,15 @@ static int arcmsr_bios_param(struct scsi
+ static int arcmsr_queue_command(struct Scsi_Host *h, struct scsi_cmnd *cmd);
+ static int arcmsr_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *id);
++static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state);
++static int arcmsr_resume(struct pci_dev *pdev);
+ static void arcmsr_remove(struct pci_dev *pdev);
+ static void arcmsr_shutdown(struct pci_dev *pdev);
+ static void arcmsr_iop_init(struct AdapterControlBlock *acb);
+ static void arcmsr_free_ccb_pool(struct AdapterControlBlock *acb);
+ static u32 arcmsr_disable_outbound_ints(struct AdapterControlBlock *acb);
++static void arcmsr_enable_outbound_ints(struct AdapterControlBlock *acb,
++	u32 intmask_org);
+ static void arcmsr_stop_adapter_bgrb(struct AdapterControlBlock *acb);
+ static void arcmsr_flush_hba_cache(struct AdapterControlBlock *acb);
+ static void arcmsr_flush_hbb_cache(struct AdapterControlBlock *acb);
+@@ -167,6 +171,8 @@ static struct pci_driver arcmsr_pci_driv
+ 	.id_table			= arcmsr_device_id_table,
+ 	.probe			= arcmsr_probe,
+ 	.remove			= arcmsr_remove,
++	.suspend		= arcmsr_suspend,
++	.resume			= arcmsr_resume,
+ 	.shutdown		= arcmsr_shutdown,
+ };
  /*
-+ * Guide to the rw_semaphore's count field for common values.
-+ * (32-bit case illustrated, similar for 64-bit)
-+ *
-+ * 0x0000000X	(1) X readers active or attempting lock, no writer waiting
-+ *		    X = #active_readers + #readers attempting to lock
-+ *		    (X*ACTIVE_BIAS)
-+ *
-+ * 0x00000000	rwsem is unlocked, and no one is waiting for the lock or
-+ *		attempting to read lock or write lock.
-+ *
-+ * 0xffff000X	(1) X readers active or attempting lock, with waiters for lock
-+ *		    X = #active readers + # readers attempting lock
-+ *		    (X*ACTIVE_BIAS + WAITING_BIAS)
-+ *		(2) 1 writer attempting lock, no waiters for lock
-+ *		    X-1 = #active readers + #readers attempting lock
-+ *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-+ *		(3) 1 writer active, no waiters for lock
-+ *		    X-1 = #active readers + #readers attempting lock
-+ *		    ((X-1)*ACTIVE_BIAS + ACTIVE_WRITE_BIAS)
-+ *
-+ * 0xffff0001	(1) 1 reader active or attempting lock, waiters for lock
-+ *		    (WAITING_BIAS + ACTIVE_BIAS)
-+ *		(2) 1 writer active or attempting lock, no waiters for lock
-+ *		    (ACTIVE_WRITE_BIAS)
-+ *
-+ * 0xffff0000	(1) There are writers or readers queued but none active
-+ *		    or in the process of attempting lock.
-+ *		    (WAITING_BIAS)
-+ *		Note: writer can attempt to steal lock for this count by adding
-+ *		ACTIVE_WRITE_BIAS in cmpxchg and checking the old count
-+ *
-+ * 0xfffe0001	(1) 1 writer active, or attempting lock. Waiters on queue.
-+ *		    (ACTIVE_WRITE_BIAS + WAITING_BIAS)
-+ *
-+ * Note: Readers attempt to lock by adding ACTIVE_BIAS in down_read and checking
-+ *	 the count becomes more than 0 for successful lock acquisition,
-+ *	 i.e. the case where there are only readers or nobody has lock.
-+ *	 (1st and 2nd case above).
-+ *
-+ *	 Writers attempt to lock by adding ACTIVE_WRITE_BIAS in down_write and
-+ *	 checking the count becomes ACTIVE_WRITE_BIAS for successful lock
-+ *	 acquisition (i.e. nobody else has lock or attempts lock).  If
-+ *	 unsuccessful, in rwsem_down_write_failed, we'll check to see if there
-+ *	 are only waiters but none active (5th case above), and attempt to
-+ *	 steal the lock.
-+ *
-+ */
+@@ -780,6 +786,86 @@ pci_disable_dev:
+ 	return -ENODEV;
+ }
+ 
++static int arcmsr_suspend(struct pci_dev *pdev, pm_message_t state)
++{
++	int i;
++	uint32_t intmask_org;
++	struct Scsi_Host *host = pci_get_drvdata(pdev);
++	struct AdapterControlBlock *acb =
++		(struct AdapterControlBlock *)host->hostdata;
 +
-+/*
-  * Initialize an rwsem:
-  */
- void __init_rwsem(struct rw_semaphore *sem, const char *name,
++	intmask_org = arcmsr_disable_outbound_ints(acb);
++	if (acb->acb_flags & ACB_F_MSI_ENABLED) {
++		free_irq(pdev->irq, acb);
++		pci_disable_msi(pdev);
++	} else if (acb->acb_flags & ACB_F_MSIX_ENABLED) {
++		for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
++			free_irq(acb->entries[i].vector, acb);
++		pci_disable_msix(pdev);
++	} else
++		free_irq(pdev->irq, acb);
++	del_timer_sync(&acb->eternal_timer);
++	flush_scheduled_work();
++	arcmsr_stop_adapter_bgrb(acb);
++	arcmsr_flush_adapter_cache(acb);
++	arcmsr_enable_outbound_ints(acb, intmask_org);
++	pci_set_drvdata(pdev, host);
++	pci_save_state(pdev);
++	pci_disable_device(pdev);
++	pci_set_power_state(pdev, pci_choose_state(pdev, state));
++	return 0;
++}
++
++static int arcmsr_resume(struct pci_dev *pdev)
++{
++	int error;
++	struct Scsi_Host *host = pci_get_drvdata(pdev);
++	struct AdapterControlBlock *acb =
++		(struct AdapterControlBlock *)host->hostdata;
++
++	pci_set_power_state(pdev, PCI_D0);
++	pci_enable_wake(pdev, PCI_D0, 0);
++	pci_restore_state(pdev);
++	if (pci_enable_device(pdev)) {
++		pr_warn("%s: pci_enable_device error\n", __func__);
++		return -ENODEV;
++	}
++	error = pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
++	if (error) {
++		error = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
++		if (error) {
++			pr_warn("scsi%d: No suitable DMA mask available\n",
++			       host->host_no);
++			goto controller_unregister;
++		}
++	}
++	pci_set_master(pdev);
++	if (arcmsr_request_irq(pdev, acb) == ARC_FAILURE)
++		goto controller_stop;
++	arcmsr_iop_init(acb);
++	INIT_WORK(&acb->arcmsr_do_message_isr_bh, arcmsr_message_isr_bh_fn);
++	atomic_set(&acb->rq_map_token, 16);
++	atomic_set(&acb->ante_token_value, 16);
++	acb->fw_flag = FW_NORMAL;
++	init_timer(&acb->eternal_timer);
++	acb->eternal_timer.expires = jiffies + msecs_to_jiffies(6 * HZ);
++	acb->eternal_timer.data = (unsigned long) acb;
++	acb->eternal_timer.function = &arcmsr_request_device_map;
++	add_timer(&acb->eternal_timer);
++	return 0;
++controller_stop:
++	arcmsr_stop_adapter_bgrb(acb);
++	arcmsr_flush_adapter_cache(acb);
++controller_unregister:
++	scsi_remove_host(host);
++	arcmsr_free_ccb_pool(acb);
++	arcmsr_unmap_pciregion(acb);
++	pci_release_regions(pdev);
++	scsi_host_put(host);
++	pci_disable_device(pdev);
++	return -ENODEV;
++}
++
+ static uint8_t arcmsr_abort_hba_allcmd(struct AdapterControlBlock *acb)
+ {
+ 	struct MessageUnit_A __iomem *reg = acb->pmuA;
+
+
