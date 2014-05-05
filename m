@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaEEQvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 12:51:42 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:38399 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342AbaEEQvk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 12:51:40 -0400
-MIME-Version: 1.0
-X-Originating-IP: [172.19.0.183]
-In-Reply-To: <CAD=FV=W=Ffye5wp0PhJ2uX4jhEQkTKA4VTT4LyX2ZdByfE4UaQ@mail.gmail.com>
-References: <1398268565-4789-3-git-send-email-dianders@chromium.org>
-	<CAD=FV=W=Ffye5wp0PhJ2uX4jhEQkTKA4VTT4LyX2ZdByfE4UaQ@mail.gmail.com>
-Date: Mon, 5 May 2014 09:51:28 -0700
-Message-ID: <CAOesGMi+jH7xEzVxRX5qEoVycdtJ=FXOJRp1xut+65d4X8YFYA@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 2/5] charger: tps65090: Allow charger module to
- be used when no irq
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754413AbaEEQ7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 12:59:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22344 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753881AbaEEQ7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 12:59:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,989,1389772800"; 
+   d="scan'208";a="506194204"
+Subject: Re: [tip:locking/core] rwsem: Add comments to explain the meaning
+ of the rwsem's count field
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-tip-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peter@hurleysoftware.com, jason.low2@hp.com, riel@redhat.com,
+        alex.shi@linaro.org, paulmck@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, walken@google.com,
+        davidlohr@hp.com, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20140505163122.GT26782@laptop.programming.kicks-ass.net>
+References: <1399060437.2970.146.camel@schen9-DESK>
+	 <tip-3cf2f34e1a3d4d5ff209d087925cf950e52f4805@git.kernel.org>
+	 <1399305808.2970.186.camel@schen9-DESK>
+	 <20140505163122.GT26782@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 09:59:11 -0700
+Message-ID: <1399309151.2970.193.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 29, 2014 at 9:39 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Anton,
->
-> On Wed, Apr 23, 2014 at 8:56 AM, Doug Anderson <dianders@chromium.org> wrote:
->> On the ARM Chromebook tps65090 has two masters: the AP (the main
->> processor running linux) and the EC (the embedded controller).  The AP
->> is allowed to mess with FETs but the EC is in charge of charge control.
->>
->> The tps65090 interupt line is routed to both the AP and the EC, which
->> can cause quite a headache.  Having two people adjusting masks and
->> acking interrupts is a recipe for disaster.
->>
->> In the shipping kernel we had a hack to have the AP pay attention to
->> the IRQ but not to ack it.  It also wasn't supposed to configure the
->> IRQ in any way.  That hack allowed us to detect when the device was
->> charging without messing with the EC's state.
->>
->> The current tps65090 infrastructure makes the above difficult, and it
->> was a bit of a hack to begin with.  Rather than uglify the driver to
->> support it, just extend the driver's existing notion of "no irq" to
->> the charger.  This makes the charger code poll every 2 seconds for AC
->> detect, which is sufficient.
->>
->> For proper functioning, requires (mfd: tps65090: Don't tell child
->> devices we have an IRQ if we don't).  If we don't have that patch
->> we'll simply fail to probe on devices without an interrupt (just like
->> we did before this patch).
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->> Changes in v3: None
->> Changes in v2:
->> - Split noirq (polling mode) changes into MFD and charger
->>
->>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
->>  1 file changed, 59 insertions(+), 17 deletions(-)
->
-> All the rest of this series has been acked and applied.  Do you have
-> time to review this patch?
->
-> Thanks!  :)
+On Mon, 2014-05-05 at 18:31 +0200, Peter Zijlstra wrote:
+> On Mon, May 05, 2014 at 09:03:28AM -0700, Tim Chen wrote:
+> > On Mon, 2014-05-05 at 01:46 -0700, tip-bot for Tim Chen wrote:
+> > > Commit-ID:  3cf2f34e1a3d4d5ff209d087925cf950e52f4805
+> > > Gitweb:     http://git.kernel.org/tip/3cf2f34e1a3d4d5ff209d087925cf950e52f4805
+> > > Author:     Tim Chen <tim.c.chen@linux.intel.com>
+> > > AuthorDate: Fri, 2 May 2014 12:53:57 -0700
+> > > Committer:  Ingo Molnar <mingo@kernel.org>
+> > > CommitDate: Sun, 4 May 2014 20:34:26 +0200
+> > > 
+> > 
+> > Ingo,
+> > 
+> > Can you pick up this version of the patch instead.  I've updated the
+> > comments to reflect all cases for which the rwsem's count is less than
+> > WAITING_BIAS, as Peter has pointed out.
+> 
+> Wouldn't a state diagram be clearer than this gobs of text?
 
-FWIW, I've seen very little email traffic from Anton this year, he
-might have limited time for maintainership at the moment. Usually what
-we do in these cases is that we give the maintainer as much time as
-possible, but eventually if there's no action, and the patches look
-reasonable, we apply them with the maintainer on Cc: line in the
-signed-offs. Or we send them to/through akpm, which tends to be the
-catch-all for high-latency maintainers, etc.
+The state is represented by the count field with an explanation
+of what each state actually means.  I started off with a
+pretty abbreviated version. But to account for the readers and writers
+that are in transient trying to acquire the lock, the comments
+get more verbose, unfortunately.
 
-Since this patch isn't holding anything up, let's give Anton as much
-time as possible to review, and revisit in ~2 weeks (so it has time to
-land somewhere in time for the merge window).
+Tim
 
-
--Olof
