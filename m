@@ -1,145 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199AbaEEKXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:23:54 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43111 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755830AbaEEKXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:23:53 -0400
-Subject: [PATCH v1.1 12/16] arcmsr: revise alloction of second
- dma_coherent_handle for type B adapter
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 18:23:45 +0800
-Message-ID: <1399285425.4398.59.camel@localhost>
+	id S1756223AbaEEK0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:26:38 -0400
+Received: from ozlabs.org ([103.22.144.67]:46420 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756086AbaEEK0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 06:26:36 -0400
+Date: Mon, 5 May 2014 20:26:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: mtk.manpages@gmail.com
+Cc: linux-next@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: linux-next: Tree for May 5
+Message-Id: <20140505202628.7f406c1b77e05d0ad56db54c@canb.auug.org.au>
+In-Reply-To: <CAKgNAkj4hsTBqfD72ZhoCrHdV4S_68tJEQ_AaE0KWO_cySqeHw@mail.gmail.com>
+References: <20140505171459.3ce28e8e0c4d6b107a66eb97@canb.auug.org.au>
+	<CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com>
+	<20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
+	<CAKgNAkj4hsTBqfD72ZhoCrHdV4S_68tJEQ_AaE0KWO_cySqeHw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_May_2014_20_26_28_+1000_B=/oppWKcQrFfWzZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<ching2048@areca.com.tw>
+--Signature=_Mon__5_May_2014_20_26_28_+1000_B=/oppWKcQrFfWzZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This modification is for consistency with up-coming adapter type D.
-They have similar H/W and S/W structure.
-Also, it makes code easier reading.
+Hi Michael,
 
-Signed-off-by: Ching<ching2048@areca.com.tw>
----
+On Mon, 5 May 2014 12:06:27 +0200 "Michael Kerrisk (man-pages)" <mtk.manpag=
+es@gmail.com> wrote:
+>
+> Okay, must be my problem then. Sorry for the noise. Somehow, I'm not
+> syncing my linux-next correctly then. (Is the proper way of doing this
+> documented somewhere?)
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr.h b/drivers/scsi/arcmsr/arcmsr.h
---- a/drivers/scsi/arcmsr/arcmsr.h	2014-04-29 12:38:44.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr.h	2014-04-29 15:50:42.000000000 +0800
-@@ -507,6 +507,7 @@ struct AdapterControlBlock
- 	#define ACB_ADAPTER_TYPE_B            0x00000002	/* hbb M IOP */
- 	#define ACB_ADAPTER_TYPE_C            0x00000004	/* hbc P IOP */
- 	#define ACB_ADAPTER_TYPE_D            0x00000008	/* hbd A IOP */
-+	u32				roundup_ccbsize;
- 	struct pci_dev *		pdev;
- 	struct Scsi_Host *		host;
- 	unsigned long			vir2phy_offset;
-@@ -563,6 +564,7 @@ struct AdapterControlBlock
- 	dma_addr_t			dma_coherent_handle;
- 	/* dma_coherent_handle used for memory free */
- 	dma_addr_t				dma_coherent_handle2;
-+	void				*dma_coherent2;
- 	unsigned int				uncache_size;
- 	uint8_t				rqbuffer[ARCMSR_MAX_QBUFFER];
- 	/* data collection buffer for read from 80331 */
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:54:00.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:54:18.000000000 +0800
-@@ -183,13 +183,10 @@ static struct pci_driver arcmsr_pci_driv
- static void arcmsr_free_mu(struct AdapterControlBlock *acb)
- {
- 	switch (acb->adapter_type) {
--	case ACB_ADAPTER_TYPE_A:
--	case ACB_ADAPTER_TYPE_C:
--		break;
- 	case ACB_ADAPTER_TYPE_B:{
--		dma_free_coherent(&acb->pdev->dev,
--			sizeof(struct MessageUnit_B),
--			acb->pmuB, acb->dma_coherent_handle2);
-+		dma_free_coherent(&acb->pdev->dev, acb->roundup_ccbsize,
-+			acb->dma_coherent2, acb->dma_coherent_handle2);
-+		break;
- 	}
- 	}
- }
-@@ -2286,12 +2283,15 @@ static bool arcmsr_hbaB_get_config(struc
- 	char __iomem *iop_device_map;
- 	/*firm_version,21,84-99*/
- 	int count;
--	dma_coherent = dma_alloc_coherent(&pdev->dev, sizeof(struct MessageUnit_B), &dma_coherent_handle, GFP_KERNEL);
-+
-+	acb->roundup_ccbsize = roundup(sizeof(struct MessageUnit_B), 32);
-+	dma_coherent = dma_alloc_coherent(&pdev->dev, acb->roundup_ccbsize, &dma_coherent_handle, GFP_KERNEL);
- 	if (!dma_coherent){
- 		printk(KERN_NOTICE "arcmsr%d: dma_alloc_coherent got error for hbb mu\n", acb->host->host_no);
- 		return false;
- 	}
- 	acb->dma_coherent_handle2 = dma_coherent_handle;
-+	acb->dma_coherent2 = dma_coherent;
- 	reg = (struct MessageUnit_B *)dma_coherent;
- 	acb->pmuB = reg;
- 	reg->drv2iop_doorbell= (uint32_t __iomem *)((unsigned long)acb->mem_base0 + ARCMSR_DRV2IOP_DOORBELL);
-@@ -2637,6 +2637,7 @@ static int arcmsr_polling_ccbdone(struct
- static int arcmsr_iop_confirm(struct AdapterControlBlock *acb)
- {
- 	uint32_t cdb_phyaddr, cdb_phyaddr_hi32;
-+	dma_addr_t dma_coherent_handle;
- 
- 	/*
- 	********************************************************************
-@@ -2644,8 +2645,16 @@ static int arcmsr_iop_confirm(struct Ada
- 	** if freeccb.HighPart is not zero
- 	********************************************************************
- 	*/
--	cdb_phyaddr = lower_32_bits(acb->dma_coherent_handle);
--	cdb_phyaddr_hi32 = upper_32_bits(acb->dma_coherent_handle);
-+	switch (acb->adapter_type) {
-+		case ACB_ADAPTER_TYPE_B:
-+			dma_coherent_handle = acb->dma_coherent_handle2;
-+			break;
-+		default:
-+			dma_coherent_handle = acb->dma_coherent_handle;
-+			break;
-+	}
-+	cdb_phyaddr = lower_32_bits(dma_coherent_handle);
-+	cdb_phyaddr_hi32 = upper_32_bits(dma_coherent_handle);
- 	acb->cdb_phyaddr_hi32 = cdb_phyaddr_hi32;
- 	/*
- 	***********************************************************************
-@@ -2673,7 +2682,6 @@ static int arcmsr_iop_confirm(struct Ada
- 		break;
- 
- 	case ACB_ADAPTER_TYPE_B: {
--		unsigned long post_queue_phyaddr;
- 		uint32_t __iomem *rwbuffer;
- 
- 		struct MessageUnit_B *reg = acb->pmuB;
-@@ -2685,16 +2693,15 @@ static int arcmsr_iop_confirm(struct Ada
- 				acb->host->host_no);
- 			return 1;
- 		}
--		post_queue_phyaddr = acb->dma_coherent_handle2;
- 		rwbuffer = reg->message_rwbuffer;
- 		/* driver "set config" signature */
- 		writel(ARCMSR_SIGNATURE_SET_CONFIG, rwbuffer++);
- 		/* normal should be zero */
- 		writel(cdb_phyaddr_hi32, rwbuffer++);
- 		/* postQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr, rwbuffer++);
-+		writel(cdb_phyaddr, rwbuffer++);
- 		/* doneQ size (256 + 8)*4	 */
--		writel(post_queue_phyaddr + 1056, rwbuffer++);
-+		writel(cdb_phyaddr + 1056, rwbuffer++);
- 		/* ccb maxQ size must be --> [(256 + 8)*4]*/
- 		writel(1056, rwbuffer);
- 
+Yeah, in the stuff you quoted :-)
 
+"If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below)."
 
+then later
+
+"There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel."
+
+Unfortunately, that site seems to have vanished :-(  Seems like I need to
+update my daily release note.
+
+Since linux-next is rebased and remoerged every day, you need to "git
+fetch" the tree and then "git reset" to the new tree, not "git pull".
+The latter will try to merge the new linux-next into the previous one  -
+which should normally make a read mess :-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__5_May_2014_20_26_28_+1000_B=/oppWKcQrFfWzZ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTZ2daAAoJEMDTa8Ir7ZwVY3AP+wanYxm5lAEH2l9hOQibzl56
+u2IBKxQj0jsAWcTMzlD0o9ay7WzminEr9kGaP55Fd3Ts08uDve6OucFlGOJWVWD+
+V+2apvTmfQAjHEinaLkv2eRF5jkoUJpIEA8QUly+PHCXBjKpkeIPaDgRG+enJgde
+BEWJmnmH+fOJ/i1ChfXEXwWYQe2mCyvseNGXyC4IWz1uvhTJHbeQaUXe4WBB7jHh
+z8/rGxh0K9GNcYm78AF9G1Z/NGPTzNBBWrlRuLwApWjC3urknYfV7z5pworkksEa
+7c36hmJX3t6RNxfN9C/uX4G4gcJEXpxnypm1RgZegrzIRY3MvwPfV7uGOn04jQNS
+fhrMBDrNiwjurLWDb0ha9kS6Hpicj3g1ipuhe3hkxgUaXGDpfFKEFIorSy+wMN48
+iydY16lpG1Po3oG+qf2agdJF3l+uojOptrBcAXurAm2Z/4MmVDinFh6YQbEoQPyY
+tFcOxWPga4/5Uq4tKUPt6zesAewfqmgBCDtuvHOfX1fHr21BouaEvObUjLcx2ecQ
++CiV8pQ4meWXorrpvUnGJbABMI6Y/9SidXUga1OybWtDtD71iHh1qPAwaKGTXlhr
+0JnZyFffMdGxBGEgkfJEmS1srznKfOeJKMjrj6lg+J7LcPvHKcojtcejwBXbyILE
+undczOsq0dbwLGR3gJs0
+=Wzvj
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_May_2014_20_26_28_+1000_B=/oppWKcQrFfWzZ--
