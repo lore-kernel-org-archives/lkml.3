@@ -1,52 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930AbaEEOit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:38:49 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:44436 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448AbaEEOip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:38:45 -0400
+	id S933059AbaEEOjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:39:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41000 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932448AbaEEOjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:39:12 -0400
+Message-ID: <5367A216.2090303@ti.com>
+Date: Mon, 5 May 2014 20:07:10 +0530
+From: Sricharan R <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-References: <000001cf643d$69e5e350$3db1a9f0$@samsung.com>
-	<CAOh2x=m8DzmLOGqL0E_seOZMuzU=O9vQuu-JEp+E5454RmfEXw@mail.gmail.com>
-	<003901cf6664$e4e8d2a0$aeba77e0$@samsung.com>
-	<CAKohpon7W726Hxj5OJ6SnmPz3gYhAeBRr1wS3SCa3F2hSLriLQ@mail.gmail.com>
-	<5367946F.1030407@ti.com>
-	<CAKohpon-KZpSJK7PxpLjZS7sVPcYraDxb4oJHN6dxSagD+F--Q@mail.gmail.com>
-	<CAGo_u6pUVeMM9mqe5htvM1X_4pkRGEUVOA2ty4ZPfUyLcLZkrw@mail.gmail.com>
-Date: Mon, 5 May 2014 20:08:45 +0530
-Message-ID: <CAKohpokfcptseU6ST+e_GfU6poVJxXCXMeoYCvT65060v5GJYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PM / OPP: Add support for descending order for
- cpufreq table
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Sricharan R <r.sricharan@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linus.walleij@linaro.org>,
+        <linux@arm.linux.org.uk>, <tony@atomide.com>, <rnayak@ti.com>,
+        <marc.zyngier@arm.com>, <grant.likely@linaro.org>,
+        <mark.rutland@arm.com>, <robherring2@gmail.com>, <tglx@linutronix.de>,
+        <galak@codeaurora.org>, <rob.herring@calxeda.com>,
+        <santosh.shilimkar@ti.com>, <nm@ti.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH V4 0/3] ARM: DTS: DRA7: Updates for adding crossbar device
+References: <1384431928-2328-1-git-send-email-r.sricharan@ti.com> <52C1197A.5010701@ti.com>
+In-Reply-To: <52C1197A.5010701@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5 May 2014 19:53, Nishanth Menon <nm@ti.com> wrote:
-> ceil and floor allows us to walk down the opp entries the direction we
-> want it to.
-> one can convert that data any way one wants it - especially when custom
-> mapping such as this is desired.
+Hi Tony,
 
-Yeah, but doing that for every frequency transition is not right.
-Otherwise they already have a solution, where they reverse order
-of frequencies for their driver. exynos_sort_descend_freq_table().
+On Monday 30 December 2013 12:28 PM, Sricharan R wrote:
+> Hi Benoit,
+>
+> On Thursday 14 November 2013 05:55 PM, Sricharan R wrote:
+>> Some socs have a large number of interrupts requests to service
+>> the needs of its many peripherals and subsystems. All of the interrupt
+>> requests lines from the subsystems are not needed at the same
+>> time, so they have to be muxed to the controllers appropriately.
+>> In such places a interrupt controllers are preceded by an
+>> IRQ CROSSBAR that provides flexibility in muxing the device interrupt
+>> requests to the controller inputs.
+>>
+>> The driver support for the same was added here.
+>> 	http://marc.info/?l=linux-omap&m=138443167321614&w=2
+>>
+>> The dts file update to support the crossbar device and convert
+>> peripheral irq numbers to crossbar number are added here.
+>> This series was originally a part of the series [1] and now split
+>> to keep the DTS updates separately as per comments from
+>> Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+>> Applied this series on top of
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+>>   for_3.13/dts
+>>
+>> [1] http://www.kernelhub.org/?msg=356470&p=2
+>>
+>> Sricharan R (3):
+>>   ARM: DTS: DRA: Add crossbar device binding
+>>   ARM: DTS: DRA: Replace peripheral interrupt numbers with crossbar
+>>     inputs
+>>   ARM: DTS: DRA7: Add routable-irqs property for gic node
+>>
+>>  arch/arm/boot/dts/dra7.dtsi |   95 +++++++++++++++++++++++--------------------
+>>  1 file changed, 52 insertions(+), 43 deletions(-)
+>>
+> I have pushed a branch with this series here
+>
+> git://github.com/Sricharanti/sricharan.git
+> branch: crossbar_dts
+>
+> This is on top of your for_3.14/dts branch
+>
+> This series has a dependency with crossbar driver functional changes, which is yet
+> to be pulled
+>
+> https://lkml.org/lkml/2013/12/30/9
+>
+> Regards,
+>  Sricharan
 
-Probably that's a better solution then :)
+I have pushed the below branch for the crossbar-dts data rebased on 3.15-rc4
 
-But, Jonghwan was probably trying to get this solved in the framework
-only, in case anybody else needs it.
+git@github.com:Sricharanti/sricharan.git
+branch: crossbar_dts_3.15_rc4
 
---
-viresh
+These patches are dependent on the crossbar driver fixes sent below.
+
+http://marc.info/?l=linux-omap&m=139929963420299&w=2
+
+Regards,
+ Sricharan
+
+-
+
