@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbaEETmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 15:42:37 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:64412 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422AbaEETmf (ORCPT
+	id S1752367AbaEETpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 15:45:35 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:51632 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751981AbaEETpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 15:42:35 -0400
-From: Peter Korsgaard <peter@korsgaard.com>
-To: monstr@monstr.eu
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, arnd@arndb.de,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] tty: serial: uartlite: Specify time for sending chars
-References: <4c1854686987185d547d1d548f89248cb27ba40c.1399301297.git.michal.simek@xilinx.com>
-	<874n14i7yn.fsf@dell.be.48ers.dk> <5367D76A.2040206@monstr.eu>
-Date: Mon, 05 May 2014 21:42:31 +0200
-In-Reply-To: <5367D76A.2040206@monstr.eu> (Michal Simek's message of "Mon, 05
-	May 2014 20:24:42 +0200")
-Message-ID: <87wqe0gggo.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Mon, 5 May 2014 15:45:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX196/j4hP2Xz8v3wv9ZER+bo
+Date: Mon, 5 May 2014 12:45:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sebastian Reichel <sre@kernel.org>, Sebastian Reichel <sre@ring0.de>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCHv2 9/9] DTS: OMAP3-N900: Add sound support
+Message-ID: <20140505194513.GE25949@atomide.com>
+References: <1398694047-28596-1-git-send-email-sre@kernel.org>
+ <1398694047-28596-10-git-send-email-sre@kernel.org>
+ <20140501175845.GK3245@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140501175845.GK3245@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Michal" == Michal Simek <monstr@monstr.eu> writes:
+* Mark Brown <broonie@kernel.org> [140501 11:41]:
+> On Mon, Apr 28, 2014 at 04:07:27PM +0200, Sebastian Reichel wrote:
+> > This patch adds support for the Nokia N900's sound
+> > system.
+> 
+> Reviewed-by: Mark Brown <broonie@linaro.org>
 
-Hi,
+Applying the last patch into omap-for-v3.16/dt branch thanks.
 
- >> > diff --git a/drivers/tty/serial/uartlite.c b/drivers/tty/serial/uartlite.c
- >> > index 5f90ef24d475..723a6b79cd14 100644
- >> > --- a/drivers/tty/serial/uartlite.c
- >> > +++ b/drivers/tty/serial/uartlite.c
- >> > @@ -418,14 +418,20 @@ static struct uart_ops ulite_ops = {
- >> >  #ifdef CONFIG_SERIAL_UARTLITE_CONSOLE
- >> >  static void ulite_console_wait_tx(struct uart_port *port)
- >> >  {
- >> > -	int i;
- >> >  	u8 val;
- >> > +	unsigned long timeout;
- >> 
- >> >  	/* Spin waiting for TX fifo to have space available */
- >> > -	for (i = 0; i < 100000; i++) {
- >> 
- >> It would be good to add a note about the slow jtag variant here.
-
- > What exactly you would like to see here?
- > Just that this 1s is here because of mdm uart.
-
-Something like:
-
- /*
-  * Spin waiting for TX fifo to have space available.
-  * When using the Microblaze Debug Module this can take up to 1s
-  */
-
--- 
-Bye, Peter Korsgaard
+Tony
