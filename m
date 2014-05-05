@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaEEGAh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 02:00:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:49143 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412AbaEEGAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 02:00:36 -0400
-Subject: Re: [PATCH] uprobes: fix scratch register selection for
- rip-relative fixups
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <5363B3E8.6020606@redhat.com>
-References: <1398964141-25097-1-git-send-email-dvlasenk@redhat.com>
-	 <1398991682.4908.22.camel@oc7886638347.ibm.com.usor.ibm.com>
-	 <5363B3E8.6020606@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 04 May 2014 23:00:24 -0700
-Message-ID: <1399269624.5603.3.camel@oc7886638347.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050506-5806-0000-0000-000024CA9651
+	id S1754610AbaEEGSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 02:18:23 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42139 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754473AbaEEGSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 02:18:22 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-55-53672d2bfa92
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux@arm.linux.org.uk
+Cc: nicolas.pitre@linaro.org, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH] arm: put_user: fix possible data corruption in put_user
+Date: Mon, 05 May 2014 10:13:58 +0400
+Message-id: <1399270438-26181-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t/xy7rauunBBnPfC1ts+/WIzWLT42us
+	Fpd3zWGzuH2Z1+LTs3/sFi8/nmBxYPNYM28No0dLcw+bx51re9g8Ni+p9+jbsorR4/MmuQC2
+	KC6blNSczLLUIn27BK6M1z+msBcc4Kxo2r+auYHxKnsXIyeHhICJxOWFLUwQtpjEhXvr2boY
+	uTiEBJYySjxfuYQVwulhkljRuBqsg01AT+LfrO1sILaIgJTEjJ1L2UGKmAUWM0qseP2EGSQh
+	LOAhceBDG1gDi4CqxNx3h8BsXgE3ifbPk9gg1ilILPuylnkCI/cCRoZVjKKppckFxUnpuUZ6
+	xYm5xaV56XrJ+bmbGCFB8nUH49JjVocYBTgYlXh4PbxTgoVYE8uKK3MPMUpwMCuJ8M5iTA8W
+	4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNg5eb4XQ3TID36JG84nGLz9Sir0Wnbez9N9/Xk2n6rj
+	worMGbWzH6xXt5F0e1bS8XlzdtumaVeu9BeLC4Qce/Bpja9H+MpXx0OcOF6tKLt0S+mH1lyx
+	yR0C+p4rBS2EFYIyNes2h+5YIKaWMX3xrYfrvKMn9WzTfBB58kvXxi1+P5pD3svaeiuxFGck
+	GmoxFxUnAgD+pw0r8AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-05-02 at 17:04 +0200, Denys Vlasenko wrote:
-> On 05/02/2014 02:48 AM, Jim Keniston wrote:
-> > On Thu, 2014-05-01 at 19:09 +0200, Denys Vlasenko wrote:
-> >> +#define VEX2_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[1])
-> >> +#define VEX3_VVVV(insn)		X86_VEX_V((insn)->vex_prefix.bytes[2])
-> > 
-> > I disclaim any knowledge about VEX* stuff.
-> ...
-> > skipped this next part...
-> > 
-> >> +	/* Similar treatment for VEX3 prefix */
-> >> +	/* TODO: add XOP/EVEX treatment when insn decoder supports them */
-> >> +	if (insn->vex_prefix.nbytes == 3) {
-> >> +		/*
-> >> +		 * vex2:     c5    rvvvvLpp   (has no b bit)
-> >> +		 * vex3/xop: c4/8f rxbmmmmm wvvvvLpp
-> >> +		 * evex:     62    rxbR00mm.wvvvv1pp.zllBVaaa
-> >> +		 *   (evex will need setting of both b and x since
-> >> +		 *   in non-sib encoding evex.x is 4th bit of MODRM.rm)
-> >> +		 * Setting VEX3.b (setting because it has inverted meaning):
-> >> +		 */
-> >> +		cursor = auprobe->insn + insn_offset_vex_prefix(insn) + 1;
-> >> +		*cursor |= 0x20;
-> >>  	}
-> > 
-> > ... resumed reviewing here.
-> 
-> I do realize that most people reading this code won't be
-> aficionados of memorizing x86 insn encoding quirks.
-> 
-> To help them, I added the comment which spells out bit layout
-> of vex/evex/xop prefixes (see above). Does it help?
-> 
-...
+According to arm procedure call standart r2 register is call-cloberred.
+So after the result of x expression was put into r2 any following
+function call in p may overwrite r2. To fix this, the result of p
+expression must be saved to the temporary variable before the
+assigment x expression to __r2.
 
-Well, yes.  I read your comments in conjunction with the "VEX Prefix"
-wikipedia page and figured out what you're doing, and it looks right.  I
-would definitely leave the comments in; otherwise there's a chance that
-even you won't remember all this stuff 6 months from now.
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ arch/arm/include/asm/uaccess.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Jim
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 12c3a5d..4b584ac 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -171,8 +171,9 @@ extern int __put_user_8(void *, unsigned long long);
+ #define __put_user_check(x,p)							\
+ 	({								\
+ 		unsigned long __limit = current_thread_info()->addr_limit - 1; \
++		const typeof(*(p)) __user *tmp_p = (p);			\
+ 		register const typeof(*(p)) __r2 asm("r2") = (x);	\
+-		register const typeof(*(p)) __user *__p asm("r0") = (p);\
++		register const typeof(*(p)) __user *__p asm("r0") = tmp_p; \
+ 		register unsigned long __l asm("r1") = __limit;		\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
+-- 
+1.8.3.2
 
