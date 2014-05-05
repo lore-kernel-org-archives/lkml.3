@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597AbaEENzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:55:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42878 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395AbaEENzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:55:10 -0400
-Date: Mon, 5 May 2014 15:55:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matthias Bayer <thematthiasbayer@gmail.com>
-Subject: Re: [PATCH] HID: core: fix computation of the report size
-In-Reply-To: <1398894520-30407-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1405051554530.3969@pobox.suse.cz>
-References: <1398894520-30407-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932640AbaEEN5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:57:06 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37837 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932395AbaEEN5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 09:57:04 -0400
+Date: Mon, 5 May 2014 15:57:02 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Mark Brown <broonie@kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] spi: Force the registration of the spidev devices
+Message-ID: <20140505135701.GA21940@piout.net>
+References: <1398705774-12361-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20140429183758.GH15125@sirena.org.uk>
+ <20140430180609.GC3000@lukather>
+ <20140501011811.GF3245@sirena.org.uk>
+ <20140501223629.GJ3000@lukather>
+ <CAMuHMdUWa1_n94sDvv=L_goc+SOnD9CAKi5DzifrY7GWYRdQmw@mail.gmail.com>
+ <20140505041721.GD11606@lukather>
+ <CAMuHMdWZ1rvC+tkT=CbfMwZtppyJ_KpzT7JrLd5k5P2oxzA+8g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWZ1rvC+tkT=CbfMwZtppyJ_KpzT7JrLd5k5P2oxzA+8g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Apr 2014, Benjamin Tissoires wrote:
+On 05/05/2014 at 09:10:43 +0200, Geert Uytterhoeven wrote :
+> Hi Maxime,
+> 
+> On Mon, May 5, 2014 at 6:17 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Fri, May 02, 2014 at 01:28:26AM +0200, Geert Uytterhoeven wrote:
+> >> On Fri, May 2, 2014 at 12:36 AM, Maxime Ripard
+> >> <maxime.ripard@free-electrons.com> wrote:
+> >> > But it actually doesn't work in a case where you can't really predict
+> >> > what is on the other side of the bus. Either because, on the board
+> >> > you're using the pins are exposed and it's pretty much up to the user
+> >> > to know what to put on it. That could be handled by DT overlays
+> >> > though.
+> >> >
+> >> > What never works is where the device on the other side is so generic
+> >> > that you really can't tell what it does. Think of a microcontroller
+> >> > that would behave as a SPI slave. It's behaviour and what it does is
+> >> > pretty much dependant of what we flashed on it, and suddenly the
+> >> > compatible string is not the proper reprensentation anymore.
+> >>
+> >> So you will (hopefully soon) use overlay DT to change the DTS to match what's
+> >> connected?
+> >
+> > Not really, because you can't declare a spidev device in the DT.
+> 
+> Yes you can. I've done it before.
+> 
+> See also "git grep -w spidev -- arch/arm/*/dts/".
+> 
 
-> The extra seven bits are only required when allocating the report buffer.
-> We can not use those extra bytes for the length of the report in the
-> generic implementation of .request because the device might (will) refuse
-> the set_report command.
-> This has been verified on the Atmel touchpad found on the Samsung Ativ 9
-> plus, which uses hid-multitouch and HID over I2C. Without this fix, the
-> device refuses to switch to the multitouch mode, and it becomes unresponsive
-> from the user point of view.
-> 
-> Actually, this has been discussed during the initial submission of the
-> commit 4fa5a7f76cc7b6ac87f57741edd2b124851d119f, see
-> https://patchwork.kernel.org/patch/3621751/
-> 
-> Unfortunately, I completely forgot about it later.
-> 
-> Reported-by: Matthias Bayer <thematthiasbayer@gmail.com>
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Hi Jiri,
-> 
-> can you schedule this fix for 3.15?
-> 
-> Fortunately, the device required some ACPI changes, so it was not seen at all
-> in 3.13 and before. I am not sure of the status of 3.14, but it is definitively
-> not working in 3.15.
+I'm pretty sure that doesn't work as there is no compatible matching
+"spidev"
 
-Gah, indeed, a nasty bug.
-
-Queuing for 3.15 now, thanks!
+My guess would be that you added it in spidev.c
 
 -- 
-Jiri Kosina
-SUSE Labs
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
