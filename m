@@ -1,71 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaEESel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 14:34:41 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:52245 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaEESek (ORCPT
+	id S1751623AbaEESfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 14:35:01 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40504 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaEESfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 14:34:40 -0400
-Date: Mon, 5 May 2014 14:34:36 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH] kernel/cgroup.c: fix 2 kernel-doc warnings
-Message-ID: <20140505183436.GP11231@htj.dyndns.org>
-References: <20140505200813.666c716451ae68f156649753@skynet.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505200813.666c716451ae68f156649753@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 May 2014 14:35:00 -0400
+From: Plamen Petrov <plamen.sisi@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] do_mounts: try all available filesystems before panicking
+Date: Mon,  5 May 2014 21:34:49 +0300
+Message-Id: <1399314889-9829-1-git-send-email-plamen.sisi@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to cgroup/for-3.16 with the actual argument description
-updated.
+While debugging a kernel panic with 3.14.1 it became clear that some
+filesystems' mount routines give back return codes other than zero, EACCES
+or EINVAL. Such return codes can result in panic during boot before the kernel
+tries to mount root with all of the available filesystems, as can be seen in
+bugzilla entries 74901 and 74261.
 
-Thanks.
------- 8< ------
->From 60106946ca7f63396680130b25511ccf6b7d5bff Mon Sep 17 00:00:00 2001
-From: Fabian Frederick <fabf@skynet.be>
-Date: Mon, 5 May 2014 20:08:13 +0200
+Make mount_block_root continue trying other available filesystems by default,
+not only when the last tried returned EACCES or EINVAL.
 
-Fix typo and variable name.
-
-tj: Updated @cgrp argument description in cgroup_destroy_css_killed()
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Plamen Petrov <plamen.sisi@gmail.com>
 ---
- kernel/cgroup.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The story short: on systems with btrfs root I have a kernel .config with ext4,
+xfs and btrfs built-in which works fine with 3.13.x, but 3.14.x panics. After
+inserting some debug printks, I got this info from mount_block_root:
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a1a20e8..07815ef 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1888,7 +1888,7 @@ struct task_struct *cgroup_taskset_next(struct cgroup_taskset *tset)
- 
- /**
-  * cgroup_task_migrate - move a task from one cgroup to another.
-- * @old_cgrp; the cgroup @tsk is being migrated from
-+ * @old_cgrp: the cgroup @tsk is being migrated from
-  * @tsk: the task being migrated
-  * @new_cset: the new css_set @tsk is being attached to
-  *
-@@ -4586,7 +4586,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 
- /**
-  * cgroup_destroy_css_killed - the second step of cgroup destruction
-- * @work: cgroup->destroy_free_work
-+ * @cgrp: the cgroup whose csses have just finished offlining
-  *
-  * This function is invoked from a work item for a cgroup which is being
-  * destroyed after all css's are offlined and performs the rest of
+---> EACCESS=13, EINVAL=22, Available filesystems: ext3 ext2 ext4 fuseblk xfs btrfs
+-----> Tried ext3, error code is -22.
+-----> Tried ext2, error code is -22.
+-----> Tried ext4, error code is -22.
+-----> Tried fuseblk, error code is -22.
+-----> Tried xfs, error code is -38.
+VFS: Cannot open root device "sda2" or unknown-block(8,2): error -38
+Please append a correct "root=" boot option; here are the available partitions:
+
+Last one tried is xfs, the needed btrfs in this case never gets a chance.
+Looking at the code in init/do_mounts.c we can see that it "continue"s only if
+the return code it got is EINVAL, yet xfs clearly does not fit - so the kernel
+panics. Maybe there are other filesystems like xfs - I did not check. This
+patch fixes mount_block_root to try all available filesystems first, and then
+panic. The patched 3.14.x works for me.
+
+This patch was sent to LKML once, see
+  http://article.gmane.org/gmane.linux.kernel/1691881
+Maybe the first time around it got damaged by my mail client, lost in all of
+the LKML traffic, or nobody picked it up, because scripts/get_maintainer.pl
+said "Send it to LKML" only, and I did just that.
+Either way - resending and CC-ing Linus, with stable- added as CC to the patch
+as well.
+
+ init/do_mounts.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 82f2288..979bd71 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -396,7 +396,7 @@ retry:
+ 			case -EACCES:
+ 				flags |= MS_RDONLY;
+ 				goto retry;
+-			case -EINVAL:
++			default:
+ 				continue;
+ 		}
+ 	        /*
 -- 
 1.9.0
 
