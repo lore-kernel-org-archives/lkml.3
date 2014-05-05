@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425AbaEEIr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 04:47:28 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37229 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027AbaEEIrZ (ORCPT
+	id S1755459AbaEEIrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 04:47:31 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:51804 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755355AbaEEIr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 04:47:25 -0400
-Date: Mon, 5 May 2014 16:47:17 +0800
-From: Wei Yang <weiyang@linux.vnet.ibm.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Wei Yang <weiyang@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH] drivercore: fix a corner case for deferred probe
-Message-ID: <20140505084717.GA5712@richard>
-Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-References: <1398045202-5714-1-git-send-email-weiyang@linux.vnet.ibm.com>
- <20140505022805.GA15162@richard>
- <20140505030432.GA11957@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140505030432.GA11957@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14050508-5816-0000-0000-00000DD751C6
+	Mon, 5 May 2014 04:47:28 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-20-5367501ddfc1
+Message-id: <1399279644.17696.3.camel@AMDC1943>
+Subject: Re: [PATCH part2 5/6] regulator: max14577: Implement SUSPEND mode for
+ MAX77836 LDO-s
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>
+Date: Mon, 05 May 2014 10:47:24 +0200
+In-reply-to: <20140501181908.GS3245@sirena.org.uk>
+References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
+ <1398264640-12122-6-git-send-email-k.kozlowski@samsung.com>
+ <20140501181908.GS3245@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xy7qyAenBBnuvGlsc3KppsXHGelaL
+	qQ+fsFlMevKe2WLiysnMFmeb3rBb3P96lNHi25UOJovLu+awWaw9cpfd4nQ3q8X6Ga9ZHHg8
+	JvR/YvTYOesuu8fmFVoem1Z1snncubaHzWPeyUCPvi2rGD0+b5IL4IjisklJzcksSy3St0vg
+	ymj/Ooel4CdvxZTNjewNjNO4uxg5OSQETCSeH2tkgrDFJC7cW8/WxcjFISSwlFHi961WVgjn
+	M6PE+XXnWEGqeAX0JSYde8cCYgsLxEvcPDUdLM4mYCyxefkSNhBbREBZ4ur3vSwgzcwCR5gl
+	dpzfA5ZgEVCVOLJ+J1ADBwengJHE9JOKEAvWMkps/LgNbCizgLrEpHmLmCFOUpaYt/8YE8Ri
+	QYkfk+9B1chLbF7zlnkCo8AsJC2zkJTNQlK2gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7u
+	JkZIxHzZwbj4mNUhRgEORiUe3sCglGAh1sSy4srcQ4wSHMxKIryzGNODhXhTEiurUovy44tK
+	c1KLDzEycXBKNTAuVeJkTP5VL7t+vylvEvMh9cad51jmspgEGnKwGQffuRE/h2lalasT21LJ
+	x4eEl144Vhr59aNilXJ7zeQJlYml4bvfCRTNvfOW9UBVnfCLy8kTv+ftfzcnLsLGUFlSZZ+f
+	bZKy21fnH2cEJWdoP//Y8O8397+0XdOWzbNljvh4dTvzBs2TB54psRRnJBpqMRcVJwIA69yL
+	onYCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 04, 2014 at 08:04:32PM -0700, Greg KH wrote:
->On Mon, May 05, 2014 at 10:28:05AM +0800, Wei Yang wrote:
->> Hi, all
->> 
->> Anyone has some comment on this?
->
->Did you miss the patch from Grant that is now in Linus's tree that
->should resolve this issue?
+On czw, 2014-05-01 at 11:19 -0700, Mark Brown wrote:
+> On Wed, Apr 23, 2014 at 04:50:39PM +0200, Krzysztof Kozlowski wrote:
+> 
+> > This patch adds support for mode REGULATOR_MODE_STANDBY (and NORMAL) to
+> > LDO regulators by implementing the set_mode() and get_mode() operations.
+> > However the necessary regulator constraints (valid modes) are not parsed
+> > by of_regulator_match() so the driver adds them manually to the
+> > regulator init_data.
+> 
+> No, that's not the idea here.  The reason that the modes need to be
+> explicitly enabled is that there's an element of board design in
+> determining if a given mode can satisfy the required current demand for
+> the board with sufficient quality (usually the lower power modes have
+> both a lower maximum current and poorer regulation accuracy especially
+> as the current rises).  Doing it unconditionally isn't in general
+> reliable.
+> 
+> The reason that the modes aren't supported by DT is that defining a
+> binding is hard - it's not clear what exactly a "mode" means since it's
+> basically a Linux internal thing.  We probably need to explicitly add
+> definitions of the modes to the bindings for individual devices
+> unfortunately (ie, saying "mode X maps to Y in the datasheet", possibly
+> using the datasheet modes in the binding for ease of use and having that
+> translation in the driver).
+> 
+> Ideally we'd be able to have the automatic mode setting working for
+> devices but in practice nobody wants to publish the numbers and working
+> out how much the board needs can also be hard so that isn't really
+> practical.
 
-Hi, Greg,
+I understand. Lets skip this patch now. I will prepare in the future a
+version of this patch with own DT binding for max77836 suspend mode.
 
-Nice to hear from you.
-
-Would you mind telling me the exact tree and commit? I searched in the
-git.kernel.org, and see several Linus's tree, including Linus Torvalds and
-Linus Walleij. So, not sure which you are pointing to. With the exact commit
-and tree, I could take a more deep look into it :-)
-
-
-BTW, I am using this tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-based on commit "455c6fd Linux 3.14".
-
->
->thanks,
->
->greg k-h
-
--- 
-Richard Yang
-Help you, Help me
+Best regards,
+Krzysztof
 
