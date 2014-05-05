@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505AbaEERsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 13:48:13 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:52825 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476AbaEERsL (ORCPT
+	id S1755181AbaEERtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 13:49:05 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:9616 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751529AbaEERtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 13:48:11 -0400
-Date: Mon, 5 May 2014 13:48:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Li Zefan <lizefan@huawei.com>, axboe@kernel.dk,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH cgroup/for-3.15-fixes] blkcg: use trylock on
- blkcg_pol_mutex in blkcg_reset_stats()
-Message-ID: <20140505174807.GO11231@htj.dyndns.org>
-References: <5363C04B.4010400@oracle.com>
- <20140505163730.GL11231@htj.dyndns.org>
- <5367CE9E.5010208@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5367CE9E.5010208@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 May 2014 13:49:03 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoEJAC3OZ1NbsEtU/2dsb2JhbABZgwarUQcBAgUBmgyBFxd0glMTHCMYgQIkCgmIRQHMEYVWiHyERgEDjxqKGQGKfod2gzY7
+Date: Mon, 5 May 2014 19:49:00 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 2/2] kernel/cpuset.c: convert printk to pr_foo()
+Message-Id: <20140505194900.a0679fd326208e0b56e51f5e@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 01:47:10PM -0400, Sasha Levin wrote:
-> Hey Tejun,
-> 
-> On 05/05/2014 12:37 PM, Tejun Heo wrote:
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Reported-by: Li Zefan <lizefan@huawei.com>
-> > References: http://lkml.kernel.org/g/5363C04B.4010400@oracle.com
-> 
-> I think that the Reported-by here should be me :)
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ kernel/cpuset.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-Oops, how did that happen?  :)
-
-Fixing up in the branch.
-
-Thanks!
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 1d8c047..7c0e8da 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -696,11 +696,8 @@ restart:
+ 		if (nslot == ndoms) {
+ 			static int warnings = 10;
+ 			if (warnings) {
+-				printk(KERN_WARNING
+-				 "rebuild_sched_domains confused:"
+-				  " nslot %d, ndoms %d, csn %d, i %d,"
+-				  " apn %d\n",
+-				  nslot, ndoms, csn, i, apn);
++				pr_warn("rebuild_sched_domains confused: nslot %d, ndoms %d, csn %d, i %d, apn %d\n",
++					nslot, ndoms, csn, i, apn);
+ 				warnings--;
+ 			}
+ 			continue;
+@@ -2018,7 +2015,7 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
+ 		parent = parent_cs(parent);
+ 
+ 	if (cgroup_transfer_tasks(parent->css.cgroup, cs->css.cgroup)) {
+-		printk(KERN_ERR "cpuset: failed to transfer tasks out of empty cpuset ");
++		pr_err("cpuset: failed to transfer tasks out of empty cpuset ");
+ 		pr_cont_cgroup_name(cs->css.cgroup);
+ 		pr_cont("\n");
+ 	}
+@@ -2555,7 +2552,7 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
+ 	cgrp = task_cs(tsk)->css.cgroup;
+ 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
+ 			   tsk->mems_allowed);
+-	printk(KERN_INFO "%s cpuset=", tsk->comm);
++	pr_info("%s cpuset=", tsk->comm);
+ 	pr_cont_cgroup_name(cgrp);
+ 	pr_cont(" mems_allowed=%s\n", cpuset_nodelist);
+ 
 -- 
-tejun
+1.9.1
