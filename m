@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476AbaEENbW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:31:22 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:48911 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaEENbU (ORCPT
+	id S932509AbaEENbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:31:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46342 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaEENbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:31:20 -0400
-Date: Mon, 5 May 2014 15:31:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        akpm@linux-foundation.org, khilman@linaro.org, tglx@linutronix.de,
-        axboe@fb.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
-Message-ID: <20140505133113.GD1429@laptop.programming.kicks-ass.net>
-References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
- <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+	Mon, 5 May 2014 09:31:38 -0400
+Date: Mon, 5 May 2014 06:31:37 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH] drivercore: fix a corner case for deferred probe
+Message-ID: <20140505133137.GA4572@kroah.com>
+References: <1398045202-5714-1-git-send-email-weiyang@linux.vnet.ibm.com>
+ <20140505022805.GA15162@richard>
+ <20140505030432.GA11957@kroah.com>
+ <20140505084717.GA5712@richard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140505123706.GP17778@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140505084717.GA5712@richard>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 05, 2014 at 02:37:06PM +0200, Peter Zijlstra wrote:
-> On Wed, Apr 16, 2014 at 12:40:01AM -0700, tip-bot for Frederic Weisbecker wrote:
-> > Commit-ID:  72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61
-> > Gitweb:     http://git.kernel.org/tip/72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61
-> > Author:     Frederic Weisbecker <fweisbec@gmail.com>
-> > AuthorDate: Tue, 18 Mar 2014 21:12:53 +0100
-> > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
-> > CommitDate: Thu, 3 Apr 2014 18:05:21 +0200
-> > 
-> > nohz: Move full nohz kick to its own IPI
-> > 
-> > Now that we have smp_queue_function_single() which can be used to
-> > safely queue IPIs when interrupts are disabled and without worrying
-> > about concurrent callers, lets use it for the full dynticks kick to
-> > notify a CPU that it's exiting single task mode.
-> > 
-> > This unbloats a bit the scheduler IPI that the nohz code was abusing
-> > for its cool "callable anywhere/anytime" properties.
-> > 
-> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Jens Axboe <axboe@fb.com>
-> > Cc: Kevin Hilman <khilman@linaro.org>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+On Mon, May 05, 2014 at 04:47:17PM +0800, Wei Yang wrote:
+> On Sun, May 04, 2014 at 08:04:32PM -0700, Greg KH wrote:
+> >On Mon, May 05, 2014 at 10:28:05AM +0800, Wei Yang wrote:
+> >> Hi, all
+> >> 
+> >> Anyone has some comment on this?
+> >
+> >Did you miss the patch from Grant that is now in Linus's tree that
+> >should resolve this issue?
 > 
-> So I suspect this is the patch that makes Ingo's machines unhappy, they
-> appear to get stuck thusly:
+> Hi, Greg,
 > 
-> [10513.382910] RIP: 0010:[<ffffffff8112b7da>]  [<ffffffff8112b7da>] generic_exec_single+0x9a/0x180
+> Nice to hear from you.
 > 
-> [10513.481704]  [<ffffffff8112c092>] smp_queue_function_single+0x42/0xa0
-> [10513.488251]  [<ffffffff81126ce0>] tick_nohz_full_kick_cpu+0x50/0x80
-> [10513.494661]  [<ffffffff810f4b0e>] enqueue_task_fair+0x59e/0x6c0
-> [10513.506469]  [<ffffffff810e3d6a>] enqueue_task+0x3a/0x60
-> [10513.511836]  [<ffffffff810e8ac3>] __migrate_task+0x123/0x150
-> [10513.523535]  [<ffffffff810e8b0d>] migration_cpu_stop+0x1d/0x30
-> [10513.529401]  [<ffffffff81143460>] cpu_stopper_thread+0x70/0x120
-> 
-> I'm not entirely sure how yet, but this is by far the most likely
-> candidate. Ingo, if you still have the vmlinuz matching this trace (your
-> hang2.txt) could you have a peek where that RIP lands?
-> 
-> If that is indeed the csd_lock() function, then this is it and
-> something's buggered.
+> Would you mind telling me the exact tree and commit? I searched in the
+> git.kernel.org, and see several Linus's tree, including Linus Torvalds and
+> Linus Walleij. So, not sure which you are pointing to. With the exact commit
+> and tree, I could take a more deep look into it :-)
 
-On a kernel build from your .config the +0x9a is indeed very close to
-that wait loop; of course 0x9a isn't even an instruction boundary for me
-so its all a bit of a guess.
+Use Linus Torvalds's tree, and look at commit
+58b116bce13612e5aa6fcd49ecbd4cf8bb59e835 "drivercore: deferral race
+condition fix"
+
+> BTW, I am using this tree:
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> based on commit "455c6fd Linux 3.14".
+
+That is the right tree, but a very old commit, please update your tree.
+
+thanks,
+
+greg k-h
