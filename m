@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468AbaEEN1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 09:27:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272AbaEEN1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 09:27:35 -0400
-Date: Mon, 5 May 2014 15:26:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: lock_task_sighand() && rcu_boost()
-Message-ID: <20140505132659.GA17996@redhat.com>
-References: <20140503161133.GA8838@redhat.com> <20140504180145.GC8754@linux.vnet.ibm.com> <20140504191757.GA11319@redhat.com> <20140504223804.GF8754@linux.vnet.ibm.com>
+	id S932476AbaEENbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 09:31:22 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48911 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932352AbaEENbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 09:31:20 -0400
+Date: Mon, 5 May 2014 15:31:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, khilman@linaro.org, tglx@linutronix.de,
+        axboe@fb.com
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:timers/nohz] nohz: Move full nohz kick to its own IPI
+Message-ID: <20140505133113.GD1429@laptop.programming.kicks-ass.net>
+References: <tip-72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61@git.kernel.org>
+ <20140505123706.GP17778@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140504223804.GF8754@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140505123706.GP17778@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04, Paul E. McKenney wrote:
->
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -884,6 +884,27 @@ static inline void rcu_read_lock(void)
->  /**
->   * rcu_read_unlock() - marks the end of an RCU read-side critical section.
->   *
-> + * In most situations, rcu_read_unlock() is immune from deadlock.
-> + * However, in kernels built with CONFIG_RCU_BOOST, rcu_read_unlock()
-> + * is responsible for deboosting, which it does via rt_mutex_unlock().
-> + * However, this function acquires the scheduler's runqueue and
-> + * priority-inheritance spinlocks.  Thus, deadlock could result if the
-> + * caller of rcu_read_unlock() already held one of these locks or any lock
-> + * acquired while holding them.
-> + *
-> + * That said, RCU readers are never priority boosted unless they were
-> + * preempted.  Therefore, one way to avoid deadlock is to make sure
-> + * that preemption never happens within any RCU read-side critical
-> + * section whose outermost rcu_read_unlock() is called with one of
-> + * rt_mutex_unlock()'s locks held.
-> + *
-> + * Given that the set of locks acquired by rt_mutex_unlock() might change
-> + * at any time, a somewhat more future-proofed approach is to make sure that
-> + * that preemption never happens within any RCU read-side critical
-> + * section whose outermost rcu_read_unlock() is called with one of
-> + * irqs disabled.  This approach relies on the fact that rt_mutex_unlock()
-> + * currently only acquires irq-disabled locks.
-> + *
->   * See rcu_read_lock() for more information.
->   */
->  static inline void rcu_read_unlock(void)
+On Mon, May 05, 2014 at 02:37:06PM +0200, Peter Zijlstra wrote:
+> On Wed, Apr 16, 2014 at 12:40:01AM -0700, tip-bot for Frederic Weisbecker wrote:
+> > Commit-ID:  72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61
+> > Gitweb:     http://git.kernel.org/tip/72aacf0259bb7d53b7a3b5b2f7bf982acaa52b61
+> > Author:     Frederic Weisbecker <fweisbec@gmail.com>
+> > AuthorDate: Tue, 18 Mar 2014 21:12:53 +0100
+> > Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+> > CommitDate: Thu, 3 Apr 2014 18:05:21 +0200
+> > 
+> > nohz: Move full nohz kick to its own IPI
+> > 
+> > Now that we have smp_queue_function_single() which can be used to
+> > safely queue IPIs when interrupts are disabled and without worrying
+> > about concurrent callers, lets use it for the full dynticks kick to
+> > notify a CPU that it's exiting single task mode.
+> > 
+> > This unbloats a bit the scheduler IPI that the nohz code was abusing
+> > for its cool "callable anywhere/anytime" properties.
+> > 
+> > Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Jens Axboe <axboe@fb.com>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> 
+> So I suspect this is the patch that makes Ingo's machines unhappy, they
+> appear to get stuck thusly:
+> 
+> [10513.382910] RIP: 0010:[<ffffffff8112b7da>]  [<ffffffff8112b7da>] generic_exec_single+0x9a/0x180
+> 
+> [10513.481704]  [<ffffffff8112c092>] smp_queue_function_single+0x42/0xa0
+> [10513.488251]  [<ffffffff81126ce0>] tick_nohz_full_kick_cpu+0x50/0x80
+> [10513.494661]  [<ffffffff810f4b0e>] enqueue_task_fair+0x59e/0x6c0
+> [10513.506469]  [<ffffffff810e3d6a>] enqueue_task+0x3a/0x60
+> [10513.511836]  [<ffffffff810e8ac3>] __migrate_task+0x123/0x150
+> [10513.523535]  [<ffffffff810e8b0d>] migration_cpu_stop+0x1d/0x30
+> [10513.529401]  [<ffffffff81143460>] cpu_stopper_thread+0x70/0x120
+> 
+> I'm not entirely sure how yet, but this is by far the most likely
+> candidate. Ingo, if you still have the vmlinuz matching this trace (your
+> hang2.txt) could you have a peek where that RIP lands?
+> 
+> If that is indeed the csd_lock() function, then this is it and
+> something's buggered.
 
-Great! And I agree with "might change at any time" part.
-
-I'll update lock_task_sighand() after you push this change (or please feel
-free to do this yourself). Cleanup is not that important, of course, but a
-short comment referring the documentation above can help another reader to
-understand the "unnecessary" local_irq_save/preempt_disable calls.
-
-Thanks Paul.
-
-Oleg.
-
+On a kernel build from your .config the +0x9a is indeed very close to
+that wait loop; of course 0x9a isn't even an instruction boundary for me
+so its all a bit of a guess.
