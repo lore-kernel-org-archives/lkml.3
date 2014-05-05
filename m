@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865AbaEEHlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 03:41:15 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:62060 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635AbaEEHlN (ORCPT
+	id S1754825AbaEEHrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 03:47:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54024 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754681AbaEEHrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 03:41:13 -0400
-Message-ID: <53674094.2020307@gmail.com>
-Date: Mon, 05 May 2014 09:41:08 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
-        Dario Faggioli <raistlin@linux.it>,
+	Mon, 5 May 2014 03:47:46 -0400
+Date: Mon, 5 May 2014 09:47:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>,
         fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
@@ -27,59 +23,76 @@ CC: mtk.manpages@gmail.com, Juri Lelli <juri.lelli@gmail.com>,
         liming.wang@windriver.com, jkacur@redhat.com,
         linux-man@vger.kernel.org
 Subject: Re: sched_{set,get}attr() manpage
-References: <CAKgNAkgw+U44SH0wd_06ZMXaCC9nCX4NZxZHkMKUdC7E7YxBhQ@mail.gmail.com> <20140214161929.GL27965@twins.programming.kicks-ass.net> <53020C9D.1050208@gmail.com> <20140428081858.GX13658@twins.programming.kicks-ass.net> <535FA467.2070403@gmail.com> <20140429160441.GU11096@twins.programming.kicks-ass.net> <5360D9E5.9080206@gmail.com> <20140430130937.GH30445@twins.programming.kicks-ass.net> <20140503124355.5d927080518051ca507bc381@gmail.com> <536735E0.7020204@gmail.com> <20140505072114.GY11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140505072114.GY11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20140505074736.GZ11096@twins.programming.kicks-ass.net>
+References: <53020C9D.1050208@gmail.com>
+ <20140428081858.GX13658@twins.programming.kicks-ass.net>
+ <535FA467.2070403@gmail.com>
+ <20140429160441.GU11096@twins.programming.kicks-ass.net>
+ <5360D9E5.9080206@gmail.com>
+ <20140430130937.GH30445@twins.programming.kicks-ass.net>
+ <20140503124355.5d927080518051ca507bc381@gmail.com>
+ <536735E0.7020204@gmail.com>
+ <20140505072114.GY11096@twins.programming.kicks-ass.net>
+ <53674094.2020307@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="e5bfZ/T2xnjpUIbw"
+Content-Disposition: inline
+In-Reply-To: <53674094.2020307@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/05/2014 09:21 AM, Peter Zijlstra wrote:
-> On Mon, May 05, 2014 at 08:55:28AM +0200, Michael Kerrisk (man-pages) wrote:
->> Hi Peter,
->>
->> Looks like a good set of comments from Juri. Could you revise and 
->> resubmit?
-> 
-> Yeah, I'll try and get it done today, but there's a few icky bugs
-> waiting for my attention as well, I'll do me bestest :-)
-> 
->> By the way, I assume you are just writing this page as raw text.
->> While I'd prefer to get proper man markup source, I'll add that
->> if you if you don't :-/. 
-> 
-> Well, learning *roff will likely take me more time than writing this
-> text + all revisions so far :/ But yeah, I appreciate the grief.
-> 
-> Is there a TeX variant one could use to generate the *roff muck? While
-> my TeX isn't entirely fresh its at least something I've done lots of.
 
-Don't worry -- just send me the plain text; I'll do it. I appreciate 
-you writing the text in the first place; I'll handle the rest--it won't
-take me too long, and probably I'll find things to fix/check on the way.
+--e5bfZ/T2xnjpUIbw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> But, in that case, I need to know the
->> copyright and license you want to use. Please see
->> https://www.kernel.org/doc/man-pages/licenses.html
-> 
-> GPLv2 + DOC (not v2+) sounds good.
+On Mon, May 05, 2014 at 09:41:08AM +0200, Michael Kerrisk (man-pages) wrote:
+> >> But, in that case, I need to know the
+> >> copyright and license you want to use. Please see
+> >> https://www.kernel.org/doc/man-pages/licenses.html
+> >=20
+> > GPLv2 + DOC (not v2+) sounds good.
+>=20
+> I'm a little unclear here. Do you or don't you mean
+> https://www.kernel.org/doc/man-pages/licenses.html#gpl
+> ?
 
-I'm a little unclear here. Do you or don't you mean
-https://www.kernel.org/doc/man-pages/licenses.html#gpl
-?
+A variant with out the +, just like I do my kernel code, no greater gpl
+versions. However,=20
 
-(Note, I'd really prefer to stick to one of those licenses
-(without variants). (My personal preference is the "verbatim"
-license, which is the most widely used one.) There's already
-do many licenses in in man-pages...
+> (Note, I'd really prefer to stick to one of those licenses
+> (without variants). (My personal preference is the "verbatim"
+> license, which is the most widely used one.) There's already
+> do many licenses in in man-pages...
 
-Cheers,
+Verbatim is OK with me I suppose. Its only text after all, who cares
+about that :-)
 
-Michael
+/me runs for the hills.
 
+--e5bfZ/T2xnjpUIbw
+Content-Type: application/pgp-signature
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTZ0IYAAoJEHZH4aRLwOS6Ob8QAKQtWPqArQKnlVJ+Ghvw3pqe
+55Qo2do1MzM8NUGZ/lkGYReqtspIyVD6llhYLq44h818vF1lQgrE9tKG9kLDXdtI
+zDfnqak8XEBRjq2Xu+aXBdTrJtX8Soy+jpGirjcUm06nHWBoYMytLc1nuPzPLuhE
+9UjW/6Dhc6ijpCB6T7EpSjlf7ceCE0I0clMi68jmV6AI9+jwl4QzV9likh1/iqKB
+G5JoII0qngenSYPP4z2d1yr03KV/JADSB8EFtY1GD9uS3oY+Ym19mBtB6mNfwQ0Z
+W1XTDbkuL9jvb4LdMcbwRJxFeQ78bXHQKTl7WHpXms3Jt3MCkjv/w8dUd6uOk/bk
+LHQWxSHWKhpTjAgc6LwItilFER+gaP3rea1meuq8MMl2SeKMpzQLY+xPl82n8I7P
+6fFvmVFW/q5hj5M6GYDNgpdLLxritYmvexLpUj30umS7LpPLwzvUR4gifrtByznM
+L/WKQn1ajbPsvxptfs6yiIOKcC5bPb2fVN9wvC7a80szPj8h4QODqtcTwZ/xpsPf
+LdlODf/5z7xS2oMYww449nGApbn/OJ7z1WoF8w4+ymB6pY0s6cdvLpVq8cstP/mH
+a4ofv1yzt3WyFHT/aNH4SScHCdi2SRrgQNOMynUyR/tS1I1zCzkfWnpe4X8ohTso
+/nerT4RSFwvnNPb1RlR6
+=nK7j
+-----END PGP SIGNATURE-----
+
+--e5bfZ/T2xnjpUIbw--
