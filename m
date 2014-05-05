@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182AbaEEOxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:53:30 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:40590 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932448AbaEEOx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:53:28 -0400
+	id S933200AbaEEOxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:53:36 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58498 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932448AbaEEOxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 10:53:33 -0400
+Date: Mon, 5 May 2014 16:53:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
+        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 1/7] apei, mce: Call MCE-specific code only for X86
+ architecture.
+Message-ID: <20140505145331.GC4373@pd.tnic>
+References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org>
+ <20140505114445.GB4373@pd.tnic>
+ <5367A181.3060300@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <536794CB.8060903@linuxfoundation.org>
-References: <CA+55aFz6Sxjy9jdai=TkeB2Rbpu0ydL4-YW4j-S-9oixDu5oZw@mail.gmail.com>
-	<CA+5PVA4Wt19ByW5c__jJWFFz0_0uvnbQeRn13w6S43TMZJt8YA@mail.gmail.com>
-	<536794CB.8060903@linuxfoundation.org>
-Date: Mon, 5 May 2014 07:53:27 -0700
-X-Google-Sender-Auth: 1hO4ipcOgefi_pYK1UV8Brp4NW0
-Message-ID: <CA+55aFw9H2bym1JUPbaa9xP7jN9Q=hawyXS2gPEv+mPPWmt6BQ@mail.gmail.com>
-Subject: Re: Linux 3.15-rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5367A181.3060300@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 5, 2014 at 6:40 AM, Konstantin Ryabitsev
-<konstantin@linuxfoundation.org> wrote:
->
-> Looks like it got placed into /v3.x/ instead of /testing/. I'll move it
-> into /testing/ shortly, which should kick off the site update (the
-> script only looks for -rc kernels in /testing/).
+On Mon, May 05, 2014 at 04:34:41PM +0200, Tomasz Nowicki wrote:
+> acpi_disable_cmcff as global value can switch off/on MC entries
+> analysing via kernel args.
 
-Thanks Konstantin. My bad.
+No, it switches off firmware first mode for correctable errors because
+of buggy BIOSes - 9ad95879cd1b2 (what else...)
 
-My release automation is almost entirely scripted, but the "where does
-it go" part is still me telling the scripts, and I screwed that up. I
-guess I should just add that too to the scripting..
+> This glob value resides in x86 ACPI code and has meaning only for MCE
+> related mechanism,
 
-             Linus
+Of course it doesn't!
+
+> that is why I have moved it under hest_parse_cmc.
+
+See APEI section in the ACPI spec "18.4 Firmware First Error Handling."
+
+Regardless of what your version of APEI does, you actually shouldn't
+need to touch acpi_disable_cmcff at all as it not arch-specific.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
