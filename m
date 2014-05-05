@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286AbaEEKn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:43:57 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59644 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaEEKnz (ORCPT
+	id S1756349AbaEEKqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:46:10 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:48887 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190AbaEEKqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:43:55 -0400
+	Mon, 5 May 2014 06:46:08 -0400
 MIME-Version: 1.0
-X-Originating-IP: [60.248.88.209]
-In-Reply-To: <20140505102830.GN4963@mwanda>
-References: <1399279631.18695.27.camel@localhost>
-	<20140505102830.GN4963@mwanda>
-Date: Mon, 5 May 2014 18:43:53 +0800
-Message-ID: <CAKiknE8i5ov3RfGaUjnNmZj1FuouYS3cP5q5CAGfwC82wX3NZw@mail.gmail.com>
-Subject: Re: [PATCH v1.1 2/16] arcmsr: Adding code to support MSI-X interrupt
-From: =?UTF-8?B?6buD5riF6ZqG?= <ching2048@areca.com.tw>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: James Bottomley <jbottomley@parallels.com>,
-        Tomas Henzl <thenzl@redhat.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140505202628.7f406c1b77e05d0ad56db54c@canb.auug.org.au>
+References: <20140505171459.3ce28e8e0c4d6b107a66eb97@canb.auug.org.au>
+ <CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com>
+ <20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
+ <CAKgNAkj4hsTBqfD72ZhoCrHdV4S_68tJEQ_AaE0KWO_cySqeHw@mail.gmail.com> <20140505202628.7f406c1b77e05d0ad56db54c@canb.auug.org.au>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 5 May 2014 12:45:46 +0200
+Message-ID: <CAKgNAkg3X3osNCdWYs4abru9kWGakF2pFuN5jje5HdNV=pK2-g@mail.gmail.com>
+Subject: Re: linux-next: Tree for May 5
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@openvz.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Mon, May 5, 2014 at 12:26 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Michael,
+>
+> On Mon, 5 May 2014 12:06:27 +0200 "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+>>
+>> Okay, must be my problem then. Sorry for the noise. Somehow, I'm not
+>> syncing my linux-next correctly then. (Is the proper way of doing this
+>> documented somewhere?)
+>
+> Yeah, in the stuff you quoted :-)
 
-Thanks for correcting this bug.
+:-}
+> "If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+> (see below)."
+>
+> then later
+>
+> "There is a wiki covering stuff to do with linux-next at
+> http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel."
+>
+> Unfortunately, that site seems to have vanished :-(  Seems like I need to
+> update my daily release note.
 
-Regards,
-Ching
+It was those instructions that I thought I'd been following (from
+memory), and then when I went to google for the site I recalled
+finding them on, I didn't get a match. Now I know why ;-).
 
-2014-05-05 18:28 GMT+08:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Mon, May 05, 2014 at 04:47:11PM +0800, ching wrote:
->> +static int
->> +arcmsr_request_irq(struct pci_dev *pdev, struct AdapterControlBlock *acb)
->> +{
->> +     int     i, j, r;
->> +     struct msix_entry entries[ARCMST_NUM_MSIX_VECTORS];
->> +
->> +     if (!pci_find_capability(pdev, PCI_CAP_ID_MSIX))
->> +             goto msi_int;
->> +     for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++)
->> +             entries[i].entry = i;
->> +     r = pci_enable_msix(pdev, entries, ARCMST_NUM_MSIX_VECTORS);
->> +     if (r < 0)
->> +             goto msi_int;
->> +     if (r == 0) {
->> +             for (i = 0; i < ARCMST_NUM_MSIX_VECTORS; i++) {
->> +                     if (request_irq(entries[i].vector,
->> +                             arcmsr_do_interrupt, 0, "arcmsr", acb)) {
->> +                             pr_warn("arcmsr%d: request_irq =%d failed!\n",
->> +                                     acb->host->host_no, pdev->irq);
->> +                             for (j = 0 ; j < i ; j++)
->> +                                     free_irq(entries[i].vector, acb);
->
-> This is a bug here.  Sorry for not noticing the first time I reviewed
-> this patch.  It should be "j" instead of "i" in
-> free_irq(entries[i].vector, acb);.
->
->> +                             pci_disable_msix(pdev);
->> +                             goto msi_int;
->> +                     }
->> +                     acb->entries[i] = entries[i];
->> +             }
->> +             acb->acb_flags |= ACB_F_MSIX_ENABLED;
->> +             pr_info("arcmsr%d: msi-x enabled\n", acb->host->host_no);
->> +             return ARC_SUCCESS;
->> +     } else {
->> +             if (pci_enable_msix(pdev, entries, r))
->> +                     goto msi_int;
->> +             for (i = 0; i < r; i++) {
->> +                     if (request_irq(entries[i].vector,
->> +                             arcmsr_do_interrupt, 0, "arcmsr", acb)) {
->> +                             pr_warn("arcmsr%d: request_irq =%d failed!\n",
->> +                                     acb->host->host_no, pdev->irq);
->> +                             for (j = 0 ; j < i ; j++)
->> +                                     free_irq(entries[i].vector, acb);
->
-> The same thing here.
->
-> But otherwise so far as style goes this function is a lot better in
-> this version.  Thanks.  Also the patchset is split up nicely into
-> patches which do one thing per patch so that's nice as well.
->
-> regards,
-> dan carpenter
->
+> Since linux-next is rebased and remoerged every day, you need to "git
+> fetch" the tree and then "git reset" to the new tree, not "git pull".
+> The latter will try to merge the new linux-next into the previous one  -
+> which should normally make a read mess :-)
+
+Okay -- thanks.
+
+Cheers,
+
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
