@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567AbaEEVI6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 17:08:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33753 "EHLO
+	id S1756647AbaEEVKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 17:10:03 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33761 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363AbaEEVI5 (ORCPT
+	with ESMTP id S1755066AbaEEVKB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 17:08:57 -0400
-Date: Mon, 05 May 2014 17:08:55 -0400 (EDT)
-Message-Id: <20140505.170855.814445464231092040.davem@davemloft.net>
-To: sam@ravnborg.org
-Cc: linux-kernel@vger.kernel.org, iamjoonsoo.kim@lge.com,
-        sparclinux@vger.kernel.org, hannes@cmpxchg.org, cl@linux.com,
-        penberg@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH] slab: Fix off by one in object max number tests.
+	Mon, 5 May 2014 17:10:01 -0400
+Date: Mon, 05 May 2014 17:09:59 -0400 (EDT)
+Message-Id: <20140505.170959.2172440110209805460.davem@davemloft.net>
+To: soren.brinkmann@xilinx.com
+Cc: michal.simek@xilinx.com, nicolas.ferre@atmel.com, git@xilinx.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 5/5] net: macb: Fix race between HW and driver
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140505210507.GA5130@ravnborg.org>
-References: <20140505.162004.1797345518474659123.davem@davemloft.net>
-	<20140505.165756.1229178386133288960.davem@davemloft.net>
-	<20140505210507.GA5130@ravnborg.org>
+In-Reply-To: <7c62baab-5f60-4f04-87f7-6b53fecc4746@CH1EHSMHS038.ehs.local>
+References: <1399243382-12528-6-git-send-email-soren.brinkmann@xilinx.com>
+	<20140505.165653.1184059074645793091.davem@davemloft.net>
+	<7c62baab-5f60-4f04-87f7-6b53fecc4746@CH1EHSMHS038.ehs.local>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 14:08:57 -0700 (PDT)
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 05 May 2014 14:10:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Mon, 5 May 2014 23:05:07 +0200
+From: Sören Brinkmann <soren.brinkmann@xilinx.com>
+Date: Mon, 5 May 2014 14:05:19 -0700
 
-> On Mon, May 05, 2014 at 04:57:56PM -0400, David Miller wrote:
->> From: David Miller <davem@davemloft.net>
->> Date: Mon, 05 May 2014 16:20:04 -0400 (EDT)
+> On Mon, 2014-05-05 at 04:56PM -0400, David Miller wrote:
+>> From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+>> Date: Sun,  4 May 2014 15:43:02 -0700
 >> 
+>> > Under "heavy" RX load, the driver cannot handle the descriptors fast
+>> > enough. In detail, when a descriptor is consumed, its used flag is
+>> > cleared and once the RX budget is consumed all descriptors with a
+>> > cleared used flag are prepared to receive more data. Under load though,
+>> > the HW may constantly receive more data and use those descriptors with a
+>> > cleared used flag before they are actually prepared for next usage.
 >> > 
->> > If freelist_idx_t is a byte, SLAB_OBJ_MAX_NUM should be 255 not 256,
->> > and likewise if freelist_idx_t is a short, then it should be 65535 not
->> > 65536.
+>> > The head and tail pointers into the RX-ring should always be valid and
+>> > we can omit clearing and checking of the used flag.
 >> > 
->> > Fixes: a41adfa ("slab: introduce byte sized index for the freelist of a slab")
->> > Signed-off-by: David S. Miller <davem@davemloft.net>
->> > ---
->> > 
->> > This was leading to all kinds of random crashes on sparc64 where PAGE_SIZE
->> > is 8192.  One problem shown was that if spinlock debugging was enabled,
->> > we'd get deadlocks in copy_pte_range() or do_wp_page() with the same cpu
->> > already holding a lock it shouldn't hold, or the lock belonging to a
->> > completely unrelated process.
+>> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 >> 
->> It turns out that after some more testing, I'm still getting spinlock
->> debugging problems with this fix applied.
+>> Isn't the RX_USED bit the only thing that controls what RX entries
+>> the chip will try to use?
 >> 
->> The change is still very much correct I think, however.
+>> I can't see how you can just remove the RX_USED bit handling
+>> altogether.
+>> 
+>> The problem actually seems to be that in the current code we clear the
+>> RX_USED bit before we actually reallocate the buffer and set it up.
+>> 
+>> It should be a bug to see the RX_USED bit set in gem_rx_refill(), and
+>> the only reason why it can happen is exactly because you're clearing it
+>> too early in gem_rx().
 > 
-> There is a related patch in this area which I think is not yet applied.
-> 
-> See: https://lkml.org/lkml/2014/4/18/28
-> 
-> Maybe this is realted.
+> I don't follow. The HW uses the descriptor and the driver handles the
+> received data. So, in gem_rx_refill we should actually only replace
+> descriptor which have the RX_USED _set_, not? Currently the test tests
+> for the opposite, since SW clears RX_USED in gem_rx. This patch just
+> removes those two parts. The RX_USED is left as is (HW should have set
+> it). And in gem_rx_refill we simply rely on the head and tail pointers
+> to refill the used descriptors. I didn't see a reason to do the additional
+> checking of the RX_USED bit.
+> After the refill the RX_USED flags are of course cleared for all
+> refilled descriptors.
 
-Thanks, I'm testing with that patch added as well.
+Aha, that makes sense, I didn't notice that RX_USED is cleared as a side
+effect of gem_rx_refill()'s work.
+
+I'll apply this series, thanks for explaining.
