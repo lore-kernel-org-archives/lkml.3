@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaEEKFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 06:05:09 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:49291 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713AbaEEKFH (ORCPT
+	id S1756191AbaEEKGt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 06:06:49 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:42077 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756078AbaEEKGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 06:05:07 -0400
-Subject: [PATCH v1.1 10/16] arcmsr: clear outbound doorbell buffer
- completely
-From: ching <ching2048@areca.com.tw>
-To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
-        linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 May 2014 18:04:59 +0800
-Message-ID: <1399284299.4398.45.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 May 2014 06:06:48 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
+References: <20140505171459.3ce28e8e0c4d6b107a66eb97@canb.auug.org.au>
+ <CAHO5Pa0D8bxBV98feBt2qk_gb3XdTDcmaa6bD7eQv4UOdjcFrA@mail.gmail.com> <20140505195711.fcce1825483f7a1ce707c2c6@canb.auug.org.au>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 5 May 2014 12:06:27 +0200
+Message-ID: <CAKgNAkj4hsTBqfD72ZhoCrHdV4S_68tJEQ_AaE0KWO_cySqeHw@mail.gmail.com>
+Subject: Re: linux-next: Tree for May 5
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrey Vagin <avagin@openvz.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ching<>
+Hi Stephen,
 
-Clearing outbound doorbell buffer completely for adapter type C.
-This is to prevent getting garbage data input from IOP before ioctl command beginning.
+On Mon, May 5, 2014 at 11:57 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Michael,
+>
+> On Mon, 5 May 2014 10:42:23 +0200 Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+>>
+>> I don't know what the process is for clearing cruft out of linux-next
+>> is, but there's at least one piece of cruft that probably should go:
+>
+> I usually depend on maintainers to clean up their trees.
+>
+>> commit d30c01a0611d54926ac860721c933edafcc91905
+>> commit 8c013e265a8eca0ada9f1aaa6cd7590698dc7231
+>> commit e86263c9d00efb091a5215b9e4063378828d815c
+>
+> I can't find any of these commits in linux-next or any commits by Andrey
+> Vagin <avagin@openvz.org> ...
 
-Signed-off-by: Ching<>
----
+Okay, must be my problem then. Sorry for the noise. Somehow, I'm not
+syncing my linux-next correctly then. (Is the proper way of doing this
+documented somewhere?)
 
-diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
---- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:53:24.000000000 +0800
-+++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:53:42.000000000 +0800
-@@ -2920,11 +2920,23 @@ static void arcmsr_clear_doorbell_queue_
- 		break;
- 	case ACB_ADAPTER_TYPE_C: {
- 		struct MessageUnit_C *reg = (struct MessageUnit_C *)acb->pmuC;
--		uint32_t outbound_doorbell;
-+		uint32_t outbound_doorbell, i;
- 		/* empty doorbell Qbuffer if door bell ringed */
- 		outbound_doorbell = readl(&reg->outbound_doorbell);
- 		writel(outbound_doorbell, &reg->outbound_doorbell_clear);
- 		writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK, &reg->inbound_doorbell);
-+		for (i = 0; i < 200; i++) {
-+			msleep(20);
-+			outbound_doorbell = readl(&reg->outbound_doorbell);
-+			if (outbound_doorbell &
-+				ARCMSR_HBCMU_IOP2DRV_DATA_WRITE_OK) {
-+				writel(outbound_doorbell,
-+					&reg->outbound_doorbell_clear);
-+				writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK,
-+					&reg->inbound_doorbell);
-+			} else
-+				break;
-+		}
- 		}
- 	}
- }
-@@ -3152,9 +3164,7 @@ sleep:
- 				arcmsr_get_firmware_spec(acb);
- 				arcmsr_start_adapter_bgrb(acb);
- 				/* clear Qbuffer if door bell ringed */
--				outbound_doorbell = readl(&reg->outbound_doorbell);
--				writel(outbound_doorbell, &reg->outbound_doorbell_clear); /*clear interrupt */
--				writel(ARCMSR_HBCMU_DRV2IOP_DATA_READ_OK, &reg->inbound_doorbell);
-+				arcmsr_clear_doorbell_queue_buffer(acb);
- 				/* enable outbound Post Queue,outbound doorbell Interrupt */
- 				arcmsr_enable_outbound_ints(acb, intmask_org);
- 				atomic_set(&acb->rq_map_token, 16);
+> [P.S. Please trim replies to relevant bits ...]
+
+Ah yes--sorry.
+
+Cheers,
+
+Michael
 
 
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
