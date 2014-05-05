@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931AbaEEOe3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 10:34:29 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:47417 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932723AbaEEOe1 (ORCPT
+	id S932983AbaEEOfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 10:35:23 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59145 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932723AbaEEOfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 10:34:27 -0400
-Message-ID: <5367A181.3060300@linaro.org>
-Date: Mon, 05 May 2014 16:34:41 +0200
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Mon, 5 May 2014 10:35:22 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: rjw@rjwysocki.net, lenb@kernel.org, tony.luck@intel.com, bp@suse.de,
-        m.chehab@samsung.com, linux-edac@vger.kernel.org, x86@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH 1/7] apei, mce: Call MCE-specific code only for X86 architecture.
-References: <1397056476-9183-1-git-send-email-tomasz.nowicki@linaro.org> <1397056476-9183-2-git-send-email-tomasz.nowicki@linaro.org> <20140505114445.GB4373@pd.tnic>
-In-Reply-To: <20140505114445.GB4373@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140502164148.44c0674b@gandalf.local.home>
+References: <1399062223-18928-1-git-send-email-ddstreet@ieee.org> <20140502164148.44c0674b@gandalf.local.home>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Mon, 5 May 2014 10:35:01 -0400
+X-Google-Sender-Auth: qebw4WeNWhhBtFNyLU1hYnVpjv4
+Message-ID: <CALZtONB-wT16fPX7GjBVFO_5Bof3=zxviG22p6_9ymbnzA9QAA@mail.gmail.com>
+Subject: Re: [PATCH] plist: include -DDEBUG if CONFIG_DEBUG_PI_LIST
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.05.2014 13:44, Borislav Petkov wrote:
-> On Wed, Apr 09, 2014 at 05:14:29PM +0200, Tomasz Nowicki wrote:
->> This commit is dealing with MCE code in:
->> - hest.c
->> Move acpi_disable_cmcff flag to hest_parse_cmc() and makes
->> that depend on CONFIG_X86_MCE so that we do not have to maintain
->> acpi_disable_cmcff for architectures which do not support MCE.
->> Also, wrap architectural MCE header inside #ifdef CONFIG_X86_MCE.
+On Fri, May 2, 2014 at 4:41 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri,  2 May 2014 16:23:43 -0400
+> Dan Streetman <ddstreet@ieee.org> wrote:
+>
+>> lib/plist.c uses pr_debug() in its test function, which is compiled
+>> and run only when CONFIG_DEBUG_PI_LIST in set; however pr_debug()
+>> is compiled out unless -DDEBUG is set for the file.
 >>
->> - ghes.c
->> Wrap architectural MCE header inside #ifdef CONFIG_X86_MCE similar to rest
->> of the MCE code in this file.
+>> Update lib/Makefile to add -DDEBUG to CFLAGS_plist.o if
+>> CONFIG_DEBUG_PI_LIST is set, so that the pr_debug() output from
+>> plist_test() is shown.
+>
+> Why not just use printk(KERN_DEBUG ...) then if we always want to print
+> it?
+>
+> You could just place
+>
+> #define DEBUG
+>
+> in plist.c as well. Although I think just switching to printk() is
+> better.
+
+Agreed - since the entire function is already inside
+CONFIG_DEBUG_PI_LIST, there's no need to additionally require DEBUG so
+we should just use printk.  New patch to follow.
+
+Thanks!
+
+>
+> -- Steve
+>
 >>
->> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+>> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
 >> ---
->>   drivers/acpi/apei/ghes.c |    2 ++
->>   drivers/acpi/apei/hest.c |    8 ++++++--
->>   2 files changed, 8 insertions(+), 2 deletions(-)
+>>  lib/Makefile | 4 ++++
+>>  1 file changed, 4 insertions(+)
 >>
->> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
->> index dab7cb7..f7edffc 100644
->> --- a/drivers/acpi/apei/ghes.c
->> +++ b/drivers/acpi/apei/ghes.c
->> @@ -49,7 +49,9 @@
->>   #include <linux/aer.h>
+>> diff --git a/lib/Makefile b/lib/Makefile
+>> index 0cd7b68..fd1f4c8 100644
+>> --- a/lib/Makefile
+>> +++ b/lib/Makefile
+>> @@ -39,6 +39,10 @@ CFLAGS_kobject.o += -DDEBUG
+>>  CFLAGS_kobject_uevent.o += -DDEBUG
+>>  endif
 >>
->>   #include <acpi/ghes.h>
->> +#ifdef CONFIG_X86_MCE
->>   #include <asm/mce.h>
->> +#endif
->>   #include <asm/tlbflush.h>
->>   #include <asm/nmi.h>
->>
->> diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
->> index f5e37f3..98db702 100644
->> --- a/drivers/acpi/apei/hest.c
->> +++ b/drivers/acpi/apei/hest.c
->> @@ -36,7 +36,9 @@
->>   #include <linux/io.h>
->>   #include <linux/platform_device.h>
->>   #include <acpi/apei.h>
->> +#ifdef CONFIG_X86_MCE
->>   #include <asm/mce.h>
->> +#endif
+>> +ifeq ($(CONFIG_DEBUG_PI_LIST),y)
+>> +CFLAGS_plist.o += -DDEBUG
+>> +endif
+>> +
+>>  obj-$(CONFIG_GENERIC_IOMAP) += iomap.o
+>>  obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_iomap.o
+>>  obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
 >
-> Actually, I would prefer if you wrapped all the arch-specific calls into
-> arch-specific functions, say, convert
->
-> apei_mce_report_mem_error -> apei_arch_report_mem_error
->
-> and have default empty functions for arches which don't use that
-> functionality.
->
-> This way you can save yourself the ugly ifdeffery around the place.
->
-True, this can be improved as you suggested.
-
->>
->>   #include "apei-internal.h"
->>
->> @@ -133,6 +135,9 @@ static int __init hest_parse_cmc(struct acpi_hest_header *hest_hdr, void *data)
->>   	struct acpi_hest_ia_corrected *cmc;
->>   	struct acpi_hest_ia_error_bank *mc_bank;
->>
->> +	if (acpi_disable_cmcff)
->> +		return 1;
->
-> This could be
->
-> 	if (arch_disable_cmcff())
-> 		return 1;
->
-> with the default stub being
->
-> static inline bool arch_disable_cmcff(void)
-> {
-> 	return false;
-> }
->
-> and so on, like it is done in many other places in the kernel.
-
-acpi_disable_cmcff as global value can switch off/on MC entries 
-analysing via kernel args. This glob value resides in x86 ACPI code and 
-has meaning only for MCE related mechanism, that is why I have moved it 
-under hest_parse_cmc.
-
-Thanks.
-
-Tomasz
