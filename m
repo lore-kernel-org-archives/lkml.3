@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388AbaEEMnj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 08:43:39 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:40971 "EHLO
+	id S932454AbaEEMo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 08:44:26 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:41127 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932184AbaEEMne (ORCPT
+	by vger.kernel.org with ESMTP id S932363AbaEEMnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 08:43:34 -0400
+	Mon, 5 May 2014 08:43:37 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 08/50] printk: pr_debug_ratelimited: check state first to reduce "callbacks suppressed" messages
-Date: Mon,  5 May 2014 14:42:50 +0200
-Message-Id: <ec44c106c1641a532faaed93a7d26d4b3e90cc25.1399292849.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 44/50] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+Date: Mon,  5 May 2014 14:43:26 +0200
+Message-Id: <ff308965e7189645ad5f8343c145388002ac49fe.1399292849.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
 References: <7d4f4737432af6216e86975e587331b9d8b08063.1399292849.git.jslaby@suse.cz>
@@ -24,72 +27,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+From: Li Zefan <lizefan@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 29fc2bc75393864bbc9b90a7a13a0d0e11c6f41e upstream.
+commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
 
-pr_debug_ratelimited should be coded similarly to dev_dbg_ratelimited
-to reduce the "callbacks suppressed" messages.
+We triggered soft-lockup under stress test on 2.6.34 kernel.
 
-Add #include <linux/dynamic_debug.h> to printk.h. Unfortunately, this
-new #include must be after the prototype/declaration of function printk.
+BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
+...
+[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
+[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
+[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
+[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
+[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
+[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
+[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
+[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
+[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
+[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
+[<c012334c>] (do_sync_write+0x98/0xd4)
+[<c0123a84>] (vfs_write+0xa8/0x150)
+[<c0123d74>] (sys_write+0x3c/0xc0)]
 
-It may be better to split out these _ratelimited declarations into
-a separate file one day.
+Fix this by adding a cond_resched() in the while loop.
 
-Any use of these pr_<foo>_ratelimited functions must also have another
-specific #include <ratelimited.h>.  Most users have this done indirectly
-via #include <linux/kernel.h>
-
-printk.h may not #include <linux/ratelimit.h> as it causes circular
-dependencies and compilation failures.
-
-Signed-off-by: Joe Perches <joe@perches.com>
-Tested-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[akpm@linux-foundation.org: don't initialize `ret']
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/linux/printk.h | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ fs/jffs2/nodemgmt.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index e6131a782481..694925837a16 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -233,6 +233,8 @@ extern asmlinkage void dump_stack(void) __cold;
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #endif
+diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
+index 03310721712f..41789e6fa6fe 100644
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -211,20 +211,25 @@ out:
+ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+ 			   uint32_t *len, uint32_t sumsize)
+ {
+-	int ret = -EAGAIN;
++	int ret;
+ 	minsize = PAD(minsize);
  
-+#include <linux/dynamic_debug.h>
+ 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+ 
+-	spin_lock(&c->erase_completion_lock);
+-	while(ret == -EAGAIN) {
++	while (true) {
++		spin_lock(&c->erase_completion_lock);
+ 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
+ 		if (ret) {
+ 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
+ 				  __func__, ret);
+ 		}
++		spin_unlock(&c->erase_completion_lock);
 +
- /* If you are writing a driver, please use dev_dbg instead */
- #if defined(CONFIG_DYNAMIC_DEBUG)
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
-@@ -343,7 +345,19 @@ extern asmlinkage void dump_stack(void) __cold;
- #endif
++		if (ret == -EAGAIN)
++			cond_resched();
++		else
++			break;
+ 	}
+-	spin_unlock(&c->erase_completion_lock);
+ 	if (!ret)
+ 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
  
- /* If you are writing a driver, please use dev_dbg instead */
--#if defined(DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+/* descriptor check is first to prevent flooding with "callbacks suppressed" */
-+#define pr_debug_ratelimited(fmt, ...)					\
-+do {									\
-+	static DEFINE_RATELIMIT_STATE(_rs,				\
-+				      DEFAULT_RATELIMIT_INTERVAL,	\
-+				      DEFAULT_RATELIMIT_BURST);		\
-+	DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, fmt);			\
-+	if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT) &&	\
-+	    __ratelimit(&_rs))						\
-+		__dynamic_pr_debug(&descriptor, fmt, ##__VA_ARGS__);	\
-+} while (0)
-+#elif defined(DEBUG)
- #define pr_debug_ratelimited(fmt, ...)					\
- 	printk_ratelimited(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
 -- 
 1.9.2
 
