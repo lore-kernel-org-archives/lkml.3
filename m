@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458AbaEEPNJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 11:13:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:7529 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753207AbaEEPNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 11:13:07 -0400
-Date: Mon, 5 May 2014 11:13:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] tracing: Remove myself as a tracing maintainer
-Message-ID: <20140505111301.65497e33@gandalf.local.home>
-In-Reply-To: <1399131991-13216-1-git-send-email-fweisbec@gmail.com>
-References: <1399131991-13216-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
+	id S1753272AbaEEPNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 11:13:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750962AbaEEPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 11:13:43 -0400
+Date: Mon, 5 May 2014 17:12:52 +0200
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: John Fastabend <john.r.fastabend@intel.com>
+Cc: Zhouyi Zhou <zhouzhouyi@gmail.com>, davem@davemloft.net,
+        steffen.klassert@secunet.com, fan.du@windriver.com,
+        dborkman@redhat.com, minipli@googlemail.com, tgraf@suug.ch,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhouyi Zhou <yizhouzhou@ict.ac.cn>, brouer@redhat.com
+Subject: Re: [PATCH] netdev: pktgen xmit packet through vlan interface
+Message-ID: <20140505171252.49773a5a@redhat.com>
+In-Reply-To: <5363A4E0.2000403@intel.com>
+References: <1399015092-28643-1-git-send-email-zhouzhouyi@gmail.com>
+	<20140502151921.014fbeec@redhat.com>
+	<5363A4E0.2000403@intel.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat,  3 May 2014 17:46:31 +0200
-Frederic Weisbecker <fweisbec@gmail.com> wrote:
+On Fri, 02 May 2014 07:00:00 -0700
+John Fastabend <john.r.fastabend@intel.com> wrote:
 
-> It has been a while since I last sent a tracing patch. I always keep an
-> eye on tracing evolutions and contributions in general but given
-> how busy I am with nohz, isolation and more generally core cleanups stuff,
-> I seldom have time left to provide deep reviews of tracing patches nor
-> simply for reviews to begin with.
+> On 5/2/2014 6:19 AM, Jesper Dangaard Brouer wrote:
+> > On Fri,  2 May 2014 15:18:12 +0800
+> > Zhouyi Zhou <zhouzhouyi@gmail.com> wrote:
+> >
+> >> As http://www.spinics.net/lists/netdev/msg165015.html
+> >> pktgen generates shared packet through vlan interface will cause
+> >> oops because of duplicate entering tc queue.
+> >>
+> >> Try to solve this problem by means of packet clone instead of sharing.
+> >
+> > I really don't like adding this stuff to the fast path of pktgen.
+> >
+> > Why would you use pktgen on a VLAN?
 > 
-> I've been very lucky to start kernel development on a very young subsystem
-> with tons of low hanging fruits back in 2008. Given that it deals with
-> a lot of tricky stuffs all around (sched, timers, irq, preemption, NMIs,
-> SMP, RCU, ....) I basically learned everything there.
-> 
-> Steve has been doing most of the incredible work these last years.
-> Thanks a lot!
-> 
-> Of course consider me always available to help on tracing if any hard
-> days happen.
+> Its a good way to test qdiscs. When you run pktgen over the VLAN
+> you exercise the lower devices qdisc.
 
-I will reluctantly apply this to my 3.16 queue.
+I do (personally) need a faster way/tool to exercise the qdisc path.
+I'm currently using trafgen, but it is not fast enough for my 10G
+testing.
 
-Thanks for all the tracing work! Although, I believe Peter Zijlstra has
-some frozen sharks heading your way. ;-)
+Perhaps we could add a pktgen option, that explicitly enable
+transmitting on qdisc path.  And when adding a VLAN device, auto enable
+that mode?
 
--- Steve
 
-> 
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  MAINTAINERS | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 6dc67b1..b69be85 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -9041,7 +9041,6 @@ F:	drivers/char/tpm/
->  
->  TRACING
->  M:	Steven Rostedt <rostedt@goodmis.org>
-> -M:	Frederic Weisbecker <fweisbec@gmail.com>
->  M:	Ingo Molnar <mingo@redhat.com>
->  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
->  S:	Maintained
+> Although I never submitted a patch like this because I figured it
+> was a corner case and we would want to keep the hotpath clean.
 
+I'm worried about the overhead of skb_clone() on for every pktgen
+pkt_dev->clone_skb counter... does it "invalidate" using the pktgen
+CLONE_SKB counter (kind-of confusing pktgen uses "clone_skb" for its
+counter).
+
+
+> > Why don't you use the "vlan_id" feature available in pktgen, and send
+> > in the lower real device?
+
+Guess, we can use it for testing/stressing the qdisc code path.
+
+
+> >> Signed-off-by: Zhouyi Zhou <yizhouzhou@ict.ac.cn>
+> >> ---
+> >>   net/core/pktgen.c |   20 +++++++++++++++++---
+> >>   1 files changed, 17 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+[...]
+> >> @@ -3347,8 +3348,18 @@ static void pktgen_xmit(struct pktgen_dev *pkt_dev)
+> >>   		pkt_dev->last_ok = 0;
+> >>   		goto unlock;
+> >>   	}
+> >> -	atomic_inc(&(pkt_dev->skb->users));
+> >> -	ret = (*xmit)(pkt_dev->skb, odev);
+> >> +
+> >> +	if (pkt_dev->clone_skb && is_vlan_dev(odev)) {
+> >> +		nskb = skb_clone(pkt_dev->skb, GFP_ATOMIC);
+> >> +		ret = -ENOMEM;
+> >> +		if (nskb)
+> >> +			ret = (*xmit)(nskb, odev);
+> >> +		else
+> >> +			nskb = ERR_PTR(ret);
+> >> +	} else {
+> >> +		atomic_inc(&(pkt_dev->skb->users));
+> >> +		ret = (*xmit)(pkt_dev->skb, odev);
+> >> +	}
+
+
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
