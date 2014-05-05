@@ -1,34 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaEEJkf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 05:40:35 -0400
-Received: from mail.centurylink.net ([205.219.233.9]:11799 "EHLO
-	smtp.centurylink.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673AbaEEJkd (ORCPT
+	id S1756072AbaEEJkq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 05:40:46 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:39325 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698AbaEEJko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 05:40:33 -0400
-X_CMAE_Category: , ,
-X-CNFS-Analysis: v=2.0 cv=cLtiQyiN c=1 sm=1 a=9cW_t1CCXrUA:10 a=FKkrIqjQGGEA:10 a=YTHtZiAxaJsA:10 a=nhVEQYUhrNQA:10 a=IkcTkHD0fZMA:10 a=I_5RNyk1AAAA:8 a=8pUsYoy7AAAA:8 a=KboJheYGbPgd6byAprYA:9 a=QEXdDO2ut3YA:10 a=Qq-eNzy4Ek8A:10 a=DAqSuGrPjygA:10 a=0ZOY+l80EUD9aPsrkRtrLg==:117
-X-CM-Score: 0
-X-Authed-Username: eXJpdmVyYTE5NzRAY2VudHVyeWxpbmsubmV0
-Authentication-Results: smtp01.agate.dfw.synacor.com smtp.mail=yrivera1974@centurylink.net; spf=neutral; sender-id=neutral
-Authentication-Results: smtp01.agate.dfw.synacor.com header.from=yrivera1974@centurylink.net; sender-id=neutral
-Date: Mon, 5 May 2014 05:40:11 -0400 (EDT)
-From: Horde Webmail Support <yrivera1974@centurylink.net>
-Message-ID: <556742135.20519431.1399282811518.JavaMail.root@centurylink.net>
-Subject: ACCOUNT UPDATE REQUIRED
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Mon, 5 May 2014 05:40:44 -0400
+Subject: [PATCH v1.1 7/16] arcmsr: revise message_isr_bh_fn to delete
+ duplicate code
+From: ching <ching2048@areca.com.tw>
+To: jbottomley@parallels.com, dan.carpenter@oracle.com, thenzl@redhat.com,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 May 2014 17:40:37 +0800
+Message-ID: <1399282837.4398.27.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.40.0.32]
-X-Mailer: Zimbra 7.2.2_GA_2852 (zclient/7.2.2_GA_2852)
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Click the Link Below:
+From: Ching<ching2048@areca.com.tw>
+
+Revise message_isr_bh_fn to remove the duplicate code for each adapter type.
+
+Signed-off-by: Ching<ching2048@areca.com.tw>
+---
+
+diff -uprN a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:32:24.000000000 +0800
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c	2014-05-02 19:52:26.000000000 +0800
+@@ -511,120 +511,65 @@ static int arcmsr_alloc_ccb_pool(struct 
  
-http://webmail-horde-support.weebly.com/
+ static void arcmsr_message_isr_bh_fn(struct work_struct *work) 
+ {
+-	struct AdapterControlBlock *acb = container_of(work,struct AdapterControlBlock, arcmsr_do_message_isr_bh);
+-	switch (acb->adapter_type) {
+-		case ACB_ADAPTER_TYPE_A: {
++	struct AdapterControlBlock *acb = container_of(work,
++		struct AdapterControlBlock, arcmsr_do_message_isr_bh);
++	char *acb_dev_map = (char *)acb->device_map;
++	uint32_t __iomem *signature = NULL;
++	char __iomem *devicemap = NULL;
++	int target, lun;
++	struct scsi_device *psdev;
++	char diff, temp;
  
-Thanks.
+-			struct MessageUnit_A __iomem *reg  = acb->pmuA;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*) (&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*) (&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
+-			break;
++	switch (acb->adapter_type) {
++	case ACB_ADAPTER_TYPE_A: {
++		struct MessageUnit_A __iomem *reg  = acb->pmuA;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
+-
+-		case ACB_ADAPTER_TYPE_B: {
+-			struct MessageUnit_B *reg  = acb->pmuB;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem*)(&reg->message_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem*)(&reg->message_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for(target = 0; target < ARCMSR_MAX_TARGETID -1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp =*acb_dev_map;
+-						for(lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if((temp & 0x01)==1 && (diff & 0x01) == 1) {	
+-								scsi_add_device(acb->host, 0, target, lun);
+-							}else if((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL ) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
+-					}
+-					devicemap++;
+-					acb_dev_map++;
+-				}
+-			}
++	case ACB_ADAPTER_TYPE_B: {
++		struct MessageUnit_B *reg  = acb->pmuB;
++		signature = (uint32_t __iomem *)(&reg->message_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->message_rwbuffer[21]);
++		break;
+ 		}
++	case ACB_ADAPTER_TYPE_C: {
++		struct MessageUnit_C __iomem *reg  = acb->pmuC;
++		signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
++		devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+ 		break;
+-		case ACB_ADAPTER_TYPE_C: {
+-			struct MessageUnit_C *reg  = acb->pmuC;
+-			char *acb_dev_map = (char *)acb->device_map;
+-			uint32_t __iomem *signature = (uint32_t __iomem *)(&reg->msgcode_rwbuffer[0]);
+-			char __iomem *devicemap = (char __iomem *)(&reg->msgcode_rwbuffer[21]);
+-			int target, lun;
+-			struct scsi_device *psdev;
+-			char diff;
+-
+-			atomic_inc(&acb->rq_map_token);
+-			if (readl(signature) == ARCMSR_SIGNATURE_GET_CONFIG) {
+-				for (target = 0; target < ARCMSR_MAX_TARGETID - 1; target++) {
+-					diff = (*acb_dev_map)^readb(devicemap);
+-					if (diff != 0) {
+-						char temp;
+-						*acb_dev_map = readb(devicemap);
+-						temp = *acb_dev_map;
+-						for (lun = 0; lun < ARCMSR_MAX_TARGETLUN; lun++) {
+-							if ((temp & 0x01) == 1 && (diff & 0x01) == 1) {
+-								scsi_add_device(acb->host, 0, target, lun);
+-							} else if ((temp & 0x01) == 0 && (diff & 0x01) == 1) {
+-								psdev = scsi_device_lookup(acb->host, 0, target, lun);
+-								if (psdev != NULL) {
+-									scsi_remove_device(psdev);
+-									scsi_device_put(psdev);
+-								}
+-							}
+-							temp >>= 1;
+-							diff >>= 1;
+-						}
++		}
++	}
++	atomic_inc(&acb->rq_map_token);
++	if (readl(signature) != ARCMSR_SIGNATURE_GET_CONFIG)
++		return;
++	for (target = 0; target < ARCMSR_MAX_TARGETID - 1;
++		target++) {
++		temp = readb(devicemap);
++		diff = (*acb_dev_map) ^ temp;
++		if (diff != 0) {
++			*acb_dev_map = temp;
++			for (lun = 0; lun < ARCMSR_MAX_TARGETLUN;
++				lun++) {
++				if ((diff & 0x01) == 1 &&
++					(temp & 0x01) == 1) {
++					scsi_add_device(acb->host,
++						0, target, lun);
++				} else if ((diff & 0x01) == 1
++					&& (temp & 0x01) == 0) {
++					psdev = scsi_device_lookup(acb->host,
++						0, target, lun);
++					if (psdev != NULL) {
++						scsi_remove_device(psdev);
++						scsi_device_put(psdev);
+ 					}
+-					devicemap++;
+-					acb_dev_map++;
+ 				}
++				temp >>= 1;
++				diff >>= 1;
+ 			}
+ 		}
++		devicemap++;
++		acb_dev_map++;
+ 	}
+ }
+ 
+
+
