@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaEEFQQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 May 2014 01:16:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19420 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412AbaEEFQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 May 2014 01:16:13 -0400
-Date: Mon, 5 May 2014 13:14:55 +0800
-From: Baoquan He <bhe@redhat.com>
-To: rjw@rjwysocki.net, linux-acpi@vger.kernel.org, linux-ia64@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dyoung@redhat.com
-Subject: Re: [Patch v3 1/2] introduce variable acpi_lapic into ia64
-Message-ID: <20140505051455.GA1702@dhcp-16-105.nay.redhat.com>
-References: <1399265306-8553-1-git-send-email-bhe@redhat.com>
+	id S1754525AbaEEFZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 May 2014 01:25:12 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:32970 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754411AbaEEFZK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 May 2014 01:25:10 -0400
+Subject: [PATCH] powerpc: Fix comment around arch specific definition of
+ RECLAIM_DISTANCE
+To: linux-kernel@vger.kernel.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Date: Mon, 05 May 2014 10:50:42 +0530
+Message-ID: <20140505052041.7795.97381.stgit@preeti>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1399265306-8553-1-git-send-email-bhe@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14050505-0928-0000-0000-000001B28D0C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Commit 32e45ff43eaf5c17f changed the default value of
+RECLAIM_DISTANCE to 30. However the comment around arch
+specifc definition of RECLAIM_DISTANCE is not updated to
+reflect the same. Correct the value mentioned in the comment.
 
-Thanks for previous comments and suggestions.
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
 
+ arch/powerpc/include/asm/topology.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I added the acpi_lapic in ia64. However I didn't find ia64 machine to
-test it. Could you or anyone please help test this 2 patches?
+diff --git a/arch/powerpc/include/asm/topology.h b/arch/powerpc/include/asm/topology.h
+index c920215..356546d 100644
+--- a/arch/powerpc/include/asm/topology.h
++++ b/arch/powerpc/include/asm/topology.h
+@@ -12,7 +12,7 @@ struct device_node;
+  * Before going off node we want the VM to try and reclaim from the local
+  * node. It does this if the remote distance is larger than RECLAIM_DISTANCE.
+  * With the default REMOTE_DISTANCE of 20 and the default RECLAIM_DISTANCE of
+- * 20, we never reclaim and go off node straight away.
++ * 30, we never reclaim and go off node straight away.
+  *
+  * To fix this we choose a smaller value of RECLAIM_DISTANCE.
+  */
 
-I don't know how to test UP system running SMP kernel with no LAPIC in
-MADT when it's ia64 arch. 
-
-Test steps for ia64 kdump:
-
-1) get a multi-cpus ia64 machine, build a upstream kernel with SMP and
-ACPI
-2)install kexec-tools, and edit /etc/sysconfig/kdump to make sure
-"nr_cpus=1" is in KDUMP_COMMANDLINE_APPEND. Then load the kdump kernel
-by below command:
-
-"kdumpctl restart" or "systemctl restart kdump"
-
-3) After kdump kernel loaded, execute below shell command. This can make
-crash happen in 2nd cpu.
-
-taskset -c 1 sh -c "echo c >/proc/sysrq-trigger"
-
-
-4) From console, below error message should not be printed any more. And
-the cpu related to 2nd lapid is present, this can be checked by console
-message and adding debugging code.
-
-"acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor."
-
---------
-For x86_64, the UP test is taken by adding "disableapic nr_cpus=1" into
-cmdline of grub. The test for kdump is the same as above ia64.
-
-Thanks
-Baoquan
-
-
-On 05/05/14 at 12:48pm, Baoquan He wrote:
-> This variable was defined and assigned in x86, is used to indicate
-> whether LAPIC exists in MADT. Now introduce it into ia64 to help
-> make correct judgment when get information for acpi processor later.
-> 
-> Signed-off-by: Baoquan He <bhe@redhat.com>
-> ---
->  arch/ia64/include/asm/acpi.h | 1 +
->  arch/ia64/kernel/acpi.c      | 3 +++
->  2 files changed, 4 insertions(+)
-> 
-> diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-> index d651102..b478219 100644
-> --- a/arch/ia64/include/asm/acpi.h
-> +++ b/arch/ia64/include/asm/acpi.h
-> @@ -85,6 +85,7 @@ ia64_acpi_release_global_lock (unsigned int *lock)
->  	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
->  
->  #ifdef	CONFIG_ACPI
-> +extern int acpi_lapic;
->  #define acpi_disabled 0	/* ACPI always enabled on IA64 */
->  #define acpi_noirq 0	/* ACPI always enabled on IA64 */
->  #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
-> diff --git a/arch/ia64/kernel/acpi.c b/arch/ia64/kernel/acpi.c
-> index 0d407b3..615ef81 100644
-> --- a/arch/ia64/kernel/acpi.c
-> +++ b/arch/ia64/kernel/acpi.c
-> @@ -56,6 +56,7 @@
->  
->  #define PREFIX			"ACPI: "
->  
-> +int acpi_lapic;
->  unsigned int acpi_cpei_override;
->  unsigned int acpi_cpei_phys_cpuid;
->  
-> @@ -676,6 +677,8 @@ int __init early_acpi_boot_init(void)
->  	if (ret < 1)
->  		printk(KERN_ERR PREFIX
->  		       "Error parsing MADT - no LAPIC entries\n");
-> +	else
-> +		acpi_lapic = 1;
->  
->  #ifdef CONFIG_SMP
->  	if (available_cpus == 0) {
-> -- 
-> 1.8.5.3
-> 
